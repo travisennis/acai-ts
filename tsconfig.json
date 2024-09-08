@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist",
+    "target": "ESNext",
+    "module": "ESNext",
+    "declaration": true,
+    "composite": true,
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "types": ["node"]
+  },
+  "include": ["source/**/*.ts"]
+}
