@@ -25,7 +25,7 @@ async function applyEditBlock(block: EditBlock): Promise<void> {
 
   try {
     if (await fileExists(trimmedPath)) {
-      let content = await fs.readFile(trimmedPath, "utf-8");
+      let content = await fs.readFile(trimmedPath, "utf8");
 
       content =
         search.trim() === ""
@@ -91,7 +91,7 @@ export class GenerateEditsTool extends CallableTool {
     };
   }
   async call(args: { [key: string]: string }): Promise<string> {
-    console.log("Generating edits: ", args.instructions);
+    console.log("Generating edits:", args.instructions);
     if (!args.instructions || typeof args.instructions !== "string") {
       throw new AcaiError("Invalid or missing instruction for generate_edits.");
     }
@@ -199,6 +199,6 @@ export class GenerateEditsTool extends CallableTool {
       [] as { path: string; result: string }[],
     );
 
-    return Promise.resolve(JSON.stringify(uniqueResults));
+    return JSON.stringify(uniqueResults);
   }
 }

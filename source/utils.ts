@@ -17,9 +17,8 @@ export async function asyncTry<T>(input: PromiseLike<T>): Promise<Try<T>> {
   } catch (e) {
     if (e instanceof Error) {
       return e;
-    } else {
-      return new Error(`Unexpected error ${String(e)}`);
     }
+    return new Error(`Unexpected error ${JSON.stringify(e)}`);
   }
 }
 

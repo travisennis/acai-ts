@@ -7,12 +7,12 @@ import TerminalRenderer from "marked-terminal";
 import meow from "meow";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { BuildTool } from "./build_tool";
+import { BuildTool } from "./build-tool";
 import { handleError } from "./errors";
 import { directoryTree } from "./files";
-import { FormatTool } from "./format_tool";
-import { GenerateEditsTool } from "./generate_edits_tool";
-import { LintTool } from "./lint_tool";
+import { FormatTool } from "./format-tool";
+import { GenerateEditsTool } from "./generate-edits-tool";
+import { LintTool } from "./lint-tool";
 import { systemPrompt, userPromptTemplate } from "./prompts";
 import { asyncTry, isError, tryOrFail } from "./utils";
 
@@ -75,7 +75,7 @@ async function chatCmd(args: Flags) {
       continue;
     } else if (userInput.startsWith("/add")) {
       const patterns = userInput
-        .substring("/add".length)
+        .slice("/add".length)
         .trimStart()
         .split(" ")
         .map((p) => p.trim());
@@ -100,7 +100,7 @@ async function chatCmd(args: Flags) {
       prompt = userInput;
     }
 
-    if (prompt.length === 0) {
+    if (prompt === "") {
       continue;
     }
 
@@ -156,7 +156,7 @@ async function chatCmd(args: Flags) {
               `Error calling tool ${tool.getName()}:`,
               toolCallResult,
             );
-            let errorMessage = toolCallResult.message;
+            const errorMessage = toolCallResult.message;
             messages.push({
               role: "user",
               content: [
@@ -170,12 +170,12 @@ async function chatCmd(args: Flags) {
             continue;
           }
           if (tool.getName() === "generate_edits") {
-            const tr = JSON.parse(toolCallResult) as {
+            const editResults = JSON.parse(toolCallResult) as {
               path: string;
               result: string;
             }[];
             await Promise.all(
-              tr
+              editResults
                 .filter((p) => p.result === "edits applied")
                 .map(async (p) => {
                   const filePath = p.path;
