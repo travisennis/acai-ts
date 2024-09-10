@@ -1,14 +1,13 @@
-import type Anthropic from "@anthropic-ai/sdk";
 import { input } from "@inquirer/prompts";
+import { generateText, LanguageModel, tool } from "ai";
 import chalk from "chalk";
 import fs from "node:fs/promises";
 import { z } from "zod";
-import { AcaiError, ApiError, FileOperationError } from "./errors";
+import { AcaiError, FileOperationError } from "./errors";
 import {
   generateEditPromptTemplate,
   generateEditSystemPrompt,
 } from "./prompts";
-import { CallableTool, type ToolParameters } from "./tools";
 
 const EditBlockSchema = z.object({
   path: z.string(),
@@ -64,76 +63,53 @@ function displayColoredDiff(search: string, replace: string): void {
   console.log(chalk.yellow("-------------------------"));
 }
 
-export class GenerateEditsTool extends CallableTool {
-  private client: Anthropic;
-  private files: { path: string; content: string }[];
-  constructor(client: Anthropic, files: { path: string; content: string }[]) {
-    super();
-    this.client = client;
-    this.files = files;
-  }
-  getName(): string {
-    return "generate_edits";
-  }
-  getDescription(): string {
-    return "This function generates a set of edits that can applied to the current code base based on the specific instructions provided. This function will return the edits and give the user the ability to accept or reject the suggested edits before applying them to the code base.";
-  }
-  getParameters(): ToolParameters {
-    return {
-      type: "object",
-      requiredProperties: {
-        instructions: {
-          type: "string",
-          description:
-            "After the reviewing the provided code, construct a plan for the necessary changes. These instructions will be used to determine what edits need to be made to the code base.",
-        },
-      },
-    };
-  }
-  async call(args: { [key: string]: string }): Promise<string> {
-    console.log("Generating edits:", args.instructions);
-    if (!args.instructions || typeof args.instructions !== "string") {
-      throw new AcaiError("Invalid or missing instruction for generate_edits.");
-    }
+export function initTool(
+  model: LanguageModel,
+  files: { path: string; content: string }[],
+) {
+  return {
+    generate_edits: tool({
+      description:
+        "This function generates a set of edits that can applied to the current code base based on the specific instructions provided. This function will return the edits and give the user the ability to accept or reject the suggested edits before applying them to the code base.",
+      parameters: z.object({
+        instructions: z
+          .string()
+          .describe(
+            "This function generates a set of edits that can applied to the current code base based on the specific instructions provided. This function will return the edits and give the user the ability to accept or reject the suggested edits before applying them to the code base.",
+          ),
+      }),
+      execute: async ({ instructions }) => {
+        console.log("Generating edits:", instructions);
+        if (!instructions || typeof instructions !== "string") {
+          throw new AcaiError(
+            "Invalid or missing instruction for generate_edits.",
+          );
+        }
 
-    const response = await this.client.messages
-      .create(
-        {
-          model: "claude-3-5-sonnet-20240620",
-          max_tokens: 8192,
+        const { text } = await generateText({
+          model: model,
           system: generateEditSystemPrompt,
-          messages: [
-            {
-              role: "user",
-              content: generateEditPromptTemplate({
-                prompt: args.instructions,
-                files: this.files,
-              }),
-            },
-            { role: "assistant", content: "[" },
-          ],
-        },
-        {
+          maxTokens: 8192,
           headers: {
             "anthropic-version": "2023-06-01",
             "anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15",
           },
-        },
-      )
-      .catch((error: unknown) => {
-        throw new ApiError(
-          `Error calling Anthropic API: ${(error as Error).message}`,
-        );
-      });
+          messages: [
+            {
+              role: "user",
+              content: generateEditPromptTemplate({
+                prompt: instructions,
+                files: files,
+              }),
+            },
+            { role: "assistant", content: "[" },
+          ],
+        });
 
-    console.dir(response);
-
-    const results: { path: string; result: string }[] = [];
-    for (const content of response.content) {
-      if (content.type === "text") {
+        const results: { path: string; result: string }[] = [];
         const parseResult = z
           .array(EditBlockSchema)
-          .safeParse(JSON.parse(`[${content.text}`));
+          .safeParse(JSON.parse(`[${text}`));
         if (!parseResult.success) {
           throw new AcaiError(
             `Invalid edit blocks: ${parseResult.error.message}`,
@@ -165,7 +141,10 @@ export class GenerateEditsTool extends CallableTool {
               continue;
             }
             case "n": {
-              results.push({ path: editBlock.path, result: "edits rejected" });
+              results.push({
+                path: editBlock.path,
+                result: "edits rejected",
+              });
               continue;
             }
             default: {
@@ -174,31 +153,31 @@ export class GenerateEditsTool extends CallableTool {
             }
           }
         }
-      } else {
-        results.push({ path: "none", result: "unexpected message" });
-      }
-    }
 
-    console.dir(results);
+        console.dir(results);
 
-    const uniqueResults = results.reduce(
-      (acc, curr) => {
-        const existingIndex = acc.findIndex((item) => item.path === curr.path);
-        if (existingIndex !== -1) {
-          if (
-            curr.result === "edits applied" ||
-            acc[existingIndex].result === "edits applied"
-          ) {
-            acc[existingIndex].result = "edits applied";
-          }
-        } else {
-          acc.push(curr);
-        }
-        return acc;
+        const uniqueResults = results.reduce(
+          (acc, curr) => {
+            const existingIndex = acc.findIndex(
+              (item) => item.path === curr.path,
+            );
+            if (existingIndex !== -1) {
+              if (
+                curr.result === "edits applied" ||
+                acc[existingIndex].result === "edits applied"
+              ) {
+                acc[existingIndex].result = "edits applied";
+              }
+            } else {
+              acc.push(curr);
+            }
+            return acc;
+          },
+          [] as { path: string; result: string }[],
+        );
+
+        return JSON.stringify(uniqueResults);
       },
-      [] as { path: string; result: string }[],
-    );
-
-    return JSON.stringify(uniqueResults);
-  }
+    }),
+  };
 }

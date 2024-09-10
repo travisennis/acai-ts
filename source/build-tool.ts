@@ -1,42 +1,35 @@
+import { tool } from "ai";
 import { exec } from "node:child_process";
-import { CallableTool, type ToolParameters } from "./tools";
+import { z } from "zod";
 
-export class BuildTool extends CallableTool {
-  getName(): string {
-    return "build";
-  }
-
-  getDescription(): string {
-    return "Executes the build command for the project and returns the output.";
-  }
-
-  getParameters(): ToolParameters {
-    return {
-      type: "object",
-      requiredProperties: {},
-      optionalProperties: {
-        command: {
-          type: "string",
-          description:
+export function initTool() {
+  return {
+    build: tool({
+      description:
+        "Executes the build command for the project and returns the output.",
+      parameters: z.object({
+        command: z
+          .string()
+          .describe(
             "Optional custom build command. If not provided, the default build command will be used.",
-        },
+          )
+          .optional(),
+      }),
+      execute: async ({ command }) => {
+        const buildCommand = command || "npm run build";
+        return new Promise((resolve, reject) => {
+          exec(buildCommand, (error, stdout, stderr) => {
+            if (error) {
+              reject(`Build execution error: ${error.message}`);
+              return;
+            }
+            if (stderr) {
+              console.error(`Build stderr: ${stderr}`);
+            }
+            resolve(stdout);
+          });
+        });
       },
-    };
-  }
-
-  async call(args: { [key: string]: string }): Promise<string> {
-    const buildCommand = args.command || "npm run build";
-    return new Promise((resolve, reject) => {
-      exec(buildCommand, (error, stdout, stderr) => {
-        if (error) {
-          reject(`Build execution error: ${error.message}`);
-          return;
-        }
-        if (stderr) {
-          console.error(`Build stderr: ${stderr}`);
-        }
-        resolve(stdout);
-      });
-    });
-  }
+    }),
+  };
 }
