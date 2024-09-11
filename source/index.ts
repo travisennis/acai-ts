@@ -13,6 +13,7 @@ import { handleError } from "./errors";
 import { directoryTree } from "./files";
 import * as FormatTool from "./format-tool";
 import * as GenerateEditsTool from "./generate-edits-tool";
+import * as GitDiffTool from "./git-diff-tool";
 import * as LintTool from "./lint-tool";
 import { systemPrompt, userPromptTemplate } from "./prompts";
 import { asyncTry, tryOrFail } from "./utils";
@@ -131,50 +132,59 @@ async function chatCmd(args: Flags) {
       content: userPromptTemplate({ fileTree: dirTree, files, prompt }),
     });
 
-    const result = await streamText({
-      model: model,
-      maxTokens: 8192,
-      system: systemPrompt,
-      messages: messages,
-      maxToolRoundtrips: 5,
-      tools: {
-        generateEdits: GenerateEditsTool.initTool(model, files),
-        lint: LintTool.initTool(),
-        build: BuildTool.initTool(),
-        format: FormatTool.initTool(),
-      },
-
-      onFinish: async (event) => {
-        const toolResults = event?.toolResults ?? [];
-        for (const toolResult of toolResults) {
-          if (toolResult.toolName === "generateEdits") {
-            const editResults = JSON.parse(toolResult.result) as {
-              path: string;
-              result: string;
-            }[];
-            await Promise.all(
-              editResults
-                .filter((p) => p.result === "edits applied")
-                .map(async (p) => {
-                  const filePath = p.path;
-                  const content = await fs.readFile(filePath, "utf8");
-                  console.log("Updated", filePath, content.length);
-                  fileMap.set(filePath, content);
-                }),
-            );
+    try {
+      const result = await streamText({
+        model: model,
+        maxTokens: 8192,
+        system: systemPrompt,
+        messages: messages,
+        maxToolRoundtrips: 5,
+        tools: {
+          generateEdits: GenerateEditsTool.initTool(model, files),
+          lint: LintTool.initTool(),
+          build: BuildTool.initTool(),
+          format: FormatTool.initTool(),
+          gitDiff: GitDiffTool.initTool(),
+        },
+        onFinish: async (event) => {
+          const toolCalls = event.toolCalls ?? [];
+          for (const toolCall of toolCalls) {
+            console.dir(toolCall);
           }
-        }
-        messages.push({
-          role: "assistant",
-          content: event.text,
-        });
-        const md = await marked.parse(event.text);
-        process.stdout.write(`\n${md}\n`);
-      },
-    });
+          const toolResults = event.toolResults ?? [];
+          for (const toolResult of toolResults) {
+            if (toolResult.toolName === "generateEdits") {
+              const editResults = JSON.parse(toolResult.result) as {
+                path: string;
+                result: string;
+              }[];
+              await Promise.all(
+                editResults
+                  .filter((p) => p.result === "edits applied")
+                  .map(async (p) => {
+                    const filePath = p.path;
+                    const content = await fs.readFile(filePath, "utf8");
+                    console.log("Updated", filePath, content.length);
+                    fileMap.set(filePath, content);
+                  }),
+              );
+            }
+          }
+          messages.push({
+            role: "assistant",
+            content: event.text,
+          });
+          process.stdout.write(`${"-".repeat(80)}\n`);
+          const md = await marked.parse(event.text);
+          process.stdout.write(`\n${md}\n`);
+        },
+      });
 
-    for await (const chunk of result.textStream) {
-      process.stdout.write(chunk);
+      for await (const chunk of result.textStream) {
+        process.stdout.write(chunk);
+      }
+    } catch (e) {
+      console.error(e);
     }
   }
 }

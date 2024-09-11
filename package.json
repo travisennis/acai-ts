@@ -7,13 +7,7 @@
     "types": "./dist/index.d.ts",
     "default": "./dist/index.js"
   },
-  "keywords": [
-    "cli",
-    "ai",
-    "llm",
-    "coding",
-    "assistant"
-  ],
+  "keywords": ["cli", "ai", "llm", "coding", "assistant"],
   "author": "Travis Ennis",
   "license": "MIT",
   "scripts": {
@@ -43,6 +37,7 @@
     "marked-terminal": "^7.1.0",
     "meow": "^13.2.0",
     "openai": "^4.57.0",
+    "simple-git": "^3.26.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
