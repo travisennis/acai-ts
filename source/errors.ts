@@ -45,6 +45,7 @@ export function handleError(error: Error): void {
     console.error(`${error.name}: ${error.message}`);
   } else {
     console.error(`Unexpected error: ${error.message}`);
+    console.error(error);
   }
   // You might want to add more specific handling based on error types
 }
