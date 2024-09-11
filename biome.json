@@ -9,7 +9,33 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "complexity": { "all": true },
+      "correctness": { "all": true, "noNodejsModules": "off" },
+      "performance": { "all": true },
+      "security": { "all": true },
+      "suspicious": { "all": true },
+      "nursery": { "recommended": true }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 80,
+    "attributePosition": "auto"
+  },
+  "javascript": {
+    "formatter": {
+      "jsxQuoteStyle": "double",
+      "quoteProperties": "asNeeded",
+      "trailingCommas": "all",
+      "arrowParentheses": "always",
+      "bracketSpacing": true,
+      "bracketSameLine": false,
+      "quoteStyle": "double",
+      "attributePosition": "auto"
     }
   }
 }
