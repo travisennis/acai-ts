@@ -19,11 +19,13 @@ If the request is ambiguous or you need more information, ask questions. If you 
 Provide answers in markdown format unless instructed otherwise. 
 `;
 
-export const userPromptTemplate = Handlebars.compile<{
+export type UserPromptContext = {
   fileTree?: string;
   files?: { path: string; content: string }[];
   prompt?: string;
-}>(`
+};
+
+export const userPromptTemplate = Handlebars.compile<UserPromptContext>(`
 {{#if fileTree}}
 File Tree:
 

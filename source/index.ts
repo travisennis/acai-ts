@@ -15,8 +15,13 @@ import * as FormatTool from "./format-tool";
 import * as GenerateEditsTool from "./generate-edits-tool";
 import * as GitDiffTool from "./git-diff-tool";
 import * as LintTool from "./lint-tool";
-import { systemPrompt, userPromptTemplate } from "./prompts";
+import {
+  systemPrompt,
+  type UserPromptContext,
+  userPromptTemplate,
+} from "./prompts";
 import { asyncTry, tryOrFail } from "./utils";
+import chalk from "chalk";
 
 const cli = meow(
   `
@@ -76,6 +81,7 @@ async function chatCmd(args: Flags) {
 
   const messages: CoreMessage[] = [];
   const fileMap = new Map<string, string>();
+  let filesUpdated = false;
   while (true) {
     const userInput = await input({ message: ">" });
     let prompt = "";
@@ -107,6 +113,7 @@ async function chatCmd(args: Flags) {
           const content = await fs.readFile(filePath, "utf8");
           console.log("Added", filePath, content.length);
           fileMap.set(filePath, content);
+          filesUpdated = true;
         }),
       );
 
@@ -125,11 +132,20 @@ async function chatCmd(args: Flags) {
       continue;
     }
 
-    const files = Array.from(fileMap, ([path, content]) => ({ path, content }));
+    const files = Array.from(fileMap, ([path, content]) => ({
+      path,
+      content,
+    }));
+
+    const context: UserPromptContext = { fileTree: dirTree, prompt };
+    if (filesUpdated) {
+      context.files = files;
+      filesUpdated = false;
+    }
 
     messages.push({
       role: "user",
-      content: userPromptTemplate({ fileTree: dirTree, files, prompt }),
+      content: userPromptTemplate(context),
     });
 
     try {
@@ -166,6 +182,7 @@ async function chatCmd(args: Flags) {
                     const content = await fs.readFile(filePath, "utf8");
                     console.log("Updated", filePath, content.length);
                     fileMap.set(filePath, content);
+                    filesUpdated = true;
                   }),
               );
             }
@@ -174,7 +191,7 @@ async function chatCmd(args: Flags) {
             role: "assistant",
             content: event.text,
           });
-          process.stdout.write(`${"-".repeat(80)}\n`);
+          process.stdout.write(chalk.yellow(`\n${"-".repeat(80)}\n`));
           const md = await marked.parse(event.text);
           process.stdout.write(`\n${md}\n`);
         },
