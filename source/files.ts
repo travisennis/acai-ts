@@ -27,7 +27,7 @@ async function generateDirectoryTree(
 ): Promise<string> {
   const name = path.basename(dirPath);
   const ignoreFile = await fs.readFile("./.gitignore");
-  const ig = ignore().add(ignoreFile.toString());
+  const ig = ignore().add(ignoreFile.toString()).add(".git");
   let output = `${getIndent(level, false)}${name}\n`;
 
   try {

@@ -1,7 +1,7 @@
+import fs from "node:fs";
+import { join } from "node:path";
 import pino from "pino";
-import { join } from "path";
 import { xdgData } from "xdg-basedir";
-import fs from "fs";
 
 const logDir = join(xdgData || "~/.local/share", "acai", "logs");
 fs.mkdirSync(logDir, { recursive: true });

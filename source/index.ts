@@ -3,7 +3,7 @@ import path from "node:path";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
 import { editor, input } from "@inquirer/prompts";
-import { type CoreMessage, streamText } from "ai";
+import { type CoreMessage, generateText } from "ai";
 import chalk from "chalk";
 import { globby } from "globby";
 import { marked } from "marked";
@@ -44,12 +44,10 @@ const cli = meow(
       provider: {
         type: "string",
         shortFlag: "p",
-        default: "anthropic",
       },
       model: {
         type: "string",
         shortFlag: "m",
-        default: "sonnet",
       },
     },
   },
@@ -62,27 +60,26 @@ marked.setOptions({
   renderer: new TerminalRenderer() as any,
 });
 
-function getModel(args: Flags, config: any) {
+function getModel(args: Flags) {
   if (args.provider === "openai") {
-    return openai(config.openai?.model || "gpt-4o-2024-08-06");
+    return openai(args.model ?? "gpt-4o-2024-08-06");
   }
 
   const anthropic = createAnthropic({
-    apiKey: config.anthropic?.apiKey || process.env.CLAUDE_API_KEY,
+    apiKey: process.env.CLAUDE_API_KEY,
     headers: {
-      "anthropic-version": config.anthropic?.version || "2023-06-01",
-      "anthropic-beta":
-        config.anthropic?.beta || "max-tokens-3-5-sonnet-2024-07-15",
+      "anthropic-version": "2023-06-01",
+      "anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15",
     },
   });
-  return anthropic(config.anthropic?.model || "claude-3-5-sonnet-20240620");
+  return anthropic(args.model ?? "claude-3-5-sonnet-20240620");
 }
 
 async function chatCmd(args: Flags, config: any) {
-  const model = getModel(args, config);
+  logger.info(config, "Config:");
+  const model = getModel(args);
 
-  const dirTree = await directoryTree(process.cwd());
-
+  let totalTokens = 0;
   const messages: CoreMessage[] = [];
   const fileMap = new Map<string, string>();
   let filesUpdated = false;
@@ -141,8 +138,9 @@ async function chatCmd(args: Flags, config: any) {
       content,
     }));
 
-    const context: UserPromptContext = { fileTree: dirTree, prompt };
+    const context: UserPromptContext = { prompt };
     if (filesUpdated) {
+      context.fileTree = await directoryTree(process.cwd());
       context.files = files;
       filesUpdated = false;
     }
@@ -153,12 +151,12 @@ async function chatCmd(args: Flags, config: any) {
     });
 
     try {
-      const result = await streamText({
+      const result = await generateText({
         model: model,
         maxTokens: 8192,
         system: systemPrompt,
         messages: messages,
-        maxToolRoundtrips: 5,
+        maxSteps: 3,
         tools: {
           generateEdits: GenerateEditsTool.initTool(model, files),
           lint: LintTool.initTool(),
@@ -167,48 +165,50 @@ async function chatCmd(args: Flags, config: any) {
           gitDiff: GitDiffTool.initTool(),
           gitCommit: GitCommitTool.initTool(),
         },
-        onFinish: async (event) => {
-          logger.info("onFinish");
-          const toolCalls = event.toolCalls ?? [];
-          for (const toolCall of toolCalls) {
-            logger.info("Tool Call:", toolCall);
-          }
-          const toolResults = event.toolResults ?? [];
-          for (const toolResult of toolResults) {
-            logger.info("Tool Result:", toolResult);
-            if (toolResult.toolName === "generateEdits") {
-              const editResults = JSON.parse(toolResult.result) as {
-                path: string;
-                result: string;
-              }[];
-              await Promise.all(
-                editResults
-                  .filter((p) => p.result === "edits applied")
-                  .map(async (p) => {
-                    const filePath = p.path;
-                    const content = await fs.readFile(filePath, "utf8");
-                    logger.info(
-                      `Updated ${filePath}, content length: ${content.length}`,
-                    );
-                    fileMap.set(filePath, content);
-                    filesUpdated = true;
-                  }),
-              );
-            }
-          }
-          messages.push({
-            role: "assistant",
-            content: event.text,
-          });
-          process.stdout.write(chalk.yellow(`\n${"-".repeat(80)}\n`));
-          const md = await marked.parse(event.text);
-          process.stdout.write(`\n${md}\n`);
-        },
       });
 
-      for await (const chunk of result.textStream) {
-        process.stdout.write(chunk);
+      const toolResults = result.toolResults ?? [];
+      for (const toolResult of toolResults) {
+        logger.info("Tool Result:", toolResult);
+        if (toolResult.toolName === "generateEdits") {
+          const editResults = JSON.parse(toolResult.result) as {
+            path: string;
+            result: string;
+          }[];
+          await Promise.all(
+            editResults
+              .filter((p) => p.result === "edits applied")
+              .map(async (p) => {
+                const filePath = p.path;
+                const content = await fs.readFile(filePath, "utf8");
+                logger.info(
+                  `Updated ${filePath}, content length: ${content.length}`,
+                );
+                fileMap.set(filePath, content);
+                filesUpdated = true;
+              }),
+          );
+        }
       }
+
+      messages.push({
+        role: "assistant",
+        content: result.text,
+      });
+
+      totalTokens += result.usage.totalTokens;
+
+      process.stdout.write(chalk.yellow(`\n${"-".repeat(80)}\n`));
+      const md = await marked.parse(result.text);
+      process.stdout.write(`\n${md}\n`);
+      process.stdout.write(
+        chalk.green(
+          `\nPrompt tokens: ${result.usage.promptTokens}, Completion tokens: ${result.usage.completionTokens}, Total tokens: ${result.usage.totalTokens}\n`,
+        ),
+      );
+      process.stdout.write(
+        chalk.green(`Tokens this session: ${totalTokens}\n`),
+      );
     } catch (e) {
       logger.error(e);
     }
@@ -216,7 +216,7 @@ async function chatCmd(args: Flags, config: any) {
 }
 
 async function main() {
-  process.stdout.write("acai\n");
+  process.stdout.write(chalk.magenta("acai\n"));
 
   const config = await readAppConfig("acai");
   tryOrFail(await asyncTry(chatCmd(cli.flags, config)), handleError);

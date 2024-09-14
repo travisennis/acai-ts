@@ -1,7 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { xdgConfig } from "xdg-basedir";
+import { xdgCache, xdgConfig, xdgData, xdgState } from "xdg-basedir";
 import { z } from "zod";
+import logger from "./logger";
+
+logger.info("App config dirs:", xdgConfig, xdgCache, xdgData, xdgState);
 
 const ProjectConfigSchema = z.object({
   build: z.string().optional(),
