@@ -14,6 +14,7 @@ import { directoryTree } from "./files";
 import * as FormatTool from "./format-tool";
 import * as GenerateEditsTool from "./generate-edits-tool";
 import * as GitDiffTool from "./git-diff-tool";
+import * as GitCommitTool from "./git-commit-tool";
 import * as LintTool from "./lint-tool";
 import {
   systemPrompt,
@@ -161,6 +162,7 @@ async function chatCmd(args: Flags) {
           build: BuildTool.initTool(),
           format: FormatTool.initTool(),
           gitDiff: GitDiffTool.initTool(),
+          gitCommit: GitCommitTool.initTool(),
         },
         onFinish: async (event) => {
           const toolCalls = event.toolCalls ?? [];
