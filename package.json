@@ -20,7 +20,8 @@
     "pretest": "npm run compile",
     "fix": "biome lint --write",
     "format": "biome format --write",
-    "dev": "tsx ./source/index.ts"
+    "dev": "tsx ./source/index.ts",
+    "oxlint": "npx oxlint@latest --ignore-path .gitignore --deny correctness --deny suspicous --deny pedantic --deny style --node-plugin"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^0.0.50",
