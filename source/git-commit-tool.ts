@@ -2,16 +2,28 @@ import { tool } from "ai";
 import { z } from "zod";
 import simpleGit from "simple-git";
 
+function validateConventionalCommit(message: string): boolean {
+  const pattern = /^(feat|fix|docs|style|refactor|perf|test|chore)(\(\w+\))?!?: .+/;
+  return pattern.test(message);
+}
+
+function generateConventionalCommit(files: string[]): string {
+  const type = files.some(file => file.includes('test')) ? 'test' : 'chore';
+  const scope = files.length === 1 ? files[0].split('/')[0] : 'various';
+  const description = `update ${files.join(', ')}`;
+  return `${type}(${scope}): ${description}`;
+}
+
 export function initTool() {
   return tool({
     description:
-      "Creates a new git commit with the current changes using the provided or generated commit message.",
+      "Creates a new git commit with the current changes using the provided or generated commit message, enforcing the Conventional Commits standard.",
     parameters: z.object({
       message: z
         .string()
         .optional()
         .describe(
-          "The commit message. If not provided, one will be generated.",
+          "The commit message. If not provided, one will be generated following the Conventional Commits standard.",
         ),
     }),
     execute: async ({ message }) => {
@@ -24,12 +36,9 @@ export function initTool() {
           return "No changes to commit.";
         }
 
-        // If no message is provided, generate one based on the changes
-        if (!message) {
-          // const diff = await git.diff(["--cached"]);
-          // Here you could call an AI model to generate a commit message based on the diff
-          // For now, we'll use a simple placeholder
-          message = `Update files: ${status.files.map((f) => f.path).join(", ")}`;
+        // If no message is provided or the provided message doesn't conform to Conventional Commits, generate one
+        if (!message || !validateConventionalCommit(message)) {
+          message = generateConventionalCommit(status.files.map(f => f.path));
         }
 
         // Add all changes and commit

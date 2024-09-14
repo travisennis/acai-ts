@@ -2,12 +2,27 @@ import fs from "node:fs/promises";
 import { input } from "@inquirer/prompts";
 import { type LanguageModel, generateText, tool } from "ai";
 import chalk from "chalk";
-import { z } from "zod";
+import { z, ZodIssueCode } from "zod";
 import { AcaiError, FileOperationError } from "./errors";
 import {
   generateEditPromptTemplate,
   generateEditSystemPrompt,
 } from "./prompts";
+
+const parseJsonPreprocessor = (value: unknown, ctx: z.RefinementCtx) => {
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch (e) {
+      ctx.addIssue({
+        code: ZodIssueCode.custom,
+        message: (e as Error).message,
+      });
+    }
+  }
+
+  return value;
+};
 
 const EditBlockSchema = z.object({
   path: z.string(),
@@ -15,6 +30,11 @@ const EditBlockSchema = z.object({
   replace: z.string(),
   thinking: z.string(),
 });
+
+const editBlocksProcessor = z.preprocess(
+  parseJsonPreprocessor,
+  z.array(EditBlockSchema),
+);
 
 type EditBlock = z.infer<typeof EditBlockSchema>;
 
@@ -103,9 +123,7 @@ export function initTool(
       });
 
       const results: { path: string; result: string }[] = [];
-      const parseResult = z
-        .array(EditBlockSchema)
-        .safeParse(JSON.parse(`[${text}`));
+      const parseResult = editBlocksProcessor.safeParse(`[${text}`);
       if (!parseResult.success) {
         throw new AcaiError(
           `Invalid edit blocks: ${parseResult.error.message}`,
