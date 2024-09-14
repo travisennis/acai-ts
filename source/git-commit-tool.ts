@@ -3,14 +3,15 @@ import { z } from "zod";
 import simpleGit from "simple-git";
 
 function validateConventionalCommit(message: string): boolean {
-  const pattern = /^(feat|fix|docs|style|refactor|perf|test|chore)(\(\w+\))?!?: .+/;
+  const pattern =
+    /^(feat|fix|docs|style|refactor|perf|test|chore)(\(\w+\))?!?: .+/;
   return pattern.test(message);
 }
 
 function generateConventionalCommit(files: string[]): string {
-  const type = files.some(file => file.includes('test')) ? 'test' : 'chore';
-  const scope = files.length === 1 ? files[0].split('/')[0] : 'various';
-  const description = `update ${files.join(', ')}`;
+  const type = files.some((file) => file.includes("test")) ? "test" : "chore";
+  const scope = files.length === 1 ? files[0].split("/")[0] : "various";
+  const description = `update ${files.join(", ")}`;
   return `${type}(${scope}): ${description}`;
 }
 
@@ -38,7 +39,7 @@ export function initTool() {
 
         // If no message is provided or the provided message doesn't conform to Conventional Commits, generate one
         if (!message || !validateConventionalCommit(message)) {
-          message = generateConventionalCommit(status.files.map(f => f.path));
+          message = generateConventionalCommit(status.files.map((f) => f.path));
         }
 
         // Add all changes and commit
