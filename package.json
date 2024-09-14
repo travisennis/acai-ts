@@ -38,6 +38,7 @@
     "meow": "^13.2.0",
     "openai": "^4.61.0",
     "simple-git": "^3.26.0",
+    "xdg-basedir": "^5.1.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

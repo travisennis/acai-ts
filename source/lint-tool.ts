@@ -1,6 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { asyncExec } from "./command";
+import { readProjectConfig } from "./config";
 
 export function initTool() {
   return tool({
@@ -9,10 +10,11 @@ export function initTool() {
     parameters: z.object({
       fileName: z.string().describe("The path of the file to lint."),
     }),
-    execute: ({ fileName }) => {
+    execute: async ({ fileName }) => {
       const file = fileName;
-      const command = `biome check ${file}`;
-      return asyncExec(command);
+      const config = await readProjectConfig();
+      const lintCommand = config.lint || `biome check ${file}`;
+      return asyncExec(lintCommand);
     },
   });
 }

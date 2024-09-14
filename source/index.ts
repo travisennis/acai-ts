@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { readAppConfig } from "./config";
 import path from "node:path";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
@@ -60,23 +61,24 @@ marked.setOptions({
   renderer: new TerminalRenderer() as any,
 });
 
-function getModel(args: Flags) {
+function getModel(args: Flags, config: any) {
   if (args.provider === "openai") {
-    return openai("gpt-4o-2024-08-06");
+    return openai(config.openai?.model || "gpt-4o-2024-08-06");
   }
 
   const anthropic = createAnthropic({
-    apiKey: process.env.CLAUDE_API_KEY,
+    apiKey: config.anthropic?.apiKey || process.env.CLAUDE_API_KEY,
     headers: {
-      "anthropic-version": "2023-06-01",
-      "anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15",
+      "anthropic-version": config.anthropic?.version || "2023-06-01",
+      "anthropic-beta":
+        config.anthropic?.beta || "max-tokens-3-5-sonnet-2024-07-15",
     },
   });
-  return anthropic("claude-3-5-sonnet-20240620");
+  return anthropic(config.anthropic?.model || "claude-3-5-sonnet-20240620");
 }
 
-async function chatCmd(args: Flags) {
-  const model = getModel(args);
+async function chatCmd(args: Flags, config: any) {
+  const model = getModel(args, config);
 
   const dirTree = await directoryTree(process.cwd());
 
@@ -211,7 +213,8 @@ async function chatCmd(args: Flags) {
 async function main() {
   process.stdout.write("acai\n");
 
-  tryOrFail(await asyncTry(chatCmd(cli.flags)), handleError);
+  const config = await readAppConfig("acai");
+  tryOrFail(await asyncTry(chatCmd(cli.flags, config)), handleError);
 }
 
 main();

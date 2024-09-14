@@ -1,6 +1,7 @@
 import { asyncExec } from "./command";
 import { tool } from "ai";
 import { z } from "zod";
+import { readProjectConfig } from "./config";
 
 export function initTool() {
   return tool({
@@ -11,9 +12,10 @@ export function initTool() {
         .string()
         .describe("The instructions for the build command."),
     }),
-    execute: ({ instructions }) => {
+    execute: async ({ instructions }) => {
       console.log(instructions);
-      const buildCommand = "npm run build";
+      const config = await readProjectConfig();
+      const buildCommand = config.build || "npm run build";
       return asyncExec(buildCommand);
     },
   });

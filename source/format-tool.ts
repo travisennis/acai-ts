@@ -1,6 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { asyncExec } from "./command";
+import { readProjectConfig } from "./config";
 
 export function initTool() {
   return tool({
@@ -9,9 +10,10 @@ export function initTool() {
     parameters: z.object({
       target: z.string().describe("The file or directory to format."),
     }),
-    execute: ({ target }) => {
-      const command = `biome format ${target}`;
-      return asyncExec(command);
+    execute: async ({ target }) => {
+      const config = await readProjectConfig();
+      const formatCommand = config.format || `biome format ${target}`;
+      return asyncExec(formatCommand);
     },
   });
 }
