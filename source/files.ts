@@ -1,6 +1,7 @@
-import ignore from "ignore";
 import fs from "node:fs/promises";
 import path from "node:path";
+import ignore from "ignore";
+import logger from "./logger";
 
 /**
  * Generates the indentation string for a given level in the directory tree.
@@ -45,7 +46,7 @@ async function generateDirectoryTree(
       }
     }
   } catch (error) {
-    console.error(`Error reading directory: ${dirPath}`, error);
+    logger.error(`Error reading directory: ${dirPath}`, error);
   }
 
   return output;

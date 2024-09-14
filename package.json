@@ -37,6 +37,9 @@
     "marked-terminal": "^7.1.0",
     "meow": "^13.2.0",
     "openai": "^4.61.0",
+    "pino": "^8.19.0",
+    "pino-pretty": "^10.3.1",
+    "pino-roll": "^1.0.0",
     "simple-git": "^3.26.0",
     "xdg-basedir": "^5.1.0",
     "zod": "^3.23.8"

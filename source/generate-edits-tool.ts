@@ -8,13 +8,14 @@ import {
   generateEditPromptTemplate,
   generateEditSystemPrompt,
 } from "./prompts";
+import logger from "./logger";
 
 const parseJsonPreprocessor = (value: unknown, ctx: z.RefinementCtx) => {
   if (typeof value === "string") {
     try {
       return JSON.parse(value);
     } catch (e) {
-      console.error(value);
+      logger.error({ json: value }, "JSON string:");
       ctx.addIssue({
         code: ZodIssueCode.custom,
         message: (e as Error).message,
@@ -169,7 +170,7 @@ export function initTool(
         }
       }
 
-      console.dir(results);
+      logger.debug({ results }, "Edit results");
 
       const uniqueResults = results.reduce(
         (acc, curr) => {

@@ -1,4 +1,5 @@
 import { exec } from "node:child_process";
+import logger from "./logger";
 
 export function asyncExec(command: string): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -8,7 +9,7 @@ export function asyncExec(command: string): Promise<string> {
         return;
       }
       if (stderr) {
-        console.error(`Command ${command} stderr: ${stderr}`);
+        logger.error(`Command ${command} stderr: ${stderr}`);
       }
       resolve(stdout);
     });

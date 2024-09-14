@@ -1,29 +1,30 @@
 import fs from "node:fs/promises";
-import { readAppConfig } from "./config";
 import path from "node:path";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
 import { editor, input } from "@inquirer/prompts";
 import { type CoreMessage, streamText } from "ai";
+import chalk from "chalk";
 import { globby } from "globby";
 import { marked } from "marked";
 import TerminalRenderer from "marked-terminal";
 import meow from "meow";
 import * as BuildTool from "./build-tool";
+import { readAppConfig } from "./config";
 import { handleError } from "./errors";
 import { directoryTree } from "./files";
 import * as FormatTool from "./format-tool";
 import * as GenerateEditsTool from "./generate-edits-tool";
-import * as GitDiffTool from "./git-diff-tool";
 import * as GitCommitTool from "./git-commit-tool";
+import * as GitDiffTool from "./git-diff-tool";
 import * as LintTool from "./lint-tool";
+import { logger } from "./logger";
 import {
-  systemPrompt,
   type UserPromptContext,
+  systemPrompt,
   userPromptTemplate,
 } from "./prompts";
 import { asyncTry, tryOrFail } from "./utils";
-import chalk from "chalk";
 
 const cli = meow(
   `
@@ -114,7 +115,7 @@ async function chatCmd(args: Flags, config: any) {
         paths.map(async (p) => {
           const filePath = path.join(process.cwd(), p);
           const content = await fs.readFile(filePath, "utf8");
-          console.log("Added", filePath, content.length);
+          logger.info(`Added ${filePath}, content length: ${content.length}`);
           fileMap.set(filePath, content);
           filesUpdated = true;
         }),
@@ -167,12 +168,14 @@ async function chatCmd(args: Flags, config: any) {
           gitCommit: GitCommitTool.initTool(),
         },
         onFinish: async (event) => {
+          logger.info("onFinish");
           const toolCalls = event.toolCalls ?? [];
           for (const toolCall of toolCalls) {
-            console.dir(toolCall);
+            logger.info("Tool Call:", toolCall);
           }
           const toolResults = event.toolResults ?? [];
           for (const toolResult of toolResults) {
+            logger.info("Tool Result:", toolResult);
             if (toolResult.toolName === "generateEdits") {
               const editResults = JSON.parse(toolResult.result) as {
                 path: string;
@@ -184,7 +187,9 @@ async function chatCmd(args: Flags, config: any) {
                   .map(async (p) => {
                     const filePath = p.path;
                     const content = await fs.readFile(filePath, "utf8");
-                    console.log("Updated", filePath, content.length);
+                    logger.info(
+                      `Updated ${filePath}, content length: ${content.length}`,
+                    );
                     fileMap.set(filePath, content);
                     filesUpdated = true;
                   }),
@@ -205,7 +210,7 @@ async function chatCmd(args: Flags, config: any) {
         process.stdout.write(chunk);
       }
     } catch (e) {
-      console.error(e);
+      logger.error(e);
     }
   }
 }

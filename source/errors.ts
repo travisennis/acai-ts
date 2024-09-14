@@ -1,3 +1,5 @@
+import { logger } from "./logger";
+
 /**
  * This module defines custom error classes and a global error handler for the Acai project.
  */
@@ -42,10 +44,9 @@ export class ApiError extends AcaiError {
  */
 export function handleError(error: Error): void {
   if (error instanceof AcaiError) {
-    console.error(`${error.name}: ${error.message}`);
+    logger.error({ error: error.name }, error.message);
   } else {
-    console.error(`Unexpected error: ${error.message}`);
-    console.error(error);
+    logger.error({ error: "Unexpected" }, error.message, error);
+    // You might want to add more specific handling based on error types
   }
-  // You might want to add more specific handling based on error types
 }
