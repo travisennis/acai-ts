@@ -1,15 +1,24 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { xdgConfig } from "xdg-basedir";
+import { z } from "zod";
 
-async function readProjectConfig(): Promise<any> {
+const ProjectConfigSchema = z.object({
+  build: z.string().optional(),
+  lint: z.string().optional(),
+  format: z.string().optional(),
+});
+
+type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
+
+async function readProjectConfig(): Promise<ProjectConfig> {
   const configPath = path.join(process.cwd(), ".acai", "acai.json");
   try {
     const data = await fs.readFile(configPath, "utf8");
-    return JSON.parse(data);
+    return ProjectConfigSchema.parse(JSON.parse(data));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return {};
+      return ProjectConfigSchema.parse({});
     }
     throw error;
   }
