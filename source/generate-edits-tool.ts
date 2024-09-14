@@ -14,6 +14,7 @@ const parseJsonPreprocessor = (value: unknown, ctx: z.RefinementCtx) => {
     try {
       return JSON.parse(value);
     } catch (e) {
+      console.error(value);
       ctx.addIssue({
         code: ZodIssueCode.custom,
         message: (e as Error).message,
