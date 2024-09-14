@@ -7,15 +7,13 @@ export function initTool() {
     description:
       "Executes the build command for the project and returns the output.",
     parameters: z.object({
-      command: z
+      instructions: z
         .string()
-        .describe(
-          "Optional custom build command. If not provided, the default build command will be used.",
-        )
-        .optional(),
+        .describe("The instructions for the build command."),
     }),
-    execute: ({ command }) => {
-      const buildCommand = command || "npm run build";
+    execute: ({ instructions }) => {
+      console.log(instructions);
+      const buildCommand = "npm run build";
       return asyncExec(buildCommand);
     },
   });

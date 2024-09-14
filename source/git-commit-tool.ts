@@ -10,7 +10,9 @@ export function initTool() {
       message: z
         .string()
         .optional()
-        .describe("The commit message. If not provided, one will be generated."),
+        .describe(
+          "The commit message. If not provided, one will be generated.",
+        ),
     }),
     execute: async ({ message }) => {
       try {
@@ -24,10 +26,10 @@ export function initTool() {
 
         // If no message is provided, generate one based on the changes
         if (!message) {
-          const diff = await git.diff(["--cached"]);
+          // const diff = await git.diff(["--cached"]);
           // Here you could call an AI model to generate a commit message based on the diff
           // For now, we'll use a simple placeholder
-          message = "Update files: " + status.files.map(f => f.path).join(", ");
+          message = `Update files: ${status.files.map((f) => f.path).join(", ")}`;
         }
 
         // Add all changes and commit
