@@ -178,10 +178,7 @@ async function chatCmd(args: Flags, config: any) {
       for (const toolResult of toolResults) {
         logger.info("Tool Result:", toolResult);
         if (toolResult.toolName === "generateEdits") {
-          const editResults = JSON.parse(toolResult.result) as {
-            path: string;
-            result: string;
-          }[];
+          const editResults = toolResult.result;
           await Promise.all(
             editResults
               .filter((p) => p.result === "edits applied")

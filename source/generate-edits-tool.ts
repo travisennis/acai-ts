@@ -82,12 +82,6 @@ export function initTool(
         ),
     }),
     execute: async ({ instructions }) => {
-      if (!instructions || typeof instructions !== "string") {
-        throw new AcaiError(
-          "Invalid or missing instruction for generate_edits.",
-        );
-      }
-
       const { text } = await generateText({
         model: model,
         system: generateEditSystemPrompt,
@@ -174,7 +168,7 @@ export function initTool(
         [] as { path: string; result: string }[],
       );
 
-      return JSON.stringify(uniqueResults);
+      return uniqueResults;
     },
   });
 }
