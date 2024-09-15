@@ -170,6 +170,9 @@ async function chatCmd(args: Flags, config: any) {
       logger.info(`Steps: ${result.steps.length}`);
       for (const step of result.steps) {
         logger.info(`Tools calls: ${step.toolCalls.length}`);
+        logger.info(
+          `Tools called: ${step.toolCalls.map((toolCall) => toolCall.toolName).join(", ")}`,
+        );
         logger.info(`Tools results: ${step.toolResults.length}`);
         logger.info(step.usage, "Usage:");
       }
