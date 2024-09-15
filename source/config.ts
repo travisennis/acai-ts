@@ -1,10 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { xdgCache, xdgConfig, xdgData, xdgState } from "xdg-basedir";
+import * as xdg from "xdg-basedir";
 import { z } from "zod";
 import logger from "./logger";
 
-logger.info("App config dirs:", xdgConfig, xdgCache, xdgData, xdgState);
+logger.info(xdg, "App config dirs:");
 
 const ProjectConfigSchema = z.object({
   build: z.string().optional(),
@@ -28,7 +28,11 @@ async function readProjectConfig(): Promise<ProjectConfig> {
 }
 
 async function readAppConfig(configName: string): Promise<any> {
-  const configPath = path.join(xdgConfig ?? "", "acai", `${configName}.json`);
+  const configPath = path.join(
+    xdg.xdgConfig ?? "",
+    "acai",
+    `${configName}.json`,
+  );
   try {
     const data = await fs.readFile(configPath, "utf8");
     return JSON.parse(data);
@@ -41,7 +45,7 @@ async function readAppConfig(configName: string): Promise<any> {
 }
 
 async function writeAppConfig(configName: string, data: any): Promise<void> {
-  const configDir = path.join(xdgConfig ?? "acai");
+  const configDir = path.join(xdg.xdgConfig ?? "acai");
   const configPath = path.join(configDir, `${configName}.json`);
   await fs.mkdir(configDir, { recursive: true });
   await fs.writeFile(configPath, JSON.stringify(data, null, 2));
