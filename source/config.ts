@@ -3,6 +3,7 @@ import path from "node:path";
 import * as xdg from "xdg-basedir";
 import { z } from "zod";
 import logger from "./logger";
+import { jsonParser } from "./parsing";
 
 logger.info(xdg, "App config dirs:");
 
@@ -18,7 +19,7 @@ async function readProjectConfig(): Promise<ProjectConfig> {
   const configPath = path.join(process.cwd(), ".acai", "acai.json");
   try {
     const data = await fs.readFile(configPath, "utf8");
-    return ProjectConfigSchema.parse(JSON.parse(data));
+    return jsonParser(ProjectConfigSchema).parse(data);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return ProjectConfigSchema.parse({});
