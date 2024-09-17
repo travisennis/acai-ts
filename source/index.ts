@@ -13,6 +13,7 @@ import * as BuildTool from "./build-tool";
 import { readAppConfig } from "./config";
 import { handleError } from "./errors";
 import { directoryTree } from "./files";
+import * as CodeInterpreterTool from "./code-interpreter-tool";
 import * as FormatTool from "./format-tool";
 import * as GenerateEditsTool from "./generate-edits-tool";
 import * as GitCommitTool from "./git-commit-tool";
@@ -166,6 +167,7 @@ async function chatCmd(args: Flags, config: any) {
           format: FormatTool.initTool(),
           gitDiff: GitDiffTool.initTool(),
           gitCommit: GitCommitTool.initTool(),
+          codeInterpreter: CodeInterpreterTool.initTool(),
         },
       });
 
