@@ -10,7 +10,7 @@ import { marked } from "marked";
 import TerminalRenderer from "marked-terminal";
 import meow from "meow";
 import * as BuildTool from "./build-tool";
-import { readAppConfig } from "./config";
+import { readAppConfig, saveMessageHistory } from "./config";
 import { handleError } from "./errors";
 import { directoryTree } from "./files";
 import * as CodeInterpreterTool from "./code-interpreter-tool";
@@ -87,15 +87,13 @@ async function chatCmd(args: Flags, config: any) {
   while (true) {
     const userInput = await input({ message: ">" });
     let prompt = "";
-    if (userInput.trim() === "/bye") {
-      break;
-    }
-
-    if (userInput.trim() === "/exit") {
+    if (userInput.trim() === "/bye" || userInput.trim() === "/exit") {
+      await saveMessageHistory(messages);
       break;
     }
 
     if (userInput.trim() === "/reset") {
+      await saveMessageHistory(messages);
       messages.length = 0;
       continue;
     }
@@ -226,6 +224,9 @@ async function chatCmd(args: Flags, config: any) {
       logger.error(e);
     }
   }
+
+  // Save message history at the end of the session
+  await saveMessageHistory(messages);
 }
 
 async function main() {

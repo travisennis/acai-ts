@@ -4,6 +4,7 @@ import * as xdg from "xdg-basedir";
 import { z } from "zod";
 import logger from "./logger";
 import { jsonParser } from "./parsing";
+import { CoreMessage } from "ai";
 
 logger.info(xdg, "App config dirs:");
 
@@ -52,4 +53,17 @@ async function writeAppConfig(configName: string, data: any): Promise<void> {
   await fs.writeFile(configPath, JSON.stringify(data, null, 2));
 }
 
-export { readAppConfig, writeAppConfig, readProjectConfig };
+function getStateDir(): string {
+  return path.join(xdg.xdgState ?? path.join(process.env.HOME ?? "", ".local", "state"), "acai");
+}
+
+async function saveMessageHistory(messages: CoreMessage[]): Promise<void> {
+  const stateDir = getStateDir();
+  await fs.mkdir(stateDir, { recursive: true });
+  const timestamp = new Date().toISOString().replace(/:/g, "-");
+  const fileName = `message-history-${timestamp}.json`;
+  const filePath = path.join(stateDir, fileName);
+  await fs.writeFile(filePath, JSON.stringify(messages, null, 2));
+}
+
+export { readAppConfig, writeAppConfig, readProjectConfig, saveMessageHistory };
