@@ -112,7 +112,9 @@ async function chatCmd(args: Flags, config: any) {
         paths.map(async (p) => {
           const filePath = path.join(process.cwd(), p);
           const content = await fs.readFile(filePath, "utf8");
-          logger.info(`Added ${filePath}, content length: ${content.length}`);
+          process.stdout.write(
+            `Added ${filePath}, content length: ${content.length}\n`,
+          );
           fileMap.set(filePath, content);
           filesUpdated = true;
         }),
@@ -178,6 +180,7 @@ async function chatCmd(args: Flags, config: any) {
       }
 
       const toolResults = result.toolResults ?? [];
+      logger.info(`All tools results: ${result.toolResults.length}`);
       for (const toolResult of toolResults) {
         logger.info("Tool Result:", toolResult);
         if (toolResult.toolName === "generateEdits") {
@@ -188,8 +191,8 @@ async function chatCmd(args: Flags, config: any) {
               .map(async (p) => {
                 const filePath = p.path;
                 const content = await fs.readFile(filePath, "utf8");
-                logger.info(
-                  `Updated ${filePath}, content length: ${content.length}`,
+                process.stdout.write(
+                  `Updated ${filePath}, content length: ${content.length}\n`,
                 );
                 fileMap.set(filePath, content);
                 filesUpdated = true;
