@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import { join } from "node:path";
 import pino from "pino";
-import { xdgData } from "xdg-basedir";
+import { xdgState } from "xdg-basedir";
 
-const logDir = join(xdgData || "~/.local/share", "acai", "logs");
+const logDir = join(xdgState ?? "~/.local/share", "acai", "logs");
 fs.mkdirSync(logDir, { recursive: true });
 
 const transport = pino.transport({
