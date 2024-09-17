@@ -8,26 +8,19 @@ function validateConventionalCommit(message: string): boolean {
   return pattern.test(message);
 }
 
-function generateConventionalCommit(files: string[]): string {
-  const type = files.some((file) => file.includes("test")) ? "test" : "chore";
-  const scope = files.length === 1 ? files[0].split("/")[0] : "various";
-  const description = `update ${files.join(", ")}`;
-  return `${type}(${scope}): ${description}`;
-}
-
 export function initTool() {
   return tool({
     description:
-      "Creates a new git commit with the current changes using the provided or generated commit message, enforcing the Conventional Commits standard.",
+      "Commits a new git changeset with the provided commit message that matches the Conventional Commits standard.",
     parameters: z.object({
-      message: z
+      message: z.string().describe("The commit message."),
+      files: z
         .string()
-        .optional()
         .describe(
-          "The commit message. If not provided, one will be generated following the Conventional Commits standard.",
+          "A command-separated list of files to include in this commit.",
         ),
     }),
-    execute: async ({ message }) => {
+    execute: async ({ message, files }) => {
       try {
         const git = simpleGit();
 
@@ -37,13 +30,18 @@ export function initTool() {
           return "No changes to commit.";
         }
 
-        // If no message is provided or the provided message doesn't conform to Conventional Commits, generate one
-        if (!message || !validateConventionalCommit(message)) {
-          message = generateConventionalCommit(status.files.map((f) => f.path));
+        // Check if no message is provided or the provided message doesn't conform to Conventional Commits
+        if (!(message && validateConventionalCommit(message))) {
+          return "Invalid commit message. Doesn't conform to Conventional Commits";
         }
 
-        // Add all changes and commit
-        await git.add(".");
+        if (!files || files.trim() === "") {
+          return "No files provided.";
+        }
+        const fileArr = files.split(",").map((file) => file.trim());
+
+        // Add the changes and commit
+        await git.add(fileArr);
         const commitResult = await git.commit(message);
 
         return `Commit created successfully: ${commitResult.commit} - ${message}`;
