@@ -27,9 +27,10 @@ async function applyEditBlock(block: EditBlock): Promise<void> {
   try {
     if (await fileExists(trimmedPath)) {
       let content = await fs.readFile(trimmedPath, "utf8");
-      content = search.trim() === ""
-        ? replace.trim()
-        : content.replace(search.trim(), replace.trim());
+      content =
+        search.trim() === ""
+          ? replace.trim()
+          : content.replace(search.trim(), replace.trim());
       await fs.writeFile(trimmedPath, content);
     } else {
       await fs.writeFile(trimmedPath, replace.trim());
@@ -99,17 +100,22 @@ export function initTool(
           `Invalid edit blocks: ${parseResult.error.message}`,
         );
       }
-      const editBlocks = parseResult.data;
+      process.stdout.write(chalk.green("-------------------------\n"));
       process.stdout.write("\nProposed edits:\n\n");
+      const editBlocks = parseResult.data;
       for (const editBlock of editBlocks) {
+        process.stdout.write(chalk.yellow("-------------------------\n"));
         process.stdout.write(
           `\nProposed edits for ${chalk.blue(editBlock.path)}:\n\n`,
         );
         displayColoredDiff(editBlock.search, editBlock.replace);
         process.stdout.write(`Reason for changes: ${editBlock.thinking}\n\n`);
       }
+
+      process.stdout.write(chalk.green("-------------------------\n"));
       process.stdout.write("\nProposed edits:\n\n");
       for (const editBlock of editBlocks) {
+        process.stdout.write(chalk.yellow("-------------------------\n"));
         process.stdout.write(
           `\nProposed edits for ${chalk.blue(editBlock.path)}:\n\n`,
         );
@@ -159,6 +165,8 @@ export function initTool(
         },
         [] as { path: string; result: string }[],
       );
+
+      process.stdout.write(chalk.green("-------------------------\n"));
 
       return uniqueResults;
     },
