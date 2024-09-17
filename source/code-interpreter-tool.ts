@@ -66,10 +66,3 @@ export function initTool({
     },
   });
 }
-
-function main() {
-  const result = codeInterpreterJavascript("return 5 * 4 / 2", []);
-  console.log(result);
-}
-
-main();
