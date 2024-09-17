@@ -27,22 +27,14 @@ async function applyEditBlock(block: EditBlock): Promise<void> {
   try {
     if (await fileExists(trimmedPath)) {
       let content = await fs.readFile(trimmedPath, "utf8");
-
-      content =
-        search.trim() === ""
-          ? replace.trim()
-          : content.replace(search.trim(), replace.trim());
-
+      content = search.trim() === ""
+        ? replace.trim()
+        : content.replace(search.trim(), replace.trim());
       await fs.writeFile(trimmedPath, content);
-    } else if (search.trim() === "") {
-      await fs.writeFile(trimmedPath, replace.trim());
     } else {
-      throw new FileOperationError(`File not found: ${trimmedPath}`);
+      await fs.writeFile(trimmedPath, replace.trim());
     }
   } catch (error) {
-    if (error instanceof FileOperationError) {
-      throw error;
-    }
     throw new FileOperationError(
       `Error applying edit block: ${(error as Error).message}`,
     );
