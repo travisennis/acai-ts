@@ -98,6 +98,12 @@ async function chatCmd(args: Flags, config: any) {
       continue;
     }
 
+    if (userInput.trim() === "/tree") {
+      const tree = await directoryTree(process.cwd());
+      process.stdout.write(`${tree}\n`);
+      continue;
+    }
+
     if (userInput.startsWith("/add")) {
       const patterns = userInput
         .slice("/add".length)
