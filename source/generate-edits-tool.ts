@@ -52,12 +52,15 @@ async function fileExists(path: string): Promise<boolean> {
 }
 
 function displayColoredDiff(search: string, replace: string): void {
-  process.stdout.write(chalk.yellow("-------------------------\n"));
+  process.stdout.write(
+    chalk.yellow(`\n${"-".repeat(process.stdout.columns)}\n`),
+  );
   process.stdout.write(chalk.red(search));
   process.stdout.write("\n");
   process.stdout.write(chalk.green(replace));
-  process.stdout.write("\n");
-  process.stdout.write(chalk.yellow("-------------------------\n"));
+  process.stdout.write(
+    chalk.yellow(`\n${"-".repeat(process.stdout.columns)}\n`),
+  );
 }
 
 export function initTool(
@@ -100,11 +103,15 @@ export function initTool(
           `Invalid edit blocks: ${parseResult.error.message}`,
         );
       }
-      process.stdout.write(chalk.green("-------------------------\n"));
+      process.stdout.write(
+        chalk.green(`\n${"-".repeat(process.stdout.columns)}\n`),
+      );
       process.stdout.write("\nProposed edits:\n\n");
       const editBlocks = parseResult.data;
       for (const editBlock of editBlocks) {
-        process.stdout.write(chalk.yellow("-------------------------\n"));
+        process.stdout.write(
+          chalk.yellow(`\n${"-".repeat(process.stdout.columns)}\n`),
+        );
         process.stdout.write(
           `\nProposed edits for ${chalk.blue(editBlock.path)}:\n\n`,
         );
@@ -112,10 +119,14 @@ export function initTool(
         process.stdout.write(`Reason for changes: ${editBlock.thinking}\n\n`);
       }
 
-      process.stdout.write(chalk.green("-------------------------\n"));
+      process.stdout.write(
+        chalk.green(`\n${"-".repeat(process.stdout.columns)}\n`),
+      );
       process.stdout.write("\nProposed edits:\n\n");
       for (const editBlock of editBlocks) {
-        process.stdout.write(chalk.yellow("-------------------------\n"));
+        process.stdout.write(
+          chalk.yellow(`\n${"-".repeat(process.stdout.columns)}\n`),
+        );
         process.stdout.write(
           `\nProposed edits for ${chalk.blue(editBlock.path)}:\n\n`,
         );
@@ -166,7 +177,9 @@ export function initTool(
         [] as { path: string; result: string }[],
       );
 
-      process.stdout.write(chalk.green("-------------------------\n"));
+      process.stdout.write(
+        chalk.green(`\n${"-".repeat(process.stdout.columns)}\n`),
+      );
 
       return uniqueResults;
     },

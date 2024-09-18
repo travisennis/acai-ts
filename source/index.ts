@@ -206,7 +206,9 @@ async function chatCmd(args: Flags, config: any) {
         content: result.text,
       });
 
-      process.stdout.write(chalk.yellow(`\n${"-".repeat(80)}\n`));
+      process.stdout.write(
+        chalk.yellow(`\n${"-".repeat(process.stdout.columns)}\n`),
+      );
       const md = await marked.parse(result.text);
       process.stdout.write(`\n${md}\n`);
 
