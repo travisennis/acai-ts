@@ -226,9 +226,6 @@ async function chatCmd(args: Flags, config: any) {
       logger.error(e);
     }
   }
-
-  // Save message history at the end of the session
-  await saveMessageHistory(messages);
 }
 
 async function main() {
