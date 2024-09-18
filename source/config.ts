@@ -54,7 +54,10 @@ async function writeAppConfig(configName: string, data: any): Promise<void> {
 }
 
 function getStateDir(): string {
-  return path.join(xdg.xdgState ?? path.join(process.env.HOME ?? "", ".local", "state"), "acai");
+  return path.join(
+    xdg.xdgState ?? path.join(process.env.HOME ?? "", ".local", "state"),
+    "acai",
+  );
 }
 
 async function saveMessageHistory(messages: CoreMessage[]): Promise<void> {
