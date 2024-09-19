@@ -5,15 +5,16 @@ import { openai } from "@ai-sdk/openai";
 import { editor, input } from "@inquirer/prompts";
 import { type CoreMessage, generateText } from "ai";
 import chalk from "chalk";
+import Table from "cli-table3";
 import { globby } from "globby";
 import { marked } from "marked";
 import TerminalRenderer from "marked-terminal";
 import meow from "meow";
 import * as BuildTool from "./build-tool";
+import * as CodeInterpreterTool from "./code-interpreter-tool";
 import { readAppConfig, saveMessageHistory } from "./config";
 import { handleError } from "./errors";
 import { directoryTree } from "./files";
-import * as CodeInterpreterTool from "./code-interpreter-tool";
 import * as FormatTool from "./format-tool";
 import * as GenerateEditsTool from "./generate-edits-tool";
 import * as GitCommitTool from "./git-commit-tool";
@@ -76,6 +77,56 @@ function getModel(args: Flags) {
   return anthropic(args.model ?? "claude-3-5-sonnet-20240620");
 }
 
+interface ChatCommand {
+  command: string;
+  description: string;
+}
+
+const resetCommand = {
+  command: "/reset",
+  description: "Saves the chat history and then resets it.",
+};
+
+const saveCommand = {
+  command: "/save",
+  description: "Saves the chat history.",
+};
+
+const exitCommand = {
+  command: "/exit",
+  description: "Exits and saves the chat history.",
+};
+
+const byeCommand = {
+  command: "/bye",
+  description: "Exits and saves the chat history.",
+};
+
+const addCommand = {
+  command: "/add",
+  description: "Add files to the chat.",
+};
+
+const treeCommand = {
+  command: "/tree",
+  description: "Display the directory of the curent project.",
+};
+
+const promptCommand = {
+  command: "/prompt",
+  description: "Opens default editor to accept prompt.",
+};
+
+const chatCommands: ChatCommand[] = [
+  addCommand,
+  resetCommand,
+  saveCommand,
+  byeCommand,
+  exitCommand,
+  treeCommand,
+  promptCommand,
+];
+
 async function chatCmd(args: Flags, config: any) {
   logger.info(config, "Config:");
   const model = getModel(args);
@@ -87,24 +138,27 @@ async function chatCmd(args: Flags, config: any) {
   while (true) {
     const userInput = await input({ message: ">" });
     let prompt = "";
-    if (userInput.trim() === "/bye" || userInput.trim() === "/exit") {
+    if (
+      userInput.trim() === exitCommand.command ||
+      userInput.trim() === byeCommand.command
+    ) {
       await saveMessageHistory(messages);
       break;
     }
 
-    if (userInput.trim() === "/reset") {
+    if (userInput.trim() === resetCommand.command) {
       await saveMessageHistory(messages);
       messages.length = 0;
       continue;
     }
 
-    if (userInput.trim() === "/tree") {
+    if (userInput.trim() === treeCommand.command) {
       const tree = await directoryTree(process.cwd());
       process.stdout.write(`${tree}\n`);
       continue;
     }
 
-    if (userInput.startsWith("/add")) {
+    if (userInput.startsWith(addCommand.command)) {
       const patterns = userInput
         .slice("/add".length)
         .trimStart()
@@ -128,7 +182,7 @@ async function chatCmd(args: Flags, config: any) {
       continue;
     }
 
-    if (userInput.trim() === "/prompt") {
+    if (userInput.trim() === promptCommand.command) {
       prompt = await editor({
         message: "Enter a prompt",
       });
@@ -235,7 +289,22 @@ async function chatCmd(args: Flags, config: any) {
 }
 
 async function main() {
-  process.stdout.write(chalk.magenta("acai\n"));
+  process.stdout.write(chalk.magenta("Greetings! I am acai.\n"));
+  process.stdout.write(
+    chalk.yellow(`The current working directory is ${process.cwd()}\n`),
+  );
+
+  const table = new Table({
+    head: ["command", "description"],
+  });
+
+  table.push(
+    ...chatCommands
+      .sort((a, b) => (a.command > b.command ? 1 : -1))
+      .map((cmd) => [cmd.command, cmd.description]),
+  );
+
+  process.stdout.write(`\n${table.toString()}\n`);
 
   const config = await readAppConfig("acai");
   tryOrFail(await asyncTry(chatCmd(cli.flags, config)), handleError);
