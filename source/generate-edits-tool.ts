@@ -10,7 +10,7 @@ import {
 } from "./prompts";
 import logger from "./logger";
 import { jsonParser } from "./parsing";
-import { writehr, writeln } from "./command";
+import { writeHeader, writehr, writeln } from "./command";
 
 const EditBlockSchema = z.object({
   path: z.string(),
@@ -94,11 +94,9 @@ async function generateEdits(
 }
 
 function previewEdits(editBlocks: EditBlock[]) {
-  writehr(chalk.green);
-  writeln("Proposed edits:");
+  writeHeader("Proposed edits:");
   for (const editBlock of editBlocks) {
-    writehr(chalk.yellow);
-    writeln(`Proposed edits for ${chalk.blue(editBlock.path)}:`);
+    writeHeader(`Proposed edits for ${chalk.blue(editBlock.path)}:`);
     displayColoredDiff(editBlock.search, editBlock.replace);
     writeln(`Reason for changes: ${editBlock.thinking}`);
   }
@@ -108,11 +106,9 @@ type EditResult = { path: string; result: string };
 
 async function processEdits(editBlocks: EditBlock[]) {
   const results: EditResult[] = [];
-  writehr(chalk.green);
-  writeln("Proposed edits:");
+  writeHeader("Proposed edits:");
   for (const editBlock of editBlocks) {
-    writehr(chalk.yellow);
-    writeln(`Proposed edits for ${chalk.blue(editBlock.path)}:`);
+    writeHeader(`Proposed edits for ${chalk.blue(editBlock.path)}:`);
     displayColoredDiff(editBlock.search, editBlock.replace);
     writeln(`Reason for changes: ${editBlock.thinking}`);
     const userInput = await input({
@@ -174,8 +170,6 @@ async function processEditInstructions(
   logger.debug({ results }, "Edit results");
 
   const uniqueResults = getUniqueResults(results);
-
-  writehr(chalk.green);
 
   return uniqueResults;
 }

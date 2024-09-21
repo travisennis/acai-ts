@@ -6,6 +6,14 @@ export function writeln(input: string): void {
   process.stdout.write(`${input}\n`);
 }
 
+export function writeHeader(
+  header: string,
+  chalkFn: ChalkInstance = chalk.green,
+): void {
+  const width = process.stdout.columns - header.length - 2;
+  process.stdout.write(chalkFn(`\n--${header}${"-".repeat(width)}\n`));
+}
+
 export function writehr(chalkFn: ChalkInstance = chalk.cyan): void {
   process.stdout.write(chalkFn(`\n${"-".repeat(process.stdout.columns)}\n`));
 }

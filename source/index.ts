@@ -27,7 +27,7 @@ import {
   userPromptTemplate,
 } from "./prompts";
 import { asyncTry, tryOrFail } from "./utils";
-import { asyncExec, writehr, writeln } from "./command";
+import { asyncExec, writeHeader, writehr, writeln } from "./command";
 import { convertHtmlToMarkdown } from "dom-to-semantic-markdown";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
@@ -176,11 +176,10 @@ async function chatCmd(args: Flags, config: any) {
   let mode: Modes = "exploring";
 
   while (true) {
-    writehr();
+    writeHeader("Input:");
     writeln(`Mode: ${mode}`);
+    writeln(`Files in context: ${fileMap.size}`);
     writeln(`Files updated: ${filesUpdated}`);
-    writeln(`Files added: ${fileMap.size}`);
-    writeln("");
 
     const userInput = await input({ message: ">" });
     let prompt = "";
@@ -225,6 +224,7 @@ async function chatCmd(args: Flags, config: any) {
 
     if (userInput.trim() === treeCommand.command) {
       const tree = await directoryTree(process.cwd());
+      writeHeader("File tree:");
       writeln(tree);
       continue;
     }
@@ -338,29 +338,29 @@ async function chatCmd(args: Flags, config: any) {
           `Tools called: ${step.toolCalls.map((toolCall) => toolCall.toolName).join(", ")}`,
         );
         logger.info(`Tools results: ${step.toolResults.length}`);
-        logger.info(step.usage, "Usage:");
-      }
-
-      const toolResults = result.toolResults ?? [];
-      logger.info(`All tools results: ${result.toolResults.length}`);
-      for (const toolResult of toolResults) {
-        logger.info("Tool Result:", toolResult);
-        if (toolResult.toolName === "generateEdits") {
-          const editResults = toolResult.result;
-          await Promise.all(
-            editResults
-              .filter((p) => p.result === "edits applied")
-              .map(async (p) => {
-                const filePath = p.path;
-                const content = await fs.readFile(filePath, "utf8");
-                writeln(
-                  `Updated ${filePath}, content length: ${content.length}\n`,
-                );
-                fileMap.set(filePath, content);
-                filesUpdated = true;
-              }),
-          );
+        logger.info(
+          `Tool results: ${step.toolResults.map((toolResult) => toolResult.toolName).join(", ")}`,
+        );
+        for (const toolResult of step.toolResults) {
+          logger.info("Tool Result:", toolResult);
+          if (toolResult.toolName === "generateEdits") {
+            const editResults = toolResult.result;
+            await Promise.all(
+              editResults
+                .filter((p) => p.result === "edits applied")
+                .map(async (p) => {
+                  const filePath = p.path;
+                  const content = await fs.readFile(filePath, "utf8");
+                  writeln(
+                    `Updated ${filePath}, content length: ${content.length}\n`,
+                  );
+                  fileMap.set(filePath, content);
+                  filesUpdated = true;
+                }),
+            );
+          }
         }
+        logger.info(step.usage, "Usage:");
       }
 
       messages.push({
@@ -368,12 +368,13 @@ async function chatCmd(args: Flags, config: any) {
         content: result.text,
       });
 
-      writehr(chalk.yellow);
+      writeHeader("Assistant:");
       const md = await marked.parse(result.text);
       writeln(md);
 
       totalTokens += result.usage.totalTokens;
 
+      writeHeader("Usage:");
       writeln(
         chalk.green(
           `Prompt tokens: ${result.usage.promptTokens}, Completion tokens: ${result.usage.completionTokens}, Total tokens: ${result.usage.totalTokens}`,
@@ -381,7 +382,7 @@ async function chatCmd(args: Flags, config: any) {
       );
       writeln(
         chalk.yellow(
-          `${JSON.stringify(result.experimental_providerMetadata?.anthropic ?? "", undefined, 2)}\n`,
+          `Cache creation: ${result.experimental_providerMetadata?.anthropic.cacheCreationInputTokens}, Cache read: ${result.experimental_providerMetadata?.anthropic.cacheReadInputTokens}`,
         ),
       );
       writeln(chalk.green(`Tokens this session: ${totalTokens}`));
