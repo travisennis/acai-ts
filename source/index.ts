@@ -224,7 +224,7 @@ async function chatCmd(args: Flags, config: any) {
 
     if (userInput.startsWith(addCommand.command)) {
       const patterns = userInput
-        .slice("/add".length)
+        .slice(addCommand.command.length)
         .trimStart()
         .split(" ")
         .map((p) => p.trim());
@@ -266,6 +266,7 @@ async function chatCmd(args: Flags, config: any) {
     if (userInput.trim() === promptCommand.command) {
       prompt = await editor({
         message: "Enter a prompt",
+        postfix: ".md",
       });
     } else {
       prompt = userInput;
