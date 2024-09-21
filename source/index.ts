@@ -119,15 +119,35 @@ const promptCommand = {
   description: "Opens default editor to accept prompt.",
 };
 
+const helpCommand = {
+  command: "/help",
+  description: "Shows usage table.",
+};
+
 const chatCommands: ChatCommand[] = [
   addCommand,
   resetCommand,
   saveCommand,
   byeCommand,
   exitCommand,
+  helpCommand,
   treeCommand,
   promptCommand,
 ];
+
+function displayUsage() {
+  const table = new Table({
+    head: ["command", "description"],
+  });
+
+  table.push(
+    ...chatCommands
+      .sort((a, b) => (a.command > b.command ? 1 : -1))
+      .map((cmd) => [cmd.command, cmd.description]),
+  );
+
+  process.stdout.write(`\n${table.toString()}\n`);
+}
 
 async function chatCmd(args: Flags, config: any) {
   logger.info(config, "Config:");
@@ -146,6 +166,11 @@ async function chatCmd(args: Flags, config: any) {
     ) {
       await saveMessageHistory(messages);
       break;
+    }
+
+    if (userInput.trim() === helpCommand.command) {
+      displayUsage();
+      continue;
     }
 
     if (userInput.trim() === resetCommand.command) {
@@ -303,18 +328,6 @@ async function main() {
   process.stdout.write(
     chalk.yellow(`The current working directory is ${process.cwd()}\n`),
   );
-
-  const table = new Table({
-    head: ["command", "description"],
-  });
-
-  table.push(
-    ...chatCommands
-      .sort((a, b) => (a.command > b.command ? 1 : -1))
-      .map((cmd) => [cmd.command, cmd.description]),
-  );
-
-  process.stdout.write(`\n${table.toString()}\n`);
 
   const config = await readAppConfig("acai");
   tryOrFail(await asyncTry(chatCmd(cli.flags, config)), handleError);
