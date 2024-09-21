@@ -27,6 +27,9 @@ import {
   userPromptTemplate,
 } from "./prompts";
 import { asyncTry, tryOrFail } from "./utils";
+import { convertHtmlToMarkdown } from "dom-to-semantic-markdown";
+import { JSDOM } from "jsdom";
+import { Readability } from "@mozilla/readability";
 
 const cli = meow(
   `
@@ -119,6 +122,11 @@ const promptCommand = {
   description: "Opens default editor to accept prompt.",
 };
 
+const urlCommand = {
+  command: "/url",
+  description: "Retrieves the content of the url.",
+};
+
 const helpCommand = {
   command: "/help",
   description: "Shows usage table.",
@@ -133,6 +141,7 @@ const chatCommands: ChatCommand[] = [
   helpCommand,
   treeCommand,
   promptCommand,
+  urlCommand,
 ];
 
 function displayUsage() {
@@ -234,6 +243,23 @@ async function chatCmd(args: Flags, config: any) {
         }),
       );
 
+      continue;
+    }
+
+    if (userInput.startsWith(urlCommand.command)) {
+      const url = userInput.slice(urlCommand.command.length).trimStart();
+      console.log(`Loading ${url}`);
+      const result = await asyncExec(
+        `/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --headless --dump-dom ${url}`,
+      );
+      const dom = new JSDOM(result);
+      const reader = new Readability(dom.window.document);
+      const article = reader.parse();
+      const markdown = convertHtmlToMarkdown(result, {
+        overrideDOMParser: new dom.window.DOMParser(),
+      });
+      console.log(markdown);
+      console.log(article?.textContent);
       continue;
     }
 
