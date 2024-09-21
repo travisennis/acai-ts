@@ -27,6 +27,7 @@ import {
   userPromptTemplate,
 } from "./prompts";
 import { asyncTry, tryOrFail } from "./utils";
+import { asyncExec, writehr, writeln } from "./command";
 import { convertHtmlToMarkdown } from "dom-to-semantic-markdown";
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
@@ -155,7 +156,7 @@ function displayUsage() {
       .map((cmd) => [cmd.command, cmd.description]),
   );
 
-  process.stdout.write(`\n${table.toString()}\n`);
+  writeln(table.toString());
 }
 
 type Modes = "exploring" | "editing";
@@ -175,6 +176,12 @@ async function chatCmd(args: Flags, config: any) {
   let mode: Modes = "exploring";
 
   while (true) {
+    writehr();
+    writeln(`Mode: ${mode}`);
+    writeln(`Files updated: ${filesUpdated}`);
+    writeln(`Files added: ${fileMap.size}`);
+    writeln("");
+
     const userInput = await input({ message: ">" });
     let prompt = "";
     if (
@@ -218,7 +225,7 @@ async function chatCmd(args: Flags, config: any) {
 
     if (userInput.trim() === treeCommand.command) {
       const tree = await directoryTree(process.cwd());
-      process.stdout.write(`${tree}\n`);
+      writeln(tree);
       continue;
     }
 
@@ -235,9 +242,7 @@ async function chatCmd(args: Flags, config: any) {
         paths.map(async (p) => {
           const filePath = path.join(process.cwd(), p);
           const content = await fs.readFile(filePath, "utf8");
-          process.stdout.write(
-            `Added ${filePath}, content length: ${content.length}\n`,
-          );
+          writeln(`Added ${filePath}, content length: ${content.length}`);
           fileMap.set(filePath, content);
           filesUpdated = true;
         }),
@@ -348,7 +353,7 @@ async function chatCmd(args: Flags, config: any) {
               .map(async (p) => {
                 const filePath = p.path;
                 const content = await fs.readFile(filePath, "utf8");
-                process.stdout.write(
+                writeln(
                   `Updated ${filePath}, content length: ${content.length}\n`,
                 );
                 fileMap.set(filePath, content);
@@ -363,27 +368,23 @@ async function chatCmd(args: Flags, config: any) {
         content: result.text,
       });
 
-      process.stdout.write(
-        chalk.yellow(`\n${"-".repeat(process.stdout.columns)}\n`),
-      );
+      writehr(chalk.yellow);
       const md = await marked.parse(result.text);
-      process.stdout.write(`\n${md}\n`);
+      writeln(md);
 
       totalTokens += result.usage.totalTokens;
 
-      process.stdout.write(
+      writeln(
         chalk.green(
-          `\nPrompt tokens: ${result.usage.promptTokens}, Completion tokens: ${result.usage.completionTokens}, Total tokens: ${result.usage.totalTokens}\n`,
+          `Prompt tokens: ${result.usage.promptTokens}, Completion tokens: ${result.usage.completionTokens}, Total tokens: ${result.usage.totalTokens}`,
         ),
       );
-      process.stdout.write(
+      writeln(
         chalk.yellow(
           `${JSON.stringify(result.experimental_providerMetadata?.anthropic ?? "", undefined, 2)}\n`,
         ),
       );
-      process.stdout.write(
-        chalk.green(`Tokens this session: ${totalTokens}\n`),
-      );
+      writeln(chalk.green(`Tokens this session: ${totalTokens}`));
     } catch (e) {
       logger.error(e);
     }
@@ -391,10 +392,8 @@ async function chatCmd(args: Flags, config: any) {
 }
 
 async function main() {
-  process.stdout.write(chalk.magenta("Greetings! I am acai.\n"));
-  process.stdout.write(
-    chalk.yellow(`The current working directory is ${process.cwd()}\n`),
-  );
+  writeln(chalk.magenta("Greetings! I am acai.\n"));
+  writeln(chalk.yellow(`The current working directory is ${process.cwd()}`));
 
   const config = await readAppConfig("acai");
   tryOrFail(await asyncTry(chatCmd(cli.flags, config)), handleError);

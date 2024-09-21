@@ -1,5 +1,14 @@
 import { exec } from "node:child_process";
 import logger from "./logger";
+import chalk, { type ChalkInstance } from "chalk";
+
+export function writeln(input: string): void {
+  process.stdout.write(`${input}\n`);
+}
+
+export function writehr(chalkFn: ChalkInstance = chalk.cyan): void {
+  process.stdout.write(chalkFn(`\n${"-".repeat(process.stdout.columns)}\n`));
+}
 
 export function asyncExec(command: string): Promise<string> {
   return new Promise((resolve, reject) => {
