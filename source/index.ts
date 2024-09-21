@@ -74,7 +74,9 @@ function getModel(args: Flags) {
       "anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15",
     },
   });
-  return anthropic(args.model ?? "claude-3-5-sonnet-20240620");
+  return anthropic(args.model ?? "claude-3-5-sonnet-20240620", {
+    cacheControl: true,
+  });
 }
 
 interface ChatCommand {
@@ -203,6 +205,9 @@ async function chatCmd(args: Flags, config: any) {
     if (filesUpdated) {
       context.fileTree = await directoryTree(process.cwd());
       context.files = files;
+        experimental_providerMetadata: {
+          anthropic: { cacheControl: { type: "ephemeral" } },
+        },
       filesUpdated = false;
     }
 
@@ -277,6 +282,11 @@ async function chatCmd(args: Flags, config: any) {
       process.stdout.write(
         chalk.green(
           `\nPrompt tokens: ${result.usage.promptTokens}, Completion tokens: ${result.usage.completionTokens}, Total tokens: ${result.usage.totalTokens}\n`,
+        ),
+      );
+      process.stdout.write(
+        chalk.yellow(
+          `${JSON.stringify(result.experimental_providerMetadata?.anthropic ?? "", undefined, 2)}\n`,
         ),
       );
       process.stdout.write(
