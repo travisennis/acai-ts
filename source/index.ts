@@ -3,15 +3,20 @@ import path from "node:path";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
 import { editor, input, select } from "@inquirer/prompts";
+import { Readability } from "@mozilla/readability";
 import { type CoreMessage, generateText } from "ai";
 import chalk from "chalk";
 import Table from "cli-table3";
+import { convertHtmlToMarkdown } from "dom-to-semantic-markdown";
+import figlet from "figlet";
 import { globby } from "globby";
+import { JSDOM } from "jsdom";
 import { marked } from "marked";
 import TerminalRenderer from "marked-terminal";
 import meow from "meow";
 import * as BuildTool from "./build-tool";
 import * as CodeInterpreterTool from "./code-interpreter-tool";
+import { asyncExec, writeHeader, writeln } from "./command";
 import { readAppConfig, saveMessageHistory } from "./config";
 import { handleError } from "./errors";
 import { directoryTree } from "./files";
@@ -27,10 +32,6 @@ import {
   userPromptTemplate,
 } from "./prompts";
 import { asyncTry, tryOrFail } from "./utils";
-import { asyncExec, writeHeader, writehr, writeln } from "./command";
-import { convertHtmlToMarkdown } from "dom-to-semantic-markdown";
-import { JSDOM } from "jsdom";
-import { Readability } from "@mozilla/readability";
 
 const cli = meow(
   `
@@ -393,7 +394,8 @@ async function chatCmd(args: Flags, config: any) {
 }
 
 async function main() {
-  writeln(chalk.magenta("Greetings! I am acai.\n"));
+  writeln(chalk.magenta(figlet.textSync("acai")));
+  writeln(chalk.magenta("Greetings!"));
   writeln(chalk.yellow(`The current working directory is ${process.cwd()}`));
 
   const config = await readAppConfig("acai");

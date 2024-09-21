@@ -10,7 +10,7 @@ import {
 } from "./prompts";
 import logger from "./logger";
 import { jsonParser } from "./parsing";
-import { writeHeader, writehr, writeln } from "./command";
+import { writeHeader, writeln } from "./command";
 
 const EditBlockSchema = z.object({
   path: z.string(),
@@ -55,11 +55,10 @@ async function applyEditBlock(block: EditBlock): Promise<void> {
 }
 
 function displayColoredDiff(search: string, replace: string): void {
-  writehr(chalk.yellow);
+  writeHeader("delete:", chalk.red);
   writeln(chalk.red(search));
-  writeln("");
+  writeHeader("replace:", chalk.green);
   writeln(chalk.green(replace));
-  writehr(chalk.yellow);
 }
 
 async function generateEdits(

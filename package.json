@@ -7,7 +7,13 @@
     "types": "./dist/index.d.ts",
     "default": "./dist/index.js"
   },
-  "keywords": ["cli", "ai", "llm", "coding", "assistant"],
+  "keywords": [
+    "cli",
+    "ai",
+    "llm",
+    "coding",
+    "assistant"
+  ],
   "author": "Travis Ennis",
   "license": "MIT",
   "scripts": {
@@ -34,6 +40,7 @@
     "cli-table3": "^0.6.5",
     "diff": "^7.0.0",
     "dom-to-semantic-markdown": "^1.2.12",
+    "figlet": "^1.7.0",
     "globby": "^14.0.2",
     "handlebars": "^4.7.8",
     "ignore": "^6.0.2",
@@ -52,6 +59,7 @@
   "devDependencies": {
     "@biomejs/biome": "1.9.2",
     "@types/diff": "^5.2.2",
+    "@types/figlet": "^1.5.8",
     "@types/jsdom": "^21.1.7",
     "@types/marked-terminal": "^6.1.1",
     "@types/node": "^22.5.5",
