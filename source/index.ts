@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
-import { editor, input } from "@inquirer/prompts";
+import { editor, input, select } from "@inquirer/prompts";
 import { type CoreMessage, generateText } from "ai";
 import chalk from "chalk";
 import Table from "cli-table3";
@@ -149,14 +149,22 @@ function displayUsage() {
   process.stdout.write(`\n${table.toString()}\n`);
 }
 
+type Modes = "exploring" | "editing";
+
 async function chatCmd(args: Flags, config: any) {
   logger.info(config, "Config:");
+
   const model = getModel(args);
 
   let totalTokens = 0;
+
   const messages: CoreMessage[] = [];
+
   const fileMap = new Map<string, string>();
   let filesUpdated = false;
+
+  let mode: Modes = "exploring";
+
   while (true) {
     const userInput = await input({ message: ">" });
     let prompt = "";
@@ -170,6 +178,26 @@ async function chatCmd(args: Flags, config: any) {
 
     if (userInput.trim() === helpCommand.command) {
       displayUsage();
+      continue;
+    }
+
+    if (userInput.startsWith("/mode")) {
+      mode = await select({
+        message: "Select a mode:",
+        choices: [
+          {
+            name: "exploring",
+            value: "exploring",
+            description: "Mode for exploring ideas.",
+          },
+          {
+            name: "editing",
+            value: "editing",
+            description: "Mode for generating edits.",
+          },
+        ],
+      });
+
       continue;
     }
 
@@ -230,34 +258,46 @@ async function chatCmd(args: Flags, config: any) {
     if (filesUpdated) {
       context.fileTree = await directoryTree(process.cwd());
       context.files = files;
+      messages.push({
+        role: "user",
+        content: userPromptTemplate(context),
         experimental_providerMetadata: {
           anthropic: { cacheControl: { type: "ephemeral" } },
         },
+      });
       filesUpdated = false;
+    } else {
+      messages.push({
+        role: "user",
+        content: userPromptTemplate(context),
+      });
     }
 
-    messages.push({
-      role: "user",
-      content: userPromptTemplate(context),
-    });
-
     try {
-      const result = await generateText({
-        model: model,
-        maxTokens: 8192,
-        system: systemPrompt,
-        messages: messages,
-        maxSteps: 3,
-        tools: {
-          generateEdits: GenerateEditsTool.initTool(model, files),
-          lint: LintTool.initTool(),
-          build: BuildTool.initTool(),
-          format: FormatTool.initTool(),
-          gitDiff: GitDiffTool.initTool(),
-          gitCommit: GitCommitTool.initTool(),
-          codeInterpreter: CodeInterpreterTool.initTool(),
-        },
-      });
+      const result = await (mode === "editing"
+        ? generateText({
+            model: model,
+            maxTokens: 8192,
+            system: systemPrompt,
+            messages: messages,
+            maxSteps: 3,
+            tools: {
+              generateEdits: GenerateEditsTool.initTool(model, files),
+              lint: LintTool.initTool(),
+              build: BuildTool.initTool(),
+              format: FormatTool.initTool(),
+              gitDiff: GitDiffTool.initTool(),
+              gitCommit: GitCommitTool.initTool(),
+              codeInterpreter: CodeInterpreterTool.initTool(),
+            },
+          })
+        : generateText({
+            model: model,
+            maxTokens: 8192,
+            system: systemPrompt,
+            messages: messages,
+            maxSteps: 3,
+          }));
 
       logger.info(`Steps: ${result.steps.length}`);
       for (const step of result.steps) {
