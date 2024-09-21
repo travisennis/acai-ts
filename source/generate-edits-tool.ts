@@ -10,6 +10,7 @@ import {
 } from "./prompts";
 import logger from "./logger";
 import { jsonParser } from "./parsing";
+import { writehr, writeln } from "./command";
 
 const EditBlockSchema = z.object({
   path: z.string(),
@@ -35,7 +36,7 @@ async function applyEditBlock(block: EditBlock): Promise<void> {
 
   try {
     if (await fileExists(trimmedPath)) {
-      console.log("updating file");
+      writeln(`Updating ${trimmedPath}`);
       let content = await fs.readFile(trimmedPath, "utf8");
       content =
         search.trim() === ""
@@ -43,7 +44,7 @@ async function applyEditBlock(block: EditBlock): Promise<void> {
           : content.replace(search.trim(), replace.trim());
       await fs.writeFile(trimmedPath, content);
     } else {
-      console.log("creating file");
+      writeln(`Creating ${trimmedPath}`);
       await fs.writeFile(trimmedPath, replace.trim());
     }
   } catch (error) {
@@ -54,15 +55,11 @@ async function applyEditBlock(block: EditBlock): Promise<void> {
 }
 
 function displayColoredDiff(search: string, replace: string): void {
-  process.stdout.write(
-    chalk.yellow(`\n${"-".repeat(process.stdout.columns)}\n`),
-  );
-  process.stdout.write(chalk.red(search));
-  process.stdout.write("\n");
-  process.stdout.write(chalk.green(replace));
-  process.stdout.write(
-    chalk.yellow(`\n${"-".repeat(process.stdout.columns)}\n`),
-  );
+  writehr(chalk.yellow);
+  writeln(chalk.red(search));
+  writeln("");
+  writeln(chalk.green(replace));
+  writehr(chalk.yellow);
 }
 
 async function generateEdits(
@@ -97,19 +94,13 @@ async function generateEdits(
 }
 
 function previewEdits(editBlocks: EditBlock[]) {
-  process.stdout.write(
-    chalk.green(`\n${"-".repeat(process.stdout.columns)}\n`),
-  );
-  process.stdout.write("\nProposed edits:\n\n");
+  writehr(chalk.green);
+  writeln("Proposed edits:");
   for (const editBlock of editBlocks) {
-    process.stdout.write(
-      chalk.yellow(`\n${"-".repeat(process.stdout.columns)}\n`),
-    );
-    process.stdout.write(
-      `\nProposed edits for ${chalk.blue(editBlock.path)}:\n\n`,
-    );
+    writehr(chalk.yellow);
+    writeln(`Proposed edits for ${chalk.blue(editBlock.path)}:`);
     displayColoredDiff(editBlock.search, editBlock.replace);
-    process.stdout.write(`Reason for changes: ${editBlock.thinking}\n\n`);
+    writeln(`Reason for changes: ${editBlock.thinking}`);
   }
 }
 
@@ -117,19 +108,13 @@ type EditResult = { path: string; result: string };
 
 async function processEdits(editBlocks: EditBlock[]) {
   const results: EditResult[] = [];
-  process.stdout.write(
-    chalk.green(`\n${"-".repeat(process.stdout.columns)}\n`),
-  );
-  process.stdout.write("\nProposed edits:\n\n");
+  writehr(chalk.green);
+  writeln("Proposed edits:");
   for (const editBlock of editBlocks) {
-    process.stdout.write(
-      chalk.yellow(`\n${"-".repeat(process.stdout.columns)}\n`),
-    );
-    process.stdout.write(
-      `\nProposed edits for ${chalk.blue(editBlock.path)}:\n\n`,
-    );
+    writehr(chalk.yellow);
+    writeln(`Proposed edits for ${chalk.blue(editBlock.path)}:`);
     displayColoredDiff(editBlock.search, editBlock.replace);
-    process.stdout.write(`Reason for changes: ${editBlock.thinking}\n\n`);
+    writeln(`Reason for changes: ${editBlock.thinking}`);
     const userInput = await input({
       message: "Accept these edits: y or n?",
     });
@@ -190,9 +175,7 @@ async function processEditInstructions(
 
   const uniqueResults = getUniqueResults(results);
 
-  process.stdout.write(
-    chalk.green(`\n${"-".repeat(process.stdout.columns)}\n`),
-  );
+  writehr(chalk.green);
 
   return uniqueResults;
 }
