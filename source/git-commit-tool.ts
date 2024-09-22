@@ -1,6 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import simpleGit from "simple-git";
+import { writeHeader, writeln } from "./command";
 
 function validateConventionalCommit(message: string): boolean {
   const pattern =
@@ -40,9 +41,15 @@ export function initTool() {
         }
         const fileArr = files.split(",").map((file) => file.trim());
 
+        writeHeader("Committing:");
+        writeln(`Files: ${files}`);
+        writeln(`Message: ${message}`);
+
         // Add the changes and commit
         await git.add(fileArr);
         const commitResult = await git.commit(message);
+
+        writeln(`Result: ${commitResult.commit}`);
 
         return `Commit created successfully: ${commitResult.commit} - ${message}`;
       } catch (error) {
