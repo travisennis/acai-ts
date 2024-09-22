@@ -1,4 +1,5 @@
 import { type LanguageModel, generateText } from "ai";
+import { writeln } from "./command";
 
 class PlanSearch {
   private model: LanguageModel;
@@ -125,13 +126,13 @@ Please implement the solution in ${this.language}.`;
     numInitialObservations = 3,
     numDerivedObservations = 2,
   ): Promise<[string, string]> {
-    console.log("Generating initial observations");
+    writeln("Generating initial observations");
     const initialObservations = await this.generateObservations(
       problem,
       numInitialObservations,
     );
 
-    console.log("Generating derived observations");
+    writeln("Generating derived observations");
     const derivedObservations = await this.generateDerivedObservations(
       problem,
       initialObservations,
@@ -140,13 +141,13 @@ Please implement the solution in ${this.language}.`;
 
     const allObservations = [...initialObservations, ...derivedObservations];
 
-    console.log("Generating solution based on observations");
+    writeln("Generating solution based on observations");
     const naturalLanguageSolution = await this.generateSolution(
       problem,
       allObservations,
     );
 
-    console.log("Implementing solution in TypeScript");
+    writeln("Implementing solution in TypeScript");
     const implementation = await this.implementSolution(
       problem,
       naturalLanguageSolution,
