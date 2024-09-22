@@ -1,7 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { openai } from "@ai-sdk/openai";
 import { editor, input, select } from "@inquirer/prompts";
 import { Readability } from "@mozilla/readability";
 import { type CoreMessage, generateText } from "ai";
@@ -31,6 +29,7 @@ import {
   systemPrompt,
   userPromptTemplate,
 } from "./prompts";
+import { model } from "./providers";
 import { asyncTry, tryOrFail } from "./utils";
 
 const cli = meow(
@@ -39,11 +38,10 @@ const cli = meow(
 	  $ acai <input>
 
 	Options
-    --model, -m  Sets the model to use
     --provider, -p  Sets the provider to use
 
 	Examples
-	  $ acai chat --model gpt4
+	  $ acai chat --provider anthropic
 `,
   {
     importMeta: import.meta, // This is required
@@ -51,10 +49,6 @@ const cli = meow(
       provider: {
         type: "string",
         shortFlag: "p",
-      },
-      model: {
-        type: "string",
-        shortFlag: "m",
       },
     },
   },
@@ -66,23 +60,6 @@ marked.setOptions({
   // Define custom renderer
   renderer: new TerminalRenderer() as any,
 });
-
-function getModel(args: Flags) {
-  if (args.provider === "openai") {
-    return openai(args.model ?? "gpt-4o-2024-08-06");
-  }
-
-  const anthropic = createAnthropic({
-    apiKey: process.env.CLAUDE_API_KEY,
-    headers: {
-      "anthropic-version": "2023-06-01",
-      "anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15",
-    },
-  });
-  return anthropic(args.model ?? "claude-3-5-sonnet-20240620", {
-    cacheControl: true,
-  });
-}
 
 interface ChatCommand {
   command: string;
@@ -165,7 +142,14 @@ type Modes = "exploring" | "editing";
 async function chatCmd(args: Flags, config: any) {
   logger.info(config, "Config:");
 
-  const model = getModel(args);
+  const exploringModel =
+    args.provider === "openai"
+      ? model("openai:gpt-4o")
+      : model("anthropic:sonnet");
+  const editingModel =
+    args.provider === "openai"
+      ? model("openai:gpt-4o")
+      : model("anthropic:sonnet");
 
   let totalTokens = 0;
 
@@ -181,6 +165,7 @@ async function chatCmd(args: Flags, config: any) {
     writeln(`Mode: ${mode}`);
     writeln(`Files in context: ${fileMap.size}`);
     writeln(`Files updated: ${filesUpdated}`);
+    writeln("");
 
     const userInput = await input({ message: ">" });
     let prompt = "";
@@ -278,7 +263,7 @@ async function chatCmd(args: Flags, config: any) {
       prompt = userInput;
     }
 
-    if (prompt === "") {
+    if (prompt.trim() === "") {
       continue;
     }
 
@@ -309,13 +294,13 @@ async function chatCmd(args: Flags, config: any) {
     try {
       const result = await (mode === "editing"
         ? generateText({
-            model: model,
+            model: editingModel,
             maxTokens: 8192,
             system: systemPrompt,
             messages: messages,
             maxSteps: 3,
             tools: {
-              generateEdits: GenerateEditsTool.initTool(model, files),
+              generateEdits: GenerateEditsTool.initTool(editingModel, files),
               lint: LintTool.initTool(),
               build: BuildTool.initTool(),
               format: FormatTool.initTool(),
@@ -325,7 +310,7 @@ async function chatCmd(args: Flags, config: any) {
             },
           })
         : generateText({
-            model: model,
+            model: exploringModel,
             maxTokens: 8192,
             system: systemPrompt,
             messages: messages,

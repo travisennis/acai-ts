@@ -7,13 +7,7 @@
     "types": "./dist/index.d.ts",
     "default": "./dist/index.js"
   },
-  "keywords": [
-    "cli",
-    "ai",
-    "llm",
-    "coding",
-    "assistant"
-  ],
+  "keywords": ["cli", "ai", "llm", "coding", "assistant"],
   "author": "Travis Ennis",
   "license": "MIT",
   "scripts": {
@@ -31,6 +25,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^0.0.50",
+    "@ai-sdk/azure": "^0.0.39",
     "@ai-sdk/openai": "^0.0.61",
     "@inquirer/prompts": "^6.0.1",
     "@mozilla/readability": "^0.5.0",
