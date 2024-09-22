@@ -6,6 +6,10 @@ export function writeln(input: string): void {
   process.stdout.write(`${input}\n`);
 }
 
+export function writeError(input: string): void {
+  process.stdout.write(chalk.red(`✖️ ${input}`));
+}
+
 export function writeHeader(
   header: string,
   chalkFn: ChalkInstance = chalk.green,
