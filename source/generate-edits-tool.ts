@@ -1,16 +1,17 @@
 import fs from "node:fs/promises";
 import { input } from "@inquirer/prompts";
-import { type LanguageModel, generateText, tool } from "ai";
+import { type CoreMessage, type LanguageModel, generateText, tool } from "ai";
 import chalk from "chalk";
 import { z } from "zod";
+import { writeError, writeHeader, writeln } from "./command";
+import { saveMessageHistory } from "./config";
 import { AcaiError, FileOperationError } from "./errors";
+import logger from "./logger";
+import { jsonParser } from "./parsing";
 import {
   generateEditPromptTemplate,
   generateEditSystemPrompt,
 } from "./prompts";
-import logger from "./logger";
-import { jsonParser } from "./parsing";
-import { writeError, writeHeader, writeln } from "./command";
 
 const EditBlockSchema = z.object({
   path: z.string(),
@@ -72,20 +73,27 @@ async function generateEdits(
   instructions: string,
   files: { path: string; content: string }[],
 ) {
+  const messages: CoreMessage[] = [
+    {
+      role: "user",
+      content: generateEditPromptTemplate({
+        prompt: instructions,
+        files: files,
+      }),
+    },
+    { role: "assistant", content: "[" },
+  ];
+
   const { text } = await generateText({
     model: model,
     system: generateEditSystemPrompt,
     maxTokens: 8192,
-    messages: [
-      {
-        role: "user",
-        content: generateEditPromptTemplate({
-          prompt: instructions,
-          files: files,
-        }),
-      },
-      { role: "assistant", content: "[" },
-    ],
+    messages,
+  });
+
+  messages.push({
+    role: "assistant",
+    content: text,
   });
 
   const parseResult = jsonParser(z.array(EditBlockSchema)).safeParse(
@@ -94,6 +102,8 @@ async function generateEdits(
   if (!parseResult.success) {
     throw new AcaiError(`Invalid edit blocks: ${parseResult.error.message}`);
   }
+
+  saveMessageHistory(messages);
 
   return parseResult.data;
 }

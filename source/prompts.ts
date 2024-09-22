@@ -36,7 +36,8 @@ export type UserPromptContext = {
   prompt?: string;
 };
 
-export const userPromptTemplate = Handlebars.compile<UserPromptContext>(`
+export const userPromptTemplate = Handlebars.compile<UserPromptContext>(
+  `
 {{#if fileTree}}
 File Tree:
 
@@ -81,7 +82,11 @@ Context:
 {{#if prompt}}
 {{prompt}}
 {{/if}}
-`);
+`,
+  {
+    noEscape: true,
+  },
+);
 
 export const generateEditSystemPrompt =
   "You are acai, an AI coding assistant. You specialize in helping software developers with the tasks that help them write better software. Pay close attention to the instructions given to you by the user and always follow those instructions. Return your reponse as valid JSON. It is very important that you format your response according to the user instructions as that formatting will be used to accomplish specific tasks.";
@@ -89,7 +94,8 @@ export const generateEditSystemPrompt =
 export const generateEditPromptTemplate = Handlebars.compile<{
   prompt: string;
   files?: { path: string; content: string }[];
-}>(`
+}>(
+  `
 Your tasks it to generate edit instructions for code files by analyzing the provided code and generating search and replace instructions for necessary changes. Follow these steps:
 
 1. Carefully analyze the specific instructions:
@@ -142,4 +148,8 @@ Use the following format to return the search and replace instructions:
 ]
 
 If no changes are needed, return an empty list.
-`);
+`,
+  {
+    noEscape: true,
+  },
+);
