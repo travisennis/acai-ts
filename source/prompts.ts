@@ -32,6 +32,7 @@ Provide answers in markdown format unless instructed otherwise.
 export type UserPromptContext = {
   fileTree?: string;
   files?: { path: string; content: string }[];
+  urlContent?: string;
   prompt?: string;
 };
 
@@ -71,12 +72,19 @@ File: {{path}}
 """
 	{{/if}}
 {{/if}}
+{{#if urlContent}}
+Context:
+
+{{urlContent}}
+
+{{/if}}
 {{#if prompt}}
 {{prompt}}
 {{/if}}
 `);
 
-export const generateEditSystemPrompt = `You are acai, an AI coding assistant. You specialize in helping software developers with the tasks that help them write better software. Pay close attention to the instructions given to you by the user and always follow those instructions. Return your reponse as valid JSON. It is very important that you format your response according to the user instructions as that formatting will be used to accomplish specific tasks.`;
+export const generateEditSystemPrompt =
+  "You are acai, an AI coding assistant. You specialize in helping software developers with the tasks that help them write better software. Pay close attention to the instructions given to you by the user and always follow those instructions. Return your reponse as valid JSON. It is very important that you format your response according to the user instructions as that formatting will be used to accomplish specific tasks.";
 
 export const generateEditPromptTemplate = Handlebars.compile<{
   prompt: string;

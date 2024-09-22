@@ -7,7 +7,13 @@
     "types": "./dist/index.d.ts",
     "default": "./dist/index.js"
   },
-  "keywords": ["cli", "ai", "llm", "coding", "assistant"],
+  "keywords": [
+    "cli",
+    "ai",
+    "llm",
+    "coding",
+    "assistant"
+  ],
   "author": "Travis Ennis",
   "license": "MIT",
   "scripts": {
@@ -43,6 +49,7 @@
     "marked-terminal": "^7.1.0",
     "meow": "^13.2.0",
     "openai": "^4.63.0",
+    "pdfreader": "^3.0.5",
     "pino": "^9.4.0",
     "pino-pretty": "^11.2.2",
     "pino-roll": "^2.0.0",

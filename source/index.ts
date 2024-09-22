@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { editor, input, select } from "@inquirer/prompts";
-import { Readability } from "@mozilla/readability";
+// import { Readability } from "@mozilla/readability";
 import { type CoreMessage, generateText } from "ai";
 import chalk from "chalk";
 import Table from "cli-table3";
@@ -12,9 +12,10 @@ import { JSDOM } from "jsdom";
 import { marked } from "marked";
 import TerminalRenderer from "marked-terminal";
 import meow from "meow";
+import { PdfReader } from "pdfreader";
 import * as BuildTool from "./build-tool";
 import * as CodeInterpreterTool from "./code-interpreter-tool";
-import { asyncExec, writeHeader, writeln } from "./command";
+import { asyncExec, writeError, writeHeader, writeln } from "./command";
 import { readAppConfig, saveMessageHistory } from "./config";
 import { handleError } from "./errors";
 import { directoryTree } from "./files";
@@ -30,7 +31,7 @@ import {
   userPromptTemplate,
 } from "./prompts";
 import { model } from "./providers";
-import { asyncTry, tryOrFail } from "./utils";
+import { asyncTry, isError, tryOrFail } from "./utils";
 
 const cli = meow(
   `
@@ -158,6 +159,9 @@ async function chatCmd(args: Flags, config: any) {
   const fileMap = new Map<string, string>();
   let filesUpdated = false;
 
+  let urlContent: string | undefined = undefined;
+  let urlUpdated = false;
+
   let mode: Modes = "exploring";
 
   while (true) {
@@ -236,21 +240,52 @@ async function chatCmd(args: Flags, config: any) {
 
       continue;
     }
-
     if (userInput.startsWith(urlCommand.command)) {
       const url = userInput.slice(urlCommand.command.length).trimStart();
-      console.log(`Loading ${url}`);
-      const result = await asyncExec(
-        `/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --headless --dump-dom ${url}`,
-      );
-      const dom = new JSDOM(result);
-      const reader = new Readability(dom.window.document);
-      const article = reader.parse();
-      const markdown = convertHtmlToMarkdown(result, {
-        overrideDOMParser: new dom.window.DOMParser(),
-      });
-      console.log(markdown);
-      console.log(article?.textContent);
+      if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        writeError("Invalid URL. Please provide a valid http or https URL.");
+        continue;
+      }
+      writeln(`Loading ${url}`);
+      try {
+        const response = await fetch(url);
+        const contentType = response.headers.get("content-type");
+        let content: string;
+        if (contentType?.includes("text/html")) {
+          const result = await asyncExec(
+            `/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --headless --dump-dom ${url}`,
+          );
+          // const html = await response.text();
+          const dom = new JSDOM(result);
+          // const reader = new Readability(dom.window.document);
+          // const article = reader.parse();
+          // content = article?.textContent || result;
+
+          const markdown = convertHtmlToMarkdown(result, {
+            overrideDOMParser: new dom.window.DOMParser(),
+          });
+
+          content = markdown;
+        } else if (contentType?.includes("application/pdf")) {
+          const buffer = await response.arrayBuffer();
+          const text = await new Promise<string>((resolve, reject) => {
+            new PdfReader().parseBuffer(Buffer.from(buffer), (err, item) => {
+              if (err) reject(err);
+              else if (!item) reject(new Error("end of buffer"));
+              else if (item.text) resolve(item.text);
+            });
+          });
+          content = text;
+        } else {
+          content = await response.text();
+        }
+        urlContent = content;
+        urlUpdated = true;
+      } catch (error) {
+        if (isError(error)) {
+          writeError(`Error fetching URL: ${error.message}`);
+        }
+      }
       continue;
     }
 
@@ -273,9 +308,20 @@ async function chatCmd(args: Flags, config: any) {
     }));
 
     const context: UserPromptContext = { prompt };
+    let useCachePrompt = false;
     if (filesUpdated) {
       context.fileTree = await directoryTree(process.cwd());
       context.files = files;
+      filesUpdated = false;
+      useCachePrompt = true;
+    }
+    if (urlUpdated) {
+      context.urlContent = urlContent;
+      urlUpdated = false;
+      useCachePrompt = true;
+    }
+
+    if (useCachePrompt) {
       messages.push({
         role: "user",
         content: userPromptTemplate(context),
@@ -283,7 +329,6 @@ async function chatCmd(args: Flags, config: any) {
           anthropic: { cacheControl: { type: "ephemeral" } },
         },
       });
-      filesUpdated = false;
     } else {
       messages.push({
         role: "user",
