@@ -10,7 +10,7 @@ import {
 } from "./prompts";
 import logger from "./logger";
 import { jsonParser } from "./parsing";
-import { writeHeader, writeln } from "./command";
+import { writeError, writeHeader, writeln } from "./command";
 
 const EditBlockSchema = z.object({
   path: z.string(),
@@ -38,6 +38,12 @@ async function applyEditBlock(block: EditBlock): Promise<void> {
     if (await fileExists(trimmedPath)) {
       writeln(`Updating ${trimmedPath}`);
       let content = await fs.readFile(trimmedPath, "utf8");
+      const searchResult = content.search(search.trim());
+      if (searchResult > -1) {
+        writeln("Search text found.");
+      } else {
+        writeError("Search text not found.");
+      }
       content =
         search.trim() === ""
           ? replace.trim()
