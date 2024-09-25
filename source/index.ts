@@ -177,7 +177,9 @@ async function chatCmd(args: Flags, config: any) {
       userInput.trim() === exitCommand.command ||
       userInput.trim() === byeCommand.command
     ) {
-      await saveMessageHistory(messages);
+      if (messages.length > 0) {
+        await saveMessageHistory(messages);
+      }
       break;
     }
 
@@ -207,8 +209,10 @@ async function chatCmd(args: Flags, config: any) {
     }
 
     if (userInput.trim() === resetCommand.command) {
-      await saveMessageHistory(messages);
-      messages.length = 0;
+      if (messages.length > 0) {
+        await saveMessageHistory(messages);
+        messages.length = 0;
+      }
       continue;
     }
 
