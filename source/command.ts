@@ -7,7 +7,7 @@ export function writeln(input: string): void {
 }
 
 export function writeError(input: string): void {
-  process.stdout.write(chalk.red(`✖️ ${input}`));
+  process.stdout.write(chalk.red(`✖️  ${input}`));
 }
 
 export function writeHeader(
