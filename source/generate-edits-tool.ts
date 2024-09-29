@@ -117,14 +117,15 @@ async function applyEditBlock(block: EditBlock): Promise<void> {
       } else {
         writeError("Search text not found.");
       }
-      content =
-        search.trim() === ""
-          ? replace.trim()
-          : content.replace(
-              escapeRegExp(search.trim()),
-              escapeReplacement(replace.trim()),
-            );
-      await fs.writeFile(trimmedPath, content);
+      if (search.trim() !== "") {
+        content = content.replace(
+          escapeRegExp(search.trim()),
+          escapeReplacement(replace.trim()),
+        );
+        await fs.writeFile(trimmedPath, content);
+      } else {
+        await fs.appendFile(trimmedPath, replace);
+      }
     } else {
       writeln(`Creating ${trimmedPath}`);
       await fs.writeFile(trimmedPath, replace.trim());
