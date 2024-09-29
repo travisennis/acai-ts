@@ -25,13 +25,10 @@ import * as GitCommitTool from "./git-commit-tool";
 import * as GitDiffTool from "./git-diff-tool";
 import * as LintTool from "./lint-tool";
 import { logger } from "./logger";
-import {
-  type UserPromptContext,
-  systemPrompt,
-  userPromptTemplate,
-} from "./prompts";
+import { PromptManager, systemPrompt } from "./prompts";
 import { model } from "./providers";
 import { asyncTry, isError, tryOrFail } from "./utils";
+import { match } from "ts-pattern";
 
 const cli = meow(
   `
@@ -156,23 +153,18 @@ async function chatCmd(args: Flags, config: any) {
 
   const messages: CoreMessage[] = [];
 
-  const fileMap = new Map<string, string>();
-  let filesUpdated = false;
-
-  let urlContent: string | undefined = undefined;
-  let urlUpdated = false;
+  const promptManager = new PromptManager();
 
   let mode: Modes = "exploring";
 
   while (true) {
     writeHeader("Input:");
     writeln(`Mode: ${mode}`);
-    writeln(`Files in context: ${fileMap.size}`);
-    writeln(`Files updated: ${filesUpdated}`);
+    writeln(`Model: ${exploringModel.provider}`);
+    writeln(`Files in context: ${promptManager.getFiles().length}`);
     writeln("");
 
     const userInput = await input({ message: ">" });
-    let prompt = "";
     if (
       userInput.trim() === exitCommand.command ||
       userInput.trim() === byeCommand.command
@@ -237,8 +229,7 @@ async function chatCmd(args: Flags, config: any) {
           const filePath = path.join(process.cwd(), p);
           const content = await fs.readFile(filePath, "utf8");
           writeln(`Added ${filePath}, content length: ${content.length}`);
-          fileMap.set(filePath, content);
-          filesUpdated = true;
+          promptManager.addFile(filePath, content);
         }),
       );
 
@@ -246,45 +237,14 @@ async function chatCmd(args: Flags, config: any) {
     }
     if (userInput.startsWith(urlCommand.command)) {
       const url = userInput.slice(urlCommand.command.length).trimStart();
-      if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      if (!(url.startsWith("http://") || url.startsWith("https://"))) {
         writeError("Invalid URL. Please provide a valid http or https URL.");
         continue;
       }
       writeln(`Loading ${url}`);
       try {
-        const response = await fetch(url);
-        const contentType = response.headers.get("content-type");
-        let content: string;
-        if (contentType?.includes("text/html")) {
-          const result = await asyncExec(
-            `/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --headless --dump-dom ${url}`,
-          );
-          // const html = await response.text();
-          const dom = new JSDOM(result);
-          // const reader = new Readability(dom.window.document);
-          // const article = reader.parse();
-          // content = article?.textContent || result;
-
-          const markdown = convertHtmlToMarkdown(result, {
-            overrideDOMParser: new dom.window.DOMParser(),
-          });
-
-          content = markdown;
-        } else if (contentType?.includes("application/pdf")) {
-          const buffer = await response.arrayBuffer();
-          const text = await new Promise<string>((resolve, reject) => {
-            new PdfReader().parseBuffer(Buffer.from(buffer), (err, item) => {
-              if (err) reject(err);
-              else if (!item) reject(new Error("end of buffer"));
-              else if (item.text) resolve(item.text);
-            });
-          });
-          content = text;
-        } else {
-          content = await response.text();
-        }
-        urlContent = content;
-        urlUpdated = true;
+        const content = await getUrlContent(url);
+        promptManager.addFile(url, content);
       } catch (error) {
         if (isError(error)) {
           writeError(`Error fetching URL: ${error.message}`);
@@ -293,42 +253,40 @@ async function chatCmd(args: Flags, config: any) {
       continue;
     }
 
-    if (userInput.trim() === promptCommand.command) {
-      prompt = await editor({
-        message: "Enter a prompt",
-        postfix: ".md",
+    const { prompt, useCache } = await match(userInput.trim())
+      .with("/editPrompt", async () => {
+        const result = await promptManager.getPrompt("<placeholder>");
+        const prompt = await editor({
+          message: "Enter a prompt",
+          postfix: ".md",
+          default: result.prompt,
+        });
+        return {
+          prompt: prompt,
+          useCache: result.useCache,
+        };
+      })
+      .with(promptCommand.command, async () => {
+        const userMessage = await editor({
+          message: "Enter a prompt",
+          postfix: ".md",
+        });
+        return promptManager.getPrompt(userMessage);
+      })
+      .otherwise((input) => {
+        if (input.trim() === "") {
+          return Promise.resolve({
+            prompt: "",
+            useCache: false,
+          });
+        }
+        return promptManager.getPrompt(input.trim());
       });
-    } else {
-      prompt = userInput;
-    }
 
-    if (prompt.trim() === "") {
-      continue;
-    }
-
-    const files = Array.from(fileMap, ([path, content]) => ({
-      path,
-      content,
-    }));
-
-    const context: UserPromptContext = { prompt };
-    let useCachePrompt = false;
-    if (filesUpdated) {
-      context.fileTree = await directoryTree(process.cwd());
-      context.files = files;
-      filesUpdated = false;
-      useCachePrompt = true;
-    }
-    if (urlUpdated) {
-      context.urlContent = urlContent;
-      urlUpdated = false;
-      useCachePrompt = true;
-    }
-
-    if (useCachePrompt) {
+    if (useCache) {
       messages.push({
         role: "user",
-        content: userPromptTemplate(context),
+        content: prompt,
         experimental_providerMetadata: {
           anthropic: { cacheControl: { type: "ephemeral" } },
         },
@@ -336,7 +294,7 @@ async function chatCmd(args: Flags, config: any) {
     } else {
       messages.push({
         role: "user",
-        content: userPromptTemplate(context),
+        content: prompt,
       });
     }
 
@@ -349,7 +307,10 @@ async function chatCmd(args: Flags, config: any) {
             messages: messages,
             maxSteps: 3,
             tools: {
-              generateEdits: GenerateEditsTool.initTool(editingModel, files),
+              generateEdits: GenerateEditsTool.initTool(
+                editingModel,
+                promptManager.getFiles(),
+              ),
               lint: LintTool.initTool(),
               build: BuildTool.initTool(),
               format: FormatTool.initTool(),
@@ -389,8 +350,7 @@ async function chatCmd(args: Flags, config: any) {
                   writeln(
                     `Updated ${filePath}, content length: ${content.length}\n`,
                   );
-                  fileMap.set(filePath, content);
-                  filesUpdated = true;
+                  promptManager.addFile(filePath, content);
                 }),
             );
           }
@@ -425,6 +385,40 @@ async function chatCmd(args: Flags, config: any) {
       logger.error(e);
     }
   }
+}
+
+async function getUrlContent(url: string) {
+  const response = await fetch(url);
+  const contentType = response.headers.get("content-type");
+  let content: string;
+  if (contentType?.includes("text/html")) {
+    const result = await asyncExec(
+      `/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --headless --dump-dom ${url}`,
+    );
+    // const html = await response.text();
+    const dom = new JSDOM(result);
+    // const reader = new Readability(dom.window.document);
+    // const article = reader.parse();
+    // content = article?.textContent || result;
+    const markdown = convertHtmlToMarkdown(result, {
+      overrideDOMParser: new dom.window.DOMParser(),
+    });
+
+    content = markdown;
+  } else if (contentType?.includes("application/pdf")) {
+    const buffer = await response.arrayBuffer();
+    const text = await new Promise<string>((resolve, reject) => {
+      new PdfReader().parseBuffer(Buffer.from(buffer), (err, item) => {
+        if (err) reject(err);
+        else if (!item) reject(new Error("end of buffer"));
+        else if (item.text) resolve(item.text);
+      });
+    });
+    content = text;
+  } else {
+    content = await response.text();
+  }
+  return content;
 }
 
 async function main() {

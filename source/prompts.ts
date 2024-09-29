@@ -1,4 +1,5 @@
 import Handlebars from "handlebars";
+import { directoryTree } from "./files";
 
 export const systemPrompt = `
 You are acai, an AI assistant. You specialize in software development. Assume the software engineer you are working with is experienced and talented. Don't dumb things down. The goal of offering assistance is to make the best software possible. Offer useful guidance in the following areas:
@@ -32,9 +33,69 @@ Provide answers in markdown format unless instructed otherwise.
 export type UserPromptContext = {
   fileTree?: string;
   files?: { path: string; content: string }[];
-  urlContent?: string;
+  urlContent?: { url: string; content: string }[];
   prompt?: string;
 };
+
+export class PromptManager {
+  private fileMap: Map<string, string>;
+  private filesUpdated = false;
+
+  private urlContent: Map<string, string>;
+  private urlUpdated = false;
+
+  constructor() {
+    this.fileMap = new Map<string, string>();
+    this.urlContent = new Map<string, string>();
+  }
+
+  addFile(fileName: string, content: string) {
+    this.fileMap.set(fileName, content);
+    this.filesUpdated = true;
+  }
+
+  addUrl(url: string, content: string) {
+    this.urlContent.set(url, content);
+    this.urlUpdated = true;
+  }
+
+  getFiles() {
+    const files = Array.from(this.fileMap, ([path, content]) => ({
+      path,
+      content,
+    }));
+    return files;
+  }
+
+  getUrls() {
+    const urls = Array.from(this.urlContent, ([url, content]) => ({
+      url,
+      content,
+    }));
+    return urls;
+  }
+
+  async getPrompt(prompt: string) {
+    const context: UserPromptContext = { prompt };
+    let useCachePrompt = false;
+    if (this.filesUpdated) {
+      context.fileTree = await directoryTree(process.cwd());
+      context.files = this.getFiles();
+      this.filesUpdated = false;
+      useCachePrompt = true;
+    }
+    if (this.urlUpdated) {
+      context.urlContent = this.getUrls();
+      this.urlUpdated = false;
+      useCachePrompt = true;
+    }
+
+    return {
+      prompt: userPromptTemplate(context),
+      useCache: useCachePrompt,
+    };
+  }
+}
 
 export const userPromptTemplate = Handlebars.compile<UserPromptContext>(
   `
@@ -53,7 +114,7 @@ File Contents:
 File: {{path}}
 
 	{{/if}}
-    {{#if content}}
+  {{#if content}}
 {{content}}
 	{{/if}}
 
@@ -76,8 +137,12 @@ File: {{path}}
 {{#if urlContent}}
 Context:
 
-{{urlContent}}
+{{#each urlContent}}
+url: {{url}}
 
+{{content}}
+
+{{/each}}
 {{/if}}
 {{#if prompt}}
 {{prompt}}
