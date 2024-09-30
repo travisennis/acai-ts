@@ -3,10 +3,11 @@ import { z } from "zod";
 import simpleGit from "simple-git";
 import { writeHeader, writeln } from "./command.js";
 
+const CONVENTIONAL_COMMIT_MESSAGE =
+  /^(feat|fix|docs|style|refactor|perf|test|chore)(\(\w+\))?!?: .+/;
+
 function validateConventionalCommit(message: string): boolean {
-  const pattern =
-    /^(feat|fix|docs|style|refactor|perf|test|chore)(\(\w+\))?!?: .+/;
-  return pattern.test(message);
+  return CONVENTIONAL_COMMIT_MESSAGE.test(message);
 }
 
 export function initTool() {
