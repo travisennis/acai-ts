@@ -407,14 +407,13 @@ async function getUrlContent(url: string) {
     content = markdown;
   } else if (contentType?.includes("application/pdf")) {
     const buffer = await response.arrayBuffer();
-    const text = await new Promise<string>((resolve, reject) => {
-      new PdfReader().parseBuffer(Buffer.from(buffer), (err, item) => {
-        if (err) reject(err);
-        else if (!item) reject(new Error("end of buffer"));
-        else if (item.text) resolve(item.text);
-      });
+    const { promise, resolve, reject } = Promise.withResolvers<string>();
+    new PdfReader().parseBuffer(Buffer.from(buffer), (err, item) => {
+      if (err) reject(err);
+      else if (!item) reject(new Error("end of buffer"));
+      else if (item.text) resolve(item.text);
     });
-    content = text;
+    content = await promise;
   } else {
     content = await response.text();
   }

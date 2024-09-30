@@ -23,16 +23,16 @@ export function writehr(chalkFn: ChalkInstance = chalk.cyan): void {
 }
 
 export function asyncExec(command: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        reject(`Command ${command} execution error: ${error.message}`);
-        return;
-      }
-      if (stderr) {
-        logger.error(`Command ${command} stderr: ${stderr}`);
-      }
-      resolve(stdout);
-    });
+  const { promise, resolve, reject } = Promise.withResolvers<string>();
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      reject(`Command ${command} execution error: ${error.message}`);
+      return;
+    }
+    if (stderr) {
+      logger.error(`Command ${command} stderr: ${stderr}`);
+    }
+    resolve(stdout);
   });
+  return promise;
 }
