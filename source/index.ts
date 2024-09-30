@@ -160,7 +160,7 @@ async function chatCmd(args: Flags, config: any) {
   while (true) {
     writeHeader("Input:");
     writeln(`Mode: ${mode}`);
-    writeln(`Model: ${exploringModel.provider}`);
+    writeln(`Model: ${exploringModel.modelId}`);
     writeln(`Files in context: ${promptManager.getFiles().length}`);
     writeln("");
 
@@ -244,7 +244,7 @@ async function chatCmd(args: Flags, config: any) {
       writeln(`Loading ${url}`);
       try {
         const content = await getUrlContent(url);
-        promptManager.addFile(url, content);
+        promptManager.addUrl(url, content);
       } catch (error) {
         if (isError(error)) {
           writeError(`Error fetching URL: ${error.message}`);
