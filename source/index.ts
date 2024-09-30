@@ -13,17 +13,17 @@ import { marked } from "marked";
 import TerminalRenderer from "marked-terminal";
 import meow from "meow";
 import { PdfReader } from "pdfreader";
-import * as BuildTool from "./build-tool";
-import * as CodeInterpreterTool from "./code-interpreter-tool";
+import { initTool as buildTool } from "./build-tool";
+import { initTool as codeInterpreterTool } from "./code-interpreter-tool";
 import { asyncExec, writeError, writeHeader, writeln } from "./command";
 import { readAppConfig, saveMessageHistory } from "./config";
 import { handleError } from "./errors";
 import { directoryTree } from "./files";
-import * as FormatTool from "./format-tool";
-import * as GenerateEditsTool from "./generate-edits-tool";
-import * as GitCommitTool from "./git-commit-tool";
-import * as GitDiffTool from "./git-diff-tool";
-import * as LintTool from "./lint-tool";
+import { initTool as formatTool } from "./format-tool";
+import { initTool as generateEditsTool } from "./generate-edits-tool";
+import { initTool as gitCommitTool } from "./git-commit-tool";
+import { initTool as gitDiffTool } from "./git-diff-tool";
+import { initTool as lintTool } from "./lint-tool";
 import { logger } from "./logger";
 import { PromptManager, systemPrompt } from "./prompts";
 import { model } from "./providers";
@@ -307,16 +307,16 @@ async function chatCmd(args: Flags, config: any) {
             messages: messages,
             maxSteps: 3,
             tools: {
-              generateEdits: GenerateEditsTool.initTool(
+              generateEdits: generateEditsTool(
                 editingModel,
                 promptManager.getFiles(),
               ),
-              lint: LintTool.initTool(),
-              build: BuildTool.initTool(),
-              format: FormatTool.initTool(),
-              gitDiff: GitDiffTool.initTool(),
-              gitCommit: GitCommitTool.initTool(),
-              codeInterpreter: CodeInterpreterTool.initTool(),
+              lint: lintTool(),
+              build: buildTool(),
+              format: formatTool(),
+              gitDiff: gitDiffTool(),
+              gitCommit: gitCommitTool(),
+              codeInterpreter: codeInterpreterTool(),
             },
           })
         : generateText({
