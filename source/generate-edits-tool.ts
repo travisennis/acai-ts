@@ -4,11 +4,11 @@ import { type CoreMessage, type LanguageModel, generateText, tool } from "ai";
 import chalk from "chalk";
 import Handlebars from "handlebars";
 import { z } from "zod";
-import { writeError, writeHeader, writeln } from "./command";
-import { saveMessageHistory } from "./config";
-import { AcaiError, FileOperationError } from "./errors";
-import logger from "./logger";
-import { jsonParser } from "./parsing";
+import { writeError, writeHeader, writeln } from "./command.js";
+import { saveMessageHistory } from "./config.js";
+import { AcaiError, FileOperationError } from "./errors.js";
+import logger from "./logger.js";
+import { jsonParser } from "./parsing.js";
 
 const generateEditSystemPrompt =
   "You are acai, an AI coding assistant. You specialize in helping software developers with the tasks that help them write better software. Pay close attention to the instructions given to you by the user and always follow those instructions. Return your reponse as valid JSON. It is very important that you format your response according to the user instructions as that formatting will be used to accomplish specific tasks.";

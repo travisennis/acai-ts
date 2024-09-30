@@ -13,22 +13,22 @@ import { marked } from "marked";
 import TerminalRenderer from "marked-terminal";
 import meow from "meow";
 import { PdfReader } from "pdfreader";
-import { initTool as buildTool } from "./build-tool";
-import { initTool as codeInterpreterTool } from "./code-interpreter-tool";
-import { asyncExec, writeError, writeHeader, writeln } from "./command";
-import { readAppConfig, saveMessageHistory } from "./config";
-import { handleError } from "./errors";
-import { directoryTree } from "./files";
-import { initTool as formatTool } from "./format-tool";
-import { initTool as generateEditsTool } from "./generate-edits-tool";
-import { initTool as gitCommitTool } from "./git-commit-tool";
-import { initTool as gitDiffTool } from "./git-diff-tool";
-import { initTool as lintTool } from "./lint-tool";
-import { logger } from "./logger";
-import { PromptManager, systemPrompt } from "./prompts";
-import { model } from "./providers";
-import { asyncTry, isError, tryOrFail } from "./utils";
 import { match } from "ts-pattern";
+import { initTool as buildTool } from "./build-tool.js";
+import { initTool as codeInterpreterTool } from "./code-interpreter-tool.js";
+import { asyncExec, writeError, writeHeader, writeln } from "./command.js";
+import { readAppConfig, saveMessageHistory } from "./config.js";
+import { handleError } from "./errors.js";
+import { directoryTree } from "./files.js";
+import { initTool as formatTool } from "./format-tool.js";
+import { initTool as generateEditsTool } from "./generate-edits-tool.js";
+import { initTool as gitCommitTool } from "./git-commit-tool.js";
+import { initTool as gitDiffTool } from "./git-diff-tool.js";
+import { initTool as lintTool } from "./lint-tool.js";
+import { logger } from "./logger.js";
+import { PromptManager, systemPrompt } from "./prompts.js";
+import { model } from "./providers.js";
+import { asyncTry, isError, tryOrFail } from "./utils.js";
 
 const cli = meow(
   `

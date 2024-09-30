@@ -1,6 +1,6 @@
 import { exec } from "node:child_process";
-import logger from "./logger";
 import chalk, { type ChalkInstance } from "chalk";
+import logger from "./logger.js";
 
 export function writeln(input: string): void {
   process.stdout.write(`${input}\n`);

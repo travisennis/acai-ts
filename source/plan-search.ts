@@ -1,5 +1,5 @@
 import { type LanguageModel, generateText } from "ai";
-import { writeln } from "./command";
+import { writeln } from "./command.js";
 
 class PlanSearch {
   private model: LanguageModel;

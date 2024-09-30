@@ -1,8 +1,8 @@
-import { asyncExec } from "./command";
 import { tool } from "ai";
 import { z } from "zod";
-import { readProjectConfig } from "./config";
-import logger from "./logger";
+import { asyncExec } from "./command.js";
+import { readProjectConfig } from "./config.js";
+import logger from "./logger.js";
 
 export function initTool() {
   return tool({

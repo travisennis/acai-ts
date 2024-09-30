@@ -1,5 +1,5 @@
 import { z, ZodIssueCode } from "zod";
-import logger from "./logger";
+import logger from "./logger.js";
 
 const parseJsonPreprocessor = (value: unknown, ctx: z.RefinementCtx) => {
   if (typeof value === "string") {

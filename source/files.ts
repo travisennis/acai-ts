@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import ignore from "ignore";
-import logger from "./logger";
+import logger from "./logger.js";
 
 /**
  * Generates the indentation string for a given level in the directory tree.

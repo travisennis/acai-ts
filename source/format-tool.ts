@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { asyncExec } from "./command";
-import { readProjectConfig } from "./config";
+import { asyncExec } from "./command.js";
+import { readProjectConfig } from "./config.js";
 
 export function initTool() {
   return tool({

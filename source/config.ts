@@ -1,10 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import type { CoreMessage } from "ai";
 import * as xdg from "xdg-basedir";
 import { z } from "zod";
-import logger from "./logger";
-import { jsonParser } from "./parsing";
-import type { CoreMessage } from "ai";
+import logger from "./logger.js";
+import { jsonParser } from "./parsing.js";
 
 logger.info(xdg, "App config dirs:");
 

@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import simpleGit from "simple-git";
-import { writeHeader, writeln } from "./command";
+import { writeHeader, writeln } from "./command.js";
 
 function validateConventionalCommit(message: string): boolean {
   const pattern =
