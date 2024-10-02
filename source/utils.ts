@@ -170,3 +170,17 @@ export function isSome<T>(option: Option<T>): option is Some<T> {
 export function isNone<T>(option: Option<T>): option is None<T> {
   return option.isNone;
 }
+
+export function* range(start: number, end?: number): Generator<number> {
+  // If only one argument is provided, assume it's the end value
+  let s = start;
+  let e = end;
+  if (e === undefined) {
+    e = start;
+    s = 0;
+  }
+
+  for (let i = s; i < e; i++) {
+    yield i;
+  }
+}
