@@ -3,12 +3,8 @@ import {
   anthropic as originalAnthropic,
 } from "@ai-sdk/anthropic";
 import { createAzure } from "@ai-sdk/azure";
-import { openai as originalOpenAI } from "@ai-sdk/openai";
-import { openrouter as originalOpenRouter } from "@openrouter/ai-sdk-provider";
-import {
-  type Provider,
-  experimental_createProviderRegistry as createProviderRegistry,
-} from "ai";
+import { createOpenAI, openai as originalOpenAI } from "@ai-sdk/openai";
+import { experimental_createProviderRegistry as createProviderRegistry } from "ai";
 import { experimental_customProvider as customProvider } from "ai";
 
 const azure = customProvider({
@@ -22,9 +18,15 @@ const azure = customProvider({
 
 const openrouter = customProvider({
   languageModels: {
-    llama370b: originalOpenRouter("meta-llama/llama-3-70b"),
+    llama370b: createOpenAI({
+      baseURL: "https://openrouter.ai/api/v1",
+      apiKey: process.env.OPENROUTER_API_KEY,
+    })("meta-llama/llama-3-70b"),
   },
-  fallbackProvider: originalOpenRouter as unknown as Provider,
+  fallbackProvider: createOpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: process.env.OPENROUTER_API_KEY,
+  }),
 });
 
 const anthropic = customProvider({
