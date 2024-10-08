@@ -1,6 +1,18 @@
 import { exec } from "node:child_process";
 import chalk, { type ChalkInstance } from "chalk";
+import { marked } from "marked";
+import TerminalRenderer from "marked-terminal";
 import logger from "./logger.js";
+
+marked.setOptions({
+  // Define custom renderer
+  renderer: new TerminalRenderer() as any,
+});
+
+export async function writeMd(input: string): Promise<void> {
+  const md = await marked.parse(input);
+  writeln(md);
+}
 
 export function writeln(input: string): void {
   process.stdout.write(`${input}\n`);
