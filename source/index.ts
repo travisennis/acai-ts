@@ -1,7 +1,6 @@
 import chalk from "chalk";
 import figlet from "figlet";
 import meow from "meow";
-import { bonCmd } from "./bon.js";
 import { chatCmd } from "./chatCmd.js";
 import { writeln } from "./command.js";
 import { readAppConfig } from "./config.js";
@@ -39,12 +38,8 @@ async function main() {
 
   const config = await readAppConfig("acai");
 
-  const cmd = cli.input.at(0);
-  if (cmd === "chat") {
-    tryOrFail(await asyncTry(chatCmd(cli.flags, config)), handleError);
-  } else if (cmd === "bon") {
-    tryOrFail(await bonCmd(), handleError);
-  }
+  // const cmd = cli.input.at(0);
+  tryOrFail(await asyncTry(chatCmd(cli.flags, config)), handleError);
 }
 
 main();
