@@ -37,7 +37,7 @@ const anthropic = customProvider({
         "anthropic-version": "2023-06-01",
         "anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15",
       },
-    })("claude-3-5-sonnet-20240620", {
+    })("claude-3-5-sonnet-20241022", {
       cacheControl: true,
     }),
     haiku: originalAnthropic("claude-3-haiku-20240307"),
