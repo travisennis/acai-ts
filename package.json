@@ -7,7 +7,13 @@
     "types": "./dist/index.d.ts",
     "default": "./dist/index.js"
   },
-  "keywords": ["cli", "ai", "llm", "coding", "assistant"],
+  "keywords": [
+    "cli",
+    "ai",
+    "llm",
+    "coding",
+    "assistant"
+  ],
   "author": "Travis Ennis",
   "license": "MIT",
   "scripts": {
@@ -22,20 +28,22 @@
     "pretest": "npm run compile",
     "format": "biome format --write",
     "dev": "tsx ./source/index.ts",
-    "oxlint": "npx oxlint@latest --ignore-path .gitignore --deny correctness --deny suspicous --deny pedantic --deny style --node-plugin"
+    "oxlint": "npx oxlint@latest --ignore-path .gitignore --deny correctness --deny suspicous --deny pedantic --deny style --node-plugin",
+    "knip": "npx knip",
+    "check": "npx npm-check-updates  --interactive --format group"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^0.0.51",
-    "@ai-sdk/azure": "^0.0.45",
-    "@ai-sdk/openai": "^0.0.66",
-    "@inquirer/prompts": "^6.0.1",
+    "@ai-sdk/azure": "^0.0.48",
+    "@ai-sdk/openai": "^0.0.68",
+    "@inquirer/prompts": "^7.0.0",
     "@mozilla/readability": "^0.5.0",
-    "ai": "^3.4.9",
+    "ai": "^3.4.18",
     "chalk": "^5.3.0",
     "cli-table3": "^0.6.5",
     "diff": "^7.0.0",
-    "dom-to-semantic-markdown": "^1.2.13",
-    "figlet": "^1.7.0",
+    "dom-to-semantic-markdown": "^1.2.14",
+    "figlet": "^1.8.0",
     "globby": "^14.0.2",
     "handlebars": "^4.7.8",
     "ignore": "^6.0.2",
@@ -44,23 +52,23 @@
     "marked-terminal": "^7.1.0",
     "meow": "^13.2.0",
     "pdfreader": "^3.0.5",
-    "pino": "^9.4.0",
-    "pino-pretty": "^11.2.2",
+    "pino": "^9.5.0",
+    "pino-pretty": "^11.3.0",
     "pino-roll": "^2.1.0",
     "simple-git": "^3.27.0",
-    "ts-pattern": "^5.4.0",
+    "ts-pattern": "^5.5.0",
     "xdg-basedir": "^5.1.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.3",
-    "@types/diff": "^5.2.2",
-    "@types/figlet": "^1.5.8",
+    "@biomejs/biome": "1.9.4",
+    "@types/diff": "^5.2.3",
+    "@types/figlet": "^1.7.0",
     "@types/jsdom": "^21.1.7",
     "@types/marked-terminal": "^6.1.1",
-    "@types/node": "^22.7.4",
+    "@types/node": "^22.7.8",
     "rimraf": "^6.0.1",
     "tsx": "^4.19.1",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.3"
   }
 }
