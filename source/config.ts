@@ -70,7 +70,7 @@ async function saveMessageHistory(messages: CoreMessage[]): Promise<void> {
   const formattedContent = messages
     .map((message) => {
       const prefix = message.role === "user" ? "User:" : "Assistant:";
-      return `${prefix}\n${message.content}`;
+      return `${prefix}\n${JSON.stringify(message.content, null, 2)}`;
     })
     .join("\n\n");
 
