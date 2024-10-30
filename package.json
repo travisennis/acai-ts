@@ -10,13 +10,7 @@
   "bin": {
     "acai": "./dist/index.js"
   },
-  "keywords": [
-    "cli",
-    "ai",
-    "llm",
-    "coding",
-    "assistant"
-  ],
+  "keywords": ["cli", "ai", "llm", "coding", "assistant"],
   "author": "Travis Ennis",
   "license": "MIT",
   "scripts": {
@@ -54,7 +48,7 @@
     "marked": "13.0.0",
     "marked-terminal": "^7.1.0",
     "meow": "^13.2.0",
-    "pdfreader": "^3.0.5",
+    "pdfjs-dist": "^4.7.76",
     "pino": "^9.5.0",
     "pino-pretty": "^11.3.0",
     "pino-roll": "^2.1.0",

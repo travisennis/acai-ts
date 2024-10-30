@@ -1,40 +1,42 @@
 import { convertHtmlToMarkdown } from "dom-to-semantic-markdown";
 import { JSDOM } from "jsdom";
-import { PdfReader } from "pdfreader";
 import { asyncExec, writeln } from "./command.js";
+import { parsePdf } from "./pdfreader.js";
 
 export async function getUrlContent(url: string) {
   const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
   const contentType = response.headers.get("content-type");
-  let content: string;
+
   if (contentType?.includes("text/html")) {
     writeln("Loading html...");
     const result = await asyncExec(
       `/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --headless --dump-dom ${url}`,
     );
-    // const html = await response.text();
     const dom = new JSDOM(result);
-    // const reader = new Readability(dom.window.document);
-    // const article = reader.parse();
-    // content = article?.textContent || result;
     const markdown = convertHtmlToMarkdown(result, {
       overrideDOMParser: new dom.window.DOMParser(),
     });
 
-    content = markdown;
-  } else if (contentType?.includes("application/pdf")) {
-    writeln("Loading pdf...");
-    const buffer = await response.arrayBuffer();
-    const { promise, resolve, reject } = Promise.withResolvers<string>();
-    new PdfReader().parseBuffer(Buffer.from(buffer), (err, item) => {
-      if (err) reject(err);
-      else if (!item) reject(new Error("end of buffer"));
-      else if (item.text) resolve(item.text);
-    });
-    content = await promise;
-  } else {
-    writeln("Loading text...");
-    content = await response.text();
+    return markdown;
   }
-  return content;
+
+  if (contentType?.includes("application/pdf")) {
+    writeln("Loading pdf...");
+    const result = await parsePdf(await response.arrayBuffer());
+
+    if (result.error) {
+      console.error("Error:", result.error);
+    } else {
+      writeln(`Successfully parsed ${result.pages} pages`);
+    }
+    return result.text;
+  }
+
+  writeln("Loading text...");
+  return response.text();
 }
