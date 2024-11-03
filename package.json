@@ -54,7 +54,6 @@
     "pino-roll": "^2.2.0",
     "simple-git": "^3.27.0",
     "ts-pattern": "^5.5.0",
-    "xdg-basedir": "^5.1.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

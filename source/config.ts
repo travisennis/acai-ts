@@ -1,12 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { CoreMessage } from "ai";
-import * as xdg from "xdg-basedir";
 import { z } from "zod";
-import logger from "./logger.js";
+import envPaths from "./env-paths.js";
 import { jsonParser } from "./parsing.js";
-
-logger.info(xdg, "App config dirs:");
 
 const ProjectConfigSchema = z.object({
   build: z.string().optional(),
@@ -30,11 +27,7 @@ async function readProjectConfig(): Promise<ProjectConfig> {
 }
 
 async function readAppConfig(configName: string): Promise<any> {
-  const configPath = path.join(
-    xdg.xdgConfig ?? "",
-    "acai",
-    `${configName}.json`,
-  );
+  const configPath = path.join(envPaths("acai").config, `${configName}.json`);
   try {
     const data = await fs.readFile(configPath, "utf8");
     return JSON.parse(data);
@@ -47,21 +40,14 @@ async function readAppConfig(configName: string): Promise<any> {
 }
 
 async function writeAppConfig(configName: string, data: any): Promise<void> {
-  const configDir = path.join(xdg.xdgConfig ?? "acai");
+  const configDir = envPaths("acai").config;
   const configPath = path.join(configDir, `${configName}.json`);
   await fs.mkdir(configDir, { recursive: true });
   await fs.writeFile(configPath, JSON.stringify(data, null, 2));
 }
 
-function getStateDir(): string {
-  return path.join(
-    xdg.xdgState ?? path.join(process.env.HOME ?? "", ".local", "state"),
-    "acai",
-  );
-}
-
 async function saveMessageHistory(messages: CoreMessage[]): Promise<void> {
-  const stateDir = getStateDir();
+  const stateDir = envPaths("acai").state;
   await fs.mkdir(stateDir, { recursive: true });
   const timestamp = new Date().toISOString().replace(/:/g, "-");
   const fileName = `message-history-${timestamp}.md`;

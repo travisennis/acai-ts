@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import { join } from "node:path";
 import pino from "pino";
-import { xdgState } from "xdg-basedir";
+import envPaths from "./env-paths.js";
 
-const logDir = join(xdgState ?? "~/.local/share", "acai", "logs");
+const logDir = envPaths("acai").logs;
 fs.mkdirSync(logDir, { recursive: true });
 
 const transport = pino.transport({

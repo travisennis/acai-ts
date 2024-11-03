@@ -7,16 +7,17 @@ const tmpdir = os.tmpdir();
 const { env } = process;
 
 const windows = (name: string) => {
-  const appData = env.APPDATA || path.join(homedir, "AppData", "Roaming");
+  const appData = env.APPDATA ?? path.join(homedir, "AppData", "Roaming");
   const localAppData =
-    env.LOCALAPPDATA || path.join(homedir, "AppData", "Local");
+    env.LOCALAPPDATA ?? path.join(homedir, "AppData", "Local");
 
   return {
     // Data/config/cache/log are invented by me as Windows isn't opinionated about this
     data: path.join(localAppData, name, "Data"),
     config: path.join(appData, name, "Config"),
     cache: path.join(localAppData, name, "Cache"),
-    log: path.join(localAppData, name, "Log"),
+    logs: path.join(localAppData, name, "Logs"),
+    state: path.join(localAppData, name, "state"),
     temp: path.join(tmpdir, name),
   };
 };
@@ -27,21 +28,22 @@ const unix = (name: string) => {
 
   return {
     data: path.join(
-      env.XDG_DATA_HOME || path.join(homedir, ".local", "share"),
+      env.XDG_DATA_HOME ?? path.join(homedir, ".local", "share"),
       name,
     ),
     config: path.join(
-      env.XDG_CONFIG_HOME || path.join(homedir, ".config"),
+      env.XDG_CONFIG_HOME ?? path.join(homedir, ".config"),
       name,
     ),
-    cache: path.join(env.XDG_CACHE_HOME || path.join(homedir, ".cache"), name),
+    cache: path.join(env.XDG_CACHE_HOME ?? path.join(homedir, ".cache"), name),
     // https://wiki.debian.org/XDGBaseDirectorySpecification#state
-    log: path.join(
-      env.XDG_STATE_HOME || path.join(homedir, ".local", "state"),
+    logs: path.join(
+      env.XDG_STATE_HOME ?? path.join(homedir, ".local", "state"),
       name,
+      "logs",
     ),
     state: path.join(
-      env.XDG_STATE_HOME || path.join(homedir, ".local", "state"),
+      env.XDG_STATE_HOME ?? path.join(homedir, ".local", "state"),
       name,
     ),
     temp: path.join(tmpdir, username, name),
