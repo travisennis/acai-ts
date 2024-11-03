@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { editor, input, select } from "@inquirer/prompts";
 // import { Readability } from "@mozilla/readability";
-import { type CoreMessage, generateText } from "ai";
+import { type CoreMessage, generateText, UserContent } from "ai";
 import chalk from "chalk";
 import Table from "cli-table3";
 import { globby } from "globby";
@@ -14,7 +14,7 @@ import { saveMessageHistory } from "./config.js";
 import { directoryTree } from "./files.js";
 import { initTool as formatTool } from "./format-tool.js";
 import { initTool as generateEditsTool } from "./generate-edits-tool.js";
-import { getUrlContent } from "./getUrlContent.js";
+import { getUrlBuffer, getUrlContent } from "./getUrlContent.js";
 import { initTool as gitCommitTool } from "./git-commit-tool.js";
 import { initTool as gitDiffTool } from "./git-diff-tool.js";
 import type { Flags } from "./index.js";
@@ -217,8 +217,25 @@ export async function chatCmd(args: Flags, config: any) {
       }
       continue;
     }
+    if (userInput.startsWith("/pdf")) {
+      const url = userInput.slice("/pdf".length).trimStart();
+      if (!(url.startsWith("http://") || url.startsWith("https://"))) {
+        writeError("Invalid URL. Please provide a valid http or https URL.");
+        continue;
+      }
+      writeln(`Loading ${url}`);
+      try {
+        const buffer = await getUrlBuffer(url);
+        promptManager.addBuffer(url, buffer);
+      } catch (error) {
+        if (isError(error)) {
+          writeError(`Error fetching PDF: ${error.message}`);
+        }
+      }
+      continue;
+    }
 
-    const { prompt, useCache } = await match(userInput.trim())
+    const { prompt, buffers, useCache } = await match(userInput.trim())
       .with("/editPrompt", async () => {
         const result = await promptManager.getPrompt("<placeholder>");
         const prompt = await editor({
@@ -228,6 +245,7 @@ export async function chatCmd(args: Flags, config: any) {
         });
         return {
           prompt: prompt,
+          buffers: result.buffers,
           useCache: result.useCache,
         };
       })
@@ -242,6 +260,7 @@ export async function chatCmd(args: Flags, config: any) {
         if (input.trim() === "") {
           return Promise.resolve({
             prompt: "",
+            buffers: [],
             useCache: false,
           });
         }
@@ -249,9 +268,24 @@ export async function chatCmd(args: Flags, config: any) {
       });
 
     if (useCache) {
+      const userContent: UserContent = [
+        {
+          type: "text",
+          text: prompt,
+        },
+      ];
+
+      for (const buffer of buffers) {
+        userContent.push({
+          type: "file",
+          data: buffer,
+          mimeType: "application/pdf",
+        });
+      }
+
       messages.push({
         role: "user",
-        content: prompt,
+        content: userContent,
         experimental_providerMetadata: {
           anthropic: { cacheControl: { type: "ephemeral" } },
         },

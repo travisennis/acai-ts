@@ -3,6 +3,21 @@ import { JSDOM } from "jsdom";
 import { asyncExec, writeln } from "./command.js";
 import { parsePdf } from "./pdfreader.js";
 
+export async function getUrlBuffer(url: string) {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  const contentType = response.headers.get("content-type");
+
+  if (contentType?.includes("application/pdf")) {
+    writeln("Loading pdf...");
+    return response.arrayBuffer();
+  }
+  throw new Error("Invalid content type.");
+}
+
 export async function getUrlContent(url: string) {
   const response = await fetch(url);
 

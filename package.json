@@ -30,7 +30,7 @@
     "check": "npx npm-check-updates  --interactive --format group"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^0.0.53",
+    "@ai-sdk/anthropic": "^0.0.54",
     "@ai-sdk/azure": "^0.0.51",
     "@ai-sdk/openai": "^0.0.71",
     "@inquirer/prompts": "^7.0.1",
@@ -48,7 +48,7 @@
     "marked": "13.0.0",
     "marked-terminal": "^7.2.1",
     "meow": "^13.2.0",
-    "pdfjs-dist": "^4.7.76",
+    "pdfjs-dist": "^4.8.69",
     "pino": "^9.5.0",
     "pino-pretty": "^11.3.0",
     "pino-roll": "^2.2.0",

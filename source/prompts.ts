@@ -44,9 +44,13 @@ export class PromptManager {
   private urlContent: Map<string, string>;
   private urlUpdated = false;
 
+  private bufferMap: Map<string, ArrayBuffer>;
+  private bufferUpdated = false;
+
   constructor() {
     this.fileMap = new Map<string, string>();
     this.urlContent = new Map<string, string>();
+    this.bufferMap = new Map<string, ArrayBuffer>();
   }
 
   addFile(fileName: string, content: string) {
@@ -57,6 +61,11 @@ export class PromptManager {
   addUrl(url: string, content: string) {
     this.urlContent.set(url, content);
     this.urlUpdated = true;
+  }
+
+  addBuffer(url: string, content: ArrayBuffer) {
+    this.bufferMap.set(url, content);
+    this.bufferUpdated = true;
   }
 
   getFiles() {
@@ -89,9 +98,14 @@ export class PromptManager {
       this.urlUpdated = false;
       useCachePrompt = true;
     }
+    if (this.bufferUpdated) {
+      this.bufferUpdated = false;
+      useCachePrompt = true;
+    }
 
     return {
       prompt: userPromptTemplate(context),
+      buffers: this.bufferMap.values().toArray(),
       useCache: useCachePrompt,
     };
   }
