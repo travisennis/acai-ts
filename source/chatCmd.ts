@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { editor, input, select } from "@inquirer/prompts";
 // import { Readability } from "@mozilla/readability";
-import { type CoreMessage, generateText, UserContent } from "ai";
+import { type CoreMessage, generateText, type UserContent } from "ai";
 import chalk from "chalk";
 import Table from "cli-table3";
 import { globby } from "globby";
