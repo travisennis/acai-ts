@@ -1,5 +1,5 @@
 {
-  "name": "acai",
+  "name": "@travisennis/acai",
   "version": "0.0.1",
   "description": "An AI assistant for developing software.",
   "type": "module",
@@ -30,25 +30,25 @@
     "check": "npx npm-check-updates  --interactive --format group"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^1.0.6",
-    "@ai-sdk/azure": "^1.0.13",
-    "@ai-sdk/openai": "^1.0.11",
+    "@ai-sdk/anthropic": "^1.0.8",
+    "@ai-sdk/azure": "^1.0.20",
+    "@ai-sdk/openai": "^1.0.18",
     "@inquirer/prompts": "^7.2.1",
     "@mozilla/readability": "^0.5.0",
-    "ai": "^4.0.22",
+    "ai": "^4.0.33",
     "chalk": "^5.4.1",
     "cli-table3": "^0.6.5",
     "diff": "^7.0.0",
-    "dom-to-semantic-markdown": "^1.2.14",
+    "dom-to-semantic-markdown": "^1.2.16",
     "figlet": "^1.8.0",
     "globby": "^14.0.2",
     "handlebars": "^4.7.8",
     "ignore": "^7.0.0",
-    "jsdom": "^25.0.1",
+    "jsdom": "^26.0.0",
     "marked": "13.0.0",
     "marked-terminal": "^7.2.1",
     "meow": "^13.2.0",
-    "pdfjs-dist": "^4.9.155",
+    "pdfjs-dist": "^4.10.38",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
     "pino-roll": "^2.2.0",
@@ -58,13 +58,13 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@types/diff": "^6.0.0",
+    "@types/diff": "^7.0.0",
     "@types/figlet": "^1.7.0",
     "@types/jsdom": "^21.1.7",
     "@types/marked-terminal": "^6.1.1",
-    "@types/node": "^22.10.2",
+    "@types/node": "^22.10.5",
     "rimraf": "^6.0.1",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.3"
   }
 }
