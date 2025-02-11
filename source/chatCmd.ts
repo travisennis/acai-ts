@@ -84,7 +84,11 @@ export async function chatCmd(
       ...codeInterpreterTool,
     } as const;
 
-    const { text } = await generateText({
+    let totalPromptTokens = 0;
+    let totalCompletionsTokens = 0;
+    let totalTokens = 0;
+
+    const { text, usage } = await generateText({
       model: langModel,
       maxTokens: 8192,
       system: metaPrompt,
@@ -100,6 +104,10 @@ export async function chatCmd(
         ),
       ],
     });
+
+    totalPromptTokens += usage.promptTokens;
+    totalCompletionsTokens += usage.completionTokens;
+    totalTokens += usage.totalTokens;
 
     writeHeader("Enhanced prompt:");
     writeln(text);
@@ -137,6 +145,15 @@ export async function chatCmd(
         writeln(
           chalk.yellow(
             `Cache creation: ${result.providerMetadata?.anthropic.cacheCreationInputTokens}, Cache read: ${result.providerMetadata?.anthropic.cacheReadInputTokens}`,
+          ),
+        );
+        writeHeader("Total Usage:");
+        totalPromptTokens += result.usage.promptTokens;
+        totalCompletionsTokens += result.usage.completionTokens;
+        totalTokens += result.usage.totalTokens;
+        writeln(
+          chalk.green(
+            `Prompt tokens: ${totalPromptTokens}, Completion tokens: ${totalCompletionsTokens}, Total tokens: ${totalTokens}`,
           ),
         );
       },
