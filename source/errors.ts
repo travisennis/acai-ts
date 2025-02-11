@@ -1,4 +1,4 @@
-import { logger } from "./logger.js";
+import { logger } from "./logger.ts";
 
 /**
  * This module defines custom error classes and a global error handler for the Acai project.

@@ -1,6 +1,3 @@
-import Handlebars from "handlebars";
-import { directoryTree } from "./files.js";
-
 export const systemPrompt = `
 You are acai, an AI assistant. You specialize in software development. Assume the software engineer you are working with is experienced and talented. Don't dumb things down. The goal of offering assistance is to make the best software possible. Offer useful guidance in the following areas:
 
@@ -27,142 +24,84 @@ When it comes to tool use keep the following in mind:
 - Provide detailed and clear explanations when using tools, especially for generateEdits.
 - When using generateEdits and gitCommit always confirm with the user before proceeding.
 
+Your current working directory is ${process.cwd()}
+
+Today's date is ${(new Date()).toISOString()}
+
 Provide answers in markdown format unless instructed otherwise. 
 `;
 
-export type UserPromptContext = {
-  fileTree?: string;
-  files?: { path: string; content: string }[];
-  urlContent?: { url: string; content: string }[];
-  prompt?: string;
-};
+export const metaPrompt = `
+Given a basic coding task prompt, enhance it by addressing these key aspects:
 
-export class PromptManager {
-  private fileMap: Map<string, string>;
-  private filesUpdated = false;
+## Context
+- What is the current state of the codebase/system?
+- What problem are we trying to solve?
+- Are there any existing constraints or dependencies?
+- Who are the stakeholders/users affected?
 
-  private urlContent: Map<string, string>;
-  private urlUpdated = false;
+## Scope Definition
+- What specific components/files need to be modified?
+- What should explicitly remain unchanged?
+- Are there related areas that might be impacted?
 
-  private bufferMap: Map<string, ArrayBuffer>;
-  private bufferUpdated = false;
+## Technical Requirements
+- What are the functional requirements?
+- What are the non-functional requirements (performance, security, accessibility, etc.)?
+- Are there specific technical constraints or standards to follow?
 
-  constructor() {
-    this.fileMap = new Map<string, string>();
-    this.urlContent = new Map<string, string>();
-    this.bufferMap = new Map<string, ArrayBuffer>();
-  }
+## Acceptance Criteria
+- How will we verify the changes work as intended?
+- What edge cases should be considered?
+- What specific metrics or benchmarks need to be met?
 
-  addFile(fileName: string, content: string) {
-    this.fileMap.set(fileName, content);
-    this.filesUpdated = true;
-  }
+## Implementation Considerations
+- Are there potential risks or challenges?
+- What testing approach should be used?
+- Are there performance implications to consider?
+- What documentation needs to be updated?
 
-  addUrl(url: string, content: string) {
-    this.urlContent.set(url, content);
-    this.urlUpdated = true;
-  }
+Access to tools to read directory trees read and edit files are available. Keep these tools in mind when enhancing the prompt.
 
-  addBuffer(url: string, content: ArrayBuffer) {
-    this.bufferMap.set(url, content);
-    this.bufferUpdated = true;
-  }
+The purpose of this is to generate a new prompt that can be used as set of instructions to be passed in a subsequent call to accomplish the task in the original. 
 
-  getFiles() {
-    const files = Array.from(this.fileMap, ([path, content]) => ({
-      path,
-      content,
-    }));
-    return files;
-  }
+Example transformation:
+Basic prompt: "Add user authentication to the app"
 
-  getUrls() {
-    const urls = Array.from(this.urlContent, ([url, content]) => ({
-      url,
-      content,
-    }));
-    return urls;
-  }
+Enhanced prompt:
+"Implement user authentication for the web application with the following considerations:
 
-  async getPrompt(prompt: string) {
-    const context: UserPromptContext = { prompt };
-    let useCachePrompt = false;
-    if (this.filesUpdated) {
-      context.fileTree = await directoryTree(process.cwd());
-      context.files = this.getFiles();
-      this.filesUpdated = false;
-      useCachePrompt = true;
-    }
-    if (this.urlUpdated) {
-      context.urlContent = this.getUrls();
-      this.urlUpdated = false;
-      useCachePrompt = true;
-    }
-    if (this.bufferUpdated) {
-      this.bufferUpdated = false;
-      useCachePrompt = true;
-    }
-
-    return {
-      prompt: userPromptTemplate(context),
-      buffers: this.bufferMap.values().toArray(),
-      useCache: useCachePrompt,
-    };
-  }
-}
-
-export const userPromptTemplate = Handlebars.compile<UserPromptContext>(
-  `
-{{#if fileTree}}
-File Tree:
-
-{{fileTree}}
-
-{{/if}}
-{{#if files}}
-File Contents:
-
-{{/if}}
-{{#each files}}
-	{{#if path}}
-File: {{path}}
-
-	{{/if}}
-  {{#if content}}
-{{content}}
-	{{/if}}
-
----
-
-{{/each}}
-{{#if prompt}}
-	{{#if context}}
-"""
-	{{/if}}
-{{/if}}
-{{#if context}}
-{{context}}
-{{/if}}
-{{#if prompt}}
-	{{#if context}}
-"""
-	{{/if}}
-{{/if}}
-{{#if urlContent}}
 Context:
+- Currently using Express.js backend with MongoDB
+- Need to support both regular users and admin roles
+- Must integrate with existing user profile system
 
-{{#each urlContent}}
-url: {{url}}
+Technical Requirements:
+- Implement JWT-based authentication
+- Support email/password and OAuth (Google, GitHub) login methods
+- Include password reset functionality
+- Enforce secure password policies
+- Rate limit authentication attempts
 
-{{content}}
+Acceptance Criteria:
+- Successful login redirects to user dashboard
+- Failed attempts show appropriate error messages
+- Sessions persist across page refreshes
+- Passwords are properly hashed and salted
+- All routes requiring authentication are protected
 
-{{/each}}
-{{/if}}
-{{#if prompt}}
-{{prompt}}
-{{/if}}
-`,
-  {
-    noEscape: true,
-  },
-);
+Implementation Notes:
+- Consider using Passport.js for auth strategies
+- Add appropriate logging for security events
+- Document API endpoints and authentication flow
+- Include unit tests for auth middleware
+- Update API documentation with auth requirements"
+
+You have access to tools that read the file system and git. Use this access to understand the current state of the code base to help with this task.
+
+Your current working directory is ${process.cwd()}
+
+Today's date is ${(new Date()).toISOString()}
+
+Only return the enhanced prompt. 
+`;

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { join } from "node:path";
+import envPaths from "@travisennis/stdlib/env";
 import pino from "pino";
-import envPaths from "./env-paths.js";
 
 const logDir = envPaths("acai").logs;
 fs.mkdirSync(logDir, { recursive: true });
@@ -27,5 +27,3 @@ export const logger = pino(
   },
   transport,
 );
-
-export default logger;

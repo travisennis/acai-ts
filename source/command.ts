@@ -1,8 +1,6 @@
-import { exec } from "node:child_process";
 import chalk, { type ChalkInstance } from "chalk";
 import { marked } from "marked";
 import TerminalRenderer from "marked-terminal";
-import logger from "./logger.js";
 
 marked.setOptions({
   // Define custom renderer
@@ -12,6 +10,10 @@ marked.setOptions({
 export async function writeMd(input: string): Promise<void> {
   const md = await marked.parse(input);
   writeln(md);
+}
+
+export function write(input: string): void {
+  process.stdout.write(input);
 }
 
 export function writeln(input: string): void {
@@ -32,19 +34,4 @@ export function writeHeader(
 
 export function writehr(chalkFn: ChalkInstance = chalk.cyan): void {
   process.stdout.write(chalkFn(`\n${"-".repeat(process.stdout.columns)}\n`));
-}
-
-export function asyncExec(command: string): Promise<string> {
-  const { promise, resolve, reject } = Promise.withResolvers<string>();
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      reject(`Command ${command} execution error: ${error.message}`);
-      return;
-    }
-    if (stderr) {
-      logger.error(`Command ${command} stderr: ${stderr}`);
-    }
-    resolve(stdout);
-  });
-  return promise;
 }

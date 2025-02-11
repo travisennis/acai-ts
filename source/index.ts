@@ -1,11 +1,11 @@
+import { asyncTry } from "@travisennis/stdlib/try";
 import chalk from "chalk";
 import figlet from "figlet";
 import meow from "meow";
-import { chatCmd } from "./chatCmd.js";
-import { writeln } from "./command.js";
-import { readAppConfig } from "./config.js";
-import { handleError } from "./errors.js";
-import { asyncTry, tryOrFail } from "./utils.js";
+import { chatCmd } from "./chatCmd.ts";
+import { writeln } from "./command.ts";
+import { readAppConfig } from "./config.ts";
+import { handleError } from "./errors.ts";
 
 const cli = meow(
   `
@@ -13,15 +13,20 @@ const cli = meow(
 	  $ acai <input>
 
 	Options
-    --provider, -p  Sets the provider to use
+    --model, -m  Sets the model to use
+    --prompt, -p  Sets the prompt
 
 	Examples
-	  $ acai chat --provider anthropic
+	  $ acai chat --model anthopric:sonnet
 `,
   {
     importMeta: import.meta, // This is required
     flags: {
-      provider: {
+      model: {
+        type: "string",
+        shortFlag: "m",
+      },
+      prompt: {
         type: "string",
         shortFlag: "p",
       },
@@ -39,7 +44,7 @@ async function main() {
   const config = await readAppConfig("acai");
 
   // const cmd = cli.input.at(0);
-  tryOrFail(await asyncTry(chatCmd(cli.flags, config)), handleError);
+  (await asyncTry(chatCmd(cli.flags, config))).recover(handleError);
 }
 
 main();

@@ -3,12 +3,11 @@
     "outDir": "./dist",
     "target": "ESNext",
     "module": "ESNext",
-    "declaration": true,
-    "composite": true,
     "moduleResolution": "Bundler",
     "strict": true,
     "skipLibCheck": true,
-    "types": ["node"]
-  },
-  "include": ["source/**/*.ts"]
+    "lib": ["ESNext"],
+    "types": ["node"],
+    "rewriteRelativeImportExtensions": true
+  }
 }
