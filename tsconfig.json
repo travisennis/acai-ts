@@ -3,11 +3,28 @@
     "outDir": "./dist",
     "target": "ESNext",
     "module": "ESNext",
+    "declaration": true,
+    "composite": true,
     "moduleResolution": "Bundler",
     "strict": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "isolatedModules": true,
+    "checkJs": true,
     "skipLibCheck": true,
-    "lib": ["ESNext"],
+    "rewriteRelativeImportExtensions": true,
     "types": ["node"],
-    "rewriteRelativeImportExtensions": true
-  }
+    "lib": ["ESNext"]
+  },
+  "include": ["source/**/*.ts"],
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "_version": "2.0.0"
 }
