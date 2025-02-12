@@ -35,7 +35,7 @@ export async function chatCmd(
     : "anthropic:sonnet";
 
   const stateDir = envPaths("acai").state;
-  const messagesFilePath = path.join(stateDir, "messages.jsonl");
+  const messagesFilePath = path.join(stateDir, "cli-messages.jsonl");
 
   const langModel = wrapLanguageModel(
     languageModel(chosenModel),
