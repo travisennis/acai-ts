@@ -94,13 +94,15 @@ export async function chatCmd(
       system: metaPrompt,
       prompt: prompt,
       maxSteps: 5,
-      tools: fsTools,
+      tools: allTools,
       experimental_activeTools: [
         ...objectKeys(fsTools).filter(
           (tool) => READ_ONLY.includes(tool as any),
           ...objectKeys(gitTools).filter((tool) =>
             GIT_READ_ONLY.includes(tool as any),
           ),
+          "buildCode",
+          "lintCode",
         ),
       ],
     });
