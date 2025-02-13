@@ -129,8 +129,8 @@ export async function chatCmd(
         ) {
           writeHeader("Step");
           writeln(`Assistant: ${event.text}`);
-          writeln(`Tool: ${event.toolCalls[0].toolName}`);
-          writeln(`Result: ${event.toolResults[0].result}`);
+          writeln(`Tool: ${event.toolCalls[0]?.toolName}`);
+          writeln(`Result: ${event.toolResults[0]?.result}`);
         }
       },
       onFinish: (result) => {
