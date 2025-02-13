@@ -25,6 +25,7 @@ import { logger } from "./logger.ts";
 import { metaPrompt, systemPrompt } from "./prompts.ts";
 
 export async function chatCmd(
+  prompt: string,
   args: Flags,
   config: Record<PropertyKey, unknown>,
 ) {
@@ -46,15 +47,6 @@ export async function chatCmd(
 
   writeln(`Model: ${langModel.modelId}`);
   writeHeader("User Input:");
-  let prompt = args.prompt;
-  if (!args.prompt) {
-    prompt = await text(process.stdin);
-  }
-
-  if (!prompt) {
-    return;
-  }
-
   writeln(prompt);
 
   try {
