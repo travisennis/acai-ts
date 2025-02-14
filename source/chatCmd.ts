@@ -152,7 +152,7 @@ export async function chatCmd(
         );
       },
       onError: ({ error }) => {
-        writeError(String(error));
+        writeError(JSON.stringify(error, null, 2));
       },
     });
 
@@ -165,6 +165,10 @@ export async function chatCmd(
 
     result.consumeStream();
   } catch (e) {
-    logger.error(e);
+    if (e instanceof Error) {
+      logger.error(e);
+    } else {
+      logger.error(JSON.stringify(e, null, 2));
+    }
   }
 }
