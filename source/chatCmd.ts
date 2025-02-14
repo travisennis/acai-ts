@@ -157,10 +157,20 @@ export async function chatCmd(
     });
 
     writeHeader("Assistant:");
+    let lastType: "reasoning" | "text-delta" | null = null;
     for await (const chunk of result.fullStream) {
       if (chunk.type === "reasoning" || chunk.type === "text-delta") {
+        if (lastType !== "reasoning" && chunk.type === "reasoning") {
+          write("<think>");
+        } else if (lastType === "reasoning" && chunk.type !== "reasoning") {
+          write("</think>");
+        }
         write(chunk.textDelta);
+        lastType = chunk.type;
       }
+    }
+    if (lastType === "reasoning") {
+      write("</think>");
     }
 
     result.consumeStream();
