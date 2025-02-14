@@ -1,5 +1,4 @@
 import path from "node:path";
-import { text } from "node:stream/consumers";
 import {
   type ModelName,
   isSupportedModel,
@@ -87,6 +86,7 @@ export async function chatCmd(
       prompt: prompt,
       maxSteps: 15,
       tools: allTools,
+      // biome-ignore lint/style/useNamingConvention: <explanation>
       experimental_activeTools: [
         ...objectKeys(fsTools).filter(
           (tool) => READ_ONLY.includes(tool as any),
