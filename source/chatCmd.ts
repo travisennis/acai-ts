@@ -111,7 +111,7 @@ export async function chatCmd(
       maxTokens: 8192,
       system: systemPrompt,
       prompt: text,
-      maxSteps: 15,
+      maxSteps: 30,
       tools: allTools,
       onStepFinish: (event) => {
         if (
