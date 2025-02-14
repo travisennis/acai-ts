@@ -34,7 +34,7 @@ Provide answers in markdown format unless instructed otherwise.
 `;
 
 export const metaPrompt = `
-Given a basic coding task prompt, enhance it by addressing these key aspects:
+Given a basic software engineering task prompt, enhance it by addressing these key aspects:
 
 ## Context
 - What is the current state of the codebase/system?
