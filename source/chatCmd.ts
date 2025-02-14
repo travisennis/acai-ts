@@ -85,7 +85,7 @@ export async function chatCmd(
       maxTokens: 8192,
       system: metaPrompt,
       prompt: prompt,
-      maxSteps: 5,
+      maxSteps: 15,
       tools: allTools,
       experimental_activeTools: [
         ...objectKeys(fsTools).filter(
