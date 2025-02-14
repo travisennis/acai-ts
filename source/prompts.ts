@@ -28,6 +28,8 @@ Your current working directory is ${process.cwd()}
 
 Today's date is ${(new Date()).toISOString()}
 
+Use the directoryTree tool to get an overview of the project layout before trying to read and write files.
+
 Provide answers in markdown format unless instructed otherwise. 
 `;
 
@@ -61,11 +63,10 @@ Given a basic coding task prompt, enhance it by addressing these key aspects:
 - Are there performance implications to consider?
 - What documentation needs to be updated?
 
-Access to tools to read directory trees read and edit files are available. Keep these tools in mind when enhancing the prompt.
-
 The purpose of this is to generate a new prompt that can be used as set of instructions to be passed in a subsequent call to accomplish the task in the original. 
 
 Example transformation:
+<example>
 Basic prompt: "Add user authentication to the app"
 
 Enhanced prompt:
@@ -96,8 +97,11 @@ Implementation Notes:
 - Document API endpoints and authentication flow
 - Include unit tests for auth middleware
 - Update API documentation with auth requirements"
+</example>
 
 You have access to tools that read the file system and git. Use this access to understand the current state of the code base to help with this task.
+
+Use the directoryTree tool to get an overview of the project layout before trying to read files.
 
 Your current working directory is ${process.cwd()}
 
