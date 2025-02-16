@@ -8,6 +8,7 @@ import {
 import { auditMessage } from "@travisennis/acai-core/middleware";
 import envPaths from "@travisennis/stdlib/env";
 import { type LanguageModel, generateText } from "ai";
+import { writeln } from "./command.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 
@@ -42,7 +43,7 @@ export async function genEvalCmd(
     generatorPrompt,
   );
 
-  return `${result[2]}\n\nFinal result:\n${result[0]}`;
+  writeln(`${result[2]}\n\nFinal result:\n${result[0]}`);
 }
 
 interface ChainOfThoughtItem {

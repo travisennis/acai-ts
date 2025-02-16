@@ -1,12 +1,14 @@
+import { text } from "node:stream/consumers";
 import { asyncTry } from "@travisennis/stdlib/try";
 import chalk from "chalk";
 import figlet from "figlet";
 import meow from "meow";
-import { chatCmd } from "./chatCmd.ts";
+import { askCmd } from "./askCmd.ts";
 import { writeError, writeln } from "./command.ts";
 import { readAppConfig } from "./config.ts";
 import { handleError } from "./errors.ts";
-import { text } from "node:stream/consumers";
+import { genEvalCmd } from "./genEvalCmd.ts";
+import { instructCmd } from "./instructCmd.ts";
 
 const cli = meow(
   `
@@ -54,8 +56,25 @@ async function main() {
 
   const config = await readAppConfig("acai");
 
-  // const cmd = cli.input.at(0);
-  (await asyncTry(chatCmd(prompt, cli.flags, config))).recover(handleError);
+  const cmd = cli.input.at(0);
+  switch (cmd) {
+    case "ask": {
+      (await asyncTry(askCmd(prompt, cli.flags, config))).recover(handleError);
+      break;
+    }
+    case "genEval": {
+      (await asyncTry(genEvalCmd(prompt, cli.flags, config))).recover(
+        handleError,
+      );
+      break;
+    }
+    case "instruct":
+    default: {
+      (await asyncTry(instructCmd(prompt, cli.flags, config))).recover(
+        handleError,
+      );
+    }
+  }
 }
 
 main();
