@@ -16,14 +16,14 @@ import {
 } from "@travisennis/acai-core/tools";
 import envPaths from "@travisennis/stdlib/env";
 import { objectKeys } from "@travisennis/stdlib/object";
-import { generateText, streamText } from "ai";
+import { generateObject, generateText, NoSuchToolError, streamText } from "ai";
 import chalk from "chalk";
 import { write, writeError, writeHeader, writeln } from "./command.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import { metaPrompt, systemPrompt } from "./prompts.ts";
 
-export async function chatCmd(
+export async function instructCmd(
   prompt: string,
   args: Flags,
   config: Record<PropertyKey, unknown>,
@@ -88,14 +88,14 @@ export async function chatCmd(
       tools: allTools,
       // biome-ignore lint/style/useNamingConvention: <explanation>
       experimental_activeTools: [
-        ...objectKeys(fsTools).filter(
-          (tool) => READ_ONLY.includes(tool as any),
-          ...objectKeys(gitTools).filter((tool) =>
-            GIT_READ_ONLY.includes(tool as any),
-          ),
-          "buildCode",
-          "lintCode",
+        ...objectKeys(fsTools).filter((tool) =>
+          READ_ONLY.includes(tool as any),
         ),
+        ...objectKeys(gitTools).filter((tool) =>
+          GIT_READ_ONLY.includes(tool as any),
+        ),
+        "buildCode",
+        "lintCode",
       ],
     });
 
@@ -113,6 +113,33 @@ export async function chatCmd(
       prompt: text,
       maxSteps: 30,
       tools: allTools,
+      // biome-ignore lint/style/useNamingConvention: <explanation>
+      experimental_repairToolCall: async ({
+        toolCall,
+        tools,
+        parameterSchema,
+        error,
+      }) => {
+        if (NoSuchToolError.isInstance(error)) {
+          return null; // do not attempt to fix invalid tool names
+        }
+
+        const tool = tools[toolCall.toolName as keyof typeof tools];
+
+        const { object: repairedArgs } = await generateObject({
+          model: languageModel("openai:gpt-4o-structured"),
+          schema: tool.parameters,
+          prompt: [
+            `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
+            JSON.stringify(toolCall.args),
+            "The tool accepts the following schema:",
+            JSON.stringify(parameterSchema(toolCall)),
+            "Please fix the arguments.",
+          ].join("\n"),
+        });
+
+        return { ...toolCall, args: JSON.stringify(repairedArgs) };
+      },
       onStepFinish: (event) => {
         if (
           event.stepType === "initial" &&
@@ -161,16 +188,16 @@ export async function chatCmd(
     for await (const chunk of result.fullStream) {
       if (chunk.type === "reasoning" || chunk.type === "text-delta") {
         if (lastType !== "reasoning" && chunk.type === "reasoning") {
-          write("<think>");
+          write("\n<think>\n");
         } else if (lastType === "reasoning" && chunk.type !== "reasoning") {
-          write("</think>");
+          write("\n</think>\n");
         }
         write(chunk.textDelta);
         lastType = chunk.type;
       }
     }
     if (lastType === "reasoning") {
-      write("</think>");
+      write("\n</think>\n");
     }
 
     result.consumeStream();
