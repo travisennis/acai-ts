@@ -45,8 +45,9 @@ async function main() {
     prompt = await text(process.stdin);
   }
 
-  if (!prompt) {
+  if (!prompt || prompt.trim().length === 0) {
     writeError("What am I supposed to do without a prompt?");
+    cli.showHelp(1);
     return;
   }
 
@@ -68,11 +69,15 @@ async function main() {
       );
       break;
     }
-    case "instruct":
-    default: {
+    case "instruct": {
       (await asyncTry(instructCmd(prompt, cli.flags, config))).recover(
         handleError,
       );
+      break;
+    }
+    default: {
+      console.error("invalid mode");
+      cli.showHelp(1);
     }
   }
 }
