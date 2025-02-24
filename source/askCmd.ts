@@ -1,17 +1,48 @@
 import path from "node:path";
 import {
   type ModelName,
+  formatFile,
   isSupportedModel,
   languageModel,
   wrapLanguageModel,
 } from "@travisennis/acai-core";
 import { auditMessage } from "@travisennis/acai-core/middleware";
 import envPaths from "@travisennis/stdlib/env";
-import { streamText } from "ai";
+import { generateText, streamText } from "ai";
 import chalk from "chalk";
 import { write, writeError, writeHeader, writeln } from "./command.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
+import { directoryTree } from "@travisennis/acai-core/tools";
+import { readFileSync } from "node:fs";
+
+const retrieverSystemPrompt = (fileStructure: string) => {
+  return `The following files are found in the repository:
+${fileStructure}
+Please provide a list of files that you would like to search for answering the user query.
+Enclose the file paths in a list in a markdown code block as shown below:
+\`\`\`
+1. [[ filepath_1 ]]\n
+2. [[ filepath_2 ]]\n
+3. [[ filepath_3 ]]\n
+...
+\`\`\`
+Think step-by-step and strategically reason about the files you choose to maximize the chances of finding the answer to the query. Only pick the files that are most likely to contain the information you are looking for in decreasing order of relevance. Once you have selected the files, please submit your response in the appropriate format mentioned above (markdown numbered list in a markdown code block). The filepath within [[ and ]] should contain the complete path of the file in the repository.`;
+};
+
+function extractFilePaths(text: string): string[] {
+  const paths: string[] = [];
+  const lines = text.split("\n");
+
+  for (const line of lines) {
+    const match = line.match(/\[\[\s*(.*?)\s*\]\]/);
+    if (match?.[1]) {
+      paths.push(match[1]);
+    }
+  }
+
+  return paths;
+}
 
 export async function askCmd(
   prompt: string,
@@ -20,18 +51,25 @@ export async function askCmd(
 ) {
   logger.info(config, "Config:");
 
+  const now = new Date();
+
   const chosenModel: ModelName = isSupportedModel(args.model)
     ? args.model
     : "deepseek:deepseek-reasoner";
 
   const stateDir = envPaths("acai").state;
-  const messagesFilePath = path.join(stateDir, "cli-messages.jsonl");
+  const messagesFilePath = path.join(
+    stateDir,
+    `${now.toISOString()}-ask-message.json`,
+  );
+  const fileRetrieverFilePath = path.join(
+    stateDir,
+    `${now.toISOString()}-file-retriever-message.json`,
+  );
 
   const langModel = wrapLanguageModel(
     languageModel(chosenModel),
-    // usage,
-    // log,
-    auditMessage({ path: messagesFilePath }),
+    auditMessage({ path: messagesFilePath, app: "ask" }),
   );
 
   writeln(`Model: ${langModel.modelId}`);
@@ -43,10 +81,36 @@ export async function askCmd(
     let totalCompletionsTokens = 0;
     let totalTokens = 0;
 
+    const { text } = await generateText({
+      model: wrapLanguageModel(
+        languageModel("google:flash2"),
+        auditMessage({ path: fileRetrieverFilePath, app: "file-retriever" }),
+      ),
+      system: retrieverSystemPrompt(await directoryTree(process.cwd())),
+      prompt,
+    });
+
+    const usefulFiles = extractFilePaths(text);
+
+    writeHeader("Reading files:");
+    for (const file of usefulFiles) {
+      writeln(file);
+    }
+
+    const finalPrompt = `${usefulFiles
+      .map((filePath) => {
+        return formatFile(
+          filePath,
+          readFileSync(path.join(process.cwd(), "..", filePath), "utf-8"),
+          "bracket",
+        );
+      })
+      .join("\n\n")}${prompt}`;
+
     const result = streamText({
       model: langModel,
       maxTokens: 8000,
-      prompt: prompt,
+      prompt: finalPrompt,
       temperature: 0.6,
       maxSteps: 30,
       onStepFinish: (event) => {
@@ -72,7 +136,7 @@ export async function askCmd(
         );
         writeln(
           chalk.yellow(
-            `Cache creation: ${result.providerMetadata?.anthropic.cacheCreationInputTokens}, Cache read: ${result.providerMetadata?.anthropic.cacheReadInputTokens}`,
+            `Cache creation: ${result.providerMetadata?.anthropic?.cacheCreationInputTokens}, Cache read: ${result.providerMetadata?.anthropic?.cacheReadInputTokens}`,
           ),
         );
         writeHeader("Total Usage:");
@@ -109,6 +173,7 @@ export async function askCmd(
 
     result.consumeStream();
   } catch (e) {
+    writeError((e as Error).message);
     if (e instanceof Error) {
       logger.error(e);
     } else {

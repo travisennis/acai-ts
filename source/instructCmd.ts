@@ -30,18 +30,26 @@ export async function instructCmd(
 ) {
   logger.info(config, "Config:");
 
+  const now = new Date();
+
   const chosenModel: ModelName = isSupportedModel(args.model)
     ? args.model
     : "anthropic:sonnet";
 
   const stateDir = envPaths("acai").state;
-  const messagesFilePath = path.join(stateDir, "cli-messages.jsonl");
+  const messagesFilePath = path.join(
+    stateDir,
+    `${now.toISOString()}-instruct-message-.json`,
+  );
+
+  const metaPromptFilePath = path.join(
+    stateDir,
+    `${now.toISOString()}-instruct-meta-prompt-message.json`,
+  );
 
   const langModel = wrapLanguageModel(
     languageModel(chosenModel),
-    // usage,
-    // log,
-    auditMessage({ path: messagesFilePath }),
+    auditMessage({ path: messagesFilePath, app: "instruct" }),
   );
 
   writeln(`Model: ${langModel.modelId}`);
@@ -80,7 +88,10 @@ export async function instructCmd(
     let totalTokens = 0;
 
     const { text, usage } = await generateText({
-      model: langModel,
+      model: wrapLanguageModel(
+        languageModel(chosenModel),
+        auditMessage({ path: metaPromptFilePath, app: "instruct-meta-prompt" }),
+      ),
       maxTokens: 8192,
       system: metaPrompt,
       prompt: prompt,

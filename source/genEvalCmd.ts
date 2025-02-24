@@ -19,6 +19,8 @@ export async function genEvalCmd(
 ) {
   logger.info(config, "Config:");
 
+  const now = new Date();
+
   const model = args.model;
   const chosenModel: ModelName = isSupportedModel(model)
     ? model
@@ -26,13 +28,14 @@ export async function genEvalCmd(
 
   // Define the path to the JSONL file, you can change this to your desired local path
   const stateDir = envPaths("acai").state;
-  const messagesFilePath = path.join(stateDir, "messages.jsonl");
+  const messagesFilePath = path.join(
+    stateDir,
+    `${now.toISOString()}-gen-eval-message.json`,
+  );
 
   const langModel = wrapLanguageModel(
     languageModel(chosenModel),
-    // log,
-    // usage,
-    auditMessage({ path: messagesFilePath }),
+    auditMessage({ path: messagesFilePath, app: "gen-eval" }),
   );
 
   // Execute the loop
