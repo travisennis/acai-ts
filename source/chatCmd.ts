@@ -113,7 +113,7 @@ export async function chatCmd(
   const stateDir = envPaths("acai").state;
   const messagesFilePath = path.join(
     stateDir,
-    `${now.toISOString()}-chat-message-.json`,
+    `${now.toISOString()}-chat-message.json`,
   );
 
   const langModel = wrapLanguageModel(
@@ -130,7 +130,7 @@ export async function chatCmd(
   let initialPrompt = prompt;
   while (true) {
     writeHeader("Input:");
-    writeln(`Model: ${chosenModel}`);
+    writeln(`Model: ${langModel.modelId}`);
     writeln("");
 
     const userInput =
@@ -156,6 +156,9 @@ export async function chatCmd(
         await saveMessageHistory(messages);
         messages.length = 0;
       }
+      totalPromptTokens = 0;
+      totalCompletionsTokens = 0;
+      totalTokens = 0;
       continue;
     }
 
