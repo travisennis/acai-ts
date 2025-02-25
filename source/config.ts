@@ -8,6 +8,7 @@ const ProjectConfigSchema = z.object({
   build: z.string().optional(),
   lint: z.string().optional(),
   format: z.string().optional(),
+  test: z.string().optional(),
 });
 
 type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
