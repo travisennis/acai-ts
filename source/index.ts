@@ -44,27 +44,27 @@ async function main() {
   const cmd = cli.input.at(0);
 
   let prompt = cli.flags.prompt ?? "";
-  if (cmd !== "chat") {
-    if (!cli.flags.prompt) {
+  if (!cli.flags.prompt) {
+    // Check if there's data available on stdin
+    if (process.stdin.isTTY) {
+      // Terminal is interactive, no piped input
+      // Continue with empty prompt
+    } else {
       try {
-        const timeoutPromise = new Promise<string>((_, reject) => {
-          setTimeout(
-            () => reject(new Error("No stdin data received within timeout")),
-            5_000,
-          ); // 5 second timeout
-        });
-
-        prompt = await Promise.race([text(process.stdin), timeoutPromise]);
+        // Non-TTY stdin means data is being piped in
+        const stdinData = await text(process.stdin);
+        prompt = stdinData;
       } catch (error) {
         console.error("Error reading stdin:", (error as Error).message);
       }
     }
+  }
 
-    if (!prompt || prompt.trim().length === 0) {
-      writeError("What am I supposed to do without a prompt?");
-      cli.showHelp(1);
-      return;
-    }
+  // For commands other than "chat", ensure we have a prompt
+  if (cmd !== "chat" && (!prompt || prompt.trim().length === 0)) {
+    writeError("What am I supposed to do without a prompt?");
+    cli.showHelp(1);
+    return;
   }
 
   writeln(chalk.magenta(figlet.textSync("acai")));
