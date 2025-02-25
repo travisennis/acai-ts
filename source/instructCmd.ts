@@ -13,6 +13,7 @@ import {
   createCodeTools,
   createFileSystemTools,
   createGitTools,
+  createGrepTools,
 } from "@travisennis/acai-core/tools";
 import envPaths from "@travisennis/stdlib/env";
 import { objectKeys } from "@travisennis/stdlib/object";
@@ -76,11 +77,16 @@ export async function instructCmd(
       sendData: async (msg) => writeln(await msg.data),
     });
 
+    const grepTool = createGrepTools({
+      sendData: async (msg) => writeln(await msg.data),
+    });
+
     const allTools = {
       ...codeTools,
       ...fsTools,
       ...gitTools,
       ...codeInterpreterTool,
+      ...grepTool,
     } as const;
 
     let totalPromptTokens = 0;
