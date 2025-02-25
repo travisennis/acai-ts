@@ -9,6 +9,7 @@ import { readAppConfig } from "./config.ts";
 import { handleError } from "./errors.ts";
 import { genEvalCmd } from "./genEvalCmd.ts";
 import { instructCmd } from "./instructCmd.ts";
+import { chatCmd } from "./chatCmd.ts";
 
 const cli = meow(
   `
@@ -40,15 +41,30 @@ const cli = meow(
 export type Flags = typeof cli.flags;
 
 async function main() {
-  let prompt = cli.flags.prompt;
-  if (!cli.flags.prompt) {
-    prompt = await text(process.stdin);
-  }
+  const cmd = cli.input.at(0);
 
-  if (!prompt || prompt.trim().length === 0) {
-    writeError("What am I supposed to do without a prompt?");
-    cli.showHelp(1);
-    return;
+  let prompt = cli.flags.prompt ?? "";
+  if (cmd !== "chat") {
+    if (!cli.flags.prompt) {
+      try {
+        const timeoutPromise = new Promise<string>((_, reject) => {
+          setTimeout(
+            () => reject(new Error("No stdin data received within timeout")),
+            5_000,
+          ); // 5 second timeout
+        });
+
+        prompt = await Promise.race([text(process.stdin), timeoutPromise]);
+      } catch (error) {
+        console.error("Error reading stdin:", (error as Error).message);
+      }
+    }
+
+    if (!prompt || prompt.trim().length === 0) {
+      writeError("What am I supposed to do without a prompt?");
+      cli.showHelp(1);
+      return;
+    }
   }
 
   writeln(chalk.magenta(figlet.textSync("acai")));
@@ -57,10 +73,13 @@ async function main() {
 
   const config = await readAppConfig("acai");
 
-  const cmd = cli.input.at(0);
   switch (cmd) {
     case "ask": {
       (await asyncTry(askCmd(prompt, cli.flags, config))).recover(handleError);
+      break;
+    }
+    case "chat": {
+      (await asyncTry(chatCmd(prompt, cli.flags, config))).recover(handleError);
       break;
     }
     case "genEval": {

@@ -10,7 +10,13 @@
   "bin": {
     "acai": "./dist/index.js"
   },
-  "keywords": ["cli", "ai", "llm", "coding", "assistant"],
+  "keywords": [
+    "cli",
+    "ai",
+    "llm",
+    "coding",
+    "assistant"
+  ],
   "author": "Travis Ennis",
   "license": "MIT",
   "scripts": {
@@ -40,6 +46,7 @@
     "@travisennis/stdlib": "^0.0.4",
     "ai": "^4.1.46",
     "chalk": "^5.4.1",
+    "cli-table3": "^0.6.5",
     "figlet": "^1.8.0",
     "marked": "15.0.7",
     "marked-terminal": "^7.3.0",
