@@ -16,7 +16,7 @@ import {
 } from "@travisennis/acai-core/tools";
 import envPaths from "@travisennis/stdlib/env";
 import { objectKeys } from "@travisennis/stdlib/object";
-import { generateObject, generateText, NoSuchToolError, streamText } from "ai";
+import { NoSuchToolError, generateObject, generateText, streamText } from "ai";
 import chalk from "chalk";
 import { write, writeError, writeHeader, writeln } from "./command.ts";
 import type { Flags } from "./index.ts";

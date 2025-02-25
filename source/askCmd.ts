@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
   type ModelName,
@@ -7,14 +8,13 @@ import {
   wrapLanguageModel,
 } from "@travisennis/acai-core";
 import { auditMessage } from "@travisennis/acai-core/middleware";
+import { directoryTree } from "@travisennis/acai-core/tools";
 import envPaths from "@travisennis/stdlib/env";
 import { generateText, streamText } from "ai";
 import chalk from "chalk";
 import { write, writeError, writeHeader, writeln } from "./command.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
-import { directoryTree } from "@travisennis/acai-core/tools";
-import { readFileSync } from "node:fs";
 
 const retrieverSystemPrompt = (fileStructure: string) => {
   return `The following files are found in the repository:
