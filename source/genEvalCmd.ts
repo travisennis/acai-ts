@@ -1,6 +1,7 @@
 import path from "node:path";
 import {
   type ModelName,
+  dedent,
   isSupportedModel,
   languageModel,
   wrapLanguageModel,
@@ -69,7 +70,7 @@ function extractXml(text: string, tag: string): string {
   return match ? match[1] : "";
 }
 
-const evaluatorPrompt = `
+const evaluatorPrompt = dedent`
 Evaluate this following code implementation for:
 1. code correctness
 2. time complexity
@@ -85,7 +86,7 @@ What needs improvement and why.
 </feedback>
 `;
 
-const generatorPrompt = `
+const generatorPrompt = dedent`
 Your goal is to complete the task based on <user input>. If there are feedback 
 from your previous generations, you should reflect on them to improve your solution
 
@@ -128,7 +129,7 @@ async function generate(
 }
 
 function formatGenerateOutput([thoughts, result]: [string, string]): string {
-  return `
+  return dedent`
 === GENERATION START ===
 Thoughts:
 ${thoughts}
