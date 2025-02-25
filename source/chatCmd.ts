@@ -13,6 +13,7 @@ import {
   createCodeTools,
   createFileSystemTools,
   createGitTools,
+  createGrepTools,
 } from "@travisennis/acai-core/tools";
 import envPaths from "@travisennis/stdlib/env";
 import {
@@ -26,6 +27,7 @@ import Table from "cli-table3";
 import { write, writeError, writeHeader, writeln } from "./command.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
+import { systemPrompt } from "./prompts.ts";
 
 async function saveMessageHistory(messages: CoreMessage[]): Promise<void> {
   const stateDir = envPaths("acai").state;
@@ -162,6 +164,31 @@ export async function chatCmd(
       continue;
     }
 
+    let thinkingBudget = 2000;
+    if (
+      userInput.includes("think harder") ||
+      userInput.includes("think intensely") ||
+      userInput.includes("think longer") ||
+      userInput.includes("think really hard") ||
+      userInput.includes("think super hard") ||
+      userInput.includes("think very hard") ||
+      userInput.includes("ultrathink")
+    ) {
+      thinkingBudget = 31999;
+    }
+    if (
+      userInput.includes("think about it") ||
+      userInput.includes("think a lot") ||
+      userInput.includes("think hard") ||
+      userInput.includes("think more") ||
+      userInput.includes("megathink")
+    ) {
+      thinkingBudget = 10000;
+    }
+    if (userInput.includes("think")) {
+      thinkingBudget = 4000;
+    }
+
     messages.push({
       role: "user",
       content: userInput,
@@ -187,21 +214,27 @@ export async function chatCmd(
         sendData: async (msg) => writeln(await msg.data),
       });
 
+      const grepTool = createGrepTools({
+        sendData: async (msg) => writeln(await msg.data),
+      });
+
       const allTools = {
         ...codeTools,
         ...fsTools,
         ...gitTools,
         ...codeInterpreterTool,
+        ...grepTool,
       } as const;
 
       const result = streamText({
         model: langModel,
-        maxTokens: 20_000,
+        maxTokens: Math.max(8_096, thinkingBudget * 1.5),
+        system: systemPrompt,
         messages: messages,
         maxSteps: 30,
         providerOptions: {
           anthropic: {
-            thinking: { type: "enabled", budgetTokens: 12_000 },
+            thinking: { type: "enabled", budgetTokens: thinkingBudget },
           },
         },
         tools: allTools,
@@ -296,6 +329,7 @@ export async function chatCmd(
 
       result.consumeStream();
     } catch (e) {
+      writeError((e as Error).message);
       if (e instanceof Error) {
         logger.error(e);
       } else {
