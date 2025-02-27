@@ -14,6 +14,7 @@ import {
   createFileSystemTools,
   createGitTools,
   createGrepTools,
+  createThinkTools,
 } from "@travisennis/acai-core/tools";
 import envPaths from "@travisennis/stdlib/env";
 import {
@@ -24,7 +25,13 @@ import {
 } from "ai";
 import chalk from "chalk";
 import Table from "cli-table3";
-import { write, writeError, writeHeader, writeln } from "./command.ts";
+import {
+  write,
+  writeBox,
+  writeError,
+  writeHeader,
+  writeln,
+} from "./command.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import { systemPrompt } from "./prompts.ts";
@@ -33,19 +40,10 @@ async function saveMessageHistory(messages: CoreMessage[]): Promise<void> {
   const stateDir = envPaths("acai").state;
   await mkdir(stateDir, { recursive: true });
   const timestamp = new Date().toISOString().replace(/:/g, "-");
-  const fileName = `message-history-${timestamp}.md`;
+  const fileName = `message-history-${timestamp}.json`;
   const filePath = path.join(stateDir, fileName);
 
-  const formattedContent = messages
-    .map((message) => {
-      const prefix = message.role === "user" ? "User:" : "Assistant:";
-      return Array.isArray(message.content)
-        ? `${prefix}\n${JSON.stringify(message.content, null, 2)}`
-        : `${prefix}\n${message.content}`;
-    })
-    .join("\n\n");
-
-  await writeFile(filePath, formattedContent);
+  await writeFile(filePath, JSON.stringify(messages, null, 2));
 }
 
 interface ChatCommand {
@@ -197,25 +195,35 @@ export async function chatCmd(
     try {
       const fsTools = await createFileSystemTools({
         workingDir: process.cwd(),
-        sendData: async (msg) => writeln(await msg.data),
+        sendData: async (msg) =>
+          writeBox(msg.event ?? "tool-event", await msg.data),
       });
 
       const gitTools = await createGitTools({
         workingDir: process.cwd(),
-        sendData: async (msg) => writeln(await msg.data),
+        sendData: async (msg) =>
+          writeBox(msg.event ?? "tool-event", await msg.data),
       });
 
       const codeTools = createCodeTools({
         baseDir: process.cwd(),
-        sendData: async (msg) => writeln(await msg.data),
+        sendData: async (msg) =>
+          writeBox(msg.event ?? "tool-event", await msg.data),
       });
 
       const codeInterpreterTool = createCodeInterpreterTool({
-        sendData: async (msg) => writeln(await msg.data),
+        sendData: async (msg) =>
+          writeBox(msg.event ?? "tool-event", await msg.data),
       });
 
       const grepTool = createGrepTools({
-        sendData: async (msg) => writeln(await msg.data),
+        sendData: async (msg) =>
+          writeBox(msg.event ?? "tool-event", await msg.data),
+      });
+
+      const thinkTool = createThinkTools({
+        sendData: async (msg) =>
+          writeBox(msg.event ?? "tool-event", await msg.data),
       });
 
       const allTools = {
@@ -224,6 +232,7 @@ export async function chatCmd(
         ...gitTools,
         ...codeInterpreterTool,
         ...grepTool,
+        ...thinkTool,
       } as const;
 
       const result = streamText({
@@ -271,17 +280,21 @@ export async function chatCmd(
             event.toolCalls.length > 0 &&
             event.text.length > 0
           ) {
-            writeHeader("Step");
-            writeln(`Assistant: ${event.text}`);
-            writeln(`Tool: ${event.toolCalls[0]?.toolName}`);
-            writeln(`Result: ${event.toolResults[0]?.result}`);
+            writeBox(
+              "Step",
+              `Assistant: ${event.text}\nTool: ${event.toolCalls[0]?.toolName}\nResult: ${event.toolResults[0]?.result}`,
+            );
+            // writeHeader("Step");
+            // writeln(`Assistant: ${event.text}`);
+            // writeln(`Tool: ${event.toolCalls[0]?.toolName}`);
+            // writeln(`Result: ${event.toolResults[0]?.result}`);
           }
         },
         onFinish: (result) => {
           messages.push(...result.response.messages);
 
           writeln("\n\n"); // this puts an empty line after the streamed response.
-          writeHeader("Steps:");
+          writeHeader("Tool use:");
           writeln(`Steps: ${result.steps.length}`);
 
           writeHeader("Usage:");
