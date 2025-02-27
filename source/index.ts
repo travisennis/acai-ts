@@ -9,7 +9,7 @@ import { readAppConfig } from "./config.ts";
 import { handleError } from "./errors.ts";
 import { genEvalCmd } from "./genEvalCmd.ts";
 import { instructCmd } from "./instructCmd.ts";
-import { chatCmd } from "./chatCmd.ts";
+import { chatCmd } from "./repl.ts";
 
 const cli = meow(
   `
