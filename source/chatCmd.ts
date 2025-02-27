@@ -41,6 +41,22 @@ import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import { systemPrompt } from "./prompts.ts";
 
+const THINKING_TIERS = [
+  {
+    pattern:
+      /\b(ultrathink|think super hard|think really hard|think intensely)\b/i,
+    budget: 31999,
+  },
+  {
+    pattern: /\b(megathink|think (very )?hard|think (a lot|more|about it))\b/i,
+    budget: 10000,
+  },
+  {
+    pattern: /\bthink\b/i, // Catch-all for standalone "think"
+    budget: 4000,
+  },
+];
+
 async function saveMessageHistory(messages: CoreMessage[]): Promise<void> {
   const stateDir = envPaths("acai").state;
   await mkdir(stateDir, { recursive: true });
@@ -201,29 +217,13 @@ export async function chatCmd(
       continue;
     }
 
-    let thinkingBudget = 2000;
-    if (
-      userInput.includes("think harder") ||
-      userInput.includes("think intensely") ||
-      userInput.includes("think longer") ||
-      userInput.includes("think really hard") ||
-      userInput.includes("think super hard") ||
-      userInput.includes("think very hard") ||
-      userInput.includes("ultrathink")
-    ) {
-      thinkingBudget = 31999;
-    }
-    if (
-      userInput.includes("think about it") ||
-      userInput.includes("think a lot") ||
-      userInput.includes("think hard") ||
-      userInput.includes("think more") ||
-      userInput.includes("megathink")
-    ) {
-      thinkingBudget = 10000;
-    }
-    if (userInput.includes("think")) {
-      thinkingBudget = 4000;
+    // determine our thinking token budget for this request
+    let thinkingBudget = 2000; // Default
+    for (const tier of THINKING_TIERS) {
+      if (tier.pattern.test(userInput)) {
+        thinkingBudget = tier.budget;
+        break; // Use highest priority match
+      }
     }
 
     messages.appendUserMessage(createUserMessage(userInput));
