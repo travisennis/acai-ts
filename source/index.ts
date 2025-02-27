@@ -95,7 +95,7 @@ async function main() {
       break;
     }
     default: {
-      console.error("invalid mode");
+      writeError(`Invalid mode: ${cmd}`);
       cli.showHelp(1);
     }
   }
