@@ -15,7 +15,7 @@ import {
   createGitTools,
   createGrepTools,
 } from "@travisennis/acai-core/tools";
-import envPaths from "@travisennis/stdlib/env";
+import { envPaths } from "@travisennis/stdlib/env";
 import { objectKeys } from "@travisennis/stdlib/object";
 import { NoSuchToolError, generateObject, generateText, streamText } from "ai";
 import chalk from "chalk";

@@ -19,7 +19,7 @@ import {
   createGrepTools,
   createThinkTools,
 } from "@travisennis/acai-core/tools";
-import envPaths from "@travisennis/stdlib/env";
+import { envPaths } from "@travisennis/stdlib/env";
 import {
   type CoreMessage,
   NoSuchToolError,

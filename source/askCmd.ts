@@ -2,14 +2,13 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
   type ModelName,
-  dedent,
   formatFile,
   isSupportedModel,
   languageModel,
   wrapLanguageModel,
 } from "@travisennis/acai-core";
 import { auditMessage } from "@travisennis/acai-core/middleware";
-import envPaths from "@travisennis/stdlib/env";
+import { envPaths } from "@travisennis/stdlib/env";
 import { streamText } from "ai";
 import chalk from "chalk";
 import { write, writeError, writeHeader, writeln } from "./command.ts";

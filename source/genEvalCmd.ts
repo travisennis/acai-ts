@@ -7,7 +7,7 @@ import {
   wrapLanguageModel,
 } from "@travisennis/acai-core";
 import { auditMessage } from "@travisennis/acai-core/middleware";
-import envPaths from "@travisennis/stdlib/env";
+import { envPaths } from "@travisennis/stdlib/env";
 import { type LanguageModel, generateText } from "ai";
 import { writeln } from "./command.ts";
 import type { Flags } from "./index.ts";

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { join } from "node:path";
-import envPaths from "@travisennis/stdlib/env";
+import { envPaths } from "@travisennis/stdlib/env";
 import pino from "pino";
 
 const logDir = envPaths("acai").logs;

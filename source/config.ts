@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import envPaths from "@travisennis/stdlib/env";
+import { envPaths } from "@travisennis/stdlib/env";
 import { z } from "zod";
 import { jsonParser } from "./parsing.ts";
 
