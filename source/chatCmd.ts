@@ -33,6 +33,7 @@ import {
   writeHeader,
   writeln,
 } from "./command.ts";
+import { readProjectConfig } from "./config.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import { systemPrompt } from "./prompts.ts";
@@ -245,6 +246,7 @@ export async function chatCmd(
 
       const codeTools = createCodeTools({
         baseDir: process.cwd(),
+        config: await readProjectConfig(),
         sendData: async (msg) =>
           writeBox(msg.event ?? "tool-event", await msg.data),
       });
