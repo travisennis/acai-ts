@@ -2,7 +2,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { input } from "@inquirer/prompts";
 import {
+  MessageHistory,
   type ModelName,
+  createAssistantMessage,
+  createUserMessage,
   isSupportedModel,
   languageModel,
   wrapLanguageModel,
@@ -133,7 +136,7 @@ export async function chatCmd(
   let totalCompletionsTokens = 0;
   let totalTokens = 0;
 
-  const messages: CoreMessage[] = [];
+  const messages = new MessageHistory();
 
   let initialPrompt = prompt;
   while (true) {
@@ -148,8 +151,8 @@ export async function chatCmd(
       userInput.trim() === exitCommand.command ||
       userInput.trim() === byeCommand.command
     ) {
-      if (messages.length > 0) {
-        await saveMessageHistory(messages);
+      if (!messages.isEmpty()) {
+        await saveMessageHistory(messages.get());
       }
       break;
     }
@@ -160,9 +163,9 @@ export async function chatCmd(
     }
 
     if (userInput.trim() === resetCommand.command) {
-      if (messages.length > 0) {
-        await saveMessageHistory(messages);
-        messages.length = 0;
+      if (!messages.isEmpty()) {
+        await saveMessageHistory(messages.get());
+        messages.clear();
       }
       totalPromptTokens = 0;
       totalCompletionsTokens = 0;
@@ -171,28 +174,25 @@ export async function chatCmd(
     }
 
     if (userInput.trim() === compactCommand.command) {
-      if (messages.length > 0) {
+      if (!messages.isEmpty()) {
         // save existing message history
-        await saveMessageHistory(messages);
+        await saveMessageHistory(messages.get());
         // summarize message history
-        messages.push({
-          role: "user",
-          content:
+        messages.appendUserMessage(
+          createUserMessage(
             "Provide a detailed but concise summary of our conversation above. Focus on information that would be helpful for continuing the conversation, including what we did, what we're doing, which files we're working on, and what we're going to do next.",
-        });
+          ),
+        );
         const { text, usage } = await generateText({
           model: langModel,
           system:
             "You are a helpful AI assistant tasked with summarizing conversations.",
-          messages,
+          messages: messages.get(),
         });
         //clear messages
-        messages.length = 0;
+        messages.clear();
         // reset messages with the summary
-        messages.push({
-          role: "assistant",
-          content: text,
-        });
+        messages.appendAssistantMessage(createAssistantMessage(text));
         // update token counts with new message history
         totalPromptTokens = 0;
         totalCompletionsTokens = usage.completionTokens;
@@ -226,10 +226,7 @@ export async function chatCmd(
       thinkingBudget = 4000;
     }
 
-    messages.push({
-      role: "user",
-      content: userInput,
-    });
+    messages.appendUserMessage(createUserMessage(userInput));
 
     try {
       const fsTools = await createFileSystemTools({
@@ -279,7 +276,7 @@ export async function chatCmd(
         model: langModel,
         maxTokens: Math.max(8_096, thinkingBudget * 1.5),
         system: systemPrompt,
-        messages: messages,
+        messages: messages.get(),
         maxSteps: 30,
         providerOptions: {
           anthropic: {
@@ -331,7 +328,7 @@ export async function chatCmd(
           }
         },
         onFinish: (result) => {
-          messages.push(...result.response.messages);
+          messages.appendResponseMessages(result.response.messages);
 
           writeln("\n\n"); // this puts an empty line after the streamed response.
           writeHeader("Tool use:");
