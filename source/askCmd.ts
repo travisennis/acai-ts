@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
   type ModelName,
+  dedent,
   formatFile,
   isSupportedModel,
   languageModel,
@@ -17,7 +18,10 @@ import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 
 const retrieverSystemPrompt = (fileStructure: string) => {
-  return `The following files are found in the repository:
+  return dedent`
+The current working directory is ${process.cwd()}
+
+The following files are found in the directory:
 
 ${fileStructure}
 
@@ -31,9 +35,7 @@ Enclose the file paths in a list in a markdown code block as shown below:
 ...
 \`\`\`
 
-Think step-by-step and strategically reason about the files you choose to maximize the chances of finding the answer to the query. Only pick the files that are most likely to contain the information you are looking for in decreasing order of relevance. Once you have selected the files, please submit your response in the appropriate format mentioned above (markdown numbered list in a markdown code block). The filepath within [[ and ]] should contain the absolute path of the file in the repository.
-
-Current working directory is ${process.cwd()}`;
+Think step-by-step and strategically reason about the files you choose to maximize the chances of finding the answer to the query. Only pick the files that are most likely to contain the information you are looking for in decreasing order of relevance. Once you have selected the files, please submit your response in the appropriate format mentioned above (markdown numbered list in a markdown code block). The filepath within [[ and ]] should contain the absolute path of the file in the repository. Use the current working directory to construct the absolute path.`;
 };
 
 function extractFilePaths(text: string): string[] {
