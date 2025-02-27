@@ -103,7 +103,7 @@ export async function askCmd(
     const usefulFiles = extractFilePaths(text);
 
     writeHeader("Reading files:");
-    for (const file of usefulFiles) {
+    for (const file of new Set(usefulFiles)) {
       writeln(file);
     }
 
