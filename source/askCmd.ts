@@ -18,16 +18,22 @@ import { logger } from "./logger.ts";
 
 const retrieverSystemPrompt = (fileStructure: string) => {
   return `The following files are found in the repository:
+
 ${fileStructure}
+
 Please provide a list of files that you would like to search for answering the user query.
 Enclose the file paths in a list in a markdown code block as shown below:
+
 \`\`\`
 1. [[ filepath_1 ]]\n
 2. [[ filepath_2 ]]\n
 3. [[ filepath_3 ]]\n
 ...
 \`\`\`
-Think step-by-step and strategically reason about the files you choose to maximize the chances of finding the answer to the query. Only pick the files that are most likely to contain the information you are looking for in decreasing order of relevance. Once you have selected the files, please submit your response in the appropriate format mentioned above (markdown numbered list in a markdown code block). The filepath within [[ and ]] should contain the complete path of the file in the repository.`;
+
+Think step-by-step and strategically reason about the files you choose to maximize the chances of finding the answer to the query. Only pick the files that are most likely to contain the information you are looking for in decreasing order of relevance. Once you have selected the files, please submit your response in the appropriate format mentioned above (markdown numbered list in a markdown code block). The filepath within [[ and ]] should contain the absolute path of the file in the repository.
+
+Current working directory is ${process.cwd()}`;
 };
 
 function extractFilePaths(text: string): string[] {
@@ -101,7 +107,12 @@ export async function askCmd(
       .map((filePath) => {
         return formatFile(
           filePath,
-          readFileSync(path.join(process.cwd(), "..", filePath), "utf-8"),
+          readFileSync(
+            path.isAbsolute(filePath)
+              ? filePath
+              : path.join(process.cwd(), "..", filePath),
+            "utf-8",
+          ),
           "bracket",
         );
       })
