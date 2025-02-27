@@ -26,7 +26,10 @@ The following files are found in the directory:
 ${fileStructure}
 
 Please provide a list of files that you would like to search for answering the user query.
-Enclose the file paths in a list in a markdown code block as shown below:
+
+Think step-by-step and strategically reason about the files you choose to maximize the chances of finding the answer to the query. Only pick the files that are most likely to contain the information you are looking for in decreasing order of relevance. Once you have selected the files, please submit your response in the appropriate format mentioned below (markdown numbered list in a markdown code block). The filepath within [[ and ]] should contain the absolute path of the file in the repository. Use the current working directory to construct the absolute path.
+
+Enclose the absolute file paths in a list in a markdown code block as shown below:
 
 \`\`\`
 1. [[ filepath_1 ]]\n
@@ -34,8 +37,7 @@ Enclose the file paths in a list in a markdown code block as shown below:
 3. [[ filepath_3 ]]\n
 ...
 \`\`\`
-
-Think step-by-step and strategically reason about the files you choose to maximize the chances of finding the answer to the query. Only pick the files that are most likely to contain the information you are looking for in decreasing order of relevance. Once you have selected the files, please submit your response in the appropriate format mentioned above (markdown numbered list in a markdown code block). The filepath within [[ and ]] should contain the absolute path of the file in the repository. Use the current working directory to construct the absolute path.`;
+`;
 };
 
 function extractFilePaths(text: string): string[] {
