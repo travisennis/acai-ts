@@ -21,6 +21,7 @@ import {
   type CoreMessage,
   NoSuchToolError,
   generateObject,
+  generateText,
   streamText,
 } from "ai";
 import chalk from "chalk";
@@ -61,6 +62,11 @@ const saveCommand = {
   description: "Saves the chat history.",
 };
 
+const compactCommand = {
+  command: "/compact",
+  description: "Saves, summarizes and resets the chat history.",
+};
+
 const exitCommand = {
   command: "/exit",
   description: "Exits and saves the chat history.",
@@ -79,6 +85,7 @@ const helpCommand = {
 const chatCommands: ChatCommand[] = [
   resetCommand,
   saveCommand,
+  compactCommand,
   byeCommand,
   exitCommand,
   helpCommand,
@@ -159,6 +166,37 @@ export async function chatCmd(
       totalPromptTokens = 0;
       totalCompletionsTokens = 0;
       totalTokens = 0;
+      continue;
+    }
+
+    if (userInput.trim() === compactCommand.command) {
+      if (messages.length > 0) {
+        // save existing message history
+        await saveMessageHistory(messages);
+        // summarize message history
+        messages.push({
+          role: "user",
+          content:
+            "Provide a detailed but concise summary of our conversation above. Focus on information that would be helpful for continuing the conversation, including what we did, what we're doing, which files we're working on, and what we're going to do next.",
+        });
+        const { text, usage } = await generateText({
+          model: langModel,
+          system:
+            "You are a helpful AI assistant tasked with summarizing conversations.",
+          messages,
+        });
+        //clear messages
+        messages.length = 0;
+        // reset messages with the summary
+        messages.push({
+          role: "assistant",
+          content: text,
+        });
+        // update token counts with new message history
+        totalPromptTokens = 0;
+        totalCompletionsTokens = usage.completionTokens;
+        totalTokens = usage.completionTokens;
+      }
       continue;
     }
 
