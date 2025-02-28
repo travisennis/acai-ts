@@ -36,7 +36,7 @@
     "@ai-sdk/google": "^1.1.17",
     "@ai-sdk/openai": "^1.1.15",
     "@inquirer/prompts": "^7.3.2",
-    "@travisennis/acai-core": "^0.0.36",
+    "@travisennis/acai-core": "^0.0.38",
     "@travisennis/stdlib": "^0.0.5",
     "ai": "^4.1.46",
     "chalk": "^5.4.1",

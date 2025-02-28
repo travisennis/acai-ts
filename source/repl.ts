@@ -1,16 +1,18 @@
+import { readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { input } from "@inquirer/prompts";
 import {
   MessageHistory,
+  ModelConfig,
   type ModelName,
+  TokenTracker,
   createAssistantMessage,
   createUserMessage,
+  formatFile,
   isSupportedModel,
   languageModel,
-  wrapLanguageModel,
 } from "@travisennis/acai-core";
-import { auditMessage } from "@travisennis/acai-core/middleware";
 import {
   createCodeInterpreterTool,
   createCodeTools,
@@ -37,9 +39,12 @@ import {
   writeln,
 } from "./command.ts";
 import { readProjectConfig } from "./config.ts";
+import { retrieveFilesForTask } from "./fileRetriever.ts";
+import { getMainModel } from "./getMainModel.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import { systemPrompt } from "./prompts.ts";
+import { optimizePrompt } from "./promptOptimizer.ts";
 
 const THINKING_TIERS = [
   {
@@ -67,7 +72,7 @@ async function saveMessageHistory(messages: CoreMessage[]): Promise<void> {
   await writeFile(filePath, JSON.stringify(messages, null, 2));
 }
 
-interface ChatCommand {
+interface ReplCommand {
   command: string;
   description: string;
 }
@@ -102,7 +107,7 @@ const helpCommand = {
   description: "Shows usage table.",
 };
 
-const chatCommands: ChatCommand[] = [
+const replCommands: ReplCommand[] = [
   resetCommand,
   saveCommand,
   compactCommand,
@@ -117,52 +122,55 @@ function displayUsage() {
   });
 
   table.push(
-    ...chatCommands
+    ...replCommands
       .sort((a, b) => (a.command > b.command ? 1 : -1))
       .map((cmd) => [cmd.command, cmd.description]),
   );
 
   writeln(table.toString());
 }
-export async function chatCmd(
-  prompt: string,
-  args: Flags,
-  config: Record<PropertyKey, unknown>,
-) {
+export async function repl({
+  initialPrompt,
+  stdin,
+  args,
+  config,
+}: {
+  initialPrompt: string | undefined;
+  stdin: string | undefined;
+  args: Flags;
+  config: Record<PropertyKey, unknown>;
+}) {
   logger.info(config, "Config:");
 
-  const now = new Date();
+  // const now = new Date();
 
   const chosenModel: ModelName = isSupportedModel(args.model)
     ? args.model
     : "anthropic:sonnet";
 
-  const stateDir = envPaths("acai").state;
-  const messagesFilePath = path.join(
-    stateDir,
-    `${now.toISOString()}-chat-message.json`,
-  );
+  const modelConfig = ModelConfig[chosenModel];
 
-  const langModel = wrapLanguageModel(
-    languageModel(chosenModel),
-    auditMessage({ path: messagesFilePath, app: "chat" }),
-  );
+  const langModel = getMainModel({ model: chosenModel, app: "repl" });
 
-  let totalPromptTokens = 0;
-  let totalCompletionsTokens = 0;
-  let totalTokens = 0;
-
+  const tokenTracker = new TokenTracker();
   const messages = new MessageHistory();
 
-  let initialPrompt = prompt;
+  let firstPrompt =
+    args.prompt && args.prompt.length > 0
+      ? args.prompt
+      : initialPrompt && initialPrompt.length > 0
+        ? `${stdin ?? ""}\n${initialPrompt}`.trim()
+        : "";
+
   while (true) {
     writeHeader("Input:");
     writeln(`Model: ${langModel.modelId}`);
     writeln("");
 
     const userInput =
-      initialPrompt.length > 0 ? initialPrompt : await input({ message: ">" });
-    initialPrompt = "";
+      firstPrompt.length > 0 ? firstPrompt : await input({ message: ">" });
+    firstPrompt = "";
+
     if (
       userInput.trim() === exitCommand.command ||
       userInput.trim() === byeCommand.command
@@ -183,9 +191,7 @@ export async function chatCmd(
         await saveMessageHistory(messages.get());
         messages.clear();
       }
-      totalPromptTokens = 0;
-      totalCompletionsTokens = 0;
-      totalTokens = 0;
+      tokenTracker.reset();
       continue;
     }
 
@@ -210,9 +216,12 @@ export async function chatCmd(
         // reset messages with the summary
         messages.appendAssistantMessage(createAssistantMessage(text));
         // update token counts with new message history
-        totalPromptTokens = 0;
-        totalCompletionsTokens = usage.completionTokens;
-        totalTokens = usage.completionTokens;
+        tokenTracker.reset();
+        tokenTracker.trackUsage("repl", {
+          promptTokens: 0,
+          completionTokens: usage.completionTokens,
+          totalTokens: usage.completionTokens,
+        });
       }
       continue;
     }
@@ -226,7 +235,48 @@ export async function chatCmd(
       }
     }
 
-    messages.appendUserMessage(createUserMessage(userInput));
+    let finalPrompt = userInput;
+
+    // models that can't support toolcalling will be limited, but this step can at least give them some context to answer questions. very early in the development of this.
+    if (!modelConfig.supportsToolCalling) {
+      writeln("Adding files for task:");
+      const usefulFiles = await retrieveFilesForTask({
+        model: chosenModel,
+        prompt: userInput,
+        tokenTracker,
+      });
+
+      writeHeader("Reading files:");
+      for (const file of usefulFiles) {
+        writeln(file);
+      }
+
+      finalPrompt = `${usefulFiles
+        .map((filePath) => {
+          return formatFile(
+            filePath,
+            readFileSync(
+              path.isAbsolute(filePath)
+                ? filePath
+                : path.join(process.cwd(), "..", filePath),
+              "utf-8",
+            ),
+            "bracket",
+          );
+        })
+        .join("\n\n")}${userInput}`;
+    }
+
+    if (!modelConfig.reasoningModel) {
+      writeln("Optimizing prompt:");
+      finalPrompt = await optimizePrompt({
+        model: chosenModel,
+        prompt: finalPrompt,
+        tokenTracker,
+      });
+    }
+
+    messages.appendUserMessage(createUserMessage(finalPrompt));
 
     try {
       const fsTools = await createFileSystemTools({
@@ -274,7 +324,7 @@ export async function chatCmd(
 
       const result = streamText({
         model: langModel,
-        maxTokens: Math.max(8_096, thinkingBudget * 1.5),
+        maxTokens: Math.max(8096, thinkingBudget * 1.5),
         system: systemPrompt,
         messages: messages.get(),
         maxSteps: 30,
@@ -294,6 +344,8 @@ export async function chatCmd(
           if (NoSuchToolError.isInstance(error)) {
             return null; // do not attempt to fix invalid tool names
           }
+
+          writeError("Attempting to repair tool call.");
 
           const tool = tools[toolCall.toolName as keyof typeof tools];
 
@@ -321,10 +373,6 @@ export async function chatCmd(
               "Step",
               `Assistant: ${event.text}\nTool: ${event.toolCalls[0]?.toolName}\nResult: ${event.toolResults[0]?.result}`,
             );
-            // writeHeader("Step");
-            // writeln(`Assistant: ${event.text}`);
-            // writeln(`Tool: ${event.toolCalls[0]?.toolName}`);
-            // writeln(`Result: ${event.toolResults[0]?.result}`);
           }
         },
         onFinish: (result) => {
@@ -346,12 +394,11 @@ export async function chatCmd(
             ),
           );
           writeHeader("Total Usage:");
-          totalPromptTokens += result.usage.promptTokens;
-          totalCompletionsTokens += result.usage.completionTokens;
-          totalTokens += result.usage.totalTokens;
+          tokenTracker.trackUsage("repl", result.usage);
+          const totalUsage = tokenTracker.getTotalUsage();
           writeln(
             chalk.green(
-              `Prompt tokens: ${totalPromptTokens}, Completion tokens: ${totalCompletionsTokens}, Total tokens: ${totalTokens}`,
+              `Prompt tokens: ${totalUsage.promptTokens}, Completion tokens: ${totalUsage.completionTokens}, Total tokens: ${totalUsage.totalTokens}`,
             ),
           );
         },
@@ -378,6 +425,11 @@ export async function chatCmd(
       }
 
       result.consumeStream();
+
+      // if prompt was provided via flag then exit repl loop
+      if (args.prompt && args.prompt.length > 0) {
+        return;
+      }
     } catch (e) {
       writeError((e as Error).message);
       if (e instanceof Error) {
