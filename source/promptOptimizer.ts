@@ -1,12 +1,9 @@
 import { platform } from "node:os";
-import path from "node:path";
 import {
   type ModelName,
   type TokenTracker,
-  languageModel,
-  wrapLanguageModel,
+  getLanguageModel,
 } from "@travisennis/acai-core";
-import { auditMessage } from "@travisennis/acai-core/middleware";
 import {
   GIT_READ_ONLY,
   READ_ONLY,
@@ -105,17 +102,12 @@ export async function optimizePrompt({
   prompt,
   tokenTracker,
 }: { model: ModelName; prompt: string; tokenTracker: TokenTracker }) {
-  const now = new Date();
-  const stateDir = envPaths("acai").state;
-  const metaPromptFilePath = path.join(
-    stateDir,
-    `${now.toISOString()}-meta-prompt-message.json`,
-  );
+  const langModel = getLanguageModel({
+    model,
+    app: "meta-prompt",
+    stateDir: envPaths("acai").state,
+  });
 
-  const langModel = wrapLanguageModel(
-    languageModel(model),
-    auditMessage({ path: metaPromptFilePath, app: "meta-prompt" }),
-  );
   const fsTools = await createFileSystemTools({
     workingDir: process.cwd(),
     sendData: async (msg) => writeln(await msg.data),

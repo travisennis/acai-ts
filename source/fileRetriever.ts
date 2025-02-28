@@ -1,15 +1,12 @@
 import {
   dedent,
-  languageModel,
   type TokenTracker,
-  wrapLanguageModel,
   type ModelName,
+  getLanguageModel,
 } from "@travisennis/acai-core";
-import { auditMessage } from "@travisennis/acai-core/middleware";
 import { directoryTree } from "@travisennis/acai-core/tools";
 import { envPaths } from "@travisennis/stdlib/env";
 import { generateText } from "ai";
-import path from "node:path";
 
 const retrieverSystemPrompt = (fileStructure: string) => {
   return dedent`
@@ -59,18 +56,12 @@ export async function retrieveFilesForTask({
   prompt: string;
   tokenTracker?: TokenTracker;
 }): Promise<string[]> {
-  const now = new Date();
-  const stateDir = envPaths("acai").state;
-  const fileRetrieverFilePath = path.join(
-    stateDir,
-    `${now.toISOString()}-file-retriever-message.json`,
-  );
-
   const { text, usage } = await generateText({
-    model: wrapLanguageModel(
-      languageModel(model),
-      auditMessage({ path: fileRetrieverFilePath, app: "file-retriever" }),
-    ),
+    model: getLanguageModel({
+      model,
+      app: "file-retriever",
+      stateDir: envPaths("acai").state,
+    }),
     system: retrieverSystemPrompt(await directoryTree(process.cwd())),
     prompt,
   });

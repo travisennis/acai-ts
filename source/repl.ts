@@ -10,8 +10,8 @@ import {
   createAssistantMessage,
   createUserMessage,
   formatFile,
+  getLanguageModel,
   isSupportedModel,
-  languageModel,
 } from "@travisennis/acai-core";
 import {
   createCodeInterpreterTool,
@@ -40,7 +40,6 @@ import {
 } from "./command.ts";
 import { readProjectConfig } from "./config.ts";
 import { retrieveFilesForTask } from "./fileRetriever.ts";
-import { getMainModel } from "./getMainModel.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import { systemPrompt } from "./prompts.ts";
@@ -150,7 +149,11 @@ export async function repl({
 
   const modelConfig = ModelConfig[chosenModel];
 
-  const langModel = getMainModel({ model: chosenModel, app: "repl" });
+  const langModel = getLanguageModel({
+    model: chosenModel,
+    stateDir: envPaths("acai").state,
+    app: "repl",
+  });
 
   const tokenTracker = new TokenTracker();
   const messages = new MessageHistory();
@@ -350,7 +353,11 @@ export async function repl({
           const tool = tools[toolCall.toolName as keyof typeof tools];
 
           const { object: repairedArgs } = await generateObject({
-            model: languageModel("openai:gpt-4o-structured"),
+            model: getLanguageModel({
+              model: "openai:gpt-4o-structured",
+              app: "tool-repair",
+              stateDir: envPaths("acai").state,
+            }),
             schema: tool.parameters,
             prompt: [
               `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
