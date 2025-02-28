@@ -42,8 +42,8 @@ import { readProjectConfig } from "./config.ts";
 import { retrieveFilesForTask } from "./fileRetriever.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
-import { systemPrompt } from "./prompts.ts";
 import { optimizePrompt } from "./promptOptimizer.ts";
+import { systemPrompt } from "./prompts.ts";
 
 const THINKING_TIERS = [
   {
@@ -145,7 +145,7 @@ export async function repl({
 
   const chosenModel: ModelName = isSupportedModel(args.model)
     ? args.model
-    : "anthropic:sonnet";
+    : "anthropic:sonnet-token-efficient-tools";
 
   const modelConfig = ModelConfig[chosenModel];
 
@@ -244,7 +244,7 @@ export async function repl({
     if (!modelConfig.supportsToolCalling) {
       writeln("Adding files for task:");
       const usefulFiles = await retrieveFilesForTask({
-        model: chosenModel,
+        model: "anthropic:haiku",
         prompt: userInput,
         tokenTracker,
       });
@@ -273,7 +273,7 @@ export async function repl({
     if (!modelConfig.reasoningModel) {
       writeln("Optimizing prompt:");
       finalPrompt = await optimizePrompt({
-        model: chosenModel,
+        model: "anthropic:sonnet35",
         prompt: finalPrompt,
         tokenTracker,
       });
@@ -331,6 +331,7 @@ export async function repl({
         system: systemPrompt,
         messages: messages.get(),
         maxSteps: 30,
+        maxRetries: 5,
         providerOptions: {
           anthropic: {
             thinking: { type: "enabled", budgetTokens: thinkingBudget },
