@@ -28,6 +28,7 @@ import {
   generateObject,
   generateText,
   streamText,
+  tool,
 } from "ai";
 import chalk from "chalk";
 import Table from "cli-table3";
@@ -44,6 +45,7 @@ import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import { optimizePrompt } from "./promptOptimizer.ts";
 import { systemPrompt } from "./prompts.ts";
+import { z } from "zod";
 
 const THINKING_TIERS = [
   {
@@ -316,6 +318,20 @@ export async function repl({
           writeBox(msg.event ?? "tool-event", await msg.data),
       });
 
+      const askUserTool = {
+        askUser: tool({
+          description: "A tool to ask the user for input.",
+          parameters: z.object({
+            question: z.string().describe("The question to ask the user."),
+          }),
+          execute: async ({ question }) => {
+            const result = await input({ message: `${question} >` });
+
+            return result;
+          },
+        }),
+      };
+
       const allTools = {
         ...codeTools,
         ...fsTools,
@@ -323,6 +339,7 @@ export async function repl({
         ...codeInterpreterTool,
         ...grepTool,
         ...thinkTool,
+        ...askUserTool,
       } as const;
 
       const result = streamText({
