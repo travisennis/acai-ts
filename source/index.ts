@@ -73,7 +73,12 @@ async function main() {
 
   (
     await asyncTry(
-      repl({ initialPrompt, stdin: stdInPrompt, args: cli.flags, config }),
+      repl({
+        initialPrompt,
+        stdin: stdInPrompt,
+        args: cli.flags,
+        config,
+      }),
     )
   ).recover(handleError);
 }

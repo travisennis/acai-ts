@@ -164,8 +164,10 @@ export async function repl({
     args.prompt && args.prompt.length > 0
       ? args.prompt
       : initialPrompt && initialPrompt.length > 0
-        ? `${stdin ?? ""}\n${initialPrompt}`.trim()
-        : "";
+        ? initialPrompt
+        : stdin && stdin.length > 0
+          ? stdin
+          : "";
 
   while (true) {
     writeHeader("Input:");
