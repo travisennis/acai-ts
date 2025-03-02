@@ -16,10 +16,12 @@ const cli = meow(
 	Options
     --model, -m  Sets the model to use
     --prompt, -p  Sets the prompt
+    --oneshot, -o  Run once and exit
 
 	Examples
 	  $ acai --model anthopric:sonnet
 	  $ acai -p "one-shot prompt"
+	  $ acai -p "one-shot prompt" -o
 `,
   {
     importMeta: import.meta, // This is required
@@ -31,6 +33,11 @@ const cli = meow(
       prompt: {
         type: "string",
         shortFlag: "p",
+      },
+      oneshot: {
+        type: "boolean",
+        shortFlag: "o",
+        default: false,
       },
     },
   },

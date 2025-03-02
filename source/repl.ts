@@ -228,9 +228,14 @@ export async function repl({
     writeln(`Model: ${langModel.modelId}`);
     writeln("");
 
-    const userInput =
-      firstPrompt.length > 0 ? firstPrompt : await input({ message: ">" });
-    firstPrompt = "";
+    let userInput = "";
+    if (firstPrompt.length > 0) {
+      userInput = firstPrompt;
+      firstPrompt = ""; // Clear firstPrompt after using it
+    } else {
+      // For interactive input
+      userInput = await input({ message: ">" });
+    }
 
     if (
       userInput.trim() === exitCommand.command ||
@@ -421,8 +426,8 @@ ${rules}`
 
       result.consumeStream();
 
-      // if prompt was provided via flag then exit repl loop
-      if (args.prompt && args.prompt.length > 0) {
+      // Only exit if explicitly requested by a flag
+      if (args.oneshot === true) {
         return;
       }
     } catch (e) {
