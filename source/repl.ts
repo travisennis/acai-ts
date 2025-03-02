@@ -41,7 +41,7 @@ import {
   writeHeader,
   writeln,
 } from "./command.ts";
-import { readProjectConfig } from "./config.ts";
+import { readProjectConfig, readRulesFile } from "./config.ts";
 import { retrieveFilesForTask } from "./fileRetriever.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
@@ -333,11 +333,20 @@ export async function repl({
 
     messages.appendUserMessage(createUserMessage(finalPrompt));
 
+    // Read rules from project directory
+    const rules = await readRulesFile();
+    const finalSystemPrompt = rules
+      ? `${systemPrompt}
+
+Project Rules:
+${rules}`
+      : systemPrompt;
+
     try {
       const result = streamText({
         model: langModel,
         maxTokens: Math.max(8096, thinkingBudget * 1.5),
-        system: systemPrompt,
+        system: finalSystemPrompt,
         messages: messages.get(),
         maxSteps: 30,
         maxRetries: 5,

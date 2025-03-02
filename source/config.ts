@@ -51,4 +51,16 @@ async function writeAppConfig(
   await fs.writeFile(configPath, JSON.stringify(data, null, 2));
 }
 
-export { readAppConfig, writeAppConfig, readProjectConfig };
+async function readRulesFile(): Promise<string> {
+  const rulesPath = path.join(process.cwd(), ".acai", "rules.md");
+  try {
+    return await fs.readFile(rulesPath, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return "";
+    }
+    throw error;
+  }
+}
+
+export { readAppConfig, writeAppConfig, readProjectConfig, readRulesFile };
