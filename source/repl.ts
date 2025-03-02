@@ -353,16 +353,23 @@ ${rules}`
         maxTokens: Math.max(8096, thinkingBudget * 1.5),
         system: finalSystemPrompt,
         messages: messages.get(),
+        temperature: langModel.modelId.includes("deepseek-reasoner")
+          ? 0.6
+          : 0.3,
         maxSteps: 30,
         maxRetries: 5,
-        providerOptions: {
-          anthropic: {
-            thinking: { type: "enabled", budgetTokens: thinkingBudget },
-          },
-        },
-        tools: allTools,
+        providerOptions: langModel.modelId.includes("sonnet")
+          ? {
+              anthropic: {
+                thinking: { type: "enabled", budgetTokens: thinkingBudget },
+              },
+            }
+          : {},
+        tools: modelConfig.supportsToolCalling ? allTools : undefined,
         // biome-ignore lint/style/useNamingConvention: <explanation>
-        experimental_repairToolCall: toolCallRepair,
+        experimental_repairToolCall: modelConfig.supportsToolCalling
+          ? toolCallRepair
+          : undefined,
         onStepFinish: (event) => {
           if (
             event.stepType === "initial" &&
@@ -390,7 +397,7 @@ ${rules}`
           );
           writeln(
             chalk.yellow(
-              `Cache creation: ${result.providerMetadata?.anthropic.cacheCreationInputTokens}, Cache read: ${result.providerMetadata?.anthropic.cacheReadInputTokens}`,
+              `Cache creation: ${result.providerMetadata?.anthropic?.cacheCreationInputTokens}, Cache read: ${result.providerMetadata?.anthropic?.cacheReadInputTokens}`,
             ),
           );
           writeHeader("Total Usage:");
