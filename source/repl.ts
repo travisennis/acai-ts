@@ -25,6 +25,7 @@ import { envPaths } from "@travisennis/stdlib/env";
 import {
   type CoreMessage,
   NoSuchToolError,
+  type ToolCallRepairFunction,
   generateObject,
   generateText,
   streamText,
@@ -32,6 +33,7 @@ import {
 } from "ai";
 import chalk from "chalk";
 import Table from "cli-table3";
+import { z } from "zod";
 import {
   write,
   writeBox,
@@ -45,7 +47,6 @@ import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import { optimizePrompt } from "./promptOptimizer.ts";
 import { systemPrompt } from "./prompts.ts";
-import { z } from "zod";
 
 const THINKING_TIERS = [
   {
@@ -117,6 +118,58 @@ const replCommands: ReplCommand[] = [
   helpCommand,
 ];
 
+const fsTools = await createFileSystemTools({
+  workingDir: process.cwd(),
+  sendData: async (msg) => writeBox(msg.event ?? "tool-event", await msg.data),
+});
+
+const gitTools = await createGitTools({
+  workingDir: process.cwd(),
+  sendData: async (msg) => writeBox(msg.event ?? "tool-event", await msg.data),
+});
+
+const codeTools = createCodeTools({
+  baseDir: process.cwd(),
+  config: await readProjectConfig(),
+  sendData: async (msg) => writeBox(msg.event ?? "tool-event", await msg.data),
+});
+
+const codeInterpreterTool = createCodeInterpreterTool({
+  sendData: async (msg) => writeBox(msg.event ?? "tool-event", await msg.data),
+});
+
+const grepTool = createGrepTools({
+  sendData: async (msg) => writeBox(msg.event ?? "tool-event", await msg.data),
+});
+
+const thinkTool = createThinkTools({
+  sendData: async (msg) => writeBox(msg.event ?? "tool-event", await msg.data),
+});
+
+const askUserTool = {
+  askUser: tool({
+    description: "A tool to ask the user for input.",
+    parameters: z.object({
+      question: z.string().describe("The question to ask the user."),
+    }),
+    execute: async ({ question }) => {
+      const result = await input({ message: `${question} >` });
+
+      return result;
+    },
+  }),
+};
+
+const allTools = {
+  ...codeTools,
+  ...fsTools,
+  ...gitTools,
+  ...codeInterpreterTool,
+  ...grepTool,
+  ...thinkTool,
+  ...askUserTool,
+} as const;
+
 function displayUsage() {
   const table = new Table({
     head: ["command", "description"],
@@ -130,6 +183,7 @@ function displayUsage() {
 
   writeln(table.toString());
 }
+
 export async function repl({
   initialPrompt,
   stdin,
@@ -234,13 +288,7 @@ export async function repl({
     }
 
     // determine our thinking token budget for this request
-    let thinkingBudget = 2000; // Default
-    for (const tier of THINKING_TIERS) {
-      if (tier.pattern.test(userInput)) {
-        thinkingBudget = tier.budget;
-        break; // Use highest priority match
-      }
-    }
+    const thinkingBudget = calculateThinkingBudget(userInput);
 
     let finalPrompt = userInput;
 
@@ -286,64 +334,6 @@ export async function repl({
     messages.appendUserMessage(createUserMessage(finalPrompt));
 
     try {
-      const fsTools = await createFileSystemTools({
-        workingDir: process.cwd(),
-        sendData: async (msg) =>
-          writeBox(msg.event ?? "tool-event", await msg.data),
-      });
-
-      const gitTools = await createGitTools({
-        workingDir: process.cwd(),
-        sendData: async (msg) =>
-          writeBox(msg.event ?? "tool-event", await msg.data),
-      });
-
-      const codeTools = createCodeTools({
-        baseDir: process.cwd(),
-        config: await readProjectConfig(),
-        sendData: async (msg) =>
-          writeBox(msg.event ?? "tool-event", await msg.data),
-      });
-
-      const codeInterpreterTool = createCodeInterpreterTool({
-        sendData: async (msg) =>
-          writeBox(msg.event ?? "tool-event", await msg.data),
-      });
-
-      const grepTool = createGrepTools({
-        sendData: async (msg) =>
-          writeBox(msg.event ?? "tool-event", await msg.data),
-      });
-
-      const thinkTool = createThinkTools({
-        sendData: async (msg) =>
-          writeBox(msg.event ?? "tool-event", await msg.data),
-      });
-
-      const askUserTool = {
-        askUser: tool({
-          description: "A tool to ask the user for input.",
-          parameters: z.object({
-            question: z.string().describe("The question to ask the user."),
-          }),
-          execute: async ({ question }) => {
-            const result = await input({ message: `${question} >` });
-
-            return result;
-          },
-        }),
-      };
-
-      const allTools = {
-        ...codeTools,
-        ...fsTools,
-        ...gitTools,
-        ...codeInterpreterTool,
-        ...grepTool,
-        ...thinkTool,
-        ...askUserTool,
-      } as const;
-
       const result = streamText({
         model: langModel,
         maxTokens: Math.max(8096, thinkingBudget * 1.5),
@@ -358,38 +348,7 @@ export async function repl({
         },
         tools: allTools,
         // biome-ignore lint/style/useNamingConvention: <explanation>
-        experimental_repairToolCall: async ({
-          toolCall,
-          tools,
-          parameterSchema,
-          error,
-        }) => {
-          if (NoSuchToolError.isInstance(error)) {
-            return null; // do not attempt to fix invalid tool names
-          }
-
-          writeError("Attempting to repair tool call.");
-
-          const tool = tools[toolCall.toolName as keyof typeof tools];
-
-          const { object: repairedArgs } = await generateObject({
-            model: getLanguageModel({
-              model: "openai:gpt-4o-structured",
-              app: "tool-repair",
-              stateDir: envPaths("acai").state,
-            }),
-            schema: tool.parameters,
-            prompt: [
-              `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
-              JSON.stringify(toolCall.args),
-              "The tool accepts the following schema:",
-              JSON.stringify(parameterSchema(toolCall)),
-              "Please fix the arguments.",
-            ].join("\n"),
-          });
-
-          return { ...toolCall, args: JSON.stringify(repairedArgs) };
-        },
+        experimental_repairToolCall: toolCallRepair,
         onStepFinish: (event) => {
           if (
             event.stepType === "initial" &&
@@ -466,4 +425,48 @@ export async function repl({
       }
     }
   }
+}
+
+const toolCallRepair: ToolCallRepairFunction<typeof allTools> = async ({
+  toolCall,
+  tools,
+  parameterSchema,
+  error,
+}) => {
+  if (NoSuchToolError.isInstance(error)) {
+    return null; // do not attempt to fix invalid tool names
+  }
+
+  writeError("Attempting to repair tool call.");
+
+  const tool = tools[toolCall.toolName as keyof typeof tools];
+
+  const { object: repairedArgs } = await generateObject({
+    model: getLanguageModel({
+      model: "openai:gpt-4o-structured",
+      app: "tool-repair",
+      stateDir: envPaths("acai").state,
+    }),
+    schema: tool.parameters,
+    prompt: [
+      `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
+      JSON.stringify(toolCall.args),
+      "The tool accepts the following schema:",
+      JSON.stringify(parameterSchema(toolCall)),
+      "Please fix the arguments.",
+    ].join("\n"),
+  });
+
+  return { ...toolCall, args: JSON.stringify(repairedArgs) };
+};
+
+function calculateThinkingBudget(userInput: string) {
+  let thinkingBudget = 2000; // Default
+  for (const tier of THINKING_TIERS) {
+    if (tier.pattern.test(userInput)) {
+      thinkingBudget = tier.budget;
+      break; // Use highest priority match
+    }
+  }
+  return thinkingBudget;
 }
