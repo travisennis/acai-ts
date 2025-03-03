@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { input } from "@inquirer/prompts";
 import {
@@ -33,6 +33,7 @@ import {
 } from "ai";
 import chalk from "chalk";
 import Table from "cli-table3";
+import { globby } from "globby";
 import { z } from "zod";
 import {
   write,
@@ -109,12 +110,19 @@ const helpCommand = {
   description: "Shows usage table.",
 };
 
+const filesCommand = {
+  command: "/files",
+  description:
+    "Finds files matching the given patterns and adds their content to the next prompt. Usage: /files src/**/*.ts",
+};
+
 const replCommands: ReplCommand[] = [
   resetCommand,
   saveCommand,
   compactCommand,
   byeCommand,
   exitCommand,
+  filesCommand,
   helpCommand,
 ];
 
@@ -214,6 +222,7 @@ export async function repl({
   const tokenTracker = new TokenTracker();
   const messages = new MessageHistory();
   const loadedFiles = new Set<string>();
+  let pendingFileContents = "";
 
   let firstPrompt =
     args.prompt && args.prompt.length > 0
@@ -257,12 +266,64 @@ export async function repl({
       continue;
     }
 
+    if (userInput.trim().startsWith(filesCommand.command)) {
+      const patterns = userInput
+        .trim()
+        .substring(filesCommand.command.length)
+        .trim();
+      if (!patterns) {
+        writeln("Please provide a file pattern. Usage: /files src/**/*.ts");
+        continue;
+      }
+
+      try {
+        writeHeader("Finding files:");
+        const patternList = patterns.split(" ").filter(Boolean);
+        const foundFiles = await globby(patternList, { gitignore: true });
+
+        if (foundFiles.length === 0) {
+          writeln("No files found matching the pattern(s)");
+          continue;
+        }
+
+        writeHeader("Found files:");
+        for (const file of foundFiles) {
+          writeln(file);
+          loadedFiles.add(file);
+        }
+
+        // Read the content of the files and format them for the next prompt
+        pendingFileContents = "";
+        for (const filePath of foundFiles) {
+          try {
+            const content = await readFile(filePath, "utf-8");
+            pendingFileContents += `${formatFile(filePath, content, "bracket")}\n\n`;
+          } catch (error) {
+            writeError(
+              `Error reading file ${filePath}: ${(error as Error).message}`,
+            );
+          }
+        }
+
+        writeln(
+          `File contents will be added to your next prompt (${foundFiles.length} files)`,
+        );
+        continue;
+      } catch (error) {
+        writeError(
+          `Error processing file patterns: ${(error as Error).message}`,
+        );
+        continue;
+      }
+    }
+
     if (userInput.trim() === resetCommand.command) {
       if (!messages.isEmpty()) {
         await saveMessageHistory(messages.get());
         messages.clear();
       }
       tokenTracker.reset();
+      pendingFileContents = ""; // Clear any pending file contents
       continue;
     }
 
@@ -294,13 +355,20 @@ export async function repl({
           totalTokens: usage.completionTokens,
         });
       }
+      pendingFileContents = ""; // Clear any pending file contents
       continue;
     }
 
     // determine our thinking token budget for this request
     const thinkingBudget = calculateThinkingBudget(userInput);
 
+    // Add any pending file contents to the user input
     let finalPrompt = userInput;
+    if (pendingFileContents) {
+      finalPrompt = pendingFileContents + userInput;
+      pendingFileContents = ""; // Clear after using
+      writeln("Added file contents to prompt");
+    }
 
     // models that can't support toolcalling will be limited, but this step can at least give them some context to answer questions. very early in the development of this.
     if (!modelConfig.supportsToolCalling) {
@@ -344,7 +412,15 @@ export async function repl({
       });
     }
 
-    messages.appendUserMessage(createUserMessage(finalPrompt));
+    // Track if we're using file content in this prompt to set cache control appropriately
+    const isUsingFileContent = finalPrompt !== userInput;
+    const userMsg = createUserMessage(finalPrompt);
+    if (isUsingFileContent && langModel.modelId.includes("claude")) {
+      userMsg.providerOptions = {
+        anthropic: { cacheControl: { type: "ephemeral" } },
+      };
+    }
+    messages.appendUserMessage(userMsg);
 
     // Read rules from project directory
     const rules = await readRulesFile();
@@ -374,7 +450,7 @@ ${rules}`
           : 0.3,
         maxSteps: 30,
         maxRetries: 5,
-        providerOptions: langModel.modelId.includes("sonnet")
+        providerOptions: langModel.modelId.includes("3-7-sonnet")
           ? {
               anthropic: {
                 thinking: { type: "enabled", budgetTokens: thinkingBudget },
