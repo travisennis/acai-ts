@@ -238,6 +238,10 @@ export async function repl({
       userInput = await input({ message: ">" });
     }
 
+    // If this is stdin input and oneshot flag is not set, make sure we don't exit after first iteration
+    const isStdinInput = stdin && stdin.length > 0 && stdin === userInput;
+    const shouldContinue = isStdinInput && !args.oneshot;
+
     if (
       userInput.trim() === exitCommand.command ||
       userInput.trim() === byeCommand.command
@@ -445,8 +449,9 @@ ${rules}`
 
       result.consumeStream();
 
-      // Only exit if explicitly requested by a flag
-      if (args.oneshot === true) {
+      // Only exit if explicitly requested by oneshot flag
+      // Don't exit if stdin was used to provide first input without oneshot flag
+      if (args.oneshot === true && !shouldContinue) {
         return;
       }
     } catch (e) {
