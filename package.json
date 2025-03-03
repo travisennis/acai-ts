@@ -42,6 +42,7 @@
     "chalk": "^5.4.1",
     "cli-table3": "^0.6.5",
     "figlet": "^1.8.0",
+    "globby": "^14.1.0",
     "marked": "15.0.7",
     "marked-terminal": "^7.3.0",
     "meow": "^13.2.0",
