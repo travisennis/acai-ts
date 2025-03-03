@@ -1,7 +1,8 @@
+import { dirname } from "node:path";
 import {
-  dedent,
-  type TokenTracker,
   type ModelName,
+  type TokenTracker,
+  dedent,
   getLanguageModel,
 } from "@travisennis/acai-core";
 import { directoryTree } from "@travisennis/acai-core/tools";
@@ -10,7 +11,7 @@ import { generateText } from "ai";
 
 const retrieverSystemPrompt = (fileStructure: string) => {
   return dedent`
-The current working directory is ${process.cwd()}
+The current working directory is ${dirname(process.cwd())}
 
 The following files are found in the directory:
 
@@ -63,7 +64,7 @@ export async function retrieveFilesForTask({
       stateDir: envPaths("acai").state,
     }),
     system: retrieverSystemPrompt(await directoryTree(process.cwd())),
-    prompt,
+    prompt: `Task:\n<task>\n${prompt}\n</task>\nFiles:`,
   });
 
   tokenTracker?.trackUsage("file-retriever", usage);
