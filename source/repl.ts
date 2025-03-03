@@ -213,6 +213,7 @@ export async function repl({
 
   const tokenTracker = new TokenTracker();
   const messages = new MessageHistory();
+  const loadedFiles = new Set<string>();
 
   let firstPrompt =
     args.prompt && args.prompt.length > 0
@@ -306,12 +307,15 @@ export async function repl({
         tokenTracker,
       });
 
+      const newFiles = usefulFiles.filter((f) => !loadedFiles.has(f));
+
       writeHeader("Reading files:");
-      for (const file of usefulFiles) {
+      for (const file of newFiles) {
         writeln(file);
+        loadedFiles.add(file);
       }
 
-      finalPrompt = `${usefulFiles
+      finalPrompt = `${newFiles
         .map((filePath) => {
           return formatFile(
             filePath,
@@ -351,8 +355,16 @@ ${rules}`
       const result = streamText({
         model: langModel,
         maxTokens: Math.max(8096, thinkingBudget * 1.5),
-        system: finalSystemPrompt,
-        messages: messages.get(),
+        messages: [
+          {
+            role: "system",
+            content: finalSystemPrompt,
+            providerOptions: {
+              anthropic: { cacheControl: { type: "ephemeral" } },
+            },
+          },
+          ...messages.get(),
+        ],
         temperature: langModel.modelId.includes("deepseek-reasoner")
           ? 0.6
           : 0.3,
