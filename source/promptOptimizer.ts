@@ -148,9 +148,11 @@ export async function optimizePrompt({
     tools: allTools,
     // biome-ignore lint/style/useNamingConvention: <explanation>
     experimental_activeTools: [
-      ...objectKeys(fsTools).filter((tool) => READ_ONLY.includes(tool as any)),
+      ...objectKeys(fsTools).filter((tool) =>
+        READ_ONLY.includes(tool as (typeof READ_ONLY)[number]),
+      ),
       ...objectKeys(gitTools).filter((tool) =>
-        GIT_READ_ONLY.includes(tool as any),
+        GIT_READ_ONLY.includes(tool as (typeof GIT_READ_ONLY)[number]),
       ),
       "buildCode",
       "lintCode",
