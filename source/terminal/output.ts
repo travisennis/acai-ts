@@ -29,7 +29,7 @@ export function writeHeader(
   chalkFn: ChalkInstance = chalk.green,
 ): void {
   const width = process.stdout.columns - header.length - 2;
-  process.stdout.write(chalkFn(`\n--${header}${"-".repeat(width)}\n`));
+  process.stdout.write(chalkFn(`\n──${header}${"─".repeat(width)}\n`));
 }
 
 export function writeBox(

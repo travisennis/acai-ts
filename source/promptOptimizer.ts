@@ -17,7 +17,7 @@ import {
 import { envPaths } from "@travisennis/stdlib/env";
 import { objectKeys } from "@travisennis/stdlib/object";
 import { generateText } from "ai";
-import { writeln } from "./command.ts";
+import { writeln } from "./terminal/output.ts";
 
 export const metaPrompt = `
 Given a basic software engineering task prompt, enhance it by addressing these key aspects:

@@ -20,6 +20,7 @@ import {
   createGitTools,
   createGrepTools,
   createThinkTools,
+  type Message,
 } from "@travisennis/acai-core/tools";
 import { envPaths } from "@travisennis/stdlib/env";
 import {
@@ -41,13 +42,14 @@ import {
   writeError,
   writeHeader,
   writeln,
-} from "./command.ts";
+} from "./terminal/output.ts";
 import { readProjectConfig, readRulesFile } from "./config.ts";
 import { retrieveFilesForTask } from "./fileRetriever.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import { optimizePrompt } from "./promptOptimizer.ts";
 import { systemPrompt } from "./prompts.ts";
+import { initTerminal } from "./terminal/index.ts";
 
 const THINKING_TIERS = [
   {
@@ -126,32 +128,41 @@ const replCommands: ReplCommand[] = [
   helpCommand,
 ];
 
+const sendDataHandler = async (msg: Message) => {
+  if (msg.event === "tool-init") {
+    writeln(`> ${await msg.data}`);
+  } else if (msg.event === "tool-completion") {
+    writeln(`└─${await msg.data}`);
+  }
+  writeln(await msg.data);
+};
+
 const fsTools = await createFileSystemTools({
   workingDir: process.cwd(),
-  sendData: async (msg) => writeBox(msg.event ?? "tool-event", await msg.data),
+  sendData: sendDataHandler,
 });
 
 const gitTools = await createGitTools({
   workingDir: process.cwd(),
-  sendData: async (msg) => writeBox(msg.event ?? "tool-event", await msg.data),
+  sendData: sendDataHandler,
 });
 
 const codeTools = createCodeTools({
   baseDir: process.cwd(),
   config: await readProjectConfig(),
-  sendData: async (msg) => writeBox(msg.event ?? "tool-event", await msg.data),
+  sendData: sendDataHandler,
 });
 
 const codeInterpreterTool = createCodeInterpreterTool({
-  sendData: async (msg) => writeBox(msg.event ?? "tool-event", await msg.data),
+  sendData: sendDataHandler,
 });
 
 const grepTool = createGrepTools({
-  sendData: async (msg) => writeBox(msg.event ?? "tool-event", await msg.data),
+  sendData: sendDataHandler,
 });
 
 const thinkTool = createThinkTools({
-  sendData: async (msg) => writeBox(msg.event ?? "tool-event", await msg.data),
+  sendData: sendDataHandler,
 });
 
 const askUserTool = {
@@ -204,6 +215,9 @@ export async function repl({
   config: Record<PropertyKey, unknown>;
 }) {
   logger.info(config, "Config:");
+
+  const terminal = initTerminal();
+  terminal.displayWelcome();
 
   // const now = new Date();
 

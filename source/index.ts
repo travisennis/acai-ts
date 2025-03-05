@@ -1,12 +1,10 @@
 import { text } from "node:stream/consumers";
 import { asyncTry } from "@travisennis/stdlib/try";
-import chalk from "chalk";
-import figlet from "figlet";
 import meow from "meow";
-import { writeError, writeln } from "./command.ts";
 import { readAppConfig } from "./config.ts";
 import { logger } from "./logger.ts";
 import { repl } from "./repl.ts";
+import { writeError } from "./terminal/output.ts";
 
 const cli = meow(
   `
@@ -71,10 +69,6 @@ async function main() {
       writeError(`Error reading stdin: ${(error as Error).message}`);
     }
   }
-
-  writeln(chalk.magenta(figlet.textSync("acai")));
-  writeln(chalk.magenta("Greetings!"));
-  writeln(chalk.yellow(`The current working directory is ${process.cwd()}`));
 
   const config = await readAppConfig("acai");
 
