@@ -69,18 +69,6 @@ Application logs are stored in the system's XDG state directory:
 - macOS: `~/Library/Application Support/acai/`
 - Windows: `%LOCALAPPDATA%/acai/`
 
-## Directory Structure
-- `source/` - Main source code
-  - `command.ts` - Terminal output utilities
-  - `config.ts` - Configuration loading and handling
-  - `fileRetriever.ts` - Intelligent file retrieval for tasks
-  - `index.ts` - CLI entry point and argument parsing
-  - `logger.ts` - Logging utilities
-  - `parsing.ts` - JSON parsing utilities
-  - `promptOptimizer.ts` - AI prompt optimization
-  - `prompts.ts` - System prompts for AI models
-  - `repl.ts` - Interactive read-eval-print loop implementation
-
 ## Requirements
 
 - Node.js 16.x or higher
