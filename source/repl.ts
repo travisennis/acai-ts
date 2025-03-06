@@ -26,7 +26,7 @@ import { optimizePrompt } from "./promptOptimizer.ts";
 import { systemPrompt } from "./prompts.ts";
 import type { ReplCommands } from "./replCommands.ts";
 import type { Terminal } from "./terminal/index.ts";
-import { tools } from "./tools.ts";
+import { initTools } from "./tools.ts";
 
 const THINKING_TIERS = [
   {
@@ -174,6 +174,7 @@ export class Repl {
           model: "anthropic:sonnet35",
           prompt: finalPrompt,
           tokenTracker,
+          terminal,
         });
       }
 
@@ -222,7 +223,9 @@ ${rules}`
                 },
               }
             : {},
-          tools: modelConfig.supportsToolCalling ? tools : undefined,
+          tools: modelConfig.supportsToolCalling
+            ? await initTools({ terminal })
+            : undefined,
           // biome-ignore lint/style/useNamingConvention: <explanation>
           experimental_repairToolCall: modelConfig.supportsToolCalling
             ? toolCallRepair
@@ -307,12 +310,15 @@ ${rules}`
   }
 }
 
-const toolCallRepair: ToolCallRepairFunction<typeof tools> = async ({
-  toolCall,
-  tools,
-  parameterSchema,
-  error,
-}) => {
+type AsyncReturnType<T extends (...args: any) => Promise<any>> = T extends (
+  ...args: any
+) => Promise<infer R>
+  ? R
+  : any;
+
+const toolCallRepair: ToolCallRepairFunction<
+  AsyncReturnType<typeof initTools>
+> = async ({ toolCall, tools, parameterSchema, error }) => {
   if (NoSuchToolError.isInstance(error)) {
     return null; // do not attempt to fix invalid tool names
   }

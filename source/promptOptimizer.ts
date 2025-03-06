@@ -11,7 +11,8 @@ import {
 } from "@travisennis/acai-core/tools";
 import { envPaths } from "@travisennis/stdlib/env";
 import { generateText } from "ai";
-import { tools } from "./tools.ts";
+import type { Terminal } from "./terminal/index.ts";
+import { initTools } from "./tools.ts";
 
 export const metaPrompt = `
 Given a basic software engineering task prompt, enhance it by addressing these key aspects:
@@ -94,8 +95,14 @@ Only return the enhanced prompt.
 export async function optimizePrompt({
   model,
   prompt,
+  terminal,
   tokenTracker,
-}: { model: ModelName; prompt: string; tokenTracker: TokenTracker }) {
+}: {
+  model: ModelName;
+  prompt: string;
+  terminal: Terminal;
+  tokenTracker: TokenTracker;
+}) {
   const langModel = getLanguageModel({
     model,
     app: "meta-prompt",
@@ -108,7 +115,7 @@ export async function optimizePrompt({
     system: metaPrompt,
     prompt: prompt,
     maxSteps: 15,
-    tools: tools,
+    tools: await initTools({ terminal }),
     // biome-ignore lint/style/useNamingConvention: <explanation>
     experimental_activeTools: [
       ...READ_ONLY,
