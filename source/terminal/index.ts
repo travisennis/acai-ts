@@ -5,19 +5,21 @@
  * Handles input/output, formatting, and display.
  */
 
-import chalk from "chalk";
+import chalk, { type ChalkInstance } from "chalk";
 import figlet from "figlet";
+import { marked } from "marked";
+import TerminalRenderer from "marked-terminal";
 import ora from "ora";
 import { table } from "table";
 import terminalLink from "terminal-link";
 import { logger } from "../logger.ts";
 import { clearScreen, formatOutput, getTerminalSize } from "./formatting.ts";
-import { writeln } from "./output.ts";
-import type {
-  SpinnerInstance,
-  TerminalConfig,
-  TerminalInterface,
-} from "./types.ts";
+import type { SpinnerInstance, TerminalConfig } from "./types.ts";
+
+marked.setOptions({
+  // Define custom renderer
+  renderer: new TerminalRenderer() as any,
+});
 
 /**
  * Initialize the terminal interface
@@ -26,7 +28,7 @@ export function initTerminal(
   config: {
     terminal?: Partial<TerminalConfig>;
   } = {},
-): TerminalInterface {
+): Terminal {
   logger.debug("Initializing terminal interface");
 
   const terminalConfig: TerminalConfig = {
@@ -56,7 +58,7 @@ export function initTerminal(
 /**
  * Terminal class for handling user interaction
  */
-class Terminal implements TerminalInterface {
+export class Terminal {
   private config: TerminalConfig;
   private activeSpinners: Map<string, SpinnerInstance> = new Map();
   private terminalWidth: number;
@@ -109,9 +111,11 @@ class Terminal implements TerminalInterface {
   displayWelcome(): void {
     this.clear();
 
-    writeln(chalk.magenta(figlet.textSync("acai")));
-    writeln(chalk.magenta("Greetings!"));
-    writeln(chalk.yellow(`The current working directory is ${process.cwd()}`));
+    this.writeln(chalk.magenta(figlet.textSync("acai")));
+    this.writeln(chalk.magenta("Greetings!"));
+    this.writeln(
+      chalk.yellow(`The current working directory is ${process.cwd()}`),
+    );
 
     // const version = "0.2.29"; // This should come from package.json
 
@@ -163,7 +167,7 @@ class Terminal implements TerminalInterface {
       codeHighlighting: this.config.codeHighlighting,
     });
 
-    console.log(formatted);
+    console.info(formatted);
   }
 
   /**
@@ -171,9 +175,9 @@ class Terminal implements TerminalInterface {
    */
   emphasize(message: string): void {
     if (this.config.useColors) {
-      console.log(chalk.cyan.bold(message));
+      console.info(chalk.cyan.bold(message));
     } else {
-      console.log(message.toUpperCase());
+      console.info(message.toUpperCase());
     }
   }
 
@@ -182,9 +186,9 @@ class Terminal implements TerminalInterface {
    */
   info(message: string): void {
     if (this.config.useColors) {
-      console.log(chalk.blue(`ℹ ${message}`));
+      console.info(chalk.blue(`ℹ ${message}`));
     } else {
-      console.log(`INFO: ${message}`);
+      console.info(`INFO: ${message}`);
     }
   }
 
@@ -193,9 +197,9 @@ class Terminal implements TerminalInterface {
    */
   success(message: string): void {
     if (this.config.useColors) {
-      console.log(chalk.green(`✓ ${message}`));
+      console.info(chalk.green(`✓ ${message}`));
     } else {
-      console.log(`SUCCESS: ${message}`);
+      console.info(`SUCCESS: ${message}`);
     }
   }
 
@@ -204,9 +208,9 @@ class Terminal implements TerminalInterface {
    */
   warn(message: string): void {
     if (this.config.useColors) {
-      console.log(chalk.yellow(`⚠ ${message}`));
+      console.info(chalk.yellow(`⚠ ${message}`));
     } else {
-      console.log(`WARNING: ${message}`);
+      console.info(`WARNING: ${message}`);
     }
   }
 
@@ -215,10 +219,61 @@ class Terminal implements TerminalInterface {
    */
   error(message: string): void {
     if (this.config.useColors) {
-      console.log(chalk.red(`✗ ${message}`));
+      console.info(chalk.red(`✗ ${message}`));
     } else {
-      console.log(`ERROR: ${message}`);
+      console.info(`ERROR: ${message}`);
     }
+  }
+
+  write(input: string): void {
+    process.stdout.write(input);
+  }
+
+  writeln(input: string): void {
+    process.stdout.write(`${input}\n`);
+  }
+
+  header(header: string, chalkFn: ChalkInstance = chalk.green): void {
+    const width = process.stdout.columns - header.length - 2;
+    process.stdout.write(chalkFn(`\n──${header}${"─".repeat(width)}\n`));
+  }
+
+  box(
+    header: string,
+    content: string,
+    chalkFn: ChalkInstance = chalk.green,
+  ): void {
+    const width = process.stdout.columns - 4; // Account for box borders
+    const paddedHeader = ` ${header} `;
+    const headerStartPos = Math.floor((width - paddedHeader.length) / 2);
+
+    // Top border with header
+    const topBorder = `┌${"─".repeat(headerStartPos)}${paddedHeader}${"─".repeat(width - headerStartPos - paddedHeader.length)}┐`;
+
+    // Content lines with side borders
+    const contentLines = content
+      .split("\n")
+      .map((line) => {
+        return `│ ${line.padEnd(width - 2)} │`;
+      })
+      .join("\n");
+
+    // Bottom border
+    const bottomBorder = `└${"─".repeat(width)}┘`;
+
+    // Write the box
+    process.stdout.write(
+      chalkFn(`\n${topBorder}\n${contentLines}\n${bottomBorder}\n`),
+    );
+  }
+
+  hr(chalkFn: ChalkInstance = chalk.cyan): void {
+    process.stdout.write(chalkFn(`\n${"-".repeat(process.stdout.columns)}\n`));
+  }
+
+  async markdown(input: string): Promise<void> {
+    const md = await marked.parse(input);
+    console.info(md);
   }
 
   /**
@@ -259,16 +314,17 @@ class Terminal implements TerminalInterface {
           },
     };
 
+    let finalData = data;
     // Add header row with formatting
     if (options.header) {
       if (this.config.useColors) {
-        data = [options.header.map((h) => chalk.bold(h)), ...data];
+        finalData = [options.header.map((h) => chalk.bold(h)), ...data];
       } else {
-        data = [options.header, ...data];
+        finalData = [options.header, ...data];
       }
     }
 
-    console.log(table(data, config));
+    console.info(table(finalData, config));
   }
 
   /**
@@ -324,52 +380,53 @@ class Terminal implements TerminalInterface {
 
       this.activeSpinners.set(id, spinnerInstance);
       return spinnerInstance;
-    } else {
-      // Fallback for non-interactive terminals or when progress indicators are disabled
-      console.log(text);
-
-      // Return a dummy spinner
-      const dummySpinner: SpinnerInstance = {
-        id,
-        update: (newText: string) => {
-          if (newText !== text) {
-            console.log(newText);
-          }
-          return dummySpinner;
-        },
-        succeed: (text?: string) => {
-          if (text) {
-            this.success(text);
-          }
-          return dummySpinner;
-        },
-        fail: (text?: string) => {
-          if (text) {
-            this.error(text);
-          }
-          return dummySpinner;
-        },
-        warn: (text?: string) => {
-          if (text) {
-            this.warn(text);
-          }
-          return dummySpinner;
-        },
-        info: (text?: string) => {
-          if (text) {
-            this.info(text);
-          }
-          return dummySpinner;
-        },
-        stop: () => {
-          return dummySpinner;
-        },
-      };
-
-      return dummySpinner;
     }
+    // Fallback for non-interactive terminals or when progress indicators are disabled
+    console.info(text);
+
+    // Return a dummy spinner
+    const dummySpinner: SpinnerInstance = {
+      id,
+      update: (newText: string) => {
+        if (newText !== text) {
+          console.info(newText);
+        }
+        return dummySpinner;
+      },
+      succeed: (text?: string) => {
+        if (text) {
+          this.success(text);
+        }
+        return dummySpinner;
+      },
+      fail: (text?: string) => {
+        if (text) {
+          this.error(text);
+        }
+        return dummySpinner;
+      },
+      warn: (text?: string) => {
+        if (text) {
+          this.warn(text);
+        }
+        return dummySpinner;
+      },
+      info: (text?: string) => {
+        if (text) {
+          this.info(text);
+        }
+        return dummySpinner;
+      },
+      stop: () => {
+        return dummySpinner;
+      },
+    };
+
+    return dummySpinner;
   }
 }
 
 // Re-export the types
+// biome-ignore lint/performance/noReExportAll: <explanation>
+// biome-ignore lint/performance/noBarrelFile: <explanation>
 export * from "./types.ts";
