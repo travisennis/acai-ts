@@ -10,7 +10,6 @@ import { generateText } from "ai";
 import Table from "cli-table3";
 import { globby } from "globby";
 import type { FileManager } from "./fileManager.ts";
-import { saveMessageHistory } from "./messages.ts";
 import type { Terminal } from "./terminal/index.ts";
 
 interface ReplCommand {
@@ -107,7 +106,7 @@ export class ReplCommands {
       userInput.trim() === byeCommand.command
     ) {
       if (!this.messageHistory.isEmpty()) {
-        await saveMessageHistory(this.messageHistory.get());
+        await this.messageHistory.save();
       }
       return {
         break: true,
@@ -178,7 +177,7 @@ export class ReplCommands {
 
     if (userInput.trim() === resetCommand.command) {
       if (!this.messageHistory.isEmpty()) {
-        await saveMessageHistory(this.messageHistory.get());
+        await this.messageHistory.save();
         this.messageHistory.clear();
       }
       this.tokenTracker.reset();
