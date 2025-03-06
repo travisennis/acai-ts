@@ -1,55 +1,32 @@
-import { readFileSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { input } from "@inquirer/prompts";
 import {
-  MessageHistory,
+  type MessageHistory,
   ModelConfig,
   type ModelName,
-  TokenTracker,
-  createAssistantMessage,
+  type TokenTracker,
   createUserMessage,
-  formatFile,
   getLanguageModel,
   isSupportedModel,
 } from "@travisennis/acai-core";
-import {
-  createCodeInterpreterTool,
-  createCodeTools,
-  createFileSystemTools,
-  createGitTools,
-  createGrepTools,
-  createThinkTools,
-  type Message,
-} from "@travisennis/acai-core/tools";
 import { envPaths } from "@travisennis/stdlib/env";
 import {
-  type CoreMessage,
   NoSuchToolError,
   type ToolCallRepairFunction,
   generateObject,
-  generateText,
   streamText,
-  tool,
 } from "ai";
 import chalk from "chalk";
-import Table from "cli-table3";
-import { globby } from "globby";
-import { z } from "zod";
-import {
-  write,
-  writeBox,
-  writeError,
-  writeHeader,
-  writeln,
-} from "./terminal/output.ts";
-import { readProjectConfig, readRulesFile } from "./config.ts";
+import { readRulesFile } from "./config.ts";
+import type { FileManager } from "./fileManager.ts";
 import { retrieveFilesForTask } from "./fileRetriever.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import { optimizePrompt } from "./promptOptimizer.ts";
 import { systemPrompt } from "./prompts.ts";
-import { initTerminal } from "./terminal/index.ts";
+import type { ReplCommands } from "./replCommands.ts";
+import type { Terminal } from "./terminal/index.ts";
+import { tools } from "./tools.ts";
 
 const THINKING_TIERS = [
   {
@@ -67,495 +44,270 @@ const THINKING_TIERS = [
   },
 ];
 
-async function saveMessageHistory(messages: CoreMessage[]): Promise<void> {
-  const stateDir = envPaths("acai").state;
-  await mkdir(stateDir, { recursive: true });
-  const timestamp = new Date().toISOString().replace(/:/g, "-");
-  const fileName = `message-history-${timestamp}.json`;
-  const filePath = path.join(stateDir, fileName);
-
-  await writeFile(filePath, JSON.stringify(messages, null, 2));
-}
-
-interface ReplCommand {
-  command: string;
-  description: string;
-}
-
-const resetCommand = {
-  command: "/reset",
-  description: "Saves the chat history and then resets it.",
-};
-
-const saveCommand = {
-  command: "/save",
-  description: "Saves the chat history.",
-};
-
-const compactCommand = {
-  command: "/compact",
-  description: "Saves, summarizes and resets the chat history.",
-};
-
-const exitCommand = {
-  command: "/exit",
-  description: "Exits and saves the chat history.",
-};
-
-const byeCommand = {
-  command: "/bye",
-  description: "Exits and saves the chat history.",
-};
-
-const helpCommand = {
-  command: "/help",
-  description: "Shows usage table.",
-};
-
-const filesCommand = {
-  command: "/files",
-  description:
-    "Finds files matching the given patterns and adds their content to the next prompt. Usage: /files src/**/*.ts",
-};
-
-const replCommands: ReplCommand[] = [
-  resetCommand,
-  saveCommand,
-  compactCommand,
-  byeCommand,
-  exitCommand,
-  filesCommand,
-  helpCommand,
-];
-
-const sendDataHandler = async (msg: Message) => {
-  if (msg.event === "tool-init") {
-    writeln(`> ${await msg.data}`);
-  } else if (msg.event === "tool-completion") {
-    writeln(`└─${await msg.data}`);
-  }
-  writeln(await msg.data);
-};
-
-const fsTools = await createFileSystemTools({
-  workingDir: process.cwd(),
-  sendData: sendDataHandler,
-});
-
-const gitTools = await createGitTools({
-  workingDir: process.cwd(),
-  sendData: sendDataHandler,
-});
-
-const codeTools = createCodeTools({
-  baseDir: process.cwd(),
-  config: await readProjectConfig(),
-  sendData: sendDataHandler,
-});
-
-const codeInterpreterTool = createCodeInterpreterTool({
-  sendData: sendDataHandler,
-});
-
-const grepTool = createGrepTools({
-  sendData: sendDataHandler,
-});
-
-const thinkTool = createThinkTools({
-  sendData: sendDataHandler,
-});
-
-const askUserTool = {
-  askUser: tool({
-    description: "A tool to ask the user for input.",
-    parameters: z.object({
-      question: z.string().describe("The question to ask the user."),
-    }),
-    execute: async ({ question }) => {
-      const result = await input({ message: `${question} >` });
-
-      return result;
-    },
-  }),
-};
-
-const allTools = {
-  ...codeTools,
-  ...fsTools,
-  ...gitTools,
-  ...codeInterpreterTool,
-  ...grepTool,
-  ...thinkTool,
-  ...askUserTool,
-} as const;
-
-function displayUsage() {
-  const table = new Table({
-    head: ["command", "description"],
-  });
-
-  table.push(
-    ...replCommands
-      .sort((a, b) => (a.command > b.command ? 1 : -1))
-      .map((cmd) => [cmd.command, cmd.description]),
-  );
-
-  writeln(table.toString());
-}
-
-export async function repl({
-  initialPrompt,
-  stdin,
-  args,
-  config,
-}: {
-  initialPrompt: string | undefined;
-  stdin: string | undefined;
-  args: Flags;
+export interface ReplOptions {
+  messageHistory: MessageHistory;
+  tokenTracker: TokenTracker;
+  terminal: Terminal;
+  commands: ReplCommands;
+  fileManager: FileManager;
   config: Record<PropertyKey, unknown>;
-}) {
-  logger.info(config, "Config:");
+}
 
-  const terminal = initTerminal();
-  terminal.displayWelcome();
+export class Repl {
+  private options: ReplOptions;
+  constructor(options: ReplOptions) {
+    this.options = options;
+  }
 
-  // const now = new Date();
+  async run({
+    initialPrompt,
+    stdin,
+    args,
+  }: {
+    initialPrompt: string | undefined;
+    stdin: string | undefined;
+    args: Flags;
+  }) {
+    const {
+      config,
+      terminal,
+      fileManager,
+      tokenTracker,
+      messageHistory,
+      commands,
+    } = this.options;
 
-  const chosenModel: ModelName = isSupportedModel(args.model)
-    ? args.model
-    : "anthropic:sonnet-token-efficient-tools";
+    logger.info(config, "Config:");
 
-  const modelConfig = ModelConfig[chosenModel];
+    terminal.displayWelcome();
 
-  const langModel = getLanguageModel({
-    model: chosenModel,
-    stateDir: envPaths("acai").state,
-    app: "repl",
-  });
+    // const now = new Date();
 
-  const tokenTracker = new TokenTracker();
-  const messages = new MessageHistory();
-  const loadedFiles = new Set<string>();
-  let pendingFileContents = "";
+    const chosenModel: ModelName = isSupportedModel(args.model)
+      ? args.model
+      : "anthropic:sonnet-token-efficient-tools";
 
-  let firstPrompt =
-    args.prompt && args.prompt.length > 0
-      ? args.prompt
-      : initialPrompt && initialPrompt.length > 0
-        ? initialPrompt
-        : stdin && stdin.length > 0
-          ? stdin
-          : "";
+    const modelConfig = ModelConfig[chosenModel];
 
-  while (true) {
-    writeHeader("Input:");
-    writeln(`Model: ${langModel.modelId}`);
-    writeln("");
+    const langModel = getLanguageModel({
+      model: chosenModel,
+      stateDir: envPaths("acai").state,
+      app: "repl",
+    });
 
-    let userInput = "";
-    if (firstPrompt.length > 0) {
-      userInput = firstPrompt;
-      firstPrompt = ""; // Clear firstPrompt after using it
-    } else {
-      // For interactive input
-      userInput = await input({ message: ">" });
-    }
+    let firstPrompt =
+      args.prompt && args.prompt.length > 0
+        ? args.prompt
+        : initialPrompt && initialPrompt.length > 0
+          ? initialPrompt
+          : stdin && stdin.length > 0
+            ? stdin
+            : "";
 
-    // If this is stdin input and oneshot flag is not set, make sure we don't exit after first iteration
-    const isStdinInput = stdin && stdin.length > 0 && stdin === userInput;
-    const shouldContinue = isStdinInput && !args.oneshot;
+    while (true) {
+      terminal.header("Input:");
+      terminal.writeln(`Model: ${langModel.modelId}`);
+      terminal.writeln("");
 
-    if (
-      userInput.trim() === exitCommand.command ||
-      userInput.trim() === byeCommand.command
-    ) {
-      if (!messages.isEmpty()) {
-        await saveMessageHistory(messages.get());
+      let userInput = "";
+      if (firstPrompt.length > 0) {
+        userInput = firstPrompt;
+        firstPrompt = ""; // Clear firstPrompt after using it
+      } else {
+        // For interactive input
+        userInput = await input({ message: ">" });
       }
-      break;
-    }
 
-    if (userInput.trim() === helpCommand.command) {
-      displayUsage();
-      continue;
-    }
+      // If this is stdin input and oneshot flag is not set, make sure we don't exit after first iteration
+      const isStdinInput = stdin && stdin.length > 0 && stdin === userInput;
+      const shouldContinue = isStdinInput && !args.oneshot;
 
-    if (userInput.trim().startsWith(filesCommand.command)) {
-      const patterns = userInput
-        .trim()
-        .substring(filesCommand.command.length)
-        .trim();
-      if (!patterns) {
-        writeln("Please provide a file pattern. Usage: /files src/**/*.ts");
+      const commandResult = await commands.handle({ userInput });
+      if (commandResult.break) {
+        break;
+      }
+      if (commandResult.continue) {
         continue;
       }
 
-      try {
-        writeHeader("Finding files:");
-        const patternList = patterns.split(" ").filter(Boolean);
-        const foundFiles = await globby(patternList, { gitignore: true });
+      // determine our thinking token budget for this request
+      const thinkingBudget = calculateThinkingBudget(userInput);
 
-        if (foundFiles.length === 0) {
-          writeln("No files found matching the pattern(s)");
-          continue;
-        }
-
-        writeHeader("Found files:");
-        for (const file of foundFiles) {
-          writeln(file);
-          loadedFiles.add(file);
-        }
-
-        // Read the content of the files and format them for the next prompt
-        pendingFileContents = "";
-        for (const filePath of foundFiles) {
-          try {
-            const content = await readFile(filePath, "utf-8");
-            pendingFileContents += `${formatFile(filePath, content, "bracket")}\n\n`;
-          } catch (error) {
-            writeError(
-              `Error reading file ${filePath}: ${(error as Error).message}`,
-            );
-          }
-        }
-
-        writeln(
-          `File contents will be added to your next prompt (${foundFiles.length} files)`,
-        );
-        continue;
-      } catch (error) {
-        writeError(
-          `Error processing file patterns: ${(error as Error).message}`,
-        );
-        continue;
+      // Add any pending file contents to the user input
+      let finalPrompt = userInput;
+      if (fileManager.hasPendingContent()) {
+        finalPrompt = fileManager.getPendingContent() + userInput;
+        fileManager.clearPendingContent(); // Clear after using
+        terminal.writeln("Added file contents to prompt");
       }
-    }
 
-    if (userInput.trim() === resetCommand.command) {
-      if (!messages.isEmpty()) {
-        await saveMessageHistory(messages.get());
-        messages.clear();
-      }
-      tokenTracker.reset();
-      pendingFileContents = ""; // Clear any pending file contents
-      continue;
-    }
-
-    if (userInput.trim() === compactCommand.command) {
-      if (!messages.isEmpty()) {
-        // save existing message history
-        await saveMessageHistory(messages.get());
-        // summarize message history
-        messages.appendUserMessage(
-          createUserMessage(
-            "Provide a detailed but concise summary of our conversation above. Focus on information that would be helpful for continuing the conversation, including what we did, what we're doing, which files we're working on, and what we're going to do next.",
-          ),
-        );
-        const { text, usage } = await generateText({
-          model: langModel,
-          system:
-            "You are a helpful AI assistant tasked with summarizing conversations.",
-          messages: messages.get(),
+      // models that can't support toolcalling will be limited, but this step can at least give them some context to answer questions. very early in the development of this.
+      if (!modelConfig.supportsToolCalling) {
+        terminal.writeln("Adding files for task:");
+        const usefulFiles = await retrieveFilesForTask({
+          model: "anthropic:haiku",
+          prompt: userInput,
+          tokenTracker,
         });
-        //clear messages
-        messages.clear();
-        // reset messages with the summary
-        messages.appendAssistantMessage(createAssistantMessage(text));
-        // update token counts with new message history
-        tokenTracker.reset();
-        tokenTracker.trackUsage("repl", {
-          promptTokens: 0,
-          completionTokens: usage.completionTokens,
-          totalTokens: usage.completionTokens,
+
+        const absFiles = usefulFiles.map((filePath) => {
+          return path.isAbsolute(filePath)
+            ? filePath
+            : path.join(process.cwd(), "..", filePath);
+        });
+
+        fileManager.addFile(...absFiles);
+
+        terminal.header("Reading files:");
+        for (const file of absFiles) {
+          terminal.writeln(file);
+        }
+
+        finalPrompt = fileManager.getPendingContent() + userInput;
+
+        fileManager.clearPendingContent();
+      }
+
+      if (!modelConfig.reasoningModel) {
+        terminal.writeln("Optimizing prompt:");
+        finalPrompt = await optimizePrompt({
+          model: "anthropic:sonnet35",
+          prompt: finalPrompt,
+          tokenTracker,
         });
       }
-      pendingFileContents = ""; // Clear any pending file contents
-      continue;
-    }
 
-    // determine our thinking token budget for this request
-    const thinkingBudget = calculateThinkingBudget(userInput);
-
-    // Add any pending file contents to the user input
-    let finalPrompt = userInput;
-    if (pendingFileContents) {
-      finalPrompt = pendingFileContents + userInput;
-      pendingFileContents = ""; // Clear after using
-      writeln("Added file contents to prompt");
-    }
-
-    // models that can't support toolcalling will be limited, but this step can at least give them some context to answer questions. very early in the development of this.
-    if (!modelConfig.supportsToolCalling) {
-      writeln("Adding files for task:");
-      const usefulFiles = await retrieveFilesForTask({
-        model: "anthropic:haiku",
-        prompt: userInput,
-        tokenTracker,
-      });
-
-      const newFiles = usefulFiles.filter((f) => !loadedFiles.has(f));
-
-      writeHeader("Reading files:");
-      for (const file of newFiles) {
-        writeln(file);
-        loadedFiles.add(file);
+      // Track if we're using file content in this prompt to set cache control appropriately
+      const isUsingFileContent = finalPrompt !== userInput;
+      const userMsg = createUserMessage(finalPrompt);
+      if (isUsingFileContent && langModel.modelId.includes("claude")) {
+        userMsg.providerOptions = {
+          anthropic: { cacheControl: { type: "ephemeral" } },
+        };
       }
+      messageHistory.appendUserMessage(userMsg);
 
-      finalPrompt = `${newFiles
-        .map((filePath) => {
-          return formatFile(
-            filePath,
-            readFileSync(
-              path.isAbsolute(filePath)
-                ? filePath
-                : path.join(process.cwd(), "..", filePath),
-              "utf-8",
-            ),
-            "bracket",
-          );
-        })
-        .join("\n\n")}${userInput}`;
-    }
-
-    if (!modelConfig.reasoningModel) {
-      writeln("Optimizing prompt:");
-      finalPrompt = await optimizePrompt({
-        model: "anthropic:sonnet35",
-        prompt: finalPrompt,
-        tokenTracker,
-      });
-    }
-
-    // Track if we're using file content in this prompt to set cache control appropriately
-    const isUsingFileContent = finalPrompt !== userInput;
-    const userMsg = createUserMessage(finalPrompt);
-    if (isUsingFileContent && langModel.modelId.includes("claude")) {
-      userMsg.providerOptions = {
-        anthropic: { cacheControl: { type: "ephemeral" } },
-      };
-    }
-    messages.appendUserMessage(userMsg);
-
-    // Read rules from project directory
-    const rules = await readRulesFile();
-    const finalSystemPrompt = rules
-      ? `${systemPrompt}
+      // Read rules from project directory
+      const rules = await readRulesFile();
+      const finalSystemPrompt = rules
+        ? `${systemPrompt}
 
 Project Rules:
 ${rules}`
-      : systemPrompt;
+        : systemPrompt;
 
-    try {
-      const result = streamText({
-        model: langModel,
-        maxTokens: Math.max(8096, thinkingBudget * 1.5),
-        messages: [
-          {
-            role: "system",
-            content: finalSystemPrompt,
-            providerOptions: {
-              anthropic: { cacheControl: { type: "ephemeral" } },
-            },
-          },
-          ...messages.get(),
-        ],
-        temperature: langModel.modelId.includes("deepseek-reasoner")
-          ? 0.6
-          : 0.3,
-        maxSteps: 30,
-        maxRetries: 5,
-        providerOptions: langModel.modelId.includes("3-7-sonnet")
-          ? {
-              anthropic: {
-                thinking: { type: "enabled", budgetTokens: thinkingBudget },
+      try {
+        const result = streamText({
+          model: langModel,
+          maxTokens: Math.max(8096, thinkingBudget * 1.5),
+          messages: [
+            {
+              role: "system",
+              content: finalSystemPrompt,
+              providerOptions: {
+                anthropic: { cacheControl: { type: "ephemeral" } },
               },
+            },
+            ...messageHistory.get(),
+          ],
+          temperature: langModel.modelId.includes("deepseek-reasoner")
+            ? 0.6
+            : 0.3,
+          maxSteps: 30,
+          maxRetries: 5,
+          providerOptions: langModel.modelId.includes("3-7-sonnet")
+            ? {
+                anthropic: {
+                  thinking: { type: "enabled", budgetTokens: thinkingBudget },
+                },
+              }
+            : {},
+          tools: modelConfig.supportsToolCalling ? tools : undefined,
+          // biome-ignore lint/style/useNamingConvention: <explanation>
+          experimental_repairToolCall: modelConfig.supportsToolCalling
+            ? toolCallRepair
+            : undefined,
+          onStepFinish: (event) => {
+            if (
+              event.stepType === "initial" &&
+              event.toolCalls.length > 0 &&
+              event.text.length > 0
+            ) {
+              terminal.box(
+                "Step",
+                `Assistant: ${event.text}\nTool: ${event.toolCalls[0]?.toolName}\nResult: ${event.toolResults[0]?.result}`,
+              );
             }
-          : {},
-        tools: modelConfig.supportsToolCalling ? allTools : undefined,
-        // biome-ignore lint/style/useNamingConvention: <explanation>
-        experimental_repairToolCall: modelConfig.supportsToolCalling
-          ? toolCallRepair
-          : undefined,
-        onStepFinish: (event) => {
-          if (
-            event.stepType === "initial" &&
-            event.toolCalls.length > 0 &&
-            event.text.length > 0
-          ) {
-            writeBox(
-              "Step",
-              `Assistant: ${event.text}\nTool: ${event.toolCalls[0]?.toolName}\nResult: ${event.toolResults[0]?.result}`,
+          },
+          onFinish: (result) => {
+            messageHistory.appendResponseMessages(result.response.messages);
+
+            terminal.writeln("\n\n"); // this puts an empty line after the streamed response.
+            terminal.header("Tool use:");
+            terminal.writeln(`Steps: ${result.steps.length}`);
+
+            terminal.header("Usage:");
+            terminal.writeln(
+              chalk.green(
+                `Prompt tokens: ${result.usage.promptTokens}, Completion tokens: ${result.usage.completionTokens}, Total tokens: ${result.usage.totalTokens}`,
+              ),
             );
+            terminal.writeln(
+              chalk.yellow(
+                `Cache creation: ${result.providerMetadata?.anthropic?.cacheCreationInputTokens}, Cache read: ${result.providerMetadata?.anthropic?.cacheReadInputTokens}`,
+              ),
+            );
+            terminal.header("Total Usage:");
+            tokenTracker.trackUsage("repl", result.usage);
+            const totalUsage = tokenTracker.getTotalUsage();
+            terminal.writeln(
+              chalk.green(
+                `Prompt tokens: ${totalUsage.promptTokens}, Completion tokens: ${totalUsage.completionTokens}, Total tokens: ${totalUsage.totalTokens}`,
+              ),
+            );
+          },
+          onError: ({ error }) => {
+            terminal.error(JSON.stringify(error, null, 2));
+          },
+        });
+
+        terminal.header("Assistant:");
+        let lastType: "reasoning" | "text-delta" | null = null;
+        for await (const chunk of result.fullStream) {
+          if (chunk.type === "reasoning" || chunk.type === "text-delta") {
+            if (lastType !== "reasoning" && chunk.type === "reasoning") {
+              terminal.write("\n<think>\n");
+            } else if (lastType === "reasoning" && chunk.type !== "reasoning") {
+              terminal.write("\n</think>\n\n");
+            }
+            terminal.write(chunk.textDelta);
+            lastType = chunk.type;
           }
-        },
-        onFinish: (result) => {
-          messages.appendResponseMessages(result.response.messages);
-
-          writeln("\n\n"); // this puts an empty line after the streamed response.
-          writeHeader("Tool use:");
-          writeln(`Steps: ${result.steps.length}`);
-
-          writeHeader("Usage:");
-          writeln(
-            chalk.green(
-              `Prompt tokens: ${result.usage.promptTokens}, Completion tokens: ${result.usage.completionTokens}, Total tokens: ${result.usage.totalTokens}`,
-            ),
-          );
-          writeln(
-            chalk.yellow(
-              `Cache creation: ${result.providerMetadata?.anthropic?.cacheCreationInputTokens}, Cache read: ${result.providerMetadata?.anthropic?.cacheReadInputTokens}`,
-            ),
-          );
-          writeHeader("Total Usage:");
-          tokenTracker.trackUsage("repl", result.usage);
-          const totalUsage = tokenTracker.getTotalUsage();
-          writeln(
-            chalk.green(
-              `Prompt tokens: ${totalUsage.promptTokens}, Completion tokens: ${totalUsage.completionTokens}, Total tokens: ${totalUsage.totalTokens}`,
-            ),
-          );
-        },
-        onError: ({ error }) => {
-          writeError(JSON.stringify(error, null, 2));
-        },
-      });
-
-      writeHeader("Assistant:");
-      let lastType: "reasoning" | "text-delta" | null = null;
-      for await (const chunk of result.fullStream) {
-        if (chunk.type === "reasoning" || chunk.type === "text-delta") {
-          if (lastType !== "reasoning" && chunk.type === "reasoning") {
-            write("\n<think>\n");
-          } else if (lastType === "reasoning" && chunk.type !== "reasoning") {
-            write("\n</think>\n\n");
-          }
-          write(chunk.textDelta);
-          lastType = chunk.type;
         }
-      }
-      if (lastType === "reasoning") {
-        write("\n</think>\n\n");
-      }
+        if (lastType === "reasoning") {
+          terminal.write("\n</think>\n\n");
+        }
 
-      result.consumeStream();
+        result.consumeStream();
 
-      // Only exit if explicitly requested by oneshot flag
-      // Don't exit if stdin was used to provide first input without oneshot flag
-      if (args.oneshot === true && !shouldContinue) {
-        return;
-      }
-    } catch (e) {
-      writeError((e as Error).message);
-      if (e instanceof Error) {
-        logger.error(e);
-      } else {
-        logger.error(JSON.stringify(e, null, 2));
+        // Only exit if explicitly requested by oneshot flag
+        // Don't exit if stdin was used to provide first input without oneshot flag
+        if (args.oneshot === true && !shouldContinue) {
+          return;
+        }
+      } catch (e) {
+        terminal.error((e as Error).message);
+        if (e instanceof Error) {
+          logger.error(e);
+        } else {
+          logger.error(JSON.stringify(e, null, 2));
+        }
       }
     }
   }
 }
 
-const toolCallRepair: ToolCallRepairFunction<typeof allTools> = async ({
+const toolCallRepair: ToolCallRepairFunction<typeof tools> = async ({
   toolCall,
   tools,
   parameterSchema,
@@ -565,7 +317,7 @@ const toolCallRepair: ToolCallRepairFunction<typeof allTools> = async ({
     return null; // do not attempt to fix invalid tool names
   }
 
-  writeError("Attempting to repair tool call.");
+  console.error("Attempting to repair tool call.");
 
   const tool = tools[toolCall.toolName as keyof typeof tools];
 

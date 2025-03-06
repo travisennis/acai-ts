@@ -1,10 +1,14 @@
 import { text } from "node:stream/consumers";
+import { MessageHistory, TokenTracker } from "@travisennis/acai-core";
+import { envPaths } from "@travisennis/stdlib/env";
 import { asyncTry } from "@travisennis/stdlib/try";
 import meow from "meow";
 import { readAppConfig } from "./config.ts";
+import { FileManager } from "./fileManager.ts";
 import { logger } from "./logger.ts";
-import { repl } from "./repl.ts";
-import { writeError } from "./terminal/output.ts";
+import { Repl } from "./repl.ts";
+import { ReplCommands } from "./replCommands.ts";
+import { initTerminal } from "./terminal/index.ts";
 
 const cli = meow(
   `
@@ -66,19 +70,39 @@ async function main() {
       const stdinData = await text(process.stdin);
       stdInPrompt = stdinData;
     } catch (error) {
-      writeError(`Error reading stdin: ${(error as Error).message}`);
+      console.error(`Error reading stdin: ${(error as Error).message}`);
     }
   }
 
   const config = await readAppConfig("acai");
 
+  const stateDir = envPaths("acai").state;
+  const terminal = initTerminal();
+  const messageHistory = new MessageHistory({ stateDir });
+  const fileManager = new FileManager({ terminal });
+  const tokenTracker = new TokenTracker();
+  const replCommands = new ReplCommands({
+    terminal,
+    messageHistory,
+    tokenTracker,
+    fileManager,
+  });
+
+  const repl = new Repl({
+    terminal,
+    config,
+    messageHistory,
+    fileManager,
+    tokenTracker,
+    commands: replCommands,
+  });
+
   (
     await asyncTry(
-      repl({
+      repl.run({
         initialPrompt,
         stdin: stdInPrompt,
         args: cli.flags,
-        config,
       }),
     )
   ).recover(handleError);
