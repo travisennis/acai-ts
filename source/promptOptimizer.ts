@@ -7,17 +7,11 @@ import {
 import {
   GIT_READ_ONLY,
   READ_ONLY,
-  createCodeInterpreterTool,
-  createCodeTools,
-  createFileSystemTools,
-  createGitTools,
-  createGrepTools,
   inGitDirectory,
 } from "@travisennis/acai-core/tools";
 import { envPaths } from "@travisennis/stdlib/env";
-import { objectKeys } from "@travisennis/stdlib/object";
 import { generateText } from "ai";
-import { writeln } from "./terminal/output.ts";
+import { tools } from "./tools.ts";
 
 export const metaPrompt = `
 Given a basic software engineering task prompt, enhance it by addressing these key aspects:
@@ -108,52 +102,17 @@ export async function optimizePrompt({
     stateDir: envPaths("acai").state,
   });
 
-  const fsTools = await createFileSystemTools({
-    workingDir: process.cwd(),
-    sendData: async (msg) => writeln(await msg.data),
-  });
-
-  const gitTools = await createGitTools({
-    workingDir: process.cwd(),
-    sendData: async (msg) => writeln(await msg.data),
-  });
-
-  const codeTools = createCodeTools({
-    baseDir: process.cwd(),
-    sendData: async (msg) => writeln(await msg.data),
-  });
-
-  const codeInterpreterTool = createCodeInterpreterTool({
-    sendData: async (msg) => writeln(await msg.data),
-  });
-
-  const grepTool = createGrepTools({
-    sendData: async (msg) => writeln(await msg.data),
-  });
-
-  const allTools = {
-    ...codeTools,
-    ...fsTools,
-    ...gitTools,
-    ...codeInterpreterTool,
-    ...grepTool,
-  } as const;
-
   const { text, usage } = await generateText({
     model: langModel,
     maxTokens: 8192,
     system: metaPrompt,
     prompt: prompt,
     maxSteps: 15,
-    tools: allTools,
+    tools: tools,
     // biome-ignore lint/style/useNamingConvention: <explanation>
     experimental_activeTools: [
-      ...objectKeys(fsTools).filter((tool) =>
-        READ_ONLY.includes(tool as (typeof READ_ONLY)[number]),
-      ),
-      ...objectKeys(gitTools).filter((tool) =>
-        GIT_READ_ONLY.includes(tool as (typeof GIT_READ_ONLY)[number]),
-      ),
+      ...READ_ONLY,
+      ...GIT_READ_ONLY,
       "buildCode",
       "lintCode",
     ],
