@@ -128,7 +128,7 @@ export class ReplCommands {
         .substring(filesCommand.command.length)
         .trim();
       if (!patterns) {
-        this.terminal.writeln(
+        this.terminal.warn(
           "Please provide a file pattern. Usage: /files src/**/*.ts",
         );
         return {
@@ -143,7 +143,7 @@ export class ReplCommands {
         const foundFiles = await globby(patternList, { gitignore: true });
 
         if (foundFiles.length === 0) {
-          this.terminal.writeln("No files found matching the pattern(s)");
+          this.terminal.warn("No files found matching the pattern(s)");
           return {
             break: false,
             continue: true,
@@ -231,7 +231,7 @@ export class ReplCommands {
     }
     return {
       break: false,
-      continue: true,
+      continue: false,
     };
   }
 }

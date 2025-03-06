@@ -81,8 +81,6 @@ export class Repl {
 
     terminal.displayWelcome();
 
-    // const now = new Date();
-
     const chosenModel: ModelName = isSupportedModel(args.model)
       ? args.model
       : "anthropic:sonnet-token-efficient-tools";
@@ -105,8 +103,8 @@ export class Repl {
             : "";
 
     while (true) {
+      terminal.box("Model:", langModel.modelId);
       terminal.header("Input:");
-      terminal.writeln(`Model: ${langModel.modelId}`);
       terminal.writeln("");
 
       let userInput = "";
@@ -138,12 +136,12 @@ export class Repl {
       if (fileManager.hasPendingContent()) {
         finalPrompt = fileManager.getPendingContent() + userInput;
         fileManager.clearPendingContent(); // Clear after using
-        terminal.writeln("Added file contents to prompt");
+        terminal.info("Added file contents to prompt");
       }
 
       // models that can't support toolcalling will be limited, but this step can at least give them some context to answer questions. very early in the development of this.
       if (!modelConfig.supportsToolCalling) {
-        terminal.writeln("Adding files for task:");
+        terminal.info("Adding files for task:");
         const usefulFiles = await retrieveFilesForTask({
           model: "anthropic:haiku",
           prompt: userInput,

@@ -5,6 +5,8 @@
  * Handles input/output, formatting, and display.
  */
 
+import { readFileSync } from "node:fs";
+import { join } from "@travisennis/stdlib/desm";
 import chalk, { type ChalkInstance } from "chalk";
 import figlet from "figlet";
 import { marked } from "marked";
@@ -111,38 +113,38 @@ export class Terminal {
   displayWelcome(): void {
     this.clear();
 
-    this.writeln(chalk.magenta(figlet.textSync("acai")));
-    this.writeln(chalk.magenta("Greetings!"));
+    const packageJson = JSON.parse(
+      readFileSync(join(import.meta.url, "..", "..", "package.json"), "utf8"),
+    );
+    const version = packageJson.version;
+
+    this.writeln(chalk.magenta(figlet.textSync("acai", "Doh")));
+    this.writeln("");
+    this.writeln(chalk.magenta("Greetings! I am acai."));
+    this.writeln(chalk.gray(`  Version ${version}`));
+    this.writeln("");
+    this.writeln(
+      chalk.white(`  Type ${chalk.cyan("/help")} to see available commands.`),
+    );
+    this.writeln(
+      chalk.white(
+        "  You can ask acai to explain code, fix issues, or perform tasks.",
+      ),
+    );
+    this.writeln(
+      chalk.white(
+        `  Example: "${chalk.italic("Please analyze this codebase and explain its structure.")}"`,
+      ),
+    );
+    this.writeln("");
     this.writeln(
       chalk.yellow(`The current working directory is ${process.cwd()}`),
     );
 
-    // const version = "0.2.29"; // This should come from package.json
-
-    // // Main logo/header
-    // console.log(chalk.blue.bold("\n  Claude Code CLI"));
-    // console.log(chalk.gray(`  Version ${version} (Research Preview)\n`));
-
-    // console.log(
-    //   chalk.white(
-    //     `  Welcome! Type ${chalk.cyan("/help")} to see available commands.`,
-    //   ),
-    // );
-    // console.log(
-    //   chalk.white(
-    //     `  You can ask Claude to explain code, fix issues, or perform tasks.`,
-    //   ),
-    // );
-    // console.log(
-    //   chalk.white(
-    //     `  Example: "${chalk.italic("Please analyze this codebase and explain its structure.")}"\n`,
-    //   ),
-    // );
-
     // if (this.config.useColors) {
     //   console.log(
     //     chalk.dim(
-    //       "  Pro tip: Use Ctrl+C to interrupt Claude and start over.\n",
+    //       "  Pro tip: Use Ctrl+C to interrupt acai and start over.\n",
     //     ),
     //   );
     // }
@@ -234,8 +236,8 @@ export class Terminal {
   }
 
   header(header: string, chalkFn: ChalkInstance = chalk.green): void {
-    const width = process.stdout.columns - header.length - 2;
-    process.stdout.write(chalkFn(`\n──${header}${"─".repeat(width)}\n`));
+    const width = process.stdout.columns - header.length - 4;
+    process.stdout.write(chalkFn(`\n── ${header} ${"─".repeat(width)}\n`));
   }
 
   box(
@@ -245,7 +247,7 @@ export class Terminal {
   ): void {
     const width = process.stdout.columns - 4; // Account for box borders
     const paddedHeader = ` ${header} `;
-    const headerStartPos = Math.floor((width - paddedHeader.length) / 2);
+    const headerStartPos = 1; //Math.floor((width - paddedHeader.length) / 2);
 
     // Top border with header
     const topBorder = `┌${"─".repeat(headerStartPos)}${paddedHeader}${"─".repeat(width - headerStartPos - paddedHeader.length)}┐`;
