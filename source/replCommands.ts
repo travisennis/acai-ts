@@ -151,13 +151,16 @@ export class ReplCommands {
         }
 
         this.terminal.header("Found files:");
+        this.terminal.writeln("");
+
         for (const file of foundFiles) {
-          this.terminal.writeln(file);
+          this.terminal.writeln(`- ${file}`);
         }
 
         this.fileManager.addFile(...foundFiles);
 
-        this.terminal.writeln(
+        this.terminal.writeln("");
+        this.terminal.success(
           `File contents will be added to your next prompt (${foundFiles.length} files)`,
         );
         return {
