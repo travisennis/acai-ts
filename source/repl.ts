@@ -33,14 +33,17 @@ const THINKING_TIERS = [
     pattern:
       /\b(ultrathink|think super hard|think really hard|think intensely)\b/i,
     budget: 31999,
+    effort: "high",
   },
   {
     pattern: /\b(megathink|think (very )?hard|think (a lot|more|about it))\b/i,
     budget: 10000,
+    effort: "medium",
   },
   {
     pattern: /\bthink\b/i, // Catch-all for standalone "think"
     budget: 4000,
+    effort: "low",
   },
 ];
 
@@ -103,7 +106,7 @@ export class Repl {
             : "";
 
     while (true) {
-      terminal.box("Model:", langModel.modelId);
+      terminal.box("Model:", `${langModel.modelId}`);
       terminal.header("Input:");
       terminal.writeln("");
 
@@ -128,8 +131,8 @@ export class Repl {
         continue;
       }
 
-      // determine our thinking token budget for this request
-      const thinkingBudget = calculateThinkingBudget(userInput);
+      // determine our thinking level for this request
+      const thinkingLevel = calculateThinkingLevel(userInput);
 
       // Add any pending file contents to the user input
       let finalPrompt = userInput;
@@ -202,7 +205,7 @@ ${rules}`
       try {
         const result = streamText({
           model: langModel,
-          maxTokens: Math.max(8096, thinkingBudget * 1.5),
+          maxTokens: Math.max(8096, thinkingLevel.tokenBudget * 1.5),
           messages: [
             {
               role: "system",
@@ -221,11 +224,14 @@ ${rules}`
           providerOptions: langModel.modelId.includes("3-7-sonnet")
             ? {
                 anthropic: {
-                  thinking: { type: "enabled", budgetTokens: thinkingBudget },
+                  thinking: {
+                    type: "enabled",
+                    budgetTokens: thinkingLevel.tokenBudget,
+                  },
                 },
               }
             : langModel.modelId.includes("o3")
-              ? { openai: { reasoningEffort: "medium" } }
+              ? { openai: { reasoningEffort: thinkingLevel.effort } }
               : {},
           tools: modelConfig.supportsToolCalling
             ? await initTools({ terminal })
@@ -368,13 +374,15 @@ const toolCallRepair: ToolCallRepairFunction<
   return { ...toolCall, args: JSON.stringify(repairedArgs) };
 };
 
-function calculateThinkingBudget(userInput: string) {
-  let thinkingBudget = 2000; // Default
+function calculateThinkingLevel(userInput: string) {
+  let tokenBudget = 2000; // Default
+  let effort = "low";
   for (const tier of THINKING_TIERS) {
     if (tier.pattern.test(userInput)) {
-      thinkingBudget = tier.budget;
+      tokenBudget = tier.budget;
+      effort = tier.effort;
       break; // Use highest priority match
     }
   }
-  return thinkingBudget;
+  return { tokenBudget, effort };
 }
