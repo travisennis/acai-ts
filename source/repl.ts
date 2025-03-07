@@ -244,11 +244,8 @@ ${rules}`
           },
           onFinish: (result) => {
             if (result.response.messages.length > 0) {
-              // I keep getting assistant messages that have empty content arrays
-              const validMessages = result.response.messages.filter(
-                (msg) => msg.content.length > 0,
-              );
-              messageHistory.appendResponseMessages(validMessages);
+              // MessageHistory class now handles filtering empty content arrays
+              messageHistory.appendResponseMessages(result.response.messages);
             }
             terminal.writeln("\n\n"); // this puts an empty line after the streamed response.
             terminal.header("Tool use:");

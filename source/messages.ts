@@ -51,7 +51,10 @@ export class MessageHistory {
   }
 
   get() {
-    return [...this.history];
+    return [...this.history].filter(msg => {
+      // Filter out messages with empty content arrays
+      return !Array.isArray(msg.content) || msg.content.length > 0;
+    });
   }
 
   clear() {
@@ -67,7 +70,11 @@ export class MessageHistory {
   }
 
   appendResponseMessages(responseMessages: ResponseMessage[]) {
-    this.history.push(...responseMessages);
+    // Filter out messages with empty content arrays
+    const validMessages = responseMessages.filter(msg => {
+      return !Array.isArray(msg.content) || msg.content.length > 0;
+    });
+    this.history.push(...validMessages);
   }
 
   isEmpty() {
