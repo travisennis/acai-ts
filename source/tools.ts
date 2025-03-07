@@ -12,22 +12,24 @@ import { tool } from "ai";
 import { z } from "zod";
 import { readProjectConfig } from "./config.ts";
 import type { Terminal } from "./terminal/index.ts";
+import chalk from "chalk";
 
 const sendDataHandler = (terminal: Terminal) => {
   return async (msg: Message) => {
-    terminal.writeln("");
     if (msg.event === "tool-init") {
-      terminal.display(`> ${await msg.data}`);
+      terminal.writeln("");
+      terminal.display(`${chalk.blue.bold("●")} ${await msg.data}`);
     } else if (msg.event === "tool-update") {
       terminal.display(`└── ${await msg.data}`);
     } else if (msg.event === "tool-completion") {
       terminal.display(`└── ${await msg.data}`);
+      terminal.writeln("");
     } else if (msg.event === "tool-error") {
       terminal.error(await msg.data);
+      terminal.writeln("");
     } else {
       terminal.display(await msg.data);
     }
-    terminal.writeln("");
   };
 };
 
