@@ -4,6 +4,12 @@ import { envPaths } from "@travisennis/stdlib/env";
 import { z } from "zod";
 import { jsonParser } from "./parsing.ts";
 
+// Project Config
+export function getProjectConfigDir() {
+  const configPath = path.join(process.cwd(), ".acai");
+  return configPath;
+}
+
 const ProjectConfigSchema = z.object({
   build: z.string().optional(),
   lint: z.string().optional(),
@@ -11,10 +17,10 @@ const ProjectConfigSchema = z.object({
   test: z.string().optional(),
 });
 
-type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
+export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
 
-async function readProjectConfig(): Promise<ProjectConfig> {
-  const configPath = path.join(process.cwd(), ".acai", "acai.json");
+export async function readProjectConfig(): Promise<ProjectConfig> {
+  const configPath = path.join(getProjectConfigDir(), "acai.json");
   try {
     const data = await fs.readFile(configPath, "utf8");
     return jsonParser(ProjectConfigSchema).parse(data);
@@ -26,7 +32,20 @@ async function readProjectConfig(): Promise<ProjectConfig> {
   }
 }
 
-async function readAppConfig(
+export async function readRulesFile(): Promise<string> {
+  const rulesPath = path.join(getProjectConfigDir(), "rules.md");
+  try {
+    return await fs.readFile(rulesPath, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return "";
+    }
+    throw error;
+  }
+}
+
+// App Config
+export async function readAppConfig(
   configName: string,
 ): Promise<Record<PropertyKey, unknown>> {
   const configPath = path.join(envPaths("acai").config, `${configName}.json`);
@@ -41,7 +60,7 @@ async function readAppConfig(
   }
 }
 
-async function writeAppConfig(
+export async function writeAppConfig(
   configName: string,
   data: Record<PropertyKey, unknown>,
 ): Promise<void> {
@@ -50,17 +69,3 @@ async function writeAppConfig(
   await fs.mkdir(configDir, { recursive: true });
   await fs.writeFile(configPath, JSON.stringify(data, null, 2));
 }
-
-async function readRulesFile(): Promise<string> {
-  const rulesPath = path.join(process.cwd(), ".acai", "rules.md");
-  try {
-    return await fs.readFile(rulesPath, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return "";
-    }
-    throw error;
-  }
-}
-
-export { readAppConfig, writeAppConfig, readProjectConfig, readRulesFile };
