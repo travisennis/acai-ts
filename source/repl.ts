@@ -120,7 +120,7 @@ export class Repl {
       const isStdinInput = stdin && stdin.length > 0 && stdin === userInput;
       const shouldContinue = isStdinInput && !args.oneshot;
 
-      const commandResult = await commands.handle({ userInput });
+      const commandResult = await commands.handle({ userInput, modelConfig });
       if (commandResult.break) {
         break;
       }
@@ -154,7 +154,10 @@ export class Repl {
             : path.join(process.cwd(), "..", filePath);
         });
 
-        fileManager.addFile(...absFiles);
+        fileManager.addFiles({
+          files: absFiles,
+          format: modelConfig.promptFormat,
+        });
 
         terminal.header("Reading files:");
         for (const file of absFiles) {

@@ -11,6 +11,7 @@ import {
 } from "./messages.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
+import { ModelMetadata } from "./models/providers.ts";
 
 interface ReplCommand {
   command: string;
@@ -100,7 +101,10 @@ export class ReplCommands {
     this.fileManager = fileManager;
   }
 
-  async handle({ userInput }: { userInput: string }) {
+  async handle({
+    userInput,
+    modelConfig,
+  }: { userInput: string; modelConfig: ModelMetadata }) {
     if (
       userInput.trim() === exitCommand.command ||
       userInput.trim() === byeCommand.command
@@ -157,7 +161,10 @@ export class ReplCommands {
           this.terminal.writeln(`- ${file}`);
         }
 
-        this.fileManager.addFile(...foundFiles);
+        this.fileManager.addFiles({
+          files: foundFiles,
+          format: modelConfig.promptFormat,
+        });
 
         this.terminal.writeln("");
         this.terminal.success(

@@ -13,7 +13,10 @@ export class FileManager {
     this.pendingFileContents = "";
   }
 
-  async addFile(...files: string[]) {
+  async addFiles({
+    files,
+    format,
+  }: { files: string[]; format: "xml" | "markdown" | "bracket" }) {
     const newFiles = files.filter((f) => !this.loadedFiles.has(f));
 
     for (const file of newFiles) {
@@ -24,7 +27,7 @@ export class FileManager {
     for (const filePath of newFiles) {
       try {
         const content = await readFile(filePath, "utf-8");
-        this.pendingFileContents += `${formatFile(filePath, content, "bracket")}\n\n`;
+        this.pendingFileContents += `${formatFile(filePath, content, format)}\n\n`;
       } catch (error) {
         this.terminal.error(
           `Error reading file ${filePath}: ${(error as Error).message}`,
