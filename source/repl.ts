@@ -136,7 +136,8 @@ export class Repl {
       if (fileManager.hasPendingContent()) {
         finalPrompt = fileManager.getPendingContent() + userInput;
         fileManager.clearPendingContent(); // Clear after using
-        terminal.info("\nAdded file contents to prompt");
+        terminal.lineBreak();
+        terminal.info("Added file contents to prompt");
       }
 
       // models that can't support toolcalling will be limited, but this step can at least give them some context to answer questions. very early in the development of this.

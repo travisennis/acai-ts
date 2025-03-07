@@ -235,6 +235,10 @@ export class Terminal {
     process.stdout.write(`${input}\n`);
   }
 
+  lineBreak() {
+    this.writeln("");
+  }
+
   header(header: string, chalkFn: ChalkInstance = chalk.green): void {
     const width = process.stdout.columns - header.length - 4;
     process.stdout.write(chalkFn(`\n── ${header} ${"─".repeat(width)}\n`));
