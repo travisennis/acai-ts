@@ -10,6 +10,7 @@ import {
   isSupportedModel,
 } from "@travisennis/acai-core";
 import { envPaths } from "@travisennis/stdlib/env";
+import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import {
   NoSuchToolError,
   type ToolCallRepairFunction,
@@ -136,7 +137,7 @@ export class Repl {
       if (fileManager.hasPendingContent()) {
         finalPrompt = fileManager.getPendingContent() + userInput;
         fileManager.clearPendingContent(); // Clear after using
-        terminal.info("Added file contents to prompt");
+        terminal.info("\nAdded file contents to prompt");
       }
 
       // models that can't support toolcalling will be limited, but this step can at least give them some context to answer questions. very early in the development of this.
@@ -220,7 +221,9 @@ ${rules}`
                   thinking: { type: "enabled", budgetTokens: thinkingBudget },
                 },
               }
-            : {},
+            : langModel.modelId.includes("o3")
+              ? { openai: { reasoningEffort: "medium" } }
+              : {},
           tools: modelConfig.supportsToolCalling
             ? await initTools({ terminal })
             : undefined,
@@ -241,11 +244,24 @@ ${rules}`
             }
           },
           onFinish: (result) => {
-            messageHistory.appendResponseMessages(result.response.messages);
-
+            if (result.response.messages.length > 0) {
+              // I keep getting assistant messages that have empty content arrays
+              const validMessages = result.response.messages.filter(
+                (msg) => msg.content.length > 0,
+              );
+              messageHistory.appendResponseMessages(validMessages);
+            }
             terminal.writeln("\n\n"); // this puts an empty line after the streamed response.
             terminal.header("Tool use:");
             terminal.writeln(`Steps: ${result.steps.length}`);
+
+            for (const step of result.steps) {
+              terminal.writeln(`Step type: ${step.stepType}`);
+              terminal.writeln(
+                `Tools called: ${step.toolCalls.map((tc) => tc.toolName).join(", ")}`,
+              );
+              terminal.writeln(`Step tokens: ${step.usage.totalTokens}`);
+            }
 
             terminal.header("Usage:");
             terminal.writeln(
@@ -266,6 +282,7 @@ ${rules}`
                 `Prompt tokens: ${totalUsage.promptTokens}, Completion tokens: ${totalUsage.completionTokens}, Total tokens: ${totalUsage.totalTokens}`,
               ),
             );
+            terminal.hr(chalk.yellow);
           },
           onError: ({ error }) => {
             terminal.error(JSON.stringify(error, null, 2));
@@ -275,18 +292,28 @@ ${rules}`
         terminal.header("Assistant:");
         let lastType: "reasoning" | "text-delta" | null = null;
         for await (const chunk of result.fullStream) {
+          // Handle text-related chunks (reasoning or text-delta)
           if (chunk.type === "reasoning" || chunk.type === "text-delta") {
             if (lastType !== "reasoning" && chunk.type === "reasoning") {
-              terminal.write("\n<think>\n");
+              terminal.write(chalk.gray("\n<think>\n"));
             } else if (lastType === "reasoning" && chunk.type !== "reasoning") {
-              terminal.write("\n</think>\n\n");
+              terminal.write(chalk.gray("\n</think>\n\n"));
             }
-            terminal.write(chunk.textDelta);
+            terminal.write(
+              lastType === "reasoning"
+                ? chalk.gray(chunk.textDelta)
+                : chunk.textDelta,
+            );
             lastType = chunk.type;
+          }
+          // Close thinking tags when moving from reasoning to any other chunk type
+          else if (lastType === "reasoning") {
+            terminal.write(chalk.gray("\n</think>\n\n"));
+            lastType = null;
           }
         }
         if (lastType === "reasoning") {
-          terminal.write("\n</think>\n\n");
+          terminal.write(chalk.gray("\n</think>\n\n"));
         }
 
         result.consumeStream();
@@ -307,12 +334,6 @@ ${rules}`
     }
   }
 }
-
-type AsyncReturnType<T extends (...args: any) => Promise<any>> = T extends (
-  ...args: any
-) => Promise<infer R>
-  ? R
-  : any;
 
 const toolCallRepair: ToolCallRepairFunction<
   AsyncReturnType<typeof initTools>
