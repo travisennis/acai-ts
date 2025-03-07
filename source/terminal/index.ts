@@ -118,7 +118,7 @@ export class Terminal {
     );
     const version = packageJson.version;
 
-    this.writeln(chalk.magenta(figlet.textSync("acai", "Doh")));
+    this.writeln(chalk.magenta(figlet.textSync("acai")));
     this.writeln("");
     this.writeln(chalk.magenta("Greetings! I am acai."));
     this.writeln(chalk.gray(`  Version ${version}`));
