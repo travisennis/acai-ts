@@ -18,8 +18,12 @@ const sendDataHandler = (terminal: Terminal) => {
     terminal.writeln("");
     if (msg.event === "tool-init") {
       terminal.display(`> ${await msg.data}`);
+    } else if (msg.event === "tool-update") {
+      terminal.display(`└── ${await msg.data}`);
     } else if (msg.event === "tool-completion") {
       terminal.display(`└── ${await msg.data}`);
+    } else if (msg.event === "tool-error") {
+      terminal.error(await msg.data);
     } else {
       terminal.display(await msg.data);
     }
