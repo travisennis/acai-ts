@@ -243,13 +243,14 @@ ${rules}`
             : undefined,
           onStepFinish: (event) => {
             if (
-              event.stepType === "initial" &&
-              event.toolCalls.length > 0 &&
-              event.text.length > 0
+              event.stepType === "initial" ||
+              (event.stepType === "tool-result" &&
+                event.toolCalls.length > 0 &&
+                event.text.length > 0)
             ) {
               terminal.box(
-                "Step",
-                `Assistant: ${event.text}\nTool: ${event.toolCalls[0]?.toolName}\nResult: ${event.toolResults[0]?.result}`,
+                "Tool Step",
+                `Assistant: ${event.text}\nTools: ${event.toolCalls.map((t) => t.toolName).join(", ")}\nResult: ${event.toolResults[0]?.result}`,
               );
             }
           },
