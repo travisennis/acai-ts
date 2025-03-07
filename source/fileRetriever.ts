@@ -1,13 +1,11 @@
 import { dirname } from "node:path";
-import {
-  type ModelName,
-  type TokenTracker,
-  dedent,
-  getLanguageModel,
-} from "@travisennis/acai-core";
-import { directoryTree } from "@travisennis/acai-core/tools";
 import { envPaths } from "@travisennis/stdlib/env";
 import { generateText } from "ai";
+import { dedent } from "./dedent.ts";
+import { getLanguageModel } from "./getLanguageModel.ts";
+import type { ModelName } from "./models/providers.ts";
+import type { TokenTracker } from "./tokenTracker.ts";
+import { directoryTree } from "./tools/index.ts";
 
 const retrieverSystemPrompt = (fileStructure: string) => {
   return dedent`

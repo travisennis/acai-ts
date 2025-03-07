@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
-import { formatFile } from "@travisennis/acai-core";
 import type { TerminalInterface } from "./terminal/types.ts";
+import { formatFile } from "./formatting.ts";
 
 export class FileManager {
   private terminal: TerminalInterface;

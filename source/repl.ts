@@ -1,14 +1,5 @@
 import path from "node:path";
 import { input } from "@inquirer/prompts";
-import {
-  type MessageHistory,
-  ModelConfig,
-  type ModelName,
-  type TokenTracker,
-  createUserMessage,
-  getLanguageModel,
-  isSupportedModel,
-} from "@travisennis/acai-core";
 import { envPaths } from "@travisennis/stdlib/env";
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import {
@@ -21,13 +12,21 @@ import chalk from "chalk";
 import { readRulesFile } from "./config.ts";
 import type { FileManager } from "./fileManager.ts";
 import { retrieveFilesForTask } from "./fileRetriever.ts";
+import { getLanguageModel } from "./getLanguageModel.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
+import { type MessageHistory, createUserMessage } from "./messages.ts";
+import {
+  type ModelName,
+  isSupportedModel,
+  modelRegistry,
+} from "./models/providers.ts";
 import { optimizePrompt } from "./promptOptimizer.ts";
 import { systemPrompt } from "./prompts.ts";
 import type { ReplCommands } from "./replCommands.ts";
 import type { Terminal } from "./terminal/index.ts";
-import { initTools } from "./tools.ts";
+import type { TokenTracker } from "./tokenTracker.ts";
+import { initTools } from "./tools/index.ts";
 
 const THINKING_TIERS = [
   {
@@ -86,7 +85,7 @@ export class Repl {
       ? args.model
       : "anthropic:sonnet-token-efficient-tools";
 
-    const modelConfig = ModelConfig[chosenModel];
+    const modelConfig = modelRegistry[chosenModel];
 
     const langModel = getLanguageModel({
       model: chosenModel,
@@ -167,7 +166,7 @@ export class Repl {
         fileManager.clearPendingContent();
       }
 
-      if (!modelConfig.reasoningModel) {
+      if (!modelConfig.supportsReasoning) {
         terminal.writeln("Optimizing prompt:");
         finalPrompt = await optimizePrompt({
           model: "anthropic:sonnet35",

@@ -1,14 +1,15 @@
 import { text } from "node:stream/consumers";
-import { MessageHistory, TokenTracker } from "@travisennis/acai-core";
 import { envPaths } from "@travisennis/stdlib/env";
 import { asyncTry } from "@travisennis/stdlib/try";
 import meow from "meow";
 import { readAppConfig } from "./config.ts";
 import { FileManager } from "./fileManager.ts";
 import { logger } from "./logger.ts";
+import { MessageHistory } from "./messages.ts";
 import { Repl } from "./repl.ts";
 import { ReplCommands } from "./replCommands.ts";
 import { initTerminal } from "./terminal/index.ts";
+import { TokenTracker } from "./tokenTracker.ts";
 
 const cli = meow(
   `

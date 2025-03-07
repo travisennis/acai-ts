@@ -1,18 +1,18 @@
 import { input } from "@inquirer/prompts";
-import {
-  type Message,
-  createCodeInterpreterTool,
-  createCodeTools,
-  createFileSystemTools,
-  createGitTools,
-  createGrepTools,
-  createThinkTools,
-} from "@travisennis/acai-core/tools";
 import { tool } from "ai";
-import { z } from "zod";
-import { readProjectConfig } from "./config.ts";
-import type { Terminal } from "./terminal/index.ts";
 import chalk from "chalk";
+import { z } from "zod";
+import { readProjectConfig } from "../config.ts";
+import type { Terminal } from "../terminal/index.ts";
+import { createCodeInterpreterTool } from "./codeInterpreter.ts";
+import { createCodeTools } from "./codeTools.ts";
+import { createFileSystemTools } from "./filesystem.ts";
+import { createGitTools } from "./git.ts";
+import { createGrepTools } from "./grep.ts";
+import { createThinkTools } from "./tauThink.ts";
+import type { Message } from "./types.ts";
+// import { createUrlTools } from "./url.ts";
+// import { createRaindropTools } from "./raindrop.ts";
 
 const sendDataHandler = (terminal: Terminal) => {
   return async (msg: Message) => {
@@ -62,6 +62,15 @@ export async function initTools({ terminal }: { terminal: Terminal }) {
     sendData: sendDataHandler(terminal),
   });
 
+  // const bookmarkTools = createRaindropTools({
+  //   apiKey: process.env.RAINDROP_API_KEY ?? "",
+  //   sendData: sendDataHandler(terminal),
+  // });
+
+  // const urlTools = createUrlTools({
+  //   sendData: sendDataHandler(terminal),
+  // });
+
   const askUserTool = {
     askUser: tool({
       description: "A tool to ask the user for input.",
@@ -83,8 +92,22 @@ export async function initTools({ terminal }: { terminal: Terminal }) {
     ...codeInterpreterTool,
     ...grepTool,
     ...thinkTool,
+    // ...urlTools,
+    // ...bookmarkTools,
     ...askUserTool,
   } as const;
 
   return tools;
 }
+
+// biome-ignore lint/performance/noBarrelFile: <explanation>
+export * from "./codeInterpreter.ts";
+export * from "./codeTools.ts";
+export * from "./filesystem.ts";
+export * from "./git.ts";
+export * from "./grep.ts";
+export * from "./memory.ts";
+export * from "./raindrop.ts";
+export * from "./tauThink.ts";
+export * from "./types.ts";
+export * from "./url.ts";

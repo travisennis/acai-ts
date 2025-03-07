@@ -1,5 +1,5 @@
 import { platform } from "node:os";
-import { inGitDirectory } from "@travisennis/acai-core/tools";
+import { inGitDirectory } from "./tools/index.ts";
 
 export const systemPrompt = `
 You are acai, an interactive CLI tool that helps users with software engineering tasks. Use the instructions below and the tools available to you to assist the user.

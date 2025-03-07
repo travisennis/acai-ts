@@ -1,18 +1,13 @@
 import { platform } from "node:os";
-import {
-  type ModelName,
-  type TokenTracker,
-  getLanguageModel,
-} from "@travisennis/acai-core";
-import {
-  GIT_READ_ONLY,
-  READ_ONLY,
-  inGitDirectory,
-} from "@travisennis/acai-core/tools";
 import { envPaths } from "@travisennis/stdlib/env";
 import { generateText } from "ai";
+import { getLanguageModel } from "./getLanguageModel.ts";
+import type { ModelName } from "./models/providers.ts";
 import type { Terminal } from "./terminal/index.ts";
-import { initTools } from "./tools.ts";
+import type { TokenTracker } from "./tokenTracker.ts";
+import { READ_ONLY } from "./tools/filesystem.ts";
+import { GIT_READ_ONLY, inGitDirectory } from "./tools/git.ts";
+import { initTools } from "./tools/index.ts";
 
 export const metaPrompt = `
 Given a basic software engineering task prompt, enhance it by addressing these key aspects:

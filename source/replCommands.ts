@@ -1,16 +1,16 @@
-import {
-  type MessageHistory,
-  type TokenTracker,
-  createAssistantMessage,
-  createUserMessage,
-  getLanguageModel,
-} from "@travisennis/acai-core";
 import { envPaths } from "@travisennis/stdlib/env";
 import { generateText } from "ai";
 import Table from "cli-table3";
 import { globby } from "globby";
 import type { FileManager } from "./fileManager.ts";
+import { getLanguageModel } from "./getLanguageModel.ts";
+import {
+  type MessageHistory,
+  createAssistantMessage,
+  createUserMessage,
+} from "./messages.ts";
 import type { Terminal } from "./terminal/index.ts";
+import type { TokenTracker } from "./tokenTracker.ts";
 
 interface ReplCommand {
   command: string;
