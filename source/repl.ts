@@ -258,6 +258,9 @@ ${rules}`
             for (const step of result.steps) {
               terminal.writeln(`Step type: ${step.stepType}`);
               terminal.writeln(
+                `Results from tools: ${step.toolResults.map((tc) => tc.toolName).join(", ")}`,
+              );
+              terminal.writeln(
                 `Tools called: ${step.toolCalls.map((tc) => tc.toolName).join(", ")}`,
               );
               terminal.writeln(`Step tokens: ${step.usage.totalTokens}`);
