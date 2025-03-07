@@ -216,23 +216,24 @@ ${rules}`
             },
             ...messageHistory.get(),
           ],
-          temperature: langModel.modelId.includes("deepseek-reasoner")
-            ? 0.6
-            : 0.3,
+          temperature: modelConfig.defaultTemperature,
           maxSteps: 30,
           maxRetries: 5,
-          providerOptions: langModel.modelId.includes("3-7-sonnet")
-            ? {
-                anthropic: {
-                  thinking: {
-                    type: "enabled",
-                    budgetTokens: thinkingLevel.tokenBudget,
+          providerOptions:
+            modelConfig.provider === "anthropic" &&
+            modelConfig.supportsReasoning
+              ? {
+                  anthropic: {
+                    thinking: {
+                      type: "enabled",
+                      budgetTokens: thinkingLevel.tokenBudget,
+                    },
                   },
-                },
-              }
-            : langModel.modelId.includes("o3")
-              ? { openai: { reasoningEffort: thinkingLevel.effort } }
-              : {},
+                }
+              : modelConfig.supportsReasoning &&
+                  modelConfig.provider === "openai"
+                ? { openai: { reasoningEffort: thinkingLevel.effort } }
+                : {},
           tools: modelConfig.supportsToolCalling
             ? await initTools({ terminal })
             : undefined,
