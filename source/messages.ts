@@ -1,10 +1,13 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type {
-  CoreAssistantMessage,
-  CoreMessage,
-  CoreToolMessage,
-  CoreUserMessage,
+import { isString } from "@travisennis/stdlib/typeguards";
+import {
+  type CoreAssistantMessage,
+  type CoreMessage,
+  type CoreToolMessage,
+  type CoreUserMessage,
+  type LanguageModel,
+  generateText,
 } from "ai";
 
 export function createUserMessage(content: string): CoreUserMessage {
@@ -51,7 +54,7 @@ export class MessageHistory {
   }
 
   get() {
-    return [...this.history].filter(msg => {
+    return [...this.history].filter((msg) => {
       // Filter out messages with empty content arrays
       return !Array.isArray(msg.content) || msg.content.length > 0;
     });
@@ -61,17 +64,23 @@ export class MessageHistory {
     this.history.length = 0;
   }
 
-  appendUserMessage(user: CoreUserMessage) {
-    this.history.push(user);
+  appendUserMessage(msg: string): void;
+  appendUserMessage(msg: CoreUserMessage): void;
+  appendUserMessage(msg: string | CoreUserMessage) {
+    const msgObj = isString(msg) ? createUserMessage(msg) : msg;
+    this.history.push(msgObj);
   }
 
-  appendAssistantMessage(assistant: CoreAssistantMessage) {
-    this.history.push(assistant);
+  appendAssistantMessage(msg: string): void;
+  appendAssistantMessage(msg: CoreAssistantMessage): void;
+  appendAssistantMessage(msg: string | CoreAssistantMessage) {
+    const msgObj = isString(msg) ? createAssistantMessage(msg) : msg;
+    this.history.push(msgObj);
   }
 
   appendResponseMessages(responseMessages: ResponseMessage[]) {
     // Filter out messages with empty content arrays
-    const validMessages = responseMessages.filter(msg => {
+    const validMessages = responseMessages.filter((msg) => {
       return !Array.isArray(msg.content) || msg.content.length > 0;
     });
     this.history.push(...validMessages);
@@ -88,6 +97,29 @@ export class MessageHistory {
     const filePath = join(this.stateDir, fileName);
 
     await writeFile(filePath, JSON.stringify(this.history, null, 2));
+  }
+
+  async summarizeAndReset({ langModel }: { langModel: LanguageModel }) {
+    // save existing message history
+    await this.save();
+    // summarize message history
+    this.appendUserMessage(
+      createUserMessage(
+        "Provide a detailed but concise summary of our conversation above. Focus on information that would be helpful for continuing the conversation, including what we did, what we're doing, which files we're working on, and what we're going to do next.",
+      ),
+    );
+    const { text, usage } = await generateText({
+      model: langModel,
+      system:
+        "You are a helpful AI assistant tasked with summarizing conversations.",
+      messages: this.get(),
+    });
+    //clear messages
+    this.clear();
+    // reset messages with the summary
+    this.appendAssistantMessage(createAssistantMessage(text));
+
+    return { text, usage };
   }
 }
 

@@ -9,9 +9,9 @@ import {
   createAssistantMessage,
   createUserMessage,
 } from "./messages.ts";
+import type { ModelMetadata } from "./models/providers.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
-import { ModelMetadata } from "./models/providers.ts";
 
 interface ReplCommand {
   command: string;
@@ -205,26 +205,11 @@ export class ReplCommands {
           stateDir: envPaths("acai").state,
           app: "repl",
         });
-        // save existing message history
-        await this.messageHistory.save();
-        // summarize message history
-        this.messageHistory.appendUserMessage(
-          createUserMessage(
-            "Provide a detailed but concise summary of our conversation above. Focus on information that would be helpful for continuing the conversation, including what we did, what we're doing, which files we're working on, and what we're going to do next.",
-          ),
-        );
-        const { text, usage } = await generateText({
-          model: langModel,
-          system:
-            "You are a helpful AI assistant tasked with summarizing conversations.",
-          messages: this.messageHistory.get(),
+
+        const { usage } = await this.messageHistory.summarizeAndReset({
+          langModel,
         });
-        //clear messages
-        this.messageHistory.clear();
-        // reset messages with the summary
-        this.messageHistory.appendAssistantMessage(
-          createAssistantMessage(text),
-        );
+
         // update token counts with new message history
         this.tokenTracker.reset();
         this.tokenTracker.trackUsage("repl", {
