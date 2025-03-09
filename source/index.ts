@@ -82,6 +82,7 @@ async function main() {
   const messageHistory = new MessageHistory({ stateDir });
   const fileManager = new FileManager({ terminal });
   const tokenTracker = new TokenTracker();
+  const messageHistory = new MessageHistory({ stateDir, tokenTracker });
   const replCommands = new ReplCommands({
     terminal,
     messageHistory,

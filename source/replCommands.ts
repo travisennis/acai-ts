@@ -1,14 +1,7 @@
-import { envPaths } from "@travisennis/stdlib/env";
-import { generateText } from "ai";
 import Table from "cli-table3";
 import { globby } from "globby";
 import type { FileManager } from "./fileManager.ts";
-import { getLanguageModel } from "./getLanguageModel.ts";
-import {
-  type MessageHistory,
-  createAssistantMessage,
-  createUserMessage,
-} from "./messages.ts";
+import type { MessageHistory } from "./messages.ts";
 import type { ModelMetadata } from "./models/providers.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
@@ -105,6 +98,7 @@ export class ReplCommands {
     userInput,
     modelConfig,
   }: { userInput: string; modelConfig: ModelMetadata }) {
+    // /exit or /bye command
     if (
       userInput.trim() === exitCommand.command ||
       userInput.trim() === byeCommand.command
@@ -118,6 +112,7 @@ export class ReplCommands {
       };
     }
 
+    // /help command
     if (userInput.trim() === helpCommand.command) {
       displayUsage();
       return {
@@ -126,6 +121,7 @@ export class ReplCommands {
       };
     }
 
+    // /files command
     if (userInput.trim().startsWith(filesCommand.command)) {
       const patterns = userInput
         .trim()
@@ -185,6 +181,7 @@ export class ReplCommands {
       }
     }
 
+    // /reset command
     if (userInput.trim() === resetCommand.command) {
       if (!this.messageHistory.isEmpty()) {
         await this.messageHistory.save();
@@ -198,25 +195,10 @@ export class ReplCommands {
       };
     }
 
+    // /compact command
     if (userInput.trim() === compactCommand.command) {
       if (!this.messageHistory.isEmpty()) {
-        const langModel = getLanguageModel({
-          model: "anthropic:haiku",
-          stateDir: envPaths("acai").state,
-          app: "repl",
-        });
-
-        const { usage } = await this.messageHistory.summarizeAndReset({
-          langModel,
-        });
-
-        // update token counts with new message history
-        this.tokenTracker.reset();
-        this.tokenTracker.trackUsage("repl", {
-          promptTokens: 0,
-          completionTokens: usage.completionTokens,
-          totalTokens: usage.completionTokens,
-        });
+        await this.messageHistory.summarizeAndReset();
       }
       this.fileManager.clearPendingContent();
       return {
