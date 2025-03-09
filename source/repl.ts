@@ -106,7 +106,10 @@ export class Repl {
             : "";
 
     while (true) {
-      terminal.box("Model:", `${langModel.modelId}`);
+      terminal.box(
+        "State:",
+        `Model:          ${langModel.modelId}\nContext Window: ${tokenTracker.getTotalUsage().promptTokens} tokens`,
+      );
       terminal.header("Input:");
       terminal.writeln("");
 
@@ -186,7 +189,7 @@ export class Repl {
       // Track if we're using file content in this prompt to set cache control appropriately
       const isUsingFileContent = finalPrompt !== userInput;
       const userMsg = createUserMessage(finalPrompt);
-      if (isUsingFileContent && langModel.modelId.includes("claude")) {
+      if (isUsingFileContent && modelConfig.provider === "anthropic") {
         userMsg.providerOptions = {
           anthropic: { cacheControl: { type: "ephemeral" } },
         };
@@ -202,10 +205,14 @@ Project Rules:
 ${rules}`
         : systemPrompt;
 
+      const maxTokens =
+        modelConfig.provider === "anthropic" && modelConfig.supportsReasoning
+          ? modelConfig.maxOutputTokens - thinkingLevel.tokenBudget
+          : modelConfig.maxOutputTokens;
       try {
         const result = streamText({
           model: langModel,
-          maxTokens: Math.max(8096, thinkingLevel.tokenBudget * 1.5),
+          maxTokens,
           messages: [
             {
               role: "system",
@@ -243,10 +250,10 @@ ${rules}`
             : undefined,
           onStepFinish: (event) => {
             if (
-              event.stepType === "initial" ||
-              (event.stepType === "tool-result" &&
-                event.toolCalls.length > 0 &&
-                event.text.length > 0)
+              (event.stepType === "initial" ||
+                event.stepType === "tool-result") &&
+              event.toolCalls.length > 0 &&
+              event.text.length > 0
             ) {
               terminal.box(
                 "Tool Step",
@@ -256,7 +263,6 @@ ${rules}`
           },
           onFinish: (result) => {
             if (result.response.messages.length > 0) {
-              // MessageHistory class now handles filtering empty content arrays
               messageHistory.appendResponseMessages(result.response.messages);
             }
             terminal.writeln("\n\n"); // this puts an empty line after the streamed response.
@@ -311,7 +317,7 @@ ${rules}`
               terminal.write(chalk.gray("\n</think>\n\n"));
             }
             terminal.write(
-              lastType === "reasoning"
+              chunk.type === "reasoning"
                 ? chalk.gray(chunk.textDelta)
                 : chunk.textDelta,
             );
