@@ -15,7 +15,12 @@ import ora from "ora";
 import { table } from "table";
 import terminalLink from "terminal-link";
 import { logger } from "../logger.ts";
-import { clearScreen, formatOutput, getTerminalSize } from "./formatting.ts";
+import {
+  clearScreen,
+  formatOutput,
+  getTerminalSize,
+  setTerminalTitle,
+} from "./formatting.ts";
 import type { SpinnerInstance, TerminalConfig } from "./types.ts";
 
 marked.setOptions({
@@ -105,6 +110,10 @@ export class Terminal {
       colorSupport: this.config.useColors ? "yes" : "no",
       size: `${this.terminalWidth}x${this.terminalHeight}`,
     });
+  }
+
+  setTitle(title: string) {
+    setTerminalTitle(title);
   }
 
   /**

@@ -15,6 +15,36 @@ export function clearScreen(): void {
 }
 
 /**
+ * Clear the terminal screen including scrollback buffer
+ *
+ * Unlike clearScreen, this function:
+ * 1. Clears the entire screen (\x1b[2J)
+ * 2. Clears the scrollback buffer (\x1b[3J)
+ * 3. Moves cursor to home position (\x1b[H)
+ * 4. Returns a Promise that resolves when the write operation completes
+ *
+ * @returns Promise that resolves when the terminal has been cleared
+ */
+export function clearTerminal(): Promise<void> {
+  return new Promise((resolve) => {
+    process.stdout.write("\x1b[2J\x1b[3J\x1b[H", () => {
+      resolve();
+    });
+  });
+}
+
+/**
+ * Sets the terminal title
+ */
+export function setTerminalTitle(title: string): void {
+  if (process.platform === "win32") {
+    process.title = title ? `✳ ${title}` : title;
+  } else {
+    process.stdout.write(`\x1b]0;${title ? `✳ ${title}` : ""}\x07`);
+  }
+}
+
+/**
  * Get the terminal size (rows and columns)
  */
 export function getTerminalSize(): { rows: number; columns: number } {

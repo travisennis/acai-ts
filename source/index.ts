@@ -79,10 +79,11 @@ async function main() {
 
   const stateDir = envPaths("acai").state;
   const terminal = initTerminal();
-  const messageHistory = new MessageHistory({ stateDir });
+  terminal.setTitle(`acai: ${process.cwd()}`);
   const fileManager = new FileManager({ terminal });
   const tokenTracker = new TokenTracker();
   const messageHistory = new MessageHistory({ stateDir, tokenTracker });
+  messageHistory.on("update-title", (title) => terminal.setTitle(title));
   const replCommands = new ReplCommands({
     terminal,
     messageHistory,
