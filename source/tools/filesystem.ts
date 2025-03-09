@@ -91,6 +91,16 @@ async function searchFiles(
 ): Promise<string[]> {
   const results: string[] = [];
 
+  // Setup ignore patterns from .gitignore
+  let ig: Ignore;
+  try {
+    const ignoreFile = await fs.readFile(path.join(rootPath, ".gitignore"));
+    ig = ignore().add(ignoreFile.toString()).add(".git");
+  } catch (_error) {
+    // If .gitignore doesn't exist, create basic ignore with just .git
+    ig = ignore().add(".git");
+  }
+
   async function search(currentPath: string) {
     const entries = await fs.readdir(currentPath, { withFileTypes: true });
     for (const entry of entries) {
@@ -102,8 +112,13 @@ async function searchFiles(
           allowedDirectories,
         );
 
-        // Check if path matches any exclude pattern
+        // Check if path should be ignored based on .gitignore
         const relativePath = path.relative(rootPath, fullPath);
+        if (ig.ignores(relativePath)) {
+          continue;
+        }
+
+        // Check if path matches any exclude pattern
         const shouldExclude = excludePatterns.some((pattern) => {
           const globPattern = pattern.includes("*")
             ? pattern
@@ -577,7 +592,7 @@ export const createFileSystemTools = async ({
         try {
           sendData?.({
             event: "tool-init",
-            data: `Search for ${pattern}: ${path}`,
+            data: `Search for ${pattern} in ${path}`,
           });
           const validPath = await validatePath(
             joinWorkingDir(path, workingDir),
@@ -589,6 +604,13 @@ export const createFileSystemTools = async ({
             excludePatterns,
             allowedDirectories,
           );
+          sendData?.({
+            event: "tool-completion",
+            data:
+              results.length > 0
+                ? `Found ${results.length} matches.`
+                : "No matches found.",
+          });
           return results.length > 0 ? results.join("\n") : "No matches found";
         } catch (error) {
           const errorMessage = `Failed to search files: ${(error as Error).message}`;
