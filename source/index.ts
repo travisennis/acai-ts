@@ -6,6 +6,8 @@ import { readAppConfig } from "./config.ts";
 import { FileManager } from "./fileManager.ts";
 import { logger } from "./logger.ts";
 import { MessageHistory } from "./messages.ts";
+import { ModelManager } from "./modelManager.ts";
+import { type ModelName, isSupportedModel } from "./models/providers.ts";
 import { Repl } from "./repl.ts";
 import { ReplCommands } from "./replCommands.ts";
 import { initTerminal } from "./terminal/index.ts";
@@ -77,13 +79,34 @@ async function main() {
 
   const config = await readAppConfig("acai");
 
+  const chosenModel: ModelName = isSupportedModel(cli.flags.model)
+    ? cli.flags.model
+    : "anthropic:sonnet-token-efficient-tools";
+
   const stateDir = envPaths("acai").state;
+
   const terminal = initTerminal();
   terminal.setTitle(`acai: ${process.cwd()}`);
+
+  const modelManager = new ModelManager({ stateDir });
+  modelManager.setModel("repl", chosenModel);
+  modelManager.setModel("title-conversation", "anthropic:haiku");
+  modelManager.setModel("conversation-summarizer", "anthropic:haiku");
+  modelManager.setModel("file-retiever", "anthropic:haiku");
+  modelManager.setModel("tool-repair", "openai:gpt-4o-structured");
+  modelManager.setModel("meta-prompt", "anthropic:sonnet35");
+
   const fileManager = new FileManager({ terminal });
+
   const tokenTracker = new TokenTracker();
-  const messageHistory = new MessageHistory({ stateDir, tokenTracker });
+
+  const messageHistory = new MessageHistory({
+    stateDir,
+    modelManager,
+    tokenTracker,
+  });
   messageHistory.on("update-title", (title) => terminal.setTitle(title));
+
   const replCommands = new ReplCommands({
     terminal,
     messageHistory,
@@ -95,6 +118,7 @@ async function main() {
     terminal,
     config,
     messageHistory,
+    modelManager,
     fileManager,
     tokenTracker,
     commands: replCommands,

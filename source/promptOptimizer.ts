@@ -1,8 +1,5 @@
 import { platform } from "node:os";
-import { envPaths } from "@travisennis/stdlib/env";
-import { generateText } from "ai";
-import { getLanguageModel } from "./getLanguageModel.ts";
-import type { ModelName } from "./models/providers.ts";
+import { generateText, type LanguageModel } from "ai";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
 import { READ_ONLY } from "./tools/filesystem.ts";
@@ -93,19 +90,13 @@ export async function optimizePrompt({
   terminal,
   tokenTracker,
 }: {
-  model: ModelName;
+  model: LanguageModel;
   prompt: string;
   terminal: Terminal;
   tokenTracker: TokenTracker;
 }) {
-  const langModel = getLanguageModel({
-    model,
-    app: "meta-prompt",
-    stateDir: envPaths("acai").state,
-  });
-
   const { text, usage } = await generateText({
-    model: langModel,
+    model,
     maxTokens: 8192,
     system: metaPrompt,
     prompt: prompt,

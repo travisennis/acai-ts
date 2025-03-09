@@ -1,9 +1,6 @@
 import { dirname } from "node:path";
-import { envPaths } from "@travisennis/stdlib/env";
-import { generateText } from "ai";
+import { type LanguageModel, generateText } from "ai";
 import { dedent } from "./dedent.ts";
-import { getLanguageModel } from "./getLanguageModel.ts";
-import type { ModelName } from "./models/providers.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
 import { directoryTree } from "./tools/index.ts";
 
@@ -51,16 +48,12 @@ export async function retrieveFilesForTask({
   prompt,
   tokenTracker,
 }: {
-  model: ModelName;
+  model: LanguageModel;
   prompt: string;
   tokenTracker?: TokenTracker;
 }): Promise<string[]> {
   const { text, usage } = await generateText({
-    model: getLanguageModel({
-      model,
-      app: "file-retriever",
-      stateDir: envPaths("acai").state,
-    }),
+    model,
     system: retrieverSystemPrompt(await directoryTree(process.cwd())),
     prompt: `Task:\n<task>\n${prompt}\n</task>\nFiles:`,
   });

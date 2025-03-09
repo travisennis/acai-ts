@@ -1,6 +1,5 @@
 import path from "node:path";
 import { input } from "@inquirer/prompts";
-import { envPaths } from "@travisennis/stdlib/env";
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import {
   NoSuchToolError,
@@ -12,15 +11,10 @@ import chalk from "chalk";
 import { readRulesFile } from "./config.ts";
 import type { FileManager } from "./fileManager.ts";
 import { retrieveFilesForTask } from "./fileRetriever.ts";
-import { getLanguageModel } from "./getLanguageModel.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import { type MessageHistory, createUserMessage } from "./messages.ts";
-import {
-  type ModelName,
-  isSupportedModel,
-  modelRegistry,
-} from "./models/providers.ts";
+import type { ModelManager } from "./modelManager.js";
 import { optimizePrompt } from "./promptOptimizer.ts";
 import { systemPrompt } from "./prompts.ts";
 import type { ReplCommands } from "./replCommands.ts";
@@ -49,6 +43,7 @@ const THINKING_TIERS = [
 
 export interface ReplOptions {
   messageHistory: MessageHistory;
+  modelManager: ModelManager;
   tokenTracker: TokenTracker;
   terminal: Terminal;
   commands: ReplCommands;
@@ -74,6 +69,7 @@ export class Repl {
     const {
       config,
       terminal,
+      modelManager,
       fileManager,
       tokenTracker,
       messageHistory,
@@ -84,17 +80,8 @@ export class Repl {
 
     terminal.displayWelcome();
 
-    const chosenModel: ModelName = isSupportedModel(args.model)
-      ? args.model
-      : "anthropic:sonnet-token-efficient-tools";
-
-    const modelConfig = modelRegistry[chosenModel];
-
-    const langModel = getLanguageModel({
-      model: chosenModel,
-      stateDir: envPaths("acai").state,
-      app: "repl",
-    });
+    const langModel = modelManager.getModel("repl");
+    const modelConfig = modelManager.getModelMetadata("repl");
 
     let firstPrompt =
       args.prompt && args.prompt.length > 0
@@ -150,7 +137,7 @@ export class Repl {
       if (!modelConfig.supportsToolCalling) {
         terminal.info("Adding files for task:");
         const usefulFiles = await retrieveFilesForTask({
-          model: "anthropic:haiku",
+          model: modelManager.getModel("file-retiever"),
           prompt: userInput,
           tokenTracker,
         });
@@ -179,7 +166,7 @@ export class Repl {
       if (!modelConfig.supportsReasoning) {
         terminal.writeln("Optimizing prompt:");
         finalPrompt = await optimizePrompt({
-          model: "anthropic:sonnet35",
+          model: modelManager.getModel("meta-prompt"),
           prompt: finalPrompt,
           tokenTracker,
           terminal,
@@ -246,7 +233,7 @@ ${rules}`
             : undefined,
           // biome-ignore lint/style/useNamingConvention: <explanation>
           experimental_repairToolCall: modelConfig.supportsToolCalling
-            ? toolCallRepair
+            ? toolCallRepair(modelManager)
             : undefined,
           onStepFinish: (event) => {
             if (
@@ -352,34 +339,36 @@ ${rules}`
   }
 }
 
-const toolCallRepair: ToolCallRepairFunction<
-  AsyncReturnType<typeof initTools>
-> = async ({ toolCall, tools, parameterSchema, error }) => {
-  if (NoSuchToolError.isInstance(error)) {
-    return null; // do not attempt to fix invalid tool names
-  }
+const toolCallRepair = (modelManager: ModelManager) => {
+  const fn: ToolCallRepairFunction<AsyncReturnType<typeof initTools>> = async ({
+    toolCall,
+    tools,
+    parameterSchema,
+    error,
+  }) => {
+    if (NoSuchToolError.isInstance(error)) {
+      return null; // do not attempt to fix invalid tool names
+    }
 
-  console.error("Attempting to repair tool call.");
+    console.error("Attempting to repair tool call.");
 
-  const tool = tools[toolCall.toolName as keyof typeof tools];
+    const tool = tools[toolCall.toolName as keyof typeof tools];
 
-  const { object: repairedArgs } = await generateObject({
-    model: getLanguageModel({
-      model: "openai:gpt-4o-structured",
-      app: "tool-repair",
-      stateDir: envPaths("acai").state,
-    }),
-    schema: tool.parameters,
-    prompt: [
-      `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
-      JSON.stringify(toolCall.args),
-      "The tool accepts the following schema:",
-      JSON.stringify(parameterSchema(toolCall)),
-      "Please fix the arguments.",
-    ].join("\n"),
-  });
+    const { object: repairedArgs } = await generateObject({
+      model: modelManager.getModel("tool-repair"),
+      schema: tool.parameters,
+      prompt: [
+        `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
+        JSON.stringify(toolCall.args),
+        "The tool accepts the following schema:",
+        JSON.stringify(parameterSchema(toolCall)),
+        "Please fix the arguments.",
+      ].join("\n"),
+    });
 
-  return { ...toolCall, args: JSON.stringify(repairedArgs) };
+    return { ...toolCall, args: JSON.stringify(repairedArgs) };
+  };
+  return fn;
 };
 
 function calculateThinkingLevel(userInput: string) {

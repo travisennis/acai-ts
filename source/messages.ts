@@ -1,7 +1,6 @@
 import EventEmitter from "node:events";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { envPaths } from "@travisennis/stdlib/env";
 import { isString } from "@travisennis/stdlib/typeguards";
 import {
   type CoreAssistantMessage,
@@ -13,7 +12,7 @@ import {
   generateText,
 } from "ai";
 import { z } from "zod";
-import { getLanguageModel } from "./getLanguageModel.ts";
+import type { ModelManager } from "./modelManager.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
 
 export function createUserMessage(content: string): CoreUserMessage {
@@ -59,15 +58,22 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
   private history: CoreMessage[];
   private title: string;
   private stateDir: string;
+  private modelManager: ModelManager;
   private tokenTracker: TokenTracker;
   constructor({
     stateDir,
+    modelManager,
     tokenTracker,
-  }: { stateDir: string; tokenTracker: TokenTracker }) {
+  }: {
+    stateDir: string;
+    modelManager: ModelManager;
+    tokenTracker: TokenTracker;
+  }) {
     super();
     this.history = [];
     this.title = "";
     this.stateDir = stateDir;
+    this.modelManager = modelManager;
     this.tokenTracker = tokenTracker;
   }
 
@@ -125,17 +131,12 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
 
   async generateTitle(message: string) {
     const app = "title-conversation";
-    const langModel = getLanguageModel({
-      model: "anthropic:haiku",
-      stateDir: envPaths("acai").state,
-      app,
-    });
 
     const systemPrompt =
       "Analyze if this message indicates a new conversation topic. If it does, extract a 2-3 word title that captures the new topic. Format your response as a JSON object with two fields: 'isNewTopic' (boolean) and 'title' (string, or null if isNewTopic is false). Only include these fields, no other text.";
 
     const { object, usage } = await generateObject({
-      model: langModel,
+      model: this.modelManager.getModel(app),
       system: systemPrompt,
       schema: z.object({
         isNewTopic: z.boolean(),
@@ -154,11 +155,6 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
 
   async summarizeAndReset() {
     const app = "conversation-summarizer";
-    const langModel = getLanguageModel({
-      model: "anthropic:haiku",
-      stateDir: envPaths("acai").state,
-      app,
-    });
 
     // save existing message history
     await this.save();
@@ -170,7 +166,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
       ),
     );
     const { text, usage } = await generateText({
-      model: langModel,
+      model: this.modelManager.getModel(app),
       system:
         "You are a helpful AI assistant tasked with summarizing conversations.",
       messages: this.get(),
