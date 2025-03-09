@@ -22,15 +22,23 @@ export const createCodeTools = ({
       parameters: z.object({}),
       execute: async () => {
         const buildCommand = config?.build || "npm run build";
-        if (sendData) {
-          sendData({
-            event: "tool-init",
-            data: `Building code in ${baseDir}`,
-          });
-        }
+        sendData?.({
+          event: "tool-init",
+          data: `Building code in ${baseDir}`,
+        });
         try {
-          return format(await asyncExec(buildCommand, baseDir));
+          const result = format(await asyncExec(buildCommand, baseDir));
+          sendData?.({
+            event: "tool-completion",
+            data: "Build complete.",
+          });
+
+          return result;
         } catch (error) {
+          sendData?.({
+            event: "tool-error",
+            data: `Error building code in ${baseDir}: ${(error as Error).message}`,
+          });
           return `Failed to execute build command: ${(error as Error).message}`;
         }
       },
@@ -48,8 +56,18 @@ export const createCodeTools = ({
         }
         const lintCommand = config?.lint || "npm run lint";
         try {
-          return format(await asyncExec(lintCommand, baseDir));
+          const result = format(await asyncExec(lintCommand, baseDir));
+          sendData?.({
+            event: "tool-completion",
+            data: "Lint complete.",
+          });
+
+          return result;
         } catch (error) {
+          sendData?.({
+            event: "tool-error",
+            data: `Error linting code in ${baseDir}: ${(error as Error).message}`,
+          });
           return `Failed to execute lint command: ${(error as Error).message}`;
         }
       },
@@ -67,8 +85,18 @@ export const createCodeTools = ({
         }
         const formatCommand = config?.format || "npm run format";
         try {
-          return format(await asyncExec(formatCommand, baseDir));
+          const result = format(await asyncExec(formatCommand, baseDir));
+          sendData?.({
+            event: "tool-completion",
+            data: "Format complete.",
+          });
+
+          return result;
         } catch (error) {
+          sendData?.({
+            event: "tool-error",
+            data: `Error formatting code in ${baseDir}: ${(error as Error).message}`,
+          });
           return `Failed to execute format command: ${(error as Error).message}`;
         }
       },
@@ -86,8 +114,18 @@ export const createCodeTools = ({
         }
         const testCommand = config?.test || "npm run test";
         try {
-          return format(await asyncExec(testCommand, baseDir));
+          const result = format(await asyncExec(testCommand, baseDir));
+          sendData?.({
+            event: "tool-completion",
+            data: "Format complete.",
+          });
+
+          return result;
         } catch (error) {
+          sendData?.({
+            event: "tool-error",
+            data: `Error testing code in ${baseDir}: ${(error as Error).message}`,
+          });
           return `Failed to execute test command: ${(error as Error).message}`;
         }
       },
