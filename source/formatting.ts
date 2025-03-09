@@ -13,7 +13,7 @@ export function removeHtmLtags(text: string) {
   return text.replace(/<[^>]*>?/gm, "");
 }
 
-type FormatType = "xml" | "markdown" | "bracket";
+export type FormatType = "xml" | "markdown" | "bracket";
 
 const codeBlockExtensions: Record<string, string> = {
   js: "javascript",
