@@ -9,12 +9,12 @@ import {
 } from "ai";
 import chalk from "chalk";
 import { readRulesFile } from "./config.ts";
-import type { FileManager } from "./fileManager.ts";
 import { retrieveFilesForTask } from "./fileRetriever.ts";
+import type { FileManager } from "./files/manager.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import { type MessageHistory, createUserMessage } from "./messages.ts";
-import type { ModelManager } from "./modelManager.js";
+import type { ModelManager } from "./models/manager.js";
 import { optimizePrompt } from "./promptOptimizer.ts";
 import { systemPrompt } from "./prompts.ts";
 import type { ReplCommands } from "./replCommands.ts";

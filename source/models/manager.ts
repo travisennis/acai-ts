@@ -1,12 +1,12 @@
 import type { LanguageModel } from "ai";
+import { auditMessage } from "../middleware/index.ts";
 import {
-  languageModel,
-  ModelMetadata,
-  modelRegistry,
+  type ModelMetadata,
   type ModelName,
-} from "./models/providers.ts";
-import { auditMessage } from "./middleware/index.ts";
-import { wrapLanguageModel } from "./models/wrapLanguageModel.ts";
+  languageModel,
+  modelRegistry,
+} from "./providers.ts";
+import { wrapLanguageModel } from "./wrapLanguageModel.ts";
 
 function getLanguageModel({
   model,

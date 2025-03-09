@@ -1,6 +1,6 @@
 import Table from "cli-table3";
 import { globby } from "globby";
-import type { FileManager } from "./fileManager.ts";
+import type { FileManager } from "./files/manager.ts";
 import type { MessageHistory } from "./messages.ts";
 import type { ModelMetadata } from "./models/providers.ts";
 import type { Terminal } from "./terminal/index.ts";

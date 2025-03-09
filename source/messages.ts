@@ -12,7 +12,7 @@ import {
   generateText,
 } from "ai";
 import { z } from "zod";
-import type { ModelManager } from "./modelManager.ts";
+import type { ModelManager } from "./models/manager.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
 
 export function createUserMessage(content: string): CoreUserMessage {

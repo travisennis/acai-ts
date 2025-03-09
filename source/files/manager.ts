@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
-import type { TerminalInterface } from "./terminal/types.ts";
-import { formatFile } from "./formatting.ts";
+import { formatFile } from "../formatting.ts";
+import type { TerminalInterface } from "../terminal/types.ts";
 
 export class FileManager {
   private terminal: TerminalInterface;
