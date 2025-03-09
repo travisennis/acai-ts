@@ -6,7 +6,11 @@ export interface TokenUsage {
   usage: LanguageModelUsage;
 }
 
-export class TokenTracker extends EventEmitter {
+interface TokenTrackerEvents {
+  usage: [LanguageModelUsage];
+}
+
+export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
   private usages: TokenUsage[] = [];
   private budget?: number;
 
