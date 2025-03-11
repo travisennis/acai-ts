@@ -95,7 +95,7 @@ export class Repl {
     while (true) {
       terminal.box(
         "State:",
-        `Model:          ${langModel.modelId}\nContext Window: ${tokenTracker.getTotalUsage().promptTokens} tokens`,
+        `Model:          ${langModel.modelId}\nContext Window: ${tokenTracker.getTotalUsage().totalTokens} tokens`,
       );
       terminal.header("Input:");
       terminal.writeln("");
