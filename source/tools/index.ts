@@ -11,7 +11,7 @@ import { createGitTools } from "./git.ts";
 import { createGrepTools } from "./grep.ts";
 import { createThinkTools } from "./tauThink.ts";
 import type { Message } from "./types.ts";
-// import { createUrlTools } from "./url.ts";
+import { createUrlTools } from "./url.ts";
 // import { createRaindropTools } from "./raindrop.ts";
 
 const sendDataHandler = (terminal: Terminal) => {
@@ -67,13 +67,14 @@ export async function initTools({ terminal }: { terminal: Terminal }) {
   //   sendData: sendDataHandler(terminal),
   // });
 
-  // const urlTools = createUrlTools({
-  //   sendData: sendDataHandler(terminal),
-  // });
+  const urlTools = createUrlTools({
+    sendData: sendDataHandler(terminal),
+  });
 
   const askUserTool = {
     askUser: tool({
-      description: "A tool to ask the user for input.",
+      description:
+        "A tool to ask the user for input. Use this ask the user for clarification when you are need it.",
       parameters: z.object({
         question: z.string().describe("The question to ask the user."),
       }),
@@ -92,7 +93,7 @@ export async function initTools({ terminal }: { terminal: Terminal }) {
     ...codeInterpreterTool,
     ...grepTool,
     ...thinkTool,
-    // ...urlTools,
+    ...urlTools,
     // ...bookmarkTools,
     ...askUserTool,
   } as const;
