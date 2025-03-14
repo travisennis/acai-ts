@@ -92,7 +92,9 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
   appendUserMessage(msg: CoreUserMessage): void;
   appendUserMessage(msg: string | CoreUserMessage) {
     const msgObj = isString(msg) ? createUserMessage(msg) : msg;
-    this.generateTitle((msgObj.content.at(0) as TextPart).text);
+    if (this.history.length > 0) {
+      this.generateTitle((msgObj.content.at(0) as TextPart).text);
+    }
     this.history.push(msgObj);
   }
 
@@ -133,13 +135,12 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     const app = "title-conversation";
 
     const systemPrompt =
-      "Analyze if this message indicates a new conversation topic. If it does, extract a 2-3 word title that captures the new topic. Format your response as a JSON object with two fields: 'isNewTopic' (boolean) and 'title' (string, or null if isNewTopic is false). Only include these fields, no other text.";
+      "Analyze this message to generate a conversation topic. Extract a 4-7 word title that captures the topic. Format your response as a JSON object with one field: 'title' (string). Only include this field, no other text.";
 
     const { object, usage } = await generateObject({
       model: this.modelManager.getModel(app),
       system: systemPrompt,
       schema: z.object({
-        isNewTopic: z.boolean(),
         title: z.string().optional(),
       }),
       prompt: message,
@@ -147,7 +148,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
 
     this.tokenTracker.trackUsage(app, usage);
 
-    if (object.isNewTopic && object.title) {
+    if (object.title) {
       this.title = object.title;
       this.emit("update-title", this.title);
     }
