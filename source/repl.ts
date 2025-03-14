@@ -1,5 +1,6 @@
 import path from "node:path";
 import { input } from "@inquirer/prompts";
+import { isDefined } from "@travisennis/stdlib/typeguards";
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import {
   NoSuchToolError,
@@ -21,8 +22,6 @@ import type { ReplCommands } from "./replCommands.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
 import { initAnthropicTools, initTools } from "./tools/index.ts";
-import { isDataView } from "node:util/types";
-import { isDefined } from "@travisennis/stdlib/typeguards";
 
 const THINKING_TIERS = [
   {
