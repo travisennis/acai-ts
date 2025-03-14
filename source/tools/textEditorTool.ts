@@ -167,7 +167,7 @@ export const createTextEditorTool = ({
       }),
     };
   }
-  return {};
+  throw new Error("Unsupported tools.");
 };
 
 /**

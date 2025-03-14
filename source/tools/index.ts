@@ -1,5 +1,5 @@
 import { input } from "@inquirer/prompts";
-import { type LanguageModel, type Tool, tool } from "ai";
+import { type LanguageModel, tool } from "ai";
 import chalk from "chalk";
 import { z } from "zod";
 import { readProjectConfig } from "../config.ts";
@@ -34,12 +34,7 @@ const sendDataHandler = (terminal: Terminal) => {
   };
 };
 
-export async function initTools({
-  model,
-  terminal,
-}: { model: LanguageModel; terminal: Terminal }): Promise<
-  Record<string, Tool>
-> {
+export async function initTools({ terminal }: { terminal: Terminal }) {
   const fsTools = await createFileSystemTools({
     workingDir: process.cwd(),
     sendData: sendDataHandler(terminal),
@@ -77,12 +72,6 @@ export async function initTools({
     sendData: sendDataHandler(terminal),
   });
 
-  const textEditorTool = createTextEditorTool({
-    modelId: model.modelId,
-    workingDir: process.cwd(),
-    sendData: sendDataHandler(terminal),
-  });
-
   const askUserTool = {
     askUser: tool({
       description:
@@ -108,6 +97,22 @@ export async function initTools({
     ...urlTools,
     // ...bookmarkTools,
     ...askUserTool,
+  } as const;
+
+  return tools;
+}
+
+export function initAnthropicTools({
+  model,
+  terminal,
+}: { model: LanguageModel; terminal: Terminal }) {
+  const textEditorTool = createTextEditorTool({
+    modelId: model.modelId,
+    workingDir: process.cwd(),
+    sendData: sendDataHandler(terminal),
+  });
+
+  const tools = {
     ...textEditorTool,
   } as const;
 

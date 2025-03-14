@@ -20,7 +20,9 @@ import { systemPrompt } from "./prompts.ts";
 import type { ReplCommands } from "./replCommands.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
-import { initTools } from "./tools/index.ts";
+import { initAnthropicTools, initTools } from "./tools/index.ts";
+import { isDataView } from "node:util/types";
+import { isDefined } from "@travisennis/stdlib/typeguards";
 
 const THINKING_TIERS = [
   {
@@ -130,7 +132,7 @@ export class Repl {
         finalPrompt = fileManager.getPendingContent() + userInput;
         fileManager.clearPendingContent(); // Clear after using
         terminal.lineBreak();
-        terminal.info("Added file contents to prompt");
+        terminal.info("Added file contents to prompt.");
       }
 
       // models that can't support toolcalling will be limited, but this step can at least give them some context to answer questions. very early in the development of this.
@@ -196,6 +198,22 @@ ${rules}`
         modelConfig.provider === "anthropic" && modelConfig.supportsReasoning
           ? modelConfig.maxOutputTokens - thinkingLevel.tokenBudget
           : modelConfig.maxOutputTokens;
+
+      const baseTools = modelConfig.supportsToolCalling
+        ? await initTools({ terminal })
+        : undefined;
+
+      const providerTools =
+        modelConfig.supportsToolCalling && modelConfig.id.includes("sonnet")
+          ? initAnthropicTools({ model: langModel, terminal })
+          : undefined;
+
+      const tools =
+        isDefined(baseTools) && isDefined(providerTools)
+          ? Object.assign(baseTools, providerTools)
+          : isDefined(baseTools)
+            ? baseTools
+            : undefined;
       try {
         const result = streamText({
           model: langModel,
@@ -228,9 +246,7 @@ ${rules}`
                   modelConfig.provider === "openai"
                 ? { openai: { reasoningEffort: thinkingLevel.effort } }
                 : {},
-          tools: modelConfig.supportsToolCalling
-            ? await initTools({ model: langModel, terminal })
-            : undefined,
+          tools,
           // biome-ignore lint/style/useNamingConvention: <explanation>
           experimental_repairToolCall: modelConfig.supportsToolCalling
             ? toolCallRepair(modelManager)
