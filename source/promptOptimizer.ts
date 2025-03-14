@@ -101,7 +101,7 @@ export async function optimizePrompt({
     system: metaPrompt,
     prompt: prompt,
     maxSteps: 15,
-    tools: await initTools({ terminal }),
+    tools: await initTools({ model, terminal }),
     // biome-ignore lint/style/useNamingConvention: <explanation>
     experimental_activeTools: [
       ...READ_ONLY,

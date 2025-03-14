@@ -1,5 +1,5 @@
 import { input } from "@inquirer/prompts";
-import { tool } from "ai";
+import { type LanguageModel, type Tool, tool } from "ai";
 import chalk from "chalk";
 import { z } from "zod";
 import { readProjectConfig } from "../config.ts";
@@ -10,6 +10,7 @@ import { createFileSystemTools } from "./filesystem.ts";
 import { createGitTools } from "./git.ts";
 import { createGrepTools } from "./grep.ts";
 import { createThinkTools } from "./tauThink.ts";
+import { createTextEditorTool } from "./textEditorTool.ts";
 import type { Message } from "./types.ts";
 import { createUrlTools } from "./url.ts";
 // import { createRaindropTools } from "./raindrop.ts";
@@ -33,7 +34,12 @@ const sendDataHandler = (terminal: Terminal) => {
   };
 };
 
-export async function initTools({ terminal }: { terminal: Terminal }) {
+export async function initTools({
+  model,
+  terminal,
+}: { model: LanguageModel; terminal: Terminal }): Promise<
+  Record<string, Tool>
+> {
   const fsTools = await createFileSystemTools({
     workingDir: process.cwd(),
     sendData: sendDataHandler(terminal),
@@ -71,6 +77,12 @@ export async function initTools({ terminal }: { terminal: Terminal }) {
     sendData: sendDataHandler(terminal),
   });
 
+  const textEditorTool = createTextEditorTool({
+    modelId: model.modelId,
+    workingDir: process.cwd(),
+    sendData: sendDataHandler(terminal),
+  });
+
   const askUserTool = {
     askUser: tool({
       description:
@@ -96,6 +108,7 @@ export async function initTools({ terminal }: { terminal: Terminal }) {
     ...urlTools,
     // ...bookmarkTools,
     ...askUserTool,
+    ...textEditorTool,
   } as const;
 
   return tools;

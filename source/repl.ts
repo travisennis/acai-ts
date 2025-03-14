@@ -229,7 +229,7 @@ ${rules}`
                 ? { openai: { reasoningEffort: thinkingLevel.effort } }
                 : {},
           tools: modelConfig.supportsToolCalling
-            ? await initTools({ terminal })
+            ? await initTools({ model: langModel, terminal })
             : undefined,
           // biome-ignore lint/style/useNamingConvention: <explanation>
           experimental_repairToolCall: modelConfig.supportsToolCalling
