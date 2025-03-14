@@ -232,6 +232,7 @@ export interface ModelMetadata {
   category: "fast" | "balanced" | "powerful";
 }
 
+// https://openrouter.ai/api/v1/models
 export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "anthropic:sonnet": {
     id: "anthropic:sonnet",
