@@ -5,6 +5,7 @@ import type { MessageHistory } from "./messages.ts";
 import type { ModelMetadata } from "./models/providers.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
+import { directoryTree } from "./tools/filesystem.ts";
 
 interface ReplCommand {
   command: string;
@@ -47,6 +48,11 @@ const filesCommand = {
     "Finds files matching the given patterns and adds their content to the next prompt. Usage: /files src/**/*.ts",
 };
 
+const ptreeCommand = {
+  command: "/ptree",
+  description: "Displays the project tree.",
+};
+
 export const replCommands: ReplCommand[] = [
   resetCommand,
   saveCommand,
@@ -55,6 +61,7 @@ export const replCommands: ReplCommand[] = [
   exitCommand,
   filesCommand,
   helpCommand,
+  ptreeCommand,
 ] as const;
 
 function displayUsage() {
@@ -179,6 +186,15 @@ export class ReplCommands {
           continue: true,
         };
       }
+    }
+
+    // /ptree command
+    if (userInput.trim() === ptreeCommand.command) {
+      this.terminal.display(await directoryTree(process.cwd()));
+      return {
+        break: false,
+        continue: true,
+      };
     }
 
     // /reset command
