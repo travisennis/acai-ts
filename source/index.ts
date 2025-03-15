@@ -2,6 +2,7 @@ import { text } from "node:stream/consumers";
 import { envPaths } from "@travisennis/stdlib/env";
 import { asyncTry } from "@travisennis/stdlib/try";
 import meow from "meow";
+import { CommandManager } from "./commands/manager.ts";
 import { readAppConfig } from "./config.ts";
 import { FileManager } from "./files/manager.ts";
 import { logger } from "./logger.ts";
@@ -9,7 +10,6 @@ import { MessageHistory } from "./messages.ts";
 import { ModelManager } from "./models/manager.ts";
 import { type ModelName, isSupportedModel } from "./models/providers.ts";
 import { Repl } from "./repl.ts";
-import { ReplCommands } from "./replCommands.ts";
 import { initTerminal } from "./terminal/index.ts";
 import { TokenTracker } from "./tokenTracker.ts";
 
@@ -107,7 +107,8 @@ async function main() {
   });
   messageHistory.on("update-title", (title) => terminal.setTitle(title));
 
-  const replCommands = new ReplCommands({
+  const commands = new CommandManager({
+    modelManager,
     terminal,
     messageHistory,
     tokenTracker,
@@ -121,7 +122,7 @@ async function main() {
     modelManager,
     fileManager,
     tokenTracker,
-    commands: replCommands,
+    commands,
   });
 
   (

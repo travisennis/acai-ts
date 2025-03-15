@@ -9,6 +9,7 @@ import {
   streamText,
 } from "ai";
 import chalk from "chalk";
+import type { CommandManager } from "./commands/manager.ts";
 import { readRulesFile } from "./config.ts";
 import { retrieveFilesForTask } from "./fileRetriever.ts";
 import type { FileManager } from "./files/manager.ts";
@@ -18,7 +19,6 @@ import { type MessageHistory, createUserMessage } from "./messages.ts";
 import type { ModelManager } from "./models/manager.js";
 import { optimizePrompt } from "./promptOptimizer.ts";
 import { systemPrompt } from "./prompts.ts";
-import type { ReplCommands } from "./replCommands.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
 import { initAnthropicTools, initTools } from "./tools/index.ts";
@@ -47,7 +47,7 @@ export interface ReplOptions {
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
   terminal: Terminal;
-  commands: ReplCommands;
+  commands: CommandManager;
   fileManager: FileManager;
   config: Record<PropertyKey, unknown>;
 }
@@ -114,7 +114,7 @@ export class Repl {
       const isStdinInput = stdin && stdin.length > 0 && stdin === userInput;
       const shouldContinue = isStdinInput && !args.oneshot;
 
-      const commandResult = await commands.handle({ userInput, modelConfig });
+      const commandResult = await commands.handle({ userInput });
       if (commandResult.break) {
         break;
       }
