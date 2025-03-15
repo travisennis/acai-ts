@@ -12,6 +12,7 @@ import { type ModelName, isSupportedModel } from "./models/providers.ts";
 import { Repl } from "./repl.ts";
 import { initTerminal } from "./terminal/index.ts";
 import { TokenTracker } from "./tokenTracker.ts";
+import { initializeLsp } from "./lsp/index.ts";
 
 const cli = meow(
   `
@@ -44,6 +45,10 @@ const cli = meow(
         shortFlag: "o",
         default: false,
       },
+      lsp: {
+        type: "boolean",
+        default: false,
+      },
     },
   },
 );
@@ -60,6 +65,11 @@ export function handleError(error: Error): void {
 export type Flags = typeof cli.flags;
 
 async function main() {
+  if (cli.flags.lsp) {
+    initializeLsp();
+    return;
+  }
+
   const initialPrompt = cli.input.at(0);
 
   let stdInPrompt: string | undefined;
