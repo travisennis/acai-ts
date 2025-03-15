@@ -22,6 +22,7 @@ import { systemPrompt } from "./prompts.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
 import { initAnthropicTools, initTools } from "./tools/index.ts";
+import { PromptManager } from "./prompts/manager.ts";
 
 const THINKING_TIERS = [
   {
@@ -44,6 +45,7 @@ const THINKING_TIERS = [
 
 export interface ReplOptions {
   messageHistory: MessageHistory;
+  promptManager: PromptManager;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
   terminal: Terminal;
@@ -59,16 +61,13 @@ export class Repl {
   }
 
   async run({
-    initialPrompt,
-    stdin,
     args,
   }: {
-    initialPrompt: string | undefined;
-    stdin: string | undefined;
     args: Flags;
   }) {
     const {
       config,
+      promptManager,
       terminal,
       modelManager,
       fileManager,
@@ -84,15 +83,6 @@ export class Repl {
     const langModel = modelManager.getModel("repl");
     const modelConfig = modelManager.getModelMetadata("repl");
 
-    let firstPrompt =
-      args.prompt && args.prompt.length > 0
-        ? args.prompt
-        : initialPrompt && initialPrompt.length > 0
-          ? initialPrompt
-          : stdin && stdin.length > 0
-            ? stdin
-            : "";
-
     while (true) {
       terminal.box(
         "State:",
@@ -101,34 +91,30 @@ export class Repl {
       terminal.header("Input:");
       terminal.writeln("");
 
-      let userInput = "";
-      if (firstPrompt.length > 0) {
-        userInput = firstPrompt;
-        firstPrompt = ""; // Clear firstPrompt after using it
-      } else {
+      if (!promptManager.isPending()) {
         // For interactive input
-        userInput = await input({ message: ">" });
+        const userInput = await input({ message: ">" });
+        const commandResult = await commands.handle({ userInput });
+        if (commandResult.break) {
+          break;
+        }
+        if (commandResult.continue) {
+          continue;
+        }
+        // if there is no pending prompt then use the user's input. otherwise, the prompt was loaded from a command
+        if (!promptManager.isPending()) {
+          promptManager.push(userInput);
+        }
       }
 
-      // If this is stdin input and oneshot flag is not set, make sure we don't exit after first iteration
-      const isStdinInput = stdin && stdin.length > 0 && stdin === userInput;
-      const shouldContinue = isStdinInput && !args.oneshot;
-
-      const commandResult = await commands.handle({ userInput });
-      if (commandResult.break) {
-        break;
-      }
-      if (commandResult.continue) {
-        continue;
-      }
-
+      const userPrompt = promptManager.pop();
       // determine our thinking level for this request
-      const thinkingLevel = calculateThinkingLevel(userInput);
+      const thinkingLevel = calculateThinkingLevel(userPrompt);
 
       // Add any pending file contents to the user input
-      let finalPrompt = userInput;
+      let finalPrompt = userPrompt;
       if (fileManager.hasPendingContent()) {
-        finalPrompt = fileManager.getPendingContent() + userInput;
+        finalPrompt = fileManager.getPendingContent() + userPrompt;
         fileManager.clearPendingContent(); // Clear after using
         terminal.lineBreak();
         terminal.info("Added file contents to prompt.");
@@ -139,7 +125,7 @@ export class Repl {
         terminal.info("Adding files for task:");
         const usefulFiles = await retrieveFilesForTask({
           model: modelManager.getModel("file-retiever"),
-          prompt: userInput,
+          prompt: userPrompt,
           tokenTracker,
         });
 
@@ -159,7 +145,7 @@ export class Repl {
           terminal.writeln(file);
         }
 
-        finalPrompt = fileManager.getPendingContent() + userInput;
+        finalPrompt = fileManager.getPendingContent() + userPrompt;
 
         fileManager.clearPendingContent();
       }
@@ -175,7 +161,7 @@ export class Repl {
       }
 
       // Track if we're using file content in this prompt to set cache control appropriately
-      const isUsingFileContent = finalPrompt !== userInput;
+      const isUsingFileContent = finalPrompt !== userPrompt;
       const userMsg = createUserMessage(finalPrompt);
       if (isUsingFileContent && modelConfig.provider === "anthropic") {
         userMsg.providerOptions = {
@@ -338,8 +324,7 @@ ${rules}`
         result.consumeStream();
 
         // Only exit if explicitly requested by oneshot flag
-        // Don't exit if stdin was used to provide first input without oneshot flag
-        if (args.oneshot === true && !shouldContinue) {
+        if (args.oneshot === true) {
           return;
         }
       } catch (e) {

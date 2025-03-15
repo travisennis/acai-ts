@@ -6,13 +6,15 @@ import { CommandManager } from "./commands/manager.ts";
 import { readAppConfig } from "./config.ts";
 import { FileManager } from "./files/manager.ts";
 import { logger } from "./logger.ts";
+import { initializeLsp } from "./lsp/index.ts";
 import { MessageHistory } from "./messages.ts";
 import { ModelManager } from "./models/manager.ts";
 import { type ModelName, isSupportedModel } from "./models/providers.ts";
+import { PromptManager } from "./prompts/manager.ts";
 import { Repl } from "./repl.ts";
 import { initTerminal } from "./terminal/index.ts";
 import { TokenTracker } from "./tokenTracker.ts";
-import { initializeLsp } from "./lsp/index.ts";
+import { isDefined } from "@travisennis/stdlib/typeguards";
 
 const cli = meow(
   `
@@ -67,7 +69,7 @@ export function handleError(error: Error): void {
 export type Flags = typeof cli.flags;
 
 async function main() {
-  const initialPrompt = cli.input.at(0);
+  const positionalPrompt = cli.input.at(0);
 
   let stdInPrompt: string | undefined;
   // Check if there's data available on stdin
@@ -84,16 +86,27 @@ async function main() {
     }
   }
 
+  const initialPrompt =
+    cli.flags.prompt && cli.flags.prompt.length > 0
+      ? cli.flags.prompt
+      : positionalPrompt && positionalPrompt.length > 0
+        ? positionalPrompt
+        : stdInPrompt && stdInPrompt.length > 0
+          ? stdInPrompt
+          : undefined;
+
+  const promptManager = new PromptManager();
+  if (isDefined(initialPrompt)) {
+    promptManager.push(initialPrompt);
+  }
+
   const config = await readAppConfig("acai");
+
+  const stateDir = envPaths("acai").state;
 
   const chosenModel: ModelName = isSupportedModel(cli.flags.model)
     ? cli.flags.model
     : "anthropic:sonnet-token-efficient-tools";
-
-  const stateDir = envPaths("acai").state;
-
-  const terminal = initTerminal();
-  terminal.setTitle(`acai: ${process.cwd()}`);
 
   const modelManager = new ModelManager({ stateDir });
   modelManager.setModel("repl", chosenModel);
@@ -108,6 +121,10 @@ async function main() {
     initializeLsp({ modelManager });
     return;
   }
+
+  const terminal = initTerminal();
+  terminal.setTitle(`acai: ${process.cwd()}`);
+
   const fileManager = new FileManager({ terminal });
 
   const tokenTracker = new TokenTracker();
@@ -120,6 +137,7 @@ async function main() {
   messageHistory.on("update-title", (title) => terminal.setTitle(title));
 
   const commands = new CommandManager({
+    promptManager,
     modelManager,
     terminal,
     messageHistory,
@@ -128,6 +146,7 @@ async function main() {
   });
 
   const repl = new Repl({
+    promptManager,
     terminal,
     config,
     messageHistory,
@@ -140,8 +159,6 @@ async function main() {
   (
     await asyncTry(
       repl.run({
-        initialPrompt,
-        stdin: stdInPrompt,
         args: cli.flags,
       }),
     )
