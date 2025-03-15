@@ -1,3 +1,6 @@
+import { readFileSync, writeFileSync } from "node:fs";
+import { extname } from "node:path";
+import { editor, search } from "@inquirer/prompts";
 import Table from "cli-table3";
 import { globby } from "globby";
 import type { FileManager } from "../files/manager.ts";
@@ -190,6 +193,40 @@ export class CommandManager {
       },
     };
     this.commands.set(ptreeCommand.command, ptreeCommand);
+
+    const editCommand = {
+      command: "/edit",
+      description: "Allows editing of files",
+      result: "continue" as const,
+      execute: async () => {
+        const fileToEdit = await search({
+          message: "Select a file",
+          source: async (input) => {
+            if (!input) {
+              return [];
+            }
+
+            const foundFiles = await globby(input, { gitignore: true });
+
+            return foundFiles.map((file) => ({
+              name: file,
+              value: file,
+            }));
+          },
+        });
+
+        const content = readFileSync(fileToEdit, { encoding: "utf8" });
+
+        const edit = await editor({
+          message: `Edit ${fileToEdit}?`,
+          postfix: extname(fileToEdit),
+          default: content,
+        });
+
+        writeFileSync(fileToEdit, edit);
+      },
+    };
+    this.commands.set(editCommand.command, editCommand);
   }
 
   async handle({ userInput }: { userInput: string }) {
