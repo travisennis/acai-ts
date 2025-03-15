@@ -15,11 +15,12 @@ import {
   TextEdit,
   createConnection,
 } from "vscode-languageserver/node.js";
+import { auditMessage } from "../middleware/auditMessage.ts";
+import type { ModelManager } from "../models/manager.ts";
+import { languageModel } from "../models/providers.ts";
+import { wrapLanguageModel } from "../models/wrapLanguageModel.ts";
 import { parseContext } from "./embeddingInstructions.ts";
 import { log } from "./log.ts";
-import { wrapLanguageModel } from "../models/wrapLanguageModel.ts";
-import { languageModel } from "../models/providers.ts";
-import { auditMessage } from "../middleware/auditMessage.ts";
 
 export function createTextDocuments() {
   // Create a text document manager
@@ -29,7 +30,10 @@ export function createTextDocuments() {
   return documents;
 }
 
-export function initConnection(documents: TextDocuments<TextDocument>) {
+export function initConnection({
+  modelManager,
+  documents,
+}: { modelManager: ModelManager; documents: TextDocuments<TextDocument> }) {
   // Create a connection for the server
   const connection = createConnection(
     ProposedFeatures.all,
@@ -41,7 +45,6 @@ export function initConnection(documents: TextDocuments<TextDocument>) {
     const result: InitializeResult = {
       capabilities: {
         textDocumentSync: TextDocumentSyncKind.Incremental,
-        // completionProvider: { resolveProvider: true },
         // Enable code actions
         codeActionProvider: {
           codeActionKinds: [CodeActionKind.QuickFix],
@@ -59,9 +62,10 @@ export function initConnection(documents: TextDocuments<TextDocument>) {
       return [];
     }
 
+    const range = params.range;
+
     const codeActions: CodeAction[] = [];
 
-    const range = params.range;
     // Create the Instruct code action
     const instructAction: CodeAction = {
       title: "Acai - Instruct",
@@ -74,23 +78,19 @@ export function initConnection(documents: TextDocuments<TextDocument>) {
       },
       isPreferred: true,
     };
-
     codeActions.push(instructAction);
+
     return codeActions;
   });
 
   connection.onCodeActionResolve(async (params) => {
     if (params.data?.documentUri && params.data?.range) {
-      const stateDir = envPaths("acai").state;
-      const codeActionMessages = path.join(
-        stateDir,
-        `${(new Date()).toISOString()}-lsp-code-action-message.json`,
-      );
-
       const textDocument = documents.get(params.data.documentUri);
       if (!textDocument) {
         return params;
       }
+
+      // const actionId = params.data.id;
 
       // Get the text from the range where the code action was triggered
       const range = params.data.range as Range;
@@ -102,11 +102,6 @@ export function initConnection(documents: TextDocuments<TextDocument>) {
 
       log.write(context);
 
-      const langModel = wrapLanguageModel(
-        languageModel("anthropic:sonnet"),
-        auditMessage({ filePath: codeActionMessages, app: "lsp-code-action" }),
-      );
-
       const userPrompt = `
 \`\`\`
 ${context.context}
@@ -117,7 +112,7 @@ ${context.prompt ?? ""}
 
       try {
         const { text } = await generateText({
-          model: langModel,
+          model: modelManager.getModel("lsp-code-action"),
           system:
             "You are a highly skilled coding assistant and senior software engineer. Your task is to provide concise, accurate, and efficient solutions to the user's coding requests. Focus on best practices, code optimization, and maintainability in your solutions. Please respond with only the revised code. If your response is a new addition to the code, then return your additions along with the original code. Only return the code. Do not wrap the code in Markdown code blocks. Ensure your answer is in plain text without any Markdown formatting. ",
           temperature: 0.3,

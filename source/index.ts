@@ -23,11 +23,13 @@ const cli = meow(
     --model, -m  Sets the model to use
     --prompt, -p  Sets the prompt
     --oneshot, -o  Run once and exit
+    --lsp Run the Language Service Provider
 
 	Examples
 	  $ acai --model anthopric:sonnet
 	  $ acai -p "one-shot prompt"
 	  $ acai -p "one-shot prompt" -o
+	  $ acai --lsp
 `,
   {
     importMeta: import.meta, // This is required
@@ -65,11 +67,6 @@ export function handleError(error: Error): void {
 export type Flags = typeof cli.flags;
 
 async function main() {
-  if (cli.flags.lsp) {
-    initializeLsp();
-    return;
-  }
-
   const initialPrompt = cli.input.at(0);
 
   let stdInPrompt: string | undefined;
@@ -105,7 +102,12 @@ async function main() {
   modelManager.setModel("file-retiever", "anthropic:haiku");
   modelManager.setModel("tool-repair", "openai:gpt-4o-structured");
   modelManager.setModel("meta-prompt", "anthropic:sonnet35");
+  modelManager.setModel("lsp-code-action", "anthropic:sonnet");
 
+  if (cli.flags.lsp) {
+    initializeLsp({ modelManager });
+    return;
+  }
   const fileManager = new FileManager({ terminal });
 
   const tokenTracker = new TokenTracker();
