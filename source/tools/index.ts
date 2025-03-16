@@ -2,7 +2,7 @@ import { input } from "@inquirer/prompts";
 import { type LanguageModel, tool } from "ai";
 import chalk from "chalk";
 import { z } from "zod";
-import { readProjectConfig } from "../config.ts";
+import { config } from "../config.ts";
 import type { Terminal } from "../terminal/index.ts";
 import { createCodeInterpreterTool } from "./codeInterpreter.ts";
 import { createCodeTools } from "./codeTools.ts";
@@ -47,7 +47,7 @@ export async function initTools({ terminal }: { terminal: Terminal }) {
 
   const codeTools = createCodeTools({
     baseDir: process.cwd(),
-    config: await readProjectConfig(),
+    config: await config.readProjectConfig(),
     sendData: sendDataHandler(terminal),
   });
 

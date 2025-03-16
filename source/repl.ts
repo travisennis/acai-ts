@@ -10,7 +10,7 @@ import {
 } from "ai";
 import chalk from "chalk";
 import type { CommandManager } from "./commands/manager.ts";
-import { readRulesFile } from "./config.ts";
+import { config as configManager } from "./config.ts";
 import { retrieveFilesForTask } from "./fileRetriever.ts";
 import type { FileManager } from "./files/manager.ts";
 import type { Flags } from "./index.ts";
@@ -19,10 +19,10 @@ import { type MessageHistory, createUserMessage } from "./messages.ts";
 import type { ModelManager } from "./models/manager.js";
 import { optimizePrompt } from "./promptOptimizer.ts";
 import { systemPrompt } from "./prompts.ts";
+import type { PromptManager } from "./prompts/manager.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
 import { initAnthropicTools, initTools } from "./tools/index.ts";
-import { PromptManager } from "./prompts/manager.ts";
 
 const THINKING_TIERS = [
   {
@@ -171,7 +171,7 @@ export class Repl {
       messageHistory.appendUserMessage(userMsg);
 
       // Read rules from project directory
-      const rules = await readRulesFile();
+      const rules = await configManager.readRulesFile();
       const finalSystemPrompt = rules
         ? `${systemPrompt}
 

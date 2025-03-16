@@ -3,7 +3,7 @@ import { asyncTry } from "@travisennis/stdlib/try";
 import { isDefined } from "@travisennis/stdlib/typeguards";
 import meow from "meow";
 import { CommandManager } from "./commands/manager.ts";
-import { getAppConfigDir, readAppConfig } from "./config.ts";
+import { config } from "./config.ts";
 import { FileManager } from "./files/manager.ts";
 import { logger } from "./logger.ts";
 import { MessageHistory } from "./messages.ts";
@@ -62,15 +62,17 @@ export function handleError(error: Error): void {
 export type Flags = typeof cli.flags;
 
 async function main() {
-  const config = await readAppConfig("acai");
+  const appConfig = await config.readAppConfig("acai");
 
-  const stateDir = getAppConfigDir();
+  const appDir = config.app;
 
   const chosenModel: ModelName = isSupportedModel(cli.flags.model)
     ? cli.flags.model
     : "anthropic:sonnet-token-efficient-tools";
 
-  const modelManager = new ModelManager({ stateDir });
+  const modelManager = new ModelManager({
+    stateDir: appDir.ensurePath("audit"),
+  });
   modelManager.setModel("repl", chosenModel);
   modelManager.setModel("title-conversation", "anthropic:haiku");
   modelManager.setModel("conversation-summarizer", "anthropic:haiku");
@@ -118,7 +120,7 @@ async function main() {
   const tokenTracker = new TokenTracker();
 
   const messageHistory = new MessageHistory({
-    stateDir,
+    stateDir: appDir.ensurePath("message-history"),
     modelManager,
     tokenTracker,
   });
@@ -136,7 +138,7 @@ async function main() {
   const repl = new Repl({
     promptManager,
     terminal,
-    config,
+    config: appConfig,
     messageHistory,
     modelManager,
     fileManager,

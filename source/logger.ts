@@ -1,10 +1,8 @@
-import fs from "node:fs";
 import { join } from "node:path";
 import pino from "pino";
-import { getAppConfigDir } from "./config.ts";
+import { config } from "./config.ts";
 
-const logDir = join(getAppConfigDir(), "logs");
-fs.mkdirSync(logDir, { recursive: true });
+const logDir = config.app.ensurePath("logs");
 
 const transport = pino.transport({
   target: "pino-roll",

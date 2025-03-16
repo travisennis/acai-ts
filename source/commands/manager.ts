@@ -1,11 +1,11 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import fs, { readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import path from "node:path";
 import { editor, search } from "@inquirer/prompts";
 import Table from "cli-table3";
 import { globby } from "globby";
-import { getAppConfigDir, getProjectConfigDir } from "../config.ts";
+import { config } from "../config.ts";
 import type { FileManager } from "../files/manager.js";
 import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
@@ -269,14 +269,12 @@ export class CommandManager {
           if (type === "project") {
             // Project prompts are stored in the project config directory
             promptPath = path.join(
-              getProjectConfigDir(),
-              "prompts",
+              config.app.ensurePath("prompts"),
               `${promptName}.md`,
             );
           } else if (type === "user") {
             // User prompts are stored in the user data directory
-            const userPromptDir = path.join(getAppConfigDir(), "prompts");
-            await fs.mkdir(userPromptDir, { recursive: true });
+            const userPromptDir = config.project.ensurePath("prompts");
             promptPath = join(userPromptDir, `${promptName}.md`);
           } else {
             this.terminal.warn(

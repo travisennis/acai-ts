@@ -1,5 +1,5 @@
 import EventEmitter from "node:events";
-import { mkdir, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { isString } from "@travisennis/stdlib/typeguards";
 import {
@@ -118,10 +118,10 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
   }
 
   async save() {
-    await mkdir(this.stateDir, { recursive: true });
+    const msgHistoryDir = this.stateDir;
     const timestamp = new Date().toISOString().replace(/:/g, "-");
     const fileName = `message-history-${timestamp}.json`;
-    const filePath = join(this.stateDir, fileName);
+    const filePath = join(msgHistoryDir, fileName);
 
     const output = {
       title: this.title,
