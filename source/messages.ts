@@ -8,10 +8,8 @@ import {
   type CoreToolMessage,
   type CoreUserMessage,
   type TextPart,
-  generateObject,
   generateText,
 } from "ai";
-import { z } from "zod";
 import type { ModelManager } from "./models/manager.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
 
@@ -135,23 +133,18 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     const app = "title-conversation";
 
     const systemPrompt =
-      "Analyze this message to generate a conversation topic. Extract a 4-7 word title that captures the topic. Format your response as a JSON object with one field: 'title' (string). Only include this field, no other text.";
+      "Analyze this message to generate a conversation topic. Extract a 4-7 word title that captures the topic. Return only the title with no other text.";
 
-    const { object, usage } = await generateObject({
+    const { text, usage } = await generateText({
       model: this.modelManager.getModel(app),
       system: systemPrompt,
-      schema: z.object({
-        title: z.string().optional(),
-      }),
       prompt: message,
     });
 
     this.tokenTracker.trackUsage(app, usage);
 
-    if (object.title) {
-      this.title = object.title;
-      this.emit("update-title", this.title);
-    }
+    this.title = text;
+    this.emit("update-title", this.title);
   }
 
   async summarizeAndReset() {
