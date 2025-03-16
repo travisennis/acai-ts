@@ -1,0 +1,1 @@
+- Before searching the project for files, try to use the directoryTree tool to get an idea of how the project is structured and what files are in which directories.
