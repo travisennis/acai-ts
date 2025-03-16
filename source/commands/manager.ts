@@ -1,11 +1,15 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import { extname } from "node:path";
+import fs, { readFile } from "node:fs/promises";
+import { extname, join } from "node:path";
+import path from "node:path";
 import { editor, search } from "@inquirer/prompts";
 import Table from "cli-table3";
 import { globby } from "globby";
-import type { FileManager } from "../files/manager.ts";
+import { getAppConfigDir, getProjectConfigDir } from "../config.ts";
+import type { FileManager } from "../files/manager.js";
 import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
+import type { PromptManager } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../tokenTracker.ts";
 import { directoryTree } from "../tools/filesystem.ts";
@@ -13,12 +17,13 @@ import { directoryTree } from "../tools/filesystem.ts";
 interface ReplCommand {
   command: string;
   description: string;
-  result: "break" | "continue";
+  result: "break" | "continue" | "use";
   execute: (args: string[]) => Promise<void>;
 }
 
 export class CommandManager {
   private commands: Map<string, ReplCommand>;
+  private promptManager: PromptManager;
   private modelManager: ModelManager;
   private messageHistory: MessageHistory;
   private tokenTracker: TokenTracker;
@@ -26,12 +31,14 @@ export class CommandManager {
   private terminal: Terminal;
 
   constructor({
+    promptManager,
     modelManager,
     terminal,
     messageHistory,
     tokenTracker,
     fileManager,
   }: {
+    promptManager: PromptManager;
     modelManager: ModelManager;
     terminal: Terminal;
     messageHistory: MessageHistory;
@@ -39,6 +46,7 @@ export class CommandManager {
     fileManager: FileManager;
   }) {
     this.commands = new Map();
+    this.promptManager = promptManager;
     this.modelManager = modelManager;
     this.terminal = terminal;
     this.messageHistory = messageHistory;
@@ -196,7 +204,7 @@ export class CommandManager {
 
     const editCommand = {
       command: "/edit",
-      description: "Allows editing of files",
+      description: "Opens files in $EDITOR for editing.",
       result: "continue" as const,
       execute: async () => {
         const fileToEdit = await search({
@@ -224,9 +232,82 @@ export class CommandManager {
         });
 
         writeFileSync(fileToEdit, edit);
+
+        if (content !== edit) {
+          this.terminal.info(`File updated: ${fileToEdit}`);
+        }
       },
     };
     this.commands.set(editCommand.command, editCommand);
+
+    const promptCommand = {
+      command: "/prompt",
+      description: "Loads and executes user and project prompts.",
+      result: "use" as const,
+      execute: async (args: string[]) => {
+        if (!args || args.length === 0) {
+          this.terminal.warn(
+            "Please provide a prompt type and name. Usage: /prompt user:optimize or /prompt project:optimize",
+          );
+          return;
+        }
+
+        const promptArg = args[0];
+        const [typeStr, promptName] = promptArg.split(":");
+
+        if (!(typeStr && promptName)) {
+          this.terminal.warn(
+            "Invalid prompt format. Use: /prompt user:name or /prompt project:name",
+          );
+          return;
+        }
+
+        let promptPath = "";
+        const type = typeStr.toLowerCase();
+
+        try {
+          if (type === "project") {
+            // Project prompts are stored in the project config directory
+            promptPath = path.join(
+              getProjectConfigDir(),
+              "prompts",
+              `${promptName}.md`,
+            );
+          } else if (type === "user") {
+            // User prompts are stored in the user data directory
+            const userPromptDir = path.join(getAppConfigDir(), "prompts");
+            await fs.mkdir(userPromptDir, { recursive: true });
+            promptPath = join(userPromptDir, `${promptName}.md`);
+          } else {
+            this.terminal.warn(
+              `Unknown prompt type: ${type}. Use 'user' or 'project'`,
+            );
+            return;
+          }
+
+          let promptContent: string;
+          try {
+            promptContent = await readFile(promptPath, "utf8");
+          } catch (error) {
+            if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+              this.terminal.error(
+                `Prompt not found: ${promptName} (${type}). Check that the file exists at ${promptPath}`,
+              );
+              return;
+            }
+            throw error;
+          }
+
+          this.terminal.info(`Loaded prompt: ${promptName} (${type})`);
+          this.promptManager.push(promptContent);
+        } catch (error) {
+          this.terminal.error(
+            `Error loading prompt: ${(error as Error).message}`,
+          );
+        }
+      },
+    };
+    this.commands.set(promptCommand.command, promptCommand);
   }
 
   async handle({ userInput }: { userInput: string }) {
