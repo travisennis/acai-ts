@@ -6,7 +6,6 @@ import { CommandManager } from "./commands/manager.ts";
 import { readAppConfig } from "./config.ts";
 import { FileManager } from "./files/manager.ts";
 import { logger } from "./logger.ts";
-import { initializeLsp } from "./lsp/index.ts";
 import { MessageHistory } from "./messages.ts";
 import { ModelManager } from "./models/manager.ts";
 import { type ModelName, isSupportedModel } from "./models/providers.ts";
@@ -31,7 +30,6 @@ const cli = meow(
 	  $ acai --model anthopric:sonnet
 	  $ acai -p "one-shot prompt"
 	  $ acai -p "one-shot prompt" -o
-	  $ acai --lsp
 `,
   {
     importMeta: import.meta, // This is required
@@ -47,10 +45,6 @@ const cli = meow(
       oneshot: {
         type: "boolean",
         shortFlag: "o",
-        default: false,
-      },
-      lsp: {
-        type: "boolean",
         default: false,
       },
     },
@@ -116,11 +110,6 @@ async function main() {
   modelManager.setModel("tool-repair", "openai:gpt-4o-structured");
   modelManager.setModel("meta-prompt", "anthropic:sonnet35");
   modelManager.setModel("lsp-code-action", "anthropic:sonnet");
-
-  if (cli.flags.lsp) {
-    initializeLsp({ modelManager });
-    return;
-  }
 
   const terminal = initTerminal();
   terminal.setTitle(`acai: ${process.cwd()}`);

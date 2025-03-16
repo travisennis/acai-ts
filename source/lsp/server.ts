@@ -1,5 +1,3 @@
-import path from "node:path";
-import { envPaths } from "@travisennis/stdlib/env";
 import { generateText } from "ai";
 import { type Range, TextDocument } from "vscode-languageserver-textdocument";
 import {
@@ -15,12 +13,9 @@ import {
   TextEdit,
   createConnection,
 } from "vscode-languageserver/node.js";
-import { auditMessage } from "../middleware/auditMessage.ts";
 import type { ModelManager } from "../models/manager.ts";
-import { languageModel } from "../models/providers.ts";
-import { wrapLanguageModel } from "../models/wrapLanguageModel.ts";
 import { parseContext } from "./embeddingInstructions.ts";
-import { log } from "./log.ts";
+import { logger } from "../logger.ts";
 
 export function createTextDocuments() {
   // Create a text document manager
@@ -96,11 +91,11 @@ export function initConnection({
       const range = params.data.range as Range;
       const documentText = textDocument.getText(range);
 
-      log.write(documentText);
+      logger.debug(documentText);
 
       const context = parseContext(documentText);
 
-      log.write(context);
+      logger.debug(context);
 
       const userPrompt = `
 \`\`\`
@@ -127,8 +122,8 @@ ${context.prompt ?? ""}
           },
         };
       } catch (error) {
-        log.write("Error generating text:");
-        log.write(error);
+        logger.error("Error generating text:");
+        logger.error(error);
         // Optionally, you can set an error message on the code action
         params.diagnostics = [
           {
