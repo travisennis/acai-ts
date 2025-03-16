@@ -10,13 +10,7 @@
   "bin": {
     "acai": "./dist/index.js"
   },
-  "keywords": [
-    "cli",
-    "ai",
-    "llm",
-    "coding",
-    "assistant"
-  ],
+  "keywords": ["cli", "ai", "llm", "coding", "assistant"],
   "author": "Travis Ennis",
   "license": "MIT",
   "scripts": {
