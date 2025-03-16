@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
+import { homedir } from "node:os";
 import path from "node:path";
-import { envPaths } from "@travisennis/stdlib/env";
 import { z } from "zod";
 import { jsonParser } from "./parsing.ts";
 
@@ -45,10 +45,15 @@ export async function readRulesFile(): Promise<string> {
 }
 
 // App Config
+export function getAppConfigDir() {
+  const configPath = path.join(homedir(), ".acai");
+  return configPath;
+}
+
 export async function readAppConfig(
   configName: string,
 ): Promise<Record<PropertyKey, unknown>> {
-  const configPath = path.join(envPaths("acai").config, `${configName}.json`);
+  const configPath = path.join(getAppConfigDir(), `${configName}.json`);
   try {
     const data = await fs.readFile(configPath, "utf8");
     return JSON.parse(data);
@@ -64,7 +69,7 @@ export async function writeAppConfig(
   configName: string,
   data: Record<PropertyKey, unknown>,
 ): Promise<void> {
-  const configDir = envPaths("acai").config;
+  const configDir = getAppConfigDir();
   const configPath = path.join(configDir, `${configName}.json`);
   await fs.mkdir(configDir, { recursive: true });
   await fs.writeFile(configPath, JSON.stringify(data, null, 2));

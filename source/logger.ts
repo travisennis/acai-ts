@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import { join } from "node:path";
-import { envPaths } from "@travisennis/stdlib/env";
 import pino from "pino";
+import { getAppConfigDir } from "./config.ts";
 
-const logDir = envPaths("acai").logs;
+const logDir = join(getAppConfigDir(), "logs");
 fs.mkdirSync(logDir, { recursive: true });
 
 const transport = pino.transport({

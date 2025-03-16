@@ -1,9 +1,9 @@
 import { text } from "node:stream/consumers";
-import { envPaths } from "@travisennis/stdlib/env";
 import { asyncTry } from "@travisennis/stdlib/try";
+import { isDefined } from "@travisennis/stdlib/typeguards";
 import meow from "meow";
 import { CommandManager } from "./commands/manager.ts";
-import { readAppConfig } from "./config.ts";
+import { getAppConfigDir, readAppConfig } from "./config.ts";
 import { FileManager } from "./files/manager.ts";
 import { logger } from "./logger.ts";
 import { MessageHistory } from "./messages.ts";
@@ -13,7 +13,6 @@ import { PromptManager } from "./prompts/manager.ts";
 import { Repl } from "./repl.ts";
 import { initTerminal } from "./terminal/index.ts";
 import { TokenTracker } from "./tokenTracker.ts";
-import { isDefined } from "@travisennis/stdlib/typeguards";
 
 const cli = meow(
   `
@@ -63,6 +62,23 @@ export function handleError(error: Error): void {
 export type Flags = typeof cli.flags;
 
 async function main() {
+  const config = await readAppConfig("acai");
+
+  const stateDir = getAppConfigDir();
+
+  const chosenModel: ModelName = isSupportedModel(cli.flags.model)
+    ? cli.flags.model
+    : "anthropic:sonnet-token-efficient-tools";
+
+  const modelManager = new ModelManager({ stateDir });
+  modelManager.setModel("repl", chosenModel);
+  modelManager.setModel("title-conversation", "anthropic:haiku");
+  modelManager.setModel("conversation-summarizer", "anthropic:haiku");
+  modelManager.setModel("file-retiever", "anthropic:haiku");
+  modelManager.setModel("tool-repair", "openai:gpt-4o-structured");
+  modelManager.setModel("meta-prompt", "anthropic:sonnet35");
+  modelManager.setModel("lsp-code-action", "anthropic:sonnet");
+
   const positionalPrompt = cli.input.at(0);
 
   let stdInPrompt: string | undefined;
@@ -93,23 +109,6 @@ async function main() {
   if (isDefined(initialPrompt)) {
     promptManager.push(initialPrompt);
   }
-
-  const config = await readAppConfig("acai");
-
-  const stateDir = envPaths("acai").state;
-
-  const chosenModel: ModelName = isSupportedModel(cli.flags.model)
-    ? cli.flags.model
-    : "anthropic:sonnet-token-efficient-tools";
-
-  const modelManager = new ModelManager({ stateDir });
-  modelManager.setModel("repl", chosenModel);
-  modelManager.setModel("title-conversation", "anthropic:haiku");
-  modelManager.setModel("conversation-summarizer", "anthropic:haiku");
-  modelManager.setModel("file-retiever", "anthropic:haiku");
-  modelManager.setModel("tool-repair", "openai:gpt-4o-structured");
-  modelManager.setModel("meta-prompt", "anthropic:sonnet35");
-  modelManager.setModel("lsp-code-action", "anthropic:sonnet");
 
   const terminal = initTerminal();
   terminal.setTitle(`acai: ${process.cwd()}`);
