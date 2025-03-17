@@ -308,6 +308,10 @@ export class CommandManager {
     this.commands.set(promptCommand.command, promptCommand);
   }
 
+  getCommands() {
+    return Array.from(this.commands.keys());
+  }
+
   async handle({ userInput }: { userInput: string }) {
     const commandArgs = userInput.split(" ");
     const command = commandArgs.at(0);

@@ -1,5 +1,5 @@
 import path from "node:path";
-import { input } from "@inquirer/prompts";
+import { createInterface } from "node:readline/promises";
 import { isDefined } from "@travisennis/stdlib/typeguards";
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import {
@@ -83,6 +83,17 @@ export class Repl {
     const langModel = modelManager.getModel("repl");
     const modelConfig = modelManager.getModelMetadata("repl");
 
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      completer: (line) => {
+        const completions = commands.getCommands();
+        const hits = completions.filter((c) => c.startsWith(line));
+        // Show all completions if none found
+        return [hits.length > 0 ? hits : completions, line];
+      },
+    });
+
     while (true) {
       terminal.box(
         "State:",
@@ -93,7 +104,7 @@ export class Repl {
 
       if (!promptManager.isPending()) {
         // For interactive input
-        const userInput = await input({ message: ">" });
+        const userInput = await rl.question("> "); //await input({ message: ">" });
         const commandResult = await commands.handle({ userInput });
         if (commandResult.break) {
           break;
