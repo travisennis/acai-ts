@@ -95,21 +95,3 @@ export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
 
 // Create a singleton instance
 export const config = new ConfigManager();
-
-// import { config } from "./config.ts";
-
-// // For the logger system
-// const logsDir = await config.app.ensurePath("logs");
-// // yourLoggerSystem.setOutputDirectory(logsDir);
-
-// // For the session system
-// const sessionsDir = await config.app.ensurePath("sessions");
-// // yourSessionManager.setStorageDirectory(sessionsDir);
-
-// // For the audit system
-// const auditDir = await config.app.ensurePath("audit");
-// // yourAuditSystem.setOutputDirectory(auditDir);
-
-// // Still able to use config features
-// const projectConfig = await config.readProjectConfig();
-// const rules = await config.readRulesFile();
