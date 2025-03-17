@@ -107,6 +107,7 @@ export class Repl {
         const userInput = await rl.question("> "); //await input({ message: ">" });
         const commandResult = await commands.handle({ userInput });
         if (commandResult.break) {
+          rl.close();
           break;
         }
         if (commandResult.continue) {
