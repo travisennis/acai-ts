@@ -127,7 +127,16 @@ async function main() {
   });
   messageHistory.on("update-title", (title) => terminal.setTitle(title));
 
+  const contextManager = new ContextManager({
+    projectRoot: process.cwd(),
+  });
+  contextManager.on("initialized", () => {
+    // terminal.info("Context Manager is initialized.");
+  });
+  contextManager.initialize();
+
   const commands = new CommandManager({
+    contextManager,
     promptManager,
     modelManager,
     terminal,
@@ -135,14 +144,6 @@ async function main() {
     tokenTracker,
     fileManager,
   });
-
-  const contextManager = new ContextManager({
-    projectRoot: process.cwd(),
-  });
-  contextManager.on("initialized", () => {
-    terminal.info("Context Manager is initialized.");
-  });
-  contextManager.initialize();
 
   const repl = new Repl({
     promptManager,
