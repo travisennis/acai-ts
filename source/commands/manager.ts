@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import path from "node:path";
-import { editor, search } from "@inquirer/prompts";
+import { checkbox, editor, search } from "@inquirer/prompts";
 import Table from "cli-table3";
 import { globby } from "globby";
 import { config } from "../config.ts";
@@ -147,41 +147,55 @@ export class CommandManager {
     const filesCommand = {
       command: "/files",
       description:
-        "Finds files matching the given patterns and adds their content to the next prompt. Usage: /files src/**/*.ts",
+        "Finds files matching the given patterns and adds their content to the next prompt. Usage: /files or /files src/**/*.ts",
       result: "continue" as const,
       execute: async (args: string[]) => {
-        if (!args || args.length === 0) {
-          this.terminal.warn(
-            "Please provide a file pattern. Usage: /files src/**/*.ts",
-          );
-          return;
-        }
-
         try {
-          this.terminal.header("Finding files:");
-          const patternList = args.filter(Boolean);
-          const foundFiles = await globby(patternList, { gitignore: true });
+          let workingFiles: string[] = [];
+          if (!args || args.length === 0) {
+            // Get all files in the current directory
+            const foundFiles = await globby("**/*", { gitignore: true });
 
-          if (foundFiles.length === 0) {
-            this.terminal.warn("No files found matching the pattern(s)");
-            return;
-          }
+            const selectedFiles = await checkbox<string>({
+              message: "Select files to include:",
+              choices: foundFiles,
+              pageSize: 15,
+            });
 
-          this.terminal.header("Found files:");
-          this.terminal.writeln("");
+            if (selectedFiles.length === 0) {
+              this.terminal.warn("No files selected.");
+              return;
+            }
 
-          for (const file of foundFiles) {
-            this.terminal.writeln(`- ${file}`);
+            // Process the selected files
+            workingFiles = selectedFiles;
+          } else {
+            this.terminal.header("Finding files:");
+            const patternList = args.filter(Boolean);
+            const foundFiles = await globby(patternList, { gitignore: true });
+
+            if (foundFiles.length === 0) {
+              this.terminal.warn("No files found matching the pattern(s)");
+              return;
+            }
+
+            this.terminal.header("Found files:");
+            this.terminal.writeln("");
+            for (const file of foundFiles) {
+              this.terminal.writeln(`- ${file}`);
+            }
+            // Process the selected files
+            workingFiles = foundFiles;
           }
 
           this.fileManager.addFiles({
-            files: foundFiles,
+            files: workingFiles,
             format: this.modelManager.getModelMetadata("repl").promptFormat,
           });
 
           this.terminal.writeln("");
           this.terminal.success(
-            `File contents will be added to your next prompt (${foundFiles.length} files)`,
+            `File contents will be added to your next prompt (${workingFiles.length} files)`,
           );
         } catch (error) {
           this.terminal.error(
