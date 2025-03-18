@@ -35,7 +35,7 @@
     "@ai-sdk/deepseek": "^0.1.15",
     "@ai-sdk/google": "^1.1.25",
     "@ai-sdk/openai": "^1.2.5",
-    "@inquirer/prompts": "^7.3.3",
+    "@inquirer/prompts": "^7.4.0",
     "@travisennis/stdlib": "^0.0.9",
     "@types/diff": "^7.0.1",
     "ai": "^4.1.61",
