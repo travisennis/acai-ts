@@ -1,128 +1,45 @@
-# Model Switching Architecture
+# Model Switching Implementation Plan
 
 ## Overview
-This document outlines the implementation of dynamically switching between different AI models within the acai CLI tool. The ability to switch between models during a session provides flexibility for users to select the most appropriate model for their specific tasks, balancing capabilities, speed, and cost.
+This document outlines a concrete implementation plan for adding model switching capability to the acai CLI tool. This will allow users to change the language model during an active REPL session without restarting the application.
 
 ## Current Implementation
 
-### Available Models
-Models are defined in `source/models/providers.ts` and organized by provider (anthropic, openai, google, deepseek, azure, openrouter, ollama). Each model has metadata including:
+- Models are defined in `source/models/providers.ts` with metadata for each model:
+  - Provider (anthropic, openai, google, deepseek, etc.)
+  - Context window size
+  - Maximum output tokens
+  - Tool calling support
+  - Reasoning support
+  - Performance category (fast, balanced, powerful)
+  - Prompt format (xml, markdown, bracket)
 
-- **Provider**: The model's provider (anthropic, openai, google, etc.)
-- **Context Window**: Maximum context length the model supports
-- **Max Output Tokens**: Maximum tokens the model can generate
-- **Supports Tool Calling**: Whether the model supports function/tool calling
-- **Supports Reasoning**: Whether the model supports reasoning/thinking steps
-- **Category**: Performance category (fast, balanced, powerful)
-- **Prompt Format**: Required format for prompts (xml, markdown, bracket)
+- The ModelManager class in `source/models/manager.ts` manages model initialization
+- Models are set at startup in `source/index.ts`
+- The main model used in `source/repl.ts` is initialized and used for the REPL session
 
-### Command Line Usage
-Models can be specified via the `--model` or `-m` flag when running acai:
+## Implementation Steps
 
-```bash
-$ acai --model anthropic:sonnet
-$ acai -m openai:gpt-4o
-```
+### 1. Add Model Command to ReplCommands
 
-The default model is "anthropic:sonnet-token-efficient-tools".
-
-### Model Registry
-The `modelRegistry` in `source/models/providers.ts` stores metadata for all supported models:
+In `source/replCommands.ts`, add a new command:
 
 ```typescript
-export const modelRegistry: Record<ModelName, ModelMetadata> = {
-  "anthropic:sonnet": {
-    id: "anthropic:sonnet",
-    provider: "anthropic",
-    contextWindow: 0,
-    maxOutputTokens: 64_000,
-    promptFormat: "xml",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "balanced",
-  },
-  // Other models...
-}
-```
-
-### Language Model Initialization
-The `getLanguageModel` function initializes a language model with appropriate middleware:
-
-```typescript
-export function getLanguageModel({
-  model,
-  app,
-  stateDir,
-}: {
-  model: ModelName;
-  app: string;
-  stateDir: string;
-}) {
-  const langModel = wrapLanguageModel(
-    languageModel(model),
-    auditMessage({ filePath: stateDir, app }),
-  );
-
-  return langModel;
-}
-```
-
-### Helper Functions
-The model registry includes utility functions:
-
-- `isSupportedModel`: Checks if a model name is valid
-- `getModelsByProvider`: Groups models by their provider
-- `getModelInfo`: Returns detailed information about a specific model
-- `isValidModel`: Validates if a given string is a valid model name
-- `getRecommendedModels`: Suggests models based on task requirements
-
-## Future Enhancements
-
-### Command Interface
-Implement the following commands in the `ReplCommands` class:
-
-```typescript
-// Model-related commands
-const modelListCommand = {
-  command: "/model list",
-  description: "Display available models with details",
-};
-
-const modelUseCommand = {
-  command: "/model use <model-name>",
-  description: "Switch to specified model",
-};
-
-const modelInfoCommand = {
-  command: "/model info <model-name>",
-  description: "Show detailed information about a model",
-};
-
-const modelDefaultCommand = {
-  command: "/model default <model-name>",
-  description: "Set default model for future sessions",
+const modelCommand = {
+  command: "/model",
+  description: "List available models or switch to a different model. Usage: /model [provider:model-name|category|provider]",
 };
 ```
 
-### Configuration Persistence
-Use the existing `readAppConfig`/`writeAppConfig` in `config.ts` to store user preferences:
+Implement the command handler to support:
+- `/model` - Display current model and list all available models by category
+- `/model [provider:model-name]` - Switch to specified model
+- `/model [category]` - List models in a category (fast/balanced/powerful)
+- `/model [provider]` - List models from a specific provider
 
-```typescript
-interface ModelPreferences {
-  defaultModel: ModelName;
-  recentModels: ModelName[];
-  modelUsage: Record<ModelName, {
-    lastUsed: string;
-    totalTokens: number;
-    totalCalls: number;
-  }>;
-}
-```
+### 2. Update Repl Class to Support Model Switching
 
-### Runtime Model Switching
-Implement model switching in the `Repl` class:
+In `source/repl.ts`, add model switching functionality:
 
 ```typescript
 async switchModel(newModelName: ModelName): Promise<void> {
@@ -130,64 +47,188 @@ async switchModel(newModelName: ModelName): Promise<void> {
     this.terminal.info(`Switching to model: ${newModelName}...`);
     
     // Get current and new model configs
-    const currentModelConfig = modelRegistry[this.currentModelName];
+    const currentModelConfig = this.modelManager.getModelMetadata("repl");
     const newModelConfig = modelRegistry[newModelName];
     
-    // Check for compatibility issues
+    // Check for capability differences
     if (currentModelConfig.supportsToolCalling && !newModelConfig.supportsToolCalling) {
       this.terminal.warn("The new model doesn't support tool calling, which may limit functionality.");
     }
+    if (currentModelConfig.supportsReasoning && !newModelConfig.supportsReasoning) {
+      this.terminal.warn("The new model doesn't support reasoning, which may change response quality.");
+    }
     
-    // Initialize new model
-    this.langModel = await this.initializeModel(newModelName);
-    this.currentModelName = newModelName;
+    // Update model in ModelManager
+    this.modelManager.setModel("repl", newModelName);
     
-    // Update model preferences
-    const modelPrefs = await getModelPreferences();
-    const recentModels = [newModelName, ...modelPrefs.recentModels.filter(m => m !== newModelName)].slice(0, 5);
-    await updateModelPreferences({ recentModels });
+    // Update the langModel reference
+    const langModel = this.modelManager.getModel("repl");
+    const modelConfig = this.modelManager.getModelMetadata("repl");
     
+    // Update display
     this.terminal.success(`Successfully switched to ${newModelName}`);
+    this.terminal.box(
+      "State:",
+      `Model:          ${langModel.modelId}\nContext Window: ${this.tokenTracker.getTotalUsage().totalTokens} tokens`,
+    );
   } catch (error) {
     this.terminal.error(`Failed to switch model: ${(error as Error).message}`);
   }
 }
 ```
 
-### UI Improvements
-Enhance the display of model information:
+### 3. Add Helper Functions for Model Selection
 
-- Model listing table with capabilities and performance characteristics
-- Detailed model info display with all metadata
-- Visual indicators for current model in the prompt
+Update or add to `source/models/providers.ts`:
 
-### Error Handling and Fallbacks
+```typescript
+// Get models by category
+export function getModelsByCategory(category: "fast" | "balanced" | "powerful"): ModelMetadata[] {
+  return Object.values(modelRegistry).filter((model) => model.category === category);
+}
 
-- Authentication error detection and helpful messaging
-- Model fallback logic for unavailable models
-- Provider-specific troubleshooting information
+// Format model information for display
+export function formatModelInfo(model: ModelMetadata): string {
+  return `${model.id} [${model.category}] - Tools: ${model.supportsToolCalling ? "✓" : "✗"}, Reasoning: ${model.supportsReasoning ? "✓" : "✗"}`;
+}
+```
 
-## Migration Strategy
+### 4. Update ReplCommands Implementation
 
-### Backward Compatibility
-- Support older model naming formats
-- Migrate existing configurations to new format
-- Provide deprecation warnings for legacy usage
+Implement the model command handler in `source/replCommands.ts`:
 
-## Implementation Phases
+```typescript
+// Handle /model command
+if (userInput.trim().startsWith("/model")) {
+  const args = userInput.trim().substring("/model".length).trim();
+  
+  // No args - display current model and list available models by category
+  if (!args) {
+    const currentModel = modelConfig.id;
+    terminal.header(`Current model: ${currentModel}`);
+    terminal.header("Available models by category:");
+    
+    // Fast models
+    terminal.writeln("\nFast models:");
+    for (const model of getModelsByCategory("fast")) {
+      terminal.writeln(formatModelInfo(model));
+    }
+    
+    // Balanced models
+    terminal.writeln("\nBalanced models:");
+    for (const model of getModelsByCategory("balanced")) {
+      terminal.writeln(formatModelInfo(model));
+    }
+    
+    // Powerful models
+    terminal.writeln("\nPowerful models:");
+    for (const model of getModelsByCategory("powerful")) {
+      terminal.writeln(formatModelInfo(model));
+    }
+    
+    return { break: false, continue: true };
+  }
+  
+  // Switch to a specific model
+  if (isValidModel(args)) {
+    await repl.switchModel(args);
+    return { break: false, continue: true };
+  }
+  
+  // Display models by category
+  if (["fast", "balanced", "powerful"].includes(args)) {
+    terminal.header(`${args.charAt(0).toUpperCase() + args.slice(1)} models:`);
+    for (const model of getModelsByCategory(args as "fast" | "balanced" | "powerful")) {
+      terminal.writeln(formatModelInfo(model));
+    }
+    return { break: false, continue: true };
+  }
+  
+  // Display models by provider
+  const providers = ["anthropic", "openai", "google", "deepseek", "azure", "openrouter", "ollama"];
+  if (providers.includes(args)) {
+    terminal.header(`Models from ${args}:`);
+    for (const model of Object.values(modelRegistry).filter(m => m.provider === args)) {
+      terminal.writeln(formatModelInfo(model));
+    }
+    return { break: false, continue: true };
+  }
+  
+  // Invalid model name
+  terminal.error(`Invalid model name or category: ${args}`);
+  terminal.info("Usage: /model [provider:model-name|category|provider]");
+  return { break: false, continue: true };
+}
+```
 
-1. **Core Model Registry Enhancement**:
-   - Complete metadata for all models
-   - Add cost information and performance metrics
+### 5. Pass Repl Instance to ReplCommands
 
-2. **Command Interface Implementation**:
-   - Add model-related commands to `ReplCommands`
-   - Implement model switching functionality
+Update the ReplCommands constructor to accept a reference to the Repl instance:
 
-3. **UI and UX Improvements**:
-   - Enhance terminal display with model information
-   - Implement error handling and fallbacks
+```typescript
+constructor({
+  terminal,
+  messageHistory,
+  tokenTracker,
+  fileManager,
+  repl,
+}: {
+  terminal: Terminal;
+  messageHistory: MessageHistory;
+  tokenTracker: TokenTracker;
+  fileManager: FileManager;
+  repl: Repl;
+}) {
+  this.terminal = terminal;
+  this.messageHistory = messageHistory;
+  this.tokenTracker = tokenTracker;
+  this.fileManager = fileManager;
+  this.repl = repl;
+}
+```
 
-4. **Configuration Persistence**:
-   - Store and manage user model preferences
-   - Track usage statistics for models
+### 6. Configuration Persistence
+
+In `source/config.ts`, add functions to persist model preferences:
+
+```typescript
+export async function savePreferredModel(modelName: ModelName): Promise<void> {
+  const config = await readAppConfig("acai");
+  config.preferredModel = modelName;
+  await writeAppConfig("acai", config);
+}
+
+export async function getPreferredModel(): Promise<ModelName | undefined> {
+  const config = await readAppConfig("acai");
+  return isSupportedModel(config.preferredModel) 
+    ? config.preferredModel 
+    : undefined;
+}
+```
+
+### 7. Modify index.ts to Use Preferred Model
+
+Update model initialization in `source/index.ts` to check for preferred model:
+
+```typescript
+const preferredModel = await getPreferredModel();
+const chosenModel: ModelName = isSupportedModel(cli.flags.model)
+  ? cli.flags.model
+  : preferredModel ?? "anthropic:sonnet-token-efficient-tools";
+```
+
+## Testing Plan
+
+1. Test basic model switching between different providers
+2. Verify history preservation after switching models
+3. Test error handling for invalid models
+4. Test configuration persistence
+5. Verify token tracking after model switching
+6. Test switching between models with different capabilities
+
+## Implementation Notes
+
+- Ensure compatibility checking when switching between models with different capabilities
+- Consider token usage differences between models
+- Update terminal UI to reflect current model
+- Add proper error handling for API key issues
