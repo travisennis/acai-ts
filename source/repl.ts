@@ -1,5 +1,5 @@
 import path from "node:path";
-import { createInterface } from "node:readline/promises";
+import { createInterface, type Interface } from "node:readline/promises";
 import { isDefined } from "@travisennis/stdlib/typeguards";
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import {
@@ -43,6 +43,34 @@ const THINKING_TIERS = [
   },
 ];
 
+class ReplPrompt {
+  private rl: Interface;
+  constructor({ commands }: { commands: CommandManager }) {
+    this.rl = createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      completer: (line) => {
+        const completions = commands.getCommands();
+        const hits = completions.filter((c) => c.startsWith(line));
+        // Show all completions if none found
+        return [hits.length > 0 ? hits : completions, line];
+      },
+    });
+  }
+
+  input() {
+    return this.rl.question("> ");
+  }
+
+  close() {
+    this.rl.close();
+  }
+
+  [Symbol.dispose]() {
+    this.close();
+  }
+}
+
 export interface ReplOptions {
   messageHistory: MessageHistory;
   promptManager: PromptManager;
@@ -83,17 +111,6 @@ export class Repl {
     const langModel = modelManager.getModel("repl");
     const modelConfig = modelManager.getModelMetadata("repl");
 
-    const rl = createInterface({
-      input: process.stdin,
-      output: process.stdout,
-      completer: (line) => {
-        const completions = commands.getCommands();
-        const hits = completions.filter((c) => c.startsWith(line));
-        // Show all completions if none found
-        return [hits.length > 0 ? hits : completions, line];
-      },
-    });
-
     while (true) {
       terminal.box(
         "State:",
@@ -104,10 +121,11 @@ export class Repl {
 
       if (!promptManager.isPending()) {
         // For interactive input
-        const userInput = await rl.question("> "); //await input({ message: ">" });
+        const prompt = new ReplPrompt({ commands });
+        const userInput = await prompt.input();
+        prompt.close();
         const commandResult = await commands.handle({ userInput });
         if (commandResult.break) {
-          rl.close();
           break;
         }
         if (commandResult.continue) {
@@ -120,6 +138,7 @@ export class Repl {
       }
 
       const userPrompt = promptManager.pop();
+
       // determine our thinking level for this request
       const thinkingLevel = calculateThinkingLevel(userPrompt);
 
