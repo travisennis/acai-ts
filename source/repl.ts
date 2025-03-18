@@ -23,6 +23,7 @@ import type { PromptManager } from "./prompts/manager.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
 import { initAnthropicTools, initTools } from "./tools/index.ts";
+import { ContextManager } from "./context/manager.ts";
 
 const THINKING_TIERS = [
   {
@@ -73,6 +74,7 @@ class ReplPrompt {
 
 export interface ReplOptions {
   messageHistory: MessageHistory;
+  contextManager: ContextManager;
   promptManager: PromptManager;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
@@ -96,6 +98,7 @@ export class Repl {
     const {
       config,
       promptManager,
+      contextManager,
       terminal,
       modelManager,
       fileManager,
@@ -133,7 +136,8 @@ export class Repl {
         }
         // if there is no pending prompt then use the user's input. otherwise, the prompt was loaded from a command
         if (!promptManager.isPending()) {
-          promptManager.push(userInput);
+          const enrichedPrompt = await contextManager.enrichPrompt(userInput);
+          promptManager.push(enrichedPrompt);
         }
       }
 

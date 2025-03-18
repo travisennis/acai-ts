@@ -13,6 +13,7 @@ import { PromptManager } from "./prompts/manager.ts";
 import { Repl } from "./repl.ts";
 import { initTerminal } from "./terminal/index.ts";
 import { TokenTracker } from "./tokenTracker.ts";
+import { ContextManager } from "./context/manager.ts";
 
 const cli = meow(
   `
@@ -135,8 +136,17 @@ async function main() {
     fileManager,
   });
 
+  const contextManager = new ContextManager({
+    projectRoot: process.cwd(),
+  });
+  contextManager.on("initialized", () => {
+    terminal.info("Context Manager is initialized.");
+  });
+  contextManager.initialize();
+
   const repl = new Repl({
     promptManager,
+    contextManager,
     terminal,
     config: appConfig,
     messageHistory,
