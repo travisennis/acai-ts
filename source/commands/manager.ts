@@ -15,13 +15,7 @@ import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../tokenTracker.ts";
 import { directoryTree } from "../tools/filesystem.ts";
 import { initTools } from "../tools/index.ts";
-
-interface ReplCommand {
-  command: string;
-  description: string;
-  result: "break" | "continue" | "use";
-  execute: (args: string[]) => Promise<void>;
-}
+import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export class CommandManager {
   private commands: Map<string, ReplCommand>;
@@ -39,14 +33,7 @@ export class CommandManager {
     messageHistory,
     tokenTracker,
     fileManager,
-  }: {
-    promptManager: PromptManager;
-    modelManager: ModelManager;
-    terminal: Terminal;
-    messageHistory: MessageHistory;
-    tokenTracker: TokenTracker;
-    fileManager: FileManager;
-  }) {
+  }: CommandOptions) {
     this.commands = new Map();
     this.promptManager = promptManager;
     this.modelManager = modelManager;
