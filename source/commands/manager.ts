@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import path from "node:path";
 import { checkbox, editor, search } from "@inquirer/prompts";
+import { generateText } from "ai";
 import Table from "cli-table3";
 import { globby } from "globby";
 import { config } from "../config.ts";
@@ -13,6 +14,7 @@ import type { PromptManager } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../tokenTracker.ts";
 import { directoryTree } from "../tools/filesystem.ts";
+import { initTools } from "../tools/index.ts";
 
 interface ReplCommand {
   command: string;
@@ -320,6 +322,29 @@ export class CommandManager {
       },
     };
     this.commands.set(promptCommand.command, promptCommand);
+
+    const initCommand = {
+      command: "/init",
+      description: "Creates the .acai/rules.md file.",
+      result: "continue" as const,
+      execute: async () => {
+        this.terminal.display(await directoryTree(process.cwd()));
+        const { text } = await generateText({
+          model: this.modelManager.getModel("repl"),
+          prompt: `Please analyze this codebase and create a .acai/rules.md file containing:
+1. Build/lint/test commands - especially for running a single test
+2. Code style guidelines including imports, formatting, types, naming conventions, error handling, etc.
+
+The file you create will be given to agentic coding agents (such as yourself) that operate in this repository. Make it about 20 lines long.
+If there's already a .acai/rules.md, improve it.
+If there are Cursor rules (in .cursor/rules/ or .cursorrules) or Copilot rules (in .github/copilot-instructions.md), make sure to include them.`,
+          maxSteps: 10,
+          tools: await initTools({ terminal: this.terminal }),
+        });
+        this.terminal.display(text);
+      },
+    };
+    this.commands.set(initCommand.command, ptreeCommand);
   }
 
   getCommands() {
