@@ -26,7 +26,7 @@ export class ContextManager extends EventEmitter<ContextManagerEvents> {
   private codeAnalyzer: CodeAnalyzer;
   private vectorStore: VectorStore;
   private refreshTimer: NodeJS.Timeout | null = null;
-  private isInitialized = false;
+  isInitialized = false;
 
   constructor(options: ContextOptions) {
     super();
