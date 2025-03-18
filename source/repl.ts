@@ -132,34 +132,39 @@ export class Repl {
         terminal.info("Added file contents to prompt.");
       }
 
+      // flag to see if the user prompt has been modified with file content
+      const isUsingFileContent = finalPrompt !== userPrompt;
+
       // models that can't support toolcalling will be limited, but this step can at least give them some context to answer questions. very early in the development of this.
       if (!modelConfig.supportsToolCalling) {
-        terminal.info("Adding files for task:");
-        const usefulFiles = await retrieveFilesForTask({
-          model: modelManager.getModel("file-retiever"),
-          prompt: userPrompt,
-          tokenTracker,
-        });
+        if (!isUsingFileContent) {
+          terminal.info("Adding files for task:");
+          const usefulFiles = await retrieveFilesForTask({
+            model: modelManager.getModel("file-retiever"),
+            prompt: userPrompt,
+            tokenTracker,
+          });
 
-        const absFiles = usefulFiles.map((filePath) => {
-          return path.isAbsolute(filePath)
-            ? filePath
-            : path.join(process.cwd(), "..", filePath);
-        });
+          const absFiles = usefulFiles.map((filePath) => {
+            return path.isAbsolute(filePath)
+              ? filePath
+              : path.join(process.cwd(), "..", filePath);
+          });
 
-        fileManager.addFiles({
-          files: absFiles,
-          format: modelConfig.promptFormat,
-        });
+          fileManager.addFiles({
+            files: absFiles,
+            format: modelConfig.promptFormat,
+          });
 
-        terminal.header("Reading files:");
-        for (const file of absFiles) {
-          terminal.writeln(file);
+          terminal.header("Reading files:");
+          for (const file of absFiles) {
+            terminal.writeln(file);
+          }
+
+          finalPrompt = fileManager.getPendingContent() + userPrompt;
+
+          fileManager.clearPendingContent();
         }
-
-        finalPrompt = fileManager.getPendingContent() + userPrompt;
-
-        fileManager.clearPendingContent();
       }
 
       if (!modelConfig.supportsReasoning) {
@@ -173,7 +178,6 @@ export class Repl {
       }
 
       // Track if we're using file content in this prompt to set cache control appropriately
-      const isUsingFileContent = finalPrompt !== userPrompt;
       const userMsg = createUserMessage(finalPrompt);
       if (isUsingFileContent && modelConfig.provider === "anthropic") {
         userMsg.providerOptions = {
