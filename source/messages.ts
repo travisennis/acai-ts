@@ -75,11 +75,28 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     this.tokenTracker = tokenTracker;
   }
 
+  validMessage(msg: CoreMessage) {
+    // Filter out messages with empty content arrays
+    if (Array.isArray(msg.content) && msg.content.length === 0) {
+      return false;
+    }
+
+    // Filter out assistant messages with empty text fields
+    if (
+      msg.role === "assistant" &&
+      Array.isArray(msg.content) &&
+      msg.content.length === 1 &&
+      msg.content[0].type === "text" &&
+      msg.content[0].text === ""
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
   get() {
-    return [...this.history].filter((msg) => {
-      // Filter out messages with empty content arrays
-      return !Array.isArray(msg.content) || msg.content.length > 0;
-    });
+    return [...this.history].filter(this.validMessage);
   }
 
   clear() {
@@ -105,9 +122,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
 
   appendResponseMessages(responseMessages: ResponseMessage[]) {
     // Filter out messages with empty content arrays
-    const validMessages = responseMessages.filter((msg) => {
-      return !Array.isArray(msg.content) || msg.content.length > 0;
-    });
+    const validMessages = responseMessages.filter(this.validMessage);
     this.history.push(...validMessages);
   }
 
