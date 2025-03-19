@@ -1,5 +1,5 @@
 import path from "node:path";
-import { createInterface, type Interface } from "node:readline/promises";
+import { type Interface, createInterface } from "node:readline/promises";
 import { isDefined } from "@travisennis/stdlib/typeguards";
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import {
@@ -11,6 +11,7 @@ import {
 import chalk from "chalk";
 import type { CommandManager } from "./commands/manager.ts";
 import { config as configManager } from "./config.ts";
+import type { ContextManager } from "./context/manager.ts";
 import { retrieveFilesForTask } from "./fileRetriever.ts";
 import type { FileManager } from "./files/manager.ts";
 import type { Flags } from "./index.ts";
@@ -23,7 +24,6 @@ import type { PromptManager } from "./prompts/manager.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
 import { initAnthropicTools, initTools } from "./tools/index.ts";
-import { ContextManager } from "./context/manager.ts";
 
 const THINKING_TIERS = [
   {
