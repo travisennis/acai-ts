@@ -228,7 +228,8 @@ ${rules}`
         : undefined;
 
       const providerTools =
-        modelConfig.supportsToolCalling && modelConfig.id.includes("sonnet")
+        modelConfig.supportsToolCalling &&
+        modelConfig.id.includes("sonnet-invalid") // do this for now to remove this tool from the mix
           ? initAnthropicTools({ model: langModel, terminal })
           : undefined;
 
@@ -393,19 +394,24 @@ const toolCallRepair = (modelManager: ModelManager) => {
 
     const tool = tools[toolCall.toolName as keyof typeof tools];
 
-    const { object: repairedArgs } = await generateObject({
-      model: modelManager.getModel("tool-repair"),
-      schema: tool.parameters,
-      prompt: [
-        `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
-        JSON.stringify(toolCall.args),
-        "The tool accepts the following schema:",
-        JSON.stringify(parameterSchema(toolCall)),
-        "Please fix the arguments.",
-      ].join("\n"),
-    });
+    try {
+      const { object: repairedArgs } = await generateObject({
+        model: modelManager.getModel("tool-repair"),
+        schema: tool.parameters,
+        prompt: [
+          `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
+          JSON.stringify(toolCall.args),
+          "The tool accepts the following schema:",
+          JSON.stringify(parameterSchema(toolCall)),
+          "Please fix the arguments.",
+        ].join("\n"),
+      });
 
-    return { ...toolCall, args: JSON.stringify(repairedArgs) };
+      return { ...toolCall, args: JSON.stringify(repairedArgs) };
+    } catch (err) {
+      console.error((err as Error).message);
+      return null;
+    }
   };
   return fn;
 };
