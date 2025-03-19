@@ -62,7 +62,7 @@ export class CommandManager {
       tokenTracker: this.tokenTracker,
       fileManager: this.fileManager,
     };
-    
+
     // Register all commands
     const cmds = [
       resetCommand(options),
@@ -78,15 +78,18 @@ export class CommandManager {
       ptreeCommand(options),
       editCommand(options),
       initCommand(options),
+      todoCommand(options),
+      contextCommand(options),
+      explainCommand(options),
     ];
-    
+
     // Add help command with access to all commands
     const helpCmd = helpCommand(options);
     cmds.push({
       ...helpCmd,
       execute: () => helpCmd.execute(this.commands),
     });
-    
+
     // Register all commands
     for (const cmd of cmds) {
       this.commands.set(cmd.command, cmd);
