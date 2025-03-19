@@ -1,13 +1,5 @@
 When writing code follow these rules:
-- Use spaces for indentation (2 spaces per level)
-- Maximum line width of 80 characters
-- Use LF line endings
-- Use double quotes for strings and JSX
-- Always use trailing commas in objects and arrays
-- Always use parentheses around arrow function parameters
-- Use spaces inside brackets/braces
 - Target ESNext
-- Avoid unused variables and parameters
 - VERY IMPORTANT: Follow strict TypeScript rules with proper type definitions
 - IMPORTANT: Always check variables that can be undefined.
 - DO NOT USE non-null assertions
@@ -15,7 +7,6 @@ When writing code follow these rules:
 - Apply proper error handling
 - Avoid console statements only when necessary
 - Use modern ES module syntax with explicit .ts file extensions in imports
-- Place brackets on the same line for blocks
 - Don't use Node.js built-in modules inappropriately
 - Import node built-in modules with node: prefix
 
