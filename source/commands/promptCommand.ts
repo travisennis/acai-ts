@@ -4,10 +4,7 @@ import { join } from "node:path";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 import { config } from "../config.ts";
 
-export const promptCommand = ({
-  terminal,
-  promptManager,
-}: CommandOptions) => {
+export const promptCommand = ({ terminal, promptManager }: CommandOptions) => {
   return {
     command: "/prompt",
     description: "Loads and executes user and project prompts.",
@@ -67,9 +64,7 @@ export const promptCommand = ({
         terminal.info(`Loaded prompt: ${promptName} (${type})`);
         promptManager.push(promptContent);
       } catch (error) {
-        terminal.error(
-          `Error loading prompt: ${(error as Error).message}`,
-        );
+        terminal.error(`Error loading prompt: ${(error as Error).message}`);
       }
     },
   } satisfies ReplCommand;

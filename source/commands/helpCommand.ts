@@ -8,8 +8,9 @@ export const helpCommand = (_options: CommandOptions) => {
     result: "continue" as const,
     execute: (args?: string[] | Map<string, ReplCommand>) => {
       // If first argument is a Map, it's the commands collection
-      const commands = args instanceof Map ? args : new Map<string, ReplCommand>();
-      
+      const commands =
+        args instanceof Map ? args : new Map<string, ReplCommand>();
+
       const table = new Table({
         head: ["command", "description"],
       });
