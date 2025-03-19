@@ -409,7 +409,7 @@ const toolCallRepair = (modelManager: ModelManager) => {
 
       return { ...toolCall, args: JSON.stringify(repairedArgs) };
     } catch (err) {
-      console.error((err as Error).message);
+      logger.error(err, "Failed to repair tool call.");
       return null;
     }
   };
