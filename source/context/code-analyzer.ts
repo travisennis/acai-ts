@@ -2,19 +2,19 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { globby } from "globby";
 import {
-  createSourceFile,
-  ScriptTarget,
   type Node,
+  ScriptTarget,
+  createSourceFile,
+  forEachChild,
   isClassDeclaration,
   isFunctionDeclaration,
   isInterfaceDeclaration,
   isPropertySignature,
-  forEachChild,
 } from "typescript";
 import { logger } from "../logger.ts";
+import type { Entity } from "./manager.ts";
 
-export interface CodeEntity {
-  id: string;
+export interface CodeEntity extends Entity {
   type: "file" | "class" | "function" | "interface" | "type" | "variable";
   name: string;
   content?: string;
@@ -23,11 +23,6 @@ export interface CodeEntity {
     startLine: number;
     endLine: number;
   };
-  metadata: Record<string, any>;
-  relationships: Array<{
-    type: string;
-    targetId: string;
-  }>;
 }
 
 export class CodeAnalyzer {

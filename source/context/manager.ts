@@ -19,6 +19,18 @@ interface ContextManagerEvents {
   disposed: [];
 }
 
+export interface Entity {
+  id: string;
+  type: string;
+  description?: string;
+  content?: string;
+  metadata: Record<string, any>;
+  relationships: Array<{
+    type: string;
+    targetId: string;
+  }>;
+}
+
 export class ContextManager extends EventEmitter<ContextManagerEvents> {
   private projectRoot: string;
   private graph: ContextGraph;
@@ -118,7 +130,7 @@ export class ContextManager extends EventEmitter<ContextManagerEvents> {
     return `${contextBlock}\n\n${prompt}`;
   }
 
-  private formatContextForPrompt(entities: any[]): string {
+  private formatContextForPrompt(entities: Entity[]): string {
     // Format entities into a context block
     const contextParts = entities.map((entity) => {
       return `${entity.type}: ${entity.id}\n${entity.description || entity.content || ""}`;
@@ -163,7 +175,7 @@ export class ContextManager extends EventEmitter<ContextManagerEvents> {
     logger.debug("Incremental context update completed");
   }
 
-  async query(question: string): Promise<any[]> {
+  async query(question: string): Promise<Entity[]> {
     if (!this.isInitialized) {
       throw new Error("Context manager not initialized");
     }

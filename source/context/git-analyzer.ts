@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { logger } from "../logger.ts";
+import type { Entity } from "./manager.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -9,15 +10,9 @@ export interface GitAnalyzerOptions {
   maxHistoryDepth: number;
 }
 
-export interface GitEntity {
-  id: string;
+export interface GitEntity extends Entity {
   type: "commit" | "file" | "author" | "branch";
   description?: string;
-  metadata: Record<string, any>;
-  relationships: Array<{
-    type: string;
-    targetId: string;
-  }>;
 }
 
 export class GitAnalyzer {
