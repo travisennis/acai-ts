@@ -1,19 +1,19 @@
+import { readFileSync } from "node:fs";
 import {
-  createSourceFile,
+  type Node,
   ScriptTarget,
   type TypeNode,
-  type Node,
-  isFunctionDeclaration,
+  createSourceFile,
+  forEachChild,
   isClassDeclaration,
-  isMethodDeclaration,
-  isPropertyDeclaration,
+  isFunctionDeclaration,
   isInterfaceDeclaration,
+  isMethodDeclaration,
   isMethodSignature,
+  isPropertyDeclaration,
   isPropertySignature,
   isTypeAliasDeclaration,
-  forEachChild,
 } from "typescript";
-import { readFileSync } from "node:fs";
 
 interface FileStructure {
   functions: FunctionInfo[];
