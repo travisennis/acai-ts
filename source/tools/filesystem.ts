@@ -31,7 +31,7 @@ function expandHome(filepath: string): string {
 // Security utilities
 async function validatePath(
   requestedPath: string,
-  allowedDirectories: string[],
+  allowedDirectory: string,
 ): Promise<string> {
   const expandedPath = expandHome(requestedPath);
   const absolute = path.isAbsolute(expandedPath)
@@ -40,12 +40,10 @@ async function validatePath(
   const normalizedRequested = normalizePath(absolute);
 
   // Check if path is within allowed directories
-  const isAllowed = allowedDirectories.some((dir) =>
-    normalizedRequested.startsWith(dir),
-  );
+  const isAllowed = normalizedRequested.startsWith(allowedDirectory);
   if (!isAllowed) {
     throw new Error(
-      `Access denied - path outside allowed directories: ${absolute} not in ${allowedDirectories.join(", ")}`,
+      `Access denied - path outside allowed directories: ${absolute} not in ${allowedDirectory}`,
     );
   }
 
@@ -53,9 +51,7 @@ async function validatePath(
   try {
     const realPath = await fs.realpath(absolute);
     const normalizedReal = normalizePath(realPath);
-    const isRealPathAllowed = allowedDirectories.some((dir) =>
-      normalizedReal.startsWith(dir),
-    );
+    const isRealPathAllowed = normalizedReal.startsWith(allowedDirectory);
     if (!isRealPathAllowed) {
       throw new Error(
         "Access denied - symlink target outside allowed directories",
@@ -68,9 +64,7 @@ async function validatePath(
     try {
       const realParentPath = await fs.realpath(parentDir);
       const normalizedParent = normalizePath(realParentPath);
-      const isParentAllowed = allowedDirectories.some((dir) =>
-        normalizedParent.startsWith(dir),
-      );
+      const isParentAllowed = normalizedParent.startsWith(allowedDirectory);
       if (!isParentAllowed) {
         throw new Error(
           "Access denied - parent directory outside allowed directories",
@@ -86,8 +80,8 @@ async function validatePath(
 async function searchFiles(
   rootPath: string,
   pattern: string,
+  allowedDirectory: string,
   excludePatterns: string[] = [],
-  allowedDirectories: string[] = [],
 ): Promise<string[]> {
   const results: string[] = [];
 
@@ -103,18 +97,20 @@ async function searchFiles(
 
   async function search(currentPath: string) {
     const entries = await fs.readdir(currentPath, { withFileTypes: true });
+
     for (const entry of entries) {
       const fullPath = path.join(currentPath, entry.name);
       try {
         // Validate each path before processing
         await validatePath(
-          joinWorkingDir(fullPath, allowedDirectories.at(0) ?? ""),
-          allowedDirectories,
+          joinWorkingDir(fullPath, allowedDirectory),
+          allowedDirectory,
         );
 
         // Check if path should be ignored based on .gitignore
         const relativePath = path.relative(rootPath, fullPath);
-        if (ig.ignores(relativePath)) {
+        const isIgnored = ig.ignores(relativePath);
+        if (isIgnored) {
           continue;
         }
 
@@ -123,27 +119,46 @@ async function searchFiles(
           const globPattern = pattern.includes("*")
             ? pattern
             : `**/${pattern}/**`;
-          return minimatch(relativePath, globPattern, { dot: true });
+          const isExcluded = minimatch(relativePath, globPattern, {
+            dot: true,
+          });
+          return isExcluded;
         });
 
         if (shouldExclude) {
           continue;
         }
 
-        if (entry.name.toLowerCase().includes(pattern.toLowerCase())) {
+        // Check if the file matches the pattern - use full path to check for paths like "./acai/rules.md"
+        // or just the name for simple filename searches
+        const patternLower = pattern.toLowerCase();
+        const fileNameLower = entry.name.toLowerCase();
+        const fullPathLower = fullPath.toLowerCase();
+        const relativePathLower = relativePath.toLowerCase();
+
+        // Try to match the pattern against the full path, relative path, or just the filename
+        const matchesPattern =
+          fileNameLower.includes(patternLower) ||
+          fullPathLower.includes(patternLower) ||
+          relativePathLower.includes(patternLower);
+
+        if (matchesPattern) {
           results.push(fullPath);
         }
 
         if (entry.isDirectory()) {
           await search(fullPath);
         }
-      } catch (_error) {
-        // ignore
+      } catch (error) {
+        console.error(error);
       }
     }
   }
 
+  // being the search
   await search(rootPath);
+
+  // return the results
   return results;
 }
 
@@ -387,9 +402,7 @@ export const createFileSystemTools = async ({
   sendData,
 }: FileSystemOptions) => {
   // Store allowed directories in normalized form
-  const allowedDirectories = [workingDir].map((dir) =>
-    normalizePath(path.resolve(expandHome(dir))),
-  );
+  const allowedDirectory = normalizePath(path.resolve(expandHome(workingDir)));
 
   // Validate that all directories exist and are accessible
   await Promise.all(
@@ -438,7 +451,7 @@ export const createFileSystemTools = async ({
         try {
           const validPath = await validatePath(
             joinWorkingDir(dirPath, workingDir),
-            allowedDirectories,
+            allowedDirectory,
           );
           await fs.mkdir(validPath, { recursive: true });
           sendData?.({
@@ -478,7 +491,7 @@ export const createFileSystemTools = async ({
         try {
           const filePath = await validatePath(
             joinWorkingDir(userPath, workingDir),
-            allowedDirectories,
+            allowedDirectory,
           );
           const file = await fs.readFile(filePath, { encoding });
           sendData?.({
@@ -521,7 +534,7 @@ export const createFileSystemTools = async ({
             try {
               const validPath = await validatePath(
                 joinWorkingDir(filePath, workingDir),
-                allowedDirectories,
+                allowedDirectory,
               );
               const content = await fs.readFile(validPath, "utf-8");
               return `${filePath}:\n${content}\n`;
@@ -564,7 +577,7 @@ export const createFileSystemTools = async ({
           });
           const validPath = await validatePath(
             joinWorkingDir(path, workingDir),
-            allowedDirectories,
+            allowedDirectory,
           );
           const result = await applyFileEdits(validPath, edits, dryRun);
           return result;
@@ -596,13 +609,13 @@ export const createFileSystemTools = async ({
           });
           const validPath = await validatePath(
             joinWorkingDir(path, workingDir),
-            allowedDirectories,
+            allowedDirectory,
           );
           const results = await searchFiles(
             validPath,
             pattern,
+            allowedDirectory,
             excludePatterns,
-            allowedDirectories,
           );
           sendData?.({
             event: "tool-completion",
@@ -638,7 +651,7 @@ export const createFileSystemTools = async ({
             event: "tool-init",
             data: `Get file info: ${path}`,
           });
-          const validPath = await validatePath(path, allowedDirectories);
+          const validPath = await validatePath(path, allowedDirectory);
           const info = await getFileStats(validPath);
           return Object.entries(info)
             .map(([key, value]) => `${key}: ${value}`)
@@ -669,7 +682,7 @@ export const createFileSystemTools = async ({
         try {
           const filePath = await validatePath(
             joinWorkingDir(userPath, workingDir),
-            allowedDirectories,
+            allowedDirectory,
           );
           await fs.writeFile(filePath, content, { encoding });
           sendData?.({
@@ -701,11 +714,11 @@ export const createFileSystemTools = async ({
           });
           const validSourcePath = await validatePath(
             joinWorkingDir(source, workingDir),
-            allowedDirectories,
+            allowedDirectory,
           );
           const validDestPath = await validatePath(
             joinWorkingDir(destination, workingDir),
-            allowedDirectories,
+            allowedDirectory,
           );
           await fs.rename(validSourcePath, validDestPath);
           return `Successfully moved ${source} to ${destination}`;
@@ -732,7 +745,7 @@ export const createFileSystemTools = async ({
           });
           const validPath = await validatePath(
             joinWorkingDir(path, workingDir),
-            allowedDirectories,
+            allowedDirectory,
           );
           const entries = await fs.readdir(validPath, { withFileTypes: true });
           return entries
@@ -766,7 +779,7 @@ export const createFileSystemTools = async ({
           });
           const validPath = await validatePath(
             joinWorkingDir(path, workingDir),
-            allowedDirectories,
+            allowedDirectory,
           );
           return directoryTree(validPath);
         } catch (error) {
