@@ -15,27 +15,7 @@ Instructions:
 8. Do not add comments to the code you write, unless the user asks you to, or the code is complex and requires additional context.
 9. VERY IMPORTANT: When you have completed a task, you MUST run the build tool to ensure your code is correct.
 10. If you aren't sure where to start, using the directoryTree tool to get an overview of the project structure and the files it contains. If you still aren't sure how to proceed ask. 
-
-When writing code follow these rules:
-- Use spaces for indentation (2 spaces per level)
-- Maximum line width of 80 characters
-- Use LF line endings
-- Use double quotes for strings and JSX
-- Always use trailing commas in objects and arrays
-- Always use parentheses around arrow function parameters
-- Use spaces inside brackets/braces
-- Target ESNext
-- Avoid unused variables and parameters
-- VERY IMPORTANT: Follow strict TypeScript rules with proper type definitions
-- IMPORTANT: Always check variables that can be undefined.
-- DO NOT USE non-null assertions
-- Avoid the use of the any types unless absolutely necessary.
-- Apply proper error handling
-- Avoid console statements only when necessary
-- Use modern ES module syntax with explicit .ts file extensions in imports
-- Place brackets on the same line for blocks
-- Don't use Node.js built-in modules inappropriately
-- Import node built-in modules with node: prefix
+11. Before searching the project for files, try to use the directoryTree tool to get an idea of how the project is structured and what files are in which directories.
 
 Your current working directory is ${process.cwd()}
 Is directory a git repo: ${(await inGitDirectory()) ? "Yes" : "No"}
