@@ -211,7 +211,7 @@ export class Repl {
 
       // Read rules from project directory
       const rules = await configManager.readRulesFile();
-      const finalSystemPrompt = systemPrompt(rules);
+      const finalSystemPrompt = await systemPrompt(rules);
 
       const maxTokens =
         modelConfig.provider === "anthropic" && modelConfig.supportsReasoning
