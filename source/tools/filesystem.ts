@@ -555,7 +555,7 @@ export const createFileSystemTools = async ({
         "with new content. Returns a git-style diff showing the changes made. " +
         "Only works within allowed directories.",
       parameters: z.object({
-        path: z.string(),
+        path: z.string().describe("The path of the file to edit."),
         edits: z.array(
           z.object({
             oldText: z
@@ -567,7 +567,9 @@ export const createFileSystemTools = async ({
         dryRun: z
           .boolean()
           .default(false)
-          .describe("Preview changes using git-style diff format"),
+          .describe(
+            "Preview changes using git-style diff format: true or false",
+          ),
       }),
       execute: async ({ path, edits, dryRun }) => {
         try {
