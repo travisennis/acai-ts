@@ -98,7 +98,7 @@ export class Repl {
     const {
       config,
       promptManager,
-      contextManager,
+      // contextManager,
       terminal,
       modelManager,
       fileManager,
@@ -136,8 +136,8 @@ export class Repl {
         }
         // if there is no pending prompt then use the user's input. otherwise, the prompt was loaded from a command
         if (!promptManager.isPending()) {
-          const enrichedPrompt = await contextManager.enrichPrompt(userInput);
-          promptManager.push(enrichedPrompt);
+          // const enrichedPrompt = await contextManager.enrichPrompt(userInput);
+          promptManager.push(userInput);
         }
       }
 
