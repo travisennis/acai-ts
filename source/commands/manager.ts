@@ -1,17 +1,3 @@
-import { explainCommand } from "./explainCommand.ts";
-import { contextCommand } from "./contextCommand.ts";
-import { todoCommand } from "./todoCommand.ts";
-import { resetCommand } from "./resetCommand.ts";
-import { saveCommand } from "./saveCommand.ts";
-import { compactCommand } from "./compactCommand.ts";
-import { exitCommand } from "./exitCommand.ts";
-import { byeCommand } from "./byeCommand.ts";
-import { helpCommand } from "./helpCommand.ts";
-import { filesCommand } from "./filesCommand.ts";
-import { ptreeCommand } from "./ptreeCommand.ts";
-import { editCommand } from "./editCommand.ts";
-import { promptCommand } from "./promptCommand.ts";
-import { initCommand } from "./initCommand.ts";
 import type { ContextManager } from "../context/manager.ts";
 import type { FileManager } from "../files/manager.js";
 import type { MessageHistory } from "../messages.ts";
@@ -19,6 +5,21 @@ import type { ModelManager } from "../models/manager.ts";
 import type { PromptManager } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../tokenTracker.ts";
+import { byeCommand } from "./byeCommand.ts";
+import { compactCommand } from "./compactCommand.ts";
+import { contextCommand } from "./contextCommand.ts";
+import { editCommand } from "./editCommand.ts";
+import { exitCommand } from "./exitCommand.ts";
+import { explainCommand } from "./explainCommand.ts";
+import { filesCommand } from "./filesCommand.ts";
+import { helpCommand } from "./helpCommand.ts";
+import { initCommand } from "./initCommand.ts";
+import { pasteCommand } from "./pasteCommand.ts";
+import { promptCommand } from "./promptCommand.ts";
+import { ptreeCommand } from "./ptreeCommand.ts";
+import { resetCommand } from "./resetCommand.ts";
+import { saveCommand } from "./saveCommand.ts";
+import { todoCommand } from "./todoCommand.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export class CommandManager {
@@ -81,6 +82,7 @@ export class CommandManager {
       todoCommand(options),
       contextCommand(options),
       explainCommand(options),
+      pasteCommand(options),
     ];
 
     // Add help command with access to all commands

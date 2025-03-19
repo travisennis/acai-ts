@@ -52,4 +52,8 @@ export class FileManager {
     this.pendingFileContents = "";
     this.loadedFiles.clear();
   }
+
+  addPendingContent(content: string): void {
+    this.pendingFileContents += `${content}\n\n`;
+  }
 }
