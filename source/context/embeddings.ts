@@ -104,11 +104,13 @@ export class VectorStore {
           const item = batch[j];
           const embedding = embeddings[j];
 
-          this.items.set(item.id, {
-            id: item.id,
-            text: item.text,
-            embedding,
-          });
+          if (item && embedding) {
+            this.items.set(item.id, {
+              id: item.id,
+              text: item.text,
+              embedding,
+            });
+          }
         }
       } catch (error) {
         logger.error({ error }, "Failed to generate embeddings for batch");
@@ -149,7 +151,7 @@ export class VectorStore {
       // 4. Use locality-sensitive hashing (LSH) to quickly find candidate matches
       // 5. Implement a hierarchical navigable small world (HNSW) graph for sub-linear search time
       for (const [id, item] of this.items.entries()) {
-        if (item.embedding) {
+        if (queryEmbedding && item.embedding) {
           const score = this.cosineSimilarity(queryEmbedding, item.embedding);
           results.push({ id, score });
         }
@@ -174,9 +176,11 @@ export class VectorStore {
     let normB = 0;
 
     for (let i = 0; i < a.length; i++) {
-      dotProduct += a[i] * b[i];
-      normA += a[i] * a[i];
-      normB += b[i] * b[i];
+      const v1 = a[i] ?? 0;
+      const v2 = b[i] ?? 0;
+      dotProduct += v1 * v2;
+      normA += v1 * v1;
+      normB += v2 * v2;
     }
 
     normA = Math.sqrt(normA);

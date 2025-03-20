@@ -86,8 +86,8 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
       msg.role === "assistant" &&
       Array.isArray(msg.content) &&
       msg.content.length === 1 &&
-      msg.content[0].type === "text" &&
-      msg.content[0].text === ""
+      msg.content[0]?.type === "text" &&
+      msg.content[0]?.text === ""
     ) {
       return false;
     }

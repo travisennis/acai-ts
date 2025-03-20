@@ -182,7 +182,7 @@ export const createTextEditorTool = ({
 async function view({
   path,
   viewRange,
-}: { path: string; viewRange?: number[] }): Promise<string> {
+}: { path: string; viewRange?: number[] | undefined }): Promise<string> {
   try {
     // Check if file exists
     try {
@@ -199,8 +199,8 @@ async function view({
 
     const lines = content.split("\n");
     const [start, end] = viewRange;
-    const startIdx = Math.max(0, start - 1);
-    const endIdx = end === -1 ? lines.length : Math.min(lines.length, end);
+    const startIdx = Math.max(0, (start ?? 0) - 1);
+    const endIdx = end === -1 ? lines.length : Math.min(lines.length, end ?? 0);
 
     return lines.slice(startIdx, endIdx).join("\n");
   } catch (error) {

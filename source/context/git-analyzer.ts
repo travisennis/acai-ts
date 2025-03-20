@@ -115,7 +115,7 @@ export class GitAnalyzer {
 
     // Keep track of the last analyzed commit
     if (commits.length > 0) {
-      this.lastAnalyzedCommit = commits[0].hash;
+      this.lastAnalyzedCommit = commits[0]?.hash ?? null;
     }
 
     logger.info(
@@ -150,7 +150,7 @@ export class GitAnalyzer {
 
     // Update the last analyzed commit
     if (commits.length > 0) {
-      this.lastAnalyzedCommit = commits[0].hash;
+      this.lastAnalyzedCommit = commits[0]?.hash ?? null;
     }
 
     return entities;
@@ -181,7 +181,7 @@ export class GitAnalyzer {
           hash,
           author,
           email,
-          timestamp: Number.parseInt(timestampStr, 10),
+          timestamp: Number.parseInt(timestampStr ?? "", 10),
           subject,
           files: [],
         };

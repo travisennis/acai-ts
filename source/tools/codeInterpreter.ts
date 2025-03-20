@@ -18,20 +18,20 @@ export function jsCodeInterpreter(
   const context: Record<string, any> = { console };
 
   if (permissions.includes("fs")) {
-    context.fs = _fs;
+    context["fs"] = _fs;
   }
   if (permissions.includes("net")) {
-    context.http = _http;
-    context.https = _https;
+    context["http"] = _http;
+    context["https"] = _https;
   }
   if (permissions.includes("os")) {
-    context.os = _os;
+    context["os"] = _os;
   }
   if (permissions.includes("crypto")) {
-    context.crypto = _crypto;
+    context["crypto"] = _crypto;
   }
   if (permissions.includes("process")) {
-    context.process = _process;
+    context["process"] = _process;
   }
 
   const options = { timeout: 120 * 1000 }; // Timeout in milliseconds
@@ -44,7 +44,7 @@ export const createCodeInterpreterTool = ({
   sendData,
 }: Readonly<{
   permissions?: readonly InterpreterPermission[];
-  sendData?: SendData;
+  sendData?: SendData | undefined;
 }>) => {
   return {
     codeInterpreter: tool({

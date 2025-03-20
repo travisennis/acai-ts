@@ -25,16 +25,16 @@ export type ModelProvider =
 const azure = customProvider({
   languageModels: {
     text: createAzure({
-      resourceName: process.env.AZURE_RESOURCE_NAME,
-      apiKey: process.env.AZURE_API_KEY,
-    })(process.env.AZURE_DEPLOYMENT_NAME ?? ""),
+      resourceName: process.env["AZURE_RESOURCE_NAME"] ?? "",
+      apiKey: process.env["AZURE_API_KEY"] ?? "",
+    })(process.env["AZURE_DEPLOYMENT_NAME"] ?? ""),
   },
 });
 
 const openRouterClient = createOpenAI({
   // biome-ignore lint/style/useNamingConvention: <explanation>
   baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_API_KEY,
+  apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
 });
 
 const openrouter = customProvider({
@@ -52,7 +52,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function addCacheControlToTools(body: string) {
   const parsedBody = JSON.parse(body);
   if (isRecord(parsedBody)) {
-    const tools = parsedBody.tools;
+    const tools = parsedBody["tools"];
     if (Array.isArray(tools)) {
       tools.at(-1).cache_control = { type: "ephemeral" };
     }

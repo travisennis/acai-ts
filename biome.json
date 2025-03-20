@@ -10,7 +10,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "complexity": { "all": true },
+      "complexity": { "all": true, "useLiteralKeys": "off" },
       "correctness": { "all": true, "noNodejsModules": "off" },
       "performance": { "all": true },
       "security": { "all": true },

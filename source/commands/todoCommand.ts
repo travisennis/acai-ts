@@ -196,11 +196,13 @@ function parseTodoResults(
       const match = line.match(/^([^:]+):(\\d+):(.*)/);
       if (match) {
         const [, file, lineNum, content] = match;
-        todos.push({
-          file,
-          line: Number.parseInt(lineNum, 10),
-          content: content.trim(),
-        });
+        if (file && lineNum && content) {
+          todos.push({
+            file,
+            line: Number.parseInt(lineNum, 10),
+            content: content.trim(),
+          });
+        }
       }
     }
   }
@@ -217,7 +219,7 @@ function groupTodosByFile(
     if (!result[todo.file]) {
       result[todo.file] = [];
     }
-    result[todo.file].push({
+    result[todo.file]?.push({
       line: todo.line,
       content: todo.content,
     });

@@ -89,7 +89,7 @@ export async function searchRaindrop({
   search,
   created,
   apiKey,
-}: { search: string; created?: string; apiKey: string }) {
+}: { search: string; created?: string | undefined; apiKey: string }) {
   const collectionId = "0";
   let searchFilter = search;
   if (created) {

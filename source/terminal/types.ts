@@ -36,12 +36,12 @@ export interface TerminalConfig {
   /**
    * Maximum terminal height (rows)
    */
-  maxHeight?: number;
+  maxHeight?: number | undefined;
 
   /**
    * Maximum terminal width (columns)
    */
-  maxWidth?: number;
+  maxWidth?: number | undefined;
 }
 
 /**

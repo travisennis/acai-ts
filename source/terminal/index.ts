@@ -249,8 +249,10 @@ export class Terminal {
   }
 
   header(header: string, chalkFn: ChalkInstance = chalk.green): void {
-    const width = process.stdout.columns - header.length - 4;
-    process.stdout.write(chalkFn(`\n── ${header} ${"─".repeat(width)}\n`));
+    const width = process.stdout.columns - header.length - 7; // Adjusted for extra spaces
+    process.stdout.write(
+      chalkFn(`\n ── ${header} ${"─".repeat(width > 0 ? width : 0)}  \n`),
+    );
   }
 
   box(

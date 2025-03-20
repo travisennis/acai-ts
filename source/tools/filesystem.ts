@@ -370,7 +370,7 @@ export async function directoryTree(dirPath: string): Promise<string> {
 
 interface FileSystemOptions {
   workingDir: string;
-  sendData?: SendData;
+  sendData?: SendData | undefined;
 }
 
 const fileEncodingSchema = z.enum([

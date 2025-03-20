@@ -17,7 +17,7 @@ export const promptCommand = ({ terminal, promptManager }: CommandOptions) => {
         return;
       }
 
-      const promptArg = args[0];
+      const promptArg = args[0] ?? "";
       const [typeStr, promptName] = promptArg.split(":");
 
       if (!(typeStr && promptName)) {

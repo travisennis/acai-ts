@@ -17,7 +17,7 @@ export const contextCommand = ({
         return;
       }
 
-      const subCommand = args[0].toLowerCase();
+      const subCommand = (args[0] ?? "").toLowerCase();
       try {
         switch (subCommand) {
           case "analyze": {
@@ -63,12 +63,12 @@ export const contextCommand = ({
 
               const table = new Table({
                 head: ["ID", "Details"],
-                colWidths: [30, 50],
+                colWidths: [60, 100],
               });
 
               for (const item of items) {
                 table.push([
-                  item.id.substring(0, 28) + (item.id.length > 28 ? "..." : ""),
+                  item.id.substring(0, 58) + (item.id.length > 58 ? "..." : ""),
                   item.properties?.description ||
                     item.properties?.name ||
                     (item.properties?.path

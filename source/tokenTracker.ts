@@ -12,9 +12,9 @@ interface TokenTrackerEvents {
 
 export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
   private usages: TokenUsage[] = [];
-  private budget?: number;
+  private budget?: number | undefined;
 
-  constructor(budget?: number) {
+  constructor(budget?: number | undefined) {
     super();
     this.budget = budget;
 

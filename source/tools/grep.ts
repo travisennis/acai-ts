@@ -3,7 +3,9 @@ import { z } from "zod";
 import { execSync } from "node:child_process";
 import type { SendData } from "./types.ts";
 
-export const createGrepTools = (options: { sendData?: SendData } = {}) => {
+export const createGrepTools = (
+  options: { sendData?: SendData | undefined } = {},
+) => {
   const { sendData } = options;
   return {
     grepFiles: tool({
@@ -64,10 +66,10 @@ export const createGrepTools = (options: { sendData?: SendData } = {}) => {
 };
 
 interface GrepOptions {
-  recursive?: boolean;
-  ignoreCase?: boolean;
-  filePattern?: string;
-  contextLines?: number;
+  recursive?: boolean | undefined;
+  ignoreCase?: boolean | undefined;
+  filePattern?: string | undefined;
+  contextLines?: number | undefined;
 }
 
 /**

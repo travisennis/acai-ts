@@ -16,17 +16,17 @@ export const explainCommand = ({ terminal, modelManager }: CommandOptions) => {
       }
 
       try {
-        const fileArg = args[0];
+        const fileArg = args[0] ?? "";
         let filePath: string;
         let lineRange: [number, number] | undefined;
 
         // Check if a line range is specified (e.g., file.ts:10-20)
         if (fileArg.includes(":")) {
-          const [path, range] = fileArg.split(":");
+          const [path = "", range = ""] = fileArg.split(":");
           filePath = path;
 
           if (range.includes("-")) {
-            const [start, end] = range.split("-").map(Number);
+            const [start = 0, end = 0] = range.split("-").map(Number);
             if (!(Number.isNaN(start) || Number.isNaN(end))) {
               lineRange = [start, end];
             }

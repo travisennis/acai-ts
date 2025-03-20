@@ -4,7 +4,7 @@ import { z } from "zod";
 import type { SendData } from "./types.ts";
 
 export const createUrlTools = (options: {
-  sendData?: SendData;
+  sendData?: SendData | undefined;
 }) => {
   const { sendData } = options;
   return {
@@ -36,7 +36,7 @@ export const createUrlTools = (options: {
 
 export async function readUrl(url: string): Promise<string> {
   try {
-    const apiKey = process.env.JINA_READER_API_KEY;
+    const apiKey = process.env["JINA_READER_API_KEY"];
     const readUrl = `https://r.jina.ai/${url}`;
     const response = await fetch(readUrl, {
       method: "GET",

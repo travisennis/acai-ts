@@ -17,7 +17,7 @@ function validateConventionalCommit(message: string): boolean {
 
 interface GitOptions {
   workingDir: string;
-  sendData?: SendData;
+  sendData?: SendData | undefined;
 }
 
 const validateGitRepo = (workingDir: string): void => {

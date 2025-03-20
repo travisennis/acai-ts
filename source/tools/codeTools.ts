@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { tool } from "ai";
 import { z } from "zod";
 import type { SendData } from "./types.ts";
+import { isUndefined } from "@travisennis/stdlib/typeguards";
 
 export interface Config {
   build?: string | undefined;
@@ -15,7 +16,11 @@ export const createCodeTools = ({
   baseDir,
   config,
   sendData,
-}: { baseDir: string; config?: Config; sendData?: SendData }) => {
+}: {
+  baseDir: string;
+  config?: Config | undefined;
+  sendData?: SendData | undefined;
+}) => {
   return {
     installDependencies: tool({
       description:
@@ -197,27 +202,32 @@ function asyncExec(
   }>();
   try {
     const [cmd, ...args] = command.split(" ");
-    execFile(
-      cmd,
-      args,
-      {
-        cwd,
-        timeout: 10 * 60 * 1000,
-        shell: true,
-      },
-      (error, stdout, stderr) => {
-        if (error) {
-          const errorCode = typeof error.code === "number" ? error.code : 1;
-          resolve({
-            stdout: stdout || "",
-            stderr: stderr || "",
-            code: errorCode,
-          });
-        } else {
-          resolve({ stdout, stderr, code: 0 });
-        }
-      },
-    );
+    if (isUndefined(cmd)) {
+      resolve({ stdout: "", stderr: "Missing command", code: 1 });
+    }
+    if (!isUndefined(cmd)) {
+      execFile(
+        cmd,
+        args,
+        {
+          cwd,
+          timeout: 10 * 60 * 1000,
+          shell: true,
+        },
+        (error, stdout, stderr) => {
+          if (error) {
+            const errorCode = typeof error.code === "number" ? error.code : 1;
+            resolve({
+              stdout: stdout || "",
+              stderr: stderr || "",
+              code: errorCode,
+            });
+          } else {
+            resolve({ stdout, stderr, code: 0 });
+          }
+        },
+      );
+    }
   } catch (error) {
     console.error(error);
     resolve({ stdout: "", stderr: "", code: 1 });

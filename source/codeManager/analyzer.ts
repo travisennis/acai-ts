@@ -343,7 +343,7 @@ function findDependencies(
         /import\s+(?:[\w\s{},*]*\s+from\s+)?['"]([^'"]+)['"]?/g;
       let match: RegExpExecArray | null;
       while ((match = esImportRegex.exec(content)) !== null) {
-        const importPath = match[1];
+        const importPath = match[1] ?? "";
         dependencies.push({
           name: getPackageName(importPath),
           type: "import",
@@ -356,7 +356,7 @@ function findDependencies(
       const requireRegex =
         /(?:const|let|var)\s+(?:[\w\s{},*]*)\s*=\s*require\s*\(\s*['"](['"]+)['"]\s*\)/g;
       while ((match = requireRegex.exec(content)) !== null) {
-        const importPath = match[1];
+        const importPath = match[1] ?? "";
         dependencies.push({
           name: getPackageName(importPath),
           type: "require",
@@ -373,10 +373,10 @@ function findDependencies(
       const importRegex = /^\s*import\s+(\S+)|\s*from\s+(\S+)\s+import/gm;
       let match: RegExpExecArray | null;
       while ((match = importRegex.exec(content)) !== null) {
-        const importPath = match[1] || match[2];
+        const importPath = (match[1] || match[2]) ?? "";
         if (importPath) {
           dependencies.push({
-            name: importPath.split(".")[0],
+            name: importPath.split(".")[0] ?? "",
             type: "import",
             source: filePath,
             importPath,
@@ -391,9 +391,9 @@ function findDependencies(
       const importRegex = /^\s*import\s+([^;]+);/gm;
       let match: RegExpExecArray | null;
       while ((match = importRegex.exec(content)) !== null) {
-        const importPath = match[1];
+        const importPath = match[1] ?? "";
         dependencies.push({
-          name: importPath.split(".")[0],
+          name: importPath.split(".")[0] ?? "",
           type: "import",
           source: filePath,
           importPath,
@@ -407,7 +407,7 @@ function findDependencies(
       const requireRegex = /^\s*require\s+['"](['"]+)['"]?/gm;
       let match: RegExpExecArray | null;
       while ((match = requireRegex.exec(content)) !== null) {
-        const importPath = match[1];
+        const importPath = match[1] ?? "";
         dependencies.push({
           name: importPath,
           type: "require",
@@ -467,7 +467,7 @@ function getPackageName(importPath: string): string {
   }
 
   // Regular packages (return first path segment)
-  return importPath.split("/")[0];
+  return importPath.split("/")[0] ?? "";
 }
 
 /**
@@ -516,7 +516,7 @@ function isExternalPythonModule(importPath: string): boolean {
 
   // Consider it external if it's not in standard library
   // and doesn't look like a relative import
-  const moduleName = importPath.split(".")[0];
+  const moduleName = importPath.split(".")[0] ?? "";
   return !(stdlibModules.includes(moduleName) || importPath.startsWith("."));
 }
 
@@ -655,7 +655,7 @@ export async function findFilesByContent(
       const lines = content.split("\n");
 
       for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
+        const line = lines[i] ?? "";
         if (regex.test(line)) {
           results.push({
             path: path.relative(directory, file),

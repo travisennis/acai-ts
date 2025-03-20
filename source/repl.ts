@@ -311,7 +311,7 @@ export class Repl {
             );
             terminal.writeln(
               chalk.yellow(
-                `Cache creation: ${result.providerMetadata?.anthropic?.cacheCreationInputTokens}, Cache read: ${result.providerMetadata?.anthropic?.cacheReadInputTokens}`,
+                `Cache creation: ${result.providerMetadata?.["anthropic"]?.["cacheCreationInputTokens"]}, Cache read: ${result.providerMetadata?.["anthropic"]?.["cacheReadInputTokens"]}`,
               ),
             );
             terminal.header("Total Usage:");

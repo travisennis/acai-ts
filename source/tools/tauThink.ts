@@ -12,7 +12,9 @@ Common use cases:
 The tool simply logs your thought process for better transparency and does not execute any code or make changes.`;
 
 // This is a no-op tool that logs a thought. It is inspired by the tau-bench think tool.
-export const createThinkTools = (options: { sendData?: SendData } = {}) => {
+export const createThinkTools = (
+  options: { sendData?: SendData | undefined } = {},
+) => {
   const { sendData } = options;
   return {
     think: tool({
