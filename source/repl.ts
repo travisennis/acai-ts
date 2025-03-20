@@ -290,17 +290,40 @@ export class Repl {
             }
             terminal.writeln("\n\n"); // this puts an empty line after the streamed response.
             terminal.header("Tool use:");
-            terminal.writeln(`Steps: ${result.steps.length}`);
+            terminal.writeln(`${chalk.bold("Steps")}: ${result.steps.length}`);
 
-            for (const step of result.steps) {
-              terminal.writeln(`Step type: ${step.stepType}`);
-              terminal.writeln(
-                `Results from tools: ${step.toolResults.map((tc) => tc.toolName).join(", ")}`,
-              );
-              terminal.writeln(
-                `Tools called: ${step.toolCalls.map((tc) => tc.toolName).join(", ")}`,
-              );
-              terminal.writeln(`Step tokens: ${step.usage.totalTokens}`);
+            // Create a more visual representation of steps
+            for (let i = 0; i < result.steps.length; i++) {
+              const step = result.steps[i];
+              if (step) {
+                const stepNumber = chalk.gray(`${i + 1}.`);
+                const stepType = getStepTypeSymbol(step.stepType);
+                const toolsCalled = step.toolCalls
+                  .map((tc) => tc.toolName)
+                  .join(", ");
+                const toolsResults = step.toolResults
+                  .map((tc) => tc.toolName)
+                  .join(", ");
+                const tokenCount = chalk.cyan(`${step.usage.totalTokens}t`);
+
+                terminal.writeln(
+                  `${stepNumber} ${stepType} ${toolsCalled ? chalk.yellow(`⚙️  ${toolsCalled}`) : ""} ${toolsResults ? chalk.green(`✓ ${toolsResults}`) : ""} ${tokenCount}`,
+                );
+              }
+            }
+
+            // Helper function to get visual indicator for step type
+            function getStepTypeSymbol(type: string) {
+              switch (type) {
+                case "initial":
+                  return chalk.blue("🔍");
+                case "tool-result":
+                  return chalk.green("🔧");
+                case "reasoning":
+                  return chalk.magenta("💭");
+                default:
+                  return chalk.gray(`[${type}]`);
+              }
             }
 
             terminal.header("Usage:");
