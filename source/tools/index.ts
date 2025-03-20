@@ -34,42 +34,43 @@ const sendDataHandler = (terminal: Terminal) => {
   };
 };
 
-export async function initTools({ terminal }: { terminal: Terminal }) {
+export async function initTools({ terminal }: { terminal?: Terminal }) {
+  const sendDataFn = terminal ? sendDataHandler(terminal) : undefined;
   const fsTools = await createFileSystemTools({
     workingDir: process.cwd(),
-    sendData: sendDataHandler(terminal),
+    sendData: sendDataFn,
   });
 
   const gitTools = await createGitTools({
     workingDir: process.cwd(),
-    sendData: sendDataHandler(terminal),
+    sendData: sendDataFn,
   });
 
   const codeTools = createCodeTools({
     baseDir: process.cwd(),
     config: await config.readProjectConfig(),
-    sendData: sendDataHandler(terminal),
+    sendData: sendDataFn,
   });
 
   const codeInterpreterTool = createCodeInterpreterTool({
-    sendData: sendDataHandler(terminal),
+    sendData: sendDataFn,
   });
 
   const grepTool = createGrepTools({
-    sendData: sendDataHandler(terminal),
+    sendData: sendDataFn,
   });
 
   const thinkTool = createThinkTools({
-    sendData: sendDataHandler(terminal),
+    sendData: sendDataFn,
   });
 
   // const bookmarkTools = createRaindropTools({
   //   apiKey: process.env.RAINDROP_API_KEY ?? "",
-  //   sendData: sendDataHandler(terminal),
+  //   sendData: sendDataFn,
   // });
 
   const urlTools = createUrlTools({
-    sendData: sendDataHandler(terminal),
+    sendData: sendDataFn,
   });
 
   const askUserTool = {
