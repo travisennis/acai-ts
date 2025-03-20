@@ -597,6 +597,61 @@ export const createFileSystemTools = async ({
       },
     }),
 
+    editFiles: tool({
+      description:
+        "Make line-based edits to multiple text files. Each edit replaces exact line sequences " +
+        "with new content. Returns a git-style diff showing the changes made. " +
+        "Only works within allowed directories.",
+      parameters: z.object({
+        fileEdits: z.array(
+          z.object({
+            path: z.string().describe("The path of the file to edit."),
+            edits: z.array(
+              z.object({
+                oldText: z
+                  .string()
+                  .describe("Text to search for - must match exactly"),
+                newText: z.string().describe("Text to replace with"),
+              }),
+            ),
+          }),
+        ),
+        dryRun: z
+          .boolean()
+          .default(false)
+          .describe(
+            "Preview changes using git-style diff format: true or false",
+          ),
+      }),
+      execute: async ({ fileEdits, dryRun }) => {
+        try {
+          sendData?.({
+            event: "tool-init",
+            data: `Editing files: ${fileEdits.map((edit) => edit.path)}`,
+          });
+          const results: string[] = [];
+          for (const edit of fileEdits) {
+            const validPath = await validatePath(
+              joinWorkingDir(edit.path, workingDir),
+              allowedDirectory,
+            );
+            results.push(await applyFileEdits(validPath, edit.edits, dryRun));
+          }
+          sendData?.({
+            event: "tool-completion",
+            data: `Edited ${fileEdits.length} files.`,
+          });
+          return results.join("\n\n");
+        } catch (error) {
+          sendData?.({
+            event: "tool-error",
+            data: `Failed to edit files: ${(error as Error).message}`,
+          });
+          return `Failed to edit files: ${(error as Error).message}`;
+        }
+      },
+    }),
+
     searchFiles: tool({
       description:
         "Recursively search for files and directories matching a pattern. " +
