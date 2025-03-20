@@ -64,7 +64,7 @@ export const todoCommand = ({ terminal }: CommandOptions) => {
           }),
           // Check markdown files for task lists
           grepFilesWithContext.call(this, {
-            pattern: "- \\\\[ \\\\]",
+            pattern: "\\- \\[ \\]",
             path: process.cwd(),
             recursive: true,
             ignoreCase: false,
