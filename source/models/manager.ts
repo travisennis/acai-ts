@@ -32,7 +32,8 @@ type App =
   | "conversation-summarizer"
   | "meta-prompt"
   | "tool-repair"
-  | "lsp-code-action";
+  | "lsp-code-action"
+  | "init-project";
 
 export class ModelManager {
   private modelMap: Map<App, LanguageModel>;

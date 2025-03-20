@@ -81,6 +81,7 @@ async function main() {
   modelManager.setModel("tool-repair", "openai:gpt-4o-structured");
   modelManager.setModel("meta-prompt", "anthropic:sonnet35");
   modelManager.setModel("lsp-code-action", "anthropic:sonnet");
+  modelManager.setModel("init-project", "anthropic:sonnet35");
 
   const positionalPrompt = cli.input.at(0);
 
