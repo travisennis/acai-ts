@@ -18,7 +18,7 @@ import { createUrlTools } from "./url.ts";
 const sendDataHandler = (terminal: Terminal) => {
   return async (msg: Message) => {
     if (msg.event === "tool-init") {
-      terminal.writeln("");
+      terminal.writeln("\n");
       terminal.display(`${chalk.blue.bold("●")} ${await msg.data}`);
     } else if (msg.event === "tool-update") {
       terminal.display(`└── ${await msg.data}`);
