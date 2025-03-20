@@ -101,7 +101,7 @@ export async function optimizePrompt({
     system: metaPrompt,
     prompt: prompt,
     maxSteps: 15,
-    tools: await initTools({ terminal }),
+    tools: await initTools({}),
     // biome-ignore lint/style/useNamingConvention: <explanation>
     experimental_activeTools: [
       ...READ_ONLY,
@@ -110,6 +110,8 @@ export async function optimizePrompt({
       "lintCode",
     ],
   });
+
+  terminal.info("Prompt optimized.");
 
   tokenTracker.trackUsage("meta-prompt", usage);
 
