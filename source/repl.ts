@@ -271,19 +271,19 @@ export class Repl {
           experimental_repairToolCall: modelConfig.supportsToolCalling
             ? toolCallRepair(modelManager)
             : undefined,
-          onStepFinish: (event) => {
-            if (
-              (event.stepType === "initial" ||
-                event.stepType === "tool-result") &&
-              event.toolCalls.length > 0 &&
-              event.text.length > 0
-            ) {
-              terminal.box(
-                "Tool Step",
-                `Assistant: ${event.text}\nTools: ${event.toolCalls.map((t) => t.toolName).join(", ")}\nResult: ${event.toolResults[0]?.result}`,
-              );
-            }
-          },
+          // onStepFinish: (event) => {
+          //   if (
+          //     (event.stepType === "initial" ||
+          //       event.stepType === "tool-result") &&
+          //     event.toolCalls.length > 0 &&
+          //     event.text.length > 0
+          //   ) {
+          //     terminal.box(
+          //       "Tool Step",
+          //       `Assistant: ${event.text}\nTools: ${event.toolCalls.map((t) => t.toolName).join(", ")}\nResult: ${event.toolResults[0]?.result}`,
+          //     );
+          //   }
+          // },
           onFinish: (result) => {
             if (result.response.messages.length > 0) {
               messageHistory.appendResponseMessages(result.response.messages);
