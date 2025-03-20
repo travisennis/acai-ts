@@ -582,8 +582,16 @@ export const createFileSystemTools = async ({
             allowedDirectory,
           );
           const result = await applyFileEdits(validPath, edits, dryRun);
+          sendData?.({
+            event: "tool-completion",
+            data: `Applied ${edits.length} edits.`,
+          });
           return result;
         } catch (error) {
+          sendData?.({
+            event: "tool-error",
+            data: `Failed to edit file: ${(error as Error).message}`,
+          });
           return `Failed to edit file: ${(error as Error).message}`;
         }
       },
