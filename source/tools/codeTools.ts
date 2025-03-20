@@ -8,6 +8,7 @@ export interface Config {
   lint?: string | undefined;
   format?: string | undefined;
   test?: string | undefined;
+  install?: string | undefined;
 }
 
 export const createCodeTools = ({
@@ -16,6 +17,51 @@ export const createCodeTools = ({
   sendData,
 }: { baseDir: string; config?: Config; sendData?: SendData }) => {
   return {
+    installDependencies: tool({
+      description:
+        "Installs dependencies in the project. Accepts an array of package names (e.g., ['lodash', '@types/node']) with optional version specifiers (e.g., 'lodash@4.17.21', 'react@latest'). Defaults to 'npm install' but can be configured via project config. Use the dev parameter to install as development dependencies.",
+      parameters: z.object({
+        dependencies: z
+          .array(z.string())
+          .describe(
+            "Array of package names to install (e.g., ['express', 'lodash@4.17.21'])",
+          ),
+        dev: z
+          .boolean()
+          .optional()
+          .describe("Whether to install as dev dependencies (--save-dev)"),
+      }),
+      execute: async ({ dependencies, dev }) => {
+        if (!dependencies || dependencies.length === 0) {
+          return "No dependencies specified";
+        }
+
+        const installCommand = config?.install || "npm install";
+        const devFlag = dev ? " --save-dev" : "";
+        const fullCommand = `${installCommand}${devFlag} ${dependencies.join(" ")}`;
+
+        sendData?.({
+          event: "tool-init",
+          data: `Installing dependencies in ${baseDir}: ${dependencies.join(", ")}`,
+        });
+
+        try {
+          const result = format(await asyncExec(fullCommand, baseDir));
+          sendData?.({
+            event: "tool-completion",
+            data: `Successfully installed ${dev ? "dev dependencies" : "dependencies"}: ${dependencies.join(", ")}`,
+          });
+
+          return result;
+        } catch (error) {
+          sendData?.({
+            event: "tool-error",
+            data: `Error installing dependencies in ${baseDir}: ${(error as Error).message}`,
+          });
+          return `Failed to install dependencies: ${(error as Error).message}`;
+        }
+      },
+    }),
     buildCode: tool({
       description:
         "Executes the build command for the current code base and returns the output.",

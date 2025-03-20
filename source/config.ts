@@ -89,6 +89,7 @@ const ProjectConfigSchema = z.object({
   lint: z.string().optional(),
   format: z.string().optional(),
   test: z.string().optional(),
+  install: z.string().optional(),
 });
 
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
