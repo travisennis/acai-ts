@@ -1,5 +1,7 @@
-import path from "node:path";
+import { readdir } from "node:fs/promises";
+import { parse, sep } from "node:path";
 import { type Interface, createInterface } from "node:readline/promises";
+import { asyncTry } from "@travisennis/stdlib/try";
 import { isDefined } from "@travisennis/stdlib/typeguards";
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import {
@@ -27,6 +29,54 @@ import {
   initTools,
 } from "./tools/index.ts";
 
+async function fileSystemCompleter(line: string): Promise<[string[], string]> {
+  try {
+    const words = line.split(" ");
+    const last = words.at(-1);
+    if (!last) {
+      return [[], line];
+    }
+    let { dir, base } = parse(last);
+    logger.debug(dir);
+    logger.debug(base);
+
+    // If dir is empty, use current directory
+    if (!dir) {
+      dir = ".";
+    }
+
+    let tryAttempt = await asyncTry(readdir(dir, { withFileTypes: true }));
+    if (tryAttempt.isFailure) {
+      tryAttempt = await asyncTry(readdir(".", { withFileTypes: true }));
+    }
+
+    let dirEntries = tryAttempt.unwrap();
+
+    // for an exact match that is a directory, read the contents of the directory
+    if (
+      dirEntries.find((entry) => entry.name === base && entry.isDirectory())
+    ) {
+      dir = dir === "/" || dir === sep ? `${dir}${base}` : `${dir}/${base}`;
+      dirEntries = await readdir(dir, { withFileTypes: true });
+      base = "";
+    } else {
+      dirEntries = dirEntries.filter((entry) => entry.name.startsWith(base));
+    }
+
+    const hits = dirEntries
+      .filter((entry) => entry.isFile() || entry.isDirectory())
+      .map((entry) => {
+        const prefix =
+          dir === "." ? "" : dir === sep || dir === "/" ? "" : `${dir}/`;
+        return `${prefix}${entry.name}${entry.isDirectory() && !entry.name.endsWith("/") ? "/" : ""}`;
+      });
+
+    return [hits, last];
+  } catch (_error) {
+    logger.error(_error);
+    return [[], line];
+  }
+}
 
 class ReplPrompt {
   private rl: Interface;
@@ -37,8 +87,12 @@ class ReplPrompt {
       completer: (line) => {
         const completions = commands.getCommands();
         const hits = completions.filter((c) => c.startsWith(line));
+        if (hits.length > 0) {
+          return [hits, line];
+        }
+
         // Show all completions if none found
-        return [hits.length > 0 ? hits : completions, line];
+        return fileSystemCompleter(line); // [completions, line];
       },
     });
   }
