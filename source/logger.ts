@@ -14,7 +14,7 @@ const transport = pino.transport({
 
 export const logger = pino(
   {
-    level: process.env["LOG_LEVEL"] ?? "info",
+    level: process.env["LOG_LEVEL"] ?? "debug",
     formatters: {
       level: (label) => {
         return { level: label.toUpperCase() };
