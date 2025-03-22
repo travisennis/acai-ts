@@ -4,6 +4,7 @@ import { isDefined } from "@travisennis/stdlib/typeguards";
 import meow from "meow";
 import { CommandManager } from "./commands/manager.ts";
 import { config } from "./config.ts";
+import { ContextManager } from "./context/manager.ts";
 import { logger } from "./logger.ts";
 import { MessageHistory } from "./messages.ts";
 import { ModelManager } from "./models/manager.ts";
@@ -12,7 +13,6 @@ import { PromptManager } from "./prompts/manager.ts";
 import { Repl } from "./repl.ts";
 import { initTerminal } from "./terminal/index.ts";
 import { TokenTracker } from "./tokenTracker.ts";
-import { ContextManager } from "./context/manager.ts";
 
 const cli = meow(
   `
@@ -74,6 +74,7 @@ async function main() {
     stateDir: appDir.ensurePath("audit"),
   });
   modelManager.setModel("repl", chosenModel);
+  modelManager.setModel("architect", "anthropic:sonnet-token-efficient-tools");
   modelManager.setModel("title-conversation", "anthropic:haiku");
   modelManager.setModel("conversation-summarizer", "anthropic:haiku");
   modelManager.setModel("file-retiever", "anthropic:haiku");
@@ -81,6 +82,7 @@ async function main() {
   modelManager.setModel("meta-prompt", "anthropic:sonnet35");
   modelManager.setModel("lsp-code-action", "anthropic:sonnet");
   modelManager.setModel("init-project", "anthropic:sonnet35");
+  modelManager.setModel("task-agent", "google:flash2");
 
   const positionalPrompt = cli.input.at(0);
 
@@ -115,7 +117,6 @@ async function main() {
 
   const terminal = initTerminal();
   terminal.setTitle(`acai: ${process.cwd()}`);
-
 
   const tokenTracker = new TokenTracker();
 

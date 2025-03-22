@@ -13,6 +13,10 @@ import { createThinkTools } from "./tauThink.ts";
 import { createTextEditorTool } from "./textEditorTool.ts";
 import type { Message } from "./types.ts";
 import { createUrlTools } from "./url.ts";
+import { createAgentTools } from "./agent.ts";
+import { ModelManager } from "../models/manager.ts";
+import { TokenTracker } from "../tokenTracker.ts";
+import { createArchitectTools } from "./architect.ts";
 // import { createRaindropTools } from "./raindrop.ts";
 
 const sendDataHandler = (terminal: Terminal) => {
@@ -34,7 +38,11 @@ const sendDataHandler = (terminal: Terminal) => {
   };
 };
 
-export async function initTools({ terminal }: { terminal?: Terminal }) {
+export async function initTools({
+  terminal,
+}: {
+  terminal?: Terminal;
+}) {
   const sendDataFn = terminal ? sendDataHandler(terminal) : undefined;
   const fsTools = await createFileSystemTools({
     workingDir: process.cwd(),
@@ -76,7 +84,7 @@ export async function initTools({ terminal }: { terminal?: Terminal }) {
   const askUserTool = {
     askUser: tool({
       description:
-        "A tool to ask the user for input. Use this ask the user for clarification when you are need it.",
+        "A tool to ask the user for input. Use this ask the user for clarification when you need it.",
       parameters: z.object({
         question: z.string().describe("The question to ask the user."),
       }),
@@ -98,6 +106,37 @@ export async function initTools({ terminal }: { terminal?: Terminal }) {
     ...urlTools,
     // ...bookmarkTools,
     ...askUserTool,
+  } as const;
+
+  return tools;
+}
+
+export function initCodingTools({
+  terminal,
+  modelManager,
+  tokenTracker,
+}: {
+  terminal: Terminal;
+  modelManager: ModelManager;
+  tokenTracker: TokenTracker;
+}) {
+  const sendDataFn = sendDataHandler(terminal);
+
+  const agentTools = createAgentTools({
+    modelManager,
+    tokenTracker,
+    sendData: sendDataFn,
+  });
+
+  const architectTools = createArchitectTools({
+    modelManager,
+    tokenTracker,
+    sendData: sendDataFn,
+  });
+
+  const tools = {
+    ...agentTools,
+    ...architectTools,
   } as const;
 
   return tools;
@@ -131,3 +170,5 @@ export * from "./raindrop.ts";
 export * from "./tauThink.ts";
 export * from "./types.ts";
 export * from "./url.ts";
+export * from "./agent.ts";
+export * from "./architect.ts";

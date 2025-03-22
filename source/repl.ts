@@ -12,17 +12,20 @@ import chalk from "chalk";
 import type { CommandManager } from "./commands/manager.ts";
 import { config as configManager } from "./config.ts";
 import type { ContextManager } from "./context/manager.ts";
-import { retrieveFilesForTask } from "./fileRetriever.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import { type MessageHistory, createUserMessage } from "./messages.ts";
+import { AiConfig } from "./models/aiConfig.ts";
 import type { ModelManager } from "./models/manager.js";
-import { optimizePrompt } from "./promptOptimizer.ts";
 import { systemPrompt } from "./prompts.ts";
 import type { PromptManager } from "./prompts/manager.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
-import { initAnthropicTools, initTools } from "./tools/index.ts";
+import {
+  initAnthropicTools,
+  initCodingTools,
+  initTools,
+} from "./tools/index.ts";
 
 
 class ReplPrompt {
@@ -154,6 +157,10 @@ export class Repl {
         ? await initTools({ terminal })
         : undefined;
 
+      const codingTools = modelConfig.supportsToolCalling
+        ? initCodingTools({ modelManager, tokenTracker, terminal })
+        : undefined;
+
       const providerTools =
         modelConfig.supportsToolCalling &&
         modelConfig.id.includes("sonnet-invalid") // do this for now to remove this tool from the mix
@@ -161,11 +168,14 @@ export class Repl {
           : undefined;
 
       const tools =
-        isDefined(baseTools) && isDefined(providerTools)
-          ? Object.assign(baseTools, providerTools)
-          : isDefined(baseTools)
-            ? baseTools
+        isDefined(baseTools) &&
+        isDefined(codingTools) &&
+        isDefined(providerTools)
+          ? Object.assign(baseTools, Object.assign(codingTools, providerTools))
+          : isDefined(baseTools) && isDefined(codingTools)
+            ? Object.assign(baseTools, codingTools)
             : undefined;
+
       try {
         const result = streamText({
           model: langModel,
