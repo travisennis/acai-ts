@@ -24,24 +24,6 @@ import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
 import { initAnthropicTools, initTools } from "./tools/index.ts";
 
-const THINKING_TIERS = [
-  {
-    pattern:
-      /\b(ultrathink|think super hard|think really hard|think intensely)\b/i,
-    budget: 31999,
-    effort: "high",
-  },
-  {
-    pattern: /\b(megathink|think (very )?hard|think (a lot|more|about it))\b/i,
-    budget: 10000,
-    effort: "medium",
-  },
-  {
-    pattern: /\bthink\b/i, // Catch-all for standalone "think"
-    budget: 4000,
-    effort: "low",
-  },
-];
 
 class ReplPrompt {
   private rl: Interface;
@@ -141,9 +123,6 @@ export class Repl {
       // flag to see if the user prompt has added context
       const hasAddedContext = promptManager.hasContext();
 
-      // determine our thinking level for this request
-      const thinkingLevel = calculateThinkingLevel(userPrompt);
-
       if (hasAddedContext) {
         terminal.lineBreak();
         terminal.info("Context will be added to prompt.");
@@ -164,10 +143,12 @@ export class Repl {
       const rules = await configManager.readRulesFile();
       const finalSystemPrompt = await systemPrompt(rules);
 
-      const maxTokens =
-        modelConfig.provider === "anthropic" && modelConfig.supportsReasoning
-          ? modelConfig.maxOutputTokens - thinkingLevel.tokenBudget
-          : modelConfig.maxOutputTokens;
+      const aiConfig = new AiConfig({
+        modelMetadata: modelConfig,
+        prompt: userPrompt,
+      });
+
+      const maxTokens = aiConfig.getMaxTokens();
 
       const baseTools = modelConfig.supportsToolCalling
         ? await initTools({ terminal })
@@ -202,21 +183,7 @@ export class Repl {
           temperature: modelConfig.defaultTemperature,
           maxSteps: 30,
           maxRetries: 5,
-          providerOptions:
-            modelConfig.provider === "anthropic" &&
-            modelConfig.supportsReasoning
-              ? {
-                  anthropic: {
-                    thinking: {
-                      type: "enabled",
-                      budgetTokens: thinkingLevel.tokenBudget,
-                    },
-                  },
-                }
-              : modelConfig.supportsReasoning &&
-                  modelConfig.provider === "openai"
-                ? { openai: { reasoningEffort: thinkingLevel.effort } }
-                : {},
+          providerOptions: aiConfig.getProviderOptions(),
           tools,
           // biome-ignore lint/style/useNamingConvention: <explanation>
           experimental_repairToolCall: modelConfig.supportsToolCalling
@@ -384,16 +351,3 @@ const toolCallRepair = (modelManager: ModelManager) => {
   };
   return fn;
 };
-
-function calculateThinkingLevel(userInput: string) {
-  let tokenBudget = 2000; // Default
-  let effort = "low";
-  for (const tier of THINKING_TIERS) {
-    if (tier.pattern.test(userInput)) {
-      tokenBudget = tier.budget;
-      effort = tier.effort;
-      break; // Use highest priority match
-    }
-  }
-  return { tokenBudget, effort };
-}
