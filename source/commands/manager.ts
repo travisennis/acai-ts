@@ -6,6 +6,7 @@ import type { PromptManager } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../tokenTracker.ts";
 import { byeCommand } from "./byeCommand.ts";
+import { commitCommand } from "./commitCommand.ts";
 import { compactCommand } from "./compactCommand.ts";
 import { contextCommand } from "./contextCommand.ts";
 import { editCommand } from "./editCommand.ts";
@@ -83,6 +84,7 @@ export class CommandManager {
       contextCommand(options),
       explainCommand(options),
       pasteCommand(options),
+      commitCommand(options),
     ];
 
     // Add help command with access to all commands
