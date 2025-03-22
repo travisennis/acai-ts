@@ -1,7 +1,12 @@
 import clipboardy from "clipboardy";
 import type { CommandOptions, ReplCommand } from "./types.ts";
+import { formatBlock } from "../formatting.ts";
 
-export const pasteCommand = ({ terminal, fileManager }: CommandOptions) => {
+export const pasteCommand = ({
+  terminal,
+  modelManager,
+  promptManager,
+}: CommandOptions) => {
   return {
     command: "/paste",
     description: "Pastes content from the clipboard into the next prompt.",
@@ -16,9 +21,12 @@ export const pasteCommand = ({ terminal, fileManager }: CommandOptions) => {
         }
 
         // Add the clipboard content to the pending content
-        const mdQuotes = "```";
-        fileManager.addPendingContent(
-          `${mdQuotes}\n${clipboardContent}\n${mdQuotes}`,
+        promptManager.addContext(
+          formatBlock(
+            clipboardContent,
+            "clipboard",
+            modelManager.getModelMetadata("repl").promptFormat,
+          ),
         );
 
         terminal.success("Clipboard content will be added to your next prompt");

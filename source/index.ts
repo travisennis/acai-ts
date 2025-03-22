@@ -4,7 +4,6 @@ import { isDefined } from "@travisennis/stdlib/typeguards";
 import meow from "meow";
 import { CommandManager } from "./commands/manager.ts";
 import { config } from "./config.ts";
-import { FileManager } from "./files/manager.ts";
 import { logger } from "./logger.ts";
 import { MessageHistory } from "./messages.ts";
 import { ModelManager } from "./models/manager.ts";
@@ -111,13 +110,12 @@ async function main() {
 
   const promptManager = new PromptManager();
   if (isDefined(initialPrompt)) {
-    promptManager.push(initialPrompt);
+    promptManager.add(initialPrompt);
   }
 
   const terminal = initTerminal();
   terminal.setTitle(`acai: ${process.cwd()}`);
 
-  const fileManager = new FileManager({ terminal });
 
   const tokenTracker = new TokenTracker();
 
@@ -143,7 +141,6 @@ async function main() {
     terminal,
     messageHistory,
     tokenTracker,
-    fileManager,
   });
 
   const repl = new Repl({
@@ -153,7 +150,6 @@ async function main() {
     config: appConfig,
     messageHistory,
     modelManager,
-    fileManager,
     tokenTracker,
     commands,
   });

@@ -1,5 +1,4 @@
 import type { ContextManager } from "../context/manager.ts";
-import type { FileManager } from "../files/manager.ts";
 import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManager } from "../prompts/manager.ts";
@@ -20,5 +19,4 @@ export interface CommandOptions {
   terminal: Terminal;
   messageHistory: MessageHistory;
   tokenTracker: TokenTracker;
-  fileManager: FileManager;
 }

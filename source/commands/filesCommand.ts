@@ -1,10 +1,12 @@
 import { checkbox } from "@inquirer/prompts";
 import { globby } from "globby";
 import type { CommandOptions, ReplCommand } from "./types.ts";
+import { readFile } from "node:fs/promises";
+import { formatFile } from "../formatting.ts";
 
 export const filesCommand = ({
   terminal,
-  fileManager,
+  promptManager,
   modelManager,
 }: CommandOptions) => {
   return {
@@ -51,10 +53,18 @@ export const filesCommand = ({
           workingFiles = foundFiles;
         }
 
-        fileManager.addFiles({
-          files: workingFiles,
-          format: modelManager.getModelMetadata("repl").promptFormat,
-        });
+        // Read the content of the files and format them for the next prompt
+        for (const filePath of workingFiles) {
+          try {
+            const content = await readFile(filePath, "utf-8");
+            const format = modelManager.getModelMetadata("repl").promptFormat;
+            promptManager.addContext(formatFile(filePath, content, format));
+          } catch (error) {
+            terminal.error(
+              `Error reading file ${filePath}: ${(error as Error).message}`,
+            );
+          }
+        }
 
         terminal.writeln("");
         terminal.success(

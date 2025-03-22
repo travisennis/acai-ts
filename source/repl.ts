@@ -13,7 +13,6 @@ import type { CommandManager } from "./commands/manager.ts";
 import { config as configManager } from "./config.ts";
 import type { ContextManager } from "./context/manager.ts";
 import { retrieveFilesForTask } from "./fileRetriever.ts";
-import type { FileManager } from "./files/manager.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import { type MessageHistory, createUserMessage } from "./messages.ts";
@@ -80,7 +79,6 @@ export interface ReplOptions {
   tokenTracker: TokenTracker;
   terminal: Terminal;
   commands: CommandManager;
-  fileManager: FileManager;
   config: Record<PropertyKey, unknown>;
 }
 
@@ -101,7 +99,6 @@ export class Repl {
       // contextManager,
       terminal,
       modelManager,
-      fileManager,
       tokenTracker,
       messageHistory,
       commands,
@@ -137,72 +134,26 @@ export class Repl {
         // if there is no pending prompt then use the user's input. otherwise, the prompt was loaded from a command
         if (!promptManager.isPending()) {
           // const enrichedPrompt = await contextManager.enrichPrompt(userInput);
-          promptManager.push(userInput);
+          promptManager.add(userInput);
         }
       }
 
-      const userPrompt = promptManager.pop();
+      // flag to see if the user prompt has added context
+      const hasAddedContext = promptManager.hasContext();
 
       // determine our thinking level for this request
       const thinkingLevel = calculateThinkingLevel(userPrompt);
 
-      // Add any pending file contents to the user input
-      let finalPrompt = userPrompt;
-      if (fileManager.hasPendingContent()) {
-        finalPrompt = fileManager.getPendingContent() + userPrompt;
-        fileManager.clearPendingContent(); // Clear after using
+      if (hasAddedContext) {
         terminal.lineBreak();
-        terminal.info("Added file contents to prompt.");
+        terminal.info("Context will be added to prompt.");
       }
 
-      // flag to see if the user prompt has been modified with file content
-      const isUsingFileContent = finalPrompt !== userPrompt;
-
-      // models that can't support toolcalling will be limited, but this step can at least give them some context to answer questions. very early in the development of this.
-      if (!modelConfig.supportsToolCalling) {
-        if (!isUsingFileContent) {
-          terminal.info("Adding files for task:");
-          const usefulFiles = await retrieveFilesForTask({
-            model: modelManager.getModel("file-retiever"),
-            prompt: userPrompt,
-            tokenTracker,
-          });
-
-          const absFiles = usefulFiles.map((filePath) => {
-            return path.isAbsolute(filePath)
-              ? filePath
-              : path.join(process.cwd(), "..", filePath);
-          });
-
-          fileManager.addFiles({
-            files: absFiles,
-            format: modelConfig.promptFormat,
-          });
-
-          terminal.header("Reading files:");
-          for (const file of absFiles) {
-            terminal.writeln(file);
-          }
-
-          finalPrompt = fileManager.getPendingContent() + userPrompt;
-
-          fileManager.clearPendingContent();
-        }
-      }
-
-      if (!modelConfig.supportsReasoning) {
-        terminal.writeln("Optimizing prompt:");
-        finalPrompt = await optimizePrompt({
-          model: modelManager.getModel("meta-prompt"),
-          prompt: finalPrompt,
-          tokenTracker,
-          terminal,
-        });
-      }
+      const userPrompt = promptManager.get();
 
       // Track if we're using file content in this prompt to set cache control appropriately
-      const userMsg = createUserMessage(finalPrompt);
-      if (isUsingFileContent && modelConfig.provider === "anthropic") {
+      const userMsg = createUserMessage(userPrompt);
+      if (hasAddedContext && modelConfig.provider === "anthropic") {
         userMsg.providerOptions = {
           anthropic: { cacheControl: { type: "ephemeral" } },
         };

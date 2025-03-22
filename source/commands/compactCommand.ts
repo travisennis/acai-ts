@@ -3,7 +3,6 @@ import type { CommandOptions, ReplCommand } from "./types.ts";
 export const compactCommand = ({
   messageHistory,
   tokenTracker,
-  fileManager,
 }: CommandOptions) => {
   return {
     command: "/compact",
@@ -16,7 +15,6 @@ export const compactCommand = ({
         messageHistory.clear();
       }
       tokenTracker.reset();
-      fileManager.clearAll();
     },
   } satisfies ReplCommand;
 };

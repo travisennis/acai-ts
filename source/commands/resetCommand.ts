@@ -3,7 +3,6 @@ import type { CommandOptions, ReplCommand } from "./types.ts";
 export const resetCommand = ({
   messageHistory,
   tokenTracker,
-  fileManager,
 }: CommandOptions) => {
   return {
     command: "/reset",
@@ -15,7 +14,6 @@ export const resetCommand = ({
         messageHistory.clear();
       }
       tokenTracker.reset();
-      fileManager.clearAll();
     },
   } satisfies ReplCommand;
 };

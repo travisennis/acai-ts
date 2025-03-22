@@ -1,24 +1,55 @@
+import { isString } from "@travisennis/stdlib/typeguards";
+
 export class PromptManager {
-  private prompts: string[];
+  private prompt: string | undefined;
+  private context: string[];
+
   constructor() {
-    this.prompts = [];
+    this.prompt = undefined;
+    this.context = [];
   }
 
-  push(prompt: string) {
-    this.prompts.push(prompt);
+  add(prompt: string) {
+    this.prompt = prompt;
   }
 
-  pop() {
-    if (this.prompts.length > 0) {
-      const queuedPrompt = this.prompts.pop();
-      if (queuedPrompt) {
-        return queuedPrompt;
+  get() {
+    const prompt = this.prompt;
+    if (isString(prompt)) {
+      if (this.hasContext()) {
+        const fullPrompt = `${this.getContext()}\n\n${prompt}`;
+        this.clearAll(); // Clear context after using
+        return fullPrompt;
       }
+
+      return prompt;
     }
-    throw new Error("No prompt queued.");
+    throw new Error("No prompt available.");
   }
 
   isPending() {
-    return this.prompts.length > 0;
+    return isString(this.prompt);
+  }
+
+  // Renamed from addPendingContent to addContext
+  addContext(content: string): void {
+    this.context.push(content);
+  }
+
+  hasContext() {
+    return this.context.length > 0;
+  }
+
+  getContext() {
+    return this.context.join("\n\n");
+  }
+
+  clearContext() {
+    this.context.length = 0;
+  }
+
+  clearAll() {
+    this.clearContext();
+    this.prompt = undefined;
   }
 }

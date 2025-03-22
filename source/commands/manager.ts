@@ -1,5 +1,4 @@
 import type { ContextManager } from "../context/manager.ts";
-import type { FileManager } from "../files/manager.js";
 import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManager } from "../prompts/manager.ts";
@@ -30,7 +29,6 @@ export class CommandManager {
   private modelManager: ModelManager;
   private messageHistory: MessageHistory;
   private tokenTracker: TokenTracker;
-  private fileManager: FileManager;
   private terminal: Terminal;
   private contextManager: ContextManager;
 
@@ -40,7 +38,6 @@ export class CommandManager {
     terminal,
     messageHistory,
     tokenTracker,
-    fileManager,
     contextManager,
   }: CommandOptions) {
     this.commands = new Map();
@@ -49,7 +46,6 @@ export class CommandManager {
     this.terminal = terminal;
     this.messageHistory = messageHistory;
     this.tokenTracker = tokenTracker;
-    this.fileManager = fileManager;
     this.contextManager = contextManager;
     this.initializeCommmands();
   }
@@ -63,7 +59,6 @@ export class CommandManager {
       terminal: this.terminal,
       messageHistory: this.messageHistory,
       tokenTracker: this.tokenTracker,
-      fileManager: this.fileManager,
     };
 
     // Register all commands
