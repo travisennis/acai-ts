@@ -8,7 +8,7 @@ export function initializeLsp({
   try {
     const documents = createTextDocuments();
 
-    const connection = initConnection({ modelManager, documents });
+    const connection = initConnection({ modelManager, documents, logger });
 
     // Make the text document manager listen on the connection
     documents.listen(connection);

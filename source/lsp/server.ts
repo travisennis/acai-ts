@@ -1,4 +1,5 @@
 import { generateText } from "ai";
+import type { Logger } from "pino";
 import { type Range, TextDocument } from "vscode-languageserver-textdocument";
 import {
   type CodeAction,
@@ -14,8 +15,15 @@ import {
   createConnection,
 } from "vscode-languageserver/node.js";
 import type { ModelManager } from "../models/manager.ts";
+import { type Selection, saveSelection } from "../savedSelections/index.ts";
 import { parseContext } from "./embeddingInstructions.ts";
-import { logger } from "../logger.ts";
+
+interface CodeActionData {
+  id: string;
+  documentUri: string;
+  range: Range;
+  diagnostics: Diagnostic[];
+}
 
 export function createTextDocuments() {
   // Create a text document manager
@@ -28,7 +36,12 @@ export function createTextDocuments() {
 export function initConnection({
   modelManager,
   documents,
-}: { modelManager: ModelManager; documents: TextDocuments<TextDocument> }) {
+  logger,
+}: {
+  modelManager: ModelManager;
+  documents: TextDocuments<TextDocument>;
+  logger: Logger;
+}) {
   // Create a connection for the server
   const connection = createConnection(
     ProposedFeatures.all,
@@ -37,6 +50,7 @@ export function initConnection({
   );
 
   connection.onInitialize((_params: InitializeParams) => {
+    logger.info("Initializing LSP server...");
     const result: InitializeResult = {
       capabilities: {
         textDocumentSync: TextDocumentSyncKind.Incremental,
@@ -71,33 +85,54 @@ export function initConnection({
         range,
         diagnostics: params.context.diagnostics,
       },
-      isPreferred: true,
+      isPreferred: false,
     };
     codeActions.push(instructAction);
+
+    // Create the Save code action
+    const saveAction: CodeAction = {
+      title: "Acai - Save",
+      kind: CodeActionKind.QuickFix,
+      data: {
+        id: "ai.save",
+        documentUri: params.textDocument.uri,
+        range,
+        diagnostics: params.context.diagnostics,
+      },
+      isPreferred: false,
+    };
+    codeActions.push(saveAction);
 
     return codeActions;
   });
 
   connection.onCodeActionResolve(async (params) => {
-    if (params.data?.documentUri && params.data?.range) {
-      const textDocument = documents.get(params.data.documentUri);
+    logger.info("Resolving code action...");
+    logger.info(params.data.id);
+    logger.debug(params);
+    const data = params.data as CodeActionData | undefined;
+    if (data?.documentUri && data?.range) {
+      const documentUri = data.documentUri as string;
+      const textDocument = documents.get(documentUri);
       if (!textDocument) {
         return params;
       }
 
-      // const actionId = params.data.id;
+      const actionId = data.id;
 
       // Get the text from the range where the code action was triggered
-      const range = params.data.range as Range;
+      const range = data.range;
       const documentText = textDocument.getText(range);
 
       logger.debug(documentText);
 
-      const context = parseContext(documentText);
+      switch (actionId) {
+        case "ai.instruct": {
+          const context = parseContext(documentText);
 
-      logger.debug(context);
+          logger.debug(context);
 
-      const userPrompt = `
+          const userPrompt = `
 \`\`\`
 ${context.context}
 \`\`\`
@@ -105,32 +140,68 @@ ${context.context}
 ${context.prompt ?? ""}
     `.trim();
 
-      try {
-        const { text } = await generateText({
-          model: modelManager.getModel("lsp-code-action"),
-          system:
-            "You are a highly skilled coding assistant and senior software engineer. Your task is to provide concise, accurate, and efficient solutions to the user's coding requests. Focus on best practices, code optimization, and maintainability in your solutions. Please respond with only the revised code. If your response is a new addition to the code, then return your additions along with the original code. Only return the code. Do not wrap the code in Markdown code blocks. Ensure your answer is in plain text without any Markdown formatting. ",
-          temperature: 0.3,
-          prompt: userPrompt,
-        });
+          try {
+            const { text } = await generateText({
+              model: modelManager.getModel("lsp-code-action"),
+              system:
+                "You are a highly skilled coding assistant and senior software engineer. Your task is to provide concise, accurate, and efficient solutions to the user's coding requests. Focus on best practices, code optimization, and maintainability in your solutions. Please respond with only the revised code. If your response is a new addition to the code, then return your additions along with the original code. Only return the code. Do not wrap the code in Markdown code blocks. Ensure your answer is in plain text without any Markdown formatting. ",
+              temperature: 0.3,
+              prompt: userPrompt,
+            });
 
-        params.edit = {
-          changes: {
-            [params.data.documentUri]: [
-              TextEdit.replace(range, extractCode(text)),
-            ],
-          },
-        };
-      } catch (error) {
-        logger.error("Error generating text:");
-        logger.error(error);
-        // Optionally, you can set an error message on the code action
-        params.diagnostics = [
-          {
-            range: range,
-            message: "Failed to generate text. Please try again.",
-          },
-        ];
+            params.edit = {
+              changes: {
+                [data.documentUri]: [
+                  TextEdit.replace(range, extractCode(text)),
+                ],
+              },
+            };
+          } catch (error) {
+            logger.error("Error generating text:");
+            logger.error(error);
+            // Optionally, you can set an error message on the code action
+            params.diagnostics = [
+              {
+                range: range,
+                message: "Failed to generate text. Please try again.",
+              },
+            ];
+          }
+          break;
+        }
+        case "ai.save": {
+          const selection: Selection = {
+            documentUri,
+            range,
+            documentText,
+          };
+
+          try {
+            await saveSelection(selection);
+            logger.info("Selection saved successfully");
+          } catch (error) {
+            logger.error("Error saving selection:", error);
+            // Optionally, you can set an error message on the code action
+            params.diagnostics = [
+              {
+                range: range,
+                message: "Failed to save selection. Please try again.",
+              },
+            ];
+            throw error;
+          }
+          break;
+        }
+        default: {
+          logger.error(`Unrecognized command: ${actionId}`);
+          // Optionally, you can set an error message on the code action
+          params.diagnostics = [
+            {
+              range: range,
+              message: `Unrecognized command: ${actionId}`,
+            },
+          ];
+        }
       }
     }
     return params;
