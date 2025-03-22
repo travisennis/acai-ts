@@ -224,7 +224,7 @@ export class Repl {
             for (let i = 0; i < result.steps.length; i++) {
               const step = result.steps[i];
               if (step) {
-                const stepNumber = chalk.gray(`${i + 1}.`);
+                const stepNumber = chalk.gray(`${i < 9 ? " " : ""}${i + 1}.`);
                 const stepType = getStepTypeSymbol(step.stepType);
                 const toolsCalled = step.toolCalls
                   .map((tc) => tc.toolName)
@@ -232,7 +232,9 @@ export class Repl {
                 const toolsResults = step.toolResults
                   .map((tc) => tc.toolName)
                   .join(", ");
-                const tokenCount = chalk.cyan(`${step.usage.totalTokens}t`);
+                const tokenCount = chalk.cyan(
+                  `${step.usage.totalTokens} tokens`,
+                );
 
                 terminal.writeln(
                   `${stepNumber} ${stepType} ${toolsCalled ? chalk.yellow(`⚙️  ${toolsCalled}`) : ""} ${toolsResults ? chalk.green(`✓ ${toolsResults}`) : ""} ${tokenCount}`,
@@ -273,6 +275,9 @@ export class Repl {
                 `Prompt tokens: ${totalUsage.promptTokens}, Completion tokens: ${totalUsage.completionTokens}, Total tokens: ${totalUsage.totalTokens}`,
               ),
             );
+
+            terminal.table(Object.entries(tokenTracker.getUsageBreakdown()));
+
             terminal.hr(chalk.yellow);
           },
           onError: ({ error }) => {
