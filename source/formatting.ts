@@ -13,6 +13,8 @@ export function removeHtmLtags(text: string) {
   return text.replace(/<[^>]*>?/gm, "");
 }
 
+export const MD_TRIPLE_QUOTE = "```";
+
 export type FormatType = "xml" | "markdown" | "bracket";
 
 const codeBlockExtensions: Record<string, string> = {
@@ -49,9 +51,26 @@ export function formatFile(
     case "xml":
       return `<file>\n<name>${file}</name>\n<content>${content}</content>\n</file>`;
     case "markdown":
-      return `# File: ${file}\n\`\`\` ${codeBlockName}\n${content}\n\`\`\``;
+      return `## File: ${file}\n${MD_TRIPLE_QUOTE} ${codeBlockName}\n${content}\n${MD_TRIPLE_QUOTE}`;
     case "bracket":
       return `[file name]: ${file}\n[file content begin]\n${content}\n[file content end]`;
+    default:
+      throw new Error(`Unsupported format: ${format}`);
+  }
+}
+
+export function formatBlock(
+  content: string,
+  blockName: string,
+  format: FormatType,
+): string {
+  switch (format) {
+    case "xml":
+      return `<${blockName}>${content}</${blockName}>\n</file>`;
+    case "markdown":
+      return `## ${blockName}\n${MD_TRIPLE_QUOTE}n${content}\n${MD_TRIPLE_QUOTE}`;
+    case "bracket":
+      return `[${blockName} begin]\n${content}\n[${blockName} end]`;
     default:
       throw new Error(`Unsupported format: ${format}`);
   }
