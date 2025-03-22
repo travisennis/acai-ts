@@ -2,7 +2,7 @@ import { platform } from "node:os";
 import { generateText, type LanguageModel } from "ai";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
-import { READ_ONLY } from "./tools/filesystem.ts";
+import { FS_READ_ONLY } from "./tools/filesystem.ts";
 import { GIT_READ_ONLY, inGitDirectory } from "./tools/git.ts";
 import { initTools } from "./tools/index.ts";
 
@@ -104,7 +104,7 @@ export async function optimizePrompt({
     tools: await initTools({}),
     // biome-ignore lint/style/useNamingConvention: <explanation>
     experimental_activeTools: [
-      ...READ_ONLY,
+      ...FS_READ_ONLY,
       ...GIT_READ_ONLY,
       "buildCode",
       "lintCode",

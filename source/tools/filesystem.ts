@@ -387,7 +387,7 @@ const fileEncodingSchema = z.enum([
   "hex",
 ]);
 
-export const READ_ONLY = [
+export const FS_READ_ONLY = [
   "currentDirectory",
   "readFile",
   "readMultipleFiles",
