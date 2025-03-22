@@ -20,6 +20,7 @@ import { promptCommand } from "./promptCommand.ts";
 import { ptreeCommand } from "./ptreeCommand.ts";
 import { resetCommand } from "./resetCommand.ts";
 import { saveCommand } from "./saveCommand.ts";
+import { selectionsCommand } from "./selections.ts";
 import { todoCommand } from "./todoCommand.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
@@ -84,6 +85,7 @@ export class CommandManager {
       contextCommand(options),
       explainCommand(options),
       pasteCommand(options),
+      selectionsCommand(options),
       commitCommand(options),
     ];
 
