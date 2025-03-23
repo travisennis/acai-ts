@@ -9,7 +9,7 @@ import { commitCommand } from "./commitCommand.ts";
 import { compactCommand } from "./compactCommand.ts";
 import { contextCommand } from "./contextCommand.ts";
 import { editCommand } from "./editCommand.ts";
-import { editPromptCommand } from "./editPrompt.ts";
+import { editPromptCommand } from "./editPromptCommand.ts";
 import { exitCommand } from "./exitCommand.ts";
 import { explainCommand } from "./explainCommand.ts";
 import { filesCommand } from "./filesCommand.ts";
