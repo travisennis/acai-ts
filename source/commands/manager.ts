@@ -19,7 +19,7 @@ import { promptCommand } from "./promptCommand.ts";
 import { ptreeCommand } from "./ptreeCommand.ts";
 import { resetCommand } from "./resetCommand.ts";
 import { saveCommand } from "./saveCommand.ts";
-import { selectionsCommand } from "./selections.ts";
+import { selectionsCommand } from "./selectionsCommand.ts";
 import { todoCommand } from "./todoCommand.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
