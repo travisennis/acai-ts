@@ -1,5 +1,7 @@
 import { readFile } from "node:fs/promises";
+import { select } from "@inquirer/prompts";
 import { generateText } from "ai";
+import { globby } from "globby";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const explainCommand = ({ terminal, modelManager }: CommandOptions) => {
@@ -8,15 +10,33 @@ export const explainCommand = ({ terminal, modelManager }: CommandOptions) => {
     description: "Explains code from a file or selection",
     result: "continue" as const,
     execute: async (args: string[]) => {
+      let fileArg: string | undefined;
       if (!args || args.length === 0) {
-        terminal.warn(
-          "Please provide a file path. Usage: /explain path/to/file.ts[:line-range]",
-        );
+        // Get all files in the current directory
+        const foundFiles = await globby("**/*", { gitignore: true });
+
+        const selectedFile = await select<string>({
+          message: "Select file to include:",
+          choices: foundFiles,
+          pageSize: 15,
+        });
+
+        if (!selectedFile) {
+          terminal.warn("No file selected.");
+          return;
+        }
+
+        // Process the selected files
+        fileArg = selectedFile;
+      } else {
+        fileArg = args[0];
+      }
+
+      if (!fileArg) {
         return;
       }
 
       try {
-        const fileArg = args[0] ?? "";
         let filePath: string;
         let lineRange: [number, number] | undefined;
 
@@ -59,8 +79,8 @@ export const explainCommand = ({ terminal, modelManager }: CommandOptions) => {
 
         // Generate explanation using the AI model
         const { text } = await generateText({
-          model: modelManager.getModel("repl"),
-          prompt: `Please explain the following code concisely:
+          model: modelManager.getModel("explain-code"),
+          prompt: `Please explain the following code:
 \`\`\`
 ${codeToExplain}
 \`\`\`

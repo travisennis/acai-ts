@@ -83,6 +83,7 @@ async function main() {
   modelManager.setModel("lsp-code-action", "anthropic:sonnet");
   modelManager.setModel("init-project", "anthropic:sonnet35");
   modelManager.setModel("task-agent", "google:flash2");
+  modelManager.setModel("explain-code", "deepseek:deepseek-reasoner");
 
   const positionalPrompt = cli.input.at(0);
 

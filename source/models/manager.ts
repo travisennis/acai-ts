@@ -35,7 +35,8 @@ type App =
   | "tool-repair"
   | "lsp-code-action"
   | "init-project"
-  | "task-agent";
+  | "task-agent"
+  | "explain-code";
 
 export class ModelManager {
   private modelMap: Map<App, LanguageModel>;
