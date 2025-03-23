@@ -9,6 +9,7 @@ import { commitCommand } from "./commitCommand.ts";
 import { compactCommand } from "./compactCommand.ts";
 import { contextCommand } from "./contextCommand.ts";
 import { editCommand } from "./editCommand.ts";
+import { editPromptCommand } from "./editPrompt.ts";
 import { exitCommand } from "./exitCommand.ts";
 import { explainCommand } from "./explainCommand.ts";
 import { filesCommand } from "./filesCommand.ts";
@@ -82,6 +83,7 @@ export class CommandManager {
       pasteCommand(options),
       selectionsCommand(options),
       commitCommand(options),
+      editPromptCommand(options),
     ];
 
     // Add help command with access to all commands

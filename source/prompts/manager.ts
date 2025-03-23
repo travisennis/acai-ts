@@ -21,7 +21,7 @@ export class PromptManager {
         this.clearAll(); // Clear context after using
         return fullPrompt;
       }
-
+      this.prompt = "";
       return prompt;
     }
     throw new Error("No prompt available.");
