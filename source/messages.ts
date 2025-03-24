@@ -107,8 +107,15 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
   appendUserMessage(msg: CoreUserMessage): void;
   appendUserMessage(msg: string | CoreUserMessage) {
     const msgObj = isString(msg) ? createUserMessage(msg) : msg;
-    if (this.history.length > 0) {
-      this.generateTitle((msgObj.content.at(0) as TextPart).text);
+    if (
+      this.history.length > 0 &&
+      msgObj.content &&
+      msgObj.content.length > 0
+    ) {
+      const textPart = msgObj.content.at(0) as TextPart;
+      if (textPart && textPart.text && textPart.text.trim() !== "") {
+        this.generateTitle(textPart.text);
+      }
     }
     this.history.push(msgObj);
   }
@@ -145,6 +152,11 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
   }
 
   async generateTitle(message: string) {
+    // Skip title generation if message is empty
+    if (!message || message.trim() === "") {
+      return;
+    }
+
     const app = "title-conversation";
 
     const systemPrompt =
