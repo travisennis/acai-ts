@@ -63,7 +63,13 @@ export const selectionsCommand = ({
           break;
         }
         default: {
-          terminal.warn(`Unrecognized selections subcommand: ${subCommand}`);
+          const validCommands = ["use", "edit", "clear"];
+          if (subCommand) {
+            terminal.warn(`Unrecognized selections subcommand: ${subCommand}`);
+          } else {
+            terminal.warn("Missing subcommand for /selections");
+          }
+          terminal.info(`Valid subcommands: ${validCommands.join(", ")}`);
           break;
         }
       }
