@@ -13,7 +13,10 @@ import {
 import type { ModelManager } from "./models/manager.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
 
-export function createUserMessage(content: string): CoreUserMessage {
+export function createUserMessage(content: string): CoreUserMessage | null {
+  if (content?.trim().length === 0) {
+    return null;
+  }
   return {
     role: "user",
     content: [
@@ -116,8 +119,8 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
       if (textPart?.text && textPart.text.trim() !== "") {
         this.generateTitle(textPart.text);
       }
+      this.history.push(msgObj);
     }
-    this.history.push(msgObj);
   }
 
   appendAssistantMessage(msg: string): void;

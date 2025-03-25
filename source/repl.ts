@@ -189,6 +189,10 @@ export class Repl {
 
       // Track if we're using file content in this prompt to set cache control appropriately
       const userMsg = createUserMessage(userPrompt);
+      if (!userMsg) {
+        terminal.error("invalid user message");
+        continue;
+      }
       if (hasAddedContext && modelConfig.provider === "anthropic") {
         userMsg.providerOptions = {
           anthropic: { cacheControl: { type: "ephemeral" } },

@@ -15,13 +15,13 @@ export class PromptManager {
 
   get() {
     const prompt = this.prompt;
-    if (isString(prompt)) {
+    if (isString(prompt) && prompt.trim().length > 0) {
       if (this.hasContext()) {
         const fullPrompt = `${this.getContext()}\n\n${prompt}`;
         this.clearAll(); // Clear context after using
         return fullPrompt;
       }
-      this.prompt = "";
+      this.prompt = undefined;
       return prompt;
     }
     throw new Error("No prompt available.");
