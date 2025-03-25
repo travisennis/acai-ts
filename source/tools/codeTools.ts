@@ -1,8 +1,8 @@
-import { execFile } from "node:child_process";
+import { isUndefined } from "@travisennis/stdlib/typeguards";
 import { tool } from "ai";
 import { z } from "zod";
+import { executeCommand } from "../utils/process.ts";
 import type { SendData } from "./types.ts";
-import { isUndefined } from "@travisennis/stdlib/typeguards";
 
 export interface Config {
   build?: string | undefined;
@@ -195,42 +195,24 @@ function asyncExec(
   command: string,
   cwd: string,
 ): Promise<{ stdout: string; stderr: string; code: number }> {
-  const { promise, resolve } = Promise.withResolvers<{
-    stdout: string;
-    stderr: string;
-    code: number;
-  }>();
   try {
     const [cmd, ...args] = command.split(" ");
     if (isUndefined(cmd)) {
-      resolve({ stdout: "", stderr: "Missing command", code: 1 });
+      return Promise.resolve({
+        stdout: "",
+        stderr: "Missing command",
+        code: 1,
+      });
     }
-    if (!isUndefined(cmd)) {
-      execFile(
-        cmd,
-        args,
-        {
-          cwd,
-          timeout: 10 * 60 * 1000,
-          shell: true,
-        },
-        (error, stdout, stderr) => {
-          if (error) {
-            const errorCode = typeof error.code === "number" ? error.code : 1;
-            resolve({
-              stdout: stdout || "",
-              stderr: stderr || "",
-              code: errorCode,
-            });
-          } else {
-            resolve({ stdout, stderr, code: 0 });
-          }
-        },
-      );
-    }
+
+    return executeCommand([cmd, ...args], {
+      cwd,
+      timeout: 10 * 60 * 1000,
+      shell: true,
+      throwOnError: false,
+    });
   } catch (error) {
     console.error(error);
-    resolve({ stdout: "", stderr: "", code: 1 });
+    return Promise.resolve({ stdout: "", stderr: "", code: 1 });
   }
-  return promise;
 }

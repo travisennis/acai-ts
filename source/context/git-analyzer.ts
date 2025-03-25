@@ -1,9 +1,6 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { logger } from "../logger.ts";
+import { executeCommand } from "../utils/process.ts";
 import type { Entity } from "./manager.ts";
-
-const execFileAsync = promisify(execFile);
 
 export interface GitAnalyzerOptions {
   projectRoot: string;
@@ -206,7 +203,11 @@ export class GitAnalyzer {
     args: string[],
   ): Promise<{ stdout: string; stderr: string }> {
     try {
-      return await execFileAsync("git", args, { cwd: this.projectRoot });
+      const result = await executeCommand(["git", ...args], {
+        cwd: this.projectRoot,
+        throwOnError: true,
+      });
+      return { stdout: result.stdout, stderr: result.stderr };
     } catch (error) {
       logger.error({ error, args }, "Git command failed");
       throw error;
