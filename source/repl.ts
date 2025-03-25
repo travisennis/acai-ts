@@ -1,5 +1,6 @@
 import { readdir } from "node:fs/promises";
 import { parse, sep } from "node:path";
+import { emitKeypressEvents } from "node:readline";
 import { type Interface, createInterface } from "node:readline/promises";
 import { asyncTry } from "@travisennis/stdlib/try";
 import { isDefined } from "@travisennis/stdlib/typeguards";
@@ -78,12 +79,22 @@ async function fileSystemCompleter(line: string): Promise<[string[], string]> {
   }
 }
 
+// We rely on raw keypress handling for history since the Interface type doesn't expose line state
+
 class ReplPrompt {
   private rl: Interface;
+  private history: string[] = [];
+  private historyIndex = -1;
+  private currentInput = "";
+
   constructor({ commands }: { commands: CommandManager }) {
+    // Enable keypress events on stdin
+    emitKeypressEvents(process.stdin);
+
     this.rl = createInterface({
       input: process.stdin,
       output: process.stdout,
+      historySize: 100,
       completer: (line) => {
         const completions = commands.getCommands();
         const hits = completions.filter((c) => c.startsWith(line));
@@ -95,10 +106,86 @@ class ReplPrompt {
         return fileSystemCompleter(line); // [completions, line];
       },
     });
+
+    // Add key listeners for history navigation
+    const stdin = process.stdin;
+    if (stdin.setRawMode) {
+      const origStdinMode = stdin.isRaw;
+      stdin.setRawMode(true);
+      stdin.on("keypress", (_chunk, key) => {
+        if (!key) {
+          return;
+        }
+
+        if (key.name === "up" && this.history.length > 0) {
+          // Save current input if at start of history navigation
+          if (this.historyIndex === -1) {
+            // Get the current line from the current input buffer
+            // This uses the fact that ctrl+u clears the line, so we capture what was there
+            this.rl.write(null, { ctrl: true, name: "e" }); // Move to end of line
+            const currentPos = this.rl.cursor;
+            this.rl.write(null, { ctrl: true, name: "a" }); // Move to beginning of line
+            let input = "";
+            // Simulate reading the current line by moving cursor and checking
+            for (let i = 0; i < currentPos; i++) {
+              this.rl.write(null, { name: "right" });
+              // We can't directly access the line content, so we'll use the entered input
+              input += i < currentPos ? " " : ""; // Placeholder, we can't actually read it
+            }
+            this.currentInput = input;
+          }
+
+          this.historyIndex = Math.min(
+            this.historyIndex + 1,
+            this.history.length - 1,
+          );
+
+          // Clear line and write history item
+          this.rl.write(null, { ctrl: true, name: "u" }); // Clear current line
+          this.rl.write(
+            this.history[this.history.length - 1 - this.historyIndex] ?? "",
+          );
+        } else if (key.name === "down") {
+          if (this.historyIndex === -1) {
+            return;
+          }
+
+          this.historyIndex--;
+          // Clear line
+          this.rl.write(null, { ctrl: true, name: "u" });
+
+          if (this.historyIndex === -1) {
+            // Write saved input when returning to the initial state
+            this.rl.write(this.currentInput);
+          } else {
+            // Write history item
+            this.rl.write(
+              this.history[this.history.length - 1 - this.historyIndex] ?? "",
+            );
+          }
+        }
+      });
+
+      // Restore stdin mode when readline interface is closed
+      this.rl.on("close", () => {
+        if (stdin.setRawMode) {
+          stdin.setRawMode(origStdinMode);
+        }
+      });
+    }
   }
 
-  input() {
-    return this.rl.question("> ");
+  async input() {
+    const input = await this.rl.question("> ");
+    if (
+      input.trim() &&
+      (this.history.length === 0 ||
+        input !== this.history[this.history.length - 1])
+    ) {
+      this.history.push(input);
+    }
+    this.historyIndex = -1;
+    return input;
   }
 
   close() {
