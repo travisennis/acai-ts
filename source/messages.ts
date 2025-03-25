@@ -13,9 +13,9 @@ import {
 import type { ModelManager } from "./models/manager.ts";
 import type { TokenTracker } from "./tokenTracker.ts";
 
-export function createUserMessage(content: string): CoreUserMessage | null {
+export function createUserMessage(content: string): CoreUserMessage {
   if (content?.trim().length === 0) {
-    return null;
+    throw new Error("invalid user message");
   }
   return {
     role: "user",
@@ -111,7 +111,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
   appendUserMessage(msg: string | CoreUserMessage) {
     const msgObj = isString(msg) ? createUserMessage(msg) : msg;
     if (
-      this.history.length > 0 &&
+      this.history.length === 0 &&
       msgObj.content &&
       msgObj.content.length > 0
     ) {
@@ -119,8 +119,8 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
       if (textPart?.text && textPart.text.trim() !== "") {
         this.generateTitle(textPart.text);
       }
-      this.history.push(msgObj);
     }
+    this.history.push(msgObj);
   }
 
   appendAssistantMessage(msg: string): void;

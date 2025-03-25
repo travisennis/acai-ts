@@ -163,6 +163,8 @@ export class Repl {
         const prompt = new ReplPrompt({ commands });
         const userInput = await prompt.input();
         prompt.close();
+
+        // see if the userInput contains a command
         const commandResult = await commands.handle({ userInput });
         if (commandResult.break) {
           break;
@@ -170,6 +172,7 @@ export class Repl {
         if (commandResult.continue) {
           continue;
         }
+
         // if there is no pending prompt then use the user's input. otherwise, the prompt was loaded from a command
         if (!promptManager.isPending()) {
           // const enrichedPrompt = await contextManager.enrichPrompt(userInput);
@@ -189,10 +192,6 @@ export class Repl {
 
       // Track if we're using file content in this prompt to set cache control appropriately
       const userMsg = createUserMessage(userPrompt);
-      if (!userMsg) {
-        terminal.error("invalid user message");
-        continue;
-      }
       if (hasAddedContext && modelConfig.provider === "anthropic") {
         userMsg.providerOptions = {
           anthropic: { cacheControl: { type: "ephemeral" } },
