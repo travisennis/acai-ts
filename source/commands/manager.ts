@@ -19,6 +19,7 @@ import { pasteCommand } from "./pasteCommand.ts";
 import { promptCommand } from "./promptCommand.ts";
 import { ptreeCommand } from "./ptreeCommand.ts";
 import { resetCommand } from "./resetCommand.ts";
+import { reviewCommand } from "./reviewCommand.ts";
 import { saveCommand } from "./saveCommand.ts";
 import { selectionsCommand } from "./selectionsCommand.ts";
 import { todoCommand } from "./todoCommand.ts";
@@ -84,6 +85,7 @@ export class CommandManager {
       selectionsCommand(options),
       commitCommand(options),
       editPromptCommand(options),
+      reviewCommand(options),
     ];
 
     // Add help command with access to all commands
