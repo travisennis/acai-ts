@@ -489,7 +489,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
     id: "google:pro25",
     provider: "google",
     contextWindow: 0,
-    maxOutputTokens: 8_192,
+    maxOutputTokens: 64_000,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
     supportsReasoning: true,
