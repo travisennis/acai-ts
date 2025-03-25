@@ -3,7 +3,11 @@ import { type LanguageModel, tool } from "ai";
 import chalk from "chalk";
 import { z } from "zod";
 import { config } from "../config.ts";
+import type { ModelManager } from "../models/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
+import type { TokenTracker } from "../tokenTracker.ts";
+import { createAgentTools } from "./agent.ts";
+import { createArchitectTools } from "./architect.ts";
 import { createCodeInterpreterTool } from "./codeInterpreter.ts";
 import { createCodeTools } from "./codeTools.ts";
 import { createFileSystemTools } from "./filesystem.ts";
@@ -13,10 +17,7 @@ import { createThinkTools } from "./tauThink.ts";
 import { createTextEditorTool } from "./textEditorTool.ts";
 import type { Message } from "./types.ts";
 import { createUrlTools } from "./url.ts";
-import { createAgentTools } from "./agent.ts";
-import { ModelManager } from "../models/manager.ts";
-import { TokenTracker } from "../tokenTracker.ts";
-import { createArchitectTools } from "./architect.ts";
+import { createBashTools } from "./bashTool.ts";
 // import { createRaindropTools } from "./raindrop.ts";
 
 const sendDataHandler = (terminal: Terminal) => {
@@ -81,6 +82,11 @@ export async function initTools({
     sendData: sendDataFn,
   });
 
+  const bashTools = createBashTools({
+    baseDir: process.cwd(),
+    sendData: sendDataFn,
+  });
+
   const askUserTool = {
     askUser: tool({
       description:
@@ -106,6 +112,7 @@ export async function initTools({
     ...urlTools,
     // ...bookmarkTools,
     ...askUserTool,
+    ...bashTools,
   } as const;
 
   return tools;
