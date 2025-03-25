@@ -113,7 +113,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
       msgObj.content.length > 0
     ) {
       const textPart = msgObj.content.at(0) as TextPart;
-      if (textPart && textPart.text && textPart.text.trim() !== "") {
+      if (textPart?.text && textPart.text.trim() !== "") {
         this.generateTitle(textPart.text);
       }
     }
@@ -161,17 +161,20 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
 
     const systemPrompt =
       "Analyze this message to generate a conversation topic. Extract a 4-7 word title that captures the topic. Return only the title with no other text.";
+    try {
+      const { text, usage } = await generateText({
+        model: this.modelManager.getModel(app),
+        system: systemPrompt,
+        prompt: message,
+      });
 
-    const { text, usage } = await generateText({
-      model: this.modelManager.getModel(app),
-      system: systemPrompt,
-      prompt: message,
-    });
+      this.tokenTracker.trackUsage(app, usage);
 
-    this.tokenTracker.trackUsage(app, usage);
-
-    this.title = text;
-    this.emit("update-title", this.title);
+      this.title = text;
+      this.emit("update-title", this.title);
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   async summarizeAndReset() {
