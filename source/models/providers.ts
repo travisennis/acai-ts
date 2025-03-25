@@ -143,6 +143,7 @@ const google = customProvider({
     flash2lite: originalGoogle("gemini-2.0-flash-lite-preview-02-05"),
     flash2thinking: originalGoogle("gemini-2.0-flash-thinking-exp-01-21"),
     pro2: originalGoogle("gemini-2.0-pro-exp-02-05"),
+    pro25: originalGoogle("gemini-2.5-pro-exp-03-25"),
   },
   fallbackProvider: originalGoogle,
 });
@@ -189,6 +190,7 @@ export const models = [
   "google:flash2-search",
   "google:flash2thinking",
   "google:pro2",
+  "google:pro25",
   "deepseek:deepseek-chat",
   "deepseek:deepseek-reasoner",
   "openrouter:deepseek-v3",
@@ -420,7 +422,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   },
   "google:flash2": {
     id: "google:flash2",
-    provider: "openai",
+    provider: "google",
     contextWindow: 0,
     maxOutputTokens: 8_192,
     defaultTemperature: 0.3,
@@ -433,7 +435,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   },
   "google:flash2lite": {
     id: "google:flash2lite",
-    provider: "openai",
+    provider: "google",
     contextWindow: 0,
     maxOutputTokens: 8_192,
     defaultTemperature: 0.3,
@@ -446,7 +448,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   },
   "google:flash2-search": {
     id: "google:flash2-search",
-    provider: "openai",
+    provider: "google",
     contextWindow: 0,
     maxOutputTokens: 8_192,
     defaultTemperature: 0.3,
@@ -459,7 +461,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   },
   "google:flash2thinking": {
     id: "google:flash2thinking",
-    provider: "openai",
+    provider: "google",
     contextWindow: 0,
     maxOutputTokens: 8_192,
     defaultTemperature: 0.3,
@@ -472,7 +474,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   },
   "google:pro2": {
     id: "google:pro2",
-    provider: "openai",
+    provider: "google",
     contextWindow: 0,
     maxOutputTokens: 8_192,
     defaultTemperature: 0.3,
@@ -483,9 +485,22 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
     costPerOutputToken: 0,
     category: "balanced",
   },
+  "google:pro25": {
+    id: "google:pro25",
+    provider: "google",
+    contextWindow: 0,
+    maxOutputTokens: 8_192,
+    defaultTemperature: 0.3,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0,
+    costPerOutputToken: 0,
+    category: "powerful",
+  },
   "deepseek:deepseek-chat": {
     id: "deepseek:deepseek-chat",
-    provider: "openai",
+    provider: "deepseek",
     contextWindow: 0,
     maxOutputTokens: 8_000,
     defaultTemperature: 0.3,
@@ -498,7 +513,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   },
   "deepseek:deepseek-reasoner": {
     id: "deepseek:deepseek-reasoner",
-    provider: "openai",
+    provider: "deepseek",
     contextWindow: 0,
     maxOutputTokens: 8_000,
     defaultTemperature: 0.6,
@@ -511,7 +526,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   },
   "openrouter:deepseek-v3": {
     id: "openrouter:deepseek-v3",
-    provider: "openai",
+    provider: "openrouter",
     contextWindow: 0,
     maxOutputTokens: 8_000,
     defaultTemperature: 0.3,
@@ -524,7 +539,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   },
   "openrouter:deepseek-r1": {
     id: "openrouter:deepseek-r1",
-    provider: "openai",
+    provider: "openrouter",
     contextWindow: 0,
     maxOutputTokens: 8_000,
     defaultTemperature: 0.6,
