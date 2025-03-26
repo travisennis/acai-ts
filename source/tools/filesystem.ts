@@ -623,10 +623,17 @@ export const createFileSystemTools = async ({
             allowedDirectory,
           );
           const result = await applyFileEdits(validPath, edits, dryRun);
-          sendData?.({
-            event: "tool-completion",
-            data: `Applied ${edits.length} edits.`,
-          });
+          if (dryRun) {
+            sendData?.({
+              event: "tool-completion",
+              data: `Applying:\n${result}.`,
+            });
+          } else {
+            sendData?.({
+              event: "tool-completion",
+              data: `Applied ${edits.length} edits.`,
+            });
+          }
           return result;
         } catch (error) {
           sendData?.({
