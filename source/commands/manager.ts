@@ -57,21 +57,21 @@ export class CommandManager {
 
     // Register all commands
     const cmds = [
-      resetCommand(options),
-      saveCommand(options),
-      compactCommand(options),
-      exitCommand(options),
       byeCommand(options),
-      promptCommand(options),
-      filesCommand(options),
-      ptreeCommand(options),
+      commitCommand(options),
+      compactCommand(options),
       editCommand(options),
+      editPromptCommand(options),
+      exitCommand(options),
+      filesCommand(options),
       initCommand(options),
       pasteCommand(options),
-      selectionsCommand(options),
-      commitCommand(options),
-      editPromptCommand(options),
+      promptCommand(options),
+      ptreeCommand(options),
+      resetCommand(options),
       reviewCommand(options),
+      saveCommand(options),
+      selectionsCommand(options),
     ];
 
     // Add help command with access to all commands
