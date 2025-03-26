@@ -1,6 +1,7 @@
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const resetCommand = ({
+  terminal,
   messageHistory,
   tokenTracker,
 }: CommandOptions) => {
@@ -14,6 +15,7 @@ export const resetCommand = ({
         messageHistory.clear();
       }
       tokenTracker.reset();
+      terminal.setTitle(`acai: ${process.cwd()}`);
     },
   } satisfies ReplCommand;
 };
