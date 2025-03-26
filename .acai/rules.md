@@ -7,7 +7,6 @@
 - **Test:** `npm test`
 - **Run Single Test File:** `npm test -- test/path/to/your.test.ts`
 - **Run Tests by Name:** `npm test -- --test-name-pattern "your test name pattern"`
-- **Check Dependencies:** `npm run check`
 - **Find Unused Code/Deps:** `npm run knip`
 
 ## Code Style & Guidelines
