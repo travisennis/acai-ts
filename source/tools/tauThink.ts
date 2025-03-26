@@ -23,9 +23,11 @@ export const createThinkTools = (
         thought: z.string().describe("Your thoughts"),
       }),
       execute: ({ thought }) => {
+        // Replace literal '\\n' with actual newline characters
+        const formattedThought = thought.replace(/\\n/g, "\n");
         sendData?.({
           event: "tool-init",
-          data: `Logging thought: ${thought}`,
+          data: `Logging thought: ${formattedThought}`,
         });
         return Promise.resolve("Your thought has been logged.");
       },
