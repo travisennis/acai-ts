@@ -5,6 +5,7 @@ import { tool } from "ai";
 import { createTwoFilesPatch } from "diff";
 import ignore, { type Ignore } from "ignore";
 import { minimatch } from "minimatch";
+import { encoding_for_model } from "tiktoken";
 import { z } from "zod";
 import type { SendData } from "./types.ts";
 
@@ -494,9 +495,22 @@ export const createFileSystemTools = async ({
             allowedDirectory,
           );
           const file = await fs.readFile(filePath, { encoding });
+          let tokenCount = 0;
+          try {
+            // Only calculate tokens for non-image files and if encoding is text-based
+            if (!isImage && encoding.startsWith("utf")) {
+              const tiktokenEncoding = encoding_for_model("gpt-4"); // Or appropriate model
+              tokenCount = tiktokenEncoding.encode(file).length;
+              tiktokenEncoding.free(); // Free up memory
+            }
+          } catch (tokenError) {
+            console.error("Error calculating token count:", tokenError);
+            // Log or handle error, but don't block file return
+          }
           sendData?.({
             event: "tool-completion",
-            data: `File read successfully: ${userPath}`,
+            // Include token count only if calculated (i.e., for text files)
+            data: `File read successfully: ${userPath}${tokenCount > 0 ? ` (${tokenCount} tokens)` : ""}`,
           });
           if (isImage) {
             return `data:image/${path
@@ -537,15 +551,42 @@ export const createFileSystemTools = async ({
                 allowedDirectory,
               );
               const content = await fs.readFile(validPath, "utf-8");
-              return `${filePath}:\n${content}\n`;
+              let tokenCount = 0;
+              try {
+                const encoding = encoding_for_model("gpt-4"); // Or another appropriate model
+                tokenCount = encoding.encode(content).length;
+                encoding.free(); // Free up memory
+              } catch (tokenError) {
+                console.error("Error calculating token count:", tokenError);
+                // Handle token calculation error if needed
+              }
+              return { path: filePath, content, tokenCount, error: null };
             } catch (error) {
               const errorMessage =
                 error instanceof Error ? error.message : String(error);
-              return `${filePath}: Error - ${errorMessage}`;
+              return {
+                path: filePath,
+                content: null,
+                tokenCount: 0,
+                error: errorMessage,
+              };
             }
           }),
         );
-        return results.join("\n---\n");
+        let totalTokens = 0;
+        const formattedResults = results.map((result) => {
+          if (result.error) {
+            return `${result.path}: Error - ${result.error}`;
+          }
+          totalTokens += result.tokenCount;
+          // Return only content, not token count in the result string
+          return `${result.path}:\n${result.content}\n`;
+        });
+        sendData?.({
+          event: "tool-completion",
+          data: `Read ${paths.length} files successfully (${totalTokens} total tokens).`,
+        });
+        return formattedResults.join("\n---\n");
       },
     }),
 

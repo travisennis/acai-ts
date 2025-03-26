@@ -61,6 +61,7 @@
     "simple-git": "^3.27.0",
     "table": "^6.9.0",
     "terminal-link": "^4.0.0",
+    "tiktoken": "^1.0.20",
     "ts-pattern": "^5.6.2",
     "typescript": "^5.8.2",
     "vscode-languageserver": "^9.0.1",
