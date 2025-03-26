@@ -4,7 +4,6 @@ import { isDefined } from "@travisennis/stdlib/typeguards";
 import meow from "meow";
 import { CommandManager } from "./commands/manager.ts";
 import { config } from "./config.ts";
-import { ContextManager } from "./context/manager.ts";
 import { logger } from "./logger.ts";
 import { MessageHistory } from "./messages.ts";
 import { ModelManager } from "./models/manager.ts";
@@ -128,16 +127,7 @@ async function main() {
   });
   messageHistory.on("update-title", (title) => terminal.setTitle(title));
 
-  const contextManager = new ContextManager({
-    projectRoot: process.cwd(),
-  });
-  contextManager.on("initialized", () => {
-    // terminal.info("Context Manager is initialized.");
-  });
-  contextManager.initialize();
-
   const commands = new CommandManager({
-    contextManager,
     promptManager,
     modelManager,
     terminal,
@@ -147,7 +137,6 @@ async function main() {
 
   const repl = new Repl({
     promptManager,
-    contextManager,
     terminal,
     config: appConfig,
     messageHistory,

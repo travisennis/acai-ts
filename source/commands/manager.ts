@@ -1,4 +1,3 @@
-import type { ContextManager } from "../context/manager.ts";
 import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManager } from "../prompts/manager.ts";
@@ -7,11 +6,9 @@ import type { TokenTracker } from "../tokenTracker.ts";
 import { byeCommand } from "./byeCommand.ts";
 import { commitCommand } from "./commitCommand.ts";
 import { compactCommand } from "./compactCommand.ts";
-import { contextCommand } from "./contextCommand.ts";
 import { editCommand } from "./editCommand.ts";
 import { editPromptCommand } from "./editPromptCommand.ts";
 import { exitCommand } from "./exitCommand.ts";
-import { explainCommand } from "./explainCommand.ts";
 import { filesCommand } from "./filesCommand.ts";
 import { helpCommand } from "./helpCommand.ts";
 import { initCommand } from "./initCommand.ts";
@@ -22,7 +19,6 @@ import { resetCommand } from "./resetCommand.ts";
 import { reviewCommand } from "./reviewCommand.ts";
 import { saveCommand } from "./saveCommand.ts";
 import { selectionsCommand } from "./selectionsCommand.ts";
-import { todoCommand } from "./todoCommand.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export class CommandManager {
@@ -32,7 +28,6 @@ export class CommandManager {
   private messageHistory: MessageHistory;
   private tokenTracker: TokenTracker;
   private terminal: Terminal;
-  private contextManager: ContextManager;
 
   constructor({
     promptManager,
@@ -40,7 +35,6 @@ export class CommandManager {
     terminal,
     messageHistory,
     tokenTracker,
-    contextManager,
   }: CommandOptions) {
     this.commands = new Map();
     this.promptManager = promptManager;
@@ -48,14 +42,12 @@ export class CommandManager {
     this.terminal = terminal;
     this.messageHistory = messageHistory;
     this.tokenTracker = tokenTracker;
-    this.contextManager = contextManager;
     this.initializeCommmands();
   }
 
   initializeCommmands() {
     // Import and register each command
     const options: CommandOptions = {
-      contextManager: this.contextManager,
       promptManager: this.promptManager,
       modelManager: this.modelManager,
       terminal: this.terminal,
@@ -70,17 +62,11 @@ export class CommandManager {
       compactCommand(options),
       exitCommand(options),
       byeCommand(options),
-      explainCommand(options),
-      contextCommand(options),
-      todoCommand(options),
       promptCommand(options),
       filesCommand(options),
       ptreeCommand(options),
       editCommand(options),
       initCommand(options),
-      todoCommand(options),
-      contextCommand(options),
-      explainCommand(options),
       pasteCommand(options),
       selectionsCommand(options),
       commitCommand(options),

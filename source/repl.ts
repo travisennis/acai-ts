@@ -1,6 +1,5 @@
 import { readdir } from "node:fs/promises";
 import { parse, sep } from "node:path";
-import { emitKeypressEvents } from "node:readline";
 import { type Interface, createInterface } from "node:readline/promises";
 import { asyncTry } from "@travisennis/stdlib/try";
 import { isDefined } from "@travisennis/stdlib/typeguards";
@@ -14,7 +13,6 @@ import {
 import chalk from "chalk";
 import type { CommandManager } from "./commands/manager.ts";
 import { config as configManager } from "./config.ts";
-import type { ContextManager } from "./context/manager.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import { type MessageHistory, createUserMessage } from "./messages.ts";
@@ -84,7 +82,7 @@ async function fileSystemCompleter(line: string): Promise<[string[], string]> {
 class ReplPrompt {
   private rl: Interface;
   private history: string[];
-  private MAX_HISTORY = 25;
+  private maxHistory = 25;
 
   constructor({
     commands,
@@ -96,7 +94,7 @@ class ReplPrompt {
       input: process.stdin,
       output: process.stdout,
       history: this.history,
-      historySize: this.MAX_HISTORY,
+      historySize: this.maxHistory,
       completer: (line) => {
         const completions = commands.getCommands();
         const hits = completions.filter((c) => c.startsWith(line));
@@ -130,7 +128,7 @@ class ReplPrompt {
     }
     if (this.history[this.history.length - 1] !== input) {
       this.history.push(input);
-      if (this.history.length > this.MAX_HISTORY) {
+      if (this.history.length > this.maxHistory) {
         this.history.shift(); // Keep history size limited
       }
     }
@@ -139,7 +137,6 @@ class ReplPrompt {
 
 export interface ReplOptions {
   messageHistory: MessageHistory;
-  contextManager: ContextManager;
   promptManager: PromptManager;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
