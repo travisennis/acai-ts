@@ -45,14 +45,17 @@ export const createGrepTools = (
             event: "tool-init",
             data: `Searching for "${pattern}" in ${path}`,
           });
-          return Promise.resolve(
-            grepFiles(pattern, path, {
-              recursive,
-              ignoreCase,
-              filePattern,
-              contextLines,
-            }),
-          );
+          const result = grepFiles(pattern, path, {
+            recursive,
+            ignoreCase,
+            filePattern,
+            contextLines,
+          });
+          sendData?.({
+            event: "tool-completion",
+            data: `Found results:\n${result}`,
+          });
+          return Promise.resolve(result);
         } catch (error) {
           sendData?.({
             event: "tool-error",
@@ -94,7 +97,7 @@ export function grepFiles(
     } = options;
 
     // Build the ripgrep command
-    let command = "rg";
+    let command = "rg --line-number";
 
     // Ripgrep is recursive by default, so we only need to add
     // --no-recursive if recursive is false
