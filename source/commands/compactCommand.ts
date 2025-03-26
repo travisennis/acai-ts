@@ -1,9 +1,6 @@
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const compactCommand = ({
-  messageHistory,
-  tokenTracker,
-}: CommandOptions) => {
+export const compactCommand = ({ messageHistory }: CommandOptions) => {
   return {
     command: "/compact",
     description:
@@ -11,10 +8,8 @@ export const compactCommand = ({
     result: "continue" as const,
     execute: async () => {
       if (!messageHistory.isEmpty()) {
-        await messageHistory.save();
-        messageHistory.clear();
+        await messageHistory.summarizeAndReset();
       }
-      tokenTracker.reset();
     },
   } satisfies ReplCommand;
 };
