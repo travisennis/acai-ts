@@ -1,6 +1,5 @@
 import { generateText } from "ai";
 import type { CommandOptions, ReplCommand } from "./types.ts";
-import { directoryTree } from "../tools/filesystem.ts";
 import { inGitDirectory, initTools } from "../tools/index.ts";
 import { platform } from "node:os";
 
@@ -10,7 +9,6 @@ export const initCommand = ({ terminal, modelManager }: CommandOptions) => {
     description: "Creates the .acai/rules.md file.",
     result: "continue" as const,
     execute: async () => {
-      terminal.display(await directoryTree(process.cwd()));
       const { text } = await generateText({
         model: modelManager.getModel("init-project"),
         prompt: `Please analyze this codebase and create a .acai/rules.md file containing:
