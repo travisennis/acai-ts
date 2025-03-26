@@ -77,8 +77,6 @@ async function fileSystemCompleter(line: string): Promise<[string[], string]> {
   }
 }
 
-// We rely on raw keypress handling for history since the Interface type doesn't expose line state
-
 class ReplPrompt {
   private rl: Interface;
   private history: string[];
