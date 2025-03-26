@@ -1,12 +1,22 @@
-When writing code follow these rules:
-- Target ESNext
-- VERY IMPORTANT: Follow strict TypeScript rules with proper type definitions
-- IMPORTANT: Always check variables that can be undefined.
-- DO NOT USE non-null assertions
-- Avoid the use of the any types unless absolutely necessary.
-- Apply proper error handling
-- Avoid console statements only when necessary
-- Use modern ES module syntax with explicit .ts file extensions in imports
-- Don't use Node.js built-in modules inappropriately
-- Import node built-in modules with node: prefix
+## Commands
 
+- **Build:** `npm run build`
+- **Lint:** `npm run lint`
+- **Format:** `npm run format`
+- **Fix Lint/Format:** `npm run lint:fix` (uses Biome)
+- **Test:** `npm test`
+- **Run Single Test File:** `npm test -- test/path/to/your.test.ts`
+- **Run Tests by Name:** `npm test -- --test-name-pattern "your test name pattern"`
+- **Check Dependencies:** `npm run check`
+- **Find Unused Code/Deps:** `npm run knip`
+
+## Code Style & Guidelines
+
+- **Language:** Strict TypeScript (ESNext target). Enable all strict checks.
+- **Modules:** Use ES Modules (`import`/`export`). Add `.ts` extensions to relative imports. Use `node:` prefix for Node.js built-ins (e.g., `import fs from 'node:fs'`).
+- **Formatting/Linting:** Adhere strictly to Biome rules (`npm run format`, `npm run lint`).
+- **Types:** Provide explicit types. Avoid `any` unless absolutely necessary. Always check potentially `undefined`/`null` values. **Do not use non-null assertions (`!`)**.
+- **Naming:** Use camelCase for variables/functions, PascalCase for classes/types/interfaces.
+- **Error Handling:** Implement robust error handling (try/catch, result patterns, etc.).
+- **Logging:** Avoid `console.log` for debugging; use a proper logger or remove before committing.
+- **Commits:** Follow the Conventional Commits standard for commit messages.
