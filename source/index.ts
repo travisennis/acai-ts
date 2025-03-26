@@ -74,15 +74,15 @@ async function main() {
     stateDir: appDir.ensurePath("audit"),
   });
   modelManager.setModel("repl", chosenModel);
-  modelManager.setModel("architect", "anthropic:sonnet-token-efficient-tools");
+  modelManager.setModel("architect", chosenModel);
   modelManager.setModel("title-conversation", "anthropic:haiku");
   modelManager.setModel("conversation-summarizer", "anthropic:haiku");
   modelManager.setModel("file-retiever", "anthropic:haiku");
   modelManager.setModel("tool-repair", "openai:gpt-4o-structured");
   modelManager.setModel("meta-prompt", "anthropic:sonnet35");
   modelManager.setModel("lsp-code-action", "anthropic:sonnet");
-  modelManager.setModel("init-project", "anthropic:sonnet35");
-  modelManager.setModel("task-agent", "google:flash2");
+  modelManager.setModel("init-project", chosenModel);
+  modelManager.setModel("task-agent", chosenModel);
   modelManager.setModel("explain-code", "deepseek:deepseek-reasoner");
 
   const positionalPrompt = cli.input.at(0);
