@@ -1,12 +1,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { logger } from "../logger.ts";
+import type { Entity } from "./manager.ts";
 
 // This is a simplified in-memory graph implementation
 // In a real implementation, you would use Neo4j or a similar graph database
 export class ContextGraph {
   private dbPath: string;
-  private nodes: Map<string, any> = new Map();
+  private nodes: Map<string, Entity> = new Map();
   private relationships: Map<string, Set<string>> = new Map();
   private initialized = false;
 
@@ -31,7 +32,9 @@ export class ContextGraph {
           "utf-8",
         );
 
-        this.nodes = new Map(JSON.parse(nodesData));
+        // Need to properly deserialize potentially complex Entity objects
+        // For now, assuming simple objects, but might need a reviver function
+        this.nodes = new Map(JSON.parse(nodesData) as [string, Entity][]);
 
         // Convert relationship arrays back to Sets
         const relMap = JSON.parse(relationshipsData);
@@ -61,7 +64,7 @@ export class ContextGraph {
     }
   }
 
-  async addEntities(entities: any[]): Promise<void> {
+  async addEntities(entities: Entity[]): Promise<void> {
     if (!this.initialized) {
       throw new Error("Graph not initialized");
     }
@@ -70,15 +73,7 @@ export class ContextGraph {
 
     for (const entity of entities) {
       // Add the node
-      this.nodes.set(entity.id, {
-        id: entity.id,
-        type: entity.type,
-        properties: {
-          name: entity.name,
-          description: entity.description,
-          ...entity.metadata,
-        },
-      });
+      this.nodes.set(entity.id, entity);
 
       // Add relationships
       if (!this.relationships.has(entity.id)) {
@@ -101,17 +96,19 @@ export class ContextGraph {
     await this.saveToFile();
   }
 
-  updateEntities(entities: any[]): Promise<void> {
+  updateEntities(entities: Entity[]): Promise<void> {
     // For simplicity, update is the same as add in this implementation
+    // In a real graph DB, update might be different (e.g., merging properties)
+    // For this simple implementation, it replaces the node entirely.
     return this.addEntities(entities);
   }
 
-  async getConnectedEntities(entityIds: string[]): Promise<any[]> {
+  async getConnectedEntities(entityIds: string[]): Promise<Entity[]> {
     if (!this.initialized) {
       throw new Error("Graph not initialized");
     }
 
-    const result: any[] = [];
+    const result: Entity[] = [];
     const visited = new Set<string>();
 
     // Helper function for traversal
@@ -129,7 +126,13 @@ export class ContextGraph {
         const nodeRels = this.relationships.get(id);
         if (nodeRels) {
           for (const relKey of nodeRels) {
-            const [sourceId, , targetId] = relKey.split(/->(.*?)$/);
+            // Extract source and target IDs from the relationship key
+            // Format: sourceId-REL_TYPE->targetId
+            const parts = relKey.match(/^(.+?)-(.+?)->(.+)$/);
+            if (!parts) {
+              continue; // Skip malformed keys
+            }
+            const [, sourceId, , targetId] = parts;
             const nextId = sourceId === id ? targetId : sourceId;
 
             if (nextId && !visited.has(nextId)) {

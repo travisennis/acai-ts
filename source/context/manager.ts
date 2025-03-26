@@ -19,12 +19,15 @@ interface ContextManagerEvents {
   disposed: [];
 }
 
-export interface Entity {
+// Base type for all entity metadata
+export type EntityMetadata = Record<string, unknown>;
+
+export interface Entity<T extends EntityMetadata = EntityMetadata> {
   id: string;
   type: string;
   description?: string;
   content?: string;
-  metadata: Record<string, any>;
+  metadata: T;
   relationships: Array<{
     type: string;
     targetId: string;

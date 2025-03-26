@@ -1,13 +1,51 @@
 import { logger } from "../logger.ts";
 import { executeCommand } from "../utils/process.ts";
-import type { Entity } from "./manager.ts";
+import type { Entity, EntityMetadata } from "./manager.ts";
+
+// Specific types for Git entities and parsing
+interface GitFileChange {
+  status: string;
+  path: string;
+}
+
+interface ParsedCommit {
+  hash: string;
+  author: string;
+  email: string;
+  timestamp: number;
+  subject: string;
+  files: GitFileChange[];
+}
+
+// Specific metadata types for GitEntity
+interface CommitMetadata extends EntityMetadata {
+  hash: string;
+  timestamp: number;
+  subject: string;
+}
+
+interface AuthorMetadata extends EntityMetadata {
+  name: string;
+  email: string;
+}
+
+interface GitFileMetadata extends EntityMetadata {
+  path: string;
+  status: string;
+}
+
+type GitEntityMetadata =
+  | CommitMetadata
+  | AuthorMetadata
+  | GitFileMetadata
+  | EntityMetadata; // Fallback for branch or other types
 
 export interface GitAnalyzerOptions {
   projectRoot: string;
   maxHistoryDepth: number;
 }
 
-export interface GitEntity extends Entity {
+export interface GitEntity extends Entity<GitEntityMetadata> {
   type: "commit" | "file" | "author" | "branch";
   description?: string;
 }
@@ -65,7 +103,7 @@ export class GitAnalyzer {
           hash: commit.hash,
           timestamp: commit.timestamp,
           subject: commit.subject,
-        },
+        } satisfies CommitMetadata,
         relationships: [
           { type: "AUTHORED_BY", targetId: `author:${commit.email}` },
         ],
@@ -79,7 +117,7 @@ export class GitAnalyzer {
         metadata: {
           name: commit.author,
           email: commit.email,
-        },
+        } satisfies AuthorMetadata,
         relationships: [],
       });
 
@@ -94,7 +132,7 @@ export class GitAnalyzer {
           metadata: {
             path: file.path,
             status: file.status,
-          },
+          } satisfies GitFileMetadata,
           relationships: [
             { type: "MODIFIED_IN", targetId: `commit:${commit.hash}` },
           ],
@@ -159,12 +197,13 @@ export class GitAnalyzer {
     email: string;
     timestamp: number;
     subject: string;
-    files: Array<{ status: string; path: string }>;
+    files: GitFileChange[];
   }> {
-    const commits: any[] = [];
-    const lines = logOutput.split("\n");
+    const commits: ParsedCommit[] = [];
 
-    let currentCommit: any = null;
+    const lines = logOutput.trim().split("\n");
+
+    let currentCommit: ParsedCommit | null = null;
 
     for (const line of lines) {
       if (line.includes("|")) {
@@ -175,18 +214,18 @@ export class GitAnalyzer {
 
         const [hash, author, email, timestampStr, subject] = line.split("|");
         currentCommit = {
-          hash,
-          author,
-          email,
+          hash: hash ?? "",
+          author: author ?? "",
+          email: email ?? "",
           timestamp: Number.parseInt(timestampStr ?? "", 10),
-          subject,
+          subject: subject ?? "",
           files: [],
         };
       } else if (line.trim() && currentCommit) {
         // This is a file change line
         const match = line.match(/^([A-Z])\s+(.+)$/);
         if (match) {
-          const [, status, path] = match;
+          const [, status, path] = match as [string, string, string]; // Assert match result
           currentCommit.files.push({ status, path });
         }
       }

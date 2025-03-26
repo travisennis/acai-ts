@@ -12,9 +12,10 @@ import {
   isPropertySignature,
 } from "typescript";
 import { logger } from "../logger.ts";
-import type { Entity } from "./manager.ts";
+import type { Entity, EntityMetadata } from "./manager.ts";
 
-export interface CodeEntity extends Entity {
+export interface CodeEntity<T extends EntityMetadata = EntityMetadata>
+  extends Entity<T> {
   type: "file" | "class" | "function" | "interface" | "type" | "variable";
   name: string;
   content?: string;
@@ -24,6 +25,32 @@ export interface CodeEntity extends Entity {
     endLine: number;
   };
 }
+// Specific metadata types for CodeEntity
+interface FileMetadata extends EntityMetadata {
+  path: string;
+  extension: string;
+}
+
+type FileCodeEntity = CodeEntity<FileMetadata>;
+
+interface ClassMetadata extends EntityMetadata {
+  modifiers: string[];
+}
+
+type ClassCodeEntity = CodeEntity<ClassMetadata>;
+
+interface FunctionMetadata extends EntityMetadata {
+  returnType: string;
+  parameters: string[];
+}
+
+type FunctionCodeEntity = CodeEntity<FunctionMetadata>;
+
+interface InterfaceMetadata extends EntityMetadata {
+  properties: Array<{ name: string; type: string }>;
+}
+
+type InterfaceCodeEntity = CodeEntity<InterfaceMetadata>;
 
 export class CodeAnalyzer {
   private projectRoot: string;
@@ -72,7 +99,7 @@ export class CodeAnalyzer {
         }
 
         // Create file entity
-        const fileEntity: CodeEntity = {
+        const fileEntity: FileCodeEntity = {
           id: `file:${filePath}`,
           type: "file",
           name: path.basename(filePath),
@@ -162,10 +189,10 @@ export class CodeAnalyzer {
             endLine: endPos.line + 1,
           },
           metadata: {
-            modifiers: node.modifiers?.map((m) => m.getText()) || [],
+            modifiers: node.modifiers?.map((m) => m.getText()) ?? [],
           },
           relationships: [],
-        });
+        } satisfies ClassCodeEntity);
       } else if (isFunctionDeclaration(node) && node.name) {
         const name = node.name.text;
         const startPos = sourceFile.getLineAndCharacterOfPosition(
@@ -184,11 +211,11 @@ export class CodeAnalyzer {
             endLine: endPos.line + 1,
           },
           metadata: {
-            returnType: node.type?.getText() || "unknown",
+            returnType: node.type?.getText() ?? "unknown",
             parameters: node.parameters.map((p) => p.getText()),
           },
           relationships: [],
-        });
+        } satisfies FunctionCodeEntity);
       } else if (isInterfaceDeclaration(node)) {
         const name = node.name.text;
         const startPos = sourceFile.getLineAndCharacterOfPosition(
@@ -209,11 +236,11 @@ export class CodeAnalyzer {
           metadata: {
             properties: node.members.filter(isPropertySignature).map((m) => ({
               name: m.name.getText(),
-              type: m.type?.getText() || "unknown",
+              type: m.type?.getText() ?? "unknown",
             })),
           },
           relationships: [],
-        });
+        } satisfies InterfaceCodeEntity);
       }
 
       // Continue traversing the AST
