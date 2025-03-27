@@ -14,13 +14,13 @@ export const createUrlTools = (options: {
       parameters: z.object({
         url: z.string().describe("The URL"),
       }),
-      execute: async ({ url }) => {
+      execute: async ({ url }, { abortSignal }) => {
         try {
           sendData?.({
             event: "tool-init",
             data: `Reading URL for ${url}`,
           });
-          const urlContent = await readUrl(url);
+          const urlContent = await readUrl(url, abortSignal);
           return urlContent;
         } catch (error) {
           sendData?.({
@@ -34,7 +34,10 @@ export const createUrlTools = (options: {
   };
 };
 
-export async function readUrl(url: string): Promise<string> {
+export async function readUrl(
+  url: string,
+  abortSignal?: AbortSignal | undefined,
+): Promise<string> {
   try {
     const apiKey = process.env["JINA_READER_API_KEY"];
     const readUrl = `https://r.jina.ai/${url}`;
@@ -44,6 +47,7 @@ export async function readUrl(url: string): Promise<string> {
         // biome-ignore lint/style/useNamingConvention: <explanation>
         Authorization: `Bearer ${apiKey}`,
       },
+      signal: abortSignal,
     });
 
     if (response.ok) {
@@ -57,7 +61,7 @@ export async function readUrl(url: string): Promise<string> {
 
   console.info("Falling back to fetch.");
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: abortSignal });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }

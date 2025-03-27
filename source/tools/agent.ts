@@ -35,7 +35,7 @@ export const createAgentTools = (options: {
     launchAgent: tool({
       description: "Launch a new task.",
       parameters: inputSchema,
-      execute: async ({ prompt }) => {
+      execute: async ({ prompt }, { abortSignal }) => {
         try {
           sendData?.({
             event: "tool-init",
@@ -56,6 +56,7 @@ export const createAgentTools = (options: {
             maxSteps: 30,
             providerOptions: aiConfig.getProviderOptions(),
             tools: await initTools({}),
+            abortSignal: abortSignal,
             // biome-ignore lint/style/useNamingConvention: <explanation>
             experimental_activeTools: [...FS_READ_ONLY, "grepFiles"],
           });

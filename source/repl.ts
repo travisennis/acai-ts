@@ -132,7 +132,6 @@ class ReplPrompt {
     }
   }
 }
-
 export interface ReplOptions {
   messageHistory: MessageHistory;
   promptManager: PromptManager;
@@ -142,6 +141,14 @@ export interface ReplOptions {
   commands: CommandManager;
   config: Record<PropertyKey, unknown>;
 }
+
+const abortController = new AbortController();
+const { signal } = abortController;
+
+// Handle Ctrl+C (SIGINT)
+process.on("SIGINT", () => {
+  abortController.abort();
+});
 
 export class Repl {
   private options: ReplOptions;
@@ -293,6 +300,7 @@ export class Repl {
           //     );
           //   }
           // },
+          abortSignal: signal,
           onFinish: (result) => {
             if (result.response.messages.length > 0) {
               messageHistory.appendResponseMessages(result.response.messages);

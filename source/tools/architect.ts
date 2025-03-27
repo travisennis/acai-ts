@@ -42,7 +42,7 @@ export const createArchitectTools = (options: {
     architect: tool({
       description: DESCRIPTION,
       parameters: inputSchema,
-      execute: async ({ prompt, context }) => {
+      execute: async ({ prompt, context }, { abortSignal }) => {
         try {
           sendData?.({
             event: "tool-init",
@@ -67,6 +67,7 @@ export const createArchitectTools = (options: {
             maxSteps: 30,
             providerOptions: aiConfig.getProviderOptions(),
             tools: await initTools({}),
+            abortSignal: abortSignal,
             // biome-ignore lint/style/useNamingConvention: <explanation>
             experimental_activeTools: [
               ...FS_READ_ONLY,
