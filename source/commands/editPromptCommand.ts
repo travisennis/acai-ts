@@ -1,5 +1,6 @@
 import { editor } from "@inquirer/prompts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
+import { syncTry } from "@travisennis/stdlib/try";
 
 export const editPromptCommand = ({
   terminal,
@@ -11,11 +12,11 @@ export const editPromptCommand = ({
     result: "continue" as const,
     execute: async () => {
       try {
-        const prompt = promptManager.get();
+        const prompt = syncTry(() => promptManager.get());
         const updatedPrompt = await editor({
           message: "Edit prompt?",
           postfix: "md",
-          default: prompt,
+          default: prompt.unwrapOr(""),
         });
         promptManager.add(updatedPrompt);
       } catch (error) {
