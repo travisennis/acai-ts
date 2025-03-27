@@ -6,7 +6,7 @@ import {
   languageModel,
   modelRegistry,
 } from "./providers.ts";
-import { wrapLanguageModel } from "./wrapLanguageModel.ts";
+import { wrapLanguageModel } from "./wrap-language-model.ts";
 
 function getLanguageModel({
   model,

@@ -5,19 +5,19 @@ import { z } from "zod";
 import { config } from "../config.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
-import type { TokenTracker } from "../tokenTracker.ts";
+import type { TokenTracker } from "../token-tracker.ts";
 import { createAgentTools } from "./agent.ts";
 import { createArchitectTools } from "./architect.ts";
-import { createCodeInterpreterTool } from "./codeInterpreter.ts";
-import { createCodeTools } from "./codeTools.ts";
+import { createBashTools } from "./bash-tool.ts";
+import { createCodeInterpreterTool } from "./code-interpreter.ts";
+import { createCodeTools } from "./code-tools.ts";
 import { createFileSystemTools } from "./filesystem.ts";
 import { createGitTools } from "./git.ts";
 import { createGrepTools } from "./grep.ts";
-import { createThinkTools } from "./tauThink.ts";
-import { createTextEditorTool } from "./textEditorTool.ts";
+import { createThinkTools } from "./tau-think.ts";
+import { createTextEditorTool } from "./text-editor-tool.ts";
 import type { Message } from "./types.ts";
 import { createUrlTools } from "./url.ts";
-import { createBashTools } from "./bashTool.ts";
 // import { createRaindropTools } from "./raindrop.ts";
 
 const sendDataHandler = (terminal: Terminal) => {
@@ -167,14 +167,14 @@ export function initAnthropicTools({
 }
 
 // biome-ignore lint/performance/noBarrelFile: <explanation>
-export * from "./codeInterpreter.ts";
-export * from "./codeTools.ts";
+export * from "./code-interpreter.ts";
+export * from "./code-tools.ts";
 export * from "./filesystem.ts";
 export * from "./git.ts";
 export * from "./grep.ts";
 export * from "./memory.ts";
 export * from "./raindrop.ts";
-export * from "./tauThink.ts";
+export * from "./tau-think.ts";
 export * from "./types.ts";
 export * from "./url.ts";
 export * from "./agent.ts";

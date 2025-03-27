@@ -16,7 +16,7 @@ import {
 } from "vscode-languageserver/node.js";
 import type { ModelManager } from "../models/manager.ts";
 import { type Selection, saveSelection } from "../savedSelections/index.ts";
-import { parseContext } from "./embeddingInstructions.ts";
+import { parseContext } from "./embedding-instructions.ts";
 
 interface CodeActionData {
   id: string;

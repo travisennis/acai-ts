@@ -1,3 +1,3 @@
 // biome-ignore lint/performance/noBarrelFile: <explanation>
-export { auditMessage } from "./auditMessage.ts";
-export { createRateLimitMiddleware } from "./rateLimit.ts";
+export { auditMessage } from "./audit-message.ts";
+export { createRateLimitMiddleware } from "./rate-limit.ts";

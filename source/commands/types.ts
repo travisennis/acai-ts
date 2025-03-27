@@ -2,7 +2,7 @@ import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManager } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
-import type { TokenTracker } from "../tokenTracker.ts";
+import type { TokenTracker } from "../token-tracker.ts";
 
 export interface ReplCommand {
   command: string;

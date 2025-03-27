@@ -11,7 +11,7 @@ import { type ModelName, isSupportedModel } from "./models/providers.ts";
 import { PromptManager } from "./prompts/manager.ts";
 import { Repl } from "./repl.ts";
 import { initTerminal } from "./terminal/index.ts";
-import { TokenTracker } from "./tokenTracker.ts";
+import { TokenTracker } from "./token-tracker.ts";
 
 const cli = meow(
   `

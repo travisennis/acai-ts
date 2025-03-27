@@ -1,10 +1,10 @@
 import { generateText, tool } from "ai";
 import { z } from "zod";
+import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
-import type { TokenTracker } from "../tokenTracker.ts";
+import type { TokenTracker } from "../token-tracker.ts";
 import { FS_READ_ONLY, initTools } from "./index.ts";
 import type { SendData } from "./types.ts";
-import { AiConfig } from "../models/aiConfig.ts";
 
 export function getPrompt(): string {
   const toolNames = ["grepFiles", ...FS_READ_ONLY].join(", ");

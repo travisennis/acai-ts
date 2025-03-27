@@ -1,10 +1,10 @@
 import { generateText, tool } from "ai";
 import { z } from "zod";
+import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
-import type { TokenTracker } from "../tokenTracker.ts";
+import type { TokenTracker } from "../token-tracker.ts";
 import { FS_READ_ONLY, GIT_READ_ONLY, initTools } from "./index.ts";
 import type { SendData } from "./types.ts";
-import { AiConfig } from "../models/aiConfig.ts";
 
 const ARCHITECT_SYSTEM_PROMPT = `You are an expert software architect. Your role is to analyze technical requirements and produce clear, actionable implementation plans.
 These plans will then be carried out by a junior software engineer so you need to be specific and detailed. However do not actually write the code, just explain the plan.

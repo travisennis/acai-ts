@@ -11,7 +11,7 @@ import {
   generateText,
 } from "ai";
 import type { ModelManager } from "./models/manager.ts";
-import type { TokenTracker } from "./tokenTracker.ts";
+import type { TokenTracker } from "./token-tracker.ts";
 
 export function createUserMessage(content: string): CoreUserMessage {
   if (content?.trim().length === 0) {

@@ -16,12 +16,12 @@ import { config as configManager } from "./config.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import { type MessageHistory, createUserMessage } from "./messages.ts";
-import { AiConfig } from "./models/aiConfig.ts";
+import { AiConfig } from "./models/ai-config.ts";
 import type { ModelManager } from "./models/manager.js";
 import { systemPrompt } from "./prompts.ts";
 import type { PromptManager } from "./prompts/manager.ts";
 import type { Terminal } from "./terminal/index.ts";
-import type { TokenTracker } from "./tokenTracker.ts";
+import type { TokenTracker } from "./token-tracker.ts";
 import {
   initAnthropicTools,
   initCodingTools,
