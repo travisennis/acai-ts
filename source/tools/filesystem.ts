@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -217,6 +218,20 @@ interface FileEdit {
 
 const INDENT_REGEX = /^\s*/;
 
+async function backupFile(filePath: string): Promise<void> {
+  /**
+   * Create a backup of a file before editing.
+   */
+  const backupPath = `${filePath}.backup`;
+  try {
+    const content = await fs.readFile(filePath, "utf8");
+    await fs.writeFile(backupPath, content);
+  } catch (error) {
+    // If we can't create a backup, just log the error
+    console.error(`Failed to create backup of ${filePath}: ${error}`);
+  }
+}
+
 async function applyFileEdits(
   filePath: string,
   edits: FileEdit[],
@@ -296,6 +311,8 @@ async function applyFileEdits(
   const formattedDiff = `${"`".repeat(numBackticks)}diff\n${diff}${"`".repeat(numBackticks)}\n\n`;
 
   if (!dryRun) {
+    // Create backup before writing changes
+    await backupFile(filePath);
     await fs.writeFile(filePath, modifiedContent, "utf-8");
   }
 
@@ -593,7 +610,8 @@ export const createFileSystemTools = async ({
     editFile: tool({
       description:
         "Make line-based edits to a text file. Each edit replaces exact line sequences " +
-        "with new content. Returns a git-style diff showing the changes made. " +
+        "with new content. Creates a backup file (.backup) before saving changes. " +
+        "Returns a git-style diff showing the changes made. " +
         "Only works within allowed directories.",
       parameters: z.object({
         path: z.string().describe("The path of the file to edit."),
@@ -631,7 +649,7 @@ export const createFileSystemTools = async ({
           } else {
             sendData?.({
               event: "tool-completion",
-              data: `Applied ${edits.length} edits.`,
+              data: `Applied ${edits.length} edits. Backup created at ${validPath}.backup`,
             });
           }
           return result;
@@ -645,60 +663,58 @@ export const createFileSystemTools = async ({
       },
     }),
 
-    // editFiles: tool({
-    //   description:
-    //     "Make line-based edits to multiple text files. Each edit replaces exact line sequences " +
-    //     "with new content. Returns a git-style diff showing the changes made. " +
-    //     "Only works within allowed directories.",
-    //   parameters: z.object({
-    //     fileEdits: z.array(
-    //       z.object({
-    //         path: z.string().describe("The path of the file to edit."),
-    //         edits: z.array(
-    //           z.object({
-    //             oldText: z
-    //               .string()
-    //               .describe("Text to search for - must match exactly"),
-    //             newText: z.string().describe("Text to replace with"),
-    //           }),
-    //         ),
-    //       }),
-    //     ),
-    //     dryRun: z
-    //       .boolean()
-    //       .default(false)
-    //       .describe(
-    //         "Preview changes using git-style diff format: true or false",
-    //       ),
-    //   }),
-    //   execute: async ({ fileEdits, dryRun }) => {
-    //     try {
-    //       sendData?.({
-    //         event: "tool-init",
-    //         data: `Editing files: ${fileEdits.map((edit) => edit.path)}`,
-    //       });
-    //       const results: string[] = [];
-    //       for (const edit of fileEdits) {
-    //         const validPath = await validatePath(
-    //           joinWorkingDir(edit.path, workingDir),
-    //           allowedDirectory,
-    //         );
-    //         results.push(await applyFileEdits(validPath, edit.edits, dryRun));
-    //       }
-    //       sendData?.({
-    //         event: "tool-completion",
-    //         data: `Edited ${fileEdits.length} files.`,
-    //       });
-    //       return results.join("\n\n");
-    //     } catch (error) {
-    //       sendData?.({
-    //         event: "tool-error",
-    //         data: `Failed to edit files: ${(error as Error).message}`,
-    //       });
-    //       return `Failed to edit files: ${(error as Error).message}`;
-    //     }
-    //   },
-    // }),
+    undoEdit: tool({
+      description:
+        "Reverts the last edit made to a file using the editFile tool by restoring from its backup file (.backup).",
+      parameters: z.object({
+        path: z
+          .string()
+          .describe("The path to the file whose last edit should be undone."),
+      }),
+      execute: async ({ path: userPath }) => {
+        sendData?.({
+          event: "tool-init",
+          data: `Undoing edit for file: ${userPath}`,
+        });
+        try {
+          const filePath = await validatePath(
+            joinWorkingDir(userPath, workingDir),
+            allowedDirectory,
+          );
+          const backupPath = `${filePath}.backup`;
+
+          // Check if backup file exists
+          if (!existsSync(backupPath)) {
+            return `No backup file found for ${filePath}`;
+          }
+
+          // Check if original file exists (it should, but good practice)
+          if (!existsSync(filePath)) {
+            return `Original file not found: ${filePath}`;
+          }
+
+          // Restore from backup
+          const backupContent = await fs.readFile(backupPath, "utf8");
+          await fs.writeFile(filePath, backupContent);
+
+          // Remove backup content (but keep file for tracking purposes)
+          await fs.writeFile(backupPath, "");
+
+          sendData?.({
+            event: "tool-completion",
+            data: `Successfully restored ${userPath} from backup.`,
+          });
+          return `Successfully restored ${filePath} from backup`;
+        } catch (error) {
+          const errorMessage = `Error restoring from backup: ${(error as Error).message}`;
+          sendData?.({
+            event: "tool-error",
+            data: errorMessage,
+          });
+          return errorMessage;
+        }
+      },
+    }),
 
     searchFiles: tool({
       description:
