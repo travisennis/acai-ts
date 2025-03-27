@@ -643,8 +643,12 @@ export const createFileSystemTools = async ({
           const result = await applyFileEdits(validPath, edits, dryRun);
           if (dryRun) {
             sendData?.({
+              event: "tool-update",
+              data: `Proposing ${edits.length} edits`,
+            });
+            sendData?.({
               event: "tool-completion",
-              data: `Proposing ${edits.length} edits.`,
+              data: result,
             });
           } else {
             sendData?.({
