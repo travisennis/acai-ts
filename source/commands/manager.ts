@@ -88,7 +88,7 @@ export class CommandManager {
   }
 
   getCommands() {
-    return Array.from(this.commands.keys());
+    return Array.from(this.commands.keys()).sort();
   }
 
   async handle({ userInput }: { userInput: string }) {
