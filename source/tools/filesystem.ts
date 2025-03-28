@@ -6,10 +6,9 @@ import { tool } from "ai";
 import { createTwoFilesPatch } from "diff";
 import ignore, { type Ignore } from "ignore";
 import { minimatch } from "minimatch";
-import { encoding_for_model } from "tiktoken";
 import { z } from "zod";
-import type { SendData } from "./types.ts";
 import { countTokens } from "../token-utils.ts";
+import type { SendData } from "./types.ts";
 
 // Normalize all paths consistently
 function normalizePath(p: string): string {
