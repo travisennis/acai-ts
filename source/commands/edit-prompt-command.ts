@@ -18,7 +18,7 @@ export const editPromptCommand = ({
           postfix: "md",
           default: prompt.unwrapOr(""),
         });
-        promptManager.add(updatedPrompt);
+        promptManager.set(updatedPrompt);
       } catch (error) {
         terminal.error(`Error updating prompt: ${(error as Error).message}`);
       }

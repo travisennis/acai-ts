@@ -62,7 +62,7 @@ export const promptCommand = ({ terminal, promptManager }: CommandOptions) => {
         }
 
         terminal.info(`Loaded prompt: ${promptName} (${type})`);
-        promptManager.add(promptContent);
+        promptManager.set(promptContent);
       } catch (error) {
         terminal.error(`Error loading prompt: ${(error as Error).message}`);
       }

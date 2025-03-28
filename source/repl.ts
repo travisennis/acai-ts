@@ -15,7 +15,7 @@ import type { CommandManager } from "./commands/manager.ts";
 import { config as configManager } from "./config.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
-import { type MessageHistory, createUserMessage } from "./messages.ts";
+import type { MessageHistory } from "./messages.ts";
 import { AiConfig } from "./models/ai-config.ts";
 import type { ModelManager } from "./models/manager.js";
 import { systemPrompt } from "./prompts.ts";
@@ -206,8 +206,7 @@ export class Repl {
 
         // if there is no pending prompt then use the user's input. otherwise, the prompt was loaded from a command
         if (!promptManager.isPending()) {
-          // const enrichedPrompt = await contextManager.enrichPrompt(userInput);
-          promptManager.add(userInput);
+          promptManager.set(userInput);
         }
       }
 
@@ -219,15 +218,14 @@ export class Repl {
         terminal.info("Context will be added to prompt.");
       }
 
-      const userPrompt = promptManager.get();
+      const userMsg = promptManager.getUserMessage();
 
       // Track if we're using file content in this prompt to set cache control appropriately
-      const userMsg = createUserMessage(userPrompt);
-      if (hasAddedContext && modelConfig.provider === "anthropic") {
-        userMsg.providerOptions = {
-          anthropic: { cacheControl: { type: "ephemeral" } },
-        };
-      }
+      // if (hasAddedContext && modelConfig.provider === "anthropic") {
+      //   userMsg.providerOptions = {
+      //     anthropic: { cacheControl: { type: "ephemeral" } },
+      //   };
+      // }
       messageHistory.appendUserMessage(userMsg);
 
       // Read rules from project directory
@@ -236,7 +234,7 @@ export class Repl {
 
       const aiConfig = new AiConfig({
         modelMetadata: modelConfig,
-        prompt: userPrompt,
+        prompt: promptManager.get(),
       });
 
       const maxTokens = aiConfig.getMaxTokens();

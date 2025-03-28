@@ -1,4 +1,5 @@
 import { isString } from "@travisennis/stdlib/typeguards";
+import { createUserMessage } from "../messages.ts";
 
 export class PromptManager {
   private prompt: string | undefined;
@@ -9,26 +10,34 @@ export class PromptManager {
     this.context = [];
   }
 
-  add(prompt: string) {
+  set(prompt: string) {
     this.prompt = prompt;
   }
 
   get() {
     const prompt = this.prompt;
     if (isString(prompt) && prompt.trim().length > 0) {
-      if (this.hasContext()) {
-        const fullPrompt = `${this.getContext()}\n\n${prompt}`;
-        this.clearAll(); // Clear context after using
-        return fullPrompt;
-      }
-      this.prompt = undefined;
       return prompt;
     }
     throw new Error("No prompt available.");
   }
 
+  getUserMessage() {
+    const prompt = this.prompt;
+    if (isString(prompt) && prompt.trim().length > 0) {
+      if (this.hasContext()) {
+        const msg = createUserMessage(this.getContext(), prompt);
+        this.clearAll(); // Clear context after using
+        return msg;
+      }
+      this.prompt = undefined;
+      return createUserMessage(prompt);
+    }
+    throw new Error("No prompt available.");
+  }
+
   isPending() {
-    return isString(this.prompt);
+    return isString(this.prompt) && this.prompt.trim().length > 0;
   }
 
   // Renamed from addPendingContent to addContext

@@ -112,7 +112,7 @@ async function main() {
 
   const promptManager = new PromptManager();
   if (isDefined(initialPrompt)) {
-    promptManager.add(initialPrompt);
+    promptManager.set(initialPrompt);
   }
 
   const terminal = initTerminal();

@@ -6,7 +6,7 @@ export const reviewCommand = ({ promptManager }: CommandOptions) => {
     description: "Instructs the agent to perform a code review on a PR.",
     result: "use" as const,
     execute: (args: string[]) => {
-      promptManager.add(
+      promptManager.set(
         `You are an expert code reviewer. Follow these steps:
 
       1. If no PR number is provided in the args, use bashTool("gh pr list") to show open PRs

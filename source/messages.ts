@@ -12,19 +12,25 @@ import {
 } from "ai";
 import type { ModelManager } from "./models/manager.ts";
 import type { TokenTracker } from "./token-tracker.ts";
+import { countTokens } from "./token-utils.ts";
 
-export function createUserMessage(content: string): CoreUserMessage {
-  if (content?.trim().length === 0) {
-    throw new Error("invalid user message");
-  }
+export function createUserMessage(...content: string[]): CoreUserMessage {
   return {
     role: "user",
-    content: [
-      {
-        type: "text",
-        text: content,
-      },
-    ],
+    content: content
+      .filter((c) => c?.trim().length > 0)
+      .map((c) => {
+        return {
+          type: "text",
+          text: c,
+          providerOptions:
+            countTokens(c) > 4096
+              ? {
+                  anthropic: { cacheControl: { type: "ephemeral" } },
+                }
+              : undefined,
+        };
+      }),
   };
 }
 
@@ -115,7 +121,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
       msgObj.content &&
       msgObj.content.length > 0
     ) {
-      const textPart = msgObj.content.at(0) as TextPart;
+      const textPart = msgObj.content.at(-1) as TextPart;
       if (textPart?.text && textPart.text.trim() !== "") {
         this.generateTitle(textPart.text);
       }
