@@ -6,10 +6,7 @@ import { createAzure } from "@ai-sdk/azure";
 import { deepseek as originalDeepseek } from "@ai-sdk/deepseek";
 import { google as originalGoogle } from "@ai-sdk/google";
 import { createOpenAI, openai as originalOpenAi } from "@ai-sdk/openai";
-import {
-  experimental_createProviderRegistry as createProviderRegistry,
-  customProvider,
-} from "ai";
+import { createProviderRegistry, customProvider } from "ai";
 import { createOllama } from "ollama-ai-provider";
 import { z } from "zod";
 
