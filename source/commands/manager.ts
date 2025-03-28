@@ -19,6 +19,7 @@ import { resetCommand } from "./reset-command.ts";
 import { reviewCommand } from "./review-command.ts";
 import { saveCommand } from "./save-command.ts";
 import { selectionsCommand } from "./selections-command.ts";
+import { memoryCommand } from "./memory-command.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export class CommandManager {
@@ -72,6 +73,7 @@ export class CommandManager {
       reviewCommand(options),
       saveCommand(options),
       selectionsCommand(options),
+      memoryCommand(options),
     ];
 
     // Add help command with access to all commands

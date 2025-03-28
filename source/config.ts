@@ -57,6 +57,18 @@ export class ConfigManager {
     }
   }
 
+  async writeRulesFile(rules: string): Promise<void> {
+    const rulesPath = path.join(this.project.getPath(), "rules.md");
+    try {
+      return await fs.writeFile(rulesPath, rules, "utf8");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return;
+      }
+      throw error;
+    }
+  }
+
   // App config helpers
   async readAppConfig(
     configName: string,
