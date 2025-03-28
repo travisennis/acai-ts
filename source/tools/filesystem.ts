@@ -9,6 +9,7 @@ import { minimatch } from "minimatch";
 import { encoding_for_model } from "tiktoken";
 import { z } from "zod";
 import type { SendData } from "./types.ts";
+import { countTokens } from "../token-utils.ts";
 
 // Normalize all paths consistently
 function normalizePath(p: string): string {
@@ -516,9 +517,7 @@ export const createFileSystemTools = async ({
           try {
             // Only calculate tokens for non-image files and if encoding is text-based
             if (!isImage && encoding.startsWith("utf")) {
-              const tiktokenEncoding = encoding_for_model("gpt-4"); // Or appropriate model
-              tokenCount = tiktokenEncoding.encode(file).length;
-              tiktokenEncoding.free(); // Free up memory
+              tokenCount = countTokens(file);
             }
           } catch (tokenError) {
             console.error("Error calculating token count:", tokenError);
@@ -570,9 +569,7 @@ export const createFileSystemTools = async ({
               const content = await fs.readFile(validPath, "utf-8");
               let tokenCount = 0;
               try {
-                const encoding = encoding_for_model("gpt-4"); // Or another appropriate model
-                tokenCount = encoding.encode(content).length;
-                encoding.free(); // Free up memory
+                tokenCount = countTokens(content);
               } catch (tokenError) {
                 console.error("Error calculating token count:", tokenError);
                 // Handle token calculation error if needed
@@ -738,7 +735,7 @@ export const createFileSystemTools = async ({
         try {
           sendData?.({
             event: "tool-init",
-            data: `Search for ${pattern} in ${path}`,
+            data: `Search for '${pattern}' in ${path}`,
           });
           const validPath = await validatePath(
             joinWorkingDir(path, workingDir),
