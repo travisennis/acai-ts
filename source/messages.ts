@@ -13,6 +13,7 @@ import {
 import type { ModelManager } from "./models/manager.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import { countTokens } from "./token-utils.ts";
+import { analyzeConversation } from "./conversation-analyzer.ts";
 
 export function createUserMessage(...content: string[]): CoreUserMessage {
   return {
@@ -151,6 +152,12 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     const timestamp = new Date().toISOString().replace(/:/g, "-");
     const fileName = `message-history-${timestamp}.json`;
     const filePath = join(msgHistoryDir, fileName);
+
+    analyzeConversation({
+      modelManager: this.modelManager,
+      messages: this.get(),
+      tokenTracker: this.tokenTracker,
+    });
 
     const output = {
       title: this.title,
