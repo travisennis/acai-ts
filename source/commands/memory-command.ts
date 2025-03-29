@@ -1,49 +1,106 @@
+import { editor } from "@inquirer/prompts";
 import { config } from "../config.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
+
+async function readRules(
+  terminal: CommandOptions["terminal"],
+): Promise<string> {
+  try {
+    return await config.readRulesFile();
+  } catch (error: any) {
+    if (error.code === "ENOENT") {
+      terminal.writeln("Info: rules file not found.");
+      return ""; // Return empty string if file doesn't exist
+    }
+    terminal.error(
+      `Error reading rules file: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    throw error; // Rethrow for handling in execute
+  }
+}
+
+async function writeRules(
+  content: string,
+  terminal: CommandOptions["terminal"],
+): Promise<void> {
+  try {
+    await config.writeRulesFile(content);
+    terminal.writeln("Rules updated successfully.");
+  } catch (error) {
+    terminal.error(
+      `Error writing rules file: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    throw error; // Rethrow for handling in execute
+  }
+}
 
 export const memoryCommand = ({ terminal }: CommandOptions) => {
   return {
     command: "/memory",
-    description: "Adds a new memory to the rules.md file.",
+    description:
+      "View, add, or edit memories (rules). Usage: /memory [view|add <text>|edit]",
     result: "continue" as const,
     execute: async (args: string[]) => {
-      const commandArgs = args.join(" ");
-      const prefix = "add ";
-      if (!commandArgs.startsWith(prefix)) {
-        terminal.writeln("Usage: /memory add <new memory>");
-        return;
-      }
-
-      const newMemory = commandArgs.substring(prefix.length).trim();
-      if (!newMemory) {
-        terminal.error("Error: Memory text cannot be empty.");
-        return;
-      }
+      const subCommand = args[0] ?? "view"; // Default to 'view'
+      const commandArgs = args.slice(1).join(" ");
 
       try {
-        let currentContent = "";
-        try {
-          currentContent = await config.readRulesFile();
-        } catch (error: any) {
-          if (error.code === "ENOENT") {
-            // File doesn't exist, treat as empty
-            terminal.writeln("Info: rules file not found, creating new file.");
-          } else {
-            // Rethrow other errors
-            throw error;
+        switch (subCommand) {
+          case "view": {
+            const currentContent = await readRules(terminal);
+            if (currentContent) {
+              terminal.writeln("--- Current Rules ---");
+              terminal.writeln(currentContent);
+              terminal.writeln("---------------------");
+            } else {
+              terminal.writeln(
+                "No rules defined yet. Use '/memory add' or '/memory edit'.",
+              );
+            }
+            break;
           }
+
+          case "add": {
+            const newMemory = commandArgs.trim();
+            if (!newMemory) {
+              terminal.error("Error: Memory text cannot be empty for 'add'.");
+              terminal.writeln("Usage: /memory add <new memory text>");
+              return;
+            }
+            const currentContent = await readRules(terminal);
+            const updatedContent = currentContent
+              ? `${currentContent.trim()}\n- ${newMemory}` // Ensure space after dash
+              : `- ${newMemory}`; // Start with dash if new file
+            await writeRules(updatedContent, terminal);
+            break;
+          }
+
+          case "edit": {
+            const currentContent = await readRules(terminal);
+            const updatedContent = await editor({
+              message: "Edit rules:",
+              postfix: "md",
+              default: currentContent,
+            });
+            // Check if the user cancelled the edit (editor returns the original content)
+            // Or if the content is actually different
+            if (updatedContent !== currentContent) {
+              await writeRules(updatedContent, terminal);
+            } else {
+              terminal.writeln("Edit cancelled or no changes made.");
+            }
+            break;
+          }
+
+          default:
+            terminal.writeln(
+              "Invalid subcommand. Usage: /memory [view|add <text>|edit]",
+            );
+            break;
         }
-
-        const updatedContent = currentContent
-          ? `${currentContent.trim()}\n -${newMemory}`
-          : newMemory;
-
-        await config.writeRulesFile(updatedContent);
-        terminal.writeln("Memory added to rules");
-      } catch (error) {
-        terminal.error(
-          `Error updating rules: ${error instanceof Error ? error.message : String(error)}`,
-        );
+      } catch (_error) {
+        // Errors from read/write helpers are already logged
+        terminal.error("Failed to execute memory command.");
       }
     },
   } satisfies ReplCommand;
