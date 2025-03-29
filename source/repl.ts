@@ -12,7 +12,6 @@ import {
 } from "ai";
 import chalk from "chalk";
 import type { CommandManager } from "./commands/manager.ts";
-import { config as configManager } from "./config.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import type { MessageHistory } from "./messages.ts";
@@ -218,23 +217,16 @@ export class Repl {
         terminal.info("Context will be added to prompt.");
       }
 
+      const userPrompt = promptManager.get();
       const userMsg = promptManager.getUserMessage();
 
-      // Track if we're using file content in this prompt to set cache control appropriately
-      // if (hasAddedContext && modelConfig.provider === "anthropic") {
-      //   userMsg.providerOptions = {
-      //     anthropic: { cacheControl: { type: "ephemeral" } },
-      //   };
-      // }
       messageHistory.appendUserMessage(userMsg);
 
-      // Read rules from project directory
-      const rules = await configManager.readRulesFile();
-      const finalSystemPrompt = await systemPrompt(rules);
+      const finalSystemPrompt = await systemPrompt();
 
       const aiConfig = new AiConfig({
         modelMetadata: modelConfig,
-        prompt: promptManager.get(),
+        prompt: userPrompt,
       });
 
       const maxTokens = aiConfig.getMaxTokens();
@@ -285,19 +277,6 @@ export class Repl {
           experimental_repairToolCall: modelConfig.supportsToolCalling
             ? toolCallRepair(modelManager)
             : undefined,
-          // onStepFinish: (event) => {
-          //   if (
-          //     (event.stepType === "initial" ||
-          //       event.stepType === "tool-result") &&
-          //     event.toolCalls.length > 0 &&
-          //     event.text.length > 0
-          //   ) {
-          //     terminal.box(
-          //       "Tool Step",
-          //       `Assistant: ${event.text}\nTools: ${event.toolCalls.map((t) => t.toolName).join(", ")}\nResult: ${event.toolResults[0]?.result}`,
-          //     );
-          //   }
-          // },
           abortSignal: signal,
           onFinish: (result) => {
             if (result.response.messages.length > 0) {

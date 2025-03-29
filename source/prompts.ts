@@ -1,8 +1,10 @@
 import { platform } from "node:os";
 import { dedent } from "./dedent.ts";
 import { inGitDirectory } from "./tools/index.ts";
+import { config } from "./config.ts";
 
-export async function systemPrompt(rules?: string) {
+export async function systemPrompt() {
+  const rules = await config.readRulesFile();
   const prompt = dedent`
 You are acai, an interactive CLI tool that helps users with software engineering tasks. Use the instructions below and the tools available to you to assist the user.
 

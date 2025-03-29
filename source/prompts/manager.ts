@@ -26,7 +26,8 @@ export class PromptManager {
     const prompt = this.prompt;
     if (isString(prompt) && prompt.trim().length > 0) {
       if (this.hasContext()) {
-        const msg = createUserMessage(this.getContext(), prompt);
+        const context = this.getContext();
+        const msg = createUserMessage(context, prompt);
         this.clearAll(); // Clear context after using
         return msg;
       }
