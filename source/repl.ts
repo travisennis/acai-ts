@@ -175,12 +175,12 @@ export class Repl {
 
     terminal.displayWelcome();
 
-    const langModel = modelManager.getModel("repl");
-    const modelConfig = modelManager.getModelMetadata("repl");
-
     const promptHistory: string[] = [];
 
     while (true) {
+      const langModel = modelManager.getModel("repl");
+      const modelConfig = modelManager.getModelMetadata("repl");
+
       terminal.box(
         "State:",
         `Model:          ${langModel.modelId}\nContext Window: ${tokenTracker.getTotalUsage().totalTokens} tokens`,

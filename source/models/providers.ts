@@ -10,14 +10,17 @@ import { createProviderRegistry, customProvider } from "ai";
 import { createOllama } from "ollama-ai-provider";
 import { z } from "zod";
 
-export type ModelProvider =
-  | "anthropic"
-  | "openai"
-  | "google"
-  | "deepseek"
-  | "azure"
-  | "openrouter"
-  | "ollama";
+export const providers = [
+  "anthropic",
+  "openai",
+  "google",
+  "deepseek",
+  "azure",
+  "openrouter",
+  "ollama",
+] as const;
+
+export type ModelProvider = (typeof providers)[number];
 
 const azure = customProvider({
   languageModels: {
@@ -576,6 +579,20 @@ export function getModelsByProvider(): Record<ModelProvider, ModelMetadata[]> {
 // Get detailed information about a specific model
 export function getModelInfo(modelName: ModelName): ModelMetadata | undefined {
   return modelRegistry[modelName];
+}
+
+// Get models by category
+export function getModelsByCategory(
+  category: "fast" | "balanced" | "powerful",
+): ModelMetadata[] {
+  return Object.values(modelRegistry).filter(
+    (model) => model.category === category,
+  );
+}
+
+// Format model information for display
+export function formatModelInfo(model: ModelMetadata): string {
+  return `${model.id} [${model.category}] - Tools: ${model.supportsToolCalling ? "✓" : "✗"}, Reasoning: ${model.supportsReasoning ? "✓" : "✗"}`;
 }
 
 // Check if a model name is valid
