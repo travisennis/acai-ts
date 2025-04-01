@@ -3,6 +3,7 @@ const PROMPT_INSTRUCTION = "//%";
 interface EmbeddedInstructions {
   prompt: string | null;
   context: string;
+  mode: "edit" | "ask";
 }
 
 /**
@@ -16,22 +17,30 @@ interface EmbeddedInstructions {
  * @returns An `EmbeddedInstructions` object with parsed values and remaining context.
  *
  */
-export function parseContext(input: string): EmbeddedInstructions {
-  let prompt: string | null = null;
-  const context: string[] = [];
+export function parseInstructions(input: string): EmbeddedInstructions {
+  // Early return for empty input
+  if (!input || input.trim() === "") {
+    return { prompt: null, context: "", mode: "edit" };
+  }
 
   const lines = input.split("\n");
+  let prompt: string | null = null;
+  const contextLines: string[] = [];
+
   for (const line of lines) {
-    const tl = line.trim();
-    if (tl.startsWith(PROMPT_INSTRUCTION)) {
-      prompt = tl.replace(PROMPT_INSTRUCTION, "").trim();
+    if (line.trim().startsWith(PROMPT_INSTRUCTION)) {
+      // Extract prompt only once - take the first occurrence
+      if (prompt === null) {
+        prompt = line.trim().substring(PROMPT_INSTRUCTION.length).trim();
+      }
     } else {
-      context.push(line);
+      contextLines.push(line);
     }
   }
 
-  return {
-    prompt,
-    context: context.join("\n"),
-  };
+  const context = contextLines.join("\n");
+  // More explicit mode determination with fallback
+  const mode = prompt ? (prompt.includes("?") ? "ask" : "edit") : "edit";
+
+  return { prompt, context, mode };
 }

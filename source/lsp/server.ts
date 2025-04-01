@@ -16,7 +16,7 @@ import {
 } from "vscode-languageserver/node.js";
 import type { ModelManager } from "../models/manager.ts";
 import { type Selection, saveSelection } from "../savedSelections/index.ts";
-import { parseContext } from "./embedding-instructions.ts";
+import { parseInstructions } from "./embedding-instructions.ts";
 
 interface CodeActionData {
   id: string;
@@ -110,6 +110,7 @@ export function initConnection({
     logger.info("Resolving code action...");
     logger.info(params.data.id);
     logger.debug(params);
+    logger.debug(params.data.documentUri);
     const data = params.data as CodeActionData | undefined;
     if (data?.documentUri && data?.range) {
       const documentUri = data.documentUri as string;
@@ -128,23 +129,22 @@ export function initConnection({
 
       switch (actionId) {
         case "ai.instruct": {
-          const context = parseContext(documentText);
+          const instructions = parseInstructions(documentText);
 
-          logger.debug(context);
+          logger.debug(instructions);
 
           const userPrompt = `
 \`\`\`
-${context.context}
+${instructions.context}
 \`\`\`
 
-${context.prompt ?? ""}
+${instructions.prompt ?? ""}
     `.trim();
 
           try {
             const { text } = await generateText({
               model: modelManager.getModel("lsp-code-action"),
-              system:
-                "You are a highly skilled coding assistant and senior software engineer. Your task is to provide concise, accurate, and efficient solutions to the user's coding requests. Focus on best practices, code optimization, and maintainability in your solutions. Please respond with only the revised code. If your response is a new addition to the code, then return your additions along with the original code. Only return the code. Do not wrap the code in Markdown code blocks. Ensure your answer is in plain text without any Markdown formatting. ",
+              system: `You are a highly skilled coding assistant and senior software engineer. Your task is to provide concise, accurate, and efficient solutions to the user's coding requests. Focus on best practices, code optimization, and maintainability in your solutions. ${instructions.mode === "edit" ? "Please respond with only the revised code. If your response is a new addition to the code, then return your additions along with the original code. Only return the code. Do not wrap the code in Markdown code blocks. Ensure your answer is in plain text without any Markdown formatting." : "Add a code comment that answers the user's question. DO NOT make any edits to the code itself. This comment should be prepended to the code provided. Return the comment that contains your answer and the code. Do not wrap the code in Markdown code blocks. Ensure your response is in plain text without any Markdown formatting."}`,
               temperature: 0.3,
               prompt: userPrompt,
             });
