@@ -49,11 +49,30 @@ export function formatFile(
   const codeBlockName = codeBlockExtensions[fileExtension] || fileExtension;
   switch (format) {
     case "xml":
-      return `<file>\n<name>${file}</name>\n<content>${content}</content>\n</file>`;
+      return `<file>\n<name>${file}</name>\n<content>\n${content}\n</content>\n</file>`;
     case "markdown":
       return `## File: ${file}\n${MD_TRIPLE_QUOTE} ${codeBlockName}\n${content}\n${MD_TRIPLE_QUOTE}`;
     case "bracket":
       return `[file name]: ${file}\n[file content begin]\n${content}\n[file content end]`;
+    default:
+      throw new Error(`Unsupported format: ${format}`);
+  }
+}
+
+export function formatCodeSnippet(
+  file: string,
+  content: string,
+  format: FormatType,
+) {
+  const fileExtension = path.extname(file).slice(1);
+  const codeBlockName = codeBlockExtensions[fileExtension] || fileExtension;
+  switch (format) {
+    case "xml":
+      return `<code>\n${content}\n</code>`;
+    case "markdown":
+      return `${MD_TRIPLE_QUOTE} ${codeBlockName}\n${content}\n${MD_TRIPLE_QUOTE}`;
+    case "bracket":
+      return `[code begin]\n${content}\n[code end]`;
     default:
       throw new Error(`Unsupported format: ${format}`);
   }
@@ -66,9 +85,9 @@ export function formatBlock(
 ): string {
   switch (format) {
     case "xml":
-      return `<${blockName}>${content}</${blockName}>\n</file>`;
+      return `<${blockName}>\n${content}\n</${blockName}>\n</file>`;
     case "markdown":
-      return `## ${blockName}\n${MD_TRIPLE_QUOTE}n${content}\n${MD_TRIPLE_QUOTE}`;
+      return `## ${blockName}\n${MD_TRIPLE_QUOTE}\n${content}\n${MD_TRIPLE_QUOTE}`;
     case "bracket":
       return `[${blockName} begin]\n${content}\n[${blockName} end]`;
     default:
