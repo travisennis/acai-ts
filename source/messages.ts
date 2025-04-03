@@ -10,10 +10,10 @@ import {
   type TextPart,
   generateText,
 } from "ai";
+import { analyzeConversation } from "./conversation-analyzer.ts";
 import type { ModelManager } from "./models/manager.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import { countTokens } from "./token-utils.ts";
-import { analyzeConversation } from "./conversation-analyzer.ts";
 
 export function createUserMessage(...content: string[]): CoreUserMessage {
   return {
@@ -176,18 +176,20 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     const app = "title-conversation";
 
     const systemPrompt =
-      "Analyze this message to generate a conversation topic. Extract a 4-7 word title that captures the topic. Return only the title with no other text.";
+      "You are an assistant who task is to analyze messages to generate a conversation topic that can be used as a conversation title. For each message, generate a 4-7 word title that captures the topic. Return only the title with no other text.\n\nExamples:\nMessage:\nHow do I implement authentication in my Express app?\nTitle: Express Authentication Implementation\n\nMessage:\nCan you help me debug this React component that isn't rendering correctly?\nTitle:React Component Rendering Debug";
     try {
       const { text, usage } = await generateText({
         model: this.modelManager.getModel(app),
         system: systemPrompt,
-        prompt: message,
+        prompt: `Request:\n${message}\nTitle:`,
       });
 
       this.tokenTracker.trackUsage(app, usage);
 
-      this.title = text;
-      this.emit("update-title", this.title);
+      if (text && text.split(" ").length < 10) {
+        this.title = text;
+        this.emit("update-title", this.title);
+      }
     } catch (error) {
       console.error(error);
     }
