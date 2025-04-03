@@ -1,6 +1,6 @@
 const PROMPT_INSTRUCTION = "//%";
 
-interface EmbeddedInstructions {
+export interface EmbeddedInstructions {
   prompt: string | null;
   context: string;
   mode: "edit" | "ask";
