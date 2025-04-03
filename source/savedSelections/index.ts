@@ -2,6 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Range } from "vscode-languageserver";
 import { config } from "../config.ts";
+import { formatFile } from "../formatting.ts";
 
 export interface Selection {
   documentUri: string;
@@ -54,7 +55,11 @@ export function formatSelection(selection: Selection) {
   const absolutePath = selection.documentUri.startsWith("file://")
     ? decodeURIComponent(selection.documentUri.replace(/^file:\/\//, ""))
     : selection.documentUri;
-  return `File: ${absolutePath}\nSelection (lines ${selection.range.start.line}-${selection.range.end.line}):\n${selection.documentText}`;
+  return formatFile(
+    `${absolutePath}:${selection.range.start.line + 1}-${selection.range.end.line + 1}`,
+    selection.documentText,
+    "markdown",
+  );
 }
 
 export async function saveSelection(selection: Selection): Promise<void>;
