@@ -203,6 +203,10 @@ export class Repl {
           continue;
         }
 
+        if (!userInput.trim()) {
+          continue;
+        }
+
         // if there is no pending prompt then use the user's input. otherwise, the prompt was loaded from a command
         if (!promptManager.isPending()) {
           promptManager.set(userInput);
