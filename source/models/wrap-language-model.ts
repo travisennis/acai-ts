@@ -12,23 +12,8 @@ export function wrapLanguageModel(
     throw new Error("required at least one middleware");
   }
 
-  const firstMiddleware = middleware.at(0);
-  if (!firstMiddleware) {
-    throw new Error("invalid middleware");
-  }
-
-  const init = orginalWrapLanguageModel({
+  return orginalWrapLanguageModel({
     model,
-    middleware: firstMiddleware,
+    middleware,
   });
-
-  return middleware
-    .slice(1)
-    .reverse()
-    .reduce((wrappedModel, currentMiddleware) => {
-      return orginalWrapLanguageModel({
-        model: wrappedModel,
-        middleware: currentMiddleware,
-      });
-    }, init);
 }
