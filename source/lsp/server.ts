@@ -1,5 +1,5 @@
 import { isNullOrUndefined } from "@travisennis/stdlib/typeguards";
-import { generateText } from "ai";
+import { generateObject, generateText } from "ai";
 import type { Logger } from "pino";
 import { type Range, TextDocument } from "vscode-languageserver-textdocument";
 import {
@@ -15,6 +15,7 @@ import {
   TextEdit,
   createConnection,
 } from "vscode-languageserver/node.js";
+import { z } from "zod";
 import { dedent } from "../dedent.ts";
 import { formatCodeSnippet, formatFile } from "../formatting.ts";
 import type { ModelManager } from "../models/manager.ts";
@@ -50,6 +51,18 @@ function getSystemPrompt(mode: "ask" | "edit") {
       `;
   }
   return dedent`${promptPrefix} Please respond with only the revised code. If your response is a new addition to the code, then return your additions along with the original code. Only return the code. Do not wrap the code in Markdown code blocks. Ensure your answer is in plain text without any Markdown formatting.`;
+}
+
+function getEditSystemPrompt() {
+  const promptPrefix =
+    "You are acai, a coding assistant that helps with software engineering. You are called when the user activates code actions in a Language Server Protocol service. Your task is to analyze the given code and determine the precise modifications needed to implement the requested update. You should do this in the curent file only. Focus on best practices, code optimization, and maintainability in your solutions.";
+  return dedent`${promptPrefix}
+Response Format:
+Return a JSON array of edits where each edit is an object with the following fields:
+- "pattern": A regex pattern matching the code section to change.
+- "replacement": The new code that should replace the matched pattern.
+
+Ensure the edits are minimal, precise, and maintain code correctness. Only return the JSON.`;
 }
 
 // Store recent edits per file
@@ -122,6 +135,7 @@ export function initConnection({
     const instructAction: CodeAction = {
       title: "Acai - Instruct",
       kind: CodeActionKind.QuickFix,
+      diagnostics: params.context.diagnostics,
       data: {
         id: "ai.instruct",
         documentUri: params.textDocument.uri,
@@ -132,10 +146,26 @@ export function initConnection({
     };
     codeActions.push(instructAction);
 
+    // Create the Edit code action
+    const editAction: CodeAction = {
+      title: "Acai - Edit",
+      kind: CodeActionKind.QuickFix,
+      diagnostics: params.context.diagnostics,
+      data: {
+        id: "ai.edit",
+        documentUri: params.textDocument.uri,
+        range,
+        diagnostics: params.context.diagnostics,
+      },
+      isPreferred: false,
+    };
+    codeActions.push(editAction);
+
     // Create the Save code action
     const saveAction: CodeAction = {
       title: "Acai - Save",
       kind: CodeActionKind.QuickFix,
+      diagnostics: params.context.diagnostics,
       data: {
         id: "ai.save",
         documentUri: params.textDocument.uri,
@@ -152,8 +182,6 @@ export function initConnection({
   connection.onCodeActionResolve(async (params) => {
     logger.info("Resolving code action...");
     logger.info(params.data.id);
-    logger.debug(params);
-    logger.debug(params.data.documentUri);
     const data = params.data as CodeActionData | undefined;
     if (data?.documentUri && data?.range) {
       const documentUri = data.documentUri as string;
@@ -164,16 +192,15 @@ export function initConnection({
 
       const actionId = data.id;
 
-      // Get the text from the range where the code action was triggered
       const range = data.range;
-      const documentText = textDocument.getText(range);
-
-      logger.debug(documentText);
 
       switch (actionId) {
         case "ai.instruct": {
           const filePath = documentUri;
           const recentEdits = editHistory.get(filePath) || [];
+
+          // Get the text from the range where the code action was triggered
+          const documentText = textDocument.getText(range);
 
           // Get surrounding code
           // const fullText = textDocument.getText();
@@ -186,7 +213,7 @@ export function initConnection({
           // Get related files and their recent edits
           const relatedContext = getRelatedFilesContext(filePath, documents);
 
-          // Parse the selected texted
+          // Parse the selected text
           const instructions = parseInstructions(documentText);
 
           logger.debug(instructions);
@@ -227,7 +254,149 @@ export function initConnection({
           }
           break;
         }
+        case "ai.edit": {
+          // Request a progress token
+          const token = crypto.randomUUID();
+          connection.sendNotification("window/workDoneProgress/create", {
+            token,
+          });
+          const filePath = documentUri;
+          const recentEdits = editHistory.get(filePath) || [];
+
+          // Get surrounding code
+          // const fullText = textDocument.getText();
+          // const cursorPosition = editor.selection.active;
+          // const surroundingCode = extractSurroundingCode(
+          //   fullText,
+          //   cursorPosition,
+          // );
+
+          // Get related files and their recent edits
+          const relatedContext = getRelatedFilesContext(filePath, documents);
+
+          // Parse the selected text
+          const instructions = parseInstructions(
+            textDocument.getText({
+              start: { line: range.start.line, character: 0 },
+              end: { line: range.end.line, character: Number.MAX_SAFE_INTEGER },
+            }),
+          );
+
+          logger.debug(instructions);
+
+          const userPrompt = createUserPrompt(
+            documentUri,
+            textDocument,
+            recentEdits,
+            relatedContext,
+            instructions,
+          ).trim();
+
+          // Start the progress
+          connection.sendNotification("$/progress", {
+            token,
+            value: {
+              kind: "begin",
+              message: "Calling LLM...",
+              percentage: 25,
+              cancellable: false, // Set to true if you support cancellation
+            },
+          });
+
+          try {
+            const { object } = await generateObject({
+              model: modelManager.getModel("lsp-code-action"),
+              system: getEditSystemPrompt(),
+              temperature: 0.3,
+              schema: z.object({
+                edits: z
+                  .array(
+                    z.object({
+                      pattern: z
+                        .string()
+                        .describe(
+                          "The precise pattern to search for in the file.",
+                        ),
+                      replacement: z.string().describe("The replacement text."),
+                    }),
+                  )
+                  .describe(
+                    "The array of edits to make to the current code file.",
+                  ),
+              }),
+              prompt: userPrompt,
+            });
+
+            const edits = object.edits;
+
+            // Get the text from the range where the code action was triggered
+            const documentText = removeLspPrompt(textDocument.getText());
+
+            // The sendProgress method is deprecated, use sendNotification instead
+            connection.sendNotification("$/progress", {
+              token,
+              value: {
+                kind: "report",
+                message: "Applying edits...",
+                percentage: 50,
+                cancellable: false, // Set to true if you support cancellation
+              },
+            });
+
+            // Apply all regex pattern replacements to the document text
+            let updatedText = documentText;
+            for (const edit of edits) {
+              try {
+                const regex = new RegExp(edit.pattern, "g");
+                updatedText = updatedText.replace(regex, edit.replacement);
+              } catch (error) {
+                logger.error(
+                  `Error applying regex pattern: ${edit.pattern}`,
+                  error,
+                );
+              }
+            }
+
+            params.edit = {
+              changes: {
+                [data.documentUri]: [
+                  TextEdit.replace(
+                    {
+                      start: { line: 0, character: 0 },
+                      end: { line: textDocument.lineCount, character: 0 },
+                    },
+                    updatedText,
+                  ),
+                ],
+              },
+            };
+
+            connection.sendNotification("$/progress", {
+              token,
+              value: {
+                kind: "report",
+                message: "Finished",
+                percentage: 100,
+                cancellable: false, // Set to true if you support cancellation
+              },
+            });
+          } catch (error) {
+            logger.error("Error generating text:");
+            logger.error(error);
+            // Optionally, you can set an error message on the code action
+            params.diagnostics = [
+              {
+                range: range,
+                message: "Failed to generate text. Please try again.",
+              },
+            ];
+          }
+          break;
+        }
         case "ai.save": {
+          // Get the text from the range where the code action was triggered
+          const documentText = textDocument.getText(range);
+
           const selection: Selection = {
             documentUri,
             range,
@@ -264,6 +433,7 @@ export function initConnection({
     }
     return params;
   });
+
   // Register diagnostic handler
   connection.onDidChangeTextDocument((params) => {
     const textDocument = documents.get(params.textDocument.uri);
@@ -321,15 +491,20 @@ export function initConnection({
   return connection;
 }
 
+function removeLspPrompt(text: string) {
+  const filteredText = text
+    .split("\n")
+    .filter((line) => !line.trim().startsWith("//%"))
+    .join("\n");
+  return filteredText;
+}
+
 function getCurrentFileContext(
   documentUri: string,
   textDocument: TextDocument,
 ) {
   const text = textDocument.getText();
-  const filteredText = text
-    .split("\n")
-    .filter((line) => !line.trim().startsWith("//%"))
-    .join("\n");
+  const filteredText = removeLspPrompt(text);
 
   return `In order to help me with my task, read the entire file for context:
 ${formatCodeSnippet(documentUri, filteredText, "markdown")}`;
