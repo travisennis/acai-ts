@@ -9,7 +9,7 @@ export function removeAllLineBreaks(text: string) {
   return text.replace(/(\r\n|\n|\r)/gm, " ");
 }
 
-export function removeHtmLtags(text: string) {
+export function removeHtmlTags(text: string) {
   return text.replace(/<[^>]*>?/gm, "");
 }
 

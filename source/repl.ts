@@ -131,6 +131,7 @@ class ReplPrompt {
     }
   }
 }
+
 export interface ReplOptions {
   messageHistory: MessageHistory;
   promptManager: PromptManager;

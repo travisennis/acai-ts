@@ -20,7 +20,7 @@ export const createThinkTools = (
     think: tool({
       description: toolDescription,
       parameters: z.object({
-        thought: z.string().describe("Your thoughts"),
+        thought: z.string().describe("Your thought"),
       }),
       execute: ({ thought }) => {
         // Replace literal '\\n' with actual newline characters
