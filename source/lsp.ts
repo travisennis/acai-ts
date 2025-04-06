@@ -7,7 +7,7 @@ function main() {
   const modelManager = new ModelManager({
     stateDir: config.app.ensurePath("audit"),
   });
-  modelManager.setModel("lsp-code-action", "anthropic:sonnet");
+  modelManager.setModel("lsp-code-action", "openrouter:quasar-alpha");
 
   logger.info("Starting acai LSP server...");
   initializeLsp({ modelManager });
