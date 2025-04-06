@@ -21,7 +21,7 @@ import { dedent } from "../dedent.ts";
 import { formatCodeSnippet, formatFile } from "../formatting.ts";
 import { logger } from "../logger.ts";
 import type { ModelManager } from "../models/manager.ts";
-import { type Selection, saveSelection } from "../savedSelections/index.ts";
+import { type Selection, saveSelection } from "../saved-selections/index.ts";
 import {
   type EmbeddedInstructions,
   parseInstructions,

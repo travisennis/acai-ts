@@ -4,7 +4,7 @@ import {
   formatSelection,
   getSavedSelections,
   updateSelections,
-} from "../savedSelections/index.ts";
+} from "../saved-selections/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const selectionsCommand = ({
