@@ -5,6 +5,7 @@ import {
   getModelsByCategory,
   isValidModel,
   modelRegistry,
+  models,
   providers,
 } from "../models/providers.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
@@ -59,7 +60,7 @@ export function modelCommand(options: CommandOptions): ReplCommand {
     description:
       "List available models or switch to a different model. Usage: /model [provider:model-name|category|provider]",
     result: "continue",
-    getSubCommands: () => [],
+    getSubCommands: () => models as unknown as string[],
     async execute(args: string[]): Promise<void> {
       const arg = args.join(" ").trim();
       const modelConfig = modelManager.getModelMetadata("repl");

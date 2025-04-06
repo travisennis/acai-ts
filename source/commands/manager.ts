@@ -19,7 +19,7 @@ import { resetCommand } from "./reset-command.ts";
 import { reviewCommand } from "./review-command.ts";
 import { saveCommand } from "./save-command.ts";
 import { selectionsCommand } from "./selections-command.ts";
-import { modelCommand } from "./modelCommand.ts";
+import { modelCommand } from "./model-command.ts";
 import { memoryCommand } from "./memory-command.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
