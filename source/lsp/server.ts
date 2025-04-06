@@ -1,6 +1,7 @@
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { isNullOrUndefined } from "@travisennis/stdlib/typeguards";
 import { generateObject, generateText } from "ai";
-import type { Logger } from "pino";
 import { type Range, TextDocument } from "vscode-languageserver-textdocument";
 import {
   type CodeAction,
@@ -18,6 +19,7 @@ import {
 import { z } from "zod";
 import { dedent } from "../dedent.ts";
 import { formatCodeSnippet, formatFile } from "../formatting.ts";
+import { logger } from "../logger.ts";
 import type { ModelManager } from "../models/manager.ts";
 import { type Selection, saveSelection } from "../savedSelections/index.ts";
 import {
@@ -92,11 +94,9 @@ export function createTextDocuments() {
 export function initConnection({
   modelManager,
   documents,
-  logger,
 }: {
   modelManager: ModelManager;
   documents: TextDocuments<TextDocument>;
-  logger: Logger;
 }) {
   // Create a connection for the server
   const connection = createConnection(
@@ -109,7 +109,11 @@ export function initConnection({
     logger.info("Initializing LSP server...");
     const result: InitializeResult = {
       capabilities: {
-        textDocumentSync: TextDocumentSyncKind.Incremental,
+        textDocumentSync: {
+          openClose: true,
+          change: TextDocumentSyncKind.Incremental,
+          save: true,
+        },
         // Enable code actions
         codeActionProvider: {
           codeActionKinds: [CodeActionKind.QuickFix],
@@ -198,20 +202,19 @@ export function initConnection({
         case "ai.instruct": {
           const filePath = documentUri;
           const recentEdits = editHistory.get(filePath) || [];
+          logger.info(
+            `Adding ${recentEdits.length} recent edits from history.`,
+          );
 
           // Get the text from the range where the code action was triggered
           const documentText = textDocument.getText(range);
 
-          // Get surrounding code
-          // const fullText = textDocument.getText();
-          // const cursorPosition = editor.selection.active;
-          // const surroundingCode = extractSurroundingCode(
-          //   fullText,
-          //   cursorPosition,
-          // );
-
           // Get related files and their recent edits
           const relatedContext = getRelatedFilesContext(filePath, documents);
+          const relatedFilesCount = fileRelations.get(filePath)?.length || 0;
+          logger.info(
+            `Adding context from ${relatedFilesCount} related files.`,
+          );
 
           // Parse the selected text
           const instructions = parseInstructions(documentText);
@@ -255,24 +258,19 @@ export function initConnection({
           break;
         }
         case "ai.edit": {
-          // Request a progress token
-          const token = crypto.randomUUID();
-          connection.sendNotification("window/workDoneProgress/create", {
-            token,
-          });
           const filePath = documentUri;
-          const recentEdits = editHistory.get(filePath) || [];
 
-          // Get surrounding code
-          // const fullText = textDocument.getText();
-          // const cursorPosition = editor.selection.active;
-          // const surroundingCode = extractSurroundingCode(
-          //   fullText,
-          //   cursorPosition,
-          // );
+          const recentEdits = editHistory.get(filePath) || [];
+          logger.info(
+            `Adding ${recentEdits.length} recent edits from history.`,
+          );
 
           // Get related files and their recent edits
           const relatedContext = getRelatedFilesContext(filePath, documents);
+          const relatedFilesCount = fileRelations.get(filePath)?.length || 0;
+          logger.info(
+            `Adding context from ${relatedFilesCount} related files.`,
+          );
 
           // Parse the selected text
           const instructions = parseInstructions(
@@ -291,17 +289,6 @@ export function initConnection({
             relatedContext,
             instructions,
           ).trim();
-
-          // Start the progress
-          connection.sendNotification("$/progress", {
-            token,
-            value: {
-              kind: "begin",
-              message: "Calling LLM...",
-              percentage: 25,
-              cancellable: false, // Set to true if you support cancellation
-            },
-          });
 
           try {
             const { object } = await generateObject({
@@ -332,17 +319,6 @@ export function initConnection({
             // Get the text from the range where the code action was triggered
             const documentText = removeLspPrompt(textDocument.getText());
 
-            // The sendProgress method is deprecated, use sendNotification instead
-            connection.sendNotification("$/progress", {
-              token,
-              value: {
-                kind: "report",
-                message: "Applying edits...",
-                percentage: 50,
-                cancellable: false, // Set to true if you support cancellation
-              },
-            });
-
             // Apply all regex pattern replacements to the document text
             let updatedText = documentText;
             for (const edit of edits) {
@@ -370,16 +346,6 @@ export function initConnection({
                 ],
               },
             };
-
-            connection.sendNotification("$/progress", {
-              token,
-              value: {
-                kind: "report",
-                message: "Finished",
-                percentage: 100,
-                cancellable: false, // Set to true if you support cancellation
-              },
-            });
           } catch (error) {
             logger.error("Error generating text:");
             logger.error(error);
@@ -434,8 +400,52 @@ export function initConnection({
     return params;
   });
 
-  // Register diagnostic handler
+  documents.onDidChangeContent((change) => {
+    logger.info(`Document content changed: ${change.document.uri}`);
+    const textDocument = change.document;
+    const filePath = change.document.uri;
+    if (textDocument) {
+      validateTextDocument(textDocument);
+
+      // Discover related files
+      logger.debug(`Updating file relations for ${filePath}`);
+      updateFileRelations(filePath, textDocument);
+    } else {
+      logger.warn(`Document not found for URI: ${change.document.uri}`);
+    }
+  });
+
+  documents.onDidOpen((event) => {
+    logger.info(`Document opened: ${event.document.uri}`);
+    const textDocument = event.document;
+    const filePath = event.document.uri;
+    if (textDocument) {
+      validateTextDocument(textDocument);
+
+      // Discover related files
+      logger.debug(`Updating file relations for ${filePath}`);
+      updateFileRelations(filePath, textDocument);
+    } else {
+      logger.warn(`Document not found for URI: ${event.document.uri}`);
+    }
+  });
+
+  connection.onDidOpenTextDocument((params) => {
+    // A text document was opened in VS Code.
+    // params.uri uniquely identifies the document. For documents stored on disk, this is a file URI.
+    // params.text the initial full content of the document.
+    logger.info(`Text document opened: ${params.textDocument.uri}`);
+  });
+
+  connection.onDidChangeWatchedFiles((change) => {
+    logger.info("Received a file change event");
+    for (const changeEvent of change.changes) {
+      logger.info(`${changeEvent.type} for ${changeEvent.uri}`);
+    }
+  });
+
   connection.onDidChangeTextDocument((params) => {
+    logger.info(`Text document changed: ${params.textDocument.uri}`);
     const textDocument = documents.get(params.textDocument.uri);
     if (textDocument) {
       validateTextDocument(textDocument);
@@ -444,22 +454,36 @@ export function initConnection({
 
       // Track recent edits
       const changes = params.contentChanges.map((change) => change.text);
+      logger.debug(`Received ${changes.length} content changes`);
+
       if (!editHistory.has(filePath)) {
+        logger.debug(`Creating new edit history for ${filePath}`);
         editHistory.set(filePath, []);
       }
 
       const history = editHistory.get(filePath);
       if (history) {
+        logger.debug(`Adding ${changes.length} changes to edit history`);
         history.push(...changes);
 
         // Keep only the last N edits
         if (history.length > MAX_HISTORY) {
+          logger.debug(`Trimming edit history to ${MAX_HISTORY} entries`);
           history.splice(0, history.length - MAX_HISTORY);
         }
       }
       // Discover related files
+      logger.debug(`Updating file relations for ${filePath}`);
       updateFileRelations(filePath, textDocument);
+    } else {
+      logger.warn(`Document not found for URI: ${params.textDocument.uri}`);
     }
+  });
+
+  connection.onDidCloseTextDocument((params) => {
+    // A text document was closed in VS Code.
+    // params.uri uniquely identifies the document.
+    logger.info(`Text document closed: ${params.textDocument.uri}`);
   });
 
   function validateTextDocument(textDocument: TextDocument): void {
@@ -558,26 +582,49 @@ ${instructions.prompt ?? ""}
 
 // Extracts related files' content based on imports, requires, or module usage
 function updateFileRelations(filePath: string, content: TextDocument) {
+  logger.debug(`Updating file relations for ${filePath}`);
   const matches = content
     .getText()
     .match(/import\s+.*?from\s+['"](.*?)['"]|require\(['"](.*?)['"]\)/g);
 
   if (!matches) {
+    logger.debug(`No import or require statements found in ${filePath}`);
     return;
   }
+
+  logger.debug(
+    `Found ${matches.length} import/require statements in ${filePath}`,
+  );
 
   const relatedFiles = matches
     .map((m) => {
       const pathMatch = m.match(/['"](.*?)['"]/);
-      return pathMatch ? pathMatch[1] : null;
+      const relatedPath = pathMatch ? pathMatch[1] : null;
+      logger.debug(`Parsed related path: ${relatedPath}`);
+      return relatedPath;
     })
     .filter((path) => {
-      // Only include paths that are relative (start with ./ or ../)
-      return (
+      const isRelative =
         !isNullOrUndefined(path) &&
-        (path.startsWith("./") || path.startsWith("../"))
-      );
-    }) as string[];
+        (path.startsWith("./") || path.startsWith("../"));
+      if (!isNullOrUndefined(path)) {
+        logger.debug(
+          `Path "${path}" is ${isRelative ? "relative, including" : "not relative, excluding"}`,
+        );
+      }
+      return isRelative;
+    })
+    .map((relativePath) => {
+      const currentDir = dirname(filePath.replace("file://", ""));
+      const absolutePath = resolve(currentDir, relativePath ?? "");
+      const uri = `file://${absolutePath}`;
+      logger.debug(`Resolved absolute URI: ${uri}`);
+      return uri;
+    });
+
+  logger.debug(
+    `Setting ${relatedFiles.length} related files for ${filePath}: ${relatedFiles.join(", ")}`,
+  );
 
   fileRelations.set(filePath, relatedFiles);
 }
@@ -587,46 +634,78 @@ function getRelatedFilesContext(
   filePath: string,
   documents: TextDocuments<TextDocument>,
 ): string {
+  logger.debug(`Fetching related files context for ${filePath}`);
   const relatedFiles = fileRelations.get(filePath) || [];
+  logger.debug(`Found ${relatedFiles.length} related files for ${filePath}`);
   const context: string[] = [];
 
   for (const related of relatedFiles) {
+    logger.debug(`Processing related file: ${related}`);
     try {
-      // Try to find the document in the TextDocuments collection
-      // We need to convert the relative path to a URI format that matches how documents are stored
-      // This is a simplistic approach - in practice you might need more sophisticated URI resolution
       const relatedUri = related.startsWith("file://")
         ? related
         : `file://${related}`;
+      logger.debug(`Resolved related URI: ${relatedUri}`);
 
-      // Find the document by URI or by checking if the URI ends with the related path
       const doc = documents
         .all()
         .find((d) => d.uri === relatedUri || d.uri.endsWith(related));
 
       if (doc) {
-        // Since we don't have extractSurroundingCode, we'll just take the first few lines
-        // const lines = doc.getText().split("\n");
-        // const previewLines = lines
-        //   .slice(0, Math.min(lines.length, 10))
-        //   .join("\n");
-
+        logger.debug(`Found related document in memory: ${doc.uri}`);
         context.push(formatFile(related, doc.getText(), "markdown"));
+      } else {
+        logger.debug(
+          "Related document not found in memory, attempting filesystem read",
+        );
+        try {
+          const currentDir = dirname(filePath.replace("file://", ""));
+          let absolutePath = resolve(currentDir, related);
+
+          // Fix incorrect absolute path resolution when related includes 'file://'
+          if (related.startsWith("file://")) {
+            absolutePath = related.replace("file://", "");
+          }
+
+          logger.debug(`Resolved absolute path: ${absolutePath}`);
+
+          if (existsSync(absolutePath)) {
+            logger.debug(`File exists on filesystem: ${absolutePath}`);
+            const fileContent = readFileSync(absolutePath, "utf8");
+            context.push(formatFile(related, fileContent, "markdown"));
+          } else {
+            logger.debug(`File does not exist on filesystem: ${absolutePath}`);
+          }
+        } catch (error) {
+          logger.warn(
+            `Could not read related file from filesystem: ${related}`,
+            error,
+          );
+        }
       }
     } catch (_error) {
-      console.warn(`Could not load related file: ${related}`);
+      logger.warn(`Could not load related file: ${related}`);
     }
   }
-
+  logger.debug(`Completed fetching related files context for ${filePath}`);
   return context.join("\n\n");
 }
+
 const MD_CODE_BLOCK = /```(?:[\w-]+)?\n(.*?)```/s;
 
-export const extractCode = (text: string): string => {
+/**
+ * Extracts the first code block content from the given text.
+ * If a Markdown-style triple backtick code block is found, returns its inner content.
+ * Otherwise, returns the original text unchanged.
+ *
+ * @param text - The input string potentially containing a Markdown code block.
+ * @returns The extracted code inside the first code block, or the original text if no block is found.
+ */
+const extractCode = (text: string): string => {
   const pattern = MD_CODE_BLOCK;
   const match = text.match(pattern);
   if (match) {
-    return match[1]?.trim() ?? "";
+    return match[1] ?? "";
   }
   return text;
 };
