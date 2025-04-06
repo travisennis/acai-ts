@@ -6,6 +6,7 @@ export const helpCommand = (_options: CommandOptions) => {
     command: "/help",
     description: "Shows usage table.",
     result: "continue" as const,
+    getSubCommands: () => [],
     execute: (args?: string[] | Map<string, ReplCommand>) => {
       // If first argument is a Map, it's the commands collection
       const commands =

@@ -5,6 +5,7 @@ export const exitCommand = ({ messageHistory }: CommandOptions) => {
     command: "/exit",
     description: "Exits and saves the chat history.",
     result: "break" as const,
+    getSubCommands: () => [],
     execute: async () => {
       if (!messageHistory.isEmpty()) {
         await messageHistory.save();

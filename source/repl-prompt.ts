@@ -72,12 +72,34 @@ export class ReplPrompt {
       historySize: this.maxHistory,
       completer: (line) => {
         const completions = commands.getCommands();
-        const hits = completions.filter((c) => c.startsWith(line));
-        if (hits.length > 0) {
-          return [hits, line];
+        const words = line.trim().split(/\s+/);
+        const firstWord = words[0] ?? "";
+        const rest: string = words.slice(1).join(" ") ?? "";
+
+        const matchingCommands = completions.filter((c) =>
+          c.startsWith(firstWord),
+        );
+
+        if (matchingCommands.length === 1 && rest !== "") {
+          // Single command matched, try to get subcommands
+          const subCompletions = commands.getSubCommands(
+            matchingCommands[0] ?? "",
+          );
+          const hits = subCompletions.filter(
+            (sc) => typeof sc === "string" && sc.startsWith(rest),
+          );
+          if (hits.length > 0) {
+            return [hits.map((h) => `${firstWord} ${h}`), line];
+          }
         }
 
-        // Show all completions if none found
+        if (
+          matchingCommands.length > 0 &&
+          (words.length === 1 || line.endsWith(" "))
+        ) {
+          return [matchingCommands, line];
+        }
+
         return fileSystemCompleter(line); // [completions, line];
       },
     });

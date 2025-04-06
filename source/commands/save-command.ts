@@ -5,6 +5,7 @@ export const saveCommand = ({ messageHistory }: CommandOptions) => {
     command: "/save",
     description: "Saves the chat history.",
     result: "continue" as const,
+    getSubCommands: () => [],
     execute: async () => {
       if (!messageHistory.isEmpty()) {
         await messageHistory.save();

@@ -6,6 +6,7 @@ export const compactCommand = ({ messageHistory }: CommandOptions) => {
     description:
       "Saves, summarizes and resets the chat history with the summary.",
     result: "continue" as const,
+    getSubCommands: () => [],
     execute: async () => {
       if (!messageHistory.isEmpty()) {
         await messageHistory.summarizeAndReset();

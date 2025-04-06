@@ -8,6 +8,7 @@ export interface ReplCommand {
   command: string;
   description: string;
   result: "break" | "continue" | "use";
+  getSubCommands: () => string[];
   execute: (args: string[]) => Promise<void>;
 }
 

@@ -95,6 +95,10 @@ export class CommandManager {
     return Array.from(this.commands.keys()).sort();
   }
 
+  getSubCommands(command: string): string[] {
+    return this.commands.get(command)?.getSubCommands() ?? [];
+  }
+
   async handle({ userInput }: { userInput: string }) {
     const commandArgs = userInput.split(" ");
     const command = commandArgs.at(0);

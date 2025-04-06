@@ -9,6 +9,7 @@ export const editCommand = ({ terminal }: CommandOptions) => {
     command: "/edit",
     description: "Opens files in $EDITOR for editing.",
     result: "continue" as const,
+    getSubCommands: () => [],
     execute: async () => {
       const fileToEdit = await search({
         message: "Select a file",

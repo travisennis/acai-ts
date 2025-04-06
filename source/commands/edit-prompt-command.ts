@@ -10,6 +10,7 @@ export const editPromptCommand = ({
     command: "/editPrompt",
     description: "Edit the prompt.",
     result: "continue" as const,
+    getSubCommands: () => [],
     execute: async () => {
       try {
         const prompt = syncTry(() => promptManager.get());

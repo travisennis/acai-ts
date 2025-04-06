@@ -5,6 +5,7 @@ export const reviewCommand = ({ promptManager }: CommandOptions) => {
     command: "/review",
     description: "Instructs the agent to perform a code review on a PR.",
     result: "use" as const,
+    getSubCommands: () => [],
     execute: (args: string[]) => {
       promptManager.set(
         `You are an expert code reviewer. Follow these steps:

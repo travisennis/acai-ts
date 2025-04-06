@@ -15,6 +15,7 @@ export const selectionsCommand = ({
     command: "/selections",
     description: "Use and manage saved selections.",
     result: "continue" as const,
+    getSubCommands: () => [],
     execute: async (args: string[]) => {
       const subCommand = args[0];
       switch (subCommand) {

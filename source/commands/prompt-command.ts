@@ -9,6 +9,7 @@ export const promptCommand = ({ terminal, promptManager }: CommandOptions) => {
     command: "/prompt",
     description: "Loads and executes user and project prompts.",
     result: "use" as const,
+    getSubCommands: () => [],
     execute: async (args: string[]) => {
       if (!args || args.length === 0) {
         terminal.warn(
