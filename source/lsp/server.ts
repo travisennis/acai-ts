@@ -1,4 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
+import { countTokens } from "../token-utils.ts";
+import { CodeMap } from "../code-utils/code-map.ts";
 import { dirname, resolve } from "node:path";
 import { isNullOrUndefined } from "@travisennis/stdlib/typeguards";
 import { generateObject, generateText } from "ai";
@@ -653,7 +655,22 @@ function getRelatedFilesContext(
 
       if (doc) {
         logger.debug(`Found related document in memory: ${doc.uri}`);
-        context.push(formatFile(related, doc.getText(), "markdown"));
+        let contentToUse: string;
+        try {
+          const docText = doc.getText();
+          const tokenCount = countTokens(docText);
+          if (tokenCount > 500) {
+            logger.debug(`In-memory doc ${doc.uri} exceeds 500 tokens (${tokenCount}), generating CodeMap.`);
+            const codeMap = CodeMap.fromSource(docText, doc.uri);
+            contentToUse = codeMap.format("markdown", doc.uri);
+          } else {
+            contentToUse = docText;
+          }
+        } catch (error) {
+          logger.warn(`Error counting tokens or generating CodeMap for in-memory doc ${doc.uri}:`, error);
+          contentToUse = doc.getText();
+        }
+        context.push(formatFile(related, contentToUse, "markdown"));
       } else {
         logger.debug(
           "Related document not found in memory, attempting filesystem read",
@@ -672,7 +689,21 @@ function getRelatedFilesContext(
           if (existsSync(absolutePath)) {
             logger.debug(`File exists on filesystem: ${absolutePath}`);
             const fileContent = readFileSync(absolutePath, "utf8");
-            context.push(formatFile(related, fileContent, "markdown"));
+            let contentToUse: string;
+            try {
+              const tokenCount = countTokens(fileContent);
+              if (tokenCount > 500) {
+                logger.debug(`File ${absolutePath} exceeds 500 tokens (${tokenCount}), generating CodeMap.`);
+                const codeMap = CodeMap.fromSource(fileContent, absolutePath);
+                contentToUse = codeMap.format("markdown", absolutePath);
+              } else {
+                contentToUse = fileContent;
+              }
+            } catch (error) {
+              logger.warn(`Error counting tokens or generating CodeMap for ${absolutePath}:`, error);
+              contentToUse = fileContent;
+            }
+            context.push(formatFile(related, contentToUse, "markdown"));
           } else {
             logger.debug(`File does not exist on filesystem: ${absolutePath}`);
           }
