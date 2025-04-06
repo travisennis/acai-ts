@@ -40,7 +40,7 @@ export const memoryCommand = ({ terminal }: CommandOptions) => {
     description:
       "View, add, or edit memories (rules). Usage: /memory [view|add <text>|edit]",
     result: "continue" as const,
-    getSubCommands: () => [],
+    getSubCommands: () => ["view", "add", "edit"],
     execute: async (args: string[]) => {
       const subCommand = args[0] ?? "view"; // Default to 'view'
       const commandArgs = args.slice(1).join(" ");
