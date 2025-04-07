@@ -38,7 +38,7 @@ acai -p "What files contain the term 'toolCallRepair'?" -o
 echo "How many TypeScript files are in this project?" | acai
 
 # Start the Language Server Protocol server
-acai --lsp
+acai-lsp
 ```
 
 ## Interactive CLI Commands
