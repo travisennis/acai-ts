@@ -15,6 +15,7 @@ import { AiConfig } from "./models/ai-config.ts";
 import type { ModelManager } from "./models/manager.js";
 import { systemPrompt } from "./prompts.ts";
 import type { PromptManager } from "./prompts/manager.ts";
+import { ReplPrompt } from "./repl-prompt.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import {
@@ -22,7 +23,6 @@ import {
   initCodingTools,
   initTools,
 } from "./tools/index.ts";
-import { ReplPrompt } from "./repl-prompt.ts";
 
 export interface ReplOptions {
   messageHistory: MessageHistory;
@@ -76,7 +76,7 @@ export class Repl {
 
       terminal.box(
         "State:",
-        `Model:          ${langModel.modelId}\nContext Window: ${tokenTracker.getTotalUsage().totalTokens} tokens`,
+        `Model:          ${langModel.modelId}\nContext Window: ${tokenTracker.getUsageByApp("repl").totalTokens} tokens`,
       );
       terminal.header("Input:");
       terminal.writeln("");
@@ -232,7 +232,7 @@ export class Repl {
             );
             terminal.header("Total Usage:");
             tokenTracker.trackUsage("repl", result.usage);
-            const totalUsage = tokenTracker.getTotalUsage();
+            const totalUsage = tokenTracker.getUsageByApp("repl");
             terminal.writeln(
               chalk.green(
                 `Prompt tokens: ${totalUsage.promptTokens}, Completion tokens: ${totalUsage.completionTokens}, Total tokens: ${totalUsage.totalTokens}`,

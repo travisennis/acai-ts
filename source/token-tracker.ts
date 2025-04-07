@@ -48,6 +48,20 @@ export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
     );
   }
 
+  getUsageByApp(app: string): LanguageModelUsage {
+    return this.usages
+      .filter(({ tool }) => tool === app)
+      .reduce(
+        (acc, { usage }) => {
+          acc.promptTokens += usage.promptTokens;
+          acc.completionTokens += usage.completionTokens;
+          acc.totalTokens += usage.totalTokens;
+          return acc;
+        },
+        { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      );
+  }
+
   getUsageBreakdown(): Record<string, number> {
     return this.usages.reduce(
       (acc, { tool, usage }) => {
