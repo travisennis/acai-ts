@@ -403,14 +403,13 @@ export function initConnection({
   });
 
   documents.onDidChangeContent((change) => {
-    logger.info(`Document content changed: ${change.document.uri}`);
     const textDocument = change.document;
     const filePath = change.document.uri;
     if (textDocument) {
       validateTextDocument(textDocument);
 
       // Discover related files
-      logger.debug(`Updating file relations for ${filePath}`);
+
       updateFileRelations(filePath, textDocument);
     } else {
       logger.warn(`Document not found for URI: ${change.document.uri}`);
@@ -418,36 +417,28 @@ export function initConnection({
   });
 
   documents.onDidOpen((event) => {
-    logger.info(`Document opened: ${event.document.uri}`);
     const textDocument = event.document;
     const filePath = event.document.uri;
     if (textDocument) {
       validateTextDocument(textDocument);
 
       // Discover related files
-      logger.debug(`Updating file relations for ${filePath}`);
+
       updateFileRelations(filePath, textDocument);
     } else {
       logger.warn(`Document not found for URI: ${event.document.uri}`);
     }
   });
 
-  connection.onDidOpenTextDocument((params) => {
+  connection.onDidOpenTextDocument((_params) => {
     // A text document was opened in VS Code.
     // params.uri uniquely identifies the document. For documents stored on disk, this is a file URI.
     // params.text the initial full content of the document.
-    logger.info(`Text document opened: ${params.textDocument.uri}`);
   });
 
-  connection.onDidChangeWatchedFiles((change) => {
-    logger.info("Received a file change event");
-    for (const changeEvent of change.changes) {
-      logger.info(`${changeEvent.type} for ${changeEvent.uri}`);
-    }
-  });
+  connection.onDidChangeWatchedFiles((_change) => {});
 
   connection.onDidChangeTextDocument((params) => {
-    logger.info(`Text document changed: ${params.textDocument.uri}`);
     const textDocument = documents.get(params.textDocument.uri);
     if (textDocument) {
       validateTextDocument(textDocument);
@@ -456,36 +447,31 @@ export function initConnection({
 
       // Track recent edits
       const changes = params.contentChanges.map((change) => change.text);
-      logger.debug(`Received ${changes.length} content changes`);
 
       if (!editHistory.has(filePath)) {
-        logger.debug(`Creating new edit history for ${filePath}`);
         editHistory.set(filePath, []);
       }
 
       const history = editHistory.get(filePath);
       if (history) {
-        logger.debug(`Adding ${changes.length} changes to edit history`);
         history.push(...changes);
 
         // Keep only the last N edits
         if (history.length > MAX_HISTORY) {
-          logger.debug(`Trimming edit history to ${MAX_HISTORY} entries`);
           history.splice(0, history.length - MAX_HISTORY);
         }
       }
       // Discover related files
-      logger.debug(`Updating file relations for ${filePath}`);
+
       updateFileRelations(filePath, textDocument);
     } else {
       logger.warn(`Document not found for URI: ${params.textDocument.uri}`);
     }
   });
 
-  connection.onDidCloseTextDocument((params) => {
+  connection.onDidCloseTextDocument((_params) => {
     // A text document was closed in VS Code.
     // params.uri uniquely identifies the document.
-    logger.info(`Text document closed: ${params.textDocument.uri}`);
   });
 
   function validateTextDocument(textDocument: TextDocument): void {
@@ -660,14 +646,19 @@ function getRelatedFilesContext(
           const docText = doc.getText();
           const tokenCount = countTokens(docText);
           if (tokenCount > 500) {
-            logger.debug(`In-memory doc ${doc.uri} exceeds 500 tokens (${tokenCount}), generating CodeMap.`);
+            logger.debug(
+              `In-memory doc ${doc.uri} exceeds 500 tokens (${tokenCount}), generating CodeMap.`,
+            );
             const codeMap = CodeMap.fromSource(docText, doc.uri);
             contentToUse = codeMap.format("markdown", doc.uri);
           } else {
             contentToUse = docText;
           }
         } catch (error) {
-          logger.warn(`Error counting tokens or generating CodeMap for in-memory doc ${doc.uri}:`, error);
+          logger.warn(
+            `Error counting tokens or generating CodeMap for in-memory doc ${doc.uri}:`,
+            error,
+          );
           contentToUse = doc.getText();
         }
         context.push(formatFile(related, contentToUse, "markdown"));
@@ -693,14 +684,19 @@ function getRelatedFilesContext(
             try {
               const tokenCount = countTokens(fileContent);
               if (tokenCount > 500) {
-                logger.debug(`File ${absolutePath} exceeds 500 tokens (${tokenCount}), generating CodeMap.`);
+                logger.debug(
+                  `File ${absolutePath} exceeds 500 tokens (${tokenCount}), generating CodeMap.`,
+                );
                 const codeMap = CodeMap.fromSource(fileContent, absolutePath);
                 contentToUse = codeMap.format("markdown", absolutePath);
               } else {
                 contentToUse = fileContent;
               }
             } catch (error) {
-              logger.warn(`Error counting tokens or generating CodeMap for ${absolutePath}:`, error);
+              logger.warn(
+                `Error counting tokens or generating CodeMap for ${absolutePath}:`,
+                error,
+              );
               contentToUse = fileContent;
             }
             context.push(formatFile(related, contentToUse, "markdown"));
