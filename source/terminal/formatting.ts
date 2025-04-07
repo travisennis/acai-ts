@@ -145,6 +145,25 @@ export function formatOutput(
     formattedText = wordWrap(text, width);
   }
 
+  // Syntax highlight diff lines if colors enabled
+  if (colors) {
+    formattedText = formattedText
+      .split("\n")
+      .map((line) => {
+        if (/^\s*\+/.test(line)) {
+          return chalk.green(line);
+        }
+        if (/^\s*-/.test(line)) {
+          return chalk.red(line);
+        }
+        if (/^\s*@/.test(line)) {
+          return chalk.yellow(line);
+        }
+        return line;
+      })
+      .join("\n");
+  }
+
   return formattedText;
 }
 
