@@ -26,7 +26,7 @@ export async function analyzeConversation({
 }) {
   messages.push(
     createUserMessage(
-      "Analyze the conversation and identify any knowledge, context, or background that would have been important to know at the beginning of the conversation to help with the task. If there is nothing, indicate that.",
+      "Analyze the conversation and identify two or three pieces of knowledge, context, or background that would have been important to know at the beginning of the conversation to help with the task. If there is nothing, indicate that.",
     ),
   );
   const { text, usage } = await generateText({
