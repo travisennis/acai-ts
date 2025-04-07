@@ -168,7 +168,7 @@ export const createCodeTools = ({
           const result = format(await asyncExec(testCommand, baseDir));
           sendData?.({
             event: "tool-completion",
-            data: "Format complete.",
+            data: "Testing complete.",
           });
 
           return result;
