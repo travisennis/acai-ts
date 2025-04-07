@@ -79,6 +79,13 @@ const appendToFile = async (
   }
 };
 
+/**
+ * Writes an audit record to the specified file, overwriting any existing content.
+ * Ensures the directory exists before writing.
+ *
+ * @param filePath - The path to the file where the audit record will be saved.
+ * @param content - The audit record object to write.
+ */
 const writeAuditRecord = async (
   filePath: string,
   content: AuditRecord,
