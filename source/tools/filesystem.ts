@@ -79,6 +79,27 @@ async function validatePath(
   }
 }
 
+function matchesPatternHybrid(
+  pattern: string,
+  relativePath: string,
+  fileName: string,
+  fullPath: string,
+): boolean {
+  const globChars = ["*", "?", "[", "]", "{", "}", "!", "+", "@", "(", ")"];
+  const isGlob = globChars.some((c) => pattern.includes(c));
+
+  if (isGlob) {
+    return minimatch(relativePath, pattern, { dot: true });
+  }
+
+  const patternLower = pattern.toLowerCase();
+  return (
+    fileName.toLowerCase().includes(patternLower) ||
+    relativePath.toLowerCase().includes(patternLower) ||
+    fullPath.toLowerCase().includes(patternLower)
+  );
+}
+
 async function searchFiles(
   rootPath: string,
   pattern: string,
@@ -133,18 +154,7 @@ async function searchFiles(
 
         // Check if the file matches the pattern - use full path to check for paths like "./acai/rules.md"
         // or just the name for simple filename searches
-        const patternLower = pattern.toLowerCase();
-        const fileNameLower = entry.name.toLowerCase();
-        const fullPathLower = fullPath.toLowerCase();
-        const relativePathLower = relativePath.toLowerCase();
-
-        // Try to match the pattern against the full path, relative path, or just the filename
-        const matchesPattern =
-          fileNameLower.includes(patternLower) ||
-          fullPathLower.includes(patternLower) ||
-          relativePathLower.includes(patternLower);
-
-        if (matchesPattern) {
+        if (matchesPatternHybrid(pattern, relativePath, entry.name, fullPath)) {
           results.push(fullPath);
         }
 
