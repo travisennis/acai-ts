@@ -21,6 +21,7 @@ import { saveCommand } from "./save-command.ts";
 import { selectionsCommand } from "./selections-command.ts";
 import { modelCommand } from "./model-command.ts";
 import { memoryCommand } from "./memory-command.ts";
+import { usageCommand } from "./usage-command.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export class CommandManager {
@@ -76,6 +77,7 @@ export class CommandManager {
       selectionsCommand(options),
       memoryCommand(options),
       modelCommand(options),
+      usageCommand(options),
     ];
 
     // Add help command with access to all commands

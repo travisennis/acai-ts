@@ -59,6 +59,7 @@ acai-lsp
 - `/prompt user:name|project:name` - Load saved prompts
 - `/memory [view|add <text>|edit]` - View or edit persistent project rules/memories
 - `/model [provider:model|category|provider]` - List or switch models
+- `/usage` - Show token usage breakdown
 
 ## Configuration
 

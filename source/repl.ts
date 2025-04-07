@@ -239,10 +239,7 @@ export class Repl {
               ),
             );
 
-            terminal.table(Object.entries(tokenTracker.getUsageBreakdown()), {
-              header: ["App", "Tokens"],
-              border: true,
-            });
+
 
             terminal.hr(chalk.yellow);
           },
