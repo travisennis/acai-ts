@@ -119,7 +119,7 @@ export class Repl {
 
       messageHistory.appendUserMessage(userMsg);
 
-      const finalSystemPrompt = await systemPrompt();
+      const finalSystemPrompt = await systemPrompt({ supportsToolCalling: modelConfig.supportsToolCalling });
 
       const aiConfig = new AiConfig({
         modelMetadata: modelConfig,

@@ -3,7 +3,8 @@ import { dedent } from "./dedent.ts";
 import { inGitDirectory } from "./tools/index.ts";
 import { config } from "./config.ts";
 
-export async function systemPrompt() {
+export async function systemPrompt(options?: { supportsToolCalling?: boolean }) {
+  const { supportsToolCalling = true } = options ?? {};
   const rules = await config.readRulesFile();
   const prompt = dedent`
 You are acai, an interactive CLI tool that helps users with software engineering tasks. Use the instructions below and the tools available to you to assist the user.
@@ -23,7 +24,7 @@ You are acai, an interactive CLI tool that helps users with software engineering
 12. For dependencies, always prefer using existing libraries already in the project. If a new dependency seems necessary, explicitly ask for user confirmation before suggesting its addition. Never assume a new dependency can be added without approval.
 13. Always consider security implications when writing code. Validate all inputs, sanitize data before displaying or storing it, avoid hardcoded secrets, and use secure coding practices to prevent common vulnerabilities like injection attacks, XSS, or unauthorized access.
 
-## Using the think tool
+${supportsToolCalling ? `## Using the think tool
 Before taking any action or responding to the user after receiving tool results, use the think tool as a scratchpad to:
 - List the specific rules that apply to the current request
 - Check if all required information is collected
@@ -35,7 +36,7 @@ Before taking any action or responding to the user after receiving tool results,
 - When doing file search, prefer to use the launchAgent tool in order to reduce context usage.
 - Don't keep searching the project for files. If you can't find what you are looking for after a few searches, try to use the directoryTree tool to get an idea of how the project is structured and what files are in which directories.
 - Use the architect tool only when the user is asking you to plan out a large or complicated new feature or refactoring.
-- If the user asks you to work with Github Issues, use the Github CLI tools (gh) via the bashTool.
+- If the user asks you to work with Github Issues, use the Github CLI tools (gh) via the bashTool.` : ""}
 
 
 ${rules ? `##Project Rules:\n${rules}\n` : ""}
