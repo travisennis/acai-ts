@@ -30,7 +30,7 @@ export async function analyzeConversation({
     ),
   );
   const { text, usage } = await generateText({
-    model: modelManager.getModel("meta-prompt"),
+    model: modelManager.getModel("conversation-analyzer"),
     maxTokens: 8192,
     system: await system(),
     messages: messages,

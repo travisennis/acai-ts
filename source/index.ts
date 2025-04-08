@@ -78,7 +78,7 @@ async function main() {
   modelManager.setModel("conversation-summarizer", "anthropic:haiku");
   modelManager.setModel("file-retiever", "anthropic:haiku");
   modelManager.setModel("tool-repair", "openai:gpt-4o-structured");
-  modelManager.setModel("meta-prompt", "google:flash2");
+  modelManager.setModel("conversation-analyzer", "google:flash2");
   modelManager.setModel("lsp-code-action", "anthropic:sonnet");
   modelManager.setModel("init-project", chosenModel);
   modelManager.setModel("task-agent", chosenModel);

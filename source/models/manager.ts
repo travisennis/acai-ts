@@ -31,7 +31,7 @@ type App =
   | "file-retiever"
   | "title-conversation"
   | "conversation-summarizer"
-  | "meta-prompt"
+  | "conversation-analyzer"
   | "tool-repair"
   | "lsp-code-action"
   | "init-project"
