@@ -145,23 +145,48 @@ export function formatOutput(
     formattedText = wordWrap(text, width);
   }
 
-  // Syntax highlight diff lines if colors enabled
+  // Syntax highlight diff lines ONLY inside ```diff blocks
   if (colors) {
-    formattedText = formattedText
-      .split("\n")
-      .map((line) => {
-        if (/^\s*\+/.test(line)) {
-          return chalk.green(line);
-        }
-        if (/^\s*-/.test(line)) {
-          return chalk.red(line);
-        }
-        if (/^\s*@/.test(line)) {
-          return chalk.yellow(line);
-        }
-        return line;
-      })
-      .join("\n");
+    const diffBlockRegex = /```diff\n([\s\S]*?)```/g;
+    let lastIndex = 0;
+    let result = '';
+    let match;
+
+    while ((match = diffBlockRegex.exec(formattedText)) !== null) {
+      const diffContent = match[1] ?? "";
+      const start = match.index;
+      const end = diffBlockRegex.lastIndex;
+
+      // Append text before this diff block without diff highlighting
+      result += formattedText.slice(lastIndex, start);
+
+      // Highlight diff content line by line
+      const highlightedDiff = diffContent
+        .split('\n')
+        .map((line) => {
+          if (/^\s*\+/.test(line)) {
+            return chalk.green(line);
+          }
+          if (/^\s*-/.test(line)) {
+            return chalk.red(line);
+          }
+          if (/^\s*@/.test(line)) {
+            return chalk.yellow(line);
+          }
+          return line;
+        })
+        .join('\n');
+
+      // Rebuild the diff block with highlighted content
+      result += '```diff\n' + highlightedDiff + '```';
+
+      lastIndex = end;
+    }
+
+    // Append remaining text after last diff block
+    result += formattedText.slice(lastIndex);
+
+    formattedText = result;
   }
 
   return formattedText;
