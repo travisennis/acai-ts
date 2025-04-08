@@ -239,8 +239,6 @@ export class Repl {
               ),
             );
 
-
-
             terminal.hr(chalk.yellow);
           },
           onError: ({ error }) => {
