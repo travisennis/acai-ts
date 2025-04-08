@@ -1,5 +1,8 @@
 import type { LanguageModel } from "ai";
-import { auditMessage } from "../middleware/index.ts";
+import {
+  auditMessage,
+  createRateLimitMiddleware,
+} from "../middleware/index.ts";
 import {
   type ModelMetadata,
   type ModelName,
@@ -19,6 +22,7 @@ function getLanguageModel({
 }) {
   const langModel = wrapLanguageModel(
     languageModel(model),
+    createRateLimitMiddleware({ requestsPerMinute: 30 }),
     auditMessage({ filePath: stateDir, app }),
   );
 
