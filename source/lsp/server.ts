@@ -1,6 +1,4 @@
 import { existsSync, readFileSync } from "node:fs";
-import { countTokens } from "../token-utils.ts";
-import { CodeMap } from "../code-utils/code-map.ts";
 import { dirname, resolve } from "node:path";
 import { isNullOrUndefined } from "@travisennis/stdlib/typeguards";
 import { generateObject, generateText } from "ai";
@@ -19,11 +17,17 @@ import {
   createConnection,
 } from "vscode-languageserver/node.js";
 import { z } from "zod";
+import { CodeMap } from "../code-utils/code-map.ts";
 import { dedent } from "../dedent.ts";
-import { formatCodeSnippet, formatFile } from "../formatting.ts";
+import {
+  extractCodeBlock,
+  formatCodeSnippet,
+  formatFile,
+} from "../formatting.ts";
 import { logger } from "../logger.ts";
 import type { ModelManager } from "../models/manager.ts";
 import { type Selection, saveSelection } from "../saved-selections/index.ts";
+import { countTokens } from "../token-utils.ts";
 import {
   type EmbeddedInstructions,
   parseInstructions,
@@ -242,7 +246,7 @@ export function initConnection({
             params.edit = {
               changes: {
                 [data.documentUri]: [
-                  TextEdit.replace(range, extractCode(text)),
+                  TextEdit.replace(range, extractCodeBlock(text)),
                 ],
               },
             };
@@ -717,22 +721,3 @@ function getRelatedFilesContext(
   logger.debug(`Completed fetching related files context for ${filePath}`);
   return context.join("\n\n");
 }
-
-const MD_CODE_BLOCK = /```(?:[\w-]+)?\n(.*?)```/s;
-
-/**
- * Extracts the first code block content from the given text.
- * If a Markdown-style triple backtick code block is found, returns its inner content.
- * Otherwise, returns the original text unchanged.
- *
- * @param text - The input string potentially containing a Markdown code block.
- * @returns The extracted code inside the first code block, or the original text if no block is found.
- */
-const extractCode = (text: string): string => {
-  const pattern = MD_CODE_BLOCK;
-  const match = text.match(pattern);
-  if (match) {
-    return match[1] ?? "";
-  }
-  return text;
-};
