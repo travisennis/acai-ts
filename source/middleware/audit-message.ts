@@ -9,6 +9,7 @@ import {
 } from "node:fs/promises";
 import { basename, dirname, extname, join } from "node:path";
 import type {
+  LanguageModelUsage,
   LanguageModelV1Middleware,
   LanguageModelV1Prompt,
   LanguageModelV1StreamPart,
@@ -61,6 +62,7 @@ interface AuditRecord {
   model: string;
   app: string;
   messages: LanguageModelV1Prompt;
+  usage: LanguageModelUsage;
   timestamp: number;
 }
 
@@ -109,7 +111,7 @@ export const auditMessage = ({
       try {
         const result = await doGenerate();
 
-        const msg = {
+        const msg: AuditRecord = {
           model: model.modelId,
           app,
           messages: [...params.prompt].concat({
@@ -121,6 +123,11 @@ export const auditMessage = ({
               },
             ],
           }),
+          usage: {
+            ...result.usage,
+            totalTokens:
+              result.usage.promptTokens + result.usage.completionTokens,
+          },
           timestamp: Date.now(),
         };
 
@@ -147,6 +154,7 @@ export const auditMessage = ({
       const { stream, ...rest } = await doStream();
 
       let generatedText = "";
+      let usage: Omit<LanguageModelUsage, "totalTokens">;
 
       const transformStream = new TransformStream<
         LanguageModelV1StreamPart,
@@ -156,24 +164,35 @@ export const auditMessage = ({
           if (chunk.type === "text-delta") {
             generatedText += chunk.textDelta;
           }
-
+          if (chunk.type === "finish") {
+            usage = chunk.usage;
+          }
           controller.enqueue(chunk);
         },
 
         async flush() {
           try {
-            const msg = {
+            const msg: AuditRecord = {
               model: model.modelId,
               app,
-              messages: [...params.prompt].concat({
-                role: "assistant",
-                content: [
-                  {
-                    type: "text",
-                    text: generatedText,
-                  },
-                ],
-              }),
+              messages: generatedText
+                ? [
+                    ...params.prompt,
+                    {
+                      role: "assistant",
+                      content: [
+                        {
+                          type: "text",
+                          text: generatedText,
+                        },
+                      ],
+                    },
+                  ]
+                : [...params.prompt],
+              usage: {
+                ...usage,
+                totalTokens: usage.completionTokens + usage.promptTokens,
+              },
               timestamp: Date.now(),
             };
 
