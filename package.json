@@ -3,10 +3,6 @@
   "version": "0.0.1",
   "description": "An AI assistant for developing software.",
   "type": "module",
-  "exports": {
-    "types": "./dist/index.d.ts",
-    "default": "./dist/index.js"
-  },
   "bin": {
     "acai": "./dist/index.js",
     "acai-lsp": "./dist/lsp.js"
