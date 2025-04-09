@@ -39,8 +39,12 @@ class KnowledgeGraphManager {
       return lines.reduce(
         (graph: KnowledgeGraph, line) => {
           const item = JSON.parse(line);
-          if (item.type === "entity") graph.entities.push(item as Entity);
-          if (item.type === "relation") graph.relations.push(item as Relation);
+          if (item.type === "entity") {
+            graph.entities.push(item as Entity);
+          }
+          if (item.type === "relation") {
+            graph.relations.push(item as Relation);
+          }
           return graph;
         },
         { entities: [], relations: [] },
