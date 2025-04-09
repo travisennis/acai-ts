@@ -7,7 +7,7 @@ import type { CommandOptions, ReplCommand } from "./types.ts";
 export const editCommand = ({ terminal }: CommandOptions) => {
   return {
     command: "/edit",
-    description: "Opens files in $EDITOR for editing.",
+    description: "Opens file in $EDITOR for editing.",
     result: "continue" as const,
     getSubCommands: () => [],
     execute: async () => {
