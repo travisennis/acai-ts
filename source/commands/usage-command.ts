@@ -9,11 +9,17 @@ export function usageCommand({
     description: "Show token usage breakdown",
     result: "continue",
     getSubCommands: () => [],
-    async execute() {
-      terminal.table(Object.entries(tokenTracker.getUsageBreakdown()), {
-        header: ["App", "Tokens"],
-        border: "single",
-      });
+    execute() {
+      const entries = Object.entries(tokenTracker.getUsageBreakdown());
+      if (entries.length === 0) {
+        terminal.info("No usage yet.");
+      } else {
+        terminal.table(entries, {
+          header: ["App", "Tokens"],
+        });
+      }
+      terminal.lineBreak();
+      return Promise.resolve();
     },
   };
 }

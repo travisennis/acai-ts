@@ -8,10 +8,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "@travisennis/stdlib/desm";
 import chalk, { type ChalkInstance } from "chalk";
+import Table from "cli-table3";
 import { marked } from "marked";
 import TerminalRenderer from "marked-terminal";
 import ora from "ora";
-import { getBorderCharacters, table } from "table";
 import terminalLink from "terminal-link";
 import { logger } from "../logger.ts";
 import {
@@ -315,45 +315,16 @@ export class Terminal {
    * Display a table of data
    */
   table(
-    data: any[][],
-    options: { header?: string[]; border?: boolean | "single" } = {},
+    data: [string, string | number][],
+    options: { header?: string[] } = {},
   ): void {
-    const config: any = {
-      border:
-        options.border === "single"
-          ? getBorderCharacters("norc")
-          : options.border
-            ? {}
-            : {
-                topBody: "",
-                topJoin: "",
-                topLeft: "",
-                topRight: "",
-                bottomBody: "",
-                bottomJoin: "",
-                bottomLeft: "",
-                bottomRight: "",
-                bodyLeft: "",
-                bodyRight: "",
-                bodyJoin: "",
-                joinBody: "",
-                joinLeft: "",
-                joinRight: "",
-                joinJoin: "",
-              },
-    };
+    const table = new Table({
+      head: options.header,
+    });
 
-    let finalData = data;
-    // Add header row with formatting
-    if (options.header) {
-      if (this.config.useColors) {
-        finalData = [options.header.map((h) => chalk.bold(h)), ...data];
-      } else {
-        finalData = [options.header, ...data];
-      }
-    }
+    table.push(...data);
 
-    this.writeln(table(finalData, config));
+    this.writeln(table.toString(), "");
   }
 
   /**
