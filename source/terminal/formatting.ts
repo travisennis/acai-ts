@@ -149,7 +149,7 @@ export function formatOutput(
   if (colors) {
     const diffBlockRegex = /```diff\n([\s\S]*?)```/g;
     let lastIndex = 0;
-    let result = '';
+    let result = "";
     let match;
 
     while ((match = diffBlockRegex.exec(formattedText)) !== null) {
@@ -162,7 +162,7 @@ export function formatOutput(
 
       // Highlight diff content line by line
       const highlightedDiff = diffContent
-        .split('\n')
+        .split("\n")
         .map((line) => {
           if (/^\s*\+/.test(line)) {
             return chalk.green(line);
@@ -175,10 +175,10 @@ export function formatOutput(
           }
           return line;
         })
-        .join('\n');
+        .join("\n");
 
       // Rebuild the diff block with highlighted content
-      result += '```diff\n' + highlightedDiff + '```';
+      result += "```diff\n" + highlightedDiff + "```";
 
       lastIndex = end;
     }
