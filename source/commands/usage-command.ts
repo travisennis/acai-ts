@@ -18,7 +18,7 @@ export function usageCommand({
           header: ["App", "Tokens"],
         });
       }
-      terminal.lineBreak();
+
       return Promise.resolve();
     },
   };

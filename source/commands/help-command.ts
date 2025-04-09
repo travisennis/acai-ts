@@ -19,8 +19,6 @@ export const helpCommand = ({ terminal }: CommandOptions) => {
         header: ["Command", "Description"],
       });
 
-      terminal.lineBreak();
-
       return Promise.resolve();
     },
   } satisfies ReplCommand;
