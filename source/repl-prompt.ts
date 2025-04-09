@@ -106,7 +106,7 @@ export class ReplPrompt {
   }
 
   async input() {
-    const input = await this.rl.question("> ");
+    const input = await this.rl.question(" > ");
     this.saveHistory(input);
     return input;
   }

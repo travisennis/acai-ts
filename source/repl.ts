@@ -6,7 +6,7 @@ import {
   generateObject,
   streamText,
 } from "ai";
-import chalk from "chalk";
+import chalk, { type ChalkInstance } from "chalk";
 import type { CommandManager } from "./commands/manager.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
@@ -56,7 +56,6 @@ export class Repl {
     const {
       config,
       promptManager,
-      // contextManager,
       terminal,
       modelManager,
       tokenTracker,
@@ -70,16 +69,13 @@ export class Repl {
 
     const promptHistory: string[] = [];
 
+    let contextWindow = 0;
     while (true) {
       const langModel = modelManager.getModel("repl");
       const modelConfig = modelManager.getModelMetadata("repl");
 
-      terminal.box(
-        "State:",
-        `Model:          ${langModel.modelId}\nContext Window: ${tokenTracker.getUsageByApp("repl").totalTokens} tokens`,
-      );
-      terminal.header("Input:");
-      terminal.writeln("");
+      terminal.writeln(chalk.dim(langModel.modelId));
+      terminal.displayProgressBar(contextWindow, modelConfig.contextWindow);
 
       if (!promptManager.isPending()) {
         // For interactive input
@@ -115,6 +111,7 @@ export class Repl {
       }
 
       const userPrompt = promptManager.get();
+
       const userMsg = promptManager.getUserMessage();
 
       messageHistory.appendUserMessage(userMsg);
@@ -181,74 +178,87 @@ export class Repl {
             if (result.response.messages.length > 0) {
               messageHistory.appendResponseMessages(result.response.messages);
             }
+
             terminal.writeln("\n\n"); // this puts an empty line after the streamed response.
-            terminal.header("Tool use:");
-            terminal.writeln(`${chalk.bold("Steps")}: ${result.steps.length}`);
 
             // Create a more visual representation of steps
-            for (let i = 0; i < result.steps.length; i++) {
-              const step = result.steps[i];
-              if (step) {
-                const stepNumber = chalk.gray(`${i < 9 ? " " : ""}${i + 1}.`);
-                const stepType = getStepTypeSymbol(step.stepType);
-                const toolsCalled = step.toolCalls
-                  .map((tc) => tc.toolName)
-                  .join(", ");
-                const toolsResults = step.toolResults
-                  .map((tc) => tc.toolName)
-                  .join(", ");
-                const tokenCount = chalk.cyan(
-                  `${step.usage.totalTokens} tokens`,
-                );
-
-                terminal.writeln(
-                  `${stepNumber} ${stepType} ${toolsCalled ? chalk.yellow(`⚙️  ${toolsCalled}`) : ""} ${toolsResults ? chalk.green(`✓ ${toolsResults}`) : ""} ${tokenCount}`,
-                );
+            const toolsCalled: string[] = [];
+            const toolColors = new Map<string, ChalkInstance>();
+            const chalkColors = [
+              "red",
+              "green",
+              "yellow",
+              "blue",
+              "magenta",
+              "cyan",
+              "white",
+              "gray",
+              "redBright",
+              "greenBright",
+              "yellowBright",
+              "blueBright",
+              "magentaBright",
+              "cyanBright",
+              "whiteBright",
+              "blackBright",
+            ] as const;
+            for (const step of result.steps) {
+              if (step.stepType === "tool-result") {
+                const toolResult = step.toolResults.at(0);
+                if (toolResult) {
+                  const toolName = toolResult.toolName;
+                  if (!toolColors.has(toolName)) {
+                    const availableColors = chalkColors.filter(
+                      (color) =>
+                        !Array.from(toolColors.values()).some(
+                          (c) => c === chalk[color],
+                        ),
+                    );
+                    const color =
+                      availableColors.length > 0
+                        ? (availableColors[
+                            Math.floor(Math.random() * availableColors.length)
+                          ] ?? "white")
+                        : "white";
+                    toolColors.set(toolName, chalk[color]);
+                  }
+                  toolsCalled.push(toolName);
+                }
               }
             }
 
-            // Helper function to get visual indicator for step type
-            function getStepTypeSymbol(type: string) {
-              switch (type) {
-                case "initial":
-                  return chalk.blue("🔍");
-                case "tool-result":
-                  return chalk.green("🔧");
-                case "reasoning":
-                  return chalk.magenta("💭");
-                default:
-                  return chalk.gray(`[${type}]`);
+            if (toolsCalled.length > 0) {
+              for (const toolCalled of toolsCalled) {
+                const colorFn = toolColors.get(toolCalled) ?? chalk.white;
+                terminal.write(" ");
+                terminal.write(colorFn("█"));
               }
+              terminal.lineBreak();
+
+              for (const toolCalled of new Set(toolsCalled)) {
+                const colorFn = toolColors.get(toolCalled) ?? chalk.white;
+                terminal.write(" ");
+                terminal.write(colorFn(toolCalled));
+              }
+              terminal.lineBreak();
+              terminal.lineBreak();
             }
 
-            terminal.header("Usage:");
-            terminal.writeln(
-              chalk.green(
-                `Prompt tokens: ${result.usage.promptTokens}, Completion tokens: ${result.usage.completionTokens}, Total tokens: ${result.usage.totalTokens}`,
-              ),
-            );
-            terminal.writeln(
-              chalk.yellow(
-                `Cache creation: ${result.providerMetadata?.["anthropic"]?.["cacheCreationInputTokens"]}, Cache read: ${result.providerMetadata?.["anthropic"]?.["cacheReadInputTokens"]}`,
-              ),
-            );
-            terminal.header("Total Usage:");
+            const tokenSummary = `Tokens: ↑ ${result.usage.promptTokens} ↓ ${result.usage.completionTokens}`;
+            terminal.writeln(chalk.dim(tokenSummary));
+
+            contextWindow = result.usage.totalTokens;
+
             tokenTracker.trackUsage("repl", result.usage);
-            const totalUsage = tokenTracker.getUsageByApp("repl");
-            terminal.writeln(
-              chalk.green(
-                `Prompt tokens: ${totalUsage.promptTokens}, Completion tokens: ${totalUsage.completionTokens}, Total tokens: ${totalUsage.totalTokens}`,
-              ),
-            );
 
-            terminal.hr(chalk.yellow);
+            terminal.hr(chalk.dim);
           },
           onError: ({ error }) => {
             terminal.error(JSON.stringify(error, null, 2));
           },
         });
 
-        terminal.header("Assistant:");
+        terminal.lineBreak();
         let lastType: "reasoning" | "text-delta" | null = null;
         for await (const chunk of result.fullStream) {
           // Handle text-related chunks (reasoning or text-delta)
@@ -283,6 +293,7 @@ export class Repl {
         }
       } catch (e) {
         terminal.error((e as Error).message);
+        terminal.lineBreak();
         if (e instanceof Error) {
           logger.error(e);
         } else {

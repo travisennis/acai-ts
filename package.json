@@ -46,7 +46,6 @@
     "cli-table3": "^0.6.5",
     "clipboardy": "^4.0.0",
     "diff": "^7.0.0",
-    "figlet": "^1.8.0",
     "globby": "^14.1.0",
     "ignore": "^7.0.3",
     "marked": "15.0.8",
@@ -71,7 +70,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@types/figlet": "^1.7.0",
     "@types/marked-terminal": "^6.1.1",
     "@types/node": "^22.14.0"
   },

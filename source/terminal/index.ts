@@ -8,15 +8,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "@travisennis/stdlib/desm";
 import chalk, { type ChalkInstance } from "chalk";
-import figlet from "figlet";
 import { marked } from "marked";
 import TerminalRenderer from "marked-terminal";
 import ora from "ora";
-import { table } from "table";
+import { getBorderCharacters, table } from "table";
 import terminalLink from "terminal-link";
 import { logger } from "../logger.ts";
 import {
-  clearScreen,
+  clearTerminal,
   formatOutput,
   getTerminalSize,
   setTerminalTitle,
@@ -116,6 +115,17 @@ export class Terminal {
     setTerminalTitle(title);
   }
 
+  getLogo(): string {
+    return `
+   █████╗  ██████╗ █████╗ ██╗
+  ██╔══██╗██╔════╝██╔══██╗██║
+  ███████║██║     ███████║██║
+  ██╔══██║██║     ██╔══██║██║
+  ██║  ██║╚██████╗██║  ██║██║
+  ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝
+                                       `;
+  }
+
   /**
    * Display the welcome message
    */
@@ -127,7 +137,7 @@ export class Terminal {
     );
     const version = packageJson.version;
 
-    this.writeln(chalk.magenta(figlet.textSync("acai")));
+    this.writeln(chalk.magenta(this.getLogo()), "");
     this.writeln("");
     this.writeln(chalk.magenta("Greetings! I am acai."));
     this.writeln(chalk.gray(`  Version ${version}`));
@@ -145,18 +155,15 @@ export class Terminal {
         `  Example: "${chalk.italic("Please analyze this codebase and explain its structure.")}"`,
       ),
     );
-    this.writeln("");
+    this.writeln(chalk.dim("  Use Ctrl+C to interrupt acai and exit."));
+
+    this.lineBreak();
+
     this.writeln(
       chalk.yellow(`The current working directory is ${process.cwd()}`),
     );
 
-    // if (this.config.useColors) {
-    //   console.log(
-    //     chalk.dim(
-    //       "  Pro tip: Use Ctrl+C to interrupt acai and start over.\n",
-    //     ),
-    //   );
-    // }
+    this.lineBreak();
   }
 
   /**
@@ -164,7 +171,7 @@ export class Terminal {
    */
   clear(): void {
     if (this.isInteractive) {
-      clearScreen();
+      clearTerminal();
     }
   }
 
@@ -178,7 +185,7 @@ export class Terminal {
       codeHighlighting: this.config.codeHighlighting,
     });
 
-    console.info(formatted);
+    this.writeln(formatted);
   }
 
   /**
@@ -186,9 +193,9 @@ export class Terminal {
    */
   emphasize(message: string): void {
     if (this.config.useColors) {
-      console.info(chalk.cyan.bold(message));
+      this.writeln(chalk.cyan.bold(message));
     } else {
-      console.info(message.toUpperCase());
+      this.writeln(message.toUpperCase());
     }
   }
 
@@ -197,9 +204,9 @@ export class Terminal {
    */
   info(message: string): void {
     if (this.config.useColors) {
-      console.info(chalk.blue(`ℹ ${message}`));
+      this.writeln(chalk.blue(`ℹ ${message}`));
     } else {
-      console.info(`INFO: ${message}`);
+      this.writeln(`INFO: ${message}`);
     }
   }
 
@@ -208,9 +215,9 @@ export class Terminal {
    */
   success(message: string): void {
     if (this.config.useColors) {
-      console.info(chalk.green(`✓ ${message}`));
+      this.writeln(chalk.green(`✓ ${message}`));
     } else {
-      console.info(`SUCCESS: ${message}`);
+      this.writeln(`SUCCESS: ${message}`);
     }
   }
 
@@ -219,9 +226,9 @@ export class Terminal {
    */
   warn(message: string): void {
     if (this.config.useColors) {
-      console.info(chalk.yellow(`⚠ ${message}`));
+      this.writeln(chalk.yellow(`⚠ ${message}`));
     } else {
-      console.info(`WARNING: ${message}`);
+      this.writeln(`WARNING: ${message}`);
     }
   }
 
@@ -230,9 +237,9 @@ export class Terminal {
    */
   error(message: string): void {
     if (this.config.useColors) {
-      console.info(chalk.red(`✗ ${message}`));
+      this.writeln(chalk.red(`✗ ${message}`));
     } else {
-      console.info(`ERROR: ${message}`);
+      this.writeln(`ERROR: ${message}`);
     }
   }
 
@@ -240,8 +247,8 @@ export class Terminal {
     process.stdout.write(input);
   }
 
-  writeln(input: string): void {
-    process.stdout.write(`${input}\n`);
+  writeln(input: string, padding = " "): void {
+    process.stdout.write(`${padding}${input}\n`);
   }
 
   lineBreak() {
@@ -251,7 +258,7 @@ export class Terminal {
   header(header: string, chalkFn: ChalkInstance = chalk.green): void {
     const width = process.stdout.columns - header.length - 7; // Adjusted for extra spaces
     process.stdout.write(
-      chalkFn(`\n ── ${header} ${"─".repeat(width > 0 ? width : 0)}  \n`),
+      chalkFn(`\n ── ${header} ${"─".repeat(width > 0 ? width : 0)}  \n\n`),
     );
   }
 
@@ -285,12 +292,14 @@ export class Terminal {
   }
 
   hr(chalkFn: ChalkInstance = chalk.cyan): void {
-    process.stdout.write(chalkFn(`\n${"-".repeat(process.stdout.columns)}\n`));
+    process.stdout.write(
+      chalkFn(`\n ${"─".repeat(process.stdout.columns - 4)}  \n`),
+    );
   }
 
   async markdown(input: string): Promise<void> {
     const md = await marked.parse(input);
-    console.info(md);
+    this.writeln(md);
   }
 
   /**
@@ -307,28 +316,31 @@ export class Terminal {
    */
   table(
     data: any[][],
-    options: { header?: string[]; border?: boolean } = {},
+    options: { header?: string[]; border?: boolean | "single" } = {},
   ): void {
     const config: any = {
-      border: options.border
-        ? {}
-        : {
-            topBody: "",
-            topJoin: "",
-            topLeft: "",
-            topRight: "",
-            bottomBody: "",
-            bottomJoin: "",
-            bottomLeft: "",
-            bottomRight: "",
-            bodyLeft: "",
-            bodyRight: "",
-            bodyJoin: "",
-            joinBody: "",
-            joinLeft: "",
-            joinRight: "",
-            joinJoin: "",
-          },
+      border:
+        options.border === "single"
+          ? getBorderCharacters("norc")
+          : options.border
+            ? {}
+            : {
+                topBody: "",
+                topJoin: "",
+                topLeft: "",
+                topRight: "",
+                bottomBody: "",
+                bottomJoin: "",
+                bottomLeft: "",
+                bottomRight: "",
+                bodyLeft: "",
+                bodyRight: "",
+                bodyJoin: "",
+                joinBody: "",
+                joinLeft: "",
+                joinRight: "",
+                joinJoin: "",
+              },
     };
 
     let finalData = data;
@@ -341,7 +353,7 @@ export class Terminal {
       }
     }
 
-    console.info(table(finalData, config));
+    this.writeln(table(finalData, config));
   }
 
   /**
@@ -440,6 +452,54 @@ export class Terminal {
     };
 
     return dummySpinner;
+  }
+
+  /**
+   * Displays a horizontal progress bar in the console.
+   * @param current The current value.
+   * @param total The target value.
+   */
+  displayProgressBar(current: number, total: number): void {
+    const terminalWidth = process.stdout.columns || 80; // Default to 80 if columns not available
+
+    // Function to format numbers concisely (e.g., 1.2K, 5M)
+    const formatNumber = (num: number): string => {
+      if (num < 1000) {
+        return num.toString();
+      }
+      if (num < 1_000_000) {
+        return `${(num / 1000).toFixed(1)}K`;
+      }
+      if (num < 1_000_000_000) {
+        return `${(num / 1_000_000).toFixed(1)}M`;
+      }
+      return `${(num / 1_000_000_000).toFixed(1)}G`;
+    };
+
+    const currentFormatted = formatNumber(current);
+    const totalFormatted = formatNumber(total);
+    const progressText = `${currentFormatted}/${totalFormatted}`;
+    const progressTextLength = progressText.length + 1; // Add 1 for space
+
+    const progressBarMaxWidth = terminalWidth - progressTextLength - 3;
+
+    const percentage = total === 0 ? 1 : current / total;
+    const filledWidth = Math.max(
+      0,
+      Math.min(
+        progressBarMaxWidth,
+        Math.floor(percentage * progressBarMaxWidth),
+      ),
+    );
+    const emptyWidth = Math.max(0, progressBarMaxWidth - filledWidth);
+
+    const a = chalk.yellow("─"); //"█"
+    const b = chalk.gray("─"); // "░"
+    const filledBar = a.repeat(filledWidth);
+    const emptyBar = b.repeat(emptyWidth);
+
+    // Use \r to move cursor to the beginning of the line for updates
+    this.writeln(`\r ${filledBar}${emptyBar} ${progressText}  `);
   }
 }
 

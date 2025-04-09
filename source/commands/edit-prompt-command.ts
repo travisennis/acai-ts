@@ -9,16 +9,19 @@ export const editPromptCommand = ({
   return {
     command: "/editPrompt",
     description: "Edit the prompt.",
-    result: "continue" as const,
+    result: "use" as const,
     getSubCommands: () => [],
     execute: async () => {
       try {
         const prompt = syncTry(() => promptManager.get());
         const updatedPrompt = await editor({
-          message: "Edit prompt?",
+          message: " Edit prompt?",
           postfix: "md",
           default: prompt.unwrapOr(""),
         });
+
+        terminal.writeln(`> ${updatedPrompt}`);
+
         promptManager.set(updatedPrompt);
       } catch (error) {
         terminal.error(`Error updating prompt: ${(error as Error).message}`);
