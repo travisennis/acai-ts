@@ -2,11 +2,11 @@ import { editor } from "@inquirer/prompts";
 import { config } from "../config.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const memoryCommand = ({ terminal }: CommandOptions) => {
+export const rulesCommand = ({ terminal }: CommandOptions) => {
   return {
-    command: "/memory",
+    command: "/rules",
     description:
-      "View, add, or edit memories (rules). Usage: /memory [view|add <text>|edit]",
+      "View, add, or edit rules. Usage: /rules [view|add <text>|edit]",
     result: "continue" as const,
     getSubCommands: () => ["view", "add", "edit"],
     execute: async (args: string[]) => {
@@ -23,7 +23,7 @@ export const memoryCommand = ({ terminal }: CommandOptions) => {
               terminal.writeln("---------------------");
             } else {
               terminal.writeln(
-                "No rules defined yet. Use '/memory add' or '/memory edit'.",
+                "No rules defined yet. Use '/rules add' or '/rules edit'.",
               );
             }
             break;
@@ -63,7 +63,7 @@ export const memoryCommand = ({ terminal }: CommandOptions) => {
 
           default:
             terminal.writeln(
-              "Invalid subcommand. Usage: /memory [view|add <text>|edit]",
+              "Invalid subcommand. Usage: /rules [view|add <text>|edit]",
             );
             break;
         }

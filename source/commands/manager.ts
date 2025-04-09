@@ -20,7 +20,7 @@ import { reviewCommand } from "./review-command.ts";
 import { saveCommand } from "./save-command.ts";
 import { selectionsCommand } from "./selections-command.ts";
 import { modelCommand } from "./model-command.ts";
-import { memoryCommand } from "./memory-command.ts";
+import { rulesCommand } from "./rules-command.ts";
 import { usageCommand } from "./usage-command.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
@@ -75,7 +75,7 @@ export class CommandManager {
       reviewCommand(options),
       saveCommand(options),
       selectionsCommand(options),
-      memoryCommand(options),
+      rulesCommand(options),
       modelCommand(options),
       usageCommand(options),
     ];
