@@ -228,17 +228,18 @@ export class Repl {
             }
 
             if (toolsCalled.length > 0) {
+              terminal.write(" ");
               for (const toolCalled of toolsCalled) {
                 const colorFn = toolColors.get(toolCalled) ?? chalk.white;
-                terminal.write(" ");
                 terminal.write(colorFn("█"));
               }
               terminal.lineBreak();
 
+              terminal.write(" ");
               for (const toolCalled of new Set(toolsCalled)) {
                 const colorFn = toolColors.get(toolCalled) ?? chalk.white;
-                terminal.write(" ");
                 terminal.write(colorFn(toolCalled));
+                terminal.write(" - ");
               }
               terminal.lineBreak();
               terminal.lineBreak();
