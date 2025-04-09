@@ -244,7 +244,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "anthropic:sonnet": {
     id: "anthropic:sonnet",
     provider: "anthropic",
-    contextWindow: 0,
+    contextWindow: 200000,
     maxOutputTokens: 64000,
     defaultTemperature: 0.3,
     promptFormat: "xml",
@@ -257,7 +257,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "anthropic:sonnet-token-efficient-tools": {
     id: "anthropic:sonnet-token-efficient-tools",
     provider: "anthropic",
-    contextWindow: 0,
+    contextWindow: 200000,
     maxOutputTokens: 64000,
     defaultTemperature: 0.3,
     promptFormat: "xml",
@@ -270,7 +270,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "anthropic:sonnet-128k": {
     id: "anthropic:sonnet-128k",
     provider: "anthropic",
-    contextWindow: 0,
+    contextWindow: 200000,
     maxOutputTokens: 128000,
     defaultTemperature: 0.3,
     promptFormat: "xml",
@@ -283,7 +283,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "anthropic:sonnet35": {
     id: "anthropic:sonnet35",
     provider: "anthropic",
-    contextWindow: 0,
+    contextWindow: 200000,
     maxOutputTokens: 8096,
     defaultTemperature: 0.3,
     promptFormat: "xml",
@@ -296,7 +296,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "anthropic:haiku": {
     id: "anthropic:haiku",
     provider: "anthropic",
-    contextWindow: 0,
+    contextWindow: 200000,
     maxOutputTokens: 4096,
     defaultTemperature: 0.3,
     promptFormat: "xml",
@@ -309,7 +309,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "openai:chatgpt-4o-latest": {
     id: "openai:chatgpt-4o-latest",
     provider: "openai",
-    contextWindow: 0,
+    contextWindow: 128000,
     maxOutputTokens: 16384,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
@@ -322,7 +322,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "openai:gpt-4o": {
     id: "openai:gpt-4o",
     provider: "openai",
-    contextWindow: 0,
+    contextWindow: 128000,
     maxOutputTokens: 16384,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
@@ -335,7 +335,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "openai:gpt-4o-mini": {
     id: "openai:gpt-4o-mini",
     provider: "openai",
-    contextWindow: 0,
+    contextWindow: 128000,
     maxOutputTokens: 16384,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
@@ -348,7 +348,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "openai:gpt-4o-structured": {
     id: "openai:gpt-4o-structured",
     provider: "openai",
-    contextWindow: 0,
+    contextWindow: 128000,
     maxOutputTokens: 16384,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
@@ -361,7 +361,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "openai:gpt-4o-mini-structured": {
     id: "openai:gpt-4o-mini-structured",
     provider: "openai",
-    contextWindow: 0,
+    contextWindow: 128000,
     maxOutputTokens: 16384,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
@@ -374,7 +374,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "openai:o1": {
     id: "openai:o1",
     provider: "openai",
-    contextWindow: 0,
+    contextWindow: 200000,
     maxOutputTokens: 100000,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
@@ -400,7 +400,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "openai:o1-mini": {
     id: "openai:o1-mini",
     provider: "openai",
-    contextWindow: 0,
+    contextWindow: 200000,
     maxOutputTokens: 65536,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
@@ -413,7 +413,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "openai:o3-mini": {
     id: "openai:o3-mini",
     provider: "openai",
-    contextWindow: 0,
+    contextWindow: 200000,
     maxOutputTokens: 100000,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
@@ -426,7 +426,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "google:flash2": {
     id: "google:flash2",
     provider: "google",
-    contextWindow: 0,
+    contextWindow: 1000000,
     maxOutputTokens: 8192,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
@@ -439,7 +439,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "google:flash2lite": {
     id: "google:flash2lite",
     provider: "google",
-    contextWindow: 0,
+    contextWindow: 1000000,
     maxOutputTokens: 8192,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
@@ -452,7 +452,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "google:flash2-search": {
     id: "google:flash2-search",
     provider: "google",
-    contextWindow: 0,
+    contextWindow: 1000000,
     maxOutputTokens: 8192,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
@@ -465,7 +465,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "google:flash2thinking": {
     id: "google:flash2thinking",
     provider: "google",
-    contextWindow: 0,
+    contextWindow: 1000000,
     maxOutputTokens: 8192,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
@@ -478,7 +478,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "google:pro2": {
     id: "google:pro2",
     provider: "google",
-    contextWindow: 0,
+    contextWindow: 1000000,
     maxOutputTokens: 8192,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
@@ -491,7 +491,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "google:pro25": {
     id: "google:pro25",
     provider: "google",
-    contextWindow: 0,
+    contextWindow: 1000000,
     maxOutputTokens: 64000,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
@@ -504,7 +504,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "deepseek:deepseek-chat": {
     id: "deepseek:deepseek-chat",
     provider: "deepseek",
-    contextWindow: 0,
+    contextWindow: 128000,
     maxOutputTokens: 8000,
     defaultTemperature: 0.3,
     promptFormat: "bracket",
@@ -517,7 +517,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "deepseek:deepseek-reasoner": {
     id: "deepseek:deepseek-reasoner",
     provider: "deepseek",
-    contextWindow: 0,
+    contextWindow: 128000,
     maxOutputTokens: 8000,
     defaultTemperature: 0.6,
     promptFormat: "bracket",
@@ -530,7 +530,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "openrouter:deepseek-v3": {
     id: "openrouter:deepseek-v3",
     provider: "openrouter",
-    contextWindow: 0,
+    contextWindow: 128000,
     maxOutputTokens: 8000,
     defaultTemperature: 0.3,
     promptFormat: "bracket",
@@ -543,7 +543,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "openrouter:deepseek-r1": {
     id: "openrouter:deepseek-r1",
     provider: "openrouter",
-    contextWindow: 0,
+    contextWindow: 128000,
     maxOutputTokens: 8000,
     defaultTemperature: 0.6,
     promptFormat: "bracket",
@@ -556,7 +556,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   "openrouter:quasar-alpha": {
     id: "openrouter:quasar-alpha",
     provider: "openrouter",
-    contextWindow: 0,
+    contextWindow: 1000000,
     maxOutputTokens: 32000,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
