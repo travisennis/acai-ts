@@ -8,6 +8,7 @@ import {
   forEachChild,
   isClassDeclaration,
   isFunctionDeclaration,
+  isImportDeclaration,
   isInterfaceDeclaration,
   isMethodDeclaration,
   isMethodSignature,
@@ -17,10 +18,16 @@ import {
 } from "typescript";
 
 export interface FileStructure {
+  imports: ImportInfo[];
   functions: FunctionInfo[];
   classes: ClassInfo[];
   interfaces: InterfaceInfo[];
   types: TypeInfo[];
+}
+
+export interface ImportInfo {
+  name: string;
+  fileName: string;
 }
 
 export interface FunctionInfo {
@@ -108,6 +115,14 @@ export class CodeMap {
         output += `<codeMap>\n<filePath>${filePath}</filePath>\n<map>\n`;
     }
 
+    if (this.structure.imports.length > 0) {
+      output += "Imported files:\n";
+      for (const relativeImport of this.structure.imports) {
+        output += `  ${relativeImport.fileName}\n`;
+      }
+      output += "\n\n";
+    }
+
     if (this.structure.functions.length > 0) {
       output += "Functions:\n";
       for (const func of this.structure.functions) {
@@ -169,6 +184,7 @@ export class CodeMap {
 
   private static analyzeSourceFile(sourceFile: SourceFile): FileStructure {
     const structure: FileStructure = {
+      imports: [],
       functions: [],
       classes: [],
       interfaces: [],
@@ -249,6 +265,15 @@ export class CodeMap {
         structure.types.push({
           name: node.name.getText(sourceFile),
           type: node.type.getText(sourceFile),
+        });
+      } else if (isImportDeclaration(node)) {
+        const importDecl = node;
+        const moduleSpecifier = importDecl.moduleSpecifier
+          .getText(sourceFile)
+          .replace(/^['"]|['"]$/g, "");
+        structure.imports.push({
+          name: "",
+          fileName: moduleSpecifier,
         });
       }
 
