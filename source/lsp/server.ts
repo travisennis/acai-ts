@@ -574,49 +574,23 @@ ${instructions.prompt ?? ""}
 
 // Extracts related files' content based on imports, requires, or module usage
 function updateFileRelations(filePath: string, content: TextDocument) {
-  logger.debug(`Updating file relations for ${filePath}`);
-  const matches = content
-    .getText()
-    .match(/import\s+.*?from\s+['"](.*?)['"]|require\(['"](.*?)['"]\)/g);
+  const map = CodeMap.fromSource(content.getText(), filePath);
+  const imports = map.getStructure().imports;
 
-  if (!matches) {
-    logger.debug(`No import or require statements found in ${filePath}`);
-    return;
-  }
-
-  logger.debug(
-    `Found ${matches.length} import/require statements in ${filePath}`,
-  );
-
-  const relatedFiles = matches
-    .map((m) => {
-      const pathMatch = m.match(/['"](.*?)['"]/);
-      const relatedPath = pathMatch ? pathMatch[1] : null;
-      logger.debug(`Parsed related path: ${relatedPath}`);
-      return relatedPath;
-    })
+  const relatedFiles = imports
+    .map((i) => i.fileName)
     .filter((path) => {
       const isRelative =
         !isNullOrUndefined(path) &&
         (path.startsWith("./") || path.startsWith("../"));
-      if (!isNullOrUndefined(path)) {
-        logger.debug(
-          `Path "${path}" is ${isRelative ? "relative, including" : "not relative, excluding"}`,
-        );
-      }
       return isRelative;
     })
     .map((relativePath) => {
       const currentDir = dirname(filePath.replace("file://", ""));
       const absolutePath = resolve(currentDir, relativePath ?? "");
       const uri = `file://${absolutePath}`;
-      logger.debug(`Resolved absolute URI: ${uri}`);
       return uri;
     });
-
-  logger.debug(
-    `Setting ${relatedFiles.length} related files for ${filePath}: ${relatedFiles.join(", ")}`,
-  );
 
   fileRelations.set(filePath, relatedFiles);
 }
