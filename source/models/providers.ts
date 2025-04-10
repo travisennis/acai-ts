@@ -19,6 +19,7 @@ export const providers = [
   "azure",
   "openrouter",
   "ollama",
+  "xai",
 ] as const;
 
 export type ModelProvider = (typeof providers)[number];
@@ -159,6 +160,20 @@ const deepseek = customProvider({
   fallbackProvider: originalDeepseek,
 });
 
+const xaiClient = createOpenAI({
+  apiKey: process.env["X_AI_API_KEY"] ?? process.env["XAI_API_KEY"],
+  // biome-ignore lint/style/useNamingConvention: <explanation>
+  baseURL: "https://api.x.ai/v1",
+});
+
+const xai = customProvider({
+  languageModels: {
+    grok3: xaiClient("grok-3"),
+    "grok3-mini": xaiClient("grok-3-mini-beta"),
+  },
+  fallbackProvider: xaiClient,
+});
+
 const ollama = customProvider({
   fallbackProvider: createOllama(),
 });
@@ -171,6 +186,7 @@ const registry = createProviderRegistry({
   openai,
   openrouter,
   ollama,
+  xai,
 });
 
 export const models = [
@@ -200,6 +216,8 @@ export const models = [
   "openrouter:deepseek-v3",
   "openrouter:deepseek-r1",
   "openrouter:quasar-alpha",
+  "xai:grok3",
+  "xai:grok3-mini",
 ] as const;
 
 export type ModelName = (typeof models)[number];
@@ -581,6 +599,32 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
     costPerOutputToken: 0,
     category: "balanced",
   },
+  "xai:grok3": {
+    id: "xai:grok3",
+    provider: "xai",
+    contextWindow: 131072,
+    maxOutputTokens: 131072,
+    defaultTemperature: 0.6,
+    promptFormat: "markdown",
+    supportsReasoning: false,
+    supportsToolCalling: true,
+    costPerInputToken: 0.000003,
+    costPerOutputToken: 0.000015,
+    category: "balanced",
+  },
+  "xai:grok3-mini": {
+    id: "xai:grok3-mini",
+    provider: "xai",
+    contextWindow: 131072,
+    maxOutputTokens: 131072,
+    defaultTemperature: 0.6,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.0000003,
+    costPerOutputToken: 0.0000005,
+    category: "balanced",
+  },
 };
 
 // Schema for validating model selection
@@ -598,6 +642,7 @@ export function getModelsByProvider(): Record<ModelProvider, ModelMetadata[]> {
     azure: [],
     openrouter: [],
     ollama: [],
+    xai: [],
   };
 
   for (const model of Object.values(modelRegistry)) {
