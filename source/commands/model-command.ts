@@ -15,8 +15,6 @@ export function modelCommand(options: CommandOptions): ReplCommand {
 
   function switchModel(newModelName: ModelName) {
     try {
-      terminal.info(`Switching to model: ${newModelName}...`);
-
       // Get current and new model configs
       const currentModelConfig = modelManager.getModelMetadata("repl");
       const newModelConfig = modelRegistry[newModelName]; // Ensure modelRegistry is available
@@ -48,7 +46,6 @@ export function modelCommand(options: CommandOptions): ReplCommand {
       modelManager.setModel("repl", newModelName);
 
       // Assuming ModelManager handles the actual model instance switching internally.
-      terminal.success(`Successfully switched to ${newModelName}`);
       terminal.info(`Model set to ${newModelName}.`); // Simplified message
     } catch (error) {
       terminal.error(`Failed to switch model: ${(error as Error).message}`);
