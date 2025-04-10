@@ -600,33 +600,25 @@ function getRelatedFilesContext(
   filePath: string,
   documents: TextDocuments<TextDocument>,
 ): string {
-  logger.debug(`Fetching related files context for ${filePath}`);
   const relatedFiles = fileRelations.get(filePath) || [];
-  logger.debug(`Found ${relatedFiles.length} related files for ${filePath}`);
   const context: string[] = [];
 
   for (const related of relatedFiles) {
-    logger.debug(`Processing related file: ${related}`);
     try {
       const relatedUri = related.startsWith("file://")
         ? related
         : `file://${related}`;
-      logger.debug(`Resolved related URI: ${relatedUri}`);
 
       const doc = documents
         .all()
         .find((d) => d.uri === relatedUri || d.uri.endsWith(related));
 
       if (doc) {
-        logger.debug(`Found related document in memory: ${doc.uri}`);
         let contentToUse: string;
         try {
           const docText = doc.getText();
           const tokenCount = countTokens(docText);
           if (tokenCount > 500) {
-            logger.debug(
-              `In-memory doc ${doc.uri} exceeds 500 tokens (${tokenCount}), generating CodeMap.`,
-            );
             const codeMap = CodeMap.fromSource(docText, doc.uri);
             contentToUse = codeMap.format("markdown", doc.uri);
           } else {
@@ -641,9 +633,6 @@ function getRelatedFilesContext(
         }
         context.push(formatFile(related, contentToUse, "markdown"));
       } else {
-        logger.debug(
-          "Related document not found in memory, attempting filesystem read",
-        );
         try {
           const currentDir = dirname(filePath.replace("file://", ""));
           let absolutePath = resolve(currentDir, related);
@@ -653,18 +642,12 @@ function getRelatedFilesContext(
             absolutePath = related.replace("file://", "");
           }
 
-          logger.debug(`Resolved absolute path: ${absolutePath}`);
-
           if (existsSync(absolutePath)) {
-            logger.debug(`File exists on filesystem: ${absolutePath}`);
             const fileContent = readFileSync(absolutePath, "utf8");
             let contentToUse: string;
             try {
               const tokenCount = countTokens(fileContent);
               if (tokenCount > 500) {
-                logger.debug(
-                  `File ${absolutePath} exceeds 500 tokens (${tokenCount}), generating CodeMap.`,
-                );
                 const codeMap = CodeMap.fromSource(fileContent, absolutePath);
                 contentToUse = codeMap.format("markdown", absolutePath);
               } else {
@@ -679,7 +662,7 @@ function getRelatedFilesContext(
             }
             context.push(formatFile(related, contentToUse, "markdown"));
           } else {
-            logger.debug(`File does not exist on filesystem: ${absolutePath}`);
+            logger.warn(`File does not exist on filesystem: ${absolutePath}`);
           }
         } catch (error) {
           logger.warn(
@@ -692,6 +675,5 @@ function getRelatedFilesContext(
       logger.warn(`Could not load related file: ${related}`);
     }
   }
-  logger.debug(`Completed fetching related files context for ${filePath}`);
   return context.join("\n\n");
 }
