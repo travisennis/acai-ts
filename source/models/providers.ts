@@ -44,6 +44,7 @@ const openrouter = customProvider({
     "deepseek-v3": openRouterClient("deepseek/deepseek-chat"),
     "deepseek-r1": openRouterClient("deepseek/deepseek-r1"),
     "quasar-alpha": openRouterClient("openrouter/quasar-alpha"),
+    "optimus-alpha": openRouterClient("openrouter:optimus-alpha"),
   },
   fallbackProvider: openRouterClient,
 });
@@ -214,6 +215,7 @@ export const models = [
   "openrouter:quasar-alpha",
   "xai:grok3",
   "xai:grok3-mini",
+  "openrouter:optimus-alpha",
 ] as const;
 
 export type ModelName = (typeof models)[number];
@@ -584,6 +586,19 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   },
   "openrouter:quasar-alpha": {
     id: "openrouter:quasar-alpha",
+    provider: "openrouter",
+    contextWindow: 1000000,
+    maxOutputTokens: 32000,
+    defaultTemperature: 0.3,
+    promptFormat: "markdown",
+    supportsReasoning: false,
+    supportsToolCalling: true,
+    costPerInputToken: 0,
+    costPerOutputToken: 0,
+    category: "balanced",
+  },
+  "openrouter:optimus-alpha": {
+    id: "openrouter:optimus-alpha",
     provider: "openrouter",
     contextWindow: 1000000,
     maxOutputTokens: 32000,
