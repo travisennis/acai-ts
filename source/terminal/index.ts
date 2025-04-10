@@ -104,11 +104,14 @@ export class Terminal {
       this.config.useColors = false;
     }
 
-    logger.debug("Terminal capabilities detected", {
-      isInteractive: this.isInteractive,
-      colorSupport: this.config.useColors ? "yes" : "no",
-      size: `${this.terminalWidth}x${this.terminalHeight}`,
-    });
+    logger.debug(
+      {
+        isInteractive: this.isInteractive,
+        colorSupport: this.config.useColors ? "yes" : "no",
+        size: `${this.terminalWidth}x${this.terminalHeight}`,
+      },
+      "Terminal capabilities detected",
+    );
   }
 
   setTitle(title: string) {
