@@ -1,4 +1,4 @@
-import { isDefined } from "@travisennis/stdlib/typeguards";
+import { isDefined, isRecord } from "@travisennis/stdlib/typeguards";
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import {
   NoSuchToolError,
@@ -180,7 +180,8 @@ export class Repl {
               messageHistory.appendResponseMessages(result.response.messages);
             }
 
-            terminal.writeln("\n\n"); // this puts an empty line after the streamed response.
+            terminal.lineBreak();
+            terminal.hr(chalk.dim);
 
             // Create a more visual representation of steps
             const toolsCalled: string[] = [];
@@ -205,8 +206,7 @@ export class Repl {
             ] as const;
             for (const step of result.steps) {
               if (step.stepType === "tool-result") {
-                const toolResult = step.toolResults.at(0);
-                if (toolResult) {
+                for (const toolResult of step.toolResults) {
                   const toolName = toolResult.toolName;
                   if (!toolColors.has(toolName)) {
                     const availableColors = chalkColors.filter(
@@ -229,7 +229,7 @@ export class Repl {
             }
 
             if (toolsCalled.length > 0) {
-              terminal.write(" ");
+              terminal.writeln(chalk.dim("Tools:"));
               for (const toolCalled of toolsCalled) {
                 const colorFn = toolColors.get(toolCalled) ?? chalk.white;
                 terminal.write(colorFn("█"));
@@ -237,10 +237,14 @@ export class Repl {
               terminal.lineBreak();
 
               terminal.write(" ");
-              for (const toolCalled of new Set(toolsCalled)) {
+              for (const [index, toolCalled] of Array.from(
+                new Set(toolsCalled),
+              ).entries()) {
                 const colorFn = toolColors.get(toolCalled) ?? chalk.white;
                 terminal.write(colorFn(toolCalled));
-                terminal.write(" - ");
+                if (index < new Set(toolsCalled).size - 1) {
+                  terminal.write(" - ");
+                }
               }
               terminal.lineBreak();
               terminal.lineBreak();
@@ -248,7 +252,7 @@ export class Repl {
 
             const stats = await getDiffStat();
             terminal.writeln(
-              `${chalk.dim("Files changed:")} ${chalk.yellow(stats.filesChanged)}` +
+              `${chalk.dim("Files changed:")} ${chalk.yellow(stats.filesChanged)} ` +
                 `${chalk.green(`+${stats.insertions}`)} ` +
                 `${chalk.red(`-${stats.deletions}`)}`,
             );
@@ -301,7 +305,17 @@ export class Repl {
           return;
         }
       } catch (e) {
-        terminal.error((e as Error).message);
+        if (isRecord(e) && isRecord(e["data"]) && "error" in e["data"]) {
+          terminal.error(
+            (e["data"]["error"] as Record<"message", string>).message,
+          );
+        } else {
+          terminal.error(
+            (e as Error).message.length > 100
+              ? `${(e as Error).message.slice(0, 100)}...`
+              : (e as Error).message,
+          );
+        }
         terminal.lineBreak();
         if (e instanceof Error) {
           logger.error(e);
