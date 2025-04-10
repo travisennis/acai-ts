@@ -6,10 +6,10 @@ import { createAzure } from "@ai-sdk/azure";
 import { deepseek as originalDeepseek } from "@ai-sdk/deepseek";
 import { google as originalGoogle } from "@ai-sdk/google";
 import { createOpenAI, openai as originalOpenAi } from "@ai-sdk/openai";
+import { isRecord } from "@travisennis/stdlib/typeguards";
 import { createProviderRegistry, customProvider } from "ai";
 import { createOllama } from "ollama-ai-provider";
 import { z } from "zod";
-// import { isRecord } from "@travisennis/stdlib/typeguards";
 
 export const providers = [
   "anthropic",
@@ -47,10 +47,6 @@ const openrouter = customProvider({
   },
   fallbackProvider: openRouterClient,
 });
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function addCacheControlToTools(body: string) {
   const parsedBody = JSON.parse(body);
