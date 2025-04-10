@@ -230,6 +230,7 @@ export class Repl {
 
             if (toolsCalled.length > 0) {
               terminal.writeln(chalk.dim("Tools:"));
+              terminal.write(" ");
               for (const toolCalled of toolsCalled) {
                 const colorFn = toolColors.get(toolCalled) ?? chalk.white;
                 terminal.write(colorFn("█"));
@@ -257,17 +258,18 @@ export class Repl {
                 `${chalk.red(`-${stats.deletions}`)}`,
             );
 
-            const tokenSummary = `Tokens: ↑ ${result.usage.promptTokens} ↓ ${result.usage.completionTokens}`;
+            const tokenSummary = `Tokens: ↑ ${result.usage.promptTokens ?? 0} ↓ ${result.usage.completionTokens ?? 0}`;
             terminal.writeln(chalk.dim(tokenSummary));
 
-            contextWindow = result.usage.totalTokens;
+            contextWindow = result.usage.totalTokens ?? 0;
 
             tokenTracker.trackUsage("repl", result.usage);
 
             terminal.hr(chalk.dim);
           },
           onError: ({ error }) => {
-            terminal.error(JSON.stringify(error, null, 2));
+            logger.error(error, "Error on REPL streamText");
+            terminal.error((error as Error).message);
           },
         });
 
