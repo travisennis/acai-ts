@@ -204,13 +204,13 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     // summarize message history
     this.appendUserMessage(
       createUserMessage(
-        "Provide a detailed but concise summary of our conversation above. Focus on information that would be helpful for continuing the conversation, including what we did, what we're doing, which files we're working on, and what we're going to do next.",
+        "Provide a detailed summary of our conversation above. Focus on information that would be helpful for continuing the conversation, including what we did and why, what we're currently doing, which files we're working on, and what we're going to do next. You need to provide enough information that another coding agent can pick up where we left off.",
       ),
     );
     const { text, usage } = await generateText({
       model: this.modelManager.getModel(app),
       system:
-        "You are a helpful AI assistant tasked with summarizing conversations.",
+        "You are a helpful AI assistant tasked with summarizing conversations so that a coding agent can understand what actions have been taken on a code base and what future work still needs to be done.",
       messages: this.get(),
     });
 
