@@ -20,6 +20,7 @@ export const logger = pino(
         return { level: label.toUpperCase() };
       },
     },
+    timestamp: pino.stdTimeFunctions.isoTime,
   },
   transport,
 );
