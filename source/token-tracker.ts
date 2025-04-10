@@ -28,6 +28,11 @@ export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
     }
   }
 
+  currentContextWindow(tool: string) {
+    const lastUsage = this.usages.findLast((usage) => usage.tool === tool);
+    return lastUsage?.usage.totalTokens ?? 0;
+  }
+
   trackUsage(tool: string, usage: LanguageModelUsage | undefined) {
     if (usage) {
       const u = { tool, usage };

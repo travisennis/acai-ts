@@ -70,13 +70,15 @@ export class Repl {
 
     const promptHistory: string[] = [];
 
-    let contextWindow = 0;
     while (true) {
       const langModel = modelManager.getModel("repl");
       const modelConfig = modelManager.getModelMetadata("repl");
 
       terminal.writeln(chalk.dim(langModel.modelId));
-      terminal.displayProgressBar(contextWindow, modelConfig.contextWindow);
+      terminal.displayProgressBar(
+        tokenTracker.currentContextWindow("repl"),
+        modelConfig.contextWindow,
+      );
 
       if (!promptManager.isPending()) {
         // For interactive input
@@ -261,9 +263,16 @@ export class Repl {
             const tokenSummary = `Tokens: ↑ ${result.usage.promptTokens ?? 0} ↓ ${result.usage.completionTokens ?? 0}`;
             terminal.writeln(chalk.dim(tokenSummary));
 
-            contextWindow = result.usage.totalTokens ?? 0;
-
             tokenTracker.trackUsage("repl", result.usage);
+
+            const currentContextWindow =
+              tokenTracker.currentContextWindow("repl");
+            if (currentContextWindow > 70000) {
+              await messageHistory.summarizeAndReset();
+              logger.info(
+                `Condensing history from ${currentContextWindow} to ${tokenTracker.currentContextWindow("repl")}`,
+              );
+            }
 
             terminal.hr(chalk.dim);
           },
