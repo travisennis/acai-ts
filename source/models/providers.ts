@@ -44,7 +44,7 @@ const openrouter = customProvider({
     "deepseek-v3": openRouterClient("deepseek/deepseek-chat"),
     "deepseek-r1": openRouterClient("deepseek/deepseek-r1"),
     "quasar-alpha": openRouterClient("openrouter/quasar-alpha"),
-    "optimus-alpha": openRouterClient("openrouter:optimus-alpha"),
+    "optimus-alpha": openRouterClient("openrouter/optimus-alpha"),
   },
   fallbackProvider: openRouterClient,
 });
