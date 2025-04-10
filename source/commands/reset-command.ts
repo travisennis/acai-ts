@@ -1,10 +1,6 @@
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const resetCommand = ({
-  terminal,
-  messageHistory,
-  tokenTracker,
-}: CommandOptions) => {
+export const resetCommand = ({ terminal, messageHistory }: CommandOptions) => {
   return {
     command: "/reset",
     description: "Saves the chat history and then resets it.",
@@ -15,7 +11,6 @@ export const resetCommand = ({
         await messageHistory.save();
         messageHistory.clear();
       }
-      tokenTracker.reset();
       terminal.setTitle(`acai: ${process.cwd()}`);
     },
   } satisfies ReplCommand;
