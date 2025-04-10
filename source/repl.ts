@@ -19,6 +19,7 @@ import { ReplPrompt } from "./repl-prompt.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import {
+  getDiffStat,
   initAnthropicTools,
   initCodingTools,
   initTools,
@@ -174,7 +175,7 @@ export class Repl {
             ? toolCallRepair(modelManager)
             : undefined,
           abortSignal: signal,
-          onFinish: (result) => {
+          onFinish: async (result) => {
             if (result.response.messages.length > 0) {
               messageHistory.appendResponseMessages(result.response.messages);
             }
@@ -244,6 +245,13 @@ export class Repl {
               terminal.lineBreak();
               terminal.lineBreak();
             }
+
+            const stats = await getDiffStat();
+            terminal.writeln(
+              `${chalk.dim("Files changed:")} ${chalk.yellow(stats.filesChanged)}` +
+                `${chalk.green(`+${stats.insertions}`)} ` +
+                `${chalk.red(`-${stats.deletions}`)}`,
+            );
 
             const tokenSummary = `Tokens: ↑ ${result.usage.promptTokens} ↓ ${result.usage.completionTokens}`;
             terminal.writeln(chalk.dim(tokenSummary));
