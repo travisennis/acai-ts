@@ -70,13 +70,18 @@ export class Repl {
 
     const promptHistory: string[] = [];
 
+    let currentContextWindow = 0;
+    messageHistory.on("clear-history", () => {
+      currentContextWindow = 0;
+    });
+
     while (true) {
       const langModel = modelManager.getModel("repl");
       const modelConfig = modelManager.getModelMetadata("repl");
 
       terminal.writeln(chalk.dim(langModel.modelId));
       terminal.displayProgressBar(
-        tokenTracker.currentContextWindow("repl"),
+        currentContextWindow,
         modelConfig.contextWindow,
       );
 
@@ -185,6 +190,8 @@ export class Repl {
             terminal.lineBreak();
             terminal.hr(chalk.dim);
 
+            terminal.writeln(chalk.dim(`Steps: ${result.steps.length}`));
+
             // Create a more visual representation of steps
             const toolsCalled: string[] = [];
             const toolColors = new Map<string, ChalkInstance>();
@@ -263,14 +270,21 @@ export class Repl {
             const tokenSummary = `Tokens: ↑ ${result.usage.promptTokens ?? 0} ↓ ${result.usage.completionTokens ?? 0}`;
             terminal.writeln(chalk.dim(tokenSummary));
 
+            // this tracks the usage of every step in the call to streamText. it's a cumulative usage.
             tokenTracker.trackUsage("repl", result.usage);
 
-            const currentContextWindow =
-              tokenTracker.currentContextWindow("repl");
+            // this gets the usage of the final step. This more accurately reflex what will be in the context window in the next loop
+            for (const step of result.steps) {
+              if (step.finishReason === "stop") {
+                const usage = step.usage;
+                currentContextWindow = usage.totalTokens;
+              }
+            }
+
             if (currentContextWindow > 70000) {
               await messageHistory.summarizeAndReset();
               logger.info(
-                `Condensing history from ${currentContextWindow} to ${tokenTracker.currentContextWindow("repl")}`,
+                `Condensing history from ${currentContextWindow} to 0 (not true)`,
               );
             }
 
