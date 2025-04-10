@@ -108,46 +108,38 @@ export const auditMessage = ({
 }: { filePath: string; app: string }) => {
   const middleware: LanguageModelV1Middleware = {
     wrapGenerate: async ({ doGenerate, params, model }) => {
-      try {
-        const result = await doGenerate();
+      const result = await doGenerate();
 
-        const msg: AuditRecord = {
-          model: model.modelId,
-          app,
-          messages: [...params.prompt].concat({
-            role: "assistant",
-            content: [
-              {
-                type: "text",
-                text: result.text ?? "no response",
-              },
-            ],
-          }),
-          usage: {
-            ...result.usage,
-            totalTokens:
-              result.usage.promptTokens + result.usage.completionTokens,
-          },
-          timestamp: Date.now(),
-        };
+      const msg: AuditRecord = {
+        model: model.modelId,
+        app,
+        messages: [...params.prompt].concat({
+          role: "assistant",
+          content: [
+            {
+              type: "text",
+              text: result.text ?? "no response",
+            },
+          ],
+        }),
+        usage: {
+          ...result.usage,
+          totalTokens:
+            result.usage.promptTokens + result.usage.completionTokens,
+        },
+        timestamp: Date.now(),
+      };
 
-        if (filePath.endsWith("jsonl")) {
-          await appendToFile(filePath, msg);
-        } else {
-          const now = new Date();
-          const path = join(
-            filePath,
-            `${now.toISOString()}-${app}-message.json`,
-          );
+      if (filePath.endsWith("jsonl")) {
+        await appendToFile(filePath, msg);
+      } else {
+        const now = new Date();
+        const path = join(filePath, `${now.toISOString()}-${app}-message.json`);
 
-          await writeAuditRecord(path, msg);
-        }
-
-        return result;
-      } catch (error) {
-        console.error("Error in wrapGenerate middleware:", error);
-        throw error;
+        await writeAuditRecord(path, msg);
       }
+
+      return result;
     },
 
     wrapStream: async ({ doStream, params, model }) => {
@@ -171,45 +163,40 @@ export const auditMessage = ({
         },
 
         async flush() {
-          try {
-            const msg: AuditRecord = {
-              model: model.modelId,
-              app,
-              messages: generatedText
-                ? [
-                    ...params.prompt,
-                    {
-                      role: "assistant",
-                      content: [
-                        {
-                          type: "text",
-                          text: generatedText,
-                        },
-                      ],
-                    },
-                  ]
-                : [...params.prompt],
-              usage: {
-                ...usage,
-                totalTokens: usage.completionTokens + usage.promptTokens,
-              },
-              timestamp: Date.now(),
-            };
+          const msg: AuditRecord = {
+            model: model.modelId,
+            app,
+            messages: generatedText
+              ? [
+                  ...params.prompt,
+                  {
+                    role: "assistant",
+                    content: [
+                      {
+                        type: "text",
+                        text: generatedText,
+                      },
+                    ],
+                  },
+                ]
+              : [...params.prompt],
+            usage: {
+              ...usage,
+              totalTokens: usage.completionTokens + usage.promptTokens,
+            },
+            timestamp: Date.now(),
+          };
 
-            if (filePath.endsWith("jsonl")) {
-              await appendToFile(filePath, msg);
-            } else {
-              const now = new Date();
-              const path = join(
-                filePath,
-                `${now.toISOString()}-${app}-message.json`,
-              );
+          if (filePath.endsWith("jsonl")) {
+            await appendToFile(filePath, msg);
+          } else {
+            const now = new Date();
+            const path = join(
+              filePath,
+              `${now.toISOString()}-${app}-message.json`,
+            );
 
-              await writeAuditRecord(path, msg);
-            }
-          } catch (error) {
-            console.error("Error in transform stream flush:", error);
-            throw error;
+            await writeAuditRecord(path, msg);
           }
         },
       });
