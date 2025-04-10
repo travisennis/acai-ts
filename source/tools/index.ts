@@ -18,7 +18,6 @@ import { createThinkTools } from "./tau-think.ts";
 import { createTextEditorTool } from "./text-editor-tool.ts";
 import type { Message } from "./types.ts";
 import { createUrlTools } from "./url.ts";
-// import { createRaindropTools } from "./raindrop.ts";
 
 const sendDataHandler = (terminal: Terminal) => {
   return async (msg: Message) => {
@@ -173,7 +172,7 @@ export * from "./filesystem.ts";
 export * from "./git.ts";
 export * from "./grep.ts";
 export * from "./memory.ts";
-export * from "./raindrop.ts";
+
 export * from "./tau-think.ts";
 export * from "./types.ts";
 export * from "./url.ts";
