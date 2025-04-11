@@ -150,7 +150,7 @@ export function formatOutput(
     const diffBlockRegex = /```diff\n([\s\S]*?)```/g;
     let lastIndex = 0;
     let result = "";
-    let match;
+    let match: RegExpExecArray | null;
 
     while ((match = diffBlockRegex.exec(formattedText)) !== null) {
       const diffContent = match[1] ?? "";
@@ -178,7 +178,7 @@ export function formatOutput(
         .join("\n");
 
       // Rebuild the diff block with highlighted content
-      result += "```diff\n" + highlightedDiff + "```";
+      result += `\`\`\`diff\n${highlightedDiff}\`\`\``;
 
       lastIndex = end;
     }
