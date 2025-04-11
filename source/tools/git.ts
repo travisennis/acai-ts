@@ -211,7 +211,7 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
           const successMessage = `Commit created successfully:\n  ${commitResult.commit} - ${message}`;
           sendData?.({
             event: "tool-completion",
-            data: successMessage,
+            data: `Commit created successfully: ${message}`,
           });
           return successMessage;
         } catch (error) {
