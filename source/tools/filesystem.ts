@@ -642,6 +642,7 @@ export const createFileSystemTools = async ({
           z.object({
             oldText: z
               .string()
+              .min(1)
               .describe("Text to search for - must match exactly"),
             newText: z.string().describe("Text to replace with"),
           }),

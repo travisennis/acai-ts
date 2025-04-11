@@ -18,7 +18,10 @@ const inputSchema = z.strictObject({
   path: z.string().describe("The path of the file to edit."),
   edits: z.array(
     z.object({
-      oldText: z.string().describe("Text to search for - must match exactly"),
+      oldText: z
+        .string()
+        .min(1)
+        .describe("Text to search for - must match exactly"),
       newText: z.string().describe("Text to replace with"),
     }),
   ),
