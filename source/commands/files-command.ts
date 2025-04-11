@@ -1,8 +1,8 @@
+import { readFile } from "node:fs/promises";
 import { checkbox } from "@inquirer/prompts";
 import { globby } from "globby";
-import type { CommandOptions, ReplCommand } from "./types.ts";
-import { readFile } from "node:fs/promises";
 import { formatFile } from "../formatting.ts";
+import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const filesCommand = ({
   terminal,

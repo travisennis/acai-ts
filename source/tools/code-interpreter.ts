@@ -1,4 +1,5 @@
 import _crypto from "node:crypto";
+import crypto from "node:crypto";
 import _fs from "node:fs";
 import _http from "node:http";
 import _https from "node:https";
@@ -7,7 +8,6 @@ import _process from "node:process";
 import { runInNewContext } from "node:vm";
 import { tool } from "ai";
 import { z } from "zod";
-import crypto from "node:crypto";
 import type { SendData } from "./types.ts";
 
 type InterpreterPermission = "fs" | "net" | "os" | "crypto" | "process";

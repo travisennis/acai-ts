@@ -1,6 +1,6 @@
 import { editor } from "@inquirer/prompts";
-import type { CommandOptions, ReplCommand } from "./types.ts";
 import { syncTry } from "@travisennis/stdlib/try";
+import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const editPromptCommand = ({
   terminal,

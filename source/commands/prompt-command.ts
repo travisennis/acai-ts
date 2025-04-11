@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { join } from "node:path";
-import type { CommandOptions, ReplCommand } from "./types.ts";
 import { config } from "../config.ts";
+import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const promptCommand = ({ terminal, promptManager }: CommandOptions) => {
   return {

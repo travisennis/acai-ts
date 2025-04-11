@@ -1,7 +1,7 @@
 import { platform } from "node:os";
+import { config } from "./config.ts";
 import { dedent } from "./dedent.ts";
 import { inGitDirectory } from "./tools/index.ts";
-import { config } from "./config.ts";
 
 export async function systemPrompt(options?: {
   supportsToolCalling?: boolean;

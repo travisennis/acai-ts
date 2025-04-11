@@ -1,6 +1,6 @@
 import clipboardy from "clipboardy";
-import type { CommandOptions, ReplCommand } from "./types.ts";
 import { formatBlock } from "../formatting.ts";
+import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const pasteCommand = ({
   terminal,

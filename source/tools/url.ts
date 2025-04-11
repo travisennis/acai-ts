@@ -1,8 +1,8 @@
 import { tool } from "ai";
 import { type CheerioAPI, load } from "cheerio";
 import { z } from "zod";
-import type { SendData } from "./types.ts";
 import { countTokens } from "../token-utils.ts";
+import type { SendData } from "./types.ts";
 
 export const createUrlTools = (options: {
   sendData?: SendData | undefined;

@@ -1,6 +1,6 @@
+import { execSync } from "node:child_process";
 import { tool } from "ai";
 import { z } from "zod";
-import { execSync } from "node:child_process";
 import type { SendData } from "./types.ts";
 
 export const createGrepTools = (

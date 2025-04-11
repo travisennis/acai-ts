@@ -12,17 +12,17 @@ import { exitCommand } from "./exit-command.ts";
 import { filesCommand } from "./files-command.ts";
 import { helpCommand } from "./help-command.ts";
 import { initCommand } from "./init-command.ts";
+import { modelCommand } from "./model-command.ts";
 import { pasteCommand } from "./paste-command.ts";
 import { promptCommand } from "./prompt-command.ts";
 import { ptreeCommand } from "./ptree-command.ts";
 import { resetCommand } from "./reset-command.ts";
 import { reviewCommand } from "./review-command.ts";
+import { rulesCommand } from "./rules-command.ts";
 import { saveCommand } from "./save-command.ts";
 import { selectionsCommand } from "./selections-command.ts";
-import { modelCommand } from "./model-command.ts";
-import { rulesCommand } from "./rules-command.ts";
-import { usageCommand } from "./usage-command.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
+import { usageCommand } from "./usage-command.ts";
 
 export class CommandManager {
   private commands: Map<string, ReplCommand>;
