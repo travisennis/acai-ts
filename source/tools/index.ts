@@ -20,20 +20,23 @@ import type { Message } from "./types.ts";
 import { createUrlTools } from "./url.ts";
 
 const sendDataHandler = (terminal: Terminal) => {
-  return async (msg: Message) => {
+  return (msg: Message) => {
     if (msg.event === "tool-init") {
       terminal.lineBreak();
-      terminal.display(`${chalk.blue.bold("●")} ${await msg.data}`);
+      terminal.display(`${chalk.blue.bold("●")} ${msg.data}`);
     } else if (msg.event === "tool-update") {
-      terminal.display(`${await msg.data}`);
+      terminal.display(`└── ${msg.data.primary}`);
+      if (msg.data.secondary) {
+        for (const line of msg.data.secondary) {
+          terminal.display(line);
+        }
+      }
     } else if (msg.event === "tool-completion") {
-      terminal.display(`└── ${await msg.data}`);
+      terminal.display(`└── ${msg.data}`);
       // terminal.lineBreak();
     } else if (msg.event === "tool-error") {
-      terminal.error(await msg.data);
+      terminal.error(msg.data);
       // terminal.lineBreak();
-    } else {
-      terminal.display(await msg.data);
     }
   };
 };
@@ -94,7 +97,8 @@ export async function initTools({
         question: z.string().describe("The question to ask the user."),
       }),
       execute: async ({ question }) => {
-        const result = await input({ message: `${question} >` });
+        terminal?.lineBreak();
+        const result = await input({ message: ` ${question}\n >` });
 
         return result;
       },

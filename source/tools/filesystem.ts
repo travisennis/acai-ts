@@ -650,11 +650,10 @@ export const createFileSystemTools = async ({
           if (dryRun) {
             sendData?.({
               event: "tool-update",
-              data: `Proposing ${edits.length} edits`,
-            });
-            sendData?.({
-              event: "tool-completion",
-              data: result,
+              data: {
+                primary: `Proposing ${edits.length} edits`,
+                secondary: [result],
+              },
             });
           } else {
             sendData?.({

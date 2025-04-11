@@ -1,17 +1,44 @@
-export interface Message {
-  data: string | Promise<string>;
-  event?: "tool-init" | "tool-update" | "tool-completion" | "tool-error";
+export interface MessageData {
+  primary: string;
+  secondary?: string[] | undefined;
+}
+
+export type ToolEvent =
+  | "tool-init"
+  | "tool-update"
+  | "tool-completion"
+  | "tool-error";
+
+interface BaseMessage {
   id?: string;
   retry?: number;
 }
-// Define message types
-export type SSEMessage =
-  | {
-      type: "progress" | "error" | "complete";
-      data: any;
-      timestamp: number;
-    }
-  | string;
+
+export interface ToolInitMessage extends BaseMessage {
+  event: "tool-init";
+  data: string;
+}
+
+export interface ToolErrorMessage extends BaseMessage {
+  event: "tool-error";
+  data: string;
+}
+
+export interface ToolCompletionMessage extends BaseMessage {
+  event: "tool-completion";
+  data: string;
+}
+
+export interface ToolUpdateMessage extends BaseMessage {
+  event: "tool-update";
+  data: MessageData;
+}
+
+export type Message =
+  | ToolInitMessage
+  | ToolErrorMessage
+  | ToolCompletionMessage
+  | ToolUpdateMessage;
 
 export type SendData = ({
   data,

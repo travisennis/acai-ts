@@ -199,7 +199,10 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
 
           sendData?.({
             event: "tool-update",
-            data: `Staging files:\n${fileArr.map((f) => `- ${f}`).join("\n")}`,
+            data: {
+              primary: "Staging files:",
+              secondary: fileArr.map((file) => `- ${file}`),
+            },
           });
 
           // Add the changes and commit
@@ -243,7 +246,7 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
           if (status.files.length === 0) {
             sendData?.({
               event: "tool-update",
-              data: "No changes found",
+              data: { primary: "No changes found" },
             });
             return "No changes found.";
           }
