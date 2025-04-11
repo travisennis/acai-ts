@@ -9,6 +9,7 @@ import type { TokenTracker } from "../token-tracker.ts";
 import { createAgentTools } from "./agent.ts";
 import { createArchitectTools } from "./architect.ts";
 import { createBashTools } from "./bash-tool.ts";
+import { createCodeEditorTools } from "./code-editor.ts";
 import { createCodeInterpreterTool } from "./code-interpreter.ts";
 import { createCodeTools } from "./code-tools.ts";
 import { createFileSystemTools } from "./filesystem.ts";
@@ -78,11 +79,6 @@ export async function initTools({
     sendData: sendDataFn,
   });
 
-  // const bookmarkTools = createRaindropTools({
-  //   apiKey: process.env.RAINDROP_API_KEY ?? "",
-  //   sendData: sendDataFn,
-  // });
-
   const urlTools = createUrlTools({
     sendData: sendDataFn,
   });
@@ -116,7 +112,6 @@ export async function initTools({
     ...grepTool,
     ...thinkTool,
     ...urlTools,
-    // ...bookmarkTools,
     ...askUserTool,
     ...bashTools,
   } as const;
@@ -147,9 +142,16 @@ export function initCodingTools({
     sendData: sendDataFn,
   });
 
+  const codeEditorTools = createCodeEditorTools({
+    modelManager,
+    tokenTracker,
+    sendData: sendDataFn,
+  });
+
   const tools = {
     ...agentTools,
     ...architectTools,
+    ...codeEditorTools,
   } as const;
 
   return tools;

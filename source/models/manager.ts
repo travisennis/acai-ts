@@ -40,7 +40,8 @@ type App =
   | "lsp-code-action"
   | "init-project"
   | "task-agent"
-  | "explain-code";
+  | "explain-code"
+  | "code-editor";
 
 export class ModelManager {
   private modelMap: Map<App, LanguageModel>;

@@ -83,6 +83,7 @@ async function main() {
   modelManager.setModel("init-project", chosenModel);
   modelManager.setModel("task-agent", "google:flash2");
   modelManager.setModel("explain-code", "deepseek:deepseek-reasoner");
+  modelManager.setModel("code-editor", "google:flash2");
 
   const positionalPrompt = cli.input.at(0);
 
