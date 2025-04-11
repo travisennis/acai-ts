@@ -154,7 +154,7 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
         files: z
           .string()
           .describe(
-            "A command-separated list of files to include in this commit. IMPORTANT: use absolute paths for all files",
+            "A comma-separated list of files to include in this commit. IMPORTANT: use absolute paths for all files",
           ),
       }),
       execute: async ({ path, message, files }) => {
