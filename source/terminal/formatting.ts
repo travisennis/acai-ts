@@ -196,11 +196,11 @@ export function formatOutput(
   }
 
   if (leftPadding > 0) {
-    const padding = ' '.repeat(leftPadding);
+    const padding = " ".repeat(leftPadding);
     formattedText = formattedText
-      .split('\n')
+      .split("\n")
       .map((line) => `${padding}${line}`)
-      .join('\n');
+      .join("\n");
   }
 
   return formattedText;
