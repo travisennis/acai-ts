@@ -182,9 +182,10 @@ export class Terminal {
       width: this.terminalWidth,
       colors: this.config.useColors,
       codeHighlighting: this.config.codeHighlighting,
+      leftPadding: 1,
     });
 
-    this.writeln(formatted);
+    this.writeln(formatted, "");
   }
 
   /**
