@@ -81,7 +81,7 @@ async function main() {
   modelManager.setModel("conversation-analyzer", "google:flash2");
   modelManager.setModel("lsp-code-action", "anthropic:sonnet");
   modelManager.setModel("init-project", chosenModel);
-  modelManager.setModel("task-agent", chosenModel);
+  modelManager.setModel("task-agent", "google:flash2");
   modelManager.setModel("explain-code", "deepseek:deepseek-reasoner");
 
   const positionalPrompt = cli.input.at(0);

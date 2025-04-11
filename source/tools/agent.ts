@@ -1,13 +1,13 @@
+import crypto from "node:crypto";
 import { generateText, tool } from "ai";
 import { z } from "zod";
-import crypto from "node:crypto";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { TokenTracker } from "../token-tracker.ts";
 import { FS_READ_ONLY, initTools } from "./index.ts";
 import type { SendData } from "./types.ts";
 
-export function getPrompt(): string {
+export function getToolDescription(): string {
   const toolNames = ["grepFiles", ...FS_READ_ONLY].join(", ");
   return `Launch a new agent that has access to the following tools: ${toolNames}. When you are searching for a keyword or file and are not confident that you will find the right match on the first try, use the Agent tool to perform the search for you. For example:
 
@@ -34,7 +34,7 @@ export const createAgentTools = (options: {
   const { modelManager, tokenTracker, sendData } = options;
   return {
     launchAgent: tool({
-      description: "Launch a new task.",
+      description: getToolDescription(),
       parameters: inputSchema,
       execute: async ({ prompt }, { abortSignal }) => {
         const uuid = crypto.randomUUID();
@@ -54,7 +54,8 @@ export const createAgentTools = (options: {
           const { text, usage } = await generateText({
             model: modelManager.getModel("task-agent"),
             maxTokens: aiConfig.getMaxTokens(),
-            system: getPrompt(),
+            system:
+              "You are a code search assistant that will be given a task that will require you to search a code base to find relevant code and files.",
             prompt: prompt,
             maxSteps: 30,
             providerOptions: aiConfig.getProviderOptions(),
