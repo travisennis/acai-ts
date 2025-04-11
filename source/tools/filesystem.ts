@@ -460,6 +460,11 @@ export const createFileSystemTools = async ({
           event: "tool-init",
           data: "Getting current working directory",
         });
+        sendData?.({
+          id,
+          event: "tool-completion",
+          data: "Done",
+        });
         return Promise.resolve(workingDir);
       },
     }),
@@ -823,6 +828,11 @@ export const createFileSystemTools = async ({
           });
           const validPath = await validatePath(path, allowedDirectory);
           const info = await getFileStats(validPath);
+          sendData?.({
+            id,
+            event: "tool-completion",
+            data: "Done",
+          });
           return Object.entries(info)
             .map(([key, value]) => `${key}: ${value}`)
             .join("\n");
@@ -896,6 +906,11 @@ export const createFileSystemTools = async ({
             allowedDirectory,
           );
           await fs.rename(validSourcePath, validDestPath);
+          sendData?.({
+            id,
+            event: "tool-completion",
+            data: "Done",
+          });
           return `Successfully moved ${source} to ${destination}`;
         } catch (error) {
           return `Failed to move file: ${(error as Error).message}`;
@@ -925,6 +940,11 @@ export const createFileSystemTools = async ({
             allowedDirectory,
           );
           const entries = await fs.readdir(validPath, { withFileTypes: true });
+          sendData?.({
+            id,
+            event: "tool-completion",
+            data: "Done",
+          });
           return entries
             .map(
               (entry) =>
@@ -961,6 +981,11 @@ export const createFileSystemTools = async ({
             joinWorkingDir(path, workingDir),
             allowedDirectory,
           );
+          sendData?.({
+            id,
+            event: "tool-completion",
+            data: "Done",
+          });
           return directoryTree(validPath);
         } catch (error) {
           return `Failed to show directory tree: ${(error as Error).message}`;
