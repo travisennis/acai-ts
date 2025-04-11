@@ -30,20 +30,16 @@ marked.setOptions({
 /**
  * Initialize the terminal interface
  */
-export function initTerminal(
-  config: {
-    terminal?: Partial<TerminalConfig>;
-  } = {},
-): Terminal {
+export function initTerminal(config: Partial<TerminalConfig> = {}): Terminal {
   logger.debug("Initializing terminal interface");
 
   const terminalConfig: TerminalConfig = {
-    theme: config.terminal?.theme || "system",
-    useColors: config.terminal?.useColors !== false,
-    showProgressIndicators: config.terminal?.showProgressIndicators !== false,
-    codeHighlighting: config.terminal?.codeHighlighting !== false,
-    maxHeight: config.terminal?.maxHeight,
-    maxWidth: config.terminal?.maxWidth,
+    theme: config.theme || "system",
+    useColors: config.useColors !== false,
+    showProgressIndicators: config.showProgressIndicators !== false,
+    codeHighlighting: config.codeHighlighting !== false,
+    maxHeight: config.maxHeight,
+    maxWidth: config.maxWidth,
   };
 
   const terminal = new Terminal(terminalConfig);
