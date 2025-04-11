@@ -76,7 +76,10 @@ export const auditMessage = ({
       const { stream, ...rest } = await doStream();
 
       let generatedText = "";
-      let usage: Omit<LanguageModelUsage, "totalTokens">;
+      let usage: Omit<LanguageModelUsage, "totalTokens"> = {
+        promptTokens: 0,
+        completionTokens: 0,
+      };
 
       const transformStream = new TransformStream<
         LanguageModelV1StreamPart,
