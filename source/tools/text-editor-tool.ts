@@ -28,6 +28,7 @@ export const createTextEditorTool = ({
           old_str,
           view_range,
         }) => {
+          const uuid = crypto.randomUUID();
           // Make sure the path is under the workingDir
           if (!path.startsWith(workingDir)) {
             return `Error: Path ${path} is not within the working directory ${workingDir}`;
@@ -35,6 +36,7 @@ export const createTextEditorTool = ({
           // Send event for tool initialization
           sendData?.({
             event: "tool-init",
+            id: uuid,
             data: `Executing ${command} operation on ${path}`,
           });
 
@@ -74,6 +76,7 @@ export const createTextEditorTool = ({
             // Send completion event
             sendData?.({
               event: "tool-completion",
+              id: uuid,
               data: `${command} operation completed successfully`,
             });
 
@@ -82,6 +85,7 @@ export const createTextEditorTool = ({
             // Send error event
             sendData?.({
               event: "tool-error",
+              id: uuid,
               data: `Error in ${command} operation: ${error instanceof Error ? error.message : String(error)}`,
             });
 
@@ -104,6 +108,7 @@ export const createTextEditorTool = ({
           old_str,
           view_range,
         }) => {
+          const uuid = crypto.randomUUID();
           // Make sure the path is under the workingDir
           if (!path.startsWith(workingDir)) {
             return `Error: Path ${path} is not within the working directory ${workingDir}`;
@@ -111,6 +116,7 @@ export const createTextEditorTool = ({
           // Send event for tool initialization
           sendData?.({
             event: "tool-init",
+            id: uuid,
             data: `Executing ${command} operation on ${path}`,
           });
 
@@ -150,6 +156,7 @@ export const createTextEditorTool = ({
             // Send completion event
             sendData?.({
               event: "tool-completion",
+              id: uuid,
               data: `${command} operation completed successfully`,
             });
 
@@ -158,6 +165,7 @@ export const createTextEditorTool = ({
             // Send error event
             sendData?.({
               event: "tool-error",
+              id: uuid,
               data: `Error in ${command} operation: ${error instanceof Error ? error.message : String(error)}`,
             });
 

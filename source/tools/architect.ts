@@ -1,5 +1,6 @@
 import { generateText, tool } from "ai";
 import { z } from "zod";
+import crypto from "node:crypto";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { TokenTracker } from "../token-tracker.ts";
@@ -43,9 +44,11 @@ export const createArchitectTools = (options: {
       description: DESCRIPTION,
       parameters: inputSchema,
       execute: async ({ prompt, context }, { abortSignal }) => {
+        const uuid = crypto.randomUUID();
         try {
           sendData?.({
             event: "tool-init",
+            id: uuid,
             data: "Initializing the architecture tool.",
           });
 
@@ -80,6 +83,7 @@ export const createArchitectTools = (options: {
 
           sendData?.({
             event: "tool-completion",
+            id: uuid,
             data: "Finished running the architecture tool.",
           });
 
@@ -87,6 +91,7 @@ export const createArchitectTools = (options: {
         } catch (error) {
           sendData?.({
             event: "tool-error",
+            id: uuid,
             data: "Error running architecture tool.",
           });
           return Promise.resolve((error as Error).message);

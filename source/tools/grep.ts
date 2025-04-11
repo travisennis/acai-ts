@@ -40,9 +40,11 @@ export const createGrepTools = (
         filePattern,
         contextLines,
       }) => {
+        const uuid = crypto.randomUUID();
         try {
           sendData?.({
             event: "tool-init",
+            id: uuid,
             data: `Searching for "${pattern}" in ${path}`,
           });
           const result = grepFiles(pattern, path, {
@@ -53,12 +55,14 @@ export const createGrepTools = (
           });
           sendData?.({
             event: "tool-completion",
+            id: uuid,
             data: `Found results:\n${result}`,
           });
           return Promise.resolve(result);
         } catch (error) {
           sendData?.({
             event: "tool-error",
+            id: uuid,
             data: `Error searching for "${pattern}" in ${path}`,
           });
           return Promise.resolve((error as Error).message);

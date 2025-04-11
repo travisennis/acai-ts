@@ -1,5 +1,6 @@
 import { generateText, tool } from "ai";
 import { z } from "zod";
+import crypto from "node:crypto";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { TokenTracker } from "../token-tracker.ts";
@@ -36,9 +37,11 @@ export const createAgentTools = (options: {
       description: "Launch a new task.",
       parameters: inputSchema,
       execute: async ({ prompt }, { abortSignal }) => {
+        const uuid = crypto.randomUUID();
         try {
           sendData?.({
             event: "tool-init",
+            id: uuid,
             data: "Initializing the agent tool.",
           });
 
@@ -65,6 +68,7 @@ export const createAgentTools = (options: {
 
           sendData?.({
             event: "tool-completion",
+            id: uuid,
             data: "Finished running the agent tool.",
           });
 
@@ -72,6 +76,7 @@ export const createAgentTools = (options: {
         } catch (error) {
           sendData?.({
             event: "tool-error",
+            id: uuid,
             data: "Error running agent tool.",
           });
           return Promise.resolve((error as Error).message);

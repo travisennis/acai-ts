@@ -1,6 +1,7 @@
 import { isUndefined } from "@travisennis/stdlib/typeguards";
 import { tool } from "ai";
 import { z } from "zod";
+import crypto from "node:crypto";
 import { executeCommand } from "../utils/index.ts";
 import type { SendData } from "./types.ts";
 import path from "node:path";
@@ -87,15 +88,17 @@ export const createBashTools = ({
         cwd = baseDir,
         timeout = DEFAULT_TIMEOUT,
       }) => {
+        const uuid = crypto.randomUUID();
         sendData?.({
           event: "tool-init",
+          id: uuid,
           data: `Executing: ${command} in ${cwd}`,
         });
 
         // Validate command
         if (!isCommandAllowed(command)) {
           const errorMsg = `Command not allowed: ${command}. Allowed commands: ${ALLOWED_COMMANDS.join(", ")}`;
-          sendData?.({ event: "tool-error", data: errorMsg });
+          sendData?.({ event: "tool-error", id: uuid, data: errorMsg });
           return errorMsg;
         }
 
@@ -103,14 +106,14 @@ export const createBashTools = ({
         if (hasCommandChaining(command)) {
           const errorMsg =
             "Command chaining is not allowed for security reasons";
-          sendData?.({ event: "tool-error", data: errorMsg });
+          sendData?.({ event: "tool-error", id: uuid, data: errorMsg });
           return errorMsg;
         }
 
         // Validate working directory
         if (!isPathWithinBaseDir(cwd, baseDir)) {
           const errorMsg = `Working directory must be within the project directory: ${baseDir}`;
-          sendData?.({ event: "tool-error", data: errorMsg });
+          sendData?.({ event: "tool-error", id: uuid, data: errorMsg });
           return errorMsg;
         }
 
@@ -118,12 +121,14 @@ export const createBashTools = ({
           const result = format(await asyncExec(command, cwd, timeout));
           sendData?.({
             event: "tool-completion",
+            id: uuid,
             data: "Command executed successfully",
           });
           return result;
         } catch (error) {
           sendData?.({
             event: "tool-error",
+            id: uuid,
             data: `Command failed: ${(error as Error).message}`,
           });
           return `Command failed: ${(error as Error).message}`;

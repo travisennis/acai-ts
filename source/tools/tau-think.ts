@@ -23,15 +23,23 @@ export const createThinkTools = (
         thought: z.string().describe("Your thought"),
       }),
       execute: ({ thought }) => {
+        const uuid = crypto.randomUUID();
         // Replace literal '\\n' with actual newline characters
         const formattedThought = thought.replace(/\\n/g, "\n");
         sendData?.({
           event: "tool-init",
+          id: uuid,
           data: "Logging thought",
         });
         sendData?.({
           event: "tool-update",
+          id: uuid,
           data: { primary: "Thought:", secondary: [formattedThought] },
+        });
+        sendData?.({
+          event: "tool-completion",
+          id: uuid,
+          data: "Done",
         });
         return Promise.resolve("Your thought has been logged.");
       },

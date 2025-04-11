@@ -2,6 +2,7 @@ import { tool } from "ai";
 import { type CheerioAPI, load } from "cheerio";
 import { z } from "zod";
 import type { SendData } from "./types.ts";
+import { countTokens } from "../token-utils.ts";
 
 export const createUrlTools = (options: {
   sendData?: SendData | undefined;
@@ -15,16 +16,25 @@ export const createUrlTools = (options: {
         url: z.string().describe("The URL"),
       }),
       execute: async ({ url }, { abortSignal }) => {
+        const uuid = crypto.randomUUID();
         try {
           sendData?.({
             event: "tool-init",
+            id: uuid,
             data: `Reading URL for ${url}`,
           });
           const urlContent = await readUrl(url, abortSignal);
+          const tokenCount = countTokens(urlContent);
+          sendData?.({
+            event: "tool-completion",
+            id: uuid,
+            data: `Done (${tokenCount} tokens)`,
+          });
           return urlContent;
         } catch (error) {
           sendData?.({
             event: "tool-error",
+            id: uuid,
             data: `Error reading URL for ${url}`,
           });
           return Promise.resolve((error as Error).message);

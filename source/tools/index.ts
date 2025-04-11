@@ -23,6 +23,7 @@ const sendDataHandler = (terminal: Terminal) => {
   return (msg: Message) => {
     if (msg.event === "tool-init") {
       terminal.lineBreak();
+      terminal.lineBreak();
       terminal.display(`${chalk.blue.bold("●")} ${msg.data}`);
     } else if (msg.event === "tool-update") {
       terminal.display(`└── ${msg.data.primary}`);
@@ -31,14 +32,14 @@ const sendDataHandler = (terminal: Terminal) => {
         for (const line of msg.data.secondary) {
           terminal.display(line);
         }
-        terminal.lineBreak();
       }
+      terminal.lineBreak();
     } else if (msg.event === "tool-completion") {
       terminal.display(`└── ${msg.data}`);
-      // terminal.lineBreak();
+      terminal.lineBreak();
     } else if (msg.event === "tool-error") {
       terminal.error(msg.data);
-      // terminal.lineBreak();
+      terminal.lineBreak();
     }
   };
 };

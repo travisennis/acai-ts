@@ -10,7 +10,7 @@ export type ToolEvent =
   | "tool-error";
 
 interface BaseMessage {
-  id?: string;
+  id: string;
   retry?: number;
 }
 

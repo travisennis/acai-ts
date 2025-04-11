@@ -1,6 +1,7 @@
 import { isUndefined } from "@travisennis/stdlib/typeguards";
 import { tool } from "ai";
 import { z } from "zod";
+import crypto from "node:crypto";
 import { executeCommand } from "../utils/process.ts";
 import type { SendData } from "./types.ts";
 
@@ -37,6 +38,7 @@ export const createCodeTools = ({
           .describe("Whether to install as dev dependencies (--save-dev)"),
       }),
       execute: async ({ dependencies, dev }) => {
+        const uuid = crypto.randomUUID();
         if (!dependencies || dependencies.length === 0) {
           return "No dependencies specified";
         }
@@ -47,6 +49,7 @@ export const createCodeTools = ({
 
         sendData?.({
           event: "tool-init",
+          id: uuid,
           data: `Installing dependencies in ${baseDir}: ${dependencies.join(", ")}`,
         });
 
@@ -54,6 +57,7 @@ export const createCodeTools = ({
           const result = format(await asyncExec(fullCommand, baseDir));
           sendData?.({
             event: "tool-completion",
+            id: uuid,
             data: `Successfully installed ${dev ? "dev dependencies" : "dependencies"}: ${dependencies.join(", ")}`,
           });
 
@@ -61,6 +65,7 @@ export const createCodeTools = ({
         } catch (error) {
           sendData?.({
             event: "tool-error",
+            id: uuid,
             data: `Error installing dependencies in ${baseDir}: ${(error as Error).message}`,
           });
           return `Failed to install dependencies: ${(error as Error).message}`;
@@ -72,15 +77,18 @@ export const createCodeTools = ({
         "Executes the build command for the current code base and returns the output.",
       parameters: z.object({}),
       execute: async () => {
+        const uuid = crypto.randomUUID();
         const buildCommand = config?.build || "npm run build";
         sendData?.({
           event: "tool-init",
+          id: uuid,
           data: `Building code in ${baseDir}`,
         });
         try {
           const result = format(await asyncExec(buildCommand, baseDir));
           sendData?.({
             event: "tool-completion",
+            id: uuid,
             data: "Build complete.",
           });
 
@@ -88,6 +96,7 @@ export const createCodeTools = ({
         } catch (error) {
           sendData?.({
             event: "tool-error",
+            id: uuid,
             data: `Error building code in ${baseDir}: ${(error as Error).message}`,
           });
           return `Failed to execute build command: ${(error as Error).message}`;
@@ -99,9 +108,11 @@ export const createCodeTools = ({
         "Lints the current code base and returns the results. This tool helps identify and report potential issues, style violations, or errors in the code, improving code quality and consistency.",
       parameters: z.object({}),
       execute: async () => {
+        const uuid = crypto.randomUUID();
         if (sendData) {
           sendData({
             event: "tool-init",
+            id: uuid,
             data: `Linting code in ${baseDir}`,
           });
         }
@@ -110,6 +121,7 @@ export const createCodeTools = ({
           const result = format(await asyncExec(lintCommand, baseDir));
           sendData?.({
             event: "tool-completion",
+            id: uuid,
             data: "Lint complete.",
           });
 
@@ -117,6 +129,7 @@ export const createCodeTools = ({
         } catch (error) {
           sendData?.({
             event: "tool-error",
+            id: uuid,
             data: `Error linting code in ${baseDir}: ${(error as Error).message}`,
           });
           return `Failed to execute lint command: ${(error as Error).message}`;
@@ -128,9 +141,11 @@ export const createCodeTools = ({
         "Executes the 'format' command on the current code base and returns the results. This reports style and formatting issues with the code base.",
       parameters: z.object({}),
       execute: async () => {
+        const uuid = crypto.randomUUID();
         if (sendData) {
           sendData({
             event: "tool-init",
+            id: uuid,
             data: `Formatting code in ${baseDir}`,
           });
         }
@@ -139,6 +154,7 @@ export const createCodeTools = ({
           const result = format(await asyncExec(formatCommand, baseDir));
           sendData?.({
             event: "tool-completion",
+            id: uuid,
             data: "Format complete.",
           });
 
@@ -146,6 +162,7 @@ export const createCodeTools = ({
         } catch (error) {
           sendData?.({
             event: "tool-error",
+            id: uuid,
             data: `Error formatting code in ${baseDir}: ${(error as Error).message}`,
           });
           return `Failed to execute format command: ${(error as Error).message}`;
@@ -157,9 +174,11 @@ export const createCodeTools = ({
         "Executes the 'test' command on the current code base to run unit tests and return the results.",
       parameters: z.object({}),
       execute: async () => {
+        const uuid = crypto.randomUUID();
         if (sendData) {
           sendData({
             event: "tool-init",
+            id: uuid,
             data: `Running unit tests in ${baseDir}`,
           });
         }
@@ -168,6 +187,7 @@ export const createCodeTools = ({
           const result = format(await asyncExec(testCommand, baseDir));
           sendData?.({
             event: "tool-completion",
+            id: uuid,
             data: "Testing complete.",
           });
 
@@ -175,6 +195,7 @@ export const createCodeTools = ({
         } catch (error) {
           sendData?.({
             event: "tool-error",
+            id: uuid,
             data: `Error testing code in ${baseDir}: ${(error as Error).message}`,
           });
           return `Failed to execute test command: ${(error as Error).message}`;

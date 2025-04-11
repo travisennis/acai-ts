@@ -7,6 +7,7 @@ import _process from "node:process";
 import { runInNewContext } from "node:vm";
 import { tool } from "ai";
 import { z } from "zod";
+import crypto from "node:crypto";
 import type { SendData } from "./types.ts";
 
 type InterpreterPermission = "fs" | "net" | "os" | "crypto" | "process";
@@ -54,9 +55,11 @@ export const createCodeInterpreterTool = ({
         code: z.string().describe("Javascript code to be executed."),
       }),
       execute: ({ code }) => {
+        const uuid = crypto.randomUUID();
         try {
           sendData?.({
             event: "tool-init",
+            id: uuid,
             data: "Initializing code interpreter environment",
           });
 
@@ -64,6 +67,7 @@ export const createCodeInterpreterTool = ({
 
           sendData?.({
             event: "tool-completion",
+            id: uuid,
             data: "Code execution completed successfully",
           });
 
@@ -76,6 +80,7 @@ export const createCodeInterpreterTool = ({
 
           sendData?.({
             event: "tool-error",
+            id: uuid,
             data: errorMessage,
           });
 
