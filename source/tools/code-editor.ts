@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { generateText, tool } from "ai";
 import { z } from "zod";
 import type { ModelManager } from "../models/manager.ts";
+import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../token-tracker.ts";
 import { initTools } from "./index.ts";
 import type { SendData } from "./types.ts";
@@ -24,11 +25,12 @@ const inputSchema = z.strictObject({
 });
 
 export const createCodeEditorTools = (options: {
+  terminal: Terminal;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
   sendData?: SendData | undefined;
 }) => {
-  const { modelManager, tokenTracker, sendData } = options;
+  const { terminal, modelManager, tokenTracker, sendData } = options;
   return {
     codeEditor: tool({
       description: DESCRIPTION,
@@ -52,7 +54,7 @@ export const createCodeEditorTools = (options: {
             system: SYSTEM_PROMPT,
             prompt: content,
             maxSteps: 30,
-            tools: await initTools({}),
+            tools: await initTools({ terminal }),
             abortSignal: abortSignal,
             // biome-ignore lint/style/useNamingConvention: <explanation>
             experimental_activeTools: ["editFile"],

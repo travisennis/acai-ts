@@ -143,6 +143,7 @@ export function initCodingTools({
   });
 
   const codeEditorTools = createCodeEditorTools({
+    terminal,
     modelManager,
     tokenTracker,
     sendData: sendDataFn,
