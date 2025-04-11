@@ -83,6 +83,11 @@ export interface FormatOptions {
    * Whether to highlight code
    */
   codeHighlighting?: boolean;
+
+  /**
+   * Number of spaces to add as left padding for each line
+   */
+  leftPadding?: number;
 }
 
 /**
@@ -96,6 +101,7 @@ export function formatOutput(
     width = getTerminalSize().columns,
     colors = true,
     codeHighlighting = true,
+    leftPadding = 0,
   } = options;
 
   if (!text) {
@@ -187,6 +193,14 @@ export function formatOutput(
     result += formattedText.slice(lastIndex);
 
     formattedText = result;
+  }
+
+  if (leftPadding > 0) {
+    const padding = ' '.repeat(leftPadding);
+    formattedText = formattedText
+      .split('\n')
+      .map((line) => `${padding}${line}`)
+      .join('\n');
   }
 
   return formattedText;
