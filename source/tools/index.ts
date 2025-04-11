@@ -27,9 +27,11 @@ const sendDataHandler = (terminal: Terminal) => {
     } else if (msg.event === "tool-update") {
       terminal.display(`└── ${msg.data.primary}`);
       if (msg.data.secondary) {
+        terminal.lineBreak();
         for (const line of msg.data.secondary) {
           terminal.display(line);
         }
+        terminal.lineBreak();
       }
     } else if (msg.event === "tool-completion") {
       terminal.display(`└── ${msg.data}`);

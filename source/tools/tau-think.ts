@@ -27,7 +27,11 @@ export const createThinkTools = (
         const formattedThought = thought.replace(/\\n/g, "\n");
         sendData?.({
           event: "tool-init",
-          data: `Logging thought: ${formattedThought}`,
+          data: "Logging thought",
+        });
+        sendData?.({
+          event: "tool-update",
+          data: { primary: "Thought:", secondary: [formattedThought] },
         });
         return Promise.resolve("Your thought has been logged.");
       },
