@@ -2,6 +2,7 @@
 
 - **Build:** `npm run build`
 - **Lint:** `npm run lint`
+- **Lint Single File:** `npm run lint -- path/to/file.ts`
 - **Format:** `npm run format`
 - **Fix Lint/Format:** `npm run lint:fix` (uses Biome)
 - **Test:** `npm test`
