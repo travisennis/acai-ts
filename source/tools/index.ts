@@ -97,7 +97,7 @@ export async function initTools({
       }),
       execute: async ({ question }) => {
         terminal?.lineBreak();
-        const result = await input({ message: ` ${question}\n >` });
+        const result = await input({ message: `${question}\n>` });
 
         return result;
       },

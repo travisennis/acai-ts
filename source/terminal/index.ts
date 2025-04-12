@@ -137,10 +137,11 @@ export class Terminal {
     const version = packageJson.version;
 
     this.writeln(chalk.magenta(this.getLogo()), "");
-    this.writeln("");
+    this.lineBreak();
     this.writeln(chalk.magenta("Greetings! I am acai."));
     this.writeln(chalk.gray(`  Version ${version}`));
-    this.writeln("");
+    this.lineBreak();
+
     this.writeln(
       chalk.white(`  Type ${chalk.cyan("/help")} to see available commands.`),
     );
@@ -182,7 +183,7 @@ export class Terminal {
       width: this.terminalWidth,
       colors: this.config.useColors,
       codeHighlighting: this.config.codeHighlighting,
-      leftPadding: 1,
+      leftPadding: 0,
     });
 
     this.writeln(formatted, "");
@@ -247,7 +248,7 @@ export class Terminal {
     process.stdout.write(input);
   }
 
-  writeln(input: string, padding = " "): void {
+  writeln(input: string, padding = ""): void {
     process.stdout.write(`${padding}${input}\n`);
   }
 
@@ -256,9 +257,9 @@ export class Terminal {
   }
 
   header(header: string, chalkFn: ChalkInstance = chalk.green): void {
-    const width = process.stdout.columns - header.length - 7; // Adjusted for extra spaces
+    const width = process.stdout.columns - header.length - 6; // Adjusted for extra spaces
     process.stdout.write(
-      chalkFn(`\n ── ${header} ${"─".repeat(width > 0 ? width : 0)}  \n\n`),
+      chalkFn(`\n── ${header} ${"─".repeat(width > 0 ? width : 0)}  \n\n`),
     );
   }
 
@@ -293,7 +294,7 @@ export class Terminal {
 
   hr(chalkFn: ChalkInstance = chalk.cyan): void {
     process.stdout.write(
-      chalkFn(`\n ${"─".repeat(process.stdout.columns - 4)}  \n`),
+      chalkFn(`\n${"─".repeat(process.stdout.columns - 3)}  \n`),
     );
   }
 
@@ -452,7 +453,7 @@ export class Terminal {
     const progressText = `${currentFormatted}/${totalFormatted}`;
     const progressTextLength = progressText.length + 1; // Add 1 for space
 
-    const progressBarMaxWidth = terminalWidth - progressTextLength - 3;
+    const progressBarMaxWidth = terminalWidth - progressTextLength - 1;
 
     const percentage = total === 0 ? 1 : current / total;
     const filledWidth = Math.max(
@@ -470,7 +471,7 @@ export class Terminal {
     const emptyBar = b.repeat(emptyWidth);
 
     // Use \r to move cursor to the beginning of the line for updates
-    this.writeln(`\r ${filledBar}${emptyBar} ${progressText}  `);
+    this.writeln(`\r${filledBar}${emptyBar} ${progressText}  `);
   }
 }
 

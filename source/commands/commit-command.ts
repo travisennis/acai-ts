@@ -32,6 +32,6 @@ async function getGitStatus() {
     "markdown",
   );
 
-  const statusMessage = `Status:\n ${statusBlock}`;
+  const statusMessage = `Status:\n${statusBlock}`;
   return statusMessage;
 }

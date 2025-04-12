@@ -221,7 +221,7 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
           // Add the changes and commit
           await git.add(fileArr);
           const commitResult = await git.commit(message);
-          const successMessage = `Commit created successfully:\n  ${commitResult.commit} - ${message}`;
+          const successMessage = `Commit created successfully:\n${commitResult.commit} - ${message}`;
           sendData?.({
             id,
             event: "tool-completion",
@@ -274,7 +274,7 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
             JSON.stringify(status, undefined, 2),
             "markdown",
           );
-          const statusMessage = `Status:\n ${statusBlock}`;
+          const statusMessage = `Status:\n${statusBlock}`;
           sendData?.({
             id,
             event: "tool-completion",

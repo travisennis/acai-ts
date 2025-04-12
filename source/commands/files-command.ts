@@ -46,7 +46,7 @@ export const filesCommand = ({
           }
 
           terminal.header("Found files:");
-          terminal.writeln("");
+          terminal.lineBreak();
           for (const file of foundFiles) {
             terminal.writeln(`- ${file}`);
           }
@@ -67,7 +67,7 @@ export const filesCommand = ({
           }
         }
 
-        terminal.writeln("");
+        terminal.lineBreak();
         terminal.success(
           `File contents will be added to your next prompt (${workingFiles.length} files)`,
         );

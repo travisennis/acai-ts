@@ -49,7 +49,7 @@ export const createCodeEditorTools = (options: {
 
           const modelConfig = modelManager.getModelMetadata("code-editor");
 
-          const content = `<edits>\n${JSON.stringify(input, null, 2)}\n</edits>\n\n Apply these edits.`;
+          const content = `<edits>\n${JSON.stringify(input, null, 2)}\n</edits>\n\nApply these edits.`;
 
           const { text, usage } = await generateText({
             model: modelManager.getModel("code-editor"),
