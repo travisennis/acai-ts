@@ -4,6 +4,7 @@ import path from "node:path";
 import { tool } from "ai";
 import { simpleGit } from "simple-git";
 import { z } from "zod";
+import { formatCodeSnippet } from "../formatting.ts";
 import { executeCommand } from "../utils/process.ts";
 import type { SendData } from "./types.ts";
 
@@ -268,7 +269,12 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
             return "No changes found.";
           }
 
-          const statusMessage = `Status:\n ${mdQuotes} json\n${JSON.stringify(status, undefined, 2)}\n${mdQuotes}`;
+          const statusBlock = formatCodeSnippet(
+            "status.json",
+            JSON.stringify(status, undefined, 2),
+            "markdown",
+          );
+          const statusMessage = `Status:\n ${statusBlock}`;
           sendData?.({
             id,
             event: "tool-completion",
