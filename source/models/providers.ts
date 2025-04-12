@@ -6,15 +6,15 @@ import {
   anthropicProvider,
 } from "./anthropic-provider.ts";
 import {
-  googleModelNames,
-  googleModelRegistry,
-  googleProvider,
-} from "./google-provider.ts";
-import {
   deepseekModelNames,
   deepseekModelRegistry,
   deepseekProvider,
 } from "./deepseek-provider.ts";
+import {
+  googleModelNames,
+  googleModelRegistry,
+  googleProvider,
+} from "./google-provider.ts";
 import {
   openaiModelNames,
   openaiModelRegistry,
