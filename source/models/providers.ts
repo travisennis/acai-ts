@@ -5,11 +5,16 @@ import {
 import { createAzure } from "@ai-sdk/azure";
 import { deepseek as originalDeepseek } from "@ai-sdk/deepseek";
 import { google as originalGoogle } from "@ai-sdk/google";
-import { createOpenAI, openai as originalOpenAi } from "@ai-sdk/openai";
+import { createOpenAI } from "@ai-sdk/openai";
 import { isRecord } from "@travisennis/stdlib/typeguards";
 import { createProviderRegistry, customProvider } from "ai";
 import { createOllama } from "ollama-ai-provider";
 import { z } from "zod";
+import {
+  openaiModelNames,
+  openaiModelRegistry,
+  openaiProvider,
+} from "./openai-provider.ts";
 
 export const providers = [
   "anthropic",
@@ -115,26 +120,6 @@ const anthropic = customProvider({
   fallbackProvider: originalAnthropic,
 });
 
-const openai = customProvider({
-  languageModels: {
-    "chatgpt-4o-latest": originalOpenAi("chatgpt-4o-latest"),
-    "gpt-4o": originalOpenAi("gpt-4o-2024-11-20"),
-    "gpt-4o-mini": originalOpenAi("gpt-4o-mini"),
-    "gpt-4o-structured": originalOpenAi("gpt-4o-2024-11-20", {
-      structuredOutputs: true,
-    }),
-    "gpt-4o-mini-structured": originalOpenAi("gpt-4o-mini", {
-      structuredOutputs: true,
-    }),
-    o1: originalOpenAi("o1"),
-    "o1-pro": originalOpenAi("o1-pro-2025-03-19"),
-    "o1-mini": originalOpenAi("o1-mini"),
-    "o3-mini": originalOpenAi("o3-mini"),
-    "gpt-4-5": originalOpenAi("gpt-4.5-preview"),
-  },
-  fallbackProvider: originalOpenAi,
-});
-
 const google = customProvider({
   languageModels: {
     flash2: originalGoogle("gemini-2.0-flash"),
@@ -181,7 +166,7 @@ const registry = createProviderRegistry({
   azure,
   deepseek,
   google,
-  openai,
+  ...openaiProvider,
   openrouter,
   ollama,
   xai,
@@ -193,16 +178,7 @@ export const models = [
   "anthropic:sonnet-128k",
   "anthropic:sonnet35",
   "anthropic:haiku",
-  "openai:chatgpt-4o-latest",
-  "openai:gpt-4o",
-  "openai:gpt-4o-mini",
-  "openai:gpt-4o-structured",
-  "openai:gpt-4o-mini-structured",
-  "openai:o1",
-  "openai:o1-pro",
-  "openai:o1-mini",
-  "openai:o3-mini",
-  "openai:gpt-4-5",
+  ...openaiModelNames,
   "google:flash2",
   "google:flash2lite",
   "google:flash2-search",
@@ -243,8 +219,8 @@ export function languageModel(input: ModelName) {
   return registry.languageModel(input);
 }
 
-export interface ModelMetadata {
-  id: ModelName;
+export interface ModelMetadata<T = ModelName> {
+  id: T;
   provider: ModelProvider;
   // displayName: string;
   // description: string;
@@ -326,136 +302,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
     costPerOutputToken: 0.000004,
     category: "fast",
   },
-  "openai:chatgpt-4o-latest": {
-    id: "openai:chatgpt-4o-latest",
-    provider: "openai",
-    contextWindow: 128000,
-    maxOutputTokens: 16384,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000025,
-    costPerOutputToken: 0.00001,
-    category: "balanced",
-  },
-  "openai:gpt-4o": {
-    id: "openai:gpt-4o",
-    provider: "openai",
-    contextWindow: 128000,
-    maxOutputTokens: 16384,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000025,
-    costPerOutputToken: 0.00001,
-    category: "balanced",
-  },
-  "openai:gpt-4o-mini": {
-    id: "openai:gpt-4o-mini",
-    provider: "openai",
-    contextWindow: 128000,
-    maxOutputTokens: 16384,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.00000015,
-    costPerOutputToken: 0.0000006,
-    category: "fast",
-  },
-  "openai:gpt-4o-structured": {
-    id: "openai:gpt-4o-structured",
-    provider: "openai",
-    contextWindow: 128000,
-    maxOutputTokens: 16384,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000025,
-    costPerOutputToken: 0.00001,
-    category: "balanced",
-  },
-  "openai:gpt-4o-mini-structured": {
-    id: "openai:gpt-4o-mini-structured",
-    provider: "openai",
-    contextWindow: 128000,
-    maxOutputTokens: 16384,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.00000015,
-    costPerOutputToken: 0.0000006,
-    category: "fast",
-  },
-  "openai:o1": {
-    id: "openai:o1",
-    provider: "openai",
-    contextWindow: 200000,
-    maxOutputTokens: 100000,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: false,
-    costPerInputToken: 0.000015,
-    costPerOutputToken: 0.00006,
-    category: "powerful",
-  },
-  "openai:o1-pro": {
-    id: "openai:o1-pro",
-    provider: "openai",
-    contextWindow: 200000,
-    maxOutputTokens: 100000,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: false,
-    costPerInputToken: 0.00015,
-    costPerOutputToken: 0.0006,
-    category: "powerful",
-  },
-  "openai:o1-mini": {
-    id: "openai:o1-mini",
-    provider: "openai",
-    contextWindow: 200000,
-    maxOutputTokens: 65536,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: false,
-    costPerInputToken: 0.0000011,
-    costPerOutputToken: 0.0000044,
-    category: "balanced",
-  },
-  "openai:o3-mini": {
-    id: "openai:o3-mini",
-    provider: "openai",
-    contextWindow: 200000,
-    maxOutputTokens: 100000,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000011,
-    costPerOutputToken: 0.0000044,
-    category: "balanced",
-  },
-  "openai:gpt-4-5": {
-    id: "openai:gpt-4-5",
-    provider: "openai",
-    contextWindow: 128000,
-    maxOutputTokens: 16000,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.000075,
-    costPerOutputToken: 0.00015,
-    category: "balanced",
-  },
+  ...openaiModelRegistry,
   "google:flash2": {
     id: "google:flash2",
     provider: "google",
