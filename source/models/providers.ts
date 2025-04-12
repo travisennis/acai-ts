@@ -10,15 +10,15 @@ import {
   anthropicProvider,
 } from "./anthropic-provider.ts";
 import {
-  openaiModelNames,
-  openaiModelRegistry,
-  openaiProvider,
-} from "./openai-provider.ts";
-import {
   googleModelNames,
   googleModelRegistry,
   googleProvider,
 } from "./google-provider.ts";
+import {
+  openaiModelNames,
+  openaiModelRegistry,
+  openaiProvider,
+} from "./openai-provider.ts";
 
 export const providers = [
   "anthropic",

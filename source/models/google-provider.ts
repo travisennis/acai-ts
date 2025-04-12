@@ -31,7 +31,10 @@ export const googleModelNames = [
 
 export type GoogleModelName = (typeof googleModelNames)[number];
 
-export const googleModelRegistry: Record<GoogleModelName, ModelMetadata<GoogleModelName>> = {
+export const googleModelRegistry: Record<
+  GoogleModelName,
+  ModelMetadata<GoogleModelName>
+> = {
   "google:flash2": {
     id: "google:flash2",
     provider: "google" as ModelProvider,

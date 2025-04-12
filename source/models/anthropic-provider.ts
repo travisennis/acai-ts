@@ -2,8 +2,8 @@ import {
   createAnthropic,
   anthropic as originalAnthropic,
 } from "@ai-sdk/anthropic";
-import { isRecord } from "@travisennis/stdlib/typeguards";
 import { objectKeys } from "@travisennis/stdlib/object";
+import { isRecord } from "@travisennis/stdlib/typeguards";
 import { customProvider } from "ai";
 import type { ModelMetadata } from "./providers.ts";
 
