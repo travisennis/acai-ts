@@ -1,8 +1,6 @@
-import { createAzure } from "@ai-sdk/azure";
 import { deepseek as originalDeepseek } from "@ai-sdk/deepseek";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createProviderRegistry, customProvider } from "ai";
-import { createOllama } from "ollama-ai-provider";
 import { z } from "zod";
 import {
   anthropicModelNames,
@@ -25,22 +23,11 @@ export const providers = [
   "openai",
   "google",
   "deepseek",
-  "azure",
   "openrouter",
-  "ollama",
   "xai",
 ] as const;
 
 export type ModelProvider = (typeof providers)[number];
-
-const azure = customProvider({
-  languageModels: {
-    text: createAzure({
-      resourceName: process.env["AZURE_RESOURCE_NAME"] ?? "",
-      apiKey: process.env["AZURE_API_KEY"] ?? "",
-    })(process.env["AZURE_DEPLOYMENT_NAME"] ?? ""),
-  },
-});
 
 const openRouterClient = createOpenAI({
   // biome-ignore lint/style/useNamingConvention: <explanation>
@@ -52,7 +39,6 @@ const openrouter = customProvider({
   languageModels: {
     "deepseek-v3": openRouterClient("deepseek/deepseek-chat"),
     "deepseek-r1": openRouterClient("deepseek/deepseek-r1"),
-    // "quasar-alpha": openRouterClient("openrouter/quasar-alpha"),
     "optimus-alpha": openRouterClient("openrouter/optimus-alpha"),
   },
   fallbackProvider: openRouterClient,
@@ -80,18 +66,12 @@ const xai = customProvider({
   fallbackProvider: xaiClient,
 });
 
-const ollama = customProvider({
-  fallbackProvider: createOllama(),
-});
-
 const registry = createProviderRegistry({
   ...anthropicProvider,
-  azure,
   deepseek,
   ...googleProvider,
   ...openaiProvider,
   openrouter,
-  ollama,
   xai,
 });
 
@@ -103,10 +83,9 @@ export const models = [
   "deepseek:deepseek-reasoner",
   "openrouter:deepseek-v3",
   "openrouter:deepseek-r1",
-  // "openrouter:quasar-alpha",
+  "openrouter:optimus-alpha",
   "xai:grok3",
   "xai:grok3-mini",
-  "openrouter:optimus-alpha",
 ] as const;
 
 export type ModelName = (typeof models)[number];
@@ -116,7 +95,6 @@ export function isSupportedModel(model: unknown): model is ModelName {
     models.includes(model as ModelName) ||
     (isString(model) &&
       (model.startsWith("openrouter:") ||
-        model.startsWith("ollama:") ||
         model.startsWith("anthropic:") ||
         model.startsWith("openai:") ||
         model.startsWith("google:") ||
@@ -271,9 +249,7 @@ export function getModelsByProvider(): Record<ModelProvider, ModelMetadata[]> {
     openai: [],
     google: [],
     deepseek: [],
-    azure: [],
     openrouter: [],
-    ollama: [],
     xai: [],
   };
 
