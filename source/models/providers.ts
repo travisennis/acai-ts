@@ -1,6 +1,5 @@
 import { createAzure } from "@ai-sdk/azure";
 import { deepseek as originalDeepseek } from "@ai-sdk/deepseek";
-import { google as originalGoogle } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createProviderRegistry, customProvider } from "ai";
 import { createOllama } from "ollama-ai-provider";
@@ -15,6 +14,11 @@ import {
   openaiModelRegistry,
   openaiProvider,
 } from "./openai-provider.ts";
+import {
+  googleModelNames,
+  googleModelRegistry,
+  googleProvider,
+} from "./google-provider.ts";
 
 export const providers = [
   "anthropic",
@@ -54,21 +58,6 @@ const openrouter = customProvider({
   fallbackProvider: openRouterClient,
 });
 
-const google = customProvider({
-  languageModels: {
-    flash2: originalGoogle("gemini-2.0-flash"),
-    "flash2-search": originalGoogle("gemini-2.0-flash", {
-      useSearchGrounding: true,
-    }),
-    flash2lite: originalGoogle("gemini-2.0-flash-lite-preview-02-05"),
-    flash2thinking: originalGoogle("gemini-2.0-flash-thinking-exp-01-21"),
-    pro2: originalGoogle("gemini-2.0-pro-exp-02-05"),
-    "pro25-free": originalGoogle("gemini-2.5-pro-exp-03-25"),
-    pro25: originalGoogle("gemini-2.5-pro-preview-03-25"),
-  },
-  fallbackProvider: originalGoogle,
-});
-
 const deepseek = customProvider({
   languageModels: {
     "deepseek-chat": originalDeepseek("deepseek-chat"),
@@ -99,7 +88,7 @@ const registry = createProviderRegistry({
   ...anthropicProvider,
   azure,
   deepseek,
-  google,
+  ...googleProvider,
   ...openaiProvider,
   openrouter,
   ollama,
@@ -109,13 +98,7 @@ const registry = createProviderRegistry({
 export const models = [
   ...anthropicModelNames,
   ...openaiModelNames,
-  "google:flash2",
-  "google:flash2lite",
-  "google:flash2-search",
-  "google:flash2thinking",
-  "google:pro2",
-  "google:pro25",
-  "google:pro25-free",
+  ...googleModelNames,
   "deepseek:deepseek-chat",
   "deepseek:deepseek-reasoner",
   "openrouter:deepseek-v3",
@@ -169,97 +152,7 @@ export interface ModelMetadata<T = ModelName> {
 export const modelRegistry: Record<ModelName, ModelMetadata> = {
   ...anthropicModelRegistry,
   ...openaiModelRegistry,
-  "google:flash2": {
-    id: "google:flash2",
-    provider: "google",
-    contextWindow: 1000000,
-    maxOutputTokens: 8192,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "balanced",
-  },
-  "google:flash2lite": {
-    id: "google:flash2lite",
-    provider: "google",
-    contextWindow: 1000000,
-    maxOutputTokens: 8192,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "fast",
-  },
-  "google:flash2-search": {
-    id: "google:flash2-search",
-    provider: "google",
-    contextWindow: 1000000,
-    maxOutputTokens: 8192,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "balanced",
-  },
-  "google:flash2thinking": {
-    id: "google:flash2thinking",
-    provider: "google",
-    contextWindow: 1000000,
-    maxOutputTokens: 8192,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "balanced",
-  },
-  "google:pro2": {
-    id: "google:pro2",
-    provider: "google",
-    contextWindow: 1000000,
-    maxOutputTokens: 8192,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "balanced",
-  },
-  "google:pro25": {
-    id: "google:pro25",
-    provider: "google",
-    contextWindow: 1000000,
-    maxOutputTokens: 64000,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "powerful",
-  },
-  "google:pro25-free": {
-    id: "google:pro25-free",
-    provider: "google",
-    contextWindow: 1000000,
-    maxOutputTokens: 64000,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "powerful",
-  },
+  ...googleModelRegistry,
   "deepseek:deepseek-chat": {
     id: "deepseek:deepseek-chat",
     provider: "deepseek",
