@@ -301,17 +301,18 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
       }),
       execute: async ({ path, n }) => {
         const id = crypto.randomUUID();
+        const maxCount = n ?? 3;
         sendData?.({
           id,
           event: "tool-init",
-          data: "Retrieving git log",
+          data: `Retrieving git log (--max-count=${maxCount})`,
         });
         try {
           validateGitRepo(workingDir);
           const baseDir = sanitizePath(workingDir, path);
           const git = simpleGit({ baseDir });
 
-          const log = await git.log({ maxCount: n ?? 3 });
+          const log = await git.log({ maxCount });
           const logMessage = `Log:\n${mdQuotes} json\n${JSON.stringify(log, undefined, 2)}\n${mdQuotes}`;
           sendData?.({
             id,
