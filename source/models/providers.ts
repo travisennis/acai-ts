@@ -1,15 +1,15 @@
-import {
-  createAnthropic,
-  anthropic as originalAnthropic,
-} from "@ai-sdk/anthropic";
 import { createAzure } from "@ai-sdk/azure";
 import { deepseek as originalDeepseek } from "@ai-sdk/deepseek";
 import { google as originalGoogle } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
-import { isRecord } from "@travisennis/stdlib/typeguards";
 import { createProviderRegistry, customProvider } from "ai";
 import { createOllama } from "ollama-ai-provider";
 import { z } from "zod";
+import {
+  anthropicModelNames,
+  anthropicModelRegistry,
+  anthropicProvider,
+} from "./anthropic-provider.ts";
 import {
   openaiModelNames,
   openaiModelRegistry,
@@ -54,72 +54,6 @@ const openrouter = customProvider({
   fallbackProvider: openRouterClient,
 });
 
-function addCacheControlToTools(body: string) {
-  const parsedBody = JSON.parse(body);
-  if (isRecord(parsedBody)) {
-    const tools = parsedBody["tools"];
-    if (Array.isArray(tools)) {
-      tools.at(-1).cache_control = { type: "ephemeral" };
-    }
-  }
-  return JSON.stringify(parsedBody);
-}
-
-const anthropic = customProvider({
-  languageModels: {
-    sonnet: createAnthropic({
-      fetch(input, init) {
-        const body = init?.body;
-        if (body && typeof body === "string") {
-          init.body = addCacheControlToTools(body);
-        }
-        return fetch(input, init);
-      },
-    })("claude-3-7-sonnet-20250219"),
-    "sonnet-token-efficient-tools": createAnthropic({
-      headers: {
-        "anthropic-version": "2023-06-01",
-        "anthropic-beta": "token-efficient-tools-2025-02-19",
-      },
-      fetch(input, init) {
-        const body = init?.body;
-        if (body && typeof body === "string") {
-          init.body = addCacheControlToTools(body);
-        }
-        return fetch(input, init);
-      },
-    })("claude-3-7-sonnet-20250219"),
-    "sonnet-128k": createAnthropic({
-      headers: {
-        "anthropic-version": "2023-06-01",
-        "anthropic-beta": "output-128k-2025-02-19",
-      },
-      fetch(input, init) {
-        const body = init?.body;
-        if (body && typeof body === "string") {
-          init.body = addCacheControlToTools(body);
-        }
-        return fetch(input, init);
-      },
-    })("claude-3-7-sonnet-20250219"),
-    sonnet35: createAnthropic({
-      headers: {
-        "anthropic-version": "2023-06-01",
-        "anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15",
-      },
-      fetch(input, init) {
-        const body = init?.body;
-        if (body && typeof body === "string") {
-          init.body = addCacheControlToTools(body);
-        }
-        return fetch(input, init);
-      },
-    })("claude-3-5-sonnet-20241022"),
-    haiku: originalAnthropic("claude-3-5-haiku-20241022"),
-  },
-  fallbackProvider: originalAnthropic,
-});
-
 const google = customProvider({
   languageModels: {
     flash2: originalGoogle("gemini-2.0-flash"),
@@ -162,7 +96,7 @@ const ollama = customProvider({
 });
 
 const registry = createProviderRegistry({
-  anthropic,
+  ...anthropicProvider,
   azure,
   deepseek,
   google,
@@ -173,11 +107,7 @@ const registry = createProviderRegistry({
 });
 
 export const models = [
-  "anthropic:sonnet",
-  "anthropic:sonnet-token-efficient-tools",
-  "anthropic:sonnet-128k",
-  "anthropic:sonnet35",
-  "anthropic:haiku",
+  ...anthropicModelNames,
   ...openaiModelNames,
   "google:flash2",
   "google:flash2lite",
@@ -237,71 +167,7 @@ export interface ModelMetadata<T = ModelName> {
 
 // https://openrouter.ai/api/v1/models
 export const modelRegistry: Record<ModelName, ModelMetadata> = {
-  "anthropic:sonnet": {
-    id: "anthropic:sonnet",
-    provider: "anthropic",
-    contextWindow: 200000,
-    maxOutputTokens: 64000,
-    defaultTemperature: 0.3,
-    promptFormat: "xml",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.000003,
-    costPerOutputToken: 0.000015,
-    category: "balanced",
-  },
-  "anthropic:sonnet-token-efficient-tools": {
-    id: "anthropic:sonnet-token-efficient-tools",
-    provider: "anthropic",
-    contextWindow: 200000,
-    maxOutputTokens: 64000,
-    defaultTemperature: 0.3,
-    promptFormat: "xml",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.000003,
-    costPerOutputToken: 0.000015,
-    category: "balanced",
-  },
-  "anthropic:sonnet-128k": {
-    id: "anthropic:sonnet-128k",
-    provider: "anthropic",
-    contextWindow: 200000,
-    maxOutputTokens: 128000,
-    defaultTemperature: 0.3,
-    promptFormat: "xml",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.000003,
-    costPerOutputToken: 0.000015,
-    category: "powerful",
-  },
-  "anthropic:sonnet35": {
-    id: "anthropic:sonnet35",
-    provider: "anthropic",
-    contextWindow: 200000,
-    maxOutputTokens: 8096,
-    defaultTemperature: 0.3,
-    promptFormat: "xml",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.000003,
-    costPerOutputToken: 0.000015,
-    category: "balanced",
-  },
-  "anthropic:haiku": {
-    id: "anthropic:haiku",
-    provider: "anthropic",
-    contextWindow: 200000,
-    maxOutputTokens: 4096,
-    defaultTemperature: 0.3,
-    promptFormat: "xml",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000008,
-    costPerOutputToken: 0.000004,
-    category: "fast",
-  },
+  ...anthropicModelRegistry,
   ...openaiModelRegistry,
   "google:flash2": {
     id: "google:flash2",
