@@ -179,7 +179,7 @@ export class Repl {
           tools,
           // biome-ignore lint/style/useNamingConvention: <explanation>
           experimental_repairToolCall: modelConfig.supportsToolCalling
-            ? toolCallRepair(modelManager)
+            ? toolCallRepair(modelManager, terminal)
             : undefined,
           abortSignal: signal,
           onFinish: async (result) => {
@@ -292,7 +292,11 @@ export class Repl {
           },
           onError: ({ error }) => {
             logger.error(error, "Error on REPL streamText");
-            terminal.error((error as Error).message);
+            terminal.error(
+              (error as Error).message.length > 100
+                ? `${(error as Error).message.slice(0, 100)}...`
+                : (error as Error).message,
+            );
           },
         });
 
@@ -352,7 +356,7 @@ export class Repl {
   }
 }
 
-const toolCallRepair = (modelManager: ModelManager) => {
+const toolCallRepair = (modelManager: ModelManager, terminal: Terminal) => {
   const fn: ToolCallRepairFunction<AsyncReturnType<typeof initTools>> = async ({
     toolCall,
     tools,
@@ -363,7 +367,8 @@ const toolCallRepair = (modelManager: ModelManager) => {
       return null; // do not attempt to fix invalid tool names
     }
 
-    console.error("Attempting to repair tool call.");
+    terminal.lineBreak();
+    terminal.warn("Attempting to repair tool call.");
 
     const tool = tools[toolCall.toolName as keyof typeof tools];
 
