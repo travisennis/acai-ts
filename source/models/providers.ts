@@ -1,6 +1,4 @@
-import { deepseek as originalDeepseek } from "@ai-sdk/deepseek";
-import { createOpenAI } from "@ai-sdk/openai";
-import { createProviderRegistry, customProvider } from "ai";
+import { createProviderRegistry } from "ai";
 import { z } from "zod";
 import {
   anthropicModelNames,
@@ -13,10 +11,25 @@ import {
   googleProvider,
 } from "./google-provider.ts";
 import {
+  deepseekModelNames,
+  deepseekModelRegistry,
+  deepseekProvider,
+} from "./deepseek-provider.ts";
+import {
   openaiModelNames,
   openaiModelRegistry,
   openaiProvider,
 } from "./openai-provider.ts";
+import {
+  openrouterModelNames,
+  openrouterModelRegistry,
+  openrouterProvider,
+} from "./openrouter-provider.ts";
+import {
+  xaiModelNames,
+  xaiModelRegistry,
+  xaiProvider,
+} from "./xai-provider.ts";
 
 export const providers = [
   "anthropic",
@@ -29,63 +42,22 @@ export const providers = [
 
 export type ModelProvider = (typeof providers)[number];
 
-const openRouterClient = createOpenAI({
-  // biome-ignore lint/style/useNamingConvention: <explanation>
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
-});
-
-const openrouter = customProvider({
-  languageModels: {
-    "deepseek-v3": openRouterClient("deepseek/deepseek-chat"),
-    "deepseek-r1": openRouterClient("deepseek/deepseek-r1"),
-    "optimus-alpha": openRouterClient("openrouter/optimus-alpha"),
-  },
-  fallbackProvider: openRouterClient,
-});
-
-const deepseek = customProvider({
-  languageModels: {
-    "deepseek-chat": originalDeepseek("deepseek-chat"),
-    "deepseek-reasoner": originalDeepseek("deepseek-reasoner"),
-  },
-  fallbackProvider: originalDeepseek,
-});
-
-const xaiClient = createOpenAI({
-  apiKey: process.env["X_AI_API_KEY"] ?? process.env["XAI_API_KEY"],
-  // biome-ignore lint/style/useNamingConvention: <explanation>
-  baseURL: "https://api.x.ai/v1",
-});
-
-const xai = customProvider({
-  languageModels: {
-    grok3: xaiClient("grok-3"),
-    "grok3-mini": xaiClient("grok-3-mini-beta"),
-  },
-  fallbackProvider: xaiClient,
-});
-
 const registry = createProviderRegistry({
   ...anthropicProvider,
-  deepseek,
+  ...deepseekProvider,
   ...googleProvider,
   ...openaiProvider,
-  openrouter,
-  xai,
+  ...openrouterProvider,
+  ...xaiProvider,
 });
 
 export const models = [
   ...anthropicModelNames,
   ...openaiModelNames,
   ...googleModelNames,
-  "deepseek:deepseek-chat",
-  "deepseek:deepseek-reasoner",
-  "openrouter:deepseek-v3",
-  "openrouter:deepseek-r1",
-  "openrouter:optimus-alpha",
-  "xai:grok3",
-  "xai:grok3-mini",
+  ...deepseekModelNames,
+  ...openrouterModelNames,
+  ...xaiModelNames,
 ] as const;
 
 export type ModelName = (typeof models)[number];
@@ -131,110 +103,9 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   ...anthropicModelRegistry,
   ...openaiModelRegistry,
   ...googleModelRegistry,
-  "deepseek:deepseek-chat": {
-    id: "deepseek:deepseek-chat",
-    provider: "deepseek",
-    contextWindow: 128000,
-    maxOutputTokens: 8000,
-    defaultTemperature: 0.3,
-    promptFormat: "bracket",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000012,
-    costPerOutputToken: 0.0000012,
-    category: "balanced",
-  },
-  "deepseek:deepseek-reasoner": {
-    id: "deepseek:deepseek-reasoner",
-    provider: "deepseek",
-    contextWindow: 128000,
-    maxOutputTokens: 8000,
-    defaultTemperature: 0.6,
-    promptFormat: "bracket",
-    supportsReasoning: true,
-    supportsToolCalling: false,
-    costPerInputToken: 0.00000055,
-    costPerOutputToken: 0.00000219,
-    category: "balanced",
-  },
-  "openrouter:deepseek-v3": {
-    id: "openrouter:deepseek-v3",
-    provider: "openrouter",
-    contextWindow: 128000,
-    maxOutputTokens: 8000,
-    defaultTemperature: 0.3,
-    promptFormat: "bracket",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "balanced",
-  },
-  "openrouter:deepseek-r1": {
-    id: "openrouter:deepseek-r1",
-    provider: "openrouter",
-    contextWindow: 128000,
-    maxOutputTokens: 8000,
-    defaultTemperature: 0.6,
-    promptFormat: "bracket",
-    supportsReasoning: true,
-    supportsToolCalling: false,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "balanced",
-  },
-  // "openrouter:quasar-alpha": {
-  //   id: "openrouter:quasar-alpha",
-  //   provider: "openrouter",
-  //   contextWindow: 1000000,
-  //   maxOutputTokens: 32000,
-  //   defaultTemperature: 0.3,
-  //   promptFormat: "markdown",
-  //   supportsReasoning: false,
-  //   supportsToolCalling: true,
-  //   costPerInputToken: 0,
-  //   costPerOutputToken: 0,
-  //   category: "balanced",
-  // },
-  "openrouter:optimus-alpha": {
-    id: "openrouter:optimus-alpha",
-    provider: "openrouter",
-    contextWindow: 1000000,
-    maxOutputTokens: 32000,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "balanced",
-  },
-  "xai:grok3": {
-    id: "xai:grok3",
-    provider: "xai",
-    contextWindow: 131072,
-    maxOutputTokens: 131072,
-    defaultTemperature: 0.6,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.000003,
-    costPerOutputToken: 0.000015,
-    category: "balanced",
-  },
-  "xai:grok3-mini": {
-    id: "xai:grok3-mini",
-    provider: "xai",
-    contextWindow: 131072,
-    maxOutputTokens: 131072,
-    defaultTemperature: 0.6,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000003,
-    costPerOutputToken: 0.0000005,
-    category: "balanced",
-  },
+  ...deepseekModelRegistry,
+  ...openrouterModelRegistry,
+  ...xaiModelRegistry,
 };
 
 // Schema for validating model selection
