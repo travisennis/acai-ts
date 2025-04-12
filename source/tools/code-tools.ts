@@ -105,18 +105,23 @@ export const createCodeTools = ({
     }),
     lintCode: tool({
       description:
-        "Lints the current code base and returns the results. This tool helps identify and report potential issues, style violations, or errors in the code, improving code quality and consistency.",
-      parameters: z.object({}),
-      execute: async () => {
+        "Lints the current code base and returns the results. This tool helps identify and report potential issues, style violations, or errors in the code, improving code quality and consistency. If a path is provided it will lint the file at that path.",
+      parameters: z.object({
+        path: z.string().describe("The path of the file to lint.").optional(),
+      }),
+      execute: async ({ path }) => {
         const uuid = crypto.randomUUID();
         if (sendData) {
           sendData({
             event: "tool-init",
             id: uuid,
-            data: `Linting code in ${baseDir}`,
+            data: `Linting code in ${baseDir}: ${path ? path : ""}`,
           });
         }
-        const lintCommand = config?.lint || "npm run lint";
+        let lintCommand = config?.lint || "npm run lint";
+        if (path) {
+          lintCommand += ` -- ${path}`;
+        }
         try {
           const result = format(await asyncExec(lintCommand, baseDir));
           sendData?.({
