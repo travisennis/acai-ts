@@ -1,6 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { customProvider } from "ai";
-import { ModelMetadata } from "./providers.ts"; // Assuming ModelMetadata is defined here or needs to be imported
+import type { ModelMetadata } from "./providers.ts";
 
 const xaiClient = createOpenAI({
   apiKey: process.env["X_AI_API_KEY"] ?? process.env["XAI_API_KEY"],
@@ -50,6 +50,6 @@ export const xaiModelRegistry: Record<
     supportsToolCalling: true,
     costPerInputToken: 0.0000003, // Placeholder, check official pricing
     costPerOutputToken: 0.0000005, // Placeholder, check official pricing
-    category: "balanced", // Or "fast" depending on performance
+    category: "fast", // Or "fast" depending on performance
   },
 };

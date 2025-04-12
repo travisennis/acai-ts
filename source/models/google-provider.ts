@@ -1,6 +1,6 @@
 import { google as originalGoogle } from "@ai-sdk/google";
 import { customProvider } from "ai";
-import type { ModelMetadata, ModelProvider } from "./providers.ts";
+import type { ModelMetadata } from "./providers.ts";
 
 export const googleProvider = {
   google: customProvider({
@@ -37,7 +37,7 @@ export const googleModelRegistry: Record<
 > = {
   "google:flash2": {
     id: "google:flash2",
-    provider: "google" as ModelProvider,
+    provider: "google",
     contextWindow: 1000000,
     maxOutputTokens: 8192,
     defaultTemperature: 0.3,
@@ -50,7 +50,7 @@ export const googleModelRegistry: Record<
   },
   "google:flash2lite": {
     id: "google:flash2lite",
-    provider: "google" as ModelProvider,
+    provider: "google",
     contextWindow: 1000000,
     maxOutputTokens: 8192,
     defaultTemperature: 0.3,
@@ -63,7 +63,7 @@ export const googleModelRegistry: Record<
   },
   "google:flash2-search": {
     id: "google:flash2-search",
-    provider: "google" as ModelProvider,
+    provider: "google",
     contextWindow: 1000000,
     maxOutputTokens: 8192,
     defaultTemperature: 0.3,
@@ -76,7 +76,7 @@ export const googleModelRegistry: Record<
   },
   "google:flash2thinking": {
     id: "google:flash2thinking",
-    provider: "google" as ModelProvider,
+    provider: "google",
     contextWindow: 1000000,
     maxOutputTokens: 8192,
     defaultTemperature: 0.3,
@@ -89,7 +89,7 @@ export const googleModelRegistry: Record<
   },
   "google:pro2": {
     id: "google:pro2",
-    provider: "google" as ModelProvider,
+    provider: "google",
     contextWindow: 1000000,
     maxOutputTokens: 8192,
     defaultTemperature: 0.3,
@@ -102,7 +102,7 @@ export const googleModelRegistry: Record<
   },
   "google:pro25": {
     id: "google:pro25",
-    provider: "google" as ModelProvider,
+    provider: "google",
     contextWindow: 1000000,
     maxOutputTokens: 64000,
     defaultTemperature: 0.3,
@@ -115,7 +115,7 @@ export const googleModelRegistry: Record<
   },
   "google:pro25-free": {
     id: "google:pro25-free",
-    provider: "google" as ModelProvider,
+    provider: "google",
     contextWindow: 1000000,
     maxOutputTokens: 64000,
     defaultTemperature: 0.3,

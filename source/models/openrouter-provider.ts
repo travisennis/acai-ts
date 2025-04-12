@@ -1,6 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { customProvider } from "ai";
-import { ModelMetadata } from "./providers.ts"; // Assuming ModelMetadata is defined here or needs to be imported
+import type { ModelMetadata } from "./providers.ts";
 
 const openRouterClient = createOpenAI({
   // biome-ignore lint/style/useNamingConvention: <explanation>

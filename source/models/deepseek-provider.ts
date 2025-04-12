@@ -1,6 +1,6 @@
 import { deepseek as originalDeepseek } from "@ai-sdk/deepseek";
 import { customProvider } from "ai";
-import { ModelMetadata } from "./providers.ts"; // Assuming ModelMetadata is defined here or needs to be imported
+import type { ModelMetadata } from "./providers.ts";
 
 export const deepseekProvider = {
   deepseek: customProvider({
