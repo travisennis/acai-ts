@@ -1,3 +1,4 @@
+import { isString } from "@travisennis/stdlib/typeguards";
 import { createProviderRegistry } from "ai";
 import { z } from "zod";
 import {
@@ -30,6 +31,7 @@ import {
   xaiModelRegistry,
   xaiProvider,
 } from "./xai-provider.ts";
+import { objectFromEntries } from "@travisennis/stdlib/object";
 
 export const providers = [
   "anthropic",
@@ -72,10 +74,6 @@ export function isSupportedModel(model: unknown): model is ModelName {
         model.startsWith("google:") ||
         model.startsWith("deepseek:")))
   );
-}
-
-function isString(value: unknown): value is string {
-  return typeof value === "string";
 }
 
 export function languageModel(input: ModelName) {
@@ -129,6 +127,17 @@ export function getModelsByProvider(): Record<ModelProvider, ModelMetadata[]> {
   }
 
   return result;
+}
+
+export function getModelsById(): Record<ModelName, string> {
+  const result: Map<ModelName, string> = new Map();
+
+  for (const name of models) {
+    const langModel = registry.languageModel(name);
+    result.set(name, langModel.modelId);
+  }
+
+  return Object.fromEntries(result) as Record<ModelName, string>;
 }
 
 // Get detailed information about a specific model
