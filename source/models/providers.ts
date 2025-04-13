@@ -31,7 +31,6 @@ import {
   xaiModelRegistry,
   xaiProvider,
 } from "./xai-provider.ts";
-import { objectFromEntries } from "@travisennis/stdlib/object";
 
 export const providers = [
   "anthropic",
