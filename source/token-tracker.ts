@@ -12,21 +12,6 @@ interface TokenTrackerEvents {
 
 export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
   private usages: TokenUsage[] = [];
-  private budget?: number | undefined;
-
-  constructor(budget?: number | undefined) {
-    super();
-    this.budget = budget;
-
-    if ("asyncLocalContext" in process) {
-      const asyncLocalContext = process.asyncLocalContext as any;
-      this.on("usage", () => {
-        if (asyncLocalContext.available()) {
-          asyncLocalContext.ctx.chargeAmount = this.getTotalUsage().totalTokens;
-        }
-      });
-    }
-  }
 
   trackUsage(tool: string, usage: LanguageModelUsage | undefined) {
     if (usage) {
@@ -75,7 +60,6 @@ export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
   printSummary() {
     const breakdown = this.getUsageBreakdown();
     console.info("Token Usage Summary:", {
-      budget: this.budget,
       total: this.getTotalUsage(),
       breakdown,
     });
