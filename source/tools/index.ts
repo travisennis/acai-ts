@@ -15,6 +15,7 @@ import { createCodeTools } from "./code-tools.ts";
 import { createFileSystemTools } from "./filesystem.ts";
 import { createGitTools } from "./git.ts";
 import { createGrepTools } from "./grep.ts";
+import { createLogTools } from "./log-tools.ts";
 import { createTextEditorTool } from "./text-editor-tool.ts";
 import { createThinkTools } from "./think.ts";
 import type { Message } from "./types.ts";
@@ -61,9 +62,11 @@ export async function initTools({
     sendData: sendDataFn,
   });
 
+  const projectConfig = await config.readProjectConfig();
+
   const codeTools = createCodeTools({
     baseDir: process.cwd(),
-    config: await config.readProjectConfig(),
+    config: projectConfig.commands,
     sendData: sendDataFn,
   });
 
@@ -73,6 +76,11 @@ export async function initTools({
 
   const grepTool = createGrepTools({
     sendData: sendDataFn,
+  });
+
+  const logTools = createLogTools({
+    sendData: sendDataFn,
+    logPath: projectConfig.logs?.path,
   });
 
   const thinkTool = createThinkTools({
@@ -110,6 +118,7 @@ export async function initTools({
     ...gitTools,
     ...codeInterpreterTool,
     ...grepTool,
+    ...logTools,
     ...thinkTool,
     ...urlTools,
     ...askUserTool,
