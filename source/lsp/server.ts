@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { isNullOrUndefined } from "@travisennis/stdlib/typeguards";
-import { generateObject, generateText } from "ai";
+import { Output, generateText } from "ai";
 import { type Range, TextDocument } from "vscode-languageserver-textdocument";
 import {
   type CodeAction,
@@ -418,24 +418,29 @@ async function editAction(
   ).trim();
 
   try {
-    const { object } = await generateObject({
+    const result = await generateText({
       model: modelManager.getModel("lsp-code-action"),
       system: getEditSystemPrompt(),
       temperature: 0.3,
-      schema: z.object({
-        edits: z
-          .array(
-            z.object({
-              pattern: z
-                .string()
-                .describe("The precise pattern to search for in the file."),
-              replacement: z.string().describe("The replacement text."),
-            }),
-          )
-          .describe("The array of edits to make to the current code file."),
+      // biome-ignore lint/style/useNamingConvention: <explanation>
+      experimental_output: Output.object({
+        schema: z.object({
+          edits: z
+            .array(
+              z.object({
+                pattern: z
+                  .string()
+                  .describe("The precise pattern to search for in the file."),
+                replacement: z.string().describe("The replacement text."),
+              }),
+            )
+            .describe("The array of edits to make to the current code file."),
+        }),
       }),
       prompt: userPrompt,
     });
+
+    const object = result.experimental_output;
 
     const edits = object.edits;
 
