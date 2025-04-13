@@ -8,6 +8,9 @@ const transport = pino.transport({
     file: join(config.app.ensurePath("logs"), "acai.log"),
     size: "10m",
     symlink: true,
+    limit: {
+      count: 3,
+    },
     mkdir: true,
   },
 });
