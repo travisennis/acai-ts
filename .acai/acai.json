@@ -1,7 +1,12 @@
 {
-  "build": "npm run build",
-  "lint": "npm run lint",
-  "format": "npm run format",
-  "test": "npm run test",
-  "install": "npm install"
+  "commands": {
+    "build": "npm run build",
+    "lint": "npm run lint",
+    "format": "npm run format",
+    "test": "npm run test",
+    "install": "npm install"
+  },
+  "logs": {
+    "path": "/Users/travisennis/.acai/logs/current.log"
+  }
 }

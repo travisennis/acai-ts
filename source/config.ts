@@ -97,11 +97,20 @@ export class ConfigManager {
 
 // Type definitions
 const ProjectConfigSchema = z.object({
-  build: z.string().optional(),
-  lint: z.string().optional(),
-  format: z.string().optional(),
-  test: z.string().optional(),
-  install: z.string().optional(),
+  commands: z
+    .object({
+      build: z.string().optional(),
+      lint: z.string().optional(),
+      format: z.string().optional(),
+      test: z.string().optional(),
+      install: z.string().optional(),
+    })
+    .optional(),
+  logs: z
+    .object({
+      path: z.string(),
+    })
+    .optional(),
 });
 
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
