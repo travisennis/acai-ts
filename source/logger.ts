@@ -15,13 +15,15 @@ const transport = pino.transport({
   },
 });
 
-export const logger = pino({
-  level: process.env["LOG_LEVEL"] ?? "debug",
-  formatters: {
-    level: (label) => {
-      return { level: label.toUpperCase() };
+export const logger = pino(
+  {
+    level: process.env["LOG_LEVEL"] ?? "debug",
+    formatters: {
+      level: (label) => {
+        return { level: label.toUpperCase() };
+      },
     },
+    timestamp: pino.stdTimeFunctions.isoTime,
   },
-  timestamp: pino.stdTimeFunctions.isoTime,
   transport,
-});
+);
