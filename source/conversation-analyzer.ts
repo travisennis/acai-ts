@@ -36,9 +36,7 @@ export async function analyzeConversation({
     messages: messages,
   });
 
-  // terminal.info("Turn Analyzed");
-
-  tokenTracker.trackUsage("meta-prompt", usage);
+  tokenTracker.trackUsage("conversation-analyzer", usage);
 
   logger.debug("Analyze turn:");
   logger.debug(text);
