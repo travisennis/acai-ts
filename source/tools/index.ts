@@ -15,8 +15,8 @@ import { createCodeTools } from "./code-tools.ts";
 import { createFileSystemTools } from "./filesystem.ts";
 import { createGitTools } from "./git.ts";
 import { createGrepTools } from "./grep.ts";
-import { createThinkTools } from "./tau-think.ts";
 import { createTextEditorTool } from "./text-editor-tool.ts";
+import { createThinkTools } from "./think.ts";
 import type { Message } from "./types.ts";
 import { createUrlTools } from "./url.ts";
 
@@ -183,7 +183,7 @@ export * from "./git.ts";
 export * from "./grep.ts";
 export * from "./memory.ts";
 
-export * from "./tau-think.ts";
+export * from "./think.ts";
 export * from "./types.ts";
 export * from "./url.ts";
 export * from "./agent.ts";
