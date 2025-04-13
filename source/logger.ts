@@ -7,20 +7,18 @@ const transport = pino.transport({
   options: {
     file: join(config.app.ensurePath("logs"), "acai.log"),
     size: "10m",
-    interval: "1d",
+    symlink: true,
     mkdir: true,
   },
 });
 
-export const logger = pino(
-  {
-    level: process.env["LOG_LEVEL"] ?? "debug",
-    formatters: {
-      level: (label) => {
-        return { level: label.toUpperCase() };
-      },
+export const logger = pino({
+  level: process.env["LOG_LEVEL"] ?? "debug",
+  formatters: {
+    level: (label) => {
+      return { level: label.toUpperCase() };
     },
-    timestamp: pino.stdTimeFunctions.isoTime,
   },
+  timestamp: pino.stdTimeFunctions.isoTime,
   transport,
-);
+});
