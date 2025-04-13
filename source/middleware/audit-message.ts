@@ -22,14 +22,17 @@ interface AuditRecord {
  * @param filePath - The path to the file where the audit record will be saved.
  * @param content - The audit record object to write.
  */
-const writeAuditRecord = async (
+export const writeAuditRecord = async (
+  app: string,
   filePath: string,
   content: AuditRecord,
 ): Promise<void> => {
   try {
+    const now = new Date();
+    const path = join(filePath, `${now.toISOString()}-${app}-message.json`);
     // Ensure directory exists
-    await mkdir(dirname(filePath), { recursive: true });
-    await writeFile(filePath, `${JSON.stringify(content, null, 2)}`);
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, `${JSON.stringify(content, null, 2)}`);
   } catch (error) {
     console.error("Error writing audit file:", error);
     throw error;
@@ -64,10 +67,7 @@ export const auditMessage = ({
         timestamp: Date.now(),
       };
 
-      const now = new Date();
-      const path = join(filePath, `${now.toISOString()}-${app}-message.json`);
-
-      await writeAuditRecord(path, msg);
+      await writeAuditRecord(app, filePath, msg);
 
       return result;
     },
@@ -120,13 +120,7 @@ export const auditMessage = ({
             timestamp: Date.now(),
           };
 
-          const now = new Date();
-          const path = join(
-            filePath,
-            `${now.toISOString()}-${app}-message.json`,
-          );
-
-          await writeAuditRecord(path, msg);
+          await writeAuditRecord(app, filePath, msg);
         },
       });
 
