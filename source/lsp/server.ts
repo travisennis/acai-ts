@@ -206,189 +206,31 @@ export function initConnection({
 
       switch (actionId) {
         case "ai.instruct": {
-          const filePath = documentUri;
-          const recentEdits = editHistory.get(filePath) || [];
-          logger.info(
-            `Adding ${recentEdits.length} recent edits from history.`,
-          );
-
-          // Get the text from the range where the code action was triggered
-          const documentText = textDocument.getText(range);
-
-          // Get related files and their recent edits
-          const relatedContext = getRelatedFilesContext(filePath, documents);
-          const relatedFilesCount = fileRelations.get(filePath)?.length || 0;
-          logger.info(
-            `Adding context from ${relatedFilesCount} related files.`,
-          );
-
-          // Parse the selected text
-          const instructions = parseInstructions(documentText);
-
-          logger.debug(instructions);
-
-          const userPrompt = createUserPrompt(
+          await instructAction(
             documentUri,
             textDocument,
-            recentEdits,
-            relatedContext,
-            instructions,
-          ).trim();
-
-          try {
-            const { text } = await generateText({
-              model: modelManager.getModel("lsp-code-action"),
-              system: getSystemPrompt(instructions.mode),
-              temperature: instructions.mode === "edit" ? 0.3 : 1.0,
-              prompt: userPrompt,
-            });
-
-            params.edit = {
-              changes: {
-                [data.documentUri]: [
-                  TextEdit.replace(range, extractCodeBlock(text)),
-                ],
-              },
-            };
-          } catch (error) {
-            logger.error("Error generating text:");
-            logger.error(error);
-            // Optionally, you can set an error message on the code action
-            params.diagnostics = [
-              {
-                range: range,
-                message: "Failed to generate text. Please try again.",
-              },
-            ];
-          }
+            range,
+            documents,
+            modelManager,
+            params,
+            data,
+          );
           break;
         }
         case "ai.edit": {
-          const filePath = documentUri;
-
-          const recentEdits = editHistory.get(filePath) || [];
-          logger.info(
-            `Adding ${recentEdits.length} recent edits from history.`,
-          );
-
-          // Get related files and their recent edits
-          const relatedContext = getRelatedFilesContext(filePath, documents);
-          const relatedFilesCount = fileRelations.get(filePath)?.length || 0;
-          logger.info(
-            `Adding context from ${relatedFilesCount} related files.`,
-          );
-
-          // Parse the selected text
-          const instructions = parseInstructions(
-            textDocument.getText({
-              start: { line: range.start.line, character: 0 },
-              end: { line: range.end.line, character: Number.MAX_SAFE_INTEGER },
-            }),
-          );
-
-          logger.debug(instructions);
-
-          const userPrompt = createUserPrompt(
+          await editAction(
             documentUri,
+            documents,
             textDocument,
-            recentEdits,
-            relatedContext,
-            instructions,
-          ).trim();
-
-          try {
-            const { object } = await generateObject({
-              model: modelManager.getModel("lsp-code-action"),
-              system: getEditSystemPrompt(),
-              temperature: 0.3,
-              schema: z.object({
-                edits: z
-                  .array(
-                    z.object({
-                      pattern: z
-                        .string()
-                        .describe(
-                          "The precise pattern to search for in the file.",
-                        ),
-                      replacement: z.string().describe("The replacement text."),
-                    }),
-                  )
-                  .describe(
-                    "The array of edits to make to the current code file.",
-                  ),
-              }),
-              prompt: userPrompt,
-            });
-
-            const edits = object.edits;
-
-            // Get the text from the range where the code action was triggered
-            const documentText = removeLspPrompt(textDocument.getText());
-
-            // Apply all regex pattern replacements to the document text
-            let updatedText = documentText;
-            for (const edit of edits) {
-              try {
-                const regex = new RegExp(edit.pattern, "g");
-                updatedText = updatedText.replace(regex, edit.replacement);
-              } catch (error) {
-                logger.error(
-                  `Error applying regex pattern: ${edit.pattern}`,
-                  error,
-                );
-              }
-            }
-
-            params.edit = {
-              changes: {
-                [data.documentUri]: [
-                  TextEdit.replace(
-                    {
-                      start: { line: 0, character: 0 },
-                      end: { line: textDocument.lineCount, character: 0 },
-                    },
-                    updatedText,
-                  ),
-                ],
-              },
-            };
-          } catch (error) {
-            logger.error("Error generating text:");
-            logger.error(error);
-            // Optionally, you can set an error message on the code action
-            params.diagnostics = [
-              {
-                range: range,
-                message: "Failed to generate text. Please try again.",
-              },
-            ];
-          }
+            range,
+            modelManager,
+            params,
+            data,
+          );
           break;
         }
         case "ai.save": {
-          // Get the text from the range where the code action was triggered
-          const documentText = textDocument.getText(range);
-
-          const selection: Selection = {
-            documentUri,
-            range,
-            documentText,
-          };
-
-          try {
-            await saveSelection(selection);
-            logger.info("Selection saved successfully");
-          } catch (error) {
-            logger.error("Error saving selection:", error);
-            // Optionally, you can set an error message on the code action
-            params.diagnostics = [
-              {
-                range: range,
-                message: "Failed to save selection. Please try again.",
-              },
-            ];
-            throw error;
-          }
+          await saveAction(textDocument, range, documentUri, params);
           break;
         }
         default: {
@@ -505,6 +347,196 @@ export function initConnection({
   }
 
   return connection;
+}
+
+async function saveAction(
+  textDocument: TextDocument,
+  range: Range,
+  documentUri: string,
+  params: CodeAction,
+) {
+  // Get the text from the range where the code action was triggered
+  const documentText = textDocument.getText(range);
+
+  const selection: Selection = {
+    documentUri,
+    range,
+    documentText,
+  };
+
+  try {
+    await saveSelection(selection);
+    logger.info("Selection saved successfully");
+  } catch (error) {
+    logger.error("Error saving selection:", error);
+    // Optionally, you can set an error message on the code action
+    params.diagnostics = [
+      {
+        range: range,
+        message: "Failed to save selection. Please try again.",
+      },
+    ];
+    throw error;
+  }
+}
+
+async function editAction(
+  documentUri: string,
+  documents: TextDocuments<TextDocument>,
+  textDocument: TextDocument,
+  range: Range,
+  modelManager: ModelManager,
+  params: CodeAction,
+  data: CodeActionData,
+) {
+  const filePath = documentUri;
+
+  const recentEdits = editHistory.get(filePath) || [];
+  logger.info(`Adding ${recentEdits.length} recent edits from history.`);
+
+  // Get related files and their recent edits
+  const relatedContext = getRelatedFilesContext(filePath, documents);
+  const relatedFilesCount = fileRelations.get(filePath)?.length || 0;
+  logger.info(`Adding context from ${relatedFilesCount} related files.`);
+
+  // Parse the selected text
+  const instructions = parseInstructions(
+    textDocument.getText({
+      start: { line: range.start.line, character: 0 },
+      end: { line: range.end.line, character: Number.MAX_SAFE_INTEGER },
+    }),
+  );
+
+  logger.debug(instructions);
+
+  const userPrompt = createUserPrompt(
+    documentUri,
+    textDocument,
+    recentEdits,
+    relatedContext,
+    instructions,
+  ).trim();
+
+  try {
+    const { object } = await generateObject({
+      model: modelManager.getModel("lsp-code-action"),
+      system: getEditSystemPrompt(),
+      temperature: 0.3,
+      schema: z.object({
+        edits: z
+          .array(
+            z.object({
+              pattern: z
+                .string()
+                .describe("The precise pattern to search for in the file."),
+              replacement: z.string().describe("The replacement text."),
+            }),
+          )
+          .describe("The array of edits to make to the current code file."),
+      }),
+      prompt: userPrompt,
+    });
+
+    const edits = object.edits;
+
+    // Get the text from the range where the code action was triggered
+    const documentText = removeLspPrompt(textDocument.getText());
+
+    // Apply all regex pattern replacements to the document text
+    let updatedText = documentText;
+    for (const edit of edits) {
+      try {
+        const regex = new RegExp(edit.pattern, "g");
+        updatedText = updatedText.replace(regex, edit.replacement);
+      } catch (error) {
+        logger.error(`Error applying regex pattern: ${edit.pattern}`, error);
+      }
+    }
+
+    params.edit = {
+      changes: {
+        [data.documentUri]: [
+          TextEdit.replace(
+            {
+              start: { line: 0, character: 0 },
+              end: { line: textDocument.lineCount, character: 0 },
+            },
+            updatedText,
+          ),
+        ],
+      },
+    };
+  } catch (error) {
+    logger.error("Error generating text:");
+    logger.error(error);
+    // Optionally, you can set an error message on the code action
+    params.diagnostics = [
+      {
+        range: range,
+        message: "Failed to generate text. Please try again.",
+      },
+    ];
+  }
+}
+
+async function instructAction(
+  documentUri: string,
+  textDocument: TextDocument,
+  range: Range,
+  documents: TextDocuments<TextDocument>,
+  modelManager: ModelManager,
+  params: CodeAction,
+  data: CodeActionData,
+) {
+  const filePath = documentUri;
+  const recentEdits = editHistory.get(filePath) || [];
+  logger.info(`Adding ${recentEdits.length} recent edits from history.`);
+
+  // Get the text from the range where the code action was triggered
+  const documentText = textDocument.getText(range);
+
+  // Get related files and their recent edits
+  const relatedContext = getRelatedFilesContext(filePath, documents);
+  const relatedFilesCount = fileRelations.get(filePath)?.length || 0;
+  logger.info(`Adding context from ${relatedFilesCount} related files.`);
+
+  // Parse the selected text
+  const instructions = parseInstructions(documentText);
+
+  logger.debug(instructions);
+
+  const userPrompt = createUserPrompt(
+    documentUri,
+    textDocument,
+    recentEdits,
+    relatedContext,
+    instructions,
+  ).trim();
+
+  try {
+    const { text } = await generateText({
+      model: modelManager.getModel("lsp-code-action"),
+      system: getSystemPrompt(instructions.mode),
+      temperature: instructions.mode === "edit" ? 0.3 : 1.0,
+      prompt: userPrompt,
+    });
+
+    params.edit = {
+      changes: {
+        [data.documentUri]: [TextEdit.replace(range, extractCodeBlock(text))],
+      },
+    };
+  } catch (error) {
+    logger.error("Error generating text:");
+    logger.error(error);
+    // Optionally, you can set an error message on the code action
+    params.diagnostics = [
+      {
+        range: range,
+        message: "Failed to generate text. Please try again.",
+      },
+    ];
+  }
 }
 
 function removeLspPrompt(text: string) {
