@@ -17,6 +17,7 @@ const openaiModels = {
   "o1-pro": originalOpenAi("o1-pro-2025-03-19"),
   "o1-mini": originalOpenAi("o1-mini"),
   "o3-mini": originalOpenAi("o3-mini"),
+  "gpt-4-1": originalOpenAi("gpt-4.1"),
   "gpt-4-5": originalOpenAi("gpt-4.5-preview"),
 } as const;
 
@@ -151,6 +152,19 @@ export const openaiModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000011,
     costPerOutputToken: 0.0000044,
+    category: "balanced",
+  },
+  "openai:gpt-4-1": {
+    id: "openai:gpt-4-1",
+    provider: "openai",
+    contextWindow: 1000000,
+    maxOutputTokens: 32768,
+    defaultTemperature: 0.3,
+    promptFormat: "markdown",
+    supportsReasoning: false,
+    supportsToolCalling: true,
+    costPerInputToken: 0.000002,
+    costPerOutputToken: 0.000008,
     category: "balanced",
   },
   "openai:gpt-4-5": {
