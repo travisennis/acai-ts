@@ -13,7 +13,6 @@ export const openrouterProvider = {
     languageModels: {
       "deepseek-v3": openRouterClient("deepseek/deepseek-chat"),
       "deepseek-r1": openRouterClient("deepseek/deepseek-r1"),
-      "optimus-alpha": openRouterClient("openrouter/optimus-alpha"),
     },
     fallbackProvider: openRouterClient,
   }),
@@ -22,7 +21,6 @@ export const openrouterProvider = {
 export const openrouterModelNames = [
   "openrouter:deepseek-v3",
   "openrouter:deepseek-r1",
-  "openrouter:optimus-alpha",
 ] as const;
 
 export type OpenRouterModelName = (typeof openrouterModelNames)[number];
@@ -53,19 +51,6 @@ export const openrouterModelRegistry: Record<
     promptFormat: "bracket",
     supportsReasoning: true,
     supportsToolCalling: false,
-    costPerInputToken: 0, // Assuming free tier or unknown cost
-    costPerOutputToken: 0, // Assuming free tier or unknown cost
-    category: "balanced",
-  },
-  "openrouter:optimus-alpha": {
-    id: "openrouter:optimus-alpha",
-    provider: "openrouter",
-    contextWindow: 1000000,
-    maxOutputTokens: 32000,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
     costPerInputToken: 0, // Assuming free tier or unknown cost
     costPerOutputToken: 0, // Assuming free tier or unknown cost
     category: "balanced",
