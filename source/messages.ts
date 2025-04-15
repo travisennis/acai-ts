@@ -204,18 +204,19 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     return firstUser;
   }
 
-  async summarizeAndReset() {
+  async summarizeAndReset(additionalInstructions?: string) {
     const app = "conversation-summarizer";
 
     // save existing message history
     await this.save();
 
     // summarize message history
-    this.appendUserMessage(
-      createUserMessage(
-        "Provide a detailed summary of our conversation above. Focus on information that would be helpful for continuing the conversation, including what we did and why, what we're currently doing, which files we're working on, and what we're going to do next. You need to provide enough information that another coding agent can pick up where we left off.",
-      ),
-    );
+    let userPrompt =
+      "Provide a detailed summary of our conversation above. Focus on information that would be helpful for continuing the conversation, including what we did and why, what we're currently doing, which files we're working on, and what we're going to do next. You need to provide enough information that another coding agent can pick up where we left off.";
+    if (additionalInstructions && additionalInstructions.trim().length > 0) {
+      userPrompt += `\n\nAdditional Instructions: ${additionalInstructions}`;
+    }
+    this.appendUserMessage(createUserMessage(userPrompt));
     const { text, usage } = await generateText({
       model: this.modelManager.getModel(app),
       system:
