@@ -67,7 +67,7 @@ async function main() {
 
   const chosenModel: ModelName = isSupportedModel(cli.flags.model)
     ? cli.flags.model
-    : "anthropic:sonnet-token-efficient-tools";
+    : "google:pro25";
 
   const modelManager = new ModelManager({
     stateDir: appDir.ensurePath("audit"),
