@@ -239,14 +239,12 @@ export class Repl {
 
             if (toolsCalled.length > 0) {
               terminal.writeln(chalk.dim("Tools:"));
-              terminal.write(" ");
               for (const toolCalled of toolsCalled) {
                 const colorFn = toolColors.get(toolCalled) ?? chalk.white;
-                terminal.write(colorFn("█"));
+                terminal.write(colorFn("██"));
               }
               terminal.lineBreak();
 
-              terminal.write(" ");
               for (const [index, toolCalled] of Array.from(
                 new Set(toolsCalled),
               ).entries()) {
