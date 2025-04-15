@@ -40,7 +40,7 @@ Remember:
 4. Show the file and line number context for code review comments
 5. Use jq to parse the JSON responses from the GitHub API
 
-${args ? `Additional user input: ${args.join(", ")}` : ""}
+${args ? `Additional user input: ${args.join(" ")}` : ""}
 `,
       );
       return Promise.resolve();
