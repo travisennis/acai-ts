@@ -9,8 +9,6 @@ import { readFileSync } from "node:fs";
 import { join } from "@travisennis/stdlib/desm";
 import chalk, { type ChalkInstance } from "chalk";
 import Table from "cli-table3";
-import { marked } from "marked";
-import TerminalRenderer from "marked-terminal";
 import ora from "ora";
 import terminalLink from "terminal-link";
 import { logger } from "../logger.ts";
@@ -21,11 +19,6 @@ import {
   setTerminalTitle,
 } from "./formatting.ts";
 import type { SpinnerInstance, TerminalConfig } from "./types.ts";
-
-marked.setOptions({
-  // Define custom renderer
-  renderer: new TerminalRenderer() as any,
-});
 
 /**
  * Initialize the terminal interface
@@ -136,7 +129,7 @@ export class Terminal {
     );
     const version = packageJson.version;
 
-    this.writeln(chalk.magenta(this.getLogo()), "");
+    this.writeln(chalk.magenta(this.getLogo()));
     this.lineBreak();
     this.writeln(chalk.magenta("Greetings! I am acai."));
     this.writeln(chalk.gray(`  Version ${version}`));
@@ -178,15 +171,10 @@ export class Terminal {
   /**
    * Display formatted content
    */
-  display(content: string): void {
-    const formatted = formatOutput(content, {
-      width: this.terminalWidth,
-      colors: this.config.useColors,
-      codeHighlighting: this.config.codeHighlighting,
-      leftPadding: 0,
-    });
+  async display(content: string): Promise<void> {
+    const formatted = await formatOutput(content);
 
-    this.writeln(formatted, "");
+    this.writeln(formatted);
   }
 
   /**
@@ -248,8 +236,8 @@ export class Terminal {
     process.stdout.write(input);
   }
 
-  writeln(input: string, padding = ""): void {
-    process.stdout.write(`${padding}${input}\n`);
+  writeln(input: string): void {
+    process.stdout.write(`${input}\n`);
   }
 
   lineBreak() {
@@ -298,11 +286,6 @@ export class Terminal {
     );
   }
 
-  async markdown(input: string): Promise<void> {
-    const md = await marked.parse(input);
-    this.writeln(md);
-  }
-
   /**
    * Create a clickable link in the terminal if supported
    */
@@ -325,7 +308,7 @@ export class Terminal {
 
     table.push(...data);
 
-    this.writeln(table.toString(), "");
+    this.writeln(table.toString());
   }
 
   /**

@@ -4,7 +4,13 @@
  * Provides functions for formatting and displaying text in the terminal.
  */
 
-import chalk from "chalk";
+import { type Renderer, marked } from "marked";
+import TerminalRenderer from "marked-terminal";
+
+marked.setOptions({
+  // Define custom renderer
+  renderer: new TerminalRenderer() as unknown as Renderer,
+});
 
 /**
  * Clear the terminal screen
@@ -66,240 +72,16 @@ export function getTerminalSize(): { rows: number; columns: number } {
 }
 
 /**
- * Options for formatting output
- */
-export interface FormatOptions {
-  /**
-   * Terminal width in columns
-   */
-  width?: number;
-
-  /**
-   * Whether to use colors
-   */
-  colors?: boolean;
-
-  /**
-   * Whether to highlight code
-   */
-  codeHighlighting?: boolean;
-
-  /**
-   * Number of spaces to add as left padding for each line
-   */
-  leftPadding?: number;
-}
-
-/**
  * Format output for display in the terminal
  */
-export function formatOutput(
-  text: string,
-  options: FormatOptions = {},
-): string {
-  const {
-    width = getTerminalSize().columns,
-    colors = true,
-    codeHighlighting = true,
-    leftPadding = 0,
-  } = options;
-
+export async function formatOutput(text: string): Promise<string> {
   if (!text) {
     return "";
   }
 
-  let formattedText = text;
+  const formattedText = await marked.parse(text);
 
-  // Process markdown-like formatting if colors are enabled
-  if (colors) {
-    // Format code blocks with syntax highlighting
-    formattedText = formatCodeBlocks(text, codeHighlighting);
-
-    // Format inline code
-    formattedText = text.replace(/`([^`]+)`/g, (_, code) => chalk.cyan(code));
-
-    // Format bold text
-    formattedText = text.replace(/\*\*([^*]+)\*\*/g, (_, bold) =>
-      chalk.bold(bold),
-    );
-
-    // Format italic text
-    formattedText = text.replace(/\*([^*]+)\*/g, (_, italic) =>
-      chalk.italic(italic),
-    );
-
-    // Format lists
-    formattedText = text.replace(
-      /^(\s*)-\s+(.+)$/gm,
-      (_, indent, item) => `${indent}${chalk.dim("•")} ${item}`,
-    );
-
-    // Format headers
-    formattedText = text.replace(/^(#+)\s+(.+)$/gm, (_, hashes, header) => {
-      if (hashes.length === 1) {
-        return chalk.bold.underline.blue(header);
-      }
-      if (hashes.length === 2) {
-        return chalk.bold.blue(header);
-      }
-      return chalk.bold(header);
-    });
-  }
-
-  // Word wrap if width is specified
-  if (width) {
-    formattedText = wordWrap(text, width);
-  }
-
-  // Syntax highlight diff lines ONLY inside ```diff blocks
-  if (colors) {
-    const diffBlockRegex = /```diff\n([\s\S]*?)```/g;
-    let lastIndex = 0;
-    let result = "";
-    let match: RegExpExecArray | null;
-
-    while ((match = diffBlockRegex.exec(formattedText)) !== null) {
-      const diffContent = match[1] ?? "";
-      const start = match.index;
-      const end = diffBlockRegex.lastIndex;
-
-      // Append text before this diff block without diff highlighting
-      result += formattedText.slice(lastIndex, start);
-
-      // Highlight diff content line by line
-      const highlightedDiff = diffContent
-        .split("\n")
-        .map((line) => {
-          if (/^\s*\+/.test(line)) {
-            return chalk.green(line);
-          }
-          if (/^\s*-/.test(line)) {
-            return chalk.red(line);
-          }
-          if (/^\s*@/.test(line)) {
-            return chalk.yellow(line);
-          }
-          return line;
-        })
-        .join("\n");
-
-      // Rebuild the diff block with highlighted content
-      result += `\`\`\`diff\n${highlightedDiff}\`\`\``;
-
-      lastIndex = end;
-    }
-
-    // Append remaining text after last diff block
-    result += formattedText.slice(lastIndex);
-
-    formattedText = result;
-  }
-
-  if (leftPadding > 0) {
-    const padding = " ".repeat(leftPadding);
-    formattedText = formattedText
-      .split("\n")
-      .map((line) => `${padding}${line}`)
-      .join("\n");
-  }
-
-  return formattedText;
-}
-
-/**
- * Format code blocks with syntax highlighting
- */
-function formatCodeBlocks(text: string, enableHighlighting: boolean): string {
-  const codeBlockRegex = /```(\w+)?\n([\s\S]+?)```/g;
-
-  return text.replace(codeBlockRegex, (_match, language, code) => {
-    // Add syntax highlighting if enabled
-    const highlightedCode: string =
-      enableHighlighting && language ? highlightSyntax(code, language) : code;
-
-    // Format the code block with a border
-    const lines = highlightedCode.split("\n");
-    const border = chalk.dim("┃");
-
-    const formattedLines = lines.map((line) => `${border} ${line}`);
-    const top = chalk.dim(
-      `┏${"━".repeat(Math.max(...lines.map((l) => l.length)) + 2)}┓`,
-    );
-    const bottom = chalk.dim(
-      `┗${"━".repeat(Math.max(...lines.map((l) => l.length)) + 2)}┛`,
-    );
-
-    // Add language indicator if present
-    const header = language ? `${border} ${chalk.bold.blue(language)}\n` : "";
-
-    return `${top}\n${header}${formattedLines.join("\n")}\n${bottom}`;
-  });
-}
-
-/**
- * Simple syntax highlighting for code
- */
-function highlightSyntax(code: string, _language: string): string {
-  // Basic syntax highlighting - in a real app, use a proper library
-  // This is just a simple example with a few patterns
-
-  // Common programming keywords
-  const keywords = [
-    "function",
-    "const",
-    "let",
-    "var",
-    "if",
-    "else",
-    "for",
-    "while",
-    "return",
-    "import",
-    "export",
-    "class",
-    "interface",
-    "extends",
-    "implements",
-    "public",
-    "private",
-    "protected",
-    "static",
-    "async",
-    "await",
-  ];
-
-  // Split by tokens that we want to preserve
-  const tokens = code.split(/(\s+|[{}[\]();,.<>?:!+\-*/%&|^~=])/);
-
-  return tokens
-    .map((token) => {
-      // Keywords
-      if (keywords.includes(token)) {
-        return chalk.blue(token);
-      }
-
-      // Numbers
-      if (/^[0-9]+(\.[0-9]+)?$/.test(token)) {
-        return chalk.yellow(token);
-      }
-
-      // Strings
-      if (/^["'].*["']$/.test(token)) {
-        return chalk.green(token);
-      }
-
-      // Comments
-      if (
-        token.startsWith("//") ||
-        token.startsWith("/*") ||
-        token.startsWith("*")
-      ) {
-        return chalk.gray(token);
-      }
-
-      return token;
-    })
-    .join("");
+  return formattedText.trimEnd();
 }
 
 /**
