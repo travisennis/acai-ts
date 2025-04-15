@@ -294,7 +294,7 @@ export class Terminal {
 
   hr(chalkFn: ChalkInstance = chalk.cyan): void {
     process.stdout.write(
-      chalkFn(`\n${"─".repeat(process.stdout.columns - 3)}  \n`),
+      chalkFn(`\n${"─".repeat(process.stdout.columns - 1)} \n`),
     );
   }
 
