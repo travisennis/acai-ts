@@ -24,13 +24,13 @@ import { createUrlTools } from "./url.ts";
 const sendDataHandler = (terminal: Terminal) => {
   return (msg: Message) => {
     if (msg.event === "tool-init") {
-      terminal.lineBreak();
+      // terminal.lineBreak();
       terminal.lineBreak();
       terminal.display(`${chalk.blue.bold("●")} ${msg.data}`);
     } else if (msg.event === "tool-update") {
       terminal.display(`└── ${msg.data.primary}`);
       if (msg.data.secondary) {
-        terminal.lineBreak();
+        // terminal.lineBreak();
         for (const line of msg.data.secondary) {
           terminal.display(line);
         }
@@ -104,10 +104,14 @@ export async function initTools({
         question: z.string().describe("The question to ask the user."),
       }),
       execute: async ({ question }) => {
-        terminal?.lineBreak();
-        const result = await input({ message: `${question}\n>` });
+        if (terminal) {
+          terminal.lineBreak();
+          terminal.display(question);
+          const result = await input({ message: "? " });
 
-        return result;
+          return result;
+        }
+        return "Terminal is not configured. Can't ask user.";
       },
     }),
   };

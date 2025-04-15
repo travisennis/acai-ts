@@ -463,7 +463,7 @@ export const createFileSystemTools = async ({
         sendData?.({
           id,
           event: "tool-completion",
-          data: "Done",
+          data: `Current working directory: ${workingDir}`,
         });
         return Promise.resolve(workingDir);
       },
