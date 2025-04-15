@@ -8,7 +8,6 @@ import { formatCodeSnippet } from "../formatting.ts";
 import { executeCommand } from "../utils/process.ts";
 import type { SendData } from "./types.ts";
 
-const mdQuotes = "```";
 
 const CONVENTIONAL_COMMIT_MESSAGE =
   /^(feat|fix|docs|style|refactor|perf|test|chore)(\(\w+\))?!?: .+/;
@@ -221,12 +220,12 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
           // Add the changes and commit
           await git.add(fileArr);
           const commitResult = await git.commit(message);
-          const successMessage = `Commit created successfully:\n${commitResult.commit} - ${message}`;
           sendData?.({
             id,
             event: "tool-completion",
             data: `Commit created successfully: ${message}`,
           });
+          const successMessage = `Commit created successfully:\n${commitResult.commit} - ${message}`;
           return successMessage;
         } catch (error) {
           const errorMessage = `Error creating commit: ${(error as Error).message}`;
@@ -263,8 +262,8 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
           if (status.files.length === 0) {
             sendData?.({
               id,
-              event: "tool-update",
-              data: { primary: "No changes found" },
+              event: "tool-completion",
+              data: "No changes found",
             });
             return "No changes found.";
           }
@@ -274,11 +273,17 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
             JSON.stringify(status, undefined, 2),
             "markdown",
           );
+          sendData?.({
+            id,
+            event: "tool-update",
+            data: { primary: "Status", secondary: [statusBlock] },
+          });
+
           const statusMessage = `Status:\n${statusBlock}`;
           sendData?.({
             id,
             event: "tool-completion",
-            data: statusMessage,
+            data: "Done",
           });
           return statusMessage;
         } catch (error) {
@@ -319,12 +324,26 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
           const git = simpleGit({ baseDir });
 
           const log = await git.log({ maxCount });
-          const logMessage = `Log:\n${mdQuotes} json\n${JSON.stringify(log, undefined, 2)}\n${mdQuotes}`;
+
+          const gitLogBlock = formatCodeSnippet(
+            "log.json",
+            JSON.stringify(log, undefined, 2),
+            "markdown",
+          );
+
+          sendData?.({
+            id,
+            event: "tool-update",
+            data: { primary: "Log", secondary: [gitLogBlock] },
+          });
+
           sendData?.({
             id,
             event: "tool-completion",
-            data: logMessage,
+            data: "Done",
           });
+
+          const logMessage = `Log:\n${gitLogBlock}`;
           return logMessage;
         } catch (error) {
           const errorMessage = `Error getting log: ${(error as Error).message}`;
@@ -357,12 +376,26 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
           const git = simpleGit({ baseDir });
 
           const show = await git.show(revision);
-          const showMessage = `Show:\n${mdQuotes} json\n${JSON.stringify(show, undefined, 2)}\n${mdQuotes}`;
+
+          const showBlock = formatCodeSnippet(
+            "show.json",
+            JSON.stringify(show, undefined, 2),
+            "markdown",
+          );
+
+          sendData?.({
+            id,
+            event: "tool-update",
+            data: { primary: "Show", secondary: [showBlock] },
+          });
+
           sendData?.({
             id,
             event: "tool-completion",
-            data: showMessage,
+            data: "Done",
           });
+
+          const showMessage = `Show:\n${showBlock}`;
           return showMessage;
         } catch (error) {
           const errorMessage = `Error getting show: ${(error as Error).message}`;
