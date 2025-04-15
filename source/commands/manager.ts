@@ -14,6 +14,7 @@ import { helpCommand } from "./help-command.ts";
 import { initCommand } from "./init-command.ts";
 import { modelCommand } from "./model-command.ts";
 import { pasteCommand } from "./paste-command.ts";
+import { prCommentsCommand } from "./pr-comments-command.ts";
 import { promptCommand } from "./prompt-command.ts";
 import { ptreeCommand } from "./ptree-command.ts";
 import { resetCommand } from "./reset-command.ts";
@@ -78,6 +79,7 @@ export class CommandManager {
       rulesCommand(options),
       modelCommand(options),
       usageCommand(options),
+      prCommentsCommand(options),
     ];
 
     // Add help command with access to all commands
