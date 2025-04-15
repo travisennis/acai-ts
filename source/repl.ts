@@ -7,6 +7,7 @@ import {
   streamText,
 } from "ai";
 import chalk, { type ChalkInstance } from "chalk";
+import logUpdate from "log-update";
 import type { CommandManager } from "./commands/manager.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
@@ -16,6 +17,7 @@ import type { ModelManager } from "./models/manager.js";
 import { systemPrompt } from "./prompts.ts";
 import type { PromptManager } from "./prompts/manager.ts";
 import { ReplPrompt } from "./repl-prompt.ts";
+import { formatOutput } from "./terminal/formatting.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import {
@@ -299,21 +301,40 @@ export class Repl {
         });
 
         terminal.lineBreak();
+        let accumulatedText = "";
         let lastType: "reasoning" | "text-delta" | null = null;
+
         for await (const chunk of result.fullStream) {
           // Handle text-related chunks (reasoning or text-delta)
           if (chunk.type === "reasoning" || chunk.type === "text-delta") {
-            if (lastType !== "reasoning" && chunk.type === "reasoning") {
-              terminal.write(chalk.gray("\n<think>\n"));
-            } else if (lastType === "reasoning" && chunk.type !== "reasoning") {
-              terminal.write(chalk.gray("\n</think>\n\n"));
+            if (chunk.type === "reasoning") {
+              if (lastType !== "reasoning") {
+                // Starting reasoning: Clear log-update, print accumulated text if any, print <think>
+                logUpdate.clear();
+                if (accumulatedText) {
+                  terminal.write(await formatOutput(accumulatedText)); // Write final state before think
+                  terminal.lineBreak(); // Ensure newline after formatted text
+                }
+                terminal.write(chalk.gray("<think>\n"));
+              }
+              terminal.write(chalk.gray(chunk.textDelta)); // Stream reasoning directly
+              lastType = "reasoning";
+            } else if (chunk.type === "text-delta") {
+              if (lastType === "reasoning") {
+                // Finishing reasoning: Print </think>, then update log-update with accumulated text
+                terminal.write(chalk.gray("\n</think>\n\n"));
+              }
+              accumulatedText += chunk.textDelta;
+              logUpdate(await formatOutput(accumulatedText)); // Update the display with formatted text
+              lastType = "text-delta";
             }
-            terminal.write(
-              chunk.type === "reasoning"
-                ? chalk.gray(chunk.textDelta)
-                : chunk.textDelta,
-            );
-            lastType = chunk.type;
+            // Handle other chunk types or transitions if needed
+            else if (lastType === "reasoning") {
+              // If we transition from reasoning to something else (e.g., tool call), close the tag.
+              terminal.write(chalk.gray("\n</think>\n\n"));
+              logUpdate(await formatOutput(accumulatedText)); // Redraw accumulated text
+              lastType = null;
+            }
           }
           // Close thinking tags when moving from reasoning to any other chunk type
           else if (lastType === "reasoning") {
@@ -321,9 +342,14 @@ export class Repl {
             lastType = null;
           }
         }
+        // Ensure the final closing tag for reasoning is written if it was the last type
         if (lastType === "reasoning") {
           terminal.write(chalk.gray("\n</think>\n\n"));
+        } else {
+          // If the stream ended with text-delta, ensure log-update is finalized
+          logUpdate.done();
         }
+        terminal.lineBreak(); // Add a final newline for clarity
 
         result.consumeStream();
 
