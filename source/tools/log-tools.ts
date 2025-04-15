@@ -3,9 +3,10 @@ import { tool } from "ai";
 import { z } from "zod";
 import type { SendData } from "./types.ts";
 
-export const createLogTools = (
-  options: { sendData?: SendData | undefined; logPath: string | undefined },
-) => {
+export const createLogTools = (options: {
+  sendData?: SendData | undefined;
+  logPath: string | undefined;
+}) => {
   const { sendData, logPath } = options;
 
   return {
@@ -42,7 +43,8 @@ export const createLogTools = (
 
           if (!logPath) {
             // If logPath wasn't provided during creation, skip the tool execution
-            const errorMsg = "Log tool not configured: Log file path is missing.";
+            const errorMsg =
+              "Log tool not configured: Log file path is missing.";
             sendData?.({ event: "tool-error", id: uuid, data: errorMsg });
             return Promise.resolve(errorMsg);
           }
