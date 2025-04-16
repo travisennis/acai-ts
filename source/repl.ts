@@ -215,10 +215,16 @@ export class Repl {
               "whiteBright",
               "blackBright",
             ] as const;
+            logger.debug(
+              { steps: result.steps.length },
+              "Processing steps in onFinish",
+            );
             for (const step of result.steps) {
+              logger.debug({ stepType: step.stepType }, "Processing step");
               if (step.stepType === "tool-result") {
                 for (const toolResult of step.toolResults) {
                   const toolName = toolResult.toolName;
+                  logger.debug({ toolName }, "Adding tool to toolsCalled list");
                   if (!toolColors.has(toolName)) {
                     const availableColors = chalkColors.filter(
                       (color) =>
@@ -238,6 +244,10 @@ export class Repl {
                 }
               }
             }
+            logger.debug(
+              { toolsCalled: toolsCalled.length },
+              "Final toolsCalled list before display",
+            );
 
             if (toolsCalled.length > 0) {
               terminal.writeln(chalk.dim("Tools:"));
@@ -247,8 +257,13 @@ export class Repl {
               }
               terminal.lineBreak();
 
+              const uniqueTools = new Set(toolsCalled);
+              logger.debug(
+                { uniqueTools: Array.from(uniqueTools) },
+                "Unique tools to display",
+              );
               for (const [index, toolCalled] of Array.from(
-                new Set(toolsCalled),
+                uniqueTools,
               ).entries()) {
                 const colorFn = toolColors.get(toolCalled) ?? chalk.white;
                 terminal.write(colorFn(toolCalled));
@@ -277,7 +292,7 @@ export class Repl {
             for (const step of result.steps) {
               if (step.finishReason === "stop") {
                 const usage = step.usage;
-                currentContextWindow = usage.totalTokens;
+                currentContextWindow = usage.totalTokens ?? 0;
               }
             }
 
@@ -340,6 +355,9 @@ export class Repl {
           else if (lastType === "reasoning") {
             terminal.write(chalk.gray("\n</think>\n\n"));
             lastType = null;
+          } else {
+            // it's not reasoning or text then we are dealing with tool calls within the stream
+            logUpdate.done();
           }
         }
         // Ensure the final closing tag for reasoning is written if it was the last type

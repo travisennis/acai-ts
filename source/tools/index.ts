@@ -22,24 +22,28 @@ import type { Message } from "./types.ts";
 import { createUrlTools } from "./url.ts";
 
 const sendDataHandler = (terminal: Terminal) => {
-  return (msg: Message) => {
+  const msgStore: Map<string, string[]> = new Map();
+  return async (msg: Message) => {
     if (msg.event === "tool-init") {
-      // terminal.lineBreak();
-      terminal.lineBreak();
-      terminal.display(`${chalk.blue.bold("●")} ${msg.data}`);
+      msgStore.set(msg.id, [`\n${chalk.blue.bold("●")} ${msg.data}`]);
+      // await terminal.display(`\n${chalk.blue.bold("●")} ${msg.data}`);
     } else if (msg.event === "tool-update") {
-      terminal.display(`└── ${msg.data.primary}`);
-      if (msg.data.secondary) {
-        // terminal.lineBreak();
-        for (const line of msg.data.secondary) {
-          terminal.display(line);
-        }
+      const secondaryMsgs = msg.data.secondary ?? [];
+      msgStore.get(msg.id)?.push(`└── ${msg.data.primary}`);
+      for (const line of secondaryMsgs) {
+        msgStore.get(msg.id)?.push(line);
       }
       terminal.lineBreak();
     } else if (msg.event === "tool-completion") {
-      terminal.display(`└── ${msg.data}`);
+      msgStore.get(msg.id)?.push(`└── ${msg.data}`);
+      const msgHistory = msgStore.get(msg.id) ?? [];
+      await Promise.all(msgHistory.map((msg) => terminal.display(msg)));
+      msgStore.delete(msg.id);
       terminal.lineBreak();
     } else if (msg.event === "tool-error") {
+      const msgHistory = msgStore.get(msg.id) ?? [];
+      await Promise.all(msgHistory.map((msg) => terminal.display(msg)));
+      msgStore.delete(msg.id);
       terminal.error(msg.data);
       terminal.lineBreak();
     }
@@ -106,7 +110,7 @@ export async function initTools({
       execute: async ({ question }) => {
         if (terminal) {
           terminal.lineBreak();
-          terminal.display(question);
+          await terminal.display(question);
           const result = await input({ message: "? " });
 
           return result;

@@ -3,7 +3,7 @@ import type { LanguageModelUsage } from "ai";
 
 export interface TokenUsage {
   tool: string;
-  usage: LanguageModelUsage;
+  usage: Partial<LanguageModelUsage>;
 }
 
 interface TokenTrackerEvents {
@@ -24,9 +24,9 @@ export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
   getTotalUsage(): LanguageModelUsage {
     return this.usages.reduce(
       (acc, { usage }) => {
-        acc.promptTokens += usage.promptTokens;
-        acc.completionTokens += usage.completionTokens;
-        acc.totalTokens += usage.totalTokens;
+        acc.promptTokens += usage.promptTokens ?? 0;
+        acc.completionTokens += usage.completionTokens ?? 0;
+        acc.totalTokens += usage.totalTokens ?? 0;
         return acc;
       },
       { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
@@ -38,9 +38,9 @@ export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
       .filter(({ tool }) => tool === app)
       .reduce(
         (acc, { usage }) => {
-          acc.promptTokens += usage.promptTokens;
-          acc.completionTokens += usage.completionTokens;
-          acc.totalTokens += usage.totalTokens;
+          acc.promptTokens += usage.promptTokens ?? 0;
+          acc.completionTokens += usage.completionTokens ?? 0;
+          acc.totalTokens += usage.totalTokens ?? 0;
           return acc;
         },
         { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
@@ -50,7 +50,7 @@ export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
   getUsageBreakdown(): Record<string, number> {
     return this.usages.reduce(
       (acc, { tool, usage }) => {
-        acc[tool] = (acc[tool] || 0) + usage.totalTokens;
+        acc[tool] = (acc[tool] || 0) + (usage.totalTokens ?? 0);
         return acc;
       },
       {} as Record<string, number>,
