@@ -221,27 +221,33 @@ export class Repl {
             );
             for (const step of result.steps) {
               logger.debug({ stepType: step.stepType }, "Processing step");
-              if (step.stepType === "tool-result") {
-                for (const toolResult of step.toolResults) {
-                  const toolName = toolResult.toolName;
-                  logger.debug({ toolName }, "Adding tool to toolsCalled list");
-                  if (!toolColors.has(toolName)) {
-                    const availableColors = chalkColors.filter(
-                      (color) =>
-                        !Array.from(toolColors.values()).some(
-                          (c) => c === chalk[color],
-                        ),
-                    );
-                    const color =
-                      availableColors.length > 0
-                        ? (availableColors[
-                            Math.floor(Math.random() * availableColors.length)
-                          ] ?? "white")
-                        : "white";
-                    toolColors.set(toolName, chalk[color]);
-                  }
-                  toolsCalled.push(toolName);
+              let currentToolCalls: Array<{ toolName: string }> = [];
+
+              if (step.stepType === "tool-result" && step.toolResults) {
+                currentToolCalls = step.toolResults;
+              } else if (step.stepType === "initial" && step.toolCalls) {
+                currentToolCalls = step.toolCalls;
+              }
+
+              for (const toolCallOrResult of currentToolCalls) {
+                const toolName = toolCallOrResult.toolName;
+                logger.debug({ toolName, stepType: step.stepType }, "Adding tool to toolsCalled list");
+                if (!toolColors.has(toolName)) {
+                  const availableColors = chalkColors.filter(
+                    (color) =>
+                      !Array.from(toolColors.values()).some(
+                        (c) => c === chalk[color],
+                      ),
+                  );
+                  const color =
+                    availableColors.length > 0
+                      ? (availableColors[
+                          Math.floor(Math.random() * availableColors.length)
+                        ] ?? "white")
+                      : "white";
+                  toolColors.set(toolName, chalk[color]);
                 }
+                toolsCalled.push(toolName);
               }
             }
             logger.debug(
