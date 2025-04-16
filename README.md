@@ -1,18 +1,21 @@
 # @travisennis/acai
 
-Acai is an interactive CLI tool that assists with software engineering tasks using AI. It provides an intelligent command-line interface that can help with code analysis, file manipulation, git operations, LSP integration, and more.
+Acai is an interactive CLI tool that assists with software engineering tasks using AI. It provides an intelligent command-line interface that can help with code analysis, file manipulation, git operations, LSP integration, log searching, and more.
 
 ## Features
 
 - Interactive chat interface with AI assistance
-- Support for various AI models (Claude, OpenAI, Google, DeepSeek, Azure, OpenRouter, Ollama)
-- File system operations (read, write, search, grep)
-- Git integration (status, commit, diff, log, branch)
-- Code tooling (build, test, lint, format, install dependencies)
+- Support for various AI models (Anthropic Claude, OpenAI GPT, Google Gemini, DeepSeek, XAI Grok) - Default: Google Gemini Pro 2.5
+- File system operations (read, write, search, grep, list, tree)
+- Git integration (status, commit, diff, log, branch, show) with improved output (JSON status, diff stats)
+- Code tooling (build, test, lint (including single file), format, install dependencies)
 - Code interpreter for JavaScript execution
 - Token usage tracking and optimization
 - Prompt optimization and file retrieval
 - Language Server Protocol (LSP) server for editor integration
+- Log searching capabilities (`searchLogs` tool)
+- Efficient multi-edit code editor (`codeEditor` tool)
+- Enhanced UI/Output (syntax highlighting for diffs, improved tables, smoother streaming)
 - Context preservation across sessions
 - Persistent project rules and user memories
 
@@ -57,8 +60,10 @@ acai-lsp
 - `/selections [use|edit|clear]` - Manage saved code selections
 - `/ptree` - Show project directory tree
 - `/prompt user:name|project:name` - Load saved prompts
-- `/memory [view|add <text>|edit]` - View or edit persistent project rules/memories
+- `/rules [view|add <text>|edit]` - View or edit persistent project rules/memories (formerly /memory)
 - `/model [provider:model|category|provider]` - List or switch models
+- `/pr-comments [PR#] [instructions]` - Add review comments to a GitHub PR
+- `/usage` - Show token usage breakdown for the current session
 - `/usage` - Show token usage breakdown
 
 ## Configuration
@@ -71,7 +76,8 @@ Acai supports project-specific configuration through a `.acai/acai.json` file in
   "test": "npm run test",
   "lint": "npm run lint",
   "format": "npm run format",
-  "install": "npm install"
+  "install": "npm install",
+  "logPath": "~/.acai/logs/acai.log" // Optional: Customize log file location
 }
 ```
 
