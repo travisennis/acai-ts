@@ -112,7 +112,6 @@ export class CommandManager {
       const replCommand = this.commands.get(command);
       if (replCommand) {
         await replCommand.execute(args);
-        this.terminal.lineBreak();
         if (replCommand.result === "continue") {
           return {
             continue: true,

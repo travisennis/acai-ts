@@ -99,6 +99,7 @@ export class Repl {
           break;
         }
         if (commandResult.continue) {
+          terminal.lineBreak();
           continue;
         }
 
