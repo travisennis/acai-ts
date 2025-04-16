@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
-import type { LanguageModelUsage } from "ai";
 import { isNumber } from "@travisennis/stdlib/typeguards";
+import type { LanguageModelUsage } from "ai";
 
 export interface TokenUsage {
   tool: string;
@@ -25,8 +25,12 @@ export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
   getTotalUsage(): LanguageModelUsage {
     return this.usages.reduce(
       (acc, { usage }) => {
-        acc.promptTokens += isNumber(usage.promptTokens) ? usage.promptTokens : 0;
-        acc.completionTokens += isNumber(usage.completionTokens) ? usage.completionTokens : 0;
+        acc.promptTokens += isNumber(usage.promptTokens)
+          ? usage.promptTokens
+          : 0;
+        acc.completionTokens += isNumber(usage.completionTokens)
+          ? usage.completionTokens
+          : 0;
         acc.totalTokens += isNumber(usage.totalTokens) ? usage.totalTokens : 0;
         return acc;
       },
@@ -39,9 +43,15 @@ export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
       .filter(({ tool }) => tool === app)
       .reduce(
         (acc, { usage }) => {
-          acc.promptTokens += isNumber(usage.promptTokens) ? usage.promptTokens : 0;
-          acc.completionTokens += isNumber(usage.completionTokens) ? usage.completionTokens : 0;
-          acc.totalTokens += isNumber(usage.totalTokens) ? usage.totalTokens : 0;
+          acc.promptTokens += isNumber(usage.promptTokens)
+            ? usage.promptTokens
+            : 0;
+          acc.completionTokens += isNumber(usage.completionTokens)
+            ? usage.completionTokens
+            : 0;
+          acc.totalTokens += isNumber(usage.totalTokens)
+            ? usage.totalTokens
+            : 0;
           return acc;
         },
         { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
@@ -51,7 +61,9 @@ export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
   getUsageBreakdown(): Record<string, number> {
     return this.usages.reduce(
       (acc, { tool, usage }) => {
-        acc[tool] = (acc[tool] || 0) + (isNumber(usage.totalTokens) ? usage.totalTokens : 0);
+        acc[tool] =
+          (acc[tool] || 0) +
+          (isNumber(usage.totalTokens) ? usage.totalTokens : 0);
         return acc;
       },
       {} as Record<string, number>,

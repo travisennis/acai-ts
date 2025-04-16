@@ -232,7 +232,10 @@ export class Repl {
 
               for (const toolCallOrResult of currentToolCalls) {
                 const toolName = toolCallOrResult.toolName;
-                logger.debug({ toolName, stepType: step.stepType }, "Adding tool to toolsCalled list");
+                logger.debug(
+                  { toolName, stepType: step.stepType },
+                  "Adding tool to toolsCalled list",
+                );
                 if (!toolColors.has(toolName)) {
                   const availableColors = chalkColors.filter(
                     (color) =>
@@ -299,7 +302,9 @@ export class Repl {
             for (const step of result.steps) {
               if (step.finishReason === "stop") {
                 const usage = step.usage;
-                currentContextWindow = Number.isNaN(usage.totalTokens) ? 0 : usage.totalTokens ?? 0;
+                currentContextWindow = Number.isNaN(usage.totalTokens)
+                  ? 0
+                  : (usage.totalTokens ?? 0);
               }
             }
 
