@@ -292,7 +292,7 @@ export class Repl {
             for (const step of result.steps) {
               if (step.finishReason === "stop") {
                 const usage = step.usage;
-                currentContextWindow = usage.totalTokens ?? 0;
+                currentContextWindow = Number.isNaN(usage.totalTokens) ? 0 : usage.totalTokens ?? 0;
               }
             }
 
