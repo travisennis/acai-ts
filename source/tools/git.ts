@@ -9,7 +9,7 @@ import { executeCommand } from "../utils/process.ts";
 import type { SendData } from "./types.ts";
 
 const CONVENTIONAL_COMMIT_MESSAGE =
-  /^(feat|fix|docs|style|refactor|perf|test|chore)(\(\w+\))?!?: .+/;
+  /^(feat|fix|docs|style|refactor|perf|test|chore)(\([\w-]+\))?!?: .+/;
 
 function validateConventionalCommit(message: string): boolean {
   return CONVENTIONAL_COMMIT_MESSAGE.test(message);
