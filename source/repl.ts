@@ -412,7 +412,7 @@ export class Repl {
 }
 
 const toolCallRepair = (modelManager: ModelManager, terminal: Terminal) => {
-  const fn: ToolCallRepairFunction<AsyncReturnType<typeof initTools>> = async ({
+  const fn: ToolCallRepairFunction<CompleteToolSet> = async ({
     toolCall,
     tools,
     parameterSchema,
