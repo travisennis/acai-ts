@@ -216,12 +216,7 @@ export class Repl {
               "whiteBright",
               "blackBright",
             ] as const;
-            logger.debug(
-              { steps: result.steps.length },
-              "Processing steps in onFinish",
-            );
             for (const step of result.steps) {
-              logger.debug({ stepType: step.stepType }, "Processing step");
               let currentToolCalls: Array<{ toolName: string }> = [];
 
               if (step.stepType === "tool-result" && step.toolResults) {
@@ -232,10 +227,6 @@ export class Repl {
 
               for (const toolCallOrResult of currentToolCalls) {
                 const toolName = toolCallOrResult.toolName;
-                logger.debug(
-                  { toolName, stepType: step.stepType },
-                  "Adding tool to toolsCalled list",
-                );
                 if (!toolColors.has(toolName)) {
                   const availableColors = chalkColors.filter(
                     (color) =>
@@ -254,10 +245,6 @@ export class Repl {
                 toolsCalled.push(toolName);
               }
             }
-            logger.debug(
-              { toolsCalled: toolsCalled.length },
-              "Final toolsCalled list before display",
-            );
 
             if (toolsCalled.length > 0) {
               terminal.writeln(chalk.dim("Tools:"));
@@ -268,10 +255,6 @@ export class Repl {
               terminal.lineBreak();
 
               const uniqueTools = new Set(toolsCalled);
-              logger.debug(
-                { uniqueTools: Array.from(uniqueTools) },
-                "Unique tools to display",
-              );
               for (const [index, toolCalled] of Array.from(
                 uniqueTools,
               ).entries()) {
