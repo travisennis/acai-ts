@@ -995,5 +995,60 @@ export const createFileSystemTools = async ({
         }
       },
     }),
+
+    deleteFile: tool({
+      description:
+        "Delete a file. Creates a backup (.backup) before deleting, allowing for potential restoration.",
+      parameters: z.object({
+        path: z.string().describe("Absolute path to the file to delete"),
+      }),
+      execute: async ({ path: userPath }) => {
+        const id = crypto.randomUUID();
+        sendData?.({
+          id,
+          event: "tool-init",
+          data: `Deleting file: ${userPath}`,
+        });
+        try {
+          const filePath = await validatePath(
+            joinWorkingDir(userPath, workingDir),
+            allowedDirectory,
+          );
+
+          // Check if file exists before attempting backup/delete
+          if (!existsSync(filePath)) {
+            throw new Error(`File not found: ${filePath}`);
+          }
+
+          // Ensure it's a file, not a directory
+          const stats = await fs.stat(filePath);
+          if (stats.isDirectory()) {
+            throw new Error(`Path is a directory, not a file: ${filePath}`);
+          }
+
+          // Create backup before deleting
+          const backupPath = `${filePath}.backup`;
+          await fs.copyFile(filePath, backupPath);
+
+          // Delete the original file
+          await fs.unlink(filePath);
+
+          sendData?.({
+            id,
+            event: "tool-completion",
+            data: `File deleted successfully: ${userPath}. Backup created at ${backupPath}`,
+          });
+          return `Successfully deleted ${filePath}. Backup created at ${backupPath}`;
+        } catch (error) {
+          const errorMessage = `Failed to delete file: ${(error as Error).message}`;
+          sendData?.({
+            id,
+            event: "tool-error",
+            data: errorMessage,
+          });
+          return errorMessage;
+        }
+      },
+    }),
   };
 };
