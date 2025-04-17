@@ -2,7 +2,9 @@ import { isDefined, isRecord } from "@travisennis/stdlib/typeguards";
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import {
   NoSuchToolError,
+  type StepResult,
   type ToolCallRepairFunction,
+  type ToolSet,
   generateObject,
   streamText,
 } from "ai";
@@ -36,6 +38,19 @@ export interface ReplOptions {
   commands: CommandManager;
   config: Record<PropertyKey, unknown>;
 }
+
+type CompleteToolSet = AsyncReturnType<typeof initTools> &
+  ReturnType<typeof initCodingTools>;
+
+type OnFinishResult<Tools extends ToolSet = CompleteToolSet> = Omit<
+  StepResult<Tools>,
+  "stepType" | "isContinued"
+> & {
+  /**
+Details for all steps.
+   */
+  readonly steps: StepResult<Tools>[];
+};
 
 const abortController = new AbortController();
 const { signal } = abortController;
@@ -196,77 +211,7 @@ export class Repl {
             terminal.writeln(chalk.dim(`Steps: ${result.steps.length}`));
 
             // Create a more visual representation of steps
-            const toolsCalled: string[] = [];
-            const toolColors = new Map<string, ChalkInstance>();
-            const chalkColors = [
-              "red",
-              "green",
-              "yellow",
-              "blue",
-              "magenta",
-              "cyan",
-              "white",
-              "gray",
-              "redBright",
-              "greenBright",
-              "yellowBright",
-              "blueBright",
-              "magentaBright",
-              "cyanBright",
-              "whiteBright",
-              "blackBright",
-            ] as const;
-            for (const step of result.steps) {
-              let currentToolCalls: Array<{ toolName: string }> = [];
-
-              if (step.stepType === "tool-result" && step.toolResults) {
-                currentToolCalls = step.toolResults;
-              } else if (step.stepType === "initial" && step.toolCalls) {
-                currentToolCalls = step.toolCalls;
-              }
-
-              for (const toolCallOrResult of currentToolCalls) {
-                const toolName = toolCallOrResult.toolName;
-                if (!toolColors.has(toolName)) {
-                  const availableColors = chalkColors.filter(
-                    (color) =>
-                      !Array.from(toolColors.values()).some(
-                        (c) => c === chalk[color],
-                      ),
-                  );
-                  const color =
-                    availableColors.length > 0
-                      ? (availableColors[
-                          Math.floor(Math.random() * availableColors.length)
-                        ] ?? "white")
-                      : "white";
-                  toolColors.set(toolName, chalk[color]);
-                }
-                toolsCalled.push(toolName);
-              }
-            }
-
-            if (toolsCalled.length > 0) {
-              terminal.writeln(chalk.dim("Tools:"));
-              for (const toolCalled of toolsCalled) {
-                const colorFn = toolColors.get(toolCalled) ?? chalk.white;
-                terminal.write(colorFn("██"));
-              }
-              terminal.lineBreak();
-
-              const uniqueTools = new Set(toolsCalled);
-              for (const [index, toolCalled] of Array.from(
-                uniqueTools,
-              ).entries()) {
-                const colorFn = toolColors.get(toolCalled) ?? chalk.white;
-                terminal.write(colorFn(toolCalled));
-                if (index < new Set(toolsCalled).size - 1) {
-                  terminal.write(" - ");
-                }
-              }
-              terminal.lineBreak();
-              terminal.lineBreak();
-            }
+            this.displayToolUse(result, terminal);
 
             const stats = await getDiffStat();
             terminal.writeln(
@@ -389,6 +334,76 @@ export class Repl {
           logger.error(JSON.stringify(e, null, 2));
         }
       }
+    }
+  }
+
+  private displayToolUse(result: OnFinishResult, terminal: Terminal) {
+    const toolsCalled: string[] = [];
+    const toolColors = new Map<string, ChalkInstance>();
+    const chalkColors = [
+      "red",
+      "green",
+      "yellow",
+      "blue",
+      "magenta",
+      "cyan",
+      "white",
+      "gray",
+      "redBright",
+      "greenBright",
+      "yellowBright",
+      "blueBright",
+      "magentaBright",
+      "cyanBright",
+      "whiteBright",
+      "blackBright",
+    ] as const;
+    for (const step of result.steps) {
+      let currentToolCalls: Array<{ toolName: string }> = [];
+
+      if (step.stepType === "tool-result" && step.toolResults) {
+        currentToolCalls = step.toolResults;
+      } else if (step.stepType === "initial" && step.toolCalls) {
+        currentToolCalls = step.toolCalls;
+      }
+
+      for (const toolCallOrResult of currentToolCalls) {
+        const toolName = toolCallOrResult.toolName;
+        if (!toolColors.has(toolName)) {
+          const availableColors = chalkColors.filter(
+            (color) =>
+              !Array.from(toolColors.values()).some((c) => c === chalk[color]),
+          );
+          const color =
+            availableColors.length > 0
+              ? (availableColors[
+                  Math.floor(Math.random() * availableColors.length)
+                ] ?? "white")
+              : "white";
+          toolColors.set(toolName, chalk[color]);
+        }
+        toolsCalled.push(toolName);
+      }
+    }
+
+    if (toolsCalled.length > 0) {
+      terminal.writeln(chalk.dim("Tools:"));
+      for (const toolCalled of toolsCalled) {
+        const colorFn = toolColors.get(toolCalled) ?? chalk.white;
+        terminal.write(colorFn("██"));
+      }
+      terminal.lineBreak();
+
+      const uniqueTools = new Set(toolsCalled);
+      for (const [index, toolCalled] of Array.from(uniqueTools).entries()) {
+        const colorFn = toolColors.get(toolCalled) ?? chalk.white;
+        terminal.write(colorFn(toolCalled));
+        if (index < new Set(toolsCalled).size - 1) {
+          terminal.write(" - ");
+        }
+      }
+      terminal.lineBreak();
+      terminal.lineBreak();
     }
   }
 }
