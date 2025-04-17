@@ -1,6 +1,6 @@
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const saveCommand = ({ messageHistory }: CommandOptions) => {
+export const saveCommand = ({ messageHistory, terminal }: CommandOptions) => {
   return {
     command: "/save",
     description: "Saves the chat history.",
@@ -10,6 +10,8 @@ export const saveCommand = ({ messageHistory }: CommandOptions) => {
       if (!messageHistory.isEmpty()) {
         await messageHistory.save();
       }
+
+      terminal.info("Message history saved.");
     },
   } satisfies ReplCommand;
 };

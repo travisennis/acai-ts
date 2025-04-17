@@ -1,6 +1,9 @@
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const compactCommand = ({ messageHistory }: CommandOptions) => {
+export const compactCommand = ({
+  messageHistory,
+  terminal,
+}: CommandOptions) => {
   return {
     command: "/compact",
     description:
@@ -12,6 +15,7 @@ export const compactCommand = ({ messageHistory }: CommandOptions) => {
         const additionalInstructions = args.join(" ");
         await messageHistory.summarizeAndReset(additionalInstructions);
       }
+      terminal.info("Message history summarized and reset.");
     },
   } satisfies ReplCommand;
 };
