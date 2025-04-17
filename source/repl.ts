@@ -191,7 +191,7 @@ export class Repl {
             }
 
             terminal.lineBreak();
-            terminal.hr(chalk.dim);
+            terminal.hr();
 
             terminal.writeln(chalk.dim(`Steps: ${result.steps.length}`));
 
@@ -315,7 +315,7 @@ export class Repl {
               );
             }
 
-            terminal.hr(chalk.dim);
+            terminal.hr();
           },
           onError: ({ error }) => {
             logger.error(error, "Error on REPL streamText");

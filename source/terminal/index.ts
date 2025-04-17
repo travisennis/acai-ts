@@ -280,7 +280,7 @@ export class Terminal {
     );
   }
 
-  hr(chalkFn: ChalkInstance = chalk.cyan): void {
+  hr(chalkFn: ChalkInstance = chalk.gray): void {
     process.stdout.write(
       chalkFn(`\n${"─".repeat(process.stdout.columns - 1)} \n`),
     );
