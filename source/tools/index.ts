@@ -156,6 +156,7 @@ export function initCodingTools({
   const architectTools = createArchitectTools({
     modelManager,
     tokenTracker,
+    terminal,
     sendData: sendDataFn,
   });
 
