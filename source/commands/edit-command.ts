@@ -12,7 +12,7 @@ export const editCommand = ({ terminal }: CommandOptions) => {
     getSubCommands: () => [],
     execute: async () => {
       const fileToEdit = await search({
-        message: "Select a file",
+        message: "Search for file:",
         source: async (input) => {
           if (!input) {
             return [];
