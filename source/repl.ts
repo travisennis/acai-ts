@@ -208,9 +208,7 @@ export class Repl {
             terminal.lineBreak();
             terminal.hr();
 
-            terminal.writeln(chalk.dim(`Steps: ${result.steps.length}`));
-
-            // Create a more visual representation of steps
+            // Create a more visual representation of steps/tool usage
             this.displayToolUse(result, terminal);
 
             const stats = await getDiffStat();
@@ -256,6 +254,7 @@ export class Repl {
         });
 
         terminal.lineBreak();
+
         let accumulatedText = "";
         let lastType: "reasoning" | "text-delta" | null = null;
 
@@ -340,6 +339,7 @@ export class Repl {
   private displayToolUse(result: OnFinishResult, terminal: Terminal) {
     const toolsCalled: string[] = [];
     const toolColors = new Map<string, ChalkInstance>();
+
     const chalkColors = [
       "red",
       "green",
@@ -358,6 +358,9 @@ export class Repl {
       "whiteBright",
       "blackBright",
     ] as const;
+
+    terminal.writeln(chalk.dim(`Steps: ${result.steps.length}`));
+
     for (const step of result.steps) {
       let currentToolCalls: Array<{ toolName: string }> = [];
 
