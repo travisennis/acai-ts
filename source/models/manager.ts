@@ -1,4 +1,5 @@
 import type { LanguageModel } from "ai";
+import { wrapLanguageModel } from "ai";
 import {
   auditMessage,
   createRateLimitMiddleware,
@@ -9,7 +10,6 @@ import {
   languageModel,
   modelRegistry,
 } from "./providers.ts";
-import { wrapLanguageModel } from "./wrap-language-model.ts";
 
 function getLanguageModel({
   model,
@@ -20,11 +20,13 @@ function getLanguageModel({
   app: string;
   stateDir: string;
 }) {
-  const langModel = wrapLanguageModel(
-    languageModel(model),
-    createRateLimitMiddleware({ requestsPerMinute: 30 }),
-    auditMessage({ filePath: stateDir, app }),
-  );
+  const langModel = wrapLanguageModel({
+    model: languageModel(model),
+    middleware: [
+      createRateLimitMiddleware({ requestsPerMinute: 30 }),
+      auditMessage({ filePath: stateDir, app }),
+    ],
+  });
 
   return langModel;
 }
