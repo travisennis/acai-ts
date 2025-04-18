@@ -286,7 +286,9 @@ export class Repl {
             else if (lastType === "reasoning") {
               // If we transition from reasoning to something else (e.g., tool call), close the tag.
               terminal.write(chalk.gray("\n</think>\n\n"));
-              logUpdate(await formatOutput(accumulatedText)); // Redraw accumulated text
+              lastType = null;
+            } else {
+              // If we transition from reasoning  or text-dalta to something else (e.g., tool call), set lastType to null.
               lastType = null;
             }
           }
@@ -297,6 +299,7 @@ export class Repl {
           } else {
             // it's not reasoning or text then we are dealing with tool calls within the stream
             logUpdate.done();
+            accumulatedText = "";
           }
         }
         // Ensure the final closing tag for reasoning is written if it was the last type
