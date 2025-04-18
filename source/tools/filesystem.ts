@@ -516,7 +516,6 @@ export const createFileSystemTools = async ({
         "the contents of a single file. Only works within allowed directories.",
       parameters: z.object({
         path: z.string().describe("Absolute path to file to read"),
-        isImage: z.boolean().describe("Specify if the file is an image"),
         encoding: fileEncodingSchema.describe(
           'Encoding format for reading the file. Use "utf-8" as default for text files',
         ),
@@ -533,13 +532,7 @@ export const createFileSystemTools = async ({
           .optional()
           .describe("Maximum number of lines to read"),
       }),
-      execute: async ({
-        path: userPath,
-        isImage,
-        encoding,
-        startLine,
-        lineCount,
-      }) => {
+      execute: async ({ path: userPath, encoding, startLine, lineCount }) => {
         const id = crypto.randomUUID();
         sendData?.({
           id,
@@ -551,10 +544,6 @@ export const createFileSystemTools = async ({
             joinWorkingDir(userPath, workingDir),
             allowedDirectory,
           );
-
-          if (isImage && (startLine !== undefined || lineCount !== undefined)) {
-            return "Line-based reading (startLine/lineCount) is not supported for images.";
-          }
 
           let file = await fs.readFile(filePath, { encoding });
 
@@ -576,7 +565,7 @@ export const createFileSystemTools = async ({
           let tokenCount = 0;
           try {
             // Only calculate tokens for non-image files and if encoding is text-based
-            if (!isImage && encoding.startsWith("utf")) {
+            if (encoding.startsWith("utf")) {
               tokenCount = countTokens(file);
             }
           } catch (tokenError) {
@@ -602,15 +591,6 @@ export const createFileSystemTools = async ({
                 ? `File read successfully: ${userPath}${tokenCount > 0 ? ` (${tokenCount} tokens)` : ""}`
                 : result,
           });
-          if (isImage) {
-            return `data:image/${path
-              .extname(filePath)
-              .toLowerCase()
-              .replace(
-                ".",
-                "",
-              )};base64,${Buffer.from(file).toString("base64")}`;
-          }
           return result;
         } catch (error) {
           return `Failed to read file: ${(error as Error).message}`;
