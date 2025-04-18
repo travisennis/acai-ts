@@ -439,7 +439,7 @@ const toolCallRepair = (modelManager: ModelManager, terminal: Terminal) => {
     try {
       const { object: repairedArgs } = await generateObject({
         model: modelManager.getModel("tool-repair"),
-        schema: tool.parameters,
+        schema: tool.parameters as any, // #FIXME
         prompt: [
           `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
           JSON.stringify(toolCall.args),
