@@ -31,6 +31,11 @@ export const createGrepTools = (
           .number()
           .optional()
           .describe("Number of lines of context to show"),
+        searchIgnored: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Whether to search ignored files and directories"),
       }),
       execute: ({
         pattern,
@@ -39,19 +44,21 @@ export const createGrepTools = (
         ignoreCase,
         filePattern,
         contextLines,
+        searchIgnored,
       }) => {
         const uuid = crypto.randomUUID();
         try {
           sendData?.({
             event: "tool-init",
             id: uuid,
-            data: `Searching for "${pattern}" in ${path}`,
+            data: `Using ripgrep to search for "${pattern}" in ${path}`,
           });
           const result = grepFiles(pattern, path, {
             recursive,
             ignoreCase,
             filePattern,
             contextLines,
+            searchIgnored,
           });
           sendData?.({
             event: "tool-completion",
@@ -77,6 +84,7 @@ interface GrepOptions {
   ignoreCase?: boolean | undefined;
   filePattern?: string | undefined;
   contextLines?: number | undefined;
+  searchIgnored?: boolean | undefined;
 }
 
 /**
@@ -98,6 +106,7 @@ export function grepFiles(
       ignoreCase = false,
       filePattern,
       contextLines,
+      searchIgnored = false,
     } = options;
 
     // Build the ripgrep command
@@ -126,6 +135,10 @@ export function grepFiles(
     // Add file pattern if specified
     if (filePattern) {
       command += ` --glob=${JSON.stringify(filePattern)}`;
+    }
+
+    if (searchIgnored) {
+      command += " --no-ignore";
     }
 
     // Execute the command

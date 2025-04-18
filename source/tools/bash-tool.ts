@@ -8,22 +8,22 @@ import type { SendData } from "./types.ts";
 
 // Whitelist of allowed commands
 const ALLOWED_COMMANDS = [
-  // "ls",
-  // "cat",
-  // "grep",
-  // "find",
+  "ls",
+  "cat",
+  "grep",
+  "find",
   // "echo",
-  // "mkdir",
-  // "touch",
+  "mkdir",
+  "touch",
   // "rm",
-  // "cp",
-  // "mv",
-  // "pwd",
-  // "wc",
+  "cp",
+  "mv",
+  "pwd",
+  "wc",
   "diff",
-  // "sort",
-  // "head",
-  // "tail",
+  "sort",
+  "head",
+  "tail",
   // "test",
   "npm",
   // "node",
@@ -41,10 +41,10 @@ function isCommandAllowed(command: string): boolean {
 }
 
 // Check for command chaining attempts
-function hasCommandChaining(command: string): boolean {
-  const chainingPatterns = [";", "&&", "||", "|", "`", "$(", ">", "<"];
-  return chainingPatterns.some((pattern) => command.includes(pattern));
-}
+// function hasCommandChaining(command: string): boolean {
+//   const chainingPatterns = [";", "&&", "||", "|", "`", "$(", ">", "<"];
+//   return chainingPatterns.some((pattern) => command.includes(pattern));
+// }
 
 // Ensure path is within base directory
 function isPathWithinBaseDir(requestedPath: string, baseDir: string): boolean {
@@ -63,7 +63,7 @@ export const createBashTools = ({
 }) => {
   return {
     bashTool: tool({
-      description: `Execute bash commands and return their output. Limited to a whitelist of safe commands: ${ALLOWED_COMMANDS.join(", ")}. Command chaining operators (;, &&, |, etc.) are not allowed. Commands will only execute within the project directory for security. Always specify absolute paths to avoid errors.`,
+      description: `Execute bash commands and return their output. Limited to a whitelist of safe commands: ${ALLOWED_COMMANDS.join(", ")}. Commands will only execute within the project directory for security. Always specify absolute paths to avoid errors.`,
       parameters: z.object({
         command: z
           .string()
@@ -103,18 +103,46 @@ export const createBashTools = ({
         }
 
         // Check for command chaining
-        if (hasCommandChaining(command)) {
-          const errorMsg =
-            "Command chaining is not allowed for security reasons";
-          sendData?.({ event: "tool-error", id: uuid, data: errorMsg });
-          return errorMsg;
-        }
+        // if (hasCommandChaining(command)) {
+        //   const errorMsg =
+        //     "Command chaining is not allowed for security reasons";
+        //   sendData?.({ event: "tool-error", id: uuid, data: errorMsg });
+        //   return errorMsg;
+        // }
 
         // Validate working directory
         if (!isPathWithinBaseDir(cwd, baseDir)) {
           const errorMsg = `Working directory must be within the project directory: ${baseDir}`;
           sendData?.({ event: "tool-error", id: uuid, data: errorMsg });
           return errorMsg;
+        }
+
+        // Validate command arguments for paths outside baseDir
+        const parts = command.split(" ");
+        for (const part of parts) {
+          // Basic check for potential paths (absolute or relative)
+          // Also check arguments containing '/' that don't look like options (start with '-')
+          if (
+            part.startsWith("/") ||
+            part.includes("../") ||
+            part.includes("./") ||
+            (part.includes("/") && !part.startsWith("-"))
+          ) {
+            try {
+              const resolvedPath = path.resolve(cwd, part);
+              if (!isPathWithinBaseDir(resolvedPath, baseDir)) {
+                const errorMsg = `Command argument references path outside the project directory: ${part} (resolved to ${resolvedPath})`;
+                sendData?.({ event: "tool-error", id: uuid, data: errorMsg });
+                return errorMsg;
+              }
+            } catch (e) {
+              // Ignore errors during path resolution (e.g., invalid characters)
+              console.warn(
+                `Could not resolve potential path argument: ${part}`,
+                e,
+              );
+            }
+          }
         }
 
         try {

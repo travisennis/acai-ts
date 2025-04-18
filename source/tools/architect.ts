@@ -94,6 +94,7 @@ export const createArchitectTools = (options: {
               ...FS_READ_ONLY,
               ...GIT_READ_ONLY,
               "grepFiles",
+              "bashTool",
             ],
           });
 

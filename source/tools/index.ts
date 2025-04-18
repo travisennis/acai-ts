@@ -150,6 +150,7 @@ export function initCodingTools({
   const agentTools = createAgentTools({
     modelManager,
     tokenTracker,
+    terminal,
     sendData: sendDataFn,
   });
 

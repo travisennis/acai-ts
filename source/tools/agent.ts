@@ -3,12 +3,13 @@ import { generateText, tool } from "ai";
 import { z } from "zod";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
+import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../token-tracker.ts";
 import { FS_READ_ONLY, initTools } from "./index.ts";
 import type { SendData } from "./types.ts";
 
 export function getToolDescription(): string {
-  const toolNames = ["grepFiles", ...FS_READ_ONLY].join(", ");
+  const toolNames = ["grepFiles", "basheTool", ...FS_READ_ONLY].join(", ");
   return `Launch a new agent that has access to the following tools: ${toolNames}. When you are searching for a keyword or file and are not confident that you will find the right match on the first try, use the Agent tool to perform the search for you. For example:
 
 - If you are searching for a keyword like "config" or "logger", the Agent tool is appropriate
@@ -29,9 +30,10 @@ const inputSchema = z.object({
 export const createAgentTools = (options: {
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
+  terminal: Terminal;
   sendData?: SendData | undefined;
 }) => {
-  const { modelManager, tokenTracker, sendData } = options;
+  const { modelManager, tokenTracker, terminal, sendData } = options;
   return {
     launchAgent: tool({
       description: getToolDescription(),
@@ -59,10 +61,14 @@ export const createAgentTools = (options: {
             prompt: prompt,
             maxSteps: 30,
             providerOptions: aiConfig.getProviderOptions(),
-            tools: await initTools({}),
+            tools: await initTools({ terminal }),
             abortSignal: abortSignal,
             // biome-ignore lint/style/useNamingConvention: <explanation>
-            experimental_activeTools: [...FS_READ_ONLY, "grepFiles"],
+            experimental_activeTools: [
+              ...FS_READ_ONLY,
+              "grepFiles",
+              "bashTool",
+            ],
           });
 
           tokenTracker.trackUsage("task-agent", usage);
