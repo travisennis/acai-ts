@@ -12,7 +12,7 @@ const ALLOWED_COMMANDS = [
   "cat",
   "grep",
   "find",
-  // "echo",
+  "echo",
   "mkdir",
   "touch",
   // "rm",
@@ -26,9 +26,10 @@ const ALLOWED_COMMANDS = [
   "tail",
   // "test",
   "npm",
-  // "node",
+  "node",
   "git",
   "gh",
+  "rg",
 ];
 
 // Command execution timeout in milliseconds
