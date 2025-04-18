@@ -32,7 +32,7 @@ export const createLogTools = (options: {
           .optional()
           .describe("Number of lines of context to show around each match"),
       }),
-      execute: async ({ pattern, maxResults, ignoreCase, contextLines }) => {
+      execute: ({ pattern, maxResults, ignoreCase, contextLines }) => {
         const uuid = crypto.randomUUID();
         try {
           sendData?.({
@@ -98,7 +98,9 @@ export const createLogTools = (options: {
             const errorMessage = `Error: Log file not found at ${error.cmd?.split(" ").pop()}`;
             sendData?.({ event: "tool-error", id: uuid, data: errorMessage });
             return Promise.resolve(errorMessage);
-          } else if (error.status === 1) {
+          }
+
+          if (error.status === 1) {
             // rg exited with 1, meaning no matches found. Tail likely received no input.
             const noMatchMessage = "No matches found.";
             sendData?.({
@@ -107,12 +109,12 @@ export const createLogTools = (options: {
               data: noMatchMessage,
             }); // Still a completion, just no results
             return Promise.resolve(noMatchMessage);
-          } else {
-            // Handle other errors (rg errors other than no match, tail errors, etc.)
-            const errorMessage = `Error executing log search: ${(error as Error).message}`;
-            sendData?.({ event: "tool-error", id: uuid, data: errorMessage });
-            return Promise.resolve(errorMessage);
           }
+
+          // Handle other errors (rg errors other than no match, tail errors, etc.)
+          const errorMessage = `Error executing log search: ${(error as Error).message}`;
+          sendData?.({ event: "tool-error", id: uuid, data: errorMessage });
+          return Promise.resolve(errorMessage);
         }
       },
     }),
