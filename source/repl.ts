@@ -224,7 +224,7 @@ export class Repl {
             const incomingTokens = isNumber(result.usage.completionTokens)
               ? result.usage.completionTokens
               : 0;
-            const tokenSummary = `Tokens: ↑ ${incomingTokens} ↓ ${outgoingTokens}`;
+            const tokenSummary = `Tokens: ↑ ${outgoingTokens} ↓ ${incomingTokens}`;
             terminal.writeln(chalk.dim(tokenSummary));
 
             // this tracks the usage of every step in the call to streamText. it's a cumulative usage.
