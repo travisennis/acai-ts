@@ -11,7 +11,7 @@ import { createArchitectTools } from "./architect.ts";
 import { createBashTools } from "./bash-tool.ts";
 import { createCodeEditorTools } from "./code-editor.ts";
 import { createCodeInterpreterTool } from "./code-interpreter.ts";
-import { createCodeTools } from "./code-tools.ts";
+// import { createCodeTools } from "./code-tools.ts";
 import { createFileSystemTools } from "./filesystem.ts";
 import { createGitTools } from "./git.ts";
 import { createGrepTools } from "./grep.ts";
@@ -68,11 +68,11 @@ export async function initTools({
 
   const projectConfig = await config.readProjectConfig();
 
-  const codeTools = createCodeTools({
-    baseDir: process.cwd(),
-    config: projectConfig.commands,
-    sendData: sendDataFn,
-  });
+  // const codeTools = createCodeTools({
+  //   baseDir: process.cwd(),
+  //   config: projectConfig.commands,
+  //   sendData: sendDataFn,
+  // });
 
   const codeInterpreterTool = createCodeInterpreterTool({
     sendData: sendDataFn,
@@ -121,7 +121,7 @@ export async function initTools({
   };
 
   const tools = {
-    ...codeTools,
+    // ...codeTools,
     ...fsTools,
     ...gitTools,
     ...codeInterpreterTool,
@@ -196,7 +196,7 @@ export function initAnthropicTools({
 
 // biome-ignore lint/performance/noBarrelFile: <explanation>
 export * from "./code-interpreter.ts";
-export * from "./code-tools.ts";
+// export * from "./code-tools.ts";
 export * from "./filesystem.ts";
 export * from "./git.ts";
 export * from "./grep.ts";
