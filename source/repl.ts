@@ -1,4 +1,4 @@
-import { isDefined, isRecord } from "@travisennis/stdlib/typeguards";
+import { isDefined, isNumber, isRecord } from "@travisennis/stdlib/typeguards";
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import {
   NoSuchToolError,
@@ -218,7 +218,13 @@ export class Repl {
                 `${chalk.red(`-${stats.deletions}`)}`,
             );
 
-            const tokenSummary = `Tokens: ↑ ${result.usage.promptTokens ?? 0} ↓ ${result.usage.completionTokens ?? 0}`;
+            const outgoingTokens = isNumber(result.usage.promptTokens)
+              ? result.usage.promptTokens
+              : 0;
+            const incomingTokens = isNumber(result.usage.completionTokens)
+              ? result.usage.completionTokens
+              : 0;
+            const tokenSummary = `Tokens: ↑ ${incomingTokens} ↓ ${outgoingTokens}`;
             terminal.writeln(chalk.dim(tokenSummary));
 
             // this tracks the usage of every step in the call to streamText. it's a cumulative usage.
