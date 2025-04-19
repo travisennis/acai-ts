@@ -57,6 +57,7 @@
     "simple-git": "^3.27.0",
     "terminal-link": "^4.0.0",
     "tiktoken": "^1.0.20",
+    "ts-lsp-client": "^1.0.3",
     "ts-pattern": "^5.7.0",
     "typescript": "^5.8.3",
     "vscode-languageserver": "^9.0.1",
