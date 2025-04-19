@@ -25,8 +25,7 @@ const sendDataHandler = (terminal: Terminal) => {
   const msgStore: Map<string, string[]> = new Map();
   return async (msg: Message) => {
     if (msg.event === "tool-init") {
-      msgStore.set(msg.id, [`\n${chalk.blue.bold("●")} ${msg.data}`]);
-      // await terminal.display(`\n${chalk.blue.bold("●")} ${msg.data}`);
+      msgStore.set(msg.id, [`${msg.data}`]);
     } else if (msg.event === "tool-update") {
       const secondaryMsgs = msg.data.secondary ?? [];
       msgStore.get(msg.id)?.push(`└── ${msg.data.primary}`);
@@ -37,11 +36,17 @@ const sendDataHandler = (terminal: Terminal) => {
     } else if (msg.event === "tool-completion") {
       msgStore.get(msg.id)?.push(`└── ${msg.data}`);
       const msgHistory = msgStore.get(msg.id) ?? [];
+      if (msgHistory.length > 0) {
+        msgHistory[0] = `\n${chalk.blue.bold("●")} ${msgHistory[0]}`;
+      }
       await Promise.all(msgHistory.map((msg) => terminal.display(msg)));
       msgStore.delete(msg.id);
       terminal.lineBreak();
     } else if (msg.event === "tool-error") {
       const msgHistory = msgStore.get(msg.id) ?? [];
+      if (msgHistory.length > 0) {
+        msgHistory[0] = `\n${chalk.red.bold("●")} ${msgHistory[0]}`;
+      }
       await Promise.all(msgHistory.map((msg) => terminal.display(msg)));
       msgStore.delete(msg.id);
       terminal.error(msg.data);
