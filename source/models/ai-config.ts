@@ -26,17 +26,38 @@ export class AiConfig {
   getProviderOptions(): LanguageModelV1ProviderMetadata {
     const modelConfig = this.modelMetadata;
     const thinkingLevel = calculateThinkingLevel(this.prompt);
-    return modelConfig.provider === "anthropic" && modelConfig.supportsReasoning
-      ? {
-          anthropic: {
-            thinking: {
-              type: "enabled",
-              budgetTokens: thinkingLevel.tokenBudget,
+
+    if (modelConfig.supportsReasoning) {
+      switch (modelConfig.provider) {
+        case "anthropic":
+          return {
+            anthropic: {
+              thinking: {
+                type: "enabled",
+                budgetTokens: thinkingLevel.tokenBudget,
+              },
             },
-          },
+          };
+        case "openai":
+          return { openai: { reasoningEffort: thinkingLevel.effort } };
+        case "google": {
+          // Only flash25 currently supports the thinking budget
+          if (modelConfig.id === "google:flash25") {
+            return {
+              google: {
+                thinkingConfig: {
+                  thinkingBudget: thinkingLevel.tokenBudget,
+                },
+              },
+            };
+          }
+          return {};
         }
-      : modelConfig.supportsReasoning && modelConfig.provider === "openai"
-        ? { openai: { reasoningEffort: thinkingLevel.effort } }
-        : {};
+        default:
+          return {};
+      }
+    }
+    // If supportsReasoning is false, or no provider case matched
+    return {};
   }
 }
