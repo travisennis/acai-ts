@@ -1,4 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai";
+import { objectKeys } from "@travisennis/stdlib/object";
 import { customProvider } from "ai";
 import type { ModelMetadata } from "./providers.ts";
 
@@ -8,27 +9,27 @@ const openRouterClient = createOpenAI({
   apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
 });
 
+const openrouterModels = {
+  "deepseek-v3": openRouterClient("deepseek/deepseek-chat"),
+  "deepseek-r1": openRouterClient("deepseek/deepseek-r1"),
+} as const;
+
+type ModelName = `openrouter:${keyof typeof openrouterModels}`;
+
+export const openrouterModelNames: ModelName[] = objectKeys(
+  openrouterModels,
+).map((key) => `openrouter:${key}` as const);
+
 export const openrouterProvider = {
   openrouter: customProvider({
-    languageModels: {
-      "deepseek-v3": openRouterClient("deepseek/deepseek-chat"),
-      "deepseek-r1": openRouterClient("deepseek/deepseek-r1"),
-    },
+    languageModels: openrouterModels,
     fallbackProvider: openRouterClient,
   }),
 };
 
-export const openrouterModelNames = [
-  "openrouter:deepseek-v3",
-  "openrouter:deepseek-r1",
-] as const;
-
-export type OpenRouterModelName = (typeof openrouterModelNames)[number];
-
-export const openrouterModelRegistry: Record<
-  OpenRouterModelName,
-  ModelMetadata<OpenRouterModelName>
-> = {
+export const openrouterModelRegistry: {
+  [K in ModelName]: ModelMetadata<ModelName>;
+} = {
   "openrouter:deepseek-v3": {
     id: "openrouter:deepseek-v3",
     provider: "openrouter",

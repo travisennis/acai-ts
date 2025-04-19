@@ -1,4 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai";
+import { objectKeys } from "@travisennis/stdlib/object";
 import { customProvider } from "ai";
 import type { ModelMetadata } from "./providers.ts";
 
@@ -8,24 +9,27 @@ const xaiClient = createOpenAI({
   baseURL: "https://api.x.ai/v1",
 });
 
+const xaiModels = {
+  grok3: xaiClient("grok-3"),
+  "grok3-mini": xaiClient("grok-3-mini-beta"),
+} as const;
+
+type ModelName = `xai:${keyof typeof xaiModels}`;
+
+export const xaiModelNames: ModelName[] = objectKeys(xaiModels).map(
+  (key) => `xai:${key}` as const,
+);
+
 export const xaiProvider = {
   xai: customProvider({
-    languageModels: {
-      grok3: xaiClient("grok-3"),
-      "grok3-mini": xaiClient("grok-3-mini-beta"),
-    },
+    languageModels: xaiModels,
     fallbackProvider: xaiClient,
   }),
 };
 
-export const xaiModelNames = ["xai:grok3", "xai:grok3-mini"] as const;
-
-export type XaiModelName = (typeof xaiModelNames)[number];
-
-export const xaiModelRegistry: Record<
-  XaiModelName,
-  ModelMetadata<XaiModelName>
-> = {
+export const xaiModelRegistry: {
+  [K in ModelName]: ModelMetadata<ModelName>;
+} = {
   "xai:grok3": {
     id: "xai:grok3",
     provider: "xai",
