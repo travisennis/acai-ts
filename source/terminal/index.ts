@@ -302,8 +302,16 @@ export class Terminal {
     data: [string, string | number][],
     options: { header?: string[] } = {},
   ): void {
+    // Calculate column widths based on terminal width
+    const padding = 5; // Account for table borders and padding
+    const availableWidth = this.terminalWidth - padding;
+    const commandWidth = Math.max(10, Math.floor(availableWidth * 0.3)); // Ensure minimum width
+    const descriptionWidth = Math.max(15, Math.floor(availableWidth * 0.7)); // Ensure minimum width
+
     const table = new Table({
       head: options.header,
+      colWidths: [commandWidth, descriptionWidth],
+      wordWrap: true, // Enable word wrapping for the description column
     });
 
     table.push(...data);
