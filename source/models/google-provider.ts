@@ -1,39 +1,36 @@
 import { google as originalGoogle } from "@ai-sdk/google";
+import { objectKeys } from "@travisennis/stdlib/object";
 import { customProvider } from "ai";
 import type { ModelMetadata } from "./providers.ts";
 
+const googleModels = {
+  flash2: originalGoogle("gemini-2.0-flash"),
+  "flash2-search": originalGoogle("gemini-2.0-flash", {
+    useSearchGrounding: true,
+  }),
+  flash2lite: originalGoogle("gemini-2.0-flash-lite,"),
+  flash2thinking: originalGoogle("gemini-2.0-flash-thinking-exp-01-21"),
+  "pro25-free": originalGoogle("gemini-2.5-pro-exp-03-25"),
+  pro25: originalGoogle("gemini-2.5-pro-preview-03-25"),
+  flash25: originalGoogle("gemini-2.5-flash-preview-04-17"),
+} as const;
+
+type ModelName = `google:${keyof typeof googleModels}`;
+
+export const googleModelNames: ModelName[] = objectKeys(googleModels).map(
+  (key) => `google:${key}` as const,
+);
+
 export const googleProvider = {
   google: customProvider({
-    languageModels: {
-      flash2: originalGoogle("gemini-2.0-flash"),
-      "flash2-search": originalGoogle("gemini-2.0-flash", {
-        useSearchGrounding: true,
-      }),
-      flash2lite: originalGoogle("gemini-2.0-flash-lite-preview-02-05"),
-      flash2thinking: originalGoogle("gemini-2.0-flash-thinking-exp-01-21"),
-      pro2: originalGoogle("gemini-2.0-pro-exp-02-05"),
-      "pro25-free": originalGoogle("gemini-2.5-pro-exp-03-25"),
-      pro25: originalGoogle("gemini-2.5-pro-preview-03-25"),
-    },
+    languageModels: googleModels,
     fallbackProvider: originalGoogle,
   }),
 };
 
-export const googleModelNames = [
-  "google:flash2",
-  "google:flash2lite",
-  "google:flash2-search",
-  "google:flash2thinking",
-  "google:pro2",
-  "google:pro25",
-  "google:pro25-free",
-] as const;
-
-export type GoogleModelName = (typeof googleModelNames)[number];
-
 export const googleModelRegistry: Record<
-  GoogleModelName,
-  ModelMetadata<GoogleModelName>
+  ModelName,
+  ModelMetadata<ModelName>
 > = {
   "google:flash2": {
     id: "google:flash2",
@@ -87,19 +84,6 @@ export const googleModelRegistry: Record<
     costPerOutputToken: 0,
     category: "balanced",
   },
-  "google:pro2": {
-    id: "google:pro2",
-    provider: "google",
-    contextWindow: 1000000,
-    maxOutputTokens: 8192,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "balanced",
-  },
   "google:pro25": {
     id: "google:pro25",
     provider: "google",
@@ -125,5 +109,18 @@ export const googleModelRegistry: Record<
     costPerInputToken: 0,
     costPerOutputToken: 0,
     category: "powerful",
+  },
+  "google:flash25": {
+    id: "google:flash25",
+    provider: "google",
+    contextWindow: 1048576,
+    maxOutputTokens: 65536,
+    defaultTemperature: 0.3,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000015,
+    costPerOutputToken: 0.0000035,
+    category: "balanced",
   },
 };
