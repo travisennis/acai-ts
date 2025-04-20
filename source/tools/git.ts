@@ -304,9 +304,9 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
         path: z.string().describe("The absolute path to the git repo."),
         n: z
           .number()
-          .optional()
+          .nullable()
           .describe(
-            "The number of commits to return in the log. This value is passed --max-count",
+            "The number of commits to return in the log. This value is passed --max-count. Passing null will use the default value of 3.",
           ),
       }),
       execute: async ({ path, n }) => {
