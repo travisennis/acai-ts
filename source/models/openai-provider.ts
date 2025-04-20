@@ -19,8 +19,8 @@ const openaiModels = {
   "o3-mini": originalOpenAi("o3-mini"),
   "gpt-4-1": originalOpenAi("gpt-4.1"),
   "gpt-4-5": originalOpenAi("gpt-4.5-preview"),
-  o3: originalOpenAi("o3"),
-  "o4-mini": originalOpenAi("o4-mini"),
+  o3: originalOpenAi.responses("o3"),
+  "o4-mini": originalOpenAi.responses("o4-mini"),
 } as const;
 
 type ModelName = `openai:${keyof typeof openaiModels}`;
