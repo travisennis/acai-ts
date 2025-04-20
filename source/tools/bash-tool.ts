@@ -74,27 +74,26 @@ export const createBashTools = ({
           ),
         cwd: z
           .string()
-          .optional()
+          .nullable()
           .describe(
             "Working directory (default: project root). Must be within the project directory.",
           ),
         timeout: z
           .number()
-          .optional()
+          .nullable()
           .describe(
             `Command execution timeout in milliseconds. Default: ${DEFAULT_TIMEOUT}ms`,
           ),
       }),
-      execute: async ({
-        command,
-        cwd = baseDir,
-        timeout = DEFAULT_TIMEOUT,
-      }) => {
+      execute: async ({ command, cwd, timeout }) => {
+        // Guard against null cwd and timeout
+        const safeCwd = cwd == null ? baseDir : cwd;
+        const safeTimeout = timeout == null ? DEFAULT_TIMEOUT : timeout;
         const uuid = crypto.randomUUID();
         sendData?.({
           event: "tool-init",
           id: uuid,
-          data: `Executing: ${command} in ${cwd}`,
+          data: `Executing: ${command} in ${safeCwd}`,
         });
 
         // Validate command
@@ -113,7 +112,7 @@ export const createBashTools = ({
         // }
 
         // Validate working directory
-        if (!isPathWithinBaseDir(cwd, baseDir)) {
+        if (!isPathWithinBaseDir(safeCwd, baseDir)) {
           const errorMsg = `Working directory must be within the project directory: ${baseDir}`;
           sendData?.({ event: "tool-error", id: uuid, data: errorMsg });
           return errorMsg;
@@ -131,7 +130,7 @@ export const createBashTools = ({
             (part.includes("/") && !part.startsWith("-"))
           ) {
             try {
-              const resolvedPath = path.resolve(cwd, part);
+              const resolvedPath = path.resolve(safeCwd, part);
               if (!isPathWithinBaseDir(resolvedPath, baseDir)) {
                 const errorMsg = `Command argument references path outside the project directory: ${part} (resolved to ${resolvedPath})`;
                 sendData?.({ event: "tool-error", id: uuid, data: errorMsg });
@@ -148,7 +147,7 @@ export const createBashTools = ({
         }
 
         try {
-          const result = format(await asyncExec(command, cwd, timeout));
+          const result = format(await asyncExec(command, safeCwd, safeTimeout));
           sendData?.({
             event: "tool-completion",
             id: uuid,
