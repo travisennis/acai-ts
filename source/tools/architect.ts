@@ -47,7 +47,7 @@ const inputSchema = z.strictObject({
   context: z
     .string()
     .describe("Optional context from previous conversation or system state.")
-    .optional(),
+    .nullable(),
 });
 
 export const createArchitectTools = (options: {
