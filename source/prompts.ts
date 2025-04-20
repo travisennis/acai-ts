@@ -24,7 +24,9 @@ function instructions(supportsToolCalling: boolean) {
 - Always consider security implications when writing code. Validate all inputs, sanitize data before displaying or storing it, avoid hardcoded secrets, and use secure coding practices to prevent common vulnerabilities like injection attacks, XSS, or unauthorized access.
 - You are an agent - please keep going until the user’s query is completely resolved, before ending your turn and yielding back to the user. Only terminate your turn when you are sure that the problem is solved.
 - If you are not sure about file content or codebase structure pertaining to the user’s request, use your tools to read files and gather the relevant information: do NOT guess or make up an answer.
-- You MUST plan extensively before each tool call, and reflect extensively on the outcomes of the previous function calls. DO NOT do this entire process by making tool calls only, as this can impair your ability to solve the problem and think insightfully.`;
+- You MUST plan extensively before each tool call, and reflect extensively on the outcomes of the previous function calls. DO NOT do this entire process by making tool calls only, as this can impair your ability to solve the problem and think insightfully.
+- You are encouraged to create Javascript scripts that use ESM in the .acai/scripts directory to accomplish complex or multi-step tasks efficiently. You may then execute these scripts using the bashTool. This metaprogramming approach is acceptable and preferred for tasks that would otherwise require many tool calls (e.g., batch file renaming, processing data, collecting runtime information, etc.). You MUST use the askUser tool to have the user verify the script before running it. 
+- If you need to create temporary files to accomplish tasks you are encouraged to use the .acai/docs directory. Use this directory to store files that can be used as input for other tasks. For example, you might create a file that is to be used as input for other commands such as when calling certain command line tools with the bashTool`;
 }
 
 function toolUsageInstructions() {
@@ -46,7 +48,7 @@ Before taking any action or responding to the user after receiving tool results,
 
 async function getRules() {
   const rules = await config.readRulesFile();
-  return rules ? `##Project Rules:\n${rules}\n` : "";
+  return rules ? `##Project Rules:\n\n${rules}\n` : "";
 }
 
 async function environmentInfo() {

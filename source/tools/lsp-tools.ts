@@ -12,10 +12,7 @@ import type { SendData } from "./types.ts";
 
 const serverPath = "typescript-language-server";
 
-export const createLspTools = async (options: {
-  sendData?: SendData | undefined;
-}) => {
-  const { sendData } = options;
+export const lspClient = async () => {
   // start the LSP server
   const lspServerProcess = spawn(serverPath, ["--stdio"], {
     shell: true,
@@ -55,6 +52,14 @@ export const createLspTools = async (options: {
 
   client.initialized();
 
+  return client;
+};
+export const createLspTools = (options: {
+  client: LspClient;
+  sendData?: SendData | undefined;
+}) => {
+  const { client, sendData } = options;
+
   return {
     getDefinition: async (path: string, line: number, symbol: string) => {
       const content = readFileSync(path, "utf8");
@@ -62,9 +67,7 @@ export const createLspTools = async (options: {
       const lines = content.split("\n");
       const lineText = lines[line - 1] || "";
       console.info(lineText);
-      let character = lineText.indexOf(symbol);
-      line -= 1;
-      character += symbol.length;
+      const character = lineText.indexOf(symbol);
       console.info(line, character);
 
       const docUri = pathToFileURL(path).href;
@@ -84,8 +87,8 @@ export const createLspTools = async (options: {
 
       const location = await client.definition({
         position: {
-          line,
-          character: character,
+          line: line - 1,
+          character: character + 1,
         },
         textDocument: {
           uri: docUri,
@@ -97,8 +100,8 @@ export const createLspTools = async (options: {
       console.info("getting type definition");
       const def = await client.typeDefinition({
         position: {
-          line,
-          character,
+          line: line - 1,
+          character: character + 1,
         },
         textDocument: {
           uri: docUri,
@@ -112,8 +115,8 @@ export const createLspTools = async (options: {
           uri: docUri,
         },
         position: {
-          line,
-          character: character + 1,
+          line: line - 1,
+          character: character + symbol.length + 1,
         },
         context: {
           triggerKind: SignatureHelpTriggerKind.ContentChange,
@@ -122,6 +125,12 @@ export const createLspTools = async (options: {
         },
       });
       console.log("Signature", JSON.stringify(result, null, 2));
+
+      client.didClose({
+        textDocument: {
+          uri: docUri,
+        },
+      });
     },
     getSignature: tool({
       description:
@@ -163,7 +172,7 @@ export const createLspTools = async (options: {
           const typeDef = await client.typeDefinition({
             position: {
               line: line - 1,
-              character: character + symbol.length,
+              character: character + 1,
             },
             textDocument: {
               uri: docUri,
@@ -182,6 +191,12 @@ export const createLspTools = async (options: {
               triggerKind: SignatureHelpTriggerKind.ContentChange,
               isRetrigger: false,
               triggerCharacter: "(",
+            },
+          });
+
+          client.didClose({
+            textDocument: {
+              uri: docUri,
             },
           });
 
@@ -211,7 +226,8 @@ export const createLspTools = async (options: {
 
 async function main() {
   console.info("Creating lsp tools");
-  const lspTools = await createLspTools({});
+  const client = await lspClient();
+  const lspTools = createLspTools({ client });
   console.info("created");
   console.info("getting definition");
   const [, , path, lineStr, symbol] = process.argv;
@@ -222,6 +238,7 @@ async function main() {
   const line = Number(lineStr);
   await lspTools.getDefinition(path, line, symbol);
   console.info("done");
+  client.exit();
 }
 
 main().catch(console.error);
