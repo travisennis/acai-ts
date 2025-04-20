@@ -21,16 +21,10 @@
     "checkJs": true,
     "skipLibCheck": true,
     "rewriteRelativeImportExtensions": true,
-    "types": [
-      "node"
-    ],
-    "lib": [
-      "ESNext"
-    ]
+    "types": ["node"],
+    "lib": ["ESNext"]
   },
-  "include": [
-    "source/**/*.ts"
-  ],
+  "include": ["source/**/*.ts"],
   "$schema": "https://json.schemastore.org/tsconfig",
   "_version": "2.0.0"
 }
