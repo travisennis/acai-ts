@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { isNumber } from "@travisennis/stdlib/typeguards";
 import { tool } from "ai";
 import { createTwoFilesPatch } from "diff";
 import ignore, { type Ignore } from "ignore";
@@ -248,6 +249,12 @@ async function applyFileEdits(
 ): Promise<string> {
   // Read file content and normalize line endings
   const content = normalizeLineEndings(await fs.readFile(filePath, "utf-8"));
+
+  if (edits.find((edit) => edit.oldText.length === 0)) {
+    throw new Error(
+      "Invalid oldText in edit. The value of oldText must be at least one character",
+    );
+  }
 
   // Apply edits sequentially
   let modifiedContent = content;
@@ -521,30 +528,39 @@ export const createFileSystemTools = async ({
         ),
         startLine: z
           .number()
-          .optional()
-          .describe("1-based line number to start reading from"),
+          .nullable()
+          .describe(
+            "1-based line number to start reading from. Pass null to start at beginning of file",
+          ),
         lineCount: z
           .number()
-          .optional()
-          .describe("Maximum number of lines to read"),
+          .nullable()
+          .describe(
+            "Maximum number of lines to read. Pass null to get all lines.",
+          ),
       }),
-      execute: async ({ path: userPath, encoding, startLine, lineCount }) => {
+      execute: async ({
+        path: providedPath,
+        encoding,
+        startLine,
+        lineCount,
+      }) => {
         const id = crypto.randomUUID();
         sendData?.({
           id,
           event: "tool-init",
-          data: `Reading file: ${userPath}`,
+          data: `Reading file: ${providedPath}`,
         });
         try {
           const filePath = await validatePath(
-            joinWorkingDir(userPath, workingDir),
+            joinWorkingDir(providedPath, workingDir),
             allowedDirectory,
           );
 
           let file = await fs.readFile(filePath, { encoding });
 
           // Apply line-based selection if requested
-          if (startLine !== undefined || lineCount !== undefined) {
+          if (isNumber(startLine) || isNumber(lineCount)) {
             const lines = file.split("\n");
             const totalLines = lines.length;
 
@@ -572,7 +588,7 @@ export const createFileSystemTools = async ({
           const maxTokens = 15000;
           // Adjust max token check message if line selection was used
           const maxTokenMessage =
-            startLine !== undefined || lineCount !== undefined
+            isNumber(startLine) || isNumber(lineCount)
               ? `Selected file content (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Consider adjusting startLine/lineCount or using grepFiles.`
               : `File content (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Please use startLine and lineCount parameters to read specific portions of the file, or using grepFiles to search for specific content.`;
 
@@ -584,7 +600,7 @@ export const createFileSystemTools = async ({
             // Include token count only if calculated (i.e., for text files)
             data:
               tokenCount <= maxTokens
-                ? `File read successfully: ${userPath}${tokenCount > 0 ? ` (${tokenCount} tokens)` : ""}`
+                ? `File read successfully: ${providedPath}${tokenCount > 0 ? ` (${tokenCount} tokens)` : ""}`
                 : result,
           });
           return result;
@@ -669,7 +685,6 @@ export const createFileSystemTools = async ({
           z.object({
             oldText: z
               .string()
-              .min(1)
               .describe(
                 "Text to search for - must match exactly and enough context must be provided to uniquely match the target text",
               ),
@@ -678,9 +693,9 @@ export const createFileSystemTools = async ({
         ),
         dryRun: z
           .boolean()
-          .default(false)
+          .nullable()
           .describe(
-            "Preview changes using git-style diff format: true or false",
+            "Preview changes using git-style diff format: true or false. If pass null, the default value is false.",
           ),
       }),
       execute: async ({ path, edits, dryRun }) => {
@@ -695,7 +710,11 @@ export const createFileSystemTools = async ({
             joinWorkingDir(path, workingDir),
             allowedDirectory,
           );
-          const result = await applyFileEdits(validPath, edits, dryRun);
+          const result = await applyFileEdits(
+            validPath,
+            edits,
+            dryRun ?? false,
+          );
           if (dryRun) {
             sendData?.({
               event: "tool-update",
