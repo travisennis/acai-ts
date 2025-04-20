@@ -20,8 +20,9 @@ const inputSchema = z.strictObject({
     z.object({
       oldText: z
         .string()
-        .min(1)
-        .describe("Text to search for - must match exactly"),
+        .describe(
+          "Text to search for - must match exactly and enough context must be provided to uniquely match the target text",
+        ),
       newText: z.string().describe("Text to replace with"),
     }),
   ),
