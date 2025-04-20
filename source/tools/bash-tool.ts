@@ -9,7 +9,7 @@ import type { SendData } from "./types.ts";
 // Whitelist of allowed commands
 const ALLOWED_COMMANDS = [
   "ls",
-  "cat",
+  // "cat",
   "grep",
   "find",
   "echo",
@@ -26,6 +26,7 @@ const ALLOWED_COMMANDS = [
   "tail",
   // "test",
   "npm",
+  "npx",
   "node",
   "git",
   "gh",
