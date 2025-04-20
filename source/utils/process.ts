@@ -5,7 +5,7 @@ const MS_IN_SECOND = 1000;
 const SECONDS_IN_MINUTE = 60;
 const DEFAULT_TIMEOUT = 10 * SECONDS_IN_MINUTE * MS_IN_SECOND;
 
-export interface ExecuteOptions {
+interface ExecuteOptions {
   /** Working directory where the command will be executed */
   cwd?: string;
   /** Timeout in milliseconds before killing the process */
@@ -22,7 +22,7 @@ export interface ExecuteOptions {
   maxBuffer?: number;
 }
 
-export interface ExecuteResult {
+interface ExecuteResult {
   /** Standard output from the command */
   stdout: string;
   /** Standard error from the command */

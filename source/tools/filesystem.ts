@@ -302,12 +302,6 @@ const fileEncodingSchema = z.enum([
   "hex",
 ]);
 
-export const FS_READ_ONLY = [
-  "readFile",
-  // "readMultipleFiles",
-  "directoryTree",
-] as const;
-
 export const createFileSystemTools = async ({
   workingDir,
   sendData,

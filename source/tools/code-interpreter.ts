@@ -12,7 +12,7 @@ import type { SendData } from "./types.ts";
 
 type InterpreterPermission = "fs" | "net" | "os" | "crypto" | "process";
 
-export function jsCodeInterpreter(
+function jsCodeInterpreter(
   code: string,
   permissions: readonly InterpreterPermission[],
 ) {

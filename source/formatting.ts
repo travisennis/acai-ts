@@ -32,9 +32,9 @@ export function removeHtmlTags(text: string) {
   return text.replace(/<[^>]*>?/gm, "");
 }
 
-export const MD_TRIPLE_QUOTE = "```";
+const MD_TRIPLE_QUOTE = "```";
 
-export type FormatType = "xml" | "markdown" | "bracket";
+type FormatType = "xml" | "markdown" | "bracket";
 
 const codeBlockExtensions: Record<string, string> = {
   js: "javascript",

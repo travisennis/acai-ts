@@ -1,7 +1,4 @@
-export type Dedent = (
-  strings: TemplateStringsArray,
-  ...values: unknown[]
-) => string;
+type Dedent = (strings: TemplateStringsArray, ...values: unknown[]) => string;
 
 const spaces = /^(\s+)\S+/;
 

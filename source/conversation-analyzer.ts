@@ -6,7 +6,7 @@ import { systemPrompt } from "./prompts.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 
-export const system =
+const system =
   async () => `You are a helpful AI-assistant that is tasked with identifying the knowledge, context, or background information that would helpful to know in order to complete a task. You will do this by analyzing a conversation. You are trying to find what knowledge would be important to add to the system prompt so that when future agents like yourelf start a task they know everything they need to know to successfully complete that task as efficiently as possible.
 
 This is the original system prompt for this converation:

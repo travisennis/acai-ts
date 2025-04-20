@@ -22,7 +22,7 @@ interface AuditRecord {
  * @param filePath - The path to the file where the audit record will be saved.
  * @param content - The audit record object to write.
  */
-export const writeAuditRecord = async (
+const writeAuditRecord = async (
   app: string,
   filePath: string,
   content: AuditRecord,

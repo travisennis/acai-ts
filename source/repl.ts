@@ -24,7 +24,7 @@ import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import { getDiffStat, initTools } from "./tools/index.ts";
 
-export interface ReplOptions {
+interface ReplOptions {
   messageHistory: MessageHistory;
   promptManager: PromptManager;
   modelManager: ModelManager;

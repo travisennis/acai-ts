@@ -2,7 +2,7 @@ import { EventEmitter } from "node:events";
 import { isNumber } from "@travisennis/stdlib/typeguards";
 import type { LanguageModelUsage } from "ai";
 
-export interface TokenUsage {
+interface TokenUsage {
   tool: string;
   usage: Partial<LanguageModelUsage>;
 }

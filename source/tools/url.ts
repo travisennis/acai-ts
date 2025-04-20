@@ -44,7 +44,7 @@ export const createUrlTools = (options: {
   };
 };
 
-export async function readUrl(
+async function readUrl(
   url: string,
   abortSignal?: AbortSignal | undefined,
 ): Promise<string> {

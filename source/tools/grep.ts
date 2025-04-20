@@ -96,7 +96,7 @@ interface GrepOptions {
  * @param options - Additional options for the grep command
  * @returns The result of the grep command
  */
-export function grepFiles(
+function grepFiles(
   pattern: string,
   path: string,
   options: GrepOptions = {},
