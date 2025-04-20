@@ -17,22 +17,28 @@ export const createLogTools = (options: {
         pattern: z.string().describe("The regex pattern to search for"),
         maxResults: z
           .number()
-          .optional()
-          .default(100)
+          .nullable()
           .describe(
-            "Maximum number of matching lines to return (from the end of the file)",
+            "Maximum number of matching lines to return (from the end of the file). Pass null to use the default (100).",
           ),
         ignoreCase: z
           .boolean()
-          .optional()
-          .default(false)
-          .describe("Whether to ignore case"),
+          .nullable()
+          .describe(
+            "Whether to ignore case. Pass null to use the default (false).",
+          ),
         contextLines: z
           .number()
-          .optional()
-          .describe("Number of lines of context to show around each match"),
+          .nullable()
+          .describe(
+            "Number of lines of context to show around each match. Pass null for no context.",
+          ),
       }),
       execute: ({ pattern, maxResults, ignoreCase, contextLines }) => {
+        // Handle nullable parameters with defaults
+        const effectiveMaxResults = maxResults === null ? 100 : maxResults;
+        const effectiveIgnoreCase = ignoreCase === null ? false : ignoreCase;
+        const effectiveContextLines = contextLines; // null means no context lines
         const uuid = crypto.randomUUID();
         try {
           sendData?.({
@@ -52,12 +58,12 @@ export const createLogTools = (options: {
           // Build the ripgrep command
           let command = "rg --no-config --no-ignore --line-number"; // Ignore user/project rg config and ignore files
 
-          if (ignoreCase) {
+          if (effectiveIgnoreCase) {
             command += " --ignore-case";
           }
 
-          if (contextLines !== undefined) {
-            command += ` --context=${contextLines}`;
+          if (effectiveContextLines !== null) {
+            command += ` --context=${effectiveContextLines}`;
           }
 
           // Add pattern (escaped for shell)
@@ -67,7 +73,7 @@ export const createLogTools = (options: {
           command += ` ${JSON.stringify(logPath)}`;
 
           // Pipe to tail to get the last N lines
-          command += ` | tail -n ${maxResults}`;
+          command += ` | tail -n ${effectiveMaxResults}`;
 
           // Execute the command
           const result = execSync(command, { encoding: "utf-8" });
