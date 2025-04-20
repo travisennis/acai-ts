@@ -6,7 +6,6 @@ import { isNumber } from "@travisennis/stdlib/typeguards";
 import { tool } from "ai";
 import { createTwoFilesPatch } from "diff";
 import ignore, { type Ignore } from "ignore";
-// import { minimatch } from "minimatch";
 import { z } from "zod";
 import { countTokens } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
@@ -79,124 +78,6 @@ async function validatePath(
     }
   }
 }
-
-// function matchesPatternHybrid(
-//   pattern: string,
-//   relativePath: string,
-//   fileName: string,
-//   fullPath: string,
-// ): boolean {
-//   const globChars = ["*", "?", "[", "]", "{", "}", "!", "+", "@", "(", ")"];
-//   const isGlob = globChars.some((c) => pattern.includes(c));
-
-//   if (isGlob) {
-//     return minimatch(relativePath, pattern, { dot: true });
-//   }
-
-//   const patternLower = pattern.toLowerCase();
-//   return (
-//     fileName.toLowerCase().includes(patternLower) ||
-//     relativePath.toLowerCase().includes(patternLower) ||
-//     fullPath.toLowerCase().includes(patternLower)
-//   );
-// }
-
-// async function searchFiles(
-//   rootPath: string,
-//   pattern: string,
-//   allowedDirectory: string,
-//   excludePatterns: string[] = [],
-// ): Promise<string[]> {
-//   const results: string[] = [];
-
-//   // Setup ignore patterns from .gitignore
-//   let ig: Ignore;
-//   try {
-//     const ignoreFile = await fs.readFile(path.join(rootPath, ".gitignore"));
-//     ig = ignore().add(ignoreFile.toString()).add(".git");
-//   } catch (_error) {
-//     // If .gitignore doesn't exist, create basic ignore with just .git
-//     ig = ignore().add(".git");
-//   }
-
-//   async function search(currentPath: string) {
-//     const entries = await fs.readdir(currentPath, { withFileTypes: true });
-
-//     for (const entry of entries) {
-//       const fullPath = path.join(currentPath, entry.name);
-//       try {
-//         // Validate each path before processing
-//         await validatePath(
-//           joinWorkingDir(fullPath, allowedDirectory),
-//           allowedDirectory,
-//         );
-
-//         // Check if path should be ignored based on .gitignore
-//         const relativePath = path.relative(rootPath, fullPath);
-//         const isIgnored = ig.ignores(relativePath);
-//         if (isIgnored) {
-//           continue;
-//         }
-
-//         // Check if path matches any exclude pattern
-//         const shouldExclude = excludePatterns.some((pattern) => {
-//           const globPattern = pattern.includes("*")
-//             ? pattern
-//             : `**/${pattern}/**`;
-//           const isExcluded = minimatch(relativePath, globPattern, {
-//             dot: true,
-//           });
-//           return isExcluded;
-//         });
-
-//         if (shouldExclude) {
-//           continue;
-//         }
-
-//         // Check if the file matches the pattern - use full path to check for paths like "./acai/rules.md"
-//         // or just the name for simple filename searches
-//         if (matchesPatternHybrid(pattern, relativePath, entry.name, fullPath)) {
-//           results.push(fullPath);
-//         }
-
-//         if (entry.isDirectory()) {
-//           await search(fullPath);
-//         }
-//       } catch (error) {
-//         console.error(error);
-//       }
-//     }
-//   }
-
-//   // being the search
-//   await search(rootPath);
-
-//   // return the results
-//   return results;
-// }
-
-// interface FileStats {
-//   size: number;
-//   created: Date;
-//   modified: Date;
-//   accessed: Date;
-//   isDirectory: boolean;
-//   isFile: boolean;
-//   permissions: string;
-// }
-
-// async function getFileStats(filePath: string): Promise<FileStats> {
-//   const stats = await fs.stat(filePath);
-//   return {
-//     size: stats.size,
-//     created: stats.birthtime,
-//     modified: stats.mtime,
-//     accessed: stats.atime,
-//     isDirectory: stats.isDirectory(),
-//     isFile: stats.isFile(),
-//     permissions: stats.mode.toString(8).slice(-3),
-//   };
-// }
 
 // file editing and diffing utilities
 function normalizeLineEndings(text: string): string {
@@ -422,12 +303,8 @@ const fileEncodingSchema = z.enum([
 ]);
 
 export const FS_READ_ONLY = [
-  // "currentDirectory",
   "readFile",
   // "readMultipleFiles",
-  // "searchFiles",
-  // "getFileInfo",
-  // "listDirectory",
   "directoryTree",
 ] as const;
 
@@ -455,66 +332,6 @@ export const createFileSystemTools = async ({
   );
 
   return {
-    // currentDirectory: tool({
-    //   description:
-    //     "Get the current working directory. Use this to understand which directory is available before trying to access files.",
-    //   parameters: z.object({}),
-    //   execute: () => {
-    //     const id = crypto.randomUUID();
-    //     sendData?.({
-    //       id,
-    //       event: "tool-init",
-    //       data: "Getting current working directory",
-    //     });
-    //     sendData?.({
-    //       id,
-    //       event: "tool-completion",
-    //       data: `Current working directory: ${workingDir}`,
-    //     });
-    //     return Promise.resolve(workingDir);
-    //   },
-    // }),
-
-    // createDirectory: tool({
-    //   description:
-    //     "Create a new directory or ensure a directory exists. Can create multiple " +
-    //     "nested directories in one operation. If the directory already exists, " +
-    //     "this operation will succeed silently. Perfect for setting up directory " +
-    //     "structures for projects or ensuring required paths exist. Only works within allowed directories.",
-    //   parameters: z.object({
-    //     path: z.string().describe("Absolute path to directory to create"),
-    //   }),
-    //   execute: async ({ path: dirPath }) => {
-    //     const id = crypto.randomUUID();
-    //     sendData?.({
-    //       id,
-    //       event: "tool-init",
-    //       data: `Creating directory: ${dirPath}`,
-    //     });
-    //     try {
-    //       const validPath = await validatePath(
-    //         joinWorkingDir(dirPath, workingDir),
-    //         allowedDirectory,
-    //       );
-    //       await fs.mkdir(validPath, { recursive: true });
-    //       sendData?.({
-    //         id,
-    //         event: "tool-completion",
-    //         data: `Directory created successfully: ${dirPath}`,
-    //       });
-    //       return `Successfully created directory ${dirPath}`;
-    //     } catch (error) {
-    //       const errorMessage = `Failed to create directory: ${(error as Error).message}`;
-    //       sendData?.({
-    //         id,
-    //         event: "tool-error",
-    //         data: errorMessage,
-    //       });
-    //       return errorMessage;
-    //     }
-    //   },
-    // }),
-
     readFile: tool({
       description:
         "Read the complete contents of a file from the file system unless startLine and lineCount are given to read a file selection. " +
@@ -805,92 +622,6 @@ export const createFileSystemTools = async ({
       },
     }),
 
-    // searchFiles: tool({
-    //   description:
-    //     "Recursively search for files and directories matching a pattern. " +
-    //     "Searches through all subdirectories from the starting path. The search " +
-    //     "is case-insensitive and matches partial names. Returns full paths to all " +
-    //     "matching items. Great for finding files when you don't know their exact location. " +
-    //     "Only searches within allowed directories. Use this tool when you need to find files by name patterns.",
-    //   parameters: z.object({
-    //     path: z.string().describe("The base path to search in."),
-    //     pattern: z
-    //       .string()
-    //       .describe('Supports glob patterns like "**/*.js" or "src/**/*.ts"'),
-    //     excludePatterns: z.array(z.string()).optional().default([]),
-    //   }),
-    //   execute: async ({ path, pattern, excludePatterns }) => {
-    //     const id = crypto.randomUUID();
-    //     try {
-    //       sendData?.({
-    //         id,
-    //         event: "tool-init",
-    //         data: `Search for '${pattern}' in ${path}`,
-    //       });
-    //       const validPath = await validatePath(
-    //         joinWorkingDir(path, workingDir),
-    //         allowedDirectory,
-    //       );
-    //       const results = await searchFiles(
-    //         validPath,
-    //         pattern,
-    //         allowedDirectory,
-    //         excludePatterns,
-    //       );
-    //       sendData?.({
-    //         id,
-    //         event: "tool-completion",
-    //         data:
-    //           results.length > 0
-    //             ? `Found ${results.length} matches.`
-    //             : "No matches found.",
-    //       });
-    //       return results.length > 0 ? results.join("\n") : "No matches found";
-    //     } catch (error) {
-    //       const errorMessage = `Failed to search files: ${(error as Error).message}`;
-    //       sendData?.({
-    //         id,
-    //         event: "tool-error",
-    //         data: errorMessage,
-    //       });
-    //       return errorMessage;
-    //     }
-    //   },
-    // }),
-
-    // getFileInfo: tool({
-    //   description:
-    //     "Retrieve detailed metadata about a file or directory. Returns comprehensive " +
-    //     "information including size, creation time, last modified time, permissions, " +
-    //     "and type. This tool is perfect for understanding file characteristics " +
-    //     "without reading the actual content. Only works within allowed directories.",
-    //   parameters: z.object({
-    //     path: z.string(),
-    //   }),
-    //   execute: async ({ path }) => {
-    //     const id = crypto.randomUUID();
-    //     try {
-    //       sendData?.({
-    //         id,
-    //         event: "tool-init",
-    //         data: `Get file info: ${path}`,
-    //       });
-    //       const validPath = await validatePath(path, allowedDirectory);
-    //       const info = await getFileStats(validPath);
-    //       sendData?.({
-    //         id,
-    //         event: "tool-completion",
-    //         data: "Done",
-    //       });
-    //       return Object.entries(info)
-    //         .map(([key, value]) => `${key}: ${value}`)
-    //         .join("\n");
-    //     } catch (error) {
-    //       return `Failed to get file info: ${(error as Error).message}`;
-    //     }
-    //   },
-    // }),
-
     saveFile: tool({
       description:
         "Create a new file or completely overwrite an existing file with new content. " +
@@ -966,51 +697,6 @@ export const createFileSystemTools = async ({
         }
       },
     }),
-
-    // listDirectory: tool({
-    //   description:
-    //     "Get a detailed listing of all files and directories in a specified path. " +
-    //     "Results clearly distinguish between files and directories with [FILE] and [DIR] " +
-    //     "prefixes. This tool is essential for understanding directory structure and " +
-    //     "finding specific files within a directory. Only works within allowed directories. Use this tool when you need to see the contents of a directory.",
-    //   parameters: z.object({
-    //     path: z.string().describe("The path."),
-    //   }),
-    //   execute: async ({ path }) => {
-    //     const id = crypto.randomUUID();
-    //     try {
-    //       sendData?.({
-    //         id,
-    //         event: "tool-init",
-    //         data: `Listing directory: ${path}`,
-    //       });
-    //       const validPath = await validatePath(
-    //         joinWorkingDir(path, workingDir),
-    //         allowedDirectory,
-    //       );
-    //       const entries = await fs.readdir(validPath, { withFileTypes: true });
-    //       sendData?.({
-    //         id,
-    //         event: "tool-completion",
-    //         data: "Done",
-    //       });
-    //       return entries
-    //         .map(
-    //           (entry) =>
-    //             `${entry.isDirectory() ? "[DIR]" : "[FILE]"} ${entry.name}`,
-    //         )
-    //         .join("\n");
-    //     } catch (error) {
-    //       const errorMessage = `Failed to list directory: ${(error as Error).message}`;
-    //       sendData?.({
-    //         id,
-    //         event: "tool-error",
-    //         data: errorMessage,
-    //       });
-    //       return errorMessage;
-    //     }
-    //   },
-    // }),
 
     directoryTree: tool({
       description:

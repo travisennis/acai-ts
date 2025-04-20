@@ -1,22 +1,13 @@
 import { input } from "@inquirer/prompts";
-import { type LanguageModel, tool } from "ai";
+import { tool } from "ai";
 import chalk from "chalk";
 import { z } from "zod";
-import { config } from "../config.ts";
-import type { ModelManager } from "../models/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
-import type { TokenTracker } from "../token-tracker.ts";
-import { createAgentTools } from "./agent.ts";
-import { createArchitectTools } from "./architect.ts";
 import { createBashTools } from "./bash-tool.ts";
-import { createCodeEditorTools } from "./code-editor.ts";
 import { createCodeInterpreterTool } from "./code-interpreter.ts";
-// import { createCodeTools } from "./code-tools.ts";
 import { createFileSystemTools } from "./filesystem.ts";
 import { createGitTools } from "./git.ts";
 import { createGrepTools } from "./grep.ts";
-import { createLogTools } from "./log-tools.ts";
-import { createTextEditorTool } from "./text-editor-tool.ts";
 import { createThinkTools } from "./think.ts";
 import type { Message } from "./types.ts";
 import { createUrlTools } from "./url.ts";
@@ -71,25 +62,12 @@ export async function initTools({
     sendData: sendDataFn,
   });
 
-  const projectConfig = await config.readProjectConfig();
-
-  // const codeTools = createCodeTools({
-  //   baseDir: process.cwd(),
-  //   config: projectConfig.commands,
-  //   sendData: sendDataFn,
-  // });
-
   const codeInterpreterTool = createCodeInterpreterTool({
     sendData: sendDataFn,
   });
 
   const grepTool = createGrepTools({
     sendData: sendDataFn,
-  });
-
-  const logTools = createLogTools({
-    sendData: sendDataFn,
-    logPath: projectConfig.logs?.path,
   });
 
   const thinkTool = createThinkTools({
@@ -126,12 +104,10 @@ export async function initTools({
   };
 
   const tools = {
-    // ...codeTools,
     ...fsTools,
     ...gitTools,
     ...codeInterpreterTool,
     ...grepTool,
-    ...logTools,
     ...thinkTool,
     ...urlTools,
     ...askUserTool,
@@ -141,74 +117,12 @@ export async function initTools({
   return tools;
 }
 
-export function initCodingTools({
-  terminal,
-  modelManager,
-  tokenTracker,
-}: {
-  terminal: Terminal;
-  modelManager: ModelManager;
-  tokenTracker: TokenTracker;
-}) {
-  const sendDataFn = sendDataHandler(terminal);
-
-  const agentTools = createAgentTools({
-    modelManager,
-    tokenTracker,
-    terminal,
-    sendData: sendDataFn,
-  });
-
-  const architectTools = createArchitectTools({
-    modelManager,
-    tokenTracker,
-    terminal,
-    sendData: sendDataFn,
-  });
-
-  const codeEditorTools = createCodeEditorTools({
-    terminal,
-    modelManager,
-    tokenTracker,
-    sendData: sendDataFn,
-  });
-
-  const tools = {
-    ...agentTools,
-    ...architectTools,
-    ...codeEditorTools,
-  } as const;
-
-  return tools;
-}
-
-export function initAnthropicTools({
-  model,
-  terminal,
-}: { model: LanguageModel; terminal: Terminal }) {
-  const textEditorTool = createTextEditorTool({
-    modelId: model.modelId,
-    workingDir: process.cwd(),
-    sendData: sendDataHandler(terminal),
-  });
-
-  const tools = {
-    ...textEditorTool,
-  } as const;
-
-  return tools;
-}
-
 // biome-ignore lint/performance/noBarrelFile: <explanation>
 export * from "./code-interpreter.ts";
-// export * from "./code-tools.ts";
 export * from "./filesystem.ts";
 export * from "./git.ts";
 export * from "./grep.ts";
 export * from "./memory.ts";
-
 export * from "./think.ts";
 export * from "./types.ts";
 export * from "./url.ts";
-export * from "./agent.ts";
-export * from "./architect.ts";

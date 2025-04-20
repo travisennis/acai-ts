@@ -1,4 +1,4 @@
-import { isDefined, isNumber, isRecord } from "@travisennis/stdlib/typeguards";
+import { isNumber, isRecord } from "@travisennis/stdlib/typeguards";
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import {
   NoSuchToolError,
@@ -22,12 +22,7 @@ import { ReplPrompt } from "./repl-prompt.ts";
 import { formatOutput } from "./terminal/formatting.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./token-tracker.ts";
-import {
-  getDiffStat,
-  initAnthropicTools,
-  initCodingTools,
-  initTools,
-} from "./tools/index.ts";
+import { getDiffStat, initTools } from "./tools/index.ts";
 
 export interface ReplOptions {
   messageHistory: MessageHistory;
@@ -39,8 +34,7 @@ export interface ReplOptions {
   config: Record<PropertyKey, unknown>;
 }
 
-type CompleteToolSet = AsyncReturnType<typeof initTools> &
-  ReturnType<typeof initCodingTools>;
+type CompleteToolSet = AsyncReturnType<typeof initTools>;
 
 type OnFinishResult<Tools extends ToolSet = CompleteToolSet> = Omit<
   StepResult<Tools>,
@@ -153,28 +147,9 @@ export class Repl {
 
       const maxTokens = aiConfig.getMaxTokens();
 
-      const baseTools = modelConfig.supportsToolCalling
+      const tools = modelConfig.supportsToolCalling
         ? await initTools({ terminal })
         : undefined;
-
-      const codingTools = modelConfig.supportsToolCalling
-        ? initCodingTools({ modelManager, tokenTracker, terminal })
-        : undefined;
-
-      const providerTools =
-        modelConfig.supportsToolCalling &&
-        modelConfig.id.includes("sonnet-invalid") // do this for now to remove this tool from the mix
-          ? initAnthropicTools({ model: langModel, terminal })
-          : undefined;
-
-      const tools =
-        isDefined(baseTools) &&
-        isDefined(codingTools) &&
-        isDefined(providerTools)
-          ? Object.assign(baseTools, Object.assign(codingTools, providerTools))
-          : isDefined(baseTools) && isDefined(codingTools)
-            ? Object.assign(baseTools, codingTools)
-            : undefined;
 
       try {
         const result = streamText({

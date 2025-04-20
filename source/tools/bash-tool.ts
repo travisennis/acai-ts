@@ -3,9 +3,9 @@ import path from "node:path";
 import { isUndefined } from "@travisennis/stdlib/typeguards";
 import { tool } from "ai";
 import { z } from "zod";
+import { countTokens } from "../token-utils.ts";
 import { executeCommand } from "../utils/index.ts";
 import type { SendData } from "./types.ts";
-import { countTokens } from "../token-utils.ts";
 
 // Whitelist of allowed commands
 const ALLOWED_COMMANDS = [
