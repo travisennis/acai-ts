@@ -5,6 +5,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { executeCommand } from "../utils/index.ts";
 import type { SendData } from "./types.ts";
+import { countTokens } from "../token-utils.ts";
 
 // Whitelist of allowed commands
 const ALLOWED_COMMANDS = [
@@ -42,11 +43,27 @@ function isCommandAllowed(command: string): boolean {
   return ALLOWED_COMMANDS.includes(baseCommand);
 }
 
+// command chaining patterns
+const patterns = [
+  /(?<!&)&&/, // &&
+  /(?<!\|)\|\|/, // ||
+  /(?<!\|)\|/, // |
+  /;/, // ;
+  /`/, // backticks
+  /\$\(/, // $(
+  />/, // redirect out
+  /</, // redirect in
+];
+
 // Check for command chaining attempts
-// function hasCommandChaining(command: string): boolean {
-//   const chainingPatterns = [";", "&&", "||", "|", "`", "$(", ">", "<"];
-//   return chainingPatterns.some((pattern) => command.includes(pattern));
-// }
+function hasCommandChaining(command: string): boolean {
+  // strip out single- and double-quoted segments
+  const stripped = command
+    .replace(/'([^'\\]|\\.)*'/g, "")
+    .replace(/"([^"\\]|\\.)*"/g, "");
+  // detect unquoted chaining operators
+  return patterns.some((re) => re.test(stripped));
+}
 
 // Ensure path is within base directory
 function isPathWithinBaseDir(requestedPath: string, baseDir: string): boolean {
@@ -104,12 +121,12 @@ export const createBashTools = ({
         }
 
         // Check for command chaining
-        // if (hasCommandChaining(command)) {
-        //   const errorMsg =
-        //     "Command chaining is not allowed for security reasons";
-        //   sendData?.({ event: "tool-error", id: uuid, data: errorMsg });
-        //   return errorMsg;
-        // }
+        if (hasCommandChaining(command)) {
+          const errorMsg =
+            "Command chaining is not allowed for security reasons";
+          sendData?.({ event: "tool-error", id: uuid, data: errorMsg });
+          return errorMsg;
+        }
 
         // Validate working directory
         if (!isPathWithinBaseDir(safeCwd, baseDir)) {
@@ -148,12 +165,31 @@ export const createBashTools = ({
 
         try {
           const result = format(await asyncExec(command, safeCwd, safeTimeout));
+
+          let tokenCount = 0;
+          try {
+            tokenCount = countTokens(result);
+          } catch (tokenError) {
+            console.error("Error calculating token count:", tokenError);
+            // Log or handle error, but don't block file return
+          }
+
+          const maxTokens = 5000;
+          // Adjust max token check message if line selection was used
+          const maxTokenMessage = `Output of commmand (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Please use adjust how you call the command to get back more specific results`;
+
+          const finalResult =
+            tokenCount <= maxTokens ? result : maxTokenMessage;
+
           sendData?.({
             event: "tool-completion",
             id: uuid,
-            data: "Command executed successfully",
+            data:
+              tokenCount <= maxTokens
+                ? "Command executed successfully."
+                : `Output of commmand (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}).`,
           });
-          return result;
+          return finalResult;
         } catch (error) {
           sendData?.({
             event: "tool-error",
