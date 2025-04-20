@@ -53,7 +53,7 @@ async function getRules() {
 
 async function environmentInfo() {
   return `
-Your current working directory is ${process.cwd()}. Use this value directly instead of calling the \`currentDirectory\` tool unless you have a specific reason to verify it.
+Your current working directory is ${process.cwd()}. Use this value directly instead of calling the bashTool(pwd) tool unless you have a specific reason to verify it.
 Is directory a git repo: ${(await inGitDirectory()) ? "Yes" : "No"}
 Platform: ${platform()}
 Today's date is ${(new Date()).toISOString()}`;

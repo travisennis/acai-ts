@@ -29,7 +29,7 @@ IMPORTANT: Do not ask the user if you should implement the changes at the end. J
 IMPORTANT: Do not attempt to write the code or use any string modification tools. Just provide the plan.
 IMPORTANT: Use the tools you have available to understand the code base and its history. Use that context to create a plan that is specific to this code base.
 
-Your current working directory is ${process.cwd()}. Use this value directly instead of calling the \`currentDirectory\` tool unless you have a specific reason to verify it.
+Your current working directory is ${process.cwd()}. Use this value directly instead of calling the bashTool(pwd) tool unless you have a specific reason to verify it.
 Is directory a git repo: ${(await inGitDirectory()) ? "Yes" : "No"}
 Platform: ${platform()}
 Today's date is ${(new Date()).toISOString()}`;
