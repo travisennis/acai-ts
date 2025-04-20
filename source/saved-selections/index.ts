@@ -4,7 +4,7 @@ import type { Range } from "vscode-languageserver";
 import { config } from "../config.ts";
 import { formatFile } from "../formatting.ts";
 
-interface Selection {
+export interface Selection {
   documentUri: string;
   range: Range;
   documentText: string;
