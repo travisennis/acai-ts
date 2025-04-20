@@ -1,4 +1,4 @@
-## Commands
+### Commands
 
 - **Build:** `npm run build`
 - **Lint:** `npm run lint`
@@ -10,7 +10,7 @@
 - **Run Tests by Name:** `npm test -- --test-name-pattern "your test name pattern"`
 - **Find Unused Code/Deps:** `npm run knip`
 
-## Code Style & Guidelines
+### Code Style & Guidelines
 
 - **Language:** Strict TypeScript (ESNext target). Enable all strict checks.
 - **Modules:** Use ES Modules (`import`/`export`). Add `.ts` extensions to relative imports. Use `node:` prefix for Node.js built-ins (e.g., `import fs from 'node:fs'`).

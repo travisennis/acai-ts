@@ -521,14 +521,10 @@ export const createFileSystemTools = async ({
         ),
         startLine: z
           .number()
-          .int()
-          .positive()
           .optional()
           .describe("1-based line number to start reading from"),
         lineCount: z
           .number()
-          .int()
-          .positive()
           .optional()
           .describe("Maximum number of lines to read"),
       }),
