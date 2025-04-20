@@ -15,27 +15,28 @@ export const createGrepTools = (
         path: z.string().describe("The path to search in"),
         recursive: z
           .boolean()
-          .optional()
-          .default(true)
-          .describe("Whether to search recursively"),
+          .nullable()
+          .describe("Pass null to use the default (true, search recursively)."),
         ignoreCase: z
           .boolean()
-          .optional()
-          .default(false)
-          .describe("Whether to ignore case"),
+          .nullable()
+          .describe(
+            "Pass null to use the default (false, case-sensitive search).",
+          ),
         filePattern: z
           .string()
-          .optional()
-          .describe("Optional pattern to filter files to search"),
+          .nullable()
+          .describe("Pass null if no file pattern filter is needed."),
         contextLines: z
           .number()
-          .optional()
-          .describe("Number of lines of context to show"),
+          .nullable()
+          .describe("Pass null if no context lines are needed."),
         searchIgnored: z
           .boolean()
-          .optional()
-          .default(false)
-          .describe("Whether to search ignored files and directories"),
+          .nullable()
+          .describe(
+            "Pass null to use the default (false, don't search ignored files).",
+          ),
       }),
       execute: ({
         pattern,
@@ -80,11 +81,11 @@ export const createGrepTools = (
 };
 
 interface GrepOptions {
-  recursive?: boolean | undefined;
-  ignoreCase?: boolean | undefined;
-  filePattern?: string | undefined;
-  contextLines?: number | undefined;
-  searchIgnored?: boolean | undefined;
+  recursive?: boolean | null;
+  ignoreCase?: boolean | null;
+  filePattern?: string | null;
+  contextLines?: number | null;
+  searchIgnored?: boolean | null;
 }
 
 /**
@@ -101,29 +102,31 @@ export function grepFiles(
   options: GrepOptions = {},
 ): string {
   try {
-    const {
-      recursive = true,
-      ignoreCase = false,
-      filePattern,
-      contextLines,
-      searchIgnored = false,
-    } = options;
+    // Handle null values by providing defaults
+    const effectiveRecursive =
+      options.recursive === null ? true : options.recursive;
+    const effectiveIgnoreCase =
+      options.ignoreCase === null ? false : options.ignoreCase;
+    const effectiveSearchIgnored =
+      options.searchIgnored === null ? false : options.searchIgnored;
+    const effectiveFilePattern = options.filePattern;
+    const effectiveContextLines = options.contextLines;
 
     // Build the ripgrep command
     let command = "rg --line-number";
 
     // Ripgrep is recursive by default, so we only need to add
-    // --no-recursive if recursive is false
-    if (recursive === false) {
+    // --no-recursive if effectiveRecursive is explicitly false
+    if (effectiveRecursive === false) {
       command += " --no-recursive";
     }
 
-    if (ignoreCase) {
+    if (effectiveIgnoreCase) {
       command += " --ignore-case";
     }
 
-    if (contextLines !== undefined) {
-      command += ` --context=${contextLines}`;
+    if (effectiveContextLines !== null && effectiveContextLines !== undefined) {
+      command += ` --context=${effectiveContextLines}`;
     }
 
     // Add pattern (escaped for shell)
@@ -133,11 +136,11 @@ export function grepFiles(
     command += ` ${path}`;
 
     // Add file pattern if specified
-    if (filePattern) {
-      command += ` --glob=${JSON.stringify(filePattern)}`;
+    if (effectiveFilePattern !== null && effectiveFilePattern !== undefined) {
+      command += ` --glob=${JSON.stringify(effectiveFilePattern)}`;
     }
 
-    if (searchIgnored) {
+    if (effectiveSearchIgnored) {
       command += " --no-ignore";
     }
 
