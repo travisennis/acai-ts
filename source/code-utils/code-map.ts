@@ -17,7 +17,7 @@ import {
   isTypeAliasDeclaration,
 } from "typescript";
 
-export interface FileStructure {
+interface FileStructure {
   imports: ImportInfo[];
   functions: FunctionInfo[];
   classes: ClassInfo[];
@@ -25,40 +25,40 @@ export interface FileStructure {
   types: TypeInfo[];
 }
 
-export interface ImportInfo {
+interface ImportInfo {
   name: string;
   fileName: string;
 }
 
-export interface FunctionInfo {
+interface FunctionInfo {
   name: string;
   parameters: ParameterInfo[];
   returnType: string;
 }
 
-export interface ParameterInfo {
+interface ParameterInfo {
   name: string;
   type: string;
 }
 
-export interface ClassInfo {
+interface ClassInfo {
   name: string;
   methods: FunctionInfo[];
   properties: PropertyInfo[];
 }
 
-export interface PropertyInfo {
+interface PropertyInfo {
   name: string;
   type: string;
 }
 
-export interface InterfaceInfo {
+interface InterfaceInfo {
   name: string;
   properties: PropertyInfo[];
   methods: FunctionInfo[];
 }
 
-export interface TypeInfo {
+interface TypeInfo {
   name: string;
   type: string;
 }
