@@ -166,17 +166,17 @@ export function initCodingTools({
     sendData: sendDataFn,
   });
 
-  // const codeEditorTools = createCodeEditorTools({
-  //   terminal,
-  //   modelManager,
-  //   tokenTracker,
-  //   sendData: sendDataFn,
-  // });
+  const codeEditorTools = createCodeEditorTools({
+    terminal,
+    modelManager,
+    tokenTracker,
+    sendData: sendDataFn,
+  });
 
   const tools = {
     ...agentTools,
     ...architectTools,
-    // ...codeEditorTools,
+    ...codeEditorTools,
   } as const;
 
   return tools;
