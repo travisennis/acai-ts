@@ -108,7 +108,15 @@ function toolUsage() {
 - Document complex scripts with clear function comments and usage examples
 - Implement error handling in scripts for robustness
 
-## Using the \`think\` Tool
+### Using the Code Interpreter Tool (\`codeInterpreter\`)
+
+*   **Purpose**: Execute self-contained JavaScript code snippets.
+*   **Use Cases**: Complex calculations, data manipulation (e.g., JSON processing), algorithm testing/prototyping, text transformations.
+*   **Output**: Use \`return\` to provide results. \`console.log\` output is ignored.
+*   **Environment**: Isolated \`node:vm\` context.
+*   **Restrictions**: No filesystem access, no network access, no \`require\`. 120s timeout.
+
+### Using the \`think\` Tool
 
 Before taking action after receiving tool results:
 1. List applicable rules for the current request
@@ -116,7 +124,7 @@ Before taking action after receiving tool results:
 3. Check planned action against policies
 4. Analyze tool results for correctness
 5. Consider alternative approaches and their tradeoffs
-6. Anticipate potential issues with the planned solutionk`;
+6. Anticipate potential issues with the planned solution`;
 }
 
 // function toolFlowCharts() {
