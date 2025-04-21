@@ -7,7 +7,7 @@ export const editPromptCommand = ({
   promptManager,
 }: CommandOptions) => {
   return {
-    command: "/editPrompt",
+    command: "/edit-prompt",
     description: "Edit the prompt.",
     result: "use" as const,
     getSubCommands: () => [],
