@@ -7,9 +7,9 @@ import { tool } from "ai";
 import { createTwoFilesPatch } from "diff";
 import ignore, { type Ignore } from "ignore";
 import { z } from "zod";
+import { config } from "../config.ts";
 import { countTokens } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
-import { config } from "../config.ts";
 
 // Normalize all paths consistently
 function normalizePath(p: string): string {

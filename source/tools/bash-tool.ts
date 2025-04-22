@@ -3,10 +3,10 @@ import path from "node:path";
 import { isUndefined } from "@travisennis/stdlib/typeguards";
 import { tool } from "ai";
 import { z } from "zod";
+import { config } from "../config.ts";
 import { countTokens } from "../token-utils.ts";
 import { executeCommand } from "../utils/index.ts";
 import type { SendData } from "./types.ts";
-import { config } from "../config.ts";
 
 // Whitelist of allowed commands
 const ALLOWED_COMMANDS = [
