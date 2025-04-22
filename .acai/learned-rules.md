@@ -1,0 +1,3 @@
+- Always adhere to existing code patterns and project conventions when generating code.
+- Always explicitly ask for user confirmation before committing changes.
+- Always explicitly ask for user confirmation before applying edits.
