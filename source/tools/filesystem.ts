@@ -421,68 +421,91 @@ export const createFileSystemTools = async ({
       },
     }),
 
-    // readMultipleFiles: tool({
-    //   description:
-    //     "Read the contents of multiple files simultaneously. This is more " +
-    //     "efficient than reading files one by one when you need to analyze " +
-    //     "or compare multiple files. Each file's content is returned with its " +
-    //     "path as a reference. Failed reads for individual files won't stop " +
-    //     "the entire operation. Only works within allowed directories.",
-    //   parameters: z.object({
-    //     paths: z.array(z.string()),
-    //   }),
-    //   execute: async ({ paths }) => {
-    //     const id = crypto.randomUUID();
-    //     sendData?.({
-    //       id,
-    //       event: "tool-init",
-    //       data: `Reading files: ${paths.join(", ")}`,
-    //     });
-    //     const results = await Promise.all(
-    //       paths.map(async (filePath) => {
-    //         try {
-    //           const validPath = await validatePath(
-    //             joinWorkingDir(filePath, workingDir),
-    //             allowedDirectory,
-    //           );
-    //           const content = await fs.readFile(validPath, "utf-8");
-    //           let tokenCount = 0;
-    //           try {
-    //             tokenCount = countTokens(content);
-    //           } catch (tokenError) {
-    //             console.error("Error calculating token count:", tokenError);
-    //             // Handle token calculation error if needed
-    //           }
-    //           return { path: filePath, content, tokenCount, error: null };
-    //         } catch (error) {
-    //           const errorMessage =
-    //             error instanceof Error ? error.message : String(error);
-    //           return {
-    //             path: filePath,
-    //             content: null,
-    //             tokenCount: 0,
-    //             error: errorMessage,
-    //           };
-    //         }
-    //       }),
-    //     );
-    //     let totalTokens = 0;
-    //     const formattedResults = results.map((result) => {
-    //       if (result.error) {
-    //         return `${result.path}: Error - ${result.error}`;
-    //       }
-    //       totalTokens += result.tokenCount;
-    //       // Return only content, not token count in the result string
-    //       return `${result.path}:\n${result.content}\n`;
-    //     });
-    //     sendData?.({
-    //       id,
-    //       event: "tool-completion",
-    //       data: `Read ${paths.length} files successfully (${totalTokens} total tokens).`,
-    //     });
-    //     return formattedResults.join("\n---\n");
-    //   },
-    // }),
+    readMultipleFiles: tool({
+      description:
+        "Read the contents of multiple files simultaneously. This is more " +
+        "efficient than reading files one by one when you need to analyze " +
+        "or compare multiple files. Each file's content is returned with its " +
+        "path as a reference. Failed reads for individual files won't stop " +
+        "the entire operation. Only works within allowed directories.",
+      parameters: z.object({
+        paths: z.array(z.string()),
+      }),
+      execute: async ({ paths }) => {
+        const id = crypto.randomUUID();
+        sendData?.({
+          id,
+          event: "tool-init",
+          data: `Reading files: ${paths.join(", ")}`,
+        });
+        const results = await Promise.all(
+          paths.map(async (filePath) => {
+            try {
+              const validPath = await validatePath(
+                joinWorkingDir(filePath, workingDir),
+                allowedDirectory,
+              );
+              const content = await fs.readFile(validPath, "utf-8");
+              let tokenCount = 0;
+              try {
+                tokenCount = countTokens(content);
+              } catch (tokenError) {
+                console.error("Error calculating token count:", tokenError);
+                // Handle token calculation error if needed
+              }
+
+              const maxTokens = 15000; // Same as readFile
+              const maxTokenMessage = `File content (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Use readFile with startLine/lineCount or grepFiles for targeted access.`;
+
+              const finalContent =
+                tokenCount > maxTokens ? maxTokenMessage : content;
+              const actualTokenCount = tokenCount > maxTokens ? 0 : tokenCount; // Don't count tokens for skipped files
+
+              return {
+                path: filePath,
+                content: finalContent,
+                tokenCount: actualTokenCount,
+                error: null,
+              };
+            } catch (error) {
+              const errorMessage =
+                error instanceof Error ? error.message : String(error);
+              return {
+                path: filePath,
+                content: null,
+                tokenCount: 0,
+                error: errorMessage,
+              };
+            }
+          }),
+        );
+        let totalTokens = 0;
+        let filesReadCount = 0;
+        const formattedResults = results.map((result) => {
+          if (result.error) {
+            return `${result.path}: Error - ${result.error}`;
+          }
+          // Check if tokenCount is > 0, meaning it wasn't skipped
+          if (result.tokenCount > 0) {
+            filesReadCount++;
+          }
+          totalTokens += result.tokenCount; // Add the token count (will be 0 for skipped files)
+          // Return content (or max token message)
+          return `${result.path}:\n${result.content}\n`;
+        });
+        const completionMessage =
+          filesReadCount === paths.length
+            ? `Read ${paths.length} files successfully (${totalTokens} total tokens).`
+            : `Read ${filesReadCount} of ${paths.length} files successfully (${totalTokens} total tokens). Files exceeding token limit were skipped.`;
+
+        sendData?.({
+          id,
+          event: "tool-completion",
+          data: completionMessage,
+        });
+        return formattedResults.join("\n---\n");
+      },
+    }),
 
     editFile: tool({
       description:
