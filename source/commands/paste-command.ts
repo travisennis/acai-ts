@@ -6,7 +6,7 @@ export const pasteCommand = ({
   terminal,
   modelManager,
   promptManager,
-}: CommandOptions) => {
+}: CommandOptions): ReplCommand => {
   return {
     command: "/paste",
     description: "Pastes content from the clipboard into the next prompt.",
@@ -37,5 +37,5 @@ export const pasteCommand = ({
         );
       }
     },
-  } satisfies ReplCommand;
+  };
 };

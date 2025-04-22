@@ -6,6 +6,7 @@ import type { TokenTracker } from "../token-tracker.ts";
 
 export interface ReplCommand {
   command: string;
+  aliases?: string[];
   description: string;
   result: "break" | "continue" | "use";
   getSubCommands: () => string[];

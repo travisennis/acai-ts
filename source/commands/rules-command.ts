@@ -2,7 +2,7 @@ import { editor } from "@inquirer/prompts";
 import { config } from "../config.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const rulesCommand = ({ terminal }: CommandOptions) => {
+export const rulesCommand = ({ terminal }: CommandOptions): ReplCommand => {
   return {
     command: "/rules",
     description:
@@ -72,5 +72,5 @@ export const rulesCommand = ({ terminal }: CommandOptions) => {
         terminal.error("Failed to execute memory command.");
       }
     },
-  } satisfies ReplCommand;
+  };
 };

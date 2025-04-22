@@ -1,8 +1,11 @@
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const exitCommand = ({ messageHistory }: CommandOptions) => {
+export const exitCommand = ({
+  messageHistory,
+}: CommandOptions): ReplCommand => {
   return {
     command: "/exit",
+    aliases: ["/bye", "/quit"],
     description: "Exits and saves the chat history.",
     result: "break" as const,
     getSubCommands: () => [],
@@ -11,5 +14,5 @@ export const exitCommand = ({ messageHistory }: CommandOptions) => {
         await messageHistory.save();
       }
     },
-  } satisfies ReplCommand;
+  };
 };

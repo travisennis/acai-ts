@@ -1,6 +1,8 @@
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const prCommentsCommand = ({ promptManager }: CommandOptions) => {
+export const prCommentsCommand = ({
+  promptManager,
+}: CommandOptions): ReplCommand => {
   return {
     command: "/pr-comments",
     description: "Get comments from a GitHub pull request.",
@@ -45,5 +47,5 @@ ${args ? `Additional user input: ${args.join(" ")}` : ""}
       );
       return Promise.resolve();
     },
-  } satisfies ReplCommand;
+  };
 };

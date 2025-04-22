@@ -1,7 +1,7 @@
 import { directoryTree } from "../tools/filesystem.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const ptreeCommand = ({ terminal }: CommandOptions) => {
+export const ptreeCommand = ({ terminal }: CommandOptions): ReplCommand => {
   return {
     command: "/ptree",
     description: "Displays the project tree.",
@@ -10,5 +10,5 @@ export const ptreeCommand = ({ terminal }: CommandOptions) => {
     execute: async () => {
       await terminal.display(await directoryTree(process.cwd()));
     },
-  } satisfies ReplCommand;
+  };
 };

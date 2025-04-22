@@ -4,7 +4,7 @@ import { editor, search } from "@inquirer/prompts";
 import { globby } from "globby";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const editCommand = ({ terminal }: CommandOptions) => {
+export const editCommand = ({ terminal }: CommandOptions): ReplCommand => {
   return {
     command: "/edit",
     description: "Opens file in $EDITOR for editing.",
@@ -41,5 +41,5 @@ export const editCommand = ({ terminal }: CommandOptions) => {
         terminal.info(`File updated: ${fileToEdit}`);
       }
     },
-  } satisfies ReplCommand;
+  };
 };

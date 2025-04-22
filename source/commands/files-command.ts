@@ -8,7 +8,7 @@ export const filesCommand = ({
   terminal,
   promptManager,
   modelManager,
-}: CommandOptions) => {
+}: CommandOptions): ReplCommand => {
   return {
     command: "/files",
     description:
@@ -77,5 +77,5 @@ export const filesCommand = ({
         );
       }
     },
-  } satisfies ReplCommand;
+  };
 };

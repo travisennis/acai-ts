@@ -2,7 +2,9 @@ import simpleGit from "simple-git";
 import { formatCodeSnippet } from "../formatting.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const commitCommand = ({ promptManager }: CommandOptions) => {
+export const commitCommand = ({
+  promptManager,
+}: CommandOptions): ReplCommand => {
   return {
     command: "/commit",
     description:
@@ -23,7 +25,7 @@ Use bashTool("git diff --cached") if there are staged changes or bashTool("git d
       );
       return Promise.resolve();
     },
-  } satisfies ReplCommand;
+  };
 };
 
 async function getGitStatus() {

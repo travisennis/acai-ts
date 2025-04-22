@@ -10,7 +10,7 @@ import type { CommandOptions, ReplCommand } from "./types.ts";
 export const selectionsCommand = ({
   terminal,
   promptManager,
-}: CommandOptions) => {
+}: CommandOptions): ReplCommand => {
   return {
     command: "/selections",
     description: "Use and manage saved selections.",
@@ -75,5 +75,5 @@ export const selectionsCommand = ({
         }
       }
     },
-  } satisfies ReplCommand;
+  };
 };

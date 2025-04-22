@@ -1,6 +1,9 @@
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const resetCommand = ({ terminal, messageHistory }: CommandOptions) => {
+export const resetCommand = ({
+  terminal,
+  messageHistory,
+}: CommandOptions): ReplCommand => {
   return {
     command: "/reset",
     description: "Saves the chat history and then resets it.",
@@ -15,5 +18,5 @@ export const resetCommand = ({ terminal, messageHistory }: CommandOptions) => {
 
       terminal.clear();
     },
-  } satisfies ReplCommand;
+  };
 };

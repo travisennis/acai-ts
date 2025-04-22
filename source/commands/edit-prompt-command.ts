@@ -5,7 +5,7 @@ import type { CommandOptions, ReplCommand } from "./types.ts";
 export const editPromptCommand = ({
   terminal,
   promptManager,
-}: CommandOptions) => {
+}: CommandOptions): ReplCommand => {
   return {
     command: "/edit-prompt",
     description: "Edit the prompt.",
@@ -27,5 +27,5 @@ export const editPromptCommand = ({
         terminal.error(`Error updating prompt: ${(error as Error).message}`);
       }
     },
-  } satisfies ReplCommand;
+  };
 };

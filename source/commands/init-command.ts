@@ -3,7 +3,10 @@ import { streamText } from "ai";
 import { inGitDirectory, initTools } from "../tools/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const initCommand = ({ terminal, modelManager }: CommandOptions) => {
+export const initCommand = ({
+  terminal,
+  modelManager,
+}: CommandOptions): ReplCommand => {
   return {
     command: "/init",
     description: "Creates the .acai/rules.md file.",
@@ -33,5 +36,5 @@ Platform: ${platform()}`,
         terminal.write(text);
       }
     },
-  } satisfies ReplCommand;
+  };
 };

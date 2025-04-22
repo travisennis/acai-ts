@@ -3,7 +3,6 @@ import type { ModelManager } from "../models/manager.ts";
 import type { PromptManager } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../token-tracker.ts";
-import { byeCommand } from "./bye-command.ts";
 import { clearCommand } from "./clear-command.ts"; // Added import
 import { commitCommand } from "./commit-command.ts";
 import { compactCommand } from "./compact-command.ts";
@@ -63,7 +62,6 @@ export class CommandManager {
     // Register all commands
     const cmds = [
       clearCommand(options), // Added new command
-      byeCommand(options),
       commitCommand(options),
       compactCommand(options),
       editCommand(options),
@@ -85,15 +83,19 @@ export class CommandManager {
     ];
 
     // Add help command with access to all commands
-    const helpCmd = helpCommand(options);
+    const helpCmd = helpCommand(options, this.commands);
     cmds.push({
       ...helpCmd,
-      execute: () => helpCmd.execute(this.commands),
+      execute: () => helpCmd.execute([]),
     });
 
     // Register all commands
     for (const cmd of cmds) {
       this.commands.set(cmd.command, cmd);
+      const aliases: string[] = cmd.aliases ?? [];
+      for (const alias of aliases) {
+        this.commands.set(alias, cmd);
+      }
     }
   }
 

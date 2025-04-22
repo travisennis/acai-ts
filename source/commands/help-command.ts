@@ -1,19 +1,20 @@
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const helpCommand = ({ terminal }: CommandOptions) => {
+export const helpCommand = (
+  { terminal }: CommandOptions,
+  cmds: Map<string, ReplCommand>,
+): ReplCommand => {
   return {
     command: "/help",
     description: "Shows available commands.",
     result: "continue" as const,
     getSubCommands: () => [],
-    execute: (args?: string[] | Map<string, ReplCommand>) => {
-      // If first argument is a Map, it's the commands collection
-      const commands =
-        args instanceof Map ? args : new Map<string, ReplCommand>();
+    execute: () => {
+      const commands = cmds;
 
-      const entries: [string, string][] = Array.from(commands.values())
-        .sort((a, b) => (a.command > b.command ? 1 : -1))
-        .map((cmd) => [cmd.command, cmd.description]);
+      const entries: [string, string][] = Array.from(commands.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, cmd]) => [key, cmd.description]);
 
       terminal.table(entries, {
         header: ["Command", "Description"],
@@ -21,5 +22,5 @@ export const helpCommand = ({ terminal }: CommandOptions) => {
 
       return Promise.resolve();
     },
-  } satisfies ReplCommand;
+  };
 };

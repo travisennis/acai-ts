@@ -1,6 +1,9 @@
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const saveCommand = ({ messageHistory, terminal }: CommandOptions) => {
+export const saveCommand = ({
+  messageHistory,
+  terminal,
+}: CommandOptions): ReplCommand => {
   return {
     command: "/save",
     description: "Saves the chat history.",
@@ -13,5 +16,5 @@ export const saveCommand = ({ messageHistory, terminal }: CommandOptions) => {
 
       terminal.info("Message history saved.");
     },
-  } satisfies ReplCommand;
+  };
 };

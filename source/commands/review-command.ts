@@ -1,6 +1,8 @@
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const reviewCommand = ({ promptManager }: CommandOptions) => {
+export const reviewCommand = ({
+  promptManager,
+}: CommandOptions): ReplCommand => {
   return {
     command: "/review",
     description: "Instructs the agent to perform a code review on a PR.",
@@ -56,5 +58,5 @@ export const reviewCommand = ({ promptManager }: CommandOptions) => {
       }
       return Promise.resolve();
     },
-  } satisfies ReplCommand;
+  };
 };
