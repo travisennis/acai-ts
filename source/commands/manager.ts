@@ -4,6 +4,7 @@ import type { PromptManager } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../token-tracker.ts";
 import { byeCommand } from "./bye-command.ts";
+import { clearCommand } from "./clear-command.ts"; // Added import
 import { commitCommand } from "./commit-command.ts";
 import { compactCommand } from "./compact-command.ts";
 import { editCommand } from "./edit-command.ts";
@@ -61,6 +62,7 @@ export class CommandManager {
 
     // Register all commands
     const cmds = [
+      clearCommand(options), // Added new command
       byeCommand(options),
       commitCommand(options),
       compactCommand(options),
