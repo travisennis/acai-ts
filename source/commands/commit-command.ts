@@ -9,9 +9,11 @@ export const commitCommand = ({ promptManager }: CommandOptions) => {
       "Instructs the agent to create commit messages for the changes in the current working directory.",
     result: "use" as const,
     getSubCommands: () => [],
-    execute: async () => {
+    execute: async (args: string[]) => {
       promptManager.set(
         `Look at the working changes in the current project and create as many commit messages as appropriate for those changes. Write the commits using the Conventional Commits standards and make the commits.
+
+        ${args.length > 0 ? args.join(" ") : ""}
 
 Current working directory: ${process.cwd()}
 
