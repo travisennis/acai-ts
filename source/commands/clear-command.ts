@@ -6,8 +6,9 @@ export const clearCommand = ({ terminal }: CommandOptions): ReplCommand => {
     description: "Clears the terminal screen.",
     result: "continue" as const, // Keep the REPL running
     getSubCommands: () => [],
-    execute: async () => {
+    execute: () => {
       terminal.clear();
+      return Promise.resolve();
     },
   };
 };
