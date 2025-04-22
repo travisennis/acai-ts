@@ -45,6 +45,7 @@ export class ConfigManager {
       throw error;
     }
   }
+
   async readRulesFile(): Promise<string> {
     const rulesPath = path.join(this.project.getPath(), "rules.md");
     try {
@@ -58,7 +59,30 @@ export class ConfigManager {
   }
 
   async writeRulesFile(rules: string): Promise<void> {
-    const rulesPath = path.join(this.project.getPath(), "rules.md");
+    const rulesPath = path.join(this.project.ensurePath(), "rules.md");
+    try {
+      return await fs.writeFile(rulesPath, rules, "utf8");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return;
+      }
+      throw error;
+    }
+  }
+  async readLearnedRulesFile(): Promise<string> {
+    const rulesPath = path.join(this.project.getPath(), "learned-rules.md");
+    try {
+      return await fs.readFile(rulesPath, "utf8");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return "";
+      }
+      throw error;
+    }
+  }
+
+  async writeLearnedRulesFile(rules: string): Promise<void> {
+    const rulesPath = path.join(this.project.ensurePath(), "learned-rules.md");
     try {
       return await fs.writeFile(rulesPath, rules, "utf8");
     } catch (error) {

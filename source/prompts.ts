@@ -252,8 +252,19 @@ Line 42 passes undefined to \`validateToken()\`. Add null check before function 
 // }
 
 async function getRules() {
-  const rules = await config.readRulesFile();
-  return rules ? `## Project Rules:\n\n${rules.trim()}` : "";
+  const rules = (await config.readRulesFile()).trim();
+  const learnedRules = (await config.readLearnedRulesFile()).trim();
+  let result = "";
+  if (rules) {
+    result += `## Project Rules:\n\n${rules}\n`;
+  }
+  if (learnedRules) {
+    if (!rules) {
+      result += "## Project Rules:\n\n";
+    }
+    result += `${learnedRules}`;
+  }
+  return result.trim();
 }
 
 async function environmentInfo() {
