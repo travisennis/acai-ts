@@ -12,8 +12,12 @@ export const commitCommand = ({ promptManager }: CommandOptions) => {
     execute: async () => {
       promptManager.set(
         `Look at the working changes in the current project and create as many commit messages as appropriate for those changes. Write the commits using the Conventional Commits standards and make the commits.
+
 Current working directory: ${process.cwd()}
-${await getGitStatus()}`,
+
+${await getGitStatus()}
+
+Use bashTool("git diff --cached") if there are staged changes or bashTool("git diff") if there are not.`,
       );
       return Promise.resolve();
     },
