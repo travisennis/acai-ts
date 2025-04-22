@@ -135,6 +135,9 @@ const ProjectConfigSchema = z.object({
       path: z.string(),
     })
     .optional(),
+  tools: z.object({
+    maxTokens: z.number().default(30000),
+  }),
 });
 
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;

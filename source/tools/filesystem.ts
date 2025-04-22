@@ -9,6 +9,7 @@ import ignore, { type Ignore } from "ignore";
 import { z } from "zod";
 import { countTokens } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
+import { config } from "../config.ts";
 
 // Normalize all paths consistently
 function normalizePath(p: string): string {
@@ -396,7 +397,7 @@ export const createFileSystemTools = async ({
             // Log or handle error, but don't block file return
           }
 
-          const maxTokens = 15000;
+          const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
           // Adjust max token check message if line selection was used
           const maxTokenMessage =
             isNumber(startLine) || isNumber(lineCount)
@@ -438,6 +439,7 @@ export const createFileSystemTools = async ({
           event: "tool-init",
           data: `Reading files: ${paths.join(", ")}`,
         });
+        const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
         const results = await Promise.all(
           paths.map(async (filePath) => {
             try {
@@ -454,7 +456,6 @@ export const createFileSystemTools = async ({
                 // Handle token calculation error if needed
               }
 
-              const maxTokens = 15000; // Same as readFile
               const maxTokenMessage = `File content (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Use readFile with startLine/lineCount or grepFiles for targeted access.`;
 
               const finalContent =

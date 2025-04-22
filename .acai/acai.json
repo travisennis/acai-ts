@@ -8,5 +8,8 @@
   },
   "logs": {
     "path": "/Users/travisennis/.acai/logs/current.log"
+  },
+  "tools": {
+    "maxTokens": 30000
   }
 }

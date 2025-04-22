@@ -6,6 +6,7 @@ import { z } from "zod";
 import { countTokens } from "../token-utils.ts";
 import { executeCommand } from "../utils/index.ts";
 import type { SendData } from "./types.ts";
+import { config } from "../config.ts";
 
 // Whitelist of allowed commands
 const ALLOWED_COMMANDS = [
@@ -174,7 +175,7 @@ export const createBashTools = ({
             // Log or handle error, but don't block file return
           }
 
-          const maxTokens = 5000;
+          const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
           // Adjust max token check message if line selection was used
           const maxTokenMessage = `Output of commmand (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Please use adjust how you call the command to get back more specific results`;
 
