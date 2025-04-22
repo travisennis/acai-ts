@@ -13,7 +13,7 @@ export const resetCommand = ({ terminal, messageHistory }: CommandOptions) => {
       }
       terminal.setTitle(`acai: ${process.cwd()}`);
 
-      terminal.info("Message history reset.");
+      terminal.clear();
     },
   } satisfies ReplCommand;
 };
