@@ -3,5 +3,6 @@
 - Always explicitly ask for user confirmation before applying edits.
 - Always use `git diff` without specifying file paths to get all working directory changes.
 - Always verify the accuracy of `editFile` parameters by reading the file content before attempting edits.
-
-- Always read all modified files before creating commit messages. (The agent only read some of the modified files initially.)
+- Always read all modified files before creating commit messages.
+- Always validate tool-specific formatting requirements, even if they appear to adhere to general standards. (The user had to correct the commit message format.)
+- Always use the correct file paths based on the project structure. (The agent initially used incorrect paths: `/Users/travisennis/Github/acai-ts/src/commands` instead of `/Users/travisennis/Github/acai-ts/source/commands`.)
