@@ -413,8 +413,8 @@ const toolCallRepair = (modelManager: ModelManager, terminal: Terminal) => {
       return null; // do not attempt to fix invalid tool names
     }
 
+    terminal.warn(`Attempting to repair tool call: ${toolCall.toolName}.`);
     terminal.lineBreak();
-    terminal.warn("Attempting to repair tool call.");
 
     const tool = tools[toolCall.toolName as keyof typeof tools];
 
@@ -433,7 +433,7 @@ const toolCallRepair = (modelManager: ModelManager, terminal: Terminal) => {
 
       return { ...toolCall, args: JSON.stringify(repairedArgs) };
     } catch (err) {
-      logger.error(err, "Failed to repair tool call.");
+      logger.error(err, `Failed to repair tool call: ${toolCall.toolName}.`);
       return null;
     }
   };
