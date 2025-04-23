@@ -232,6 +232,16 @@ export class Terminal {
     }
   }
 
+  /**
+   * Emits an audible alert sound in the terminal.
+   */
+  alert(): void {
+    // Only emit alert in interactive terminals to avoid issues in CI/scripts
+    if (this.isInteractive) {
+      process.stdout.write("\u0007");
+    }
+  }
+
   write(input: string): void {
     process.stdout.write(input);
   }
