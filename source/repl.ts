@@ -11,6 +11,7 @@ import {
 import chalk, { type ChalkInstance } from "chalk";
 import logUpdate from "log-update";
 import type { CommandManager } from "./commands/manager.ts";
+import { config as configManager } from "./config.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
 import type { MessageHistory } from "./messages.ts";
@@ -182,6 +183,12 @@ export class Repl {
 
             terminal.lineBreak();
             terminal.hr();
+
+            // Notify if configured in project config (acai.json)
+            const projectConfig = await configManager.readProjectConfig();
+            if (projectConfig.notify) {
+              terminal.alert();
+            }
 
             // Create a more visual representation of steps/tool usage
             this.displayToolUse(result, terminal);
