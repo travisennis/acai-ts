@@ -5,4 +5,12 @@
 - Always verify the accuracy of `editFile` parameters by reading the file content before attempting edits.
 - Always read all modified files before creating commit messages.
 - Always validate tool-specific formatting requirements, even if they appear to adhere to general standards. (The user had to correct the commit message format.)
-- Always use the correct file paths based on the project structure. (The agent initially used incorrect paths: `/Users/travisennis/Github/acai-ts/src/commands` instead of `/Users/travisennis/Github/acai-ts/source/commands`.)
+- Always use the correct file paths based on the project structure. The directoryTree tool can be used to understand project structure.
+- Always break down large `git show` outputs into smaller, more manageable chunks when the output exceeds the token limit. (The agent initially tried to get the entire commit content with `git show`, which exceeded the token limit. It then had to refine its approach to get file names and then individual file diffs.)
+- Always format markdown documents with appropriate headers and sections for readability. (The user requested the output as a markdown document, implying a need for structure.)
+- Always use the `git diff --cached` command when the user specifies "staged files" to only include staged changes in the diff. ("Use bashTool("git diff --cached") if there are staged changes or bashTool("git diff") if there are not.")
+- Never assume that specifying file paths to the `gitCommit` tool will limit the commit to only those files. (The agent attempted to create two commits with specific file lists, but the first commit included all staged changes.)
+- Never proceed with an edit or commit after a dry run without explicit user approval.
+- Never create a commit without reviewing all staged changes.
+- Always confirm the scope of a commit when the user specifies "only" certain changes.
+- Always check for available type definitions for a new package before using it.
