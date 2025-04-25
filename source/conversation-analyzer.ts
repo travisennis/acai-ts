@@ -54,6 +54,17 @@ ${learnedRules}
 
   tokenTracker.trackUsage("conversation-analyzer", usage);
 
+  let parsed = text;
+  try {
+    parsed = JSON.parse(text);
+  } catch (_e) {
+    // If parsing fails, treat as plain text (likely not a JSON array)
+  }
+
+  if (Array.isArray(parsed)) {
+    return text;
+  }
+
   await config.writeLearnedRulesFile(
     learnedRules.endsWith("\n")
       ? `${learnedRules}${text}`
