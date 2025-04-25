@@ -4,12 +4,16 @@
  * Provides functions for formatting and displaying text in the terminal.
  */
 
+import chalk from "chalk";
 import { type Renderer, marked } from "marked";
 import TerminalRenderer from "marked-terminal";
 
 marked.setOptions({
   // Define custom renderer
-  renderer: new TerminalRenderer() as unknown as Renderer,
+  renderer: new TerminalRenderer({
+    strong: chalk.gray.bold,
+    tab: 2,
+  }) as unknown as Renderer,
 });
 
 /**
