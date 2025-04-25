@@ -78,6 +78,23 @@ export function formatFile(
   }
 }
 
+export function formatUrl(
+  siteUrl: string,
+  content: string,
+  format: FormatType,
+): string {
+  switch (format) {
+    case "xml":
+      return `<webpage>\n<url>${siteUrl}</url>\n<content>\n${content}\n</content>\n</webpage>`;
+    case "markdown":
+      return `## URL: ${siteUrl}\n${MD_TRIPLE_QUOTE}\n${content}\n${MD_TRIPLE_QUOTE}`;
+    case "bracket":
+      return `[url]: ${siteUrl}\n[url content begin]\n${content}\n[url content end]`;
+    default:
+      throw new Error(`Unsupported format: ${format}`);
+  }
+}
+
 export function formatCodeSnippet(
   file: string,
   content: string,

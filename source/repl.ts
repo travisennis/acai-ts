@@ -14,6 +14,7 @@ import type { CommandManager } from "./commands/manager.ts";
 import { config as configManager } from "./config.ts";
 import type { Flags } from "./index.ts";
 import { logger } from "./logger.ts";
+import { processPrompt } from "./mentions.ts";
 import type { MessageHistory } from "./messages.ts";
 import { AiConfig } from "./models/ai-config.ts";
 import type { ModelManager } from "./models/manager.js";
@@ -119,7 +120,11 @@ export class Repl {
 
         // if there is no pending prompt then use the user's input. otherwise, the prompt was loaded from a command
         if (!promptManager.isPending()) {
-          promptManager.set(userInput);
+          const processedPrompt = await processPrompt(userInput, {
+            baseDir: process.cwd(),
+            model: modelConfig,
+          });
+          promptManager.set(processedPrompt.prompt);
         }
       }
 

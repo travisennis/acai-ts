@@ -8,13 +8,16 @@ import { logger } from "./logger.ts";
 async function fileSystemCompleter(line: string): Promise<[string[], string]> {
   try {
     const words = line.split(" ");
-    const last = words.at(-1);
+    let last = words.at(-1);
     if (!last) {
       return [[], line];
     }
+    const isAt = last.startsWith("@");
+    if (isAt) {
+      last = last.slice(1);
+    }
+
     let { dir, base } = parse(last);
-    logger.debug(dir);
-    logger.debug(base);
 
     // If dir is empty, use current directory
     if (!dir) {
@@ -44,10 +47,10 @@ async function fileSystemCompleter(line: string): Promise<[string[], string]> {
       .map((entry) => {
         const prefix =
           dir === "." ? "" : dir === sep || dir === "/" ? "" : `${dir}/`;
-        return `${prefix}${entry.name}${entry.isDirectory() && !entry.name.endsWith("/") ? "/" : ""}`;
+        return `${isAt ? "@" : ""}${prefix}${entry.name}${entry.isDirectory() && !entry.name.endsWith("/") ? "/" : ""}`;
       });
 
-    return [hits, last];
+    return [hits, `${isAt ? "@" : ""}${last}`];
   } catch (_error) {
     logger.error(_error);
     return [[], line];
