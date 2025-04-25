@@ -9,6 +9,7 @@ import { readFileSync } from "node:fs";
 import { join } from "@travisennis/stdlib/desm";
 import chalk, { type ChalkInstance } from "chalk";
 import Table from "cli-table3";
+import notifier from "node-notifier";
 import ora from "ora";
 import terminalLink from "terminal-link";
 import { logger } from "../logger.ts";
@@ -233,12 +234,17 @@ export class Terminal {
   }
 
   /**
-   * Emits an audible alert sound in the terminal.
+   * Emits an audible alert sound in the terminal using system notifications.
    */
   alert(): void {
     // Only emit alert in interactive terminals to avoid issues in CI/scripts
     if (this.isInteractive) {
-      process.stdout.write("\u0007");
+      notifier.notify({
+        title: "Acai Alert",
+        message: `The current task has finished in ${process.cwd()}`,
+        sound: true,
+        wait: false,
+      });
     }
   }
 
