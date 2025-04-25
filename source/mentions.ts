@@ -8,51 +8,64 @@ interface CommandContext {
   model: ModelMetadata;
   baseDir: string;
   match: string;
-  processedLines: string[];
 }
 
-async function processFileCommand(context: CommandContext) {
-  const { baseDir, match, processedLines } = context;
-  const filePath = match;
-
+// Returns the formatted string or an error message string
+async function processFileCommand(context: CommandContext): Promise<string> {
+  const { baseDir, match } = context;
+  const filePath = match.trim();
   const format = context.model.promptFormat;
+
   try {
-    const fileContents = await fs.readFile(
-      path.join(baseDir, filePath.trim()),
-      "utf8",
-    );
-    processedLines.push(formatFile(filePath, fileContents, format));
-  } catch (error) {
-    if ((error as { code: string }).code === "ENOENT") {
-      processedLines.push(
-        `Error: File not found: ${filePath}\nPlease check that the file path is correct and the file exists.`,
-      );
-    } else {
-      processedLines.push(
-        `Error reading file ${filePath}: ${(error as Error).message}`,
-      );
+    // Resolve paths to absolute to prevent traversal issues
+    const resolvedBaseDir = path.resolve(baseDir);
+    const resolvedFilePath = path.resolve(resolvedBaseDir, filePath);
+
+    // Security Check: Ensure the resolved path is still within the base directory
+    if (!resolvedFilePath.startsWith(resolvedBaseDir + path.sep)) {
+      return `Error: Access denied. Attempted to read file outside the allowed directory: ${filePath}`;
     }
+
+    const fileContents = await fs.readFile(resolvedFilePath, "utf8");
+    return formatFile(filePath, fileContents, format);
+  } catch (error) {
+    // Improved type checking for errors
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "ENOENT"
+    ) {
+      return `Error: File not found: ${filePath}\nPlease check that the file path is correct and the file exists.`;
+    }
+    if (error instanceof Error) {
+      return `Error reading file ${filePath}: ${error.message}`;
+    }
+    // Fallback for unknown error types
+    return `Error reading file ${filePath}: An unknown error occurred.`;
   }
 }
 
-async function processUrlCommand(context: CommandContext) {
-  const { match, processedLines } = context;
+// Returns the formatted string or an error message string
+async function processUrlCommand(context: CommandContext): Promise<string> {
+  const { match } = context;
   const urlPath = match;
   try {
     const clean = await readUrl(urlPath);
-    processedLines.push(
-      formatUrl(urlPath, clean.trim(), context.model.promptFormat),
-    );
+    return formatUrl(urlPath, clean.trim(), context.model.promptFormat);
   } catch (error) {
-    processedLines.push(`Url:${urlPath}\nStatus: ${error}`);
+    if (error instanceof Error) {
+      return `Url: ${urlPath}\nStatus: Error fetching URL: ${error.message}`;
+    }
+    // Fallback for unknown error types
+    return `Url: ${urlPath}\nStatus: Error fetching URL: An unknown error occurred.`;
   }
 }
 
 export async function processPrompt(
   message: string,
   { baseDir, model }: { baseDir: string; model: ModelMetadata },
-) {
-  const processedLines: string[] = [];
+): Promise<{ prompt: string }> {
   const fileRegex = /@([^\s@]+(?:\.[\w\d]+))/g;
   const urlRegex = /@(https?:\/\/[^\s]+)/g;
 
@@ -60,11 +73,9 @@ export async function processPrompt(
   const fileMatches = Array.from(message.matchAll(fileRegex));
   const urlMatches = Array.from(message.matchAll(urlRegex));
 
-  // Add original message first
-  processedLines.push(message);
-  processedLines.push("");
+  const mentionProcessingPromises: Promise<string>[] = [];
 
-  // Process file references
+  // Process file references - collect promises
   for (const match of fileMatches) {
     const firstMatch = match[1];
     if (firstMatch) {
@@ -72,31 +83,31 @@ export async function processPrompt(
         model,
         baseDir,
         match: firstMatch,
-        processedLines,
       };
-      await processFileCommand(context);
+      mentionProcessingPromises.push(processFileCommand(context));
     }
   }
 
-  // Process url references
+  // Process url references - collect promises
   for (const match of urlMatches) {
     const firstMatch = match[1];
     if (firstMatch) {
       const context = {
         model,
-        baseDir,
+        baseDir, // baseDir is not used by processUrlCommand but kept for consistency
         match: firstMatch,
-        processedLines,
       };
-      await processUrlCommand(context);
+      mentionProcessingPromises.push(processUrlCommand(context));
     }
   }
 
-  // Add original message again
-  processedLines.push("");
-  processedLines.push(message);
+  // Wait for all mentions to be processed
+  const mentionResults = await Promise.all(mentionProcessingPromises);
+
+  // Construct the final prompt
+  const finalPromptParts = [message, "", ...mentionResults, "", message];
 
   return {
-    prompt: processedLines.join("\n").trim(),
+    prompt: finalPromptParts.join("\n").trim(),
   };
 }
