@@ -86,7 +86,7 @@ export async function initTools({
   const askUserTool = {
     askUser: tool({
       description:
-        "A tool to ask the user for input. Use this ask the user for clarification when you need it.",
+        "A tool to ask the user for input. Use this ask the user for clarification when you need it. This tool will display the question to the user.",
       parameters: z.object({
         question: z.string().describe("The question to ask the user."),
       }),
@@ -95,6 +95,7 @@ export async function initTools({
           terminal.lineBreak();
           await terminal.display(question);
           const result = await input({ message: "? " });
+          terminal.lineBreak();
 
           return result;
         }
