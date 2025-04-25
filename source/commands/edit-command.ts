@@ -18,7 +18,7 @@ export const editCommand = ({ terminal }: CommandOptions): ReplCommand => {
             return [];
           }
 
-          const foundFiles = await globby(input, { gitignore: true });
+          const foundFiles = await globby(`**/*${input}*`, { gitignore: true });
 
           return foundFiles.map((file) => ({
             name: file,
