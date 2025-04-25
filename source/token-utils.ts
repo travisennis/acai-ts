@@ -1,4 +1,4 @@
-import { encoding_for_model, type TiktokenModel } from "tiktoken";
+import { type TiktokenModel, encoding_for_model } from "tiktoken";
 
 export function countTokens(input: string) {
   const tiktokenEncoding = encoding_for_model("chatgpt-4o-latest"); // Or appropriate model
