@@ -6,19 +6,41 @@ import { systemPrompt } from "./prompts.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 
+// Modified System Prompt
 const system =
-  async () => `You are to analyze the following conversation between a coding agent and a software engineer. Identify each point where the engineer corrected or redirected the agent. For each, infer a single, concise, actionable rule (starting with 'Always' or 'Never') that would have prevented the issue. Use only evidence from the conversation. For each rule, provide a brief supporting quote or example from the conversation in parentheses. List the rules in Markdown; do not include explanations, summaries, or unrelated content. Ignore corrections that are minor or do not indicate a systemic improvement for agent behavior. Not every conversation will have instances of these corrections or redirections.
+  async () => `You are an expert analyst reviewing conversations between a coding agent and a software engineer. Your goal is to identify instances where the engineer corrected the agent's approach or understanding in a way that reveals a *generalizable principle* for improving the agent's future behavior across *different* tasks.
 
-Example rules:
+**Your Task:**
+1. Analyze the conversation provided.
+2. Identify significant corrections or redirections from the engineer. Ignore minor clarifications or task-specific adjustments.
+3. For each significant correction, infer a *single, concise, broadly applicable, actionable rule* (starting with 'Always' or 'Never') that captures the underlying principle the agent should follow in the future.
+4. Ensure the rule is general enough to be useful in various scenarios, not just the specific context of this conversation.
+5. Provide a brief, illustrative quote or example from the conversation in parentheses after the rule.
+6. List only the inferred rules in Markdown bullet points. Do not include explanations, summaries, or conversational filler.
+
+**Crucially, AVOID generating rules that are:**
+- Overly specific to the files, functions, or variables discussed (e.g., "Always check for null in the 'processUserData' function"). Instead, generalize (e.g., "Always validate data from external sources before processing").
+- Merely restatements of the task requirements.
+- Too narrow to be useful outside the immediate context.
+- Related to minor typos or formatting preferences unless they represent a consistent pattern requested by the user.
+
+**Good General Rule Examples:**
 <examples>
 - Always ask for clarification if the user's request is ambiguous.
 - Never make assumptions about file paths without confirmation.
-- Always follow the user's formatting preferences.
-- Never provide incomplete code snippets.
-- Never use the \`any\` type when writing code.
+- Always follow the user's explicitly stated formatting preferences.
+- Never provide incomplete code snippets without indicating they are partial.
+- Always check for potential null or undefined values before accessing properties.
 </examples>
 
-This is the original system prompt for this converation:
+**Bad Specific Rule Examples (Avoid These):**
+<bad-examples>
+- Always use 'const' instead of 'let' for the 'userId' variable in 'auth.ts'.
+- Never forget to pass the 'config' object to the 'initializeDb' function.
+- Always add a try-catch block around the 'api.fetchData()' call in 'dataService.ts'.
+</bad-examples>
+
+This is the original system prompt the agent operated under:
 <systemPrompt>
 ${await systemPrompt()}
 </systemPrompt>`;
@@ -34,11 +56,17 @@ export async function analyzeConversation({
   tokenTracker: TokenTracker;
 }) {
   const learnedRules = await config.readLearnedRulesFile();
+  // Modified User Message within analyzeConversation
   messages.push(
     createUserMessage(
-      `Analyze this conversation for any points where the user corrected or redirected the agent. For each instance, infer a concise, actionable rule that would have prevented the correction or redirection. Return a markdown list of rules, each starting with 'Always' or 'Never'.
+      `Analyze this conversation based on the system instructions. Identify points where the user made significant corrections revealing general principles for agent improvement. Infer concise, broadly applicable rules (Always/Never) based *only* on these corrections.
 
-Only include rules that are directly supported by evidence from the conversation. Only return rules that don't already exist in <existing-rules>. If the converation doens't support the creation of new rules, then return an empty list. Only return the list with no preamble.
+**Key Requirements:**
+- Focus on *generalizable* rules applicable to future, different tasks.
+- Avoid rules tied to the specifics of *this* conversation.
+- Ensure rules don't already exist in <existing-rules>.
+- If no *new, general* rules can be inferred, return an empty list or response.
+- Return *only* the Markdown list of rules, with no preamble or explanation.
 
 <existing-rules>
 ${learnedRules}
@@ -54,22 +82,23 @@ ${learnedRules}
 
   tokenTracker.trackUsage("conversation-analyzer", usage);
 
-  let parsed = text;
-  try {
-    parsed = JSON.parse(text);
-  } catch (_e) {
-    // If parsing fails, treat as plain text (likely not a JSON array)
+  // Trim whitespace and check if the response is effectively empty or just whitespace
+  const potentialRules = text.trim();
+
+  // Basic check to prevent adding empty lines or just formatting
+  if (!potentialRules || potentialRules.length === 0) {
+    return ""; // Return empty string if no valid rules generated
   }
 
-  if (Array.isArray(parsed)) {
-    return text;
-  }
+  // Further validation could be added here (e.g., check if it starts with '- ', etc.)
+  // before writing to the file.
 
+  // Append only if there are non-empty potential rules
   await config.writeLearnedRulesFile(
-    learnedRules.endsWith("\n")
-      ? `${learnedRules}${text}`
-      : `${learnedRules}\n${text}`,
+    learnedRules.endsWith("\n") || learnedRules.length === 0
+      ? `${learnedRules}${potentialRules}`
+      : `${learnedRules}\n${potentialRules}`,
   );
 
-  return text;
+  return potentialRules; // Return the rules that were added
 }
