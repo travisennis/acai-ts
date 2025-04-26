@@ -11,6 +11,7 @@ import { createGrepTools } from "./grep.ts";
 import { createThinkTools } from "./think.ts";
 import type { Message } from "./types.ts";
 import { createUrlTools } from "./url.ts";
+import { createWebSearchTools } from "./web-search.ts";
 
 const sendDataHandler = (terminal: Terminal) => {
   const msgStore: Map<string, string[]> = new Map();
@@ -78,6 +79,10 @@ export async function initTools({
     sendData: sendDataFn,
   });
 
+  const webSearchTools = createWebSearchTools({
+    sendData: sendDataFn,
+  });
+
   const bashTools = createBashTools({
     baseDir: process.cwd(),
     sendData: sendDataFn,
@@ -113,6 +118,7 @@ export async function initTools({
     ...urlTools,
     ...askUserTool,
     ...bashTools,
+    ...webSearchTools,
   } as const;
 
   return tools;

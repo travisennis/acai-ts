@@ -68,8 +68,11 @@ function toolUsage() {
 2. Use \`readFile\` to examine specific files
 3. Use \`grepFiles\` for finding code patterns or usages
 4. Use \`bashTool\` for runtime information when appropriate
-5. NEVER guess or make up answers about file content or codebase structure - use tools to gather accurate information
-6. If the user includes filenames or file paths in their prompt, you MUST read the content of those files before creating your response.
+5. Use \`fetch\` to retrieve the contents of of text-based files (like code, documentation, or configuration) directly from a URL. Dos not support binary files.
+6. Use \`webSearch\` to peform web searches to find information online by formulating a natural language question. Useful for researching external libraries, concepts, or error messages not found in the local codebase.
+7. NEVER guess or make up answers about file content or codebase structure - use tools to gather accurate information.
+8. If the user includes filenames or file paths in their prompt, you MUST read the content of those files before creating your response.
+9. If the user includes URLs in their prompt, you MUST fetch the content of those URLs before creating your response.
 
 ### Planning & Reflection
 - You **MUST** plan extensively before each tool call
@@ -93,6 +96,7 @@ function toolUsage() {
   - \`feat(auth): add login validation\`
   - \`fix(parser): handle edge case with empty input\`
 - Prefer the \`gitCommit\` tool over using \`bashTool(git commit)\`
+- All other git operations can be done via the \`bashTool\`
 - Check and report uncommitted changes before suggesting commits
 
 ### GitHub Integration
@@ -108,7 +112,6 @@ function toolUsage() {
 - Implement error handling in scripts for robustness
 
 ### Using the Code Interpreter Tool (\`codeInterpreter\`)
-
 *   **Purpose**: Execute self-contained JavaScript code snippets.
 *   **Use Cases**: Complex calculations, data manipulation (e.g., JSON processing), algorithm testing/prototyping, text transformations.
 *   **Output**: Use \`return\` to provide results. \`console.log\` output is ignored.

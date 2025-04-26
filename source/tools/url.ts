@@ -1,6 +1,7 @@
 import { tool } from "ai";
 import { type CheerioAPI, load } from "cheerio";
 import { z } from "zod";
+import { logger } from "../logger.ts";
 import { countTokens } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
 
@@ -9,9 +10,9 @@ export const createUrlTools = (options: {
 }) => {
   const { sendData } = options;
   return {
-    readUrl: tool({
+    fetch: tool({
       description:
-        "Reads the contents of the file at the given url. IMPORTANT: only reads text files. No binary files.",
+        "Featches the contents of the file at the given url. IMPORTANT: only reads text files. No binary files.",
       parameters: z.object({
         url: z.string().describe("The URL"),
       }),
@@ -64,12 +65,12 @@ export async function readUrl(
       const data = await response.text();
       return data;
     }
-    console.error(`Failed to fetch Jina: ${response.statusText}`);
+    logger.error(`Failed to fetch Jina: ${response.statusText}`);
   } catch (error) {
-    console.error(`Failed to fetch Jina: ${(error as Error).message}`);
+    logger.error(`Failed to fetch Jina: ${(error as Error).message}`);
   }
 
-  console.info("Falling back to fetch.");
+  logger.warn("Falling back to fetch.");
   try {
     const response = await fetch(url, { signal: abortSignal });
     if (!response.ok) {
