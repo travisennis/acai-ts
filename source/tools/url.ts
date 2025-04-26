@@ -12,9 +12,9 @@ export const createUrlTools = (options: {
   return {
     fetch: tool({
       description:
-        "Featches the contents of the file at the given url. IMPORTANT: only reads text files. No binary files.",
+        "Fetches the content of a given URL. It intelligently handles HTML content by attempting to use a specialized service for cleaner extraction, falling back to local cleaning if needed. For non-HTML content (like plain text or markdown), it fetches the raw content directly. IMPORTANT: Does not retrieve binary files.",
       parameters: z.object({
-        url: z.string().describe("The URL"),
+        url: z.string().describe("The URL to fetch content from."),
       }),
       execute: async ({ url }, { abortSignal }) => {
         const uuid = crypto.randomUUID();
@@ -22,23 +22,28 @@ export const createUrlTools = (options: {
           sendData?.({
             event: "tool-init",
             id: uuid,
-            data: `Reading URL for ${url}`,
+            data: `Reading URL: ${url}`,
           });
+          logger.info(`Initiating fetch for URL: ${url}`);
           const urlContent = await readUrl(url, abortSignal);
           const tokenCount = countTokens(urlContent);
           sendData?.({
             event: "tool-completion",
             id: uuid,
-            data: `Done (${tokenCount} tokens)`,
+            data: `Read URL successfully (${tokenCount} tokens)`,
           });
+          logger.info(`Successfully read URL: ${url} (${tokenCount} tokens)`);
           return urlContent;
         } catch (error) {
+          const errorMessage = (error as Error).message;
           sendData?.({
             event: "tool-error",
             id: uuid,
-            data: `Error reading URL for ${url}`,
+            data: `Error reading URL ${url}: ${errorMessage}`,
           });
-          return Promise.resolve((error as Error).message);
+          logger.error(`Error reading URL ${url}: ${errorMessage}`);
+          // Return the error message so the LLM knows the tool failed.
+          return `Failed to read URL: ${errorMessage}`;
         }
       },
     }),
@@ -49,44 +54,110 @@ export async function readUrl(
   url: string,
   abortSignal?: AbortSignal | undefined,
 ): Promise<string> {
+  let initialResponse: Response;
   try {
-    const apiKey = process.env["JINA_READER_API_KEY"];
-    const readUrl = `https://r.jina.ai/${url}`;
-    const response = await fetch(readUrl, {
-      method: "GET",
-      headers: {
-        // biome-ignore lint/style/useNamingConvention: <explanation>
-        Authorization: `Bearer ${apiKey}`,
-      },
-      signal: abortSignal,
-    });
-
-    if (response.ok) {
-      const data = await response.text();
-      return data;
+    // Initial fetch to check content type and potentially use directly
+    logger.debug(`Performing initial fetch for: ${url}`);
+    initialResponse = await fetch(url, { signal: abortSignal });
+    if (!initialResponse.ok) {
+      throw new Error(
+        `HTTP error! status: ${initialResponse.status} ${initialResponse.statusText}`,
+      );
     }
-    logger.error(`Failed to fetch Jina: ${response.statusText}`);
+    logger.debug(
+      `Initial fetch successful for: ${url}, Status: ${initialResponse.status}`,
+    );
   } catch (error) {
-    logger.error(`Failed to fetch Jina: ${(error as Error).message}`);
+    // If the initial fetch fails entirely, rethrow
+    logger.error(`Initial fetch failed for ${url}: ${error}`);
+    throw new Error(`Error fetching initial data for ${url}: ${error}`);
   }
 
-  logger.warn("Falling back to fetch.");
-  try {
-    const response = await fetch(url, { signal: abortSignal });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+  const contentType = initialResponse.headers.get("content-type") ?? "";
+  logger.debug(`Content-Type for ${url}: ${contentType}`);
+
+  // If content type is HTML, try Jina first
+  if (contentType.includes("text/html")) {
+    logger.info(`Detected HTML content for ${url}. Attempting Jina AI fetch.`);
+    try {
+      const apiKey = process.env["JINA_READER_API_KEY"];
+      if (!apiKey) {
+        logger.warn("JINA_READER_API_KEY not set. Skipping Jina fetch.");
+        throw new Error("Jina API key not available"); // Skip to fallback
+      }
+      const jinaReadUrl = `https://r.jina.ai/${url}`;
+      logger.debug(`Fetching with Jina: ${jinaReadUrl}`);
+      const jinaResponse = await fetch(jinaReadUrl, {
+        method: "GET",
+        headers: {
+          // biome-ignore lint/style/useNamingConvention: API requirement
+          Authorization: `Bearer ${apiKey}`,
+          "X-With-Generated-Alt": "true", // Optional: Ask Jina to include image descriptions
+          "X-With-Links-Summary": "true", // Optional: Ask Jina for a summary of links
+        },
+        signal: abortSignal,
+      });
+
+      if (jinaResponse.ok) {
+        const data = await jinaResponse.text();
+        logger.info(
+          `Successfully fetched and processed HTML URL with Jina: ${url}`,
+        );
+        return data;
+      }
+      logger.warn(
+        `Jina fetch failed for ${url} with status ${jinaResponse.status}: ${jinaResponse.statusText}. Falling back to direct fetch and clean.`,
+      );
+      // Fall through to use the initialResponse if Jina fails
+    } catch (error) {
+      logger.warn(
+        `Error fetching from Jina for ${url}: ${(error as Error).message}. Falling back to direct fetch and clean.`,
+      );
+      // Fall through to use the initialResponse if Jina fails
     }
 
-    const contentType = response.headers.get("content-type");
-
-    if (contentType?.includes("text/html")) {
-      const cleaner = HtmlCleaner.new(await response.text());
+    // Fallback for HTML: Use the initial response and clean it
+    try {
+      logger.warn(
+        `Falling back to direct fetch and cleaning for HTML URL: ${url}`,
+      );
+      const htmlText = await initialResponse.text();
+      logger.debug(
+        `Cleaning HTML content for ${url} (length: ${htmlText.length})`,
+      );
+      const cleaner = HtmlCleaner.new(htmlText);
       const processedText = cleaner.clean();
+      logger.info(
+        `Successfully cleaned HTML content for ${url} (length: ${processedText.length})`,
+      );
       return processedText;
+    } catch (cleanError) {
+      logger.error(
+        `Error cleaning HTML from fallback fetch for ${url}: ${cleanError}`,
+      );
+      throw new Error(
+        `Error cleaning HTML from fallback fetch for ${url}: ${cleanError}`,
+      );
     }
-    return await response.text();
-  } catch (error) {
-    throw new Error(`Error fetching data: ${error}`);
+  } else {
+    // If not HTML, return the text directly from the initial response
+    logger.info(
+      `Fetched non-HTML content directly: ${url} (Content-Type: ${contentType})`,
+    );
+    try {
+      const textContent = await initialResponse.text();
+      logger.debug(
+        `Returning raw text content for ${url} (length: ${textContent.length})`,
+      );
+      return textContent;
+    } catch (textError) {
+      logger.error(
+        `Error reading text from non-HTML response for ${url}: ${textError}`,
+      );
+      throw new Error(
+        `Error reading text from non-HTML response for ${url}: ${textError}`,
+      );
+    }
   }
 }
 
