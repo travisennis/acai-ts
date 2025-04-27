@@ -5,8 +5,8 @@ Acai is an interactive CLI tool that assists with software engineering tasks usi
 ## Features
 
 - Interactive chat interface with AI assistance
-- Support for various AI models (Anthropic Claude, OpenAI GPT, Google Gemini, DeepSeek, XAI Grok) - Default: Google Gemini Pro 2.5
-- File system operations (read, write, search, grep, list, tree)
+- Support for various AI models (Anthropic Claude, OpenAI GPT, Google Gemini [Pro 2.5, Flash 2.5], DeepSeek, XAI Grok, OpenAI [O3, O4-mini]) - Default: Google Gemini Pro 2.5
+- File system operations (read with token limits, write, delete, search, grep, list, tree)
 - Git integration (status, commit, diff, log, branch, show) with improved output (JSON status, diff stats)
 - Code tooling (build, test, lint (including single file), format, install dependencies)
 - Code interpreter for JavaScript execution
@@ -18,6 +18,11 @@ Acai is an interactive CLI tool that assists with software engineering tasks usi
 - Enhanced UI/Output (syntax highlighting for diffs, improved tables, smoother streaming)
 - Context preservation across sessions
 - Persistent project rules and user memories
+- Web search capabilities (`webSearch` tool)
+- Execute whitelisted shell commands (`bashTool` tool)
+- @Mentions for easy file/URL context injection
+- System notifications on task completion (configurable)
+- Enhanced `fetch` tool for better URL content retrieval
 
 ## Installation
 
@@ -52,8 +57,8 @@ acai-lsp
 - `/compact` - Saves, summarizes and resets the chat history
 - `/exit` or `/bye` - Exits and saves chat history
 - `/files [pattern]` - Select files interactively or by pattern, adding content to prompt
-- `/commit` - Generate Conventional Commits for current changes
-- `/review [PR#]` - Review a GitHub pull request
+- `/commit [args]` - Generate Conventional Commits for current changes (accepts args for prompt customization)
+- `/review [PR#|local]` - Review a GitHub pull request or local changes
 - `/init` - Generate or improve `.acai/rules.md`
 - `/editPrompt` - Edit the current prompt
 - `/paste` - Add clipboard contents to the next prompt
@@ -63,7 +68,8 @@ acai-lsp
 - `/rules [view|add <text>|edit]` - View or edit persistent project rules/memories (formerly /memory)
 - `/model [provider:model|category|provider]` - List or switch models
 - `/pr-comments [PR#] [instructions]` - Add review comments to a GitHub PR
-- `/usage` - Show token usage breakdown for the current session
+- `/usage` - Show token usage breakdown
+- `/clear` - Clears the terminal screen for the current session
 - `/usage` - Show token usage breakdown
 
 ## Configuration
@@ -77,7 +83,14 @@ Acai supports project-specific configuration through a `.acai/acai.json` file in
   "lint": "npm run lint",
   "format": "npm run format",
   "install": "npm install",
-  "logPath": "~/.acai/logs/acai.log" // Optional: Customize log file location
+  "logPath": "~/.acai/logs/acai.log", // Optional: Customize log file location
+  "notify": true, // Optional: Enable/disable system notifications (default: false)
+  "maxTokens": { // Optional: Set max token limits per tool
+    "readFile": 10000
+  },
+  "google": { // Optional: Google-specific settings
+    "thinkingBudget": 5000 // Example: Limit tokens for Gemini's internal thinking
+  }
 }
 ```
 
