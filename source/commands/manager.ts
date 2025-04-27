@@ -3,7 +3,8 @@ import type { ModelManager } from "../models/manager.ts";
 import type { PromptManager } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../token-tracker.ts";
-import { clearCommand } from "./clear-command.ts"; // Added import
+import { cleanRepoCommand } from "./clean-repo.ts";
+import { clearCommand } from "./clear-command.ts";
 import { commitCommand } from "./commit-command.ts";
 import { compactCommand } from "./compact-command.ts";
 import { editCommand } from "./edit-command.ts";
@@ -61,7 +62,8 @@ export class CommandManager {
 
     // Register all commands
     const cmds = [
-      clearCommand(options), // Added new command
+      cleanRepoCommand(options),
+      clearCommand(options),
       commitCommand(options),
       compactCommand(options),
       editCommand(options),
