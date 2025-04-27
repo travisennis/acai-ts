@@ -274,10 +274,11 @@ async function generateDirectoryTree(
 export async function directoryTree(dirPath: string): Promise<string> {
   let ig: Ignore;
   try {
-    const ignoreFile = await fs.readFile(path.join(dirPath, ".gitignore"));
+    const ignoreFile = await fs.readFile(
+      path.join(process.cwd(), ".gitignore"),
+    );
     ig = ignore().add(ignoreFile.toString()).add(".git");
   } catch (_error) {
-    console.error(_error);
     // If .gitignore doesn't exist, create basic ignore with just .git
     ig = ignore().add(".git");
   }
