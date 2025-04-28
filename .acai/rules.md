@@ -12,6 +12,7 @@
 
 ### Code Style & Guidelines
 
+- **Code Organization:** All source code for this project is stored in `./source`.
 - **Language:** Strict TypeScript (ESNext target). Enable all strict checks.
 - **Modules:** Use ES Modules (`import`/`export`). Add `.ts` extensions to relative imports. Use `node:` prefix for Node.js built-ins (e.g., `import fs from 'node:fs'`).
 - **Formatting/Linting:** Adhere strictly to Biome rules (`npm run format`, `npm run lint`).
