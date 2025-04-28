@@ -70,7 +70,7 @@ export class ConfigManager {
     }
   }
   async readLearnedRulesFile(): Promise<string> {
-    const rulesPath = path.join(this.project.getPath(), "learned-rules.md");
+    const rulesPath = path.join(this.app.getPath("rules"), "learned-rules.md");
     try {
       return await fs.readFile(rulesPath, "utf8");
     } catch (error) {
@@ -82,7 +82,10 @@ export class ConfigManager {
   }
 
   async writeLearnedRulesFile(rules: string): Promise<void> {
-    const rulesPath = path.join(this.project.ensurePath(), "learned-rules.md");
+    const rulesPath = path.join(
+      this.app.ensurePath("rules"),
+      "learned-rules.md",
+    );
     try {
       return await fs.writeFile(rulesPath, rules, "utf8");
     } catch (error) {
