@@ -173,7 +173,7 @@ Fix: [suggested solution]
 **acai:** \`npm test\`
 
 **User:** What's in the package.json file?
-**acai:** 
+**acai:**
 \`\`\`json
 {
   "name": "acai-ts",
@@ -186,7 +186,7 @@ Fix: [suggested solution]
 **acai:** Planning implementation... would you prefer a stream-based or in-memory approach?
 
 **User:** What's causing the TypeError in the auth module?
-**acai:** 
+**acai:**
 Line 42 passes undefined to \`validateToken()\`. Add null check before function call.`;
 }
 
@@ -209,10 +209,10 @@ async function getRules() {
 async function environmentInfo() {
   return `## Environment
 
-**Current working directory**: ${process.cwd()}. [Use this value directly instead of calling the bashTool(pwd) tool unless you have a specific reason to verify it].
-**Is directory a git repo**: ${(await inGitDirectory()) ? "Yes" : "No"}
-**Platform**: ${platform()}
-**Today's date**: ${(new Date()).toISOString()}`;
+- **Current working directory**: ${process.cwd()}. [Use this value directly instead of calling the bashTool(pwd) tool unless you have a specific reason to verify it].
+- **Is directory a git repo**: ${(await inGitDirectory()) ? "Yes" : "No"}
+- **Platform**: ${platform()}
+- **Today's date**: ${(new Date()).toISOString()}`;
 }
 
 export async function systemPrompt(options?: {
