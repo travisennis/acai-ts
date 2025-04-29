@@ -259,8 +259,7 @@ export class Repl {
                 // Starting reasoning: Clear log-update, print accumulated text if any, print <think>
                 logUpdate.clear();
                 if (accumulatedText) {
-                  terminal.write(await formatOutput(accumulatedText)); // Write final state before think
-                  terminal.lineBreak(); // Ensure newline after formatted text
+                  terminal.write(await formatOutput(accumulatedText, true)); // Write final state before think
                 }
                 terminal.write(chalk.gray("<think>\n"));
               }
@@ -272,7 +271,7 @@ export class Repl {
                 terminal.write(chalk.gray("\n</think>\n\n"));
               }
               accumulatedText += chunk.textDelta;
-              logUpdate(await formatOutput(accumulatedText)); // Update the display with formatted text
+              logUpdate(accumulatedText); // Update the display with RAW text
               lastType = "text-delta";
             }
             // Handle other chunk types or transitions if needed
@@ -291,15 +290,21 @@ export class Repl {
             lastType = null;
           } else {
             // it's not reasoning or text then we are dealing with tool calls within the stream
-            logUpdate.done();
+            logUpdate.clear();
+            terminal.write(await formatOutput(accumulatedText, true));
             accumulatedText = "";
           }
         }
         // Ensure the final closing tag for reasoning is written if it was the last type
         if (lastType === "reasoning") {
           terminal.write(chalk.gray("\n</think>\n\n"));
+        } else if (accumulatedText) {
+          // If the stream ended with text-delta, clear the last raw update
+          // and print the final formatted version.
+          logUpdate.clear();
+          terminal.write(await formatOutput(accumulatedText, true));
         } else {
-          // If the stream ended with text-delta, ensure log-update is finalized
+          // If the stream ended otherwise (e.g. tool call), just finalize.
           logUpdate.done();
         }
         terminal.lineBreak(); // Add a final newline for clarity

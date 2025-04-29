@@ -24,7 +24,6 @@ const sendDataHandler = (terminal: Terminal) => {
       for (const line of secondaryMsgs) {
         msgStore.get(msg.id)?.push(line);
       }
-      terminal.lineBreak();
     } else if (msg.event === "tool-completion") {
       msgStore.get(msg.id)?.push(`└── ${msg.data}`);
       const msgHistory = msgStore.get(msg.id) ?? [];

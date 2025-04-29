@@ -72,7 +72,6 @@ export const filesCommand = ({
 
         tokenCounter.free();
 
-        terminal.lineBreak();
         terminal.success(
           `File contents will be added to your next prompt (${workingFiles.length} files, ${tokenCount} tokens)`,
         );
