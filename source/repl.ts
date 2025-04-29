@@ -201,8 +201,9 @@ export class Repl {
             const stats = await getDiffStat();
             terminal.writeln(
               `${chalk.dim("Files changed:")} ${chalk.yellow(stats.filesChanged)} ` +
-                `${chalk.green(`+${stats.insertions}`)} ` +
-                `${chalk.red(`-${stats.deletions}`)}`,
+                `${chalk.green(`+${stats.insertions}`)} ` + // Insertions first (green)
+                `${chalk.yellow(`~${stats.modifications}`)} ` + // Modifications second (yellow)
+                `${chalk.red(`-${stats.deletions}`)}`, // Deletions last (red)
             );
 
             const outgoingTokens = isNumber(result.usage.promptTokens)
