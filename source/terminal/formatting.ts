@@ -5,15 +5,25 @@
  */
 
 import chalk from "chalk";
-import { type Renderer, marked } from "marked";
-import TerminalRenderer from "marked-terminal";
+import { Marked } from "marked";
+import { TerminalRenderer } from "./marked-renderer.ts";
 
-marked.setOptions({
+const marked = new Marked().setOptions({
   // Define custom renderer
   renderer: new TerminalRenderer({
-    strong: chalk.gray.bold,
+    strong: chalk.blue.bold,
     tab: 2,
-  }) as unknown as Renderer,
+  }),
+});
+
+const wrapMarked = new Marked().setOptions({
+  // Define custom renderer
+  renderer: new TerminalRenderer({
+    strong: chalk.blue.bold,
+    tab: 2,
+    width: Math.max(80, process.stdout.columns - 2),
+    reflowText: true,
+  }),
 });
 
 /**
@@ -78,12 +88,17 @@ export function getTerminalSize(): { rows: number; columns: number } {
 /**
  * Format output for display in the terminal
  */
-export async function formatOutput(text: string): Promise<string> {
+export async function formatOutput(
+  text: string,
+  wrap = false,
+): Promise<string> {
   if (!text) {
     return "";
   }
 
-  const formattedText = await marked.parse(text);
+  const formattedText = wrap
+    ? await wrapMarked.parse(text)
+    : await marked.parse(text);
 
   return formattedText.trimEnd();
 }
