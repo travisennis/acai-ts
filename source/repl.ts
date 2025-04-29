@@ -202,7 +202,6 @@ export class Repl {
             terminal.writeln(
               `${chalk.dim("Files changed:")} ${chalk.yellow(stats.filesChanged)} ` +
                 `${chalk.green(`+${stats.insertions}`)} ` + // Insertions first (green)
-                `${chalk.yellow(`~${stats.modifications}`)} ` + // Modifications second (yellow)
                 `${chalk.red(`-${stats.deletions}`)}`, // Deletions last (red)
             );
 

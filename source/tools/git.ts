@@ -69,7 +69,6 @@ export async function getDiffStat() {
       filesChanged: diffSummary.files.length,
       insertions: diffSummary.insertions,
       deletions: diffSummary.deletions,
-      modifications: 0, // Add modifications property, initialized to 0
     };
   } catch (error) {
     // Handle cases where git diff fails (e.g., initial commit)
@@ -78,7 +77,6 @@ export async function getDiffStat() {
       filesChanged: 0,
       insertions: 0,
       deletions: 0,
-      modifications: 0, // Also add here for consistency
     };
   }
 }
