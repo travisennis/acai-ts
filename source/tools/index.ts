@@ -49,11 +49,12 @@ const sendDataHandler = (terminal: Terminal) => {
 export async function initTools({
   terminal,
 }: {
-  terminal?: Terminal;
+  terminal: Terminal;
 }) {
   const sendDataFn = terminal ? sendDataHandler(terminal) : undefined;
   const fsTools = await createFileSystemTools({
     workingDir: process.cwd(),
+    terminal,
     sendData: sendDataFn,
   });
 
@@ -95,15 +96,12 @@ export async function initTools({
         question: z.string().describe("The question to ask the user."),
       }),
       execute: async ({ question }) => {
-        if (terminal) {
-          terminal.lineBreak();
-          await terminal.display(question);
-          const result = await input({ message: "? " });
-          terminal.lineBreak();
+        terminal.lineBreak();
+        await terminal.display(question);
+        const result = await input({ message: "? " });
+        terminal.lineBreak();
 
-          return result;
-        }
-        return "Terminal is not configured. Can't ask user.";
+        return result;
       },
     }),
   };
