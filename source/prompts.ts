@@ -82,7 +82,7 @@ function toolUsage() {
 - When dealing with multi-step tasks, outline the approach before beginning
 
 ### Code Modification
-1. Use \`editFile\` to edit existing files. The tool will ask the user for approval. If approved the tool will return the diff. If reject, the tool will return the user's feedback as to why.
+1. Use \`editFile\` to edit existing files. The tool will ask the user for approval. If approved the tool will return the diff. If rejected, the tool will return the user's feedback as to why. Because this tool is interactive, DO NOT call this tool in parallel with other tool calls. Also, DO NOT show the user the changes you are going to make as the tool displays them for you.
 2. Use \`saveFile\` only for new files
 3. After code changes, ALWAYS run:
    - format command using basTool
