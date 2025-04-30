@@ -11,6 +11,7 @@ import { editCommand } from "./edit-command.ts";
 import { editPromptCommand } from "./edit-prompt-command.ts";
 import { exitCommand } from "./exit-command.ts";
 import { filesCommand } from "./files-command.ts";
+import { generateRulesCommand } from "./generate-rules-command.ts";
 import { helpCommand } from "./help-command.ts";
 import { initCommand } from "./init-command.ts";
 import { lastLogCommand } from "./last-log-command.ts";
@@ -84,6 +85,7 @@ export class CommandManager {
       usageCommand(options),
       prCommentsCommand(options),
       lastLogCommand(options),
+      generateRulesCommand(options),
     ];
 
     // Add help command with access to all commands

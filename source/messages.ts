@@ -10,7 +10,6 @@ import {
   type TextPart,
   generateText,
 } from "ai";
-import { analyzeConversation } from "./conversation-analyzer.ts";
 import type { ModelManager } from "./models/manager.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import { countTokens } from "./token-utils.ts";
@@ -155,11 +154,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     const fileName = `message-history-${timestamp}.json`;
     const filePath = join(msgHistoryDir, fileName);
 
-    analyzeConversation({
-      modelManager: this.modelManager,
-      messages: this.get(),
-      tokenTracker: this.tokenTracker,
-    });
+    // analyzeConversation removed - now triggered by /generate-rules command
 
     const output = {
       title: this.title,
