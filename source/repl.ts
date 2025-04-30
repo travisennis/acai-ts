@@ -256,12 +256,6 @@ export class Repl {
           if (chunk.type === "reasoning" || chunk.type === "text-delta") {
             if (chunk.type === "reasoning") {
               if (lastType !== "reasoning") {
-                // Starting reasoning: Clear log-update, print accumulated text if any, print <think>
-                logUpdate.clear();
-                if (accumulatedText) {
-                  terminal.write(await formatOutput(accumulatedText, true)); // Write final state before think
-                  terminal.lineBreak();
-                }
                 terminal.write(chalk.gray("<think>\n"));
               }
               terminal.write(chalk.gray(chunk.textDelta)); // Stream reasoning directly
@@ -281,7 +275,7 @@ export class Repl {
               terminal.write(chalk.gray("\n</think>\n\n"));
               lastType = null;
             } else {
-              // If we transition from reasoning  or text-dalta to something else (e.g., tool call), set lastType to null.
+              // If we transition from reasoning  or text-delta to something else (e.g., tool call), set lastType to null.
               lastType = null;
             }
           }
@@ -289,11 +283,16 @@ export class Repl {
           else if (lastType === "reasoning") {
             terminal.write(chalk.gray("\n</think>\n\n"));
             lastType = null;
-          } else {
+          } else if (chunk.type === "finish" || chunk.type === "step-finish") {
             // it's not reasoning or text then we are dealing with tool calls within the stream
             logUpdate.clear();
-            terminal.write(await formatOutput(accumulatedText, true));
-            terminal.lineBreak();
+            if (accumulatedText) {
+              terminal.write(await formatOutput(accumulatedText, true));
+              terminal.lineBreak();
+            }
+            accumulatedText = "";
+          } else {
+            logUpdate.done();
             accumulatedText = "";
           }
         }
@@ -301,11 +300,6 @@ export class Repl {
         // Ensure the final closing tag for reasoning is written if it was the last type
         if (lastType === "reasoning") {
           terminal.write(chalk.gray("\n</think>\n\n"));
-        } else if (accumulatedText) {
-          // If the stream ended with text-delta, clear the last raw update
-          // and print the final formatted version.
-          logUpdate.clear();
-          terminal.write(await formatOutput(accumulatedText, true));
         } else {
           // If the stream ended otherwise (e.g. tool call), just finalize.
           logUpdate.done();
