@@ -43,10 +43,9 @@ const sendDataHandler = (terminal: Terminal) => {
           for (const msg of messages) {
             if (msg.event === "tool-update") {
               if (msg.data.secondary && msg.data.secondary.length > 0) {
-                await terminal.box(
-                  msg.data.primary,
-                  msg.data.secondary.join("\n"),
-                );
+                terminal.header(msg.data.primary, chalk.blue);
+                await terminal.display(msg.data.secondary.join("\n"));
+                terminal.hr(chalk.blue);
               } else {
                 await terminal.display(`└── ${msg.data.primary}`);
               }
