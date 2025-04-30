@@ -13,6 +13,7 @@ import { exitCommand } from "./exit-command.ts";
 import { filesCommand } from "./files-command.ts";
 import { helpCommand } from "./help-command.ts";
 import { initCommand } from "./init-command.ts";
+import { lastLogCommand } from "./last-log-command.ts";
 import { modelCommand } from "./model-command.ts";
 import { pasteCommand } from "./paste-command.ts";
 import { prCommentsCommand } from "./pr-comments-command.ts";
@@ -82,6 +83,7 @@ export class CommandManager {
       modelCommand(options),
       usageCommand(options),
       prCommentsCommand(options),
+      lastLogCommand(options),
     ];
 
     // Add help command with access to all commands
