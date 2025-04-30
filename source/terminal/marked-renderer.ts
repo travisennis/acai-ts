@@ -1,12 +1,12 @@
 import process from "node:process";
 import ansiEscapes from "ansi-escapes";
-import ansiRegex from "ansi-regex";
 import chalk, { type ChalkInstance } from "chalk"; // Added ChalkInstance
 import { highlight as highlightCli } from "cli-highlight";
 import Table from "cli-table3";
 import { type MarkedOptions, Renderer } from "marked";
 import { get as emojiGet } from "node-emoji";
 import supportsHyperlinks from "supports-hyperlinks";
+import wrapAnsi from "wrap-ansi";
 
 // --- Helper Functions (moved some from original global scope) ---
 
@@ -23,11 +23,8 @@ const COLON_REPLACER_REGEXP = new RegExp(escapeRegExp(COLON_REPLACER), "g");
 
 const TAB_ALLOWED_CHARACTERS = ["\t"];
 
-const ANSI_REGEXP = ansiRegex();
-
 const HARD_RETURN = "\r";
 const HARD_RETURN_RE = new RegExp(HARD_RETURN);
-const HARD_RETURN_GFM_RE = new RegExp(`${HARD_RETURN}|<br />`);
 
 function identity<T = string>(str: T): T {
   return str;
@@ -57,17 +54,6 @@ function compose<T extends AnyType[], R>(
   };
 }
 
-// function compose(...funcs: Function[]) {
-//   return function (...args: any[]) {
-//     let result = args;
-//     for (let i = funcs.length; i-- > 0; ) {
-//       // TODO: Fix 'this' context and typing here if needed
-//       result = [funcs[i].apply(this, result)];
-//     }
-//     return result[0];
-//   };
-// }
-
 function isAllowedTabString(str: string): boolean {
   return TAB_ALLOWED_CHARACTERS.some((char) => str.match(`^(${char})+$`));
 }
@@ -83,10 +69,6 @@ function sanitizeTab(
     return tab;
   }
   return " ".repeat(fallbackTab);
-}
-
-function textLength(str: string): number {
-  return str.replace(ANSI_REGEXP, "").length;
 }
 
 function fixHardReturn(text: string, reflow: boolean): string {
@@ -323,11 +305,7 @@ export class TerminalRenderer extends Renderer {
 
     if (this.o.reflowText) {
       // Pass gfm flag from options
-      currentText = reflowText(
-        currentText,
-        this.o.width ?? defaultOptions.width,
-        this.options.gfm ?? defaultOptions.gfm,
-      );
+      currentText = wrapAnsi(currentText, this.o.width ?? defaultOptions.width);
     }
 
     const headingFn =
@@ -485,11 +463,7 @@ export class TerminalRenderer extends Renderer {
     currentText = transformFn(currentText);
 
     if (this.o.reflowText) {
-      currentText = reflowText(
-        currentText,
-        this.o.width ?? defaultOptions.width,
-        this.options.gfm ?? defaultOptions.gfm,
-      );
+      currentText = wrapAnsi(currentText, this.o.width ?? defaultOptions.width);
     }
     return section(currentText);
   }
@@ -635,19 +609,6 @@ export class TerminalRenderer extends Renderer {
       currentHref = href;
     }
 
-    // if (this.options.sanitize) {
-    //   try {
-    //     const decodedHref = decodeURIComponent(unescape(currentHref));
-    //     const protocol = decodedHref.replace(/[^\w:]/g, "").toLowerCase();
-    //     // Check if protocol starts with 'javascript:'
-    //     if (protocol.startsWith("javascript:")) {
-    //       return currentText || ""; // Return text if sanitize removes link
-    //     }
-    //   } catch (_e) {
-    //     return currentText || ""; // Return text on error
-    //   }
-    // }
-
     const linkFn = this.o.link || identity;
     const hrefFn = this.o.href || identity;
     const textTransform = this.emoji; // Apply emoji transformation
@@ -708,107 +669,6 @@ export class TerminalRenderer extends Renderer {
 }
 
 // --- Standalone Helper Functions (Potentially used by options or internally) ---
-
-// Munge \n's and spaces in "text" so that the number of
-// characters between \n's is less than or equal to "width".
-function reflowText(text: string, width: number, gfm: boolean): string {
-  const splitRe = gfm ? HARD_RETURN_GFM_RE : HARD_RETURN_RE;
-  const sections = text.split(splitRe);
-  const reflowed: string[] = []; // Explicitly type as string array
-
-  for (const section of sections) {
-    // Use for...of
-    // Split the section by escape codes
-    const fragments = section.split(/(\u001b\[(?:\d{1,3})(?:;\d{1,3})*m)/g);
-    let column = 0;
-    let currentLine = "";
-    let lastWasEscapeChar = false;
-
-    while (fragments.length > 0) {
-      const fragment = fragments.shift() ?? "";
-
-      if (fragment === "") {
-        lastWasEscapeChar = false;
-        continue;
-      }
-
-      // This is an escape code
-      if (!textLength(fragment)) {
-        currentLine += fragment;
-        lastWasEscapeChar = true;
-        continue;
-      }
-
-      // Regex for splitting words (moved to top level if performance needed)
-      const wordSplitRe = /[ \t\n]+/;
-      const words = fragment.split(wordSplitRe);
-
-      for (const word of words) {
-        if (!word) {
-          continue; // Skip empty strings resulting from split
-        }
-
-        let thisWord = word;
-
-        const addSpace = column !== 0 && !lastWasEscapeChar;
-        const spaceWidth = addSpace ? 1 : 0;
-
-        // If adding the new word overflows the required width
-        if (column + word.length + spaceWidth > width) {
-          if (word.length <= width) {
-            // Word fits on a new line
-            reflowed.push(currentLine);
-            currentLine = word;
-            column = word.length;
-          } else {
-            // Word is longer than width, must break it
-            if (column + spaceWidth < width) {
-              // Add space if it fits before breaking word
-              if (addSpace) {
-                currentLine += " ";
-              }
-              const charsToFit = width - (column + spaceWidth);
-              currentLine += word.substring(0, charsToFit);
-              thisWord = word.substring(charsToFit);
-            }
-            // Push the completed line
-            reflowed.push(currentLine);
-            currentLine = "";
-            column = 0;
-
-            // Break the remaining part of the word
-            while (thisWord.length > 0) {
-              const segment = thisWord.substring(0, width);
-              if (segment.length < width) {
-                currentLine = segment;
-                column = segment.length;
-                thisWord = ""; // Finished with this word
-              } else {
-                reflowed.push(segment);
-                thisWord = word.substring(width);
-              }
-            }
-          }
-        } else {
-          // Word fits on the current line
-          if (addSpace) {
-            currentLine += " ";
-            column++;
-          }
-          currentLine += thisWord;
-          column += thisWord.length;
-        }
-        lastWasEscapeChar = false;
-      }
-    }
-
-    if (textLength(currentLine) > 0) {
-      reflowed.push(currentLine);
-    }
-  }
-
-  return reflowed.join("\n");
-}
 
 const BULLET_POINT_REGEX = "\\*";
 const NUMBERED_POINT_REGEX = "\\d+\\.";
