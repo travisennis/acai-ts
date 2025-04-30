@@ -154,8 +154,6 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     const fileName = `message-history-${timestamp}.json`;
     const filePath = join(msgHistoryDir, fileName);
 
-    // analyzeConversation removed - now triggered by /generate-rules command
-
     const output = {
       title: this.title,
       messages: this.history,
