@@ -21,7 +21,7 @@ const wrapMarked = new Marked().setOptions({
   renderer: new TerminalRenderer({
     strong: chalk.blue.bold,
     tab: 2,
-    width: Math.max(80, process.stdout.columns - 2),
+    width: Math.max(80, process.stdout.columns - 6),
     reflowText: true,
   }),
 });

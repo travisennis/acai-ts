@@ -288,7 +288,7 @@ export class Terminal {
 
     // Write the box
     process.stdout.write(
-      `${topBorder}\n${await formatOutput(contentLines)}\n${bottomBorder}\n`,
+      `${topBorder}\n${await formatOutput(contentLines, true)}\n${bottomBorder}\n`,
     );
   }
 
