@@ -267,11 +267,7 @@ export class Terminal {
     );
   }
 
-  box(
-    header: string,
-    content: string,
-    chalkFn: ChalkInstance = chalk.green,
-  ): void {
+  async box(header: string, content: string): Promise<void> {
     const width = process.stdout.columns - 4; // Account for box borders
     const paddedHeader = ` ${header} `;
     const headerStartPos = 1; //Math.floor((width - paddedHeader.length) / 2);
@@ -292,7 +288,7 @@ export class Terminal {
 
     // Write the box
     process.stdout.write(
-      chalkFn(`\n${topBorder}\n${contentLines}\n${bottomBorder}\n`),
+      `${topBorder}\n${await formatOutput(contentLines)}\n${bottomBorder}\n`,
     );
   }
 
