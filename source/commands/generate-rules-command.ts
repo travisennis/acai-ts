@@ -15,11 +15,11 @@ export const generateRulesCommand = ({
     getSubCommands: () => [],
     execute: async () => {
       if (messageHistory.isEmpty()) {
-        terminal.write("Cannot generate rules from an empty conversation.\n");
+        terminal.writeln("Cannot generate rules from an empty conversation.");
         return;
       }
 
-      terminal.write("Analyzing conversation to generate rules...\n");
+      terminal.writeln("Analyzing conversation to generate rules...");
       try {
         const newRules = await analyzeConversation({
           modelManager,
@@ -29,14 +29,14 @@ export const generateRulesCommand = ({
         });
 
         if (newRules && newRules.trim().length > 0) {
-          terminal.write("Generated and saved the following rules:\n");
-          terminal.write(`${newRules}\n`);
+          terminal.writeln("Generated and saved the following rules:");
+          terminal.writeln(`${newRules}`);
         } else {
-          terminal.write("No new generalizable rules were identified.\n");
+          terminal.writeln("No new generalizable rules were identified.");
         }
       } catch (error) {
-        terminal.write(
-          `Error generating rules: ${error instanceof Error ? error.message : error}\n`,
+        terminal.writeln(
+          `Error generating rules: ${error instanceof Error ? error.message : error}`,
         );
         console.error("Error during rule generation:", error);
       }
