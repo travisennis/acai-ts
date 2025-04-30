@@ -534,7 +534,12 @@ export const createFileSystemTools = async ({
         ),
       }),
       execute: async ({ path, edits }) => {
-        const uuid = crypto.randomUUID();
+        const id = crypto.randomUUID();
+        sendData?.({
+          id,
+          event: "tool-init",
+          data: `Editing file: ${path}`,
+        });
         try {
           const validPath = await validatePath(
             joinWorkingDir(path, workingDir),
@@ -545,11 +550,15 @@ export const createFileSystemTools = async ({
 
           terminal.writeln(`\n${chalk.blue.bold("●")} Editing file: ${path}`);
 
+          terminal.lineBreak();
+
           const result = await applyFileEdits(validPath, edits, true);
 
           terminal.writeln(
             `The agent is proposing the following ${edits.length} edits:`,
           );
+
+          terminal.lineBreak();
 
           await terminal.display(result);
 
@@ -564,6 +573,12 @@ export const createFileSystemTools = async ({
 
           if (acceptEdits) {
             const finalEdits = await applyFileEdits(validPath, edits, false);
+            // Send completion message indicating success
+            sendData?.({
+              id,
+              event: "tool-completion",
+              data: "Edits accepted and applied successfully.",
+            });
             return finalEdits;
           }
 
@@ -571,11 +586,17 @@ export const createFileSystemTools = async ({
 
           terminal.lineBreak();
 
-          return `The user did not accept these changes. Reason: ${reason}`;
+          // Send completion message indicating rejection
+          sendData?.({
+            id,
+            event: "tool-completion",
+            data: `Edits rejected by user. Reason: ${reason}`,
+          });
+          return `The user rejected these changes. Reason: ${reason}`;
         } catch (error) {
           sendData?.({
             event: "tool-error",
-            id: uuid,
+            id: id,
             data: `Failed to edit file: ${(error as Error).message}`,
           });
           return `Failed to edit file: ${(error as Error).message}`;
