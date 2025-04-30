@@ -260,6 +260,7 @@ export class Repl {
                 logUpdate.clear();
                 if (accumulatedText) {
                   terminal.write(await formatOutput(accumulatedText, true)); // Write final state before think
+                  terminal.lineBreak();
                 }
                 terminal.write(chalk.gray("<think>\n"));
               }
@@ -292,9 +293,11 @@ export class Repl {
             // it's not reasoning or text then we are dealing with tool calls within the stream
             logUpdate.clear();
             terminal.write(await formatOutput(accumulatedText, true));
+            terminal.lineBreak();
             accumulatedText = "";
           }
         }
+
         // Ensure the final closing tag for reasoning is written if it was the last type
         if (lastType === "reasoning") {
           terminal.write(chalk.gray("\n</think>\n\n"));
@@ -307,6 +310,7 @@ export class Repl {
           // If the stream ended otherwise (e.g. tool call), just finalize.
           logUpdate.done();
         }
+
         terminal.lineBreak(); // Add a final newline for clarity
 
         result.consumeStream();
