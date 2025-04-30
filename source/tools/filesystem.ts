@@ -2,12 +2,15 @@ import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { confirm, input } from "@inquirer/prompts";
 import { isNumber } from "@travisennis/stdlib/typeguards";
 import { tool } from "ai";
+import chalk from "chalk";
 import { createTwoFilesPatch } from "diff";
 import ignore, { type Ignore } from "ignore";
 import { z } from "zod";
 import { config } from "../config.ts";
+import type { Terminal } from "../terminal/index.ts";
 import { countTokens } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
 
@@ -287,6 +290,7 @@ export async function directoryTree(dirPath: string): Promise<string> {
 
 interface FileSystemOptions {
   workingDir: string;
+  terminal: Terminal;
   sendData?: SendData | undefined;
 }
 
@@ -306,6 +310,7 @@ const fileEncodingSchema = z.enum([
 
 export const createFileSystemTools = async ({
   workingDir,
+  terminal,
   sendData,
 }: FileSystemOptions) => {
   // Store allowed directories in normalized form
@@ -527,52 +532,46 @@ export const createFileSystemTools = async ({
             newText: z.string().describe("Text to replace with"),
           }),
         ),
-        dryRun: z
-          .boolean()
-          .nullable()
-          .describe(
-            "Preview changes using git-style diff format: true or false. If pass null, the default value is false.",
-          ),
       }),
-      execute: async ({ path, edits, dryRun }) => {
+      execute: async ({ path, edits }) => {
         const uuid = crypto.randomUUID();
         try {
-          sendData?.({
-            event: "tool-init",
-            id: uuid,
-            data: `Editing file: ${path}`,
-          });
           const validPath = await validatePath(
             joinWorkingDir(path, workingDir),
             allowedDirectory,
           );
-          const result = await applyFileEdits(
-            validPath,
-            edits,
-            dryRun ?? false,
+
+          terminal.lineBreak();
+
+          terminal.writeln(`\n${chalk.blue.bold("●")} Editing file: ${path}`);
+
+          const result = await applyFileEdits(validPath, edits, true);
+
+          terminal.writeln(
+            `The agent is proposing the following ${edits.length} edits:`,
           );
-          if (dryRun) {
-            sendData?.({
-              event: "tool-update",
-              id: uuid,
-              data: {
-                primary: `Proposing ${edits.length} edits`,
-                secondary: [result],
-              },
-            });
-            sendData?.({
-              event: "tool-completion",
-              id: uuid,
-              data: "Done",
-            });
-          } else {
-            sendData?.({
-              event: "tool-completion",
-              id: uuid,
-              data: `Applied ${edits.length} edits. Backup created at ${validPath}.backup`,
-            });
+
+          await terminal.display(result);
+
+          terminal.lineBreak();
+
+          const acceptEdits = await confirm({
+            message: "Accept these changes?",
+            default: false,
+          });
+
+          terminal.lineBreak();
+
+          if (acceptEdits) {
+            const finalEdits = await applyFileEdits(validPath, edits, false);
+            return finalEdits;
           }
-          return result;
+
+          const reason = await input({ message: "Feedback: " });
+
+          terminal.lineBreak();
+
+          return `The user did not accept these changes. Reason: ${reason}`;
         } catch (error) {
           sendData?.({
             event: "tool-error",
