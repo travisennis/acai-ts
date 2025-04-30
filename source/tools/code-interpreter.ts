@@ -63,6 +63,12 @@ export const createCodeInterpreterTool = ({
             data: "Initializing code interpreter environment",
           });
 
+          sendData?.({
+            event: "tool-update",
+            id: uuid,
+            data: { primary: "Executing...", secondary: [code.slice(0, 500)] },
+          });
+
           const result = jsCodeInterpreter(code, permissions ?? []);
 
           sendData?.({
