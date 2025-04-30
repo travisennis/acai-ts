@@ -14,34 +14,54 @@ import { createUrlTools } from "./url.ts";
 import { createWebSearchTools } from "./web-search.ts";
 
 const sendDataHandler = (terminal: Terminal) => {
-  const msgStore: Map<string, string[]> = new Map();
-  return async (msg: Message) => {
-    if (msg.event === "tool-init") {
-      msgStore.set(msg.id, [`${msg.data}`]);
-    } else if (msg.event === "tool-update") {
-      const secondaryMsgs = msg.data.secondary ?? [];
-      msgStore.get(msg.id)?.push(`└── ${msg.data.primary}`);
-      for (const line of secondaryMsgs) {
-        msgStore.get(msg.id)?.push(line);
-      }
-    } else if (msg.event === "tool-completion") {
-      msgStore.get(msg.id)?.push(`└── ${msg.data}`);
-      const msgHistory = msgStore.get(msg.id) ?? [];
-      if (msgHistory.length > 0) {
-        msgHistory[0] = `\n${chalk.blue.bold("●")} ${msgHistory[0]}`;
-      }
-      await Promise.all(msgHistory.map((msg) => terminal.display(msg)));
+  const msgStore: Map<string, Message[]> = new Map();
+  let printChain = Promise.resolve();
+  return (msg: Message) => {
+    if (msgStore.has(msg.id)) {
+      msgStore.get(msg.id)?.push(msg);
+    } else {
+      msgStore.set(msg.id, [msg]);
+    }
+
+    if (msg.event === "tool-completion" || msg.event === "tool-error") {
+      const messages = msgStore.get(msg.id) ?? [];
       msgStore.delete(msg.id);
-      terminal.lineBreak();
-    } else if (msg.event === "tool-error") {
-      const msgHistory = msgStore.get(msg.id) ?? [];
-      if (msgHistory.length > 0) {
-        msgHistory[0] = `\n${chalk.red.bold("●")} ${msgHistory[0]}`;
-      }
-      await Promise.all(msgHistory.map((msg) => terminal.display(msg)));
-      msgStore.delete(msg.id);
-      terminal.error(msg.data);
-      terminal.lineBreak();
+      printChain = printChain
+        .then(async () => {
+          // --- Printing logic for the current tool (uuid, messages) goes here ---
+          const isError = messages[messages.length - 1]?.event === "tool-error";
+          const indicator = isError
+            ? chalk.red.bold("●")
+            : chalk.blue.bold("●");
+          const initMessage =
+            messages.find((m) => m.event === "tool-init")?.data ??
+            "Tool Execution";
+
+          terminal.write(`\n${indicator} `); // Write indicator without newline (sync)
+          await terminal.display(initMessage); // Display initial message (async)
+
+          for (const msg of messages) {
+            if (msg.event === "tool-update") {
+              await terminal.display(`└── ${msg.data.primary}`);
+              if (msg.data.secondary && msg.data.secondary.length > 0) {
+                await terminal.box("Updates", msg.data.secondary.join("\n"));
+              }
+            } else if (msg.event === "tool-completion") {
+              await terminal.display(`└── ${msg.data}`);
+            } else if (msg.event === "tool-error") {
+              terminal.error(msg.data); // Use terminal.error for errors
+            }
+            // 'init' message already handled
+          }
+          terminal.lineBreak(); // Add a line break after all messages for this tool (sync)
+          // --- End of printing logic ---
+        })
+        .catch((err) => {
+          // Catch potential errors within the printing logic itself
+          console.error("Error during terminal output:", err);
+          // Ensure the chain continues even if one print job fails
+          return Promise.resolve();
+        });
     }
   };
 };
