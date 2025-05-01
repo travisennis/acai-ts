@@ -21,3 +21,4 @@
 - **Error Handling:** Implement robust error handling (try/catch, result patterns, etc.).
 - **Logging:** Avoid `console.log` for debugging; use a proper logger or remove before committing.
 - **Commits:** Follow the Conventional Commits standard for commit messages.
+- **Comments** Never add comments to the code explaining the edit you are making. Comments that help explain how code works are acceptable.
