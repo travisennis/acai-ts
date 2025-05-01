@@ -8,7 +8,7 @@ export const helpCommand = (
     command: "/help",
     description: "Shows available commands.",
     result: "continue" as const,
-    getSubCommands: () => [],
+    getSubCommands: () => Promise.resolve([]),
     execute: () => {
       const commands = cmds;
 

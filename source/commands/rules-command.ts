@@ -8,7 +8,7 @@ export const rulesCommand = ({ terminal }: CommandOptions): ReplCommand => {
     description:
       "View, add, or edit rules. Usage: /rules [view|add <text>|edit]",
     result: "continue" as const,
-    getSubCommands: () => ["view", "add", "edit"],
+    getSubCommands: () => Promise.resolve(["view", "add", "edit"]),
     execute: async (args: string[]) => {
       const subCommand = args[0] ?? "view"; // Default to 'view'
       const commandArgs = args.slice(1).join(" ");

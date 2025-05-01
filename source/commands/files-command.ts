@@ -15,7 +15,7 @@ export const filesCommand = ({
     description:
       "Finds files matching the given patterns and adds their content to the next prompt. Usage: /files or /files src/**/*.ts",
     result: "continue" as const,
-    getSubCommands: () => [],
+    getSubCommands: () => Promise.resolve([]),
     execute: async (args: string[]) => {
       try {
         let workingFiles: string[] = [];

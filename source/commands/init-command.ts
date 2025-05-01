@@ -11,7 +11,7 @@ export const initCommand = ({
     command: "/init",
     description: "Creates the .acai/rules.md file.",
     result: "continue" as const,
-    getSubCommands: () => [],
+    getSubCommands: () => Promise.resolve([]),
     execute: async () => {
       const result = streamText({
         model: modelManager.getModel("init-project"),

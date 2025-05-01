@@ -15,7 +15,7 @@ export const selectionsCommand = ({
     command: "/selections",
     description: "Use and manage saved selections.",
     result: "continue" as const,
-    getSubCommands: () => ["use", "edit", "clear"],
+    getSubCommands: () => Promise.resolve(["use", "edit", "clear"]),
     execute: async (args: string[]) => {
       const subCommand = args[0];
       switch (subCommand) {

@@ -9,7 +9,7 @@ export interface ReplCommand {
   aliases?: string[];
   description: string;
   result: "break" | "continue" | "use";
-  getSubCommands: () => string[];
+  getSubCommands: () => Promise<string[]>;
   execute: (args: string[]) => Promise<void>;
 }
 

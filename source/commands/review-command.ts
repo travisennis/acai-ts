@@ -7,7 +7,7 @@ export const reviewCommand = ({
     command: "/review",
     description: "Instructs the agent to perform a code review on a PR.",
     result: "use" as const,
-    getSubCommands: () => ["pr", "local"],
+    getSubCommands: () => Promise.resolve(["pr", "local"]),
     execute: (args: string[]) => {
       if (args[0] === "pr") {
         promptManager.set(

@@ -8,7 +8,7 @@ export const resetCommand = ({
     command: "/reset",
     description: "Saves the chat history and then resets it.",
     result: "continue" as const,
-    getSubCommands: () => [],
+    getSubCommands: () => Promise.resolve([]),
     execute: async () => {
       if (!messageHistory.isEmpty()) {
         await messageHistory.save();

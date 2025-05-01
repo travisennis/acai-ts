@@ -11,7 +11,7 @@ export const pasteCommand = ({
     command: "/paste",
     description: "Pastes content from the clipboard into the next prompt.",
     result: "continue" as const,
-    getSubCommands: () => [],
+    getSubCommands: () => Promise.resolve([]),
     execute: async () => {
       try {
         const clipboardContent = await clipboardy.read();

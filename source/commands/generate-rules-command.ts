@@ -12,7 +12,7 @@ export const generateRulesCommand = ({
     description:
       "Analyzes the current conversation to generate and save new interaction rules, then displays them.",
     result: "continue" as const,
-    getSubCommands: () => [],
+    getSubCommands: () => Promise.resolve([]),
     execute: async () => {
       if (messageHistory.isEmpty()) {
         terminal.writeln("Cannot generate rules from an empty conversation.");

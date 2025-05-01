@@ -73,7 +73,7 @@ export class ReplPrompt {
       output: process.stdout,
       history: this.history,
       historySize: this.maxHistory,
-      completer: (line) => {
+      completer: async (line): Promise<[string[], string]> => {
         const completions = commands.getCommands();
         const words = line.trim().split(/\s+/);
         const firstWord = words[0] ?? "";
@@ -85,7 +85,7 @@ export class ReplPrompt {
 
         if (matchingCommands.length === 1 && rest !== "") {
           // Single command matched, try to get subcommands
-          const subCompletions = commands.getSubCommands(
+          const subCompletions = await commands.getSubCommands(
             matchingCommands[0] ?? "",
           );
           const hits = subCompletions.filter(

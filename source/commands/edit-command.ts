@@ -9,7 +9,7 @@ export const editCommand = ({ terminal }: CommandOptions): ReplCommand => {
     command: "/edit",
     description: "Opens file in $EDITOR for editing.",
     result: "continue" as const,
-    getSubCommands: () => [],
+    getSubCommands: () => Promise.resolve([]),
     execute: async () => {
       const fileToEdit = await search({
         message: "Search for file:",

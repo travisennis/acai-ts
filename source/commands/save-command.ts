@@ -8,7 +8,7 @@ export const saveCommand = ({
     command: "/save",
     description: "Saves the chat history.",
     result: "continue" as const,
-    getSubCommands: () => [],
+    getSubCommands: () => Promise.resolve([]),
     execute: async () => {
       if (!messageHistory.isEmpty()) {
         await messageHistory.save();

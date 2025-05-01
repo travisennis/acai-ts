@@ -8,7 +8,7 @@ export const exitCommand = ({
     aliases: ["/bye", "/quit"],
     description: "Exits and saves the chat history.",
     result: "break" as const,
-    getSubCommands: () => [],
+    getSubCommands: () => Promise.resolve([]),
     execute: async () => {
       if (!messageHistory.isEmpty()) {
         await messageHistory.save();

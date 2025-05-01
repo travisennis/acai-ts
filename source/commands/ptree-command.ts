@@ -6,7 +6,7 @@ export const ptreeCommand = ({ terminal }: CommandOptions): ReplCommand => {
     command: "/ptree",
     description: "Displays the project tree.",
     result: "continue" as const,
-    getSubCommands: () => [],
+    getSubCommands: () => Promise.resolve([]),
     execute: async () => {
       await terminal.display(await directoryTree(process.cwd()));
     },

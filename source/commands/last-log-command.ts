@@ -55,7 +55,7 @@ export const lastLogCommand = ({ terminal }: CommandOptions): ReplCommand => {
     command: "/last-log",
     description: "Opens the most recent REPL audit log in the editor.",
     result: "continue" as const,
-    getSubCommands: () => [],
+    getSubCommands: () => Promise.resolve([]),
     execute: async () => {
       const logDir = config.app.ensurePath("audit");
       const mostRecentLog = await findMostRecentLog(logDir);

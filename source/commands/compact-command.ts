@@ -9,7 +9,7 @@ export const compactCommand = ({
     description:
       "Saves, summarizes, and resets the chat history. Optional instructions can be provided for the summary.",
     result: "continue" as const,
-    getSubCommands: () => [],
+    getSubCommands: () => Promise.resolve([]),
     execute: async (args: string[]) => {
       if (!messageHistory.isEmpty()) {
         const additionalInstructions = args.join(" ");

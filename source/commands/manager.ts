@@ -109,8 +109,8 @@ export class CommandManager {
     return Array.from(this.commands.keys()).sort();
   }
 
-  getSubCommands(command: string): string[] {
-    return this.commands.get(command)?.getSubCommands() ?? [];
+  async getSubCommands(command: string): Promise<string[]> {
+    return (await this.commands.get(command)?.getSubCommands()) ?? [];
   }
 
   async handle({ userInput }: { userInput: string }) {

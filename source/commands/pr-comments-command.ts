@@ -7,7 +7,7 @@ export const prCommentsCommand = ({
     command: "/pr-comments",
     description: "Get comments from a GitHub pull request.",
     result: "use" as const,
-    getSubCommands: () => [],
+    getSubCommands: () => Promise.resolve([]),
     execute: (args: string[]) => {
       promptManager.set(
         `You are an AI assistant integrated into a git-based version control system. Your task is to fetch and display comments from a GitHub pull request.

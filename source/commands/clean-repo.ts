@@ -39,7 +39,7 @@ export function cleanRepoCommand(options: CommandOptions): ReplCommand {
     description: "Removes all .backup files created by agent edits.",
     aliases: ["/clean"],
     result: "continue",
-    getSubCommands: () => [],
+    getSubCommands: () => Promise.resolve([]),
     execute: async (): Promise<void> => {
       const projectRoot = process.cwd();
       options.terminal.write("Starting cleanup of .backup files...\n");

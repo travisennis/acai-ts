@@ -8,7 +8,7 @@ export function usageCommand({
     command: "/usage",
     description: "Show token usage breakdown",
     result: "continue",
-    getSubCommands: () => [],
+    getSubCommands: () => Promise.resolve([]),
     execute() {
       const entries = Object.entries(tokenTracker.getUsageBreakdown());
       if (entries.length === 0) {

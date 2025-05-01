@@ -10,7 +10,7 @@ export const commitCommand = ({
     description:
       "Instructs the agent to create commit messages for the changes in the current working directory.",
     result: "use" as const,
-    getSubCommands: () => [],
+    getSubCommands: () => Promise.resolve([]),
     execute: async (args: string[]) => {
       promptManager.set(
         `Look at the working changes in the current project and create as many commit messages as appropriate for those changes. Write the commits using the Conventional Commits standards and make the commits.
