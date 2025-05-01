@@ -1,3 +1,4 @@
+
 import { analyzeConversation } from "../conversation-analyzer.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
@@ -19,7 +20,8 @@ export const generateRulesCommand = ({
         return;
       }
 
-      terminal.writeln("Analyzing conversation to generate rules...");
+      terminal.lineBreak(); // Add line break before output
+      terminal.info("Analyzing conversation to generate rules...");
       try {
         const newRules = await analyzeConversation({
           modelManager,
@@ -29,13 +31,14 @@ export const generateRulesCommand = ({
         });
 
         if (newRules && newRules.trim().length > 0) {
-          terminal.writeln("Generated and saved the following rules:");
-          terminal.writeln(`${newRules}`);
+          terminal.info("Generated and saved the following rules:");
+          terminal.lineBreak(); // Add line break before rules
+          await terminal.display(newRules); // Use display for formatted rules
         } else {
-          terminal.writeln("No new generalizable rules were identified.");
+          terminal.warn("No new generalizable rules were identified."); // Use warn for this case
         }
       } catch (error) {
-        terminal.writeln(
+        terminal.error( // Use error method
           `Error generating rules: ${error instanceof Error ? error.message : error}`,
         );
         console.error("Error during rule generation:", error);
