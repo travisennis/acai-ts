@@ -172,8 +172,8 @@ export class Terminal {
   /**
    * Display formatted content
    */
-  async display(content: string): Promise<void> {
-    const formatted = await formatOutput(content);
+  async display(content: string, wrap = false): Promise<void> {
+    const formatted = await formatOutput(content, wrap);
 
     this.writeln(formatted);
   }
