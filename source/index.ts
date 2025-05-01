@@ -1,4 +1,5 @@
 import { text } from "node:stream/consumers";
+import { select } from "@inquirer/prompts";
 import { asyncTry } from "@travisennis/stdlib/try";
 import { isDefined } from "@travisennis/stdlib/typeguards";
 import meow from "meow";
@@ -22,7 +23,8 @@ const cli = meow(
     --model, -m  Sets the model to use
     --prompt, -p  Sets the prompt
     --oneshot, -o  Run once and exit
-    --lsp Run the Language Service Provider
+    --continue Load the most recent conversation
+    --resume Select a recent conversation to resume
 
 	Examples
 	  $ acai --model anthopric:sonnet
@@ -45,6 +47,14 @@ const cli = meow(
         shortFlag: "o",
         default: false,
       },
+      continue: {
+        type: "boolean",
+        default: false,
+      },
+      resume: {
+        type: "boolean",
+        default: false,
+      },
     },
   },
 );
@@ -64,6 +74,50 @@ async function main() {
   const appConfig = await config.readAppConfig("acai");
 
   const appDir = config.app;
+  const messageHistoryDir = appDir.ensurePath("message-history");
+
+  // --- Argument Validation ---
+  if (cli.flags.continue && cli.flags.resume) {
+    console.error("Cannot use --continue and --resume flags together.");
+    process.exit(1);
+  }
+
+  const hasContinueOrResume = cli.flags.continue || cli.flags.resume;
+
+  if (hasContinueOrResume && cli.flags.oneshot) {
+    console.error("Cannot use --continue or --resume with --oneshot.");
+    process.exit(1);
+  }
+
+  // --- Determine Initial Prompt (potential conflict) ---
+  const positionalPrompt = cli.input.at(0);
+  let stdInPrompt: string | undefined;
+  // Check if there's data available on stdin
+  if (!process.stdin.isTTY) {
+    try {
+      // Non-TTY stdin means data is being piped in
+      stdInPrompt = await text(process.stdin);
+    } catch (error) {
+      console.error(`Error reading stdin: ${(error as Error).message}`);
+    }
+  }
+
+  const initialPromptInput =
+    cli.flags.prompt && cli.flags.prompt.length > 0
+      ? cli.flags.prompt
+      : positionalPrompt && positionalPrompt.length > 0
+        ? positionalPrompt
+        : stdInPrompt && stdInPrompt.length > 0
+          ? stdInPrompt
+          : undefined;
+
+  if (hasContinueOrResume && isDefined(initialPromptInput)) {
+    console.error("Cannot use --continue or --resume with an initial prompt.");
+    process.exit(1);
+  }
+
+  const terminal = initTerminal();
+  terminal.setTitle(`acai: ${process.cwd()}`);
 
   const chosenModel: ModelName = isSupportedModel(cli.flags.model)
     ? cli.flags.model
@@ -85,48 +139,57 @@ async function main() {
   modelManager.setModel("explain-code", "deepseek:deepseek-reasoner");
   modelManager.setModel("code-editor", "google:flash2");
 
-  const positionalPrompt = cli.input.at(0);
-
-  let stdInPrompt: string | undefined;
-  // Check if there's data available on stdin
-  if (process.stdin.isTTY) {
-    // Terminal is interactive, no piped input
-    // Continue with empty prompt
-  } else {
-    try {
-      // Non-TTY stdin means data is being piped in
-      const stdinData = await text(process.stdin);
-      stdInPrompt = stdinData;
-    } catch (error) {
-      console.error(`Error reading stdin: ${(error as Error).message}`);
-    }
-  }
-
-  const initialPrompt =
-    cli.flags.prompt && cli.flags.prompt.length > 0
-      ? cli.flags.prompt
-      : positionalPrompt && positionalPrompt.length > 0
-        ? positionalPrompt
-        : stdInPrompt && stdInPrompt.length > 0
-          ? stdInPrompt
-          : undefined;
-
-  const promptManager = new PromptManager();
-  if (isDefined(initialPrompt)) {
-    promptManager.set(initialPrompt);
-  }
-
-  const terminal = initTerminal();
-  terminal.setTitle(`acai: ${process.cwd()}`);
-
   const tokenTracker = new TokenTracker();
 
   const messageHistory = new MessageHistory({
-    stateDir: appDir.ensurePath("message-history"),
+    stateDir: messageHistoryDir,
     modelManager,
     tokenTracker,
   });
   messageHistory.on("update-title", (title) => terminal.setTitle(title));
+
+  if (cli.flags.continue) {
+    const histories = await MessageHistory.load(messageHistoryDir, 1);
+    const latestHistory = histories.at(0);
+    if (latestHistory) {
+      messageHistory.restore(latestHistory);
+      console.info(`Resuming conversation: ${latestHistory.title}`);
+      // Set terminal title after restoring
+      terminal.setTitle(latestHistory.title || `acai: ${process.cwd()}`);
+    } else {
+      logger.info("No previous conversation found to continue.");
+    }
+  } else if (cli.flags.resume) {
+    const histories = await MessageHistory.load(messageHistoryDir, 10);
+    if (histories.length > 0) {
+      const choice = await select({
+        message: "Select a conversation to resume:",
+        choices: histories.map((h, index) => ({
+          name: `${index + 1}: ${h.title} (${h.updatedAt.toLocaleString()})`,
+          value: index,
+          description: `${h.messages.length} messages`,
+        })),
+      });
+      const selectedHistory = histories.at(choice);
+      if (selectedHistory) {
+        messageHistory.restore(selectedHistory);
+        logger.info(`Resuming conversation: ${selectedHistory.title}`);
+        // Set terminal title after restoring
+        terminal.setTitle(selectedHistory.title || `acai: ${process.cwd()}`);
+      } else {
+        // This case should theoretically not happen if choice is valid
+        logger.error("Selected history index out of bounds.");
+      }
+    } else {
+      logger.info("No previous conversations found to resume.");
+    }
+  }
+
+  // --- Setup Prompt Manager (only if not continuing/resuming) ---
+  const promptManager = new PromptManager();
+  if (!hasContinueOrResume && isDefined(initialPromptInput)) {
+    promptManager.set(initialPromptInput);
+  }
 
   const commands = new CommandManager({
     promptManager,
