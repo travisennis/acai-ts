@@ -197,6 +197,7 @@ async function main() {
     terminal,
     messageHistory,
     tokenTracker,
+    config,
   });
 
   const repl = new Repl({

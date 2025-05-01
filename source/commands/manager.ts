@@ -1,3 +1,4 @@
+import type { ConfigManager } from "../config.ts";
 import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManager } from "../prompts/manager.ts";
@@ -35,6 +36,7 @@ export class CommandManager {
   private messageHistory: MessageHistory;
   private tokenTracker: TokenTracker;
   private terminal: Terminal;
+  private config: ConfigManager;
 
   constructor({
     promptManager,
@@ -42,6 +44,7 @@ export class CommandManager {
     terminal,
     messageHistory,
     tokenTracker,
+    config,
   }: CommandOptions) {
     this.commands = new Map();
     this.promptManager = promptManager;
@@ -49,6 +52,7 @@ export class CommandManager {
     this.terminal = terminal;
     this.messageHistory = messageHistory;
     this.tokenTracker = tokenTracker;
+    this.config = config;
     this.initializeCommmands();
   }
 
@@ -60,6 +64,7 @@ export class CommandManager {
       terminal: this.terminal,
       messageHistory: this.messageHistory,
       tokenTracker: this.tokenTracker,
+      config: this.config,
     };
 
     // Register all commands

@@ -1,3 +1,4 @@
+import type { ConfigManager } from "../config.ts";
 import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManager } from "../prompts/manager.ts";
@@ -19,4 +20,5 @@ export interface CommandOptions {
   terminal: Terminal;
   messageHistory: MessageHistory;
   tokenTracker: TokenTracker;
+  config: ConfigManager;
 }

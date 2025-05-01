@@ -1,18 +1,47 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import { join } from "node:path";
-import { config } from "../config.ts";
+import { readFile, readdir } from "node:fs/promises";
+import path, { basename } from "node:path";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const promptCommand = ({
   terminal,
   promptManager,
+  config,
 }: CommandOptions): ReplCommand => {
   return {
     command: "/prompt",
-    description: "Loads and executes user and project prompts.",
+    description:
+      "Loads and executes user (global) and project (local) prompts.",
     result: "use" as const,
-    getSubCommands: () => Promise.resolve([]),
+    getSubCommands: async (): Promise<string[]> => {
+      const getPromptNamesFromDir = async (
+        dirPath: string,
+        type: "user" | "project",
+      ): Promise<string[]> => {
+        try {
+          const dirents = await readdir(dirPath, { withFileTypes: true });
+          return dirents
+            .filter((dirent) => dirent.isFile() && dirent.name.endsWith(".md"))
+            .map((dirent) => `${type}:${basename(dirent.name, ".md")}`);
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+            return []; // Directory doesn't exist, return empty array
+          }
+          terminal.error(`Error reading prompts from ${dirPath}: ${error}`);
+          return []; // Return empty on other errors too, but log them
+        }
+      };
+
+      const userPromptDir = config.app.ensurePath("prompts"); // User prompts are global (~/.acai/prompts)
+      const projectPromptDir = config.project.ensurePath("prompts"); // Project prompts are local (./.acai/prompts)
+
+      const userPrompts = await getPromptNamesFromDir(userPromptDir, "user");
+      const projectPrompts = await getPromptNamesFromDir(
+        projectPromptDir,
+        "project",
+      );
+
+      return [...userPrompts, ...projectPrompts];
+    },
     execute: async (args: string[]) => {
       if (!args || args.length === 0) {
         terminal.warn(
@@ -36,15 +65,17 @@ export const promptCommand = ({
 
       try {
         if (type === "project") {
-          // Project prompts are stored in the project config directory
+          // Project prompts are stored in the project's .acai directory
+          promptPath = path.join(
+            config.project.ensurePath("prompts"),
+            `${promptName}.md`,
+          );
+        } else if (type === "user") {
+          // User prompts are stored in the global ~/.acai directory
           promptPath = path.join(
             config.app.ensurePath("prompts"),
             `${promptName}.md`,
           );
-        } else if (type === "user") {
-          // User prompts are stored in the user data directory
-          const userPromptDir = config.project.ensurePath("prompts");
-          promptPath = join(userPromptDir, `${promptName}.md`);
         } else {
           terminal.warn(
             `Unknown prompt type: ${type}. Use 'user' or 'project'`,
@@ -58,14 +89,16 @@ export const promptCommand = ({
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code === "ENOENT") {
             terminal.error(
-              `Prompt not found: ${promptName} (${type}). Check that the file exists at ${promptPath}`,
+              `Prompt not found: ${promptName} (${type}). Looked in: ${promptPath}`,
             );
             return;
           }
           throw error;
         }
 
-        terminal.info(`Loaded prompt: ${promptName} (${type})`);
+        terminal.info(
+          `Loaded ${type} prompt: ${promptName} from ${promptPath}`,
+        );
         promptManager.set(promptContent);
       } catch (error) {
         terminal.error(`Error loading prompt: ${(error as Error).message}`);
