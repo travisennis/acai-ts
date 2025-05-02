@@ -172,7 +172,7 @@ export class Repl {
             ...messageHistory.get(),
           ],
           temperature: modelConfig.defaultTemperature,
-          maxSteps: 30,
+          maxSteps: 60,
           maxRetries: 5,
           providerOptions: aiConfig.getProviderOptions(),
           tools,

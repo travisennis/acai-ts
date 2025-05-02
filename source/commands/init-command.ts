@@ -28,7 +28,7 @@ If there are Cursor rules (in .cursor/rules/ or .cursorrules) or Copilot rules (
 Your current working directory is ${process.cwd()}
 Is directory a git repo: ${(await inGitDirectory()) ? "Yes" : "No"}
 Platform: ${platform()}`,
-        maxSteps: 20,
+        maxSteps: 40,
         tools: await initTools({ terminal }),
       });
 
