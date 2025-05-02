@@ -69,7 +69,39 @@ export class ConfigManager {
       throw error;
     }
   }
-  async readLearnedRulesFile(): Promise<string> {
+  // Project-specific learned rules
+  async readProjectLearnedRulesFile(): Promise<string> {
+    const rulesPath = path.join(
+      this.project.getPath("rules"),
+      "learned-rules.md",
+    );
+    try {
+      return await fs.readFile(rulesPath, "utf8");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return "";
+      }
+      throw error;
+    }
+  }
+
+  async writeProjectLearnedRulesFile(rules: string): Promise<void> {
+    const rulesPath = path.join(
+      this.project.ensurePath("rules"),
+      "learned-rules.md",
+    );
+    try {
+      return await fs.writeFile(rulesPath, rules, "utf8");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return;
+      }
+      throw error;
+    }
+  }
+
+  // App-cached learned rules (used during conversation analysis)
+  async readCachedLearnedRulesFile(): Promise<string> {
     const rulesPath = path.join(this.app.getPath("rules"), "learned-rules.md");
     try {
       return await fs.readFile(rulesPath, "utf8");
@@ -81,7 +113,7 @@ export class ConfigManager {
     }
   }
 
-  async writeLearnedRulesFile(rules: string): Promise<void> {
+  async writeCachedLearnedRulesFile(rules: string): Promise<void> {
     const rulesPath = path.join(
       this.app.ensurePath("rules"),
       "learned-rules.md",

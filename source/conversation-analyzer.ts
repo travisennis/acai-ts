@@ -54,8 +54,8 @@ export async function analyzeConversation({
   messages: CoreMessage[];
   terminal?: Terminal | undefined;
   tokenTracker: TokenTracker;
-}) {
-  const learnedRules = await config.readLearnedRulesFile();
+}): Promise<string[]> {
+  const learnedRules = await config.readCachedLearnedRulesFile();
   // Modified User Message within analyzeConversation
   messages.push(
     createUserMessage(
@@ -83,22 +83,33 @@ ${learnedRules}
   tokenTracker.trackUsage("conversation-analyzer", usage);
 
   // Trim whitespace and check if the response is effectively empty or just whitespace
-  const potentialRules = text.trim();
+  const potentialRulesText = text.trim();
 
   // Basic check to prevent adding empty lines or just formatting
-  if (!potentialRules || potentialRules.length === 0) {
-    return ""; // Return empty string if no valid rules generated
+  if (!potentialRulesText || potentialRulesText.length === 0) {
+    return []; // Return empty array if no valid rules generated
+  }
+
+  // Split into individual rules, filter out empty lines
+  const potentialRulesList = potentialRulesText
+    .split("\n")
+    .map((rule) => rule.trim())
+    .filter((rule) => rule.length > 0);
+
+  if (potentialRulesList.length === 0) {
+    return []; // Return empty array if splitting results in no rules
   }
 
   // Further validation could be added here (e.g., check if it starts with '- ', etc.)
   // before writing to the file.
 
   // Append only if there are non-empty potential rules
-  await config.writeLearnedRulesFile(
+  const updatedRules =
     learnedRules.endsWith("\n") || learnedRules.length === 0
-      ? `${learnedRules}${potentialRules}`
-      : `${learnedRules}\n${potentialRules}`,
-  );
+      ? `${learnedRules}${potentialRulesList.join("\n")}`
+      : `${learnedRules}\n${potentialRulesList.join("\n")}`;
 
-  return potentialRules; // Return the rules that were added
+  await config.writeCachedLearnedRulesFile(updatedRules);
+
+  return potentialRulesList; // Return the list of rules that were added
 }
