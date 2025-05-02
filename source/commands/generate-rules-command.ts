@@ -1,4 +1,3 @@
-
 import { analyzeConversation } from "../conversation-analyzer.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
@@ -38,7 +37,7 @@ export const generateRulesCommand = ({
           terminal.warn("No new generalizable rules were identified."); // Use warn for this case
         }
       } catch (error) {
-        terminal.error( // Use error method
+        terminal.error(
           `Error generating rules: ${error instanceof Error ? error.message : error}`,
         );
         console.error("Error during rule generation:", error);
