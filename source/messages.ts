@@ -232,7 +232,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
 
     // summarize message history
     let userPrompt =
-      "Provide a detailed summary of our conversation above. Focus on information that would be helpful for continuing the conversation, including what we did and why, what we're currently doing, which files we're working on, and what we're going to do next. You need to provide enough information that another coding agent can pick up where we left off.";
+      "Provide a detailed summary of our conversation above. Focus on information that would be helpful for continuing the conversation, including what we did and why, what we're currently doing, which files we're working on, and what we're going to do next. You need to provide enough information that another coding agent can pick up where we left off. Only return the summary with no preamble.";
     if (additionalInstructions && additionalInstructions.trim().length > 0) {
       userPrompt += `\n\nAdditional Instructions: ${additionalInstructions}`;
     }
@@ -240,7 +240,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     const { text, usage } = await generateText({
       model: this.modelManager.getModel(app),
       system:
-        "You are a helpful AI assistant tasked with summarizing conversations so that a coding agent can understand what actions have been taken on a code base and what future work still needs to be done.",
+        "You are a helpful AI assistant tasked with summarizing conversations so that a coding agent such as yourself can understand what actions have been taken on a code base and what future work still needs to be done.",
       messages: this.get(),
     });
 
