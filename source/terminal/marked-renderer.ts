@@ -357,9 +357,7 @@ export class TerminalRenderer extends Renderer {
     // Ensure list function exists
     const listFn = this.o.list || list; // Use standalone list as default
     currentBody = listFn(currentBody, isOrdered, this.tab);
-    return section(
-      fixNestedLists(indentLines(this.tab, currentBody), this.tab),
-    );
+    return fixNestedLists(indentLines(this.tab, currentBody), this.tab);
   }
 
   override listitem(
