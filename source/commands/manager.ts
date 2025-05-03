@@ -4,6 +4,7 @@ import type { ModelManager } from "../models/manager.ts";
 import type { PromptManager } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../token-tracker.ts";
+import { applicationLogCommand } from "./application-log-command.ts";
 import { cleanRepoCommand } from "./clean-repo.ts";
 import { clearCommand } from "./clear-command.ts";
 import { commitCommand } from "./commit-command.ts";
@@ -91,6 +92,7 @@ export class CommandManager {
       prCommentsCommand(options),
       lastLogCommand(options),
       generateRulesCommand(options),
+      applicationLogCommand(options),
     ];
 
     // Add help command with access to all commands
