@@ -65,7 +65,7 @@ async function processUrlCommand(context: CommandContext): Promise<string> {
 export async function processPrompt(
   message: string,
   { baseDir, model }: { baseDir: string; model: ModelMetadata },
-): Promise<{ prompt: string }> {
+): Promise<string> {
   const fileRegex = /@([^\s@]+(?:\.[\w\d]+))/g;
   const urlRegex = /@(https?:\/\/[^\s]+)/g;
 
@@ -107,7 +107,5 @@ export async function processPrompt(
   // Construct the final prompt
   const finalPromptParts = [message, "", ...mentionResults, "", message];
 
-  return {
-    prompt: finalPromptParts.join("\n").trim(),
-  };
+  return finalPromptParts.join("\n").trim();
 }

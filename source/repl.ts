@@ -124,7 +124,7 @@ export class Repl {
             baseDir: process.cwd(),
             model: modelConfig,
           });
-          promptManager.set(processedPrompt.prompt);
+          promptManager.set(processedPrompt);
         }
       }
 

@@ -1,9 +1,11 @@
 import { readFile, readdir } from "node:fs/promises";
 import path, { basename } from "node:path";
 import type { CommandOptions, ReplCommand } from "./types.ts";
+import { processPrompt } from "../mentions.ts";
 
 export const promptCommand = ({
   terminal,
+  modelManager,
   promptManager,
   config,
 }: CommandOptions): ReplCommand => {
@@ -96,10 +98,14 @@ export const promptCommand = ({
           throw error;
         }
 
-        terminal.info(
-          `Loaded ${type} prompt: ${promptName} from ${promptPath}`,
-        );
-        promptManager.set(promptContent);
+        terminal.info(`Loaded ${type} prompt: ${promptName}`);
+
+        const processedPrompt = await processPrompt(promptContent, {
+          baseDir: process.cwd(),
+          model: modelManager.getModelMetadata("repl"),
+        });
+
+        promptManager.set(processedPrompt);
       } catch (error) {
         terminal.error(`Error loading prompt: ${(error as Error).message}`);
       }
