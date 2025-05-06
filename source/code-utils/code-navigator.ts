@@ -77,6 +77,8 @@ class CodeNavigator {
       if (existsSync(tsConfigPath)) {
         await this.typeChecker.initialize(projectDir, tsConfigPath);
       } else {
+        // TODO: Handle case where tsconfig.json does not exist
+        console.warn("tsconfig.json not found in project root. TypeScript type checking may be incomplete.");
       }
     }
 
@@ -207,7 +209,7 @@ class CodeNavigator {
   /**
    * Find all references in a file
    */
-  private async findReferencesInFile(filePath: string): Promise<void> {
+  private findReferencesInFile(filePath: string): void {
     const extension = extname(filePath).slice(1);
     const parser = this.parsers.get(extension);
     if (!parser) {
@@ -271,7 +273,10 @@ class CodeNavigator {
 
     // Recursively search children
     for (let i = 0; i < node.childCount; i++) {
-      this.findClassDefinitions(node.child(i)!, filePath, language);
+      const child = node.child(i);
+      if (child) {
+        this.findClassDefinitions(child, filePath, language);
+      }
     }
   }
 
@@ -311,7 +316,10 @@ class CodeNavigator {
 
     // Recursively search children
     for (let i = 0; i < node.childCount; i++) {
-      this.findFunctionDefinitions(node.child(i)!, filePath, language);
+      const child = node.child(i);
+      if (child) {
+        this.findFunctionDefinitions(child, filePath, language);
+      }
     }
   }
 
@@ -351,7 +359,10 @@ class CodeNavigator {
 
     // Recursively search children
     for (let i = 0; i < node.childCount; i++) {
-      this.findVariableDefinitions(node.child(i)!, filePath, language);
+      const child = node.child(i);
+      if (child) {
+        this.findVariableDefinitions(child, filePath, language);
+      }
     }
   }
 
@@ -390,7 +401,10 @@ class CodeNavigator {
 
     // Recursively search children
     for (let i = 0; i < node.childCount; i++) {
-      this.findIdentifierReferences(node.child(i)!, filePath, code);
+      const child = node.child(i);
+      if (child) {
+        this.findIdentifierReferences(child, filePath, code);
+      }
     }
   }
 
@@ -416,10 +430,12 @@ class CodeNavigator {
     ) {
       // Check children
       for (let i = 0; i < node.childCount; i++) {
-        const child = node.child(i)!;
-        const found = this.findNodeAtPosition(child, point);
-        if (found) {
-          return found;
+        const child = node.child(i);
+        if (child) {
+          const found = this.findNodeAtPosition(child, point);
+          if (found) {
+            return found;
+          }
         }
       }
 
@@ -500,6 +516,8 @@ class CodeNavigator {
         }
         break;
       }
+      default:
+        return null;
     }
 
     return null;
@@ -580,6 +598,9 @@ class CodeNavigator {
           }
           break;
         }
+        default:
+          console.warn(`Unsupported symbol type: ${symbol.type}`);
+          break;
       }
     } catch (error) {
       console.error(
