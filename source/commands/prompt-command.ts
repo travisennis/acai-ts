@@ -1,7 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
 import path, { basename } from "node:path";
-import type { CommandOptions, ReplCommand } from "./types.ts";
 import { processPrompt } from "../mentions.ts";
+import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const promptCommand = ({
   terminal,
