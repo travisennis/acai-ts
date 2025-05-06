@@ -340,12 +340,12 @@ export class TypeScriptTypeChecker {
       // Return a placeholder for recursive or too deep types
       return {
         name:
-          this.checker.typeToString(
+          `${this.checker.typeToString(
             type,
             undefined,
             TypeFormatFlags.NoTruncation |
               TypeFormatFlags.UseFullyQualifiedType,
-          ) + " (recursive/too deep)",
+          )} (recursive/too deep)`,
       };
     }
 
