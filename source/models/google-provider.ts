@@ -11,7 +11,7 @@ const googleModels = {
   flash2lite: originalGoogle("gemini-2.0-flash-lite,"),
   flash2thinking: originalGoogle("gemini-2.0-flash-thinking-exp-01-21"),
   "pro25-free": originalGoogle("gemini-2.5-pro-exp-03-25"),
-  pro25: originalGoogle("gemini-2.5-pro-preview-03-25"),
+  pro25: originalGoogle("gemini-2.5-pro-preview-05-06"),
   flash25: originalGoogle("gemini-2.5-flash-preview-04-17"),
 } as const;
 
