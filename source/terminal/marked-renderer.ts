@@ -77,21 +77,17 @@ function fixHardReturn(text: string, reflow: boolean): string {
 }
 
 function section(text: string): string {
-  return `${text}\n\n`;
-}
-
-function finalizeBlock(text: string): string {
-  if (text.endsWith('\n\n')) {
+  if (text.endsWith("\n\n")) {
     return text; // Already ends with two newlines, do nothing
   }
-  if (text.endsWith('\n')) {
-    return text + '\n'; // Ends with one newline, add one more
+  if (text.endsWith("\n")) {
+    return `${text}\n`; // Ends with one newline, add one more
   }
   // For empty strings or strings not ending with a newline
-  if (text.trim() === '') {
-    return '\n\n'; // Mimic section() for empty content
+  if (text.trim() === "") {
+    return "\n\n"; // Mimic section() for empty content
   }
-  return text + '\n\n'; // Add two newlines
+  return `${text}\n\n`; // Add two newlines
 }
 
 function indentLines(indent: string, text: string): string {
@@ -263,7 +259,7 @@ export class TerminalRenderer extends Renderer {
       this.o,
       this.highlightOptions,
     );
-    return finalizeBlock(indentify(this.tab, highlightedCode));
+    return section(indentify(this.tab, highlightedCode));
   }
 
   override blockquote(quote: string | { tokens: AnyType[] }): string {
@@ -276,7 +272,7 @@ export class TerminalRenderer extends Renderer {
     }
     // Ensure blockquote function exists before calling
     const blockquoteFn = this.o.blockquote || identity;
-    return finalizeBlock(blockquoteFn(indentify(this.tab, currentQuote.trim())));
+    return section(blockquoteFn(indentify(this.tab, currentQuote.trim())));
   }
 
   override html(html: string | { text: string }): string {
@@ -324,7 +320,7 @@ export class TerminalRenderer extends Renderer {
 
     const headingFn =
       (currentLevel === 1 ? this.o.firstHeading : this.o.heading) || identity;
-    return finalizeBlock(headingFn(currentText));
+    return section(headingFn(currentText));
   }
 
   override hr(): string {
@@ -333,7 +329,7 @@ export class TerminalRenderer extends Renderer {
       "-",
       this.o.reflowText ? (this.o.width ?? defaultOptions.width) : undefined,
     );
-    return finalizeBlock(hrFn(hrText));
+    return section(hrFn(hrText));
   }
 
   override list(
@@ -371,7 +367,9 @@ export class TerminalRenderer extends Renderer {
     // Ensure list function exists
     const listFn = this.o.list || list; // Use standalone list as default
     currentBody = listFn(currentBody, isOrdered, this.tab);
-    return finalizeBlock(fixNestedLists(indentLines(this.tab, currentBody), this.tab));
+    return section(
+      fixNestedLists(indentLines(this.tab, currentBody), this.tab),
+    );
   }
 
   override listitem(
@@ -477,7 +475,7 @@ export class TerminalRenderer extends Renderer {
     if (this.o.reflowText) {
       currentText = wrapAnsi(currentText, this.o.width ?? defaultOptions.width);
     }
-    return finalizeBlock(currentText);
+    return section(currentText);
   }
 
   override table(
@@ -528,7 +526,7 @@ export class TerminalRenderer extends Renderer {
     }
 
     const tableFn = this.o.table || identity;
-    return finalizeBlock(tableFn(tableInstance.toString()));
+    return section(tableFn(tableInstance.toString()));
   }
 
   override tablerow(content: string | { text: string }): string {
