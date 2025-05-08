@@ -3,6 +3,7 @@ import { tool } from "ai";
 import chalk from "chalk";
 import { z } from "zod";
 import type { Terminal } from "../terminal/index.ts";
+import type { TokenCounter } from "../token-utils.ts";
 import { createBashTools } from "./bash-tool.ts";
 import { createCodeInterpreterTool } from "./code-interpreter.ts";
 import { createFileSystemTools } from "./filesystem.ts";
@@ -71,14 +72,17 @@ const sendDataHandler = (terminal: Terminal) => {
 
 export async function initTools({
   terminal,
+  tokenCounter,
 }: {
   terminal: Terminal;
+  tokenCounter: TokenCounter;
 }) {
   const sendDataFn = terminal ? sendDataHandler(terminal) : undefined;
   const fsTools = await createFileSystemTools({
     workingDir: process.cwd(),
     terminal,
     sendData: sendDataFn,
+    tokenCounter,
   });
 
   const gitTools = await createGitTools({
@@ -100,6 +104,7 @@ export async function initTools({
 
   const urlTools = createUrlTools({
     sendData: sendDataFn,
+    tokenCounter,
   });
 
   const webSearchTools = createWebSearchTools({
@@ -109,6 +114,7 @@ export async function initTools({
   const bashTools = createBashTools({
     baseDir: process.cwd(),
     sendData: sendDataFn,
+    tokenCounter,
   });
 
   const askUserTool = {

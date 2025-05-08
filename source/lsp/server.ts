@@ -27,7 +27,7 @@ import {
 import { logger } from "../logger.ts";
 import type { ModelManager } from "../models/manager.ts";
 import { type Selection, saveSelection } from "../saved-selections/index.ts";
-import { countTokens } from "../token-utils.ts";
+import type { TokenCounter } from "../token-utils.ts";
 import {
   type EmbeddedInstructions,
   parseInstructions,
@@ -100,9 +100,11 @@ export function createTextDocuments() {
 export function initConnection({
   modelManager,
   documents,
+  tokenCounter,
 }: {
   modelManager: ModelManager;
   documents: TextDocuments<TextDocument>;
+  tokenCounter: TokenCounter;
 }) {
   // Create a connection for the server
   const connection = createConnection(
@@ -214,6 +216,7 @@ export function initConnection({
             modelManager,
             params,
             data,
+            tokenCounter,
           );
           break;
         }
@@ -226,6 +229,7 @@ export function initConnection({
             modelManager,
             params,
             data,
+            tokenCounter,
           );
           break;
         }
@@ -256,7 +260,7 @@ export function initConnection({
 
       // Discover related files
 
-      updateFileRelations(filePath, textDocument);
+      updateFileRelations(filePath, textDocument, tokenCounter);
     } else {
       logger.warn(`Document not found for URI: ${change.document.uri}`);
     }
@@ -270,7 +274,7 @@ export function initConnection({
 
       // Discover related files
 
-      updateFileRelations(filePath, textDocument);
+      updateFileRelations(filePath, textDocument, tokenCounter);
     } else {
       logger.warn(`Document not found for URI: ${event.document.uri}`);
     }
@@ -309,7 +313,7 @@ export function initConnection({
       }
       // Discover related files
 
-      updateFileRelations(filePath, textDocument);
+      updateFileRelations(filePath, textDocument, tokenCounter);
     } else {
       logger.warn(`Document not found for URI: ${params.textDocument.uri}`);
     }
@@ -388,6 +392,7 @@ async function editAction(
   modelManager: ModelManager,
   params: CodeAction,
   data: CodeActionData,
+  tokenCounter: TokenCounter,
 ) {
   const filePath = documentUri;
 
@@ -395,7 +400,11 @@ async function editAction(
   logger.info(`Adding ${recentEdits.length} recent edits from history.`);
 
   // Get related files and their recent edits
-  const relatedContext = getRelatedFilesContext(filePath, documents);
+  const relatedContext = getRelatedFilesContext(
+    filePath,
+    documents,
+    tokenCounter,
+  );
   const relatedFilesCount = fileRelations.get(filePath)?.length || 0;
   logger.info(`Adding context from ${relatedFilesCount} related files.`);
 
@@ -492,6 +501,7 @@ async function instructAction(
   modelManager: ModelManager,
   params: CodeAction,
   data: CodeActionData,
+  tokenCounter: TokenCounter,
 ) {
   const filePath = documentUri;
   const recentEdits = editHistory.get(filePath) || [];
@@ -501,7 +511,11 @@ async function instructAction(
   const documentText = textDocument.getText(range);
 
   // Get related files and their recent edits
-  const relatedContext = getRelatedFilesContext(filePath, documents);
+  const relatedContext = getRelatedFilesContext(
+    filePath,
+    documents,
+    tokenCounter,
+  );
   const relatedFilesCount = fileRelations.get(filePath)?.length || 0;
   logger.info(`Adding context from ${relatedFilesCount} related files.`);
 
@@ -610,7 +624,11 @@ ${instructions.prompt ?? ""}
 }
 
 // Extracts related files' content based on imports, requires, or module usage
-function updateFileRelations(filePath: string, content: TextDocument) {
+function updateFileRelations(
+  filePath: string,
+  content: TextDocument,
+  _tokenCounter: TokenCounter,
+) {
   const map = CodeMap.fromSource(content.getText(), filePath);
   const imports = map.getStructure().imports;
 
@@ -636,6 +654,7 @@ function updateFileRelations(filePath: string, content: TextDocument) {
 function getRelatedFilesContext(
   filePath: string,
   documents: TextDocuments<TextDocument>,
+  tokenCounter: TokenCounter,
 ): string {
   const relatedFiles = fileRelations.get(filePath) || [];
   const context: string[] = [];
@@ -654,7 +673,7 @@ function getRelatedFilesContext(
         let contentToUse: string;
         try {
           const docText = doc.getText();
-          const tokenCount = countTokens(docText);
+          const tokenCount = tokenCounter.count(docText);
           if (tokenCount > 500) {
             const codeMap = CodeMap.fromSource(docText, doc.uri);
             contentToUse = codeMap.format("markdown", doc.uri);
@@ -683,7 +702,7 @@ function getRelatedFilesContext(
             const fileContent = readFileSync(absolutePath, "utf8");
             let contentToUse: string;
             try {
-              const tokenCount = countTokens(fileContent);
+              const tokenCount = tokenCounter.count(fileContent);
               if (tokenCount > 500) {
                 const codeMap = CodeMap.fromSource(fileContent, absolutePath);
                 contentToUse = codeMap.format("markdown", absolutePath);

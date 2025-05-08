@@ -6,6 +6,7 @@ import type { CommandOptions, ReplCommand } from "./types.ts";
 export const initCommand = ({
   terminal,
   modelManager,
+  tokenCounter,
 }: CommandOptions): ReplCommand => {
   return {
     command: "/init",
@@ -29,7 +30,7 @@ Your current working directory is ${process.cwd()}
 Is directory a git repo: ${(await inGitDirectory()) ? "Yes" : "No"}
 Platform: ${platform()}`,
         maxSteps: 40,
-        tools: await initTools({ terminal }),
+        tools: await initTools({ terminal, tokenCounter }),
       });
 
       for await (const text of result.textStream) {

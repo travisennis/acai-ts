@@ -24,6 +24,7 @@ import { ReplPrompt } from "./repl-prompt.ts";
 import { formatOutput } from "./terminal/formatting.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./token-tracker.ts";
+import type { TokenCounter } from "./token-utils.ts";
 import { getDiffStat, initTools } from "./tools/index.ts";
 
 interface ReplOptions {
@@ -34,6 +35,7 @@ interface ReplOptions {
   terminal: Terminal;
   commands: CommandManager;
   config: Record<PropertyKey, unknown>;
+  tokenCounter: TokenCounter;
 }
 
 type CompleteToolSet = AsyncReturnType<typeof initTools>;
@@ -75,6 +77,7 @@ export class Repl {
       tokenTracker,
       messageHistory,
       commands,
+      tokenCounter,
     } = this.options;
 
     logger.info(config, "Config:");
@@ -154,7 +157,7 @@ export class Repl {
       const maxTokens = aiConfig.getMaxTokens();
 
       const tools = modelConfig.supportsToolCalling
-        ? await initTools({ terminal })
+        ? await initTools({ terminal, tokenCounter })
         : undefined;
 
       try {

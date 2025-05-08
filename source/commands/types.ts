@@ -4,6 +4,7 @@ import type { ModelManager } from "../models/manager.ts";
 import type { PromptManager } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../token-tracker.ts";
+import type { TokenCounter } from "../token-utils.ts";
 
 export interface ReplCommand {
   command: string;
@@ -21,4 +22,5 @@ export interface CommandOptions {
   messageHistory: MessageHistory;
   tokenTracker: TokenTracker;
   config: ConfigManager;
+  tokenCounter: TokenCounter;
 }

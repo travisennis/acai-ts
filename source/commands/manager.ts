@@ -4,6 +4,7 @@ import type { ModelManager } from "../models/manager.ts";
 import type { PromptManager } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../token-tracker.ts";
+import type { TokenCounter } from "../token-utils.ts";
 import { applicationLogCommand } from "./application-log-command.ts";
 import { cleanRepoCommand } from "./clean-repo.ts";
 import { clearCommand } from "./clear-command.ts";
@@ -38,6 +39,7 @@ export class CommandManager {
   private tokenTracker: TokenTracker;
   private terminal: Terminal;
   private config: ConfigManager;
+  private tokenCounter: TokenCounter;
 
   constructor({
     promptManager,
@@ -46,6 +48,7 @@ export class CommandManager {
     messageHistory,
     tokenTracker,
     config,
+    tokenCounter,
   }: CommandOptions) {
     this.commands = new Map();
     this.promptManager = promptManager;
@@ -54,6 +57,7 @@ export class CommandManager {
     this.messageHistory = messageHistory;
     this.tokenTracker = tokenTracker;
     this.config = config;
+    this.tokenCounter = tokenCounter;
     this.initializeCommmands();
   }
 
@@ -66,6 +70,7 @@ export class CommandManager {
       messageHistory: this.messageHistory,
       tokenTracker: this.tokenTracker,
       config: this.config,
+      tokenCounter: this.tokenCounter,
     };
 
     // Register all commands

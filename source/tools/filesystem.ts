@@ -11,7 +11,7 @@ import ignore, { type Ignore } from "ignore";
 import { z } from "zod";
 import { config } from "../config.ts";
 import type { Terminal } from "../terminal/index.ts";
-import { countTokens } from "../token-utils.ts";
+import type { TokenCounter } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
 
 // Normalize all paths consistently
@@ -292,6 +292,7 @@ interface FileSystemOptions {
   workingDir: string;
   terminal: Terminal;
   sendData?: SendData | undefined;
+  tokenCounter: TokenCounter;
 }
 
 const fileEncodingSchema = z.enum([
@@ -312,6 +313,7 @@ export const createFileSystemTools = async ({
   workingDir,
   terminal,
   sendData,
+  tokenCounter,
 }: FileSystemOptions) => {
   // Store allowed directories in normalized form
   const allowedDirectory = normalizePath(path.resolve(expandHome(workingDir)));
@@ -396,7 +398,7 @@ export const createFileSystemTools = async ({
           try {
             // Only calculate tokens for non-image files and if encoding is text-based
             if (encoding.startsWith("utf")) {
-              tokenCount = countTokens(file);
+              tokenCount = tokenCounter.count(file);
             }
           } catch (tokenError) {
             console.error("Error calculating token count:", tokenError);
@@ -456,7 +458,7 @@ export const createFileSystemTools = async ({
               const content = await fs.readFile(validPath, "utf-8");
               let tokenCount = 0;
               try {
-                tokenCount = countTokens(content);
+                tokenCount = tokenCounter.count(content);
               } catch (tokenError) {
                 console.error("Error calculating token count:", tokenError);
                 // Handle token calculation error if needed

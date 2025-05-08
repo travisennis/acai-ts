@@ -4,7 +4,7 @@ import { isUndefined } from "@travisennis/stdlib/typeguards";
 import { tool } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
-import { countTokens } from "../token-utils.ts";
+import type { TokenCounter } from "../token-utils.ts";
 import { executeCommand } from "../utils/index.ts";
 import type { SendData } from "./types.ts";
 
@@ -77,9 +77,11 @@ function isPathWithinBaseDir(requestedPath: string, baseDir: string): boolean {
 export const createBashTools = ({
   baseDir,
   sendData,
+  tokenCounter,
 }: {
   baseDir: string;
   sendData?: SendData | undefined;
+  tokenCounter: TokenCounter;
 }) => {
   return {
     bashTool: tool({
@@ -169,7 +171,7 @@ export const createBashTools = ({
 
           let tokenCount = 0;
           try {
-            tokenCount = countTokens(result);
+            tokenCount = tokenCounter.count(result);
           } catch (tokenError) {
             console.error("Error calculating token count:", tokenError);
             // Log or handle error, but don't block file return

@@ -12,8 +12,6 @@ import {
 } from "ai";
 import type { ModelManager } from "./models/manager.ts";
 import type { TokenTracker } from "./token-tracker.ts";
-import { countTokens } from "./token-utils.ts";
-
 export function createUserMessage(...content: string[]): CoreUserMessage {
   return {
     role: "user",
@@ -23,12 +21,6 @@ export function createUserMessage(...content: string[]): CoreUserMessage {
         return {
           type: "text",
           text: c,
-          providerOptions:
-            countTokens(c) > 4096
-              ? {
-                  anthropic: { cacheControl: { type: "ephemeral" } },
-                }
-              : undefined,
         };
       }),
   };

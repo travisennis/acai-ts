@@ -13,6 +13,7 @@ import { PromptManager } from "./prompts/manager.ts";
 import { Repl } from "./repl.ts";
 import { initTerminal } from "./terminal/index.ts";
 import { TokenTracker } from "./token-tracker.ts";
+import { TokenCounter } from "./token-utils.ts";
 
 const cli = meow(
   `
@@ -140,6 +141,7 @@ async function main() {
   modelManager.setModel("code-editor", "google:flash2");
 
   const tokenTracker = new TokenTracker();
+  const tokenCounter = new TokenCounter();
 
   const messageHistory = new MessageHistory({
     stateDir: messageHistoryDir,
@@ -186,7 +188,7 @@ async function main() {
   }
 
   // --- Setup Prompt Manager (only if not continuing/resuming) ---
-  const promptManager = new PromptManager();
+  const promptManager = new PromptManager(tokenCounter);
   if (!hasContinueOrResume && isDefined(initialPromptInput)) {
     promptManager.set(initialPromptInput);
   }
@@ -198,6 +200,7 @@ async function main() {
     messageHistory,
     tokenTracker,
     config,
+    tokenCounter,
   });
 
   const repl = new Repl({
@@ -208,6 +211,7 @@ async function main() {
     modelManager,
     tokenTracker,
     commands,
+    tokenCounter,
   });
 
   (

@@ -2,11 +2,12 @@ import { tool } from "ai";
 import { type CheerioAPI, load } from "cheerio";
 import { z } from "zod";
 import { logger } from "../logger.ts";
-import { countTokens } from "../token-utils.ts";
+import type { TokenCounter } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
 
 export const createUrlTools = (options: {
   sendData?: SendData | undefined;
+  tokenCounter: TokenCounter;
 }) => {
   const { sendData } = options;
   return {
@@ -26,7 +27,7 @@ export const createUrlTools = (options: {
           });
           logger.info(`Initiating fetch for URL: ${url}`);
           const urlContent = await readUrl(url, abortSignal);
-          const tokenCount = countTokens(urlContent);
+          const tokenCount = options.tokenCounter.count(urlContent);
           sendData?.({
             event: "tool-completion",
             id: uuid,
