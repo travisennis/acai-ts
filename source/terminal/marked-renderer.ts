@@ -80,6 +80,20 @@ function section(text: string): string {
   return `${text}\n\n`;
 }
 
+function finalizeBlock(text: string): string {
+  if (text.endsWith('\n\n')) {
+    return text; // Already ends with two newlines, do nothing
+  }
+  if (text.endsWith('\n')) {
+    return text + '\n'; // Ends with one newline, add one more
+  }
+  // For empty strings or strings not ending with a newline
+  if (text.trim() === '') {
+    return '\n\n'; // Mimic section() for empty content
+  }
+  return text + '\n\n'; // Add two newlines
+}
+
 function indentLines(indent: string, text: string): string {
   return text.replace(/(^|\n)(.+)/g, `$1${indent}$2`);
 }
@@ -249,7 +263,7 @@ export class TerminalRenderer extends Renderer {
       this.o,
       this.highlightOptions,
     );
-    return section(indentify(this.tab, highlightedCode));
+    return finalizeBlock(indentify(this.tab, highlightedCode));
   }
 
   override blockquote(quote: string | { tokens: AnyType[] }): string {
@@ -262,7 +276,7 @@ export class TerminalRenderer extends Renderer {
     }
     // Ensure blockquote function exists before calling
     const blockquoteFn = this.o.blockquote || identity;
-    return section(blockquoteFn(indentify(this.tab, currentQuote.trim())));
+    return finalizeBlock(blockquoteFn(indentify(this.tab, currentQuote.trim())));
   }
 
   override html(html: string | { text: string }): string {
@@ -310,7 +324,7 @@ export class TerminalRenderer extends Renderer {
 
     const headingFn =
       (currentLevel === 1 ? this.o.firstHeading : this.o.heading) || identity;
-    return section(headingFn(currentText));
+    return finalizeBlock(headingFn(currentText));
   }
 
   override hr(): string {
@@ -319,7 +333,7 @@ export class TerminalRenderer extends Renderer {
       "-",
       this.o.reflowText ? (this.o.width ?? defaultOptions.width) : undefined,
     );
-    return section(hrFn(hrText));
+    return finalizeBlock(hrFn(hrText));
   }
 
   override list(
@@ -357,7 +371,7 @@ export class TerminalRenderer extends Renderer {
     // Ensure list function exists
     const listFn = this.o.list || list; // Use standalone list as default
     currentBody = listFn(currentBody, isOrdered, this.tab);
-    return fixNestedLists(indentLines(this.tab, currentBody), this.tab);
+    return finalizeBlock(fixNestedLists(indentLines(this.tab, currentBody), this.tab));
   }
 
   override listitem(
@@ -463,7 +477,7 @@ export class TerminalRenderer extends Renderer {
     if (this.o.reflowText) {
       currentText = wrapAnsi(currentText, this.o.width ?? defaultOptions.width);
     }
-    return section(currentText);
+    return finalizeBlock(currentText);
   }
 
   override table(
@@ -514,7 +528,7 @@ export class TerminalRenderer extends Renderer {
     }
 
     const tableFn = this.o.table || identity;
-    return section(tableFn(tableInstance.toString()));
+    return finalizeBlock(tableFn(tableInstance.toString()));
   }
 
   override tablerow(content: string | { text: string }): string {
