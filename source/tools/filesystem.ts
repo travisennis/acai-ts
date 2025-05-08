@@ -111,8 +111,6 @@ interface FileEdit {
   newText: string;
 }
 
-const INDENT_REGEX = /^\s*/;
-
 async function backupFile(filePath: string): Promise<void> {
   /**
    * Create a backup of a file before editing.
@@ -132,8 +130,8 @@ async function applyFileEdits(
   edits: FileEdit[],
   dryRun = false,
 ): Promise<string> {
-  // Read file content and normalize line endings
-  const content = normalizeLineEndings(await fs.readFile(filePath, "utf-8"));
+  // Read file content literally
+  const originalContent = await fs.readFile(filePath, "utf-8");
 
   if (edits.find((edit) => edit.oldText.length === 0)) {
     throw new Error(
@@ -142,67 +140,24 @@ async function applyFileEdits(
   }
 
   // Apply edits sequentially
-  let modifiedContent = content;
+  let modifiedContent = originalContent;
   for (const edit of edits) {
-    const normalizedOld = normalizeLineEndings(edit.oldText);
-    const normalizedNew = normalizeLineEndings(edit.newText);
+    const { oldText, newText } = edit; // Use literal oldText and newText
 
-    // If exact match exists, use it
-    if (modifiedContent.includes(normalizedOld)) {
-      modifiedContent = modifiedContent.replace(normalizedOld, normalizedNew);
-      continue;
-    }
-
-    // Otherwise, try line-by-line matching with flexibility for whitespace
-    const oldLines = normalizedOld.split("\n");
-    const contentLines = modifiedContent.split("\n");
-    let matchFound = false;
-
-    for (let i = 0; i <= contentLines.length - oldLines.length; i++) {
-      const potentialMatch = contentLines.slice(i, i + oldLines.length);
-
-      // Compare lines with normalized whitespace
-      const isMatch = oldLines.every((oldLine, j) => {
-        const contentLine = potentialMatch[j] ?? "";
-        return oldLine.trim() === contentLine.trim();
-      });
-
-      if (isMatch) {
-        // Preserve original indentation of first line
-        const originalIndent = contentLines[i]?.match(INDENT_REGEX)?.[0] || "";
-        const newLines = normalizedNew.split("\n").map((line, j) => {
-          if (j === 0) {
-            return originalIndent + line.trimStart();
-          }
-
-          // For subsequent lines, try to preserve relative indentation
-          const oldIndent = oldLines[j]?.match(INDENT_REGEX)?.[0] || "";
-          const newIndent = line.match(INDENT_REGEX)?.[0] || "";
-          if (oldIndent && newIndent) {
-            const relativeIndent = newIndent.length - oldIndent.length;
-            return (
-              originalIndent +
-              " ".repeat(Math.max(0, relativeIndent)) +
-              line.trimStart()
-            );
-          }
-          return line;
-        });
-
-        contentLines.splice(i, oldLines.length, ...newLines);
-        modifiedContent = contentLines.join("\n");
-        matchFound = true;
-        break;
-      }
-    }
-
-    if (!matchFound) {
-      throw new Error(`Could not find exact match for edit:\n${edit.oldText}`);
+    if (modifiedContent.includes(oldText)) {
+      // Literal replacement of the first occurrence
+      modifiedContent = modifiedContent.replace(oldText, newText);
+    } else {
+      // If literal match is not found, throw an error.
+      // The previous complex fallback logic is removed to ensure literal matching.
+      throw new Error(
+        `Could not find literal match for edit:\n${edit.oldText}`,
+      );
     }
   }
 
-  // Create unified diff
-  const diff = createUnifiedDiff(content, modifiedContent, filePath);
+  // Create unified diff (createUnifiedDiff normalizes line endings internally for diffing)
+  const diff = createUnifiedDiff(originalContent, modifiedContent, filePath);
 
   // Format diff with appropriate number of backticks
   let numBackticks = 3;
@@ -214,6 +169,7 @@ async function applyFileEdits(
   if (!dryRun) {
     // Create backup before writing changes
     await backupFile(filePath);
+    // Write the modified content (which has literal newlines from newText, and preserves original newlines not part of oldText/newText)
     await fs.writeFile(filePath, modifiedContent, "utf-8");
   }
 
