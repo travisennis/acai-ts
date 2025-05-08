@@ -78,7 +78,9 @@ class CodeNavigator {
         await this.typeChecker.initialize(projectDir, tsConfigPath);
       } else {
         // TODO: Handle case where tsconfig.json does not exist
-        console.warn("tsconfig.json not found in project root. TypeScript type checking may be incomplete.");
+        console.warn(
+          "tsconfig.json not found in project root. TypeScript type checking may be incomplete.",
+        );
       }
     }
 
