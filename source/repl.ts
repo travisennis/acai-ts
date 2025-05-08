@@ -21,7 +21,6 @@ import type { ModelManager } from "./models/manager.js";
 import { systemPrompt } from "./prompts.ts";
 import type { PromptManager } from "./prompts/manager.ts";
 import { ReplPrompt } from "./repl-prompt.ts";
-import { formatOutput } from "./terminal/formatting.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import type { TokenCounter } from "./token-utils.ts";
@@ -290,7 +289,7 @@ export class Repl {
             // it's not reasoning or text then we are dealing with tool calls within the stream
             logUpdate.clear();
             if (accumulatedText) {
-              terminal.write(await formatOutput(accumulatedText, true));
+              await terminal.display(accumulatedText, true);
               terminal.lineBreak();
             }
             accumulatedText = "";
