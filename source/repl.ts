@@ -49,14 +49,6 @@ Details for all steps.
   readonly steps: StepResult<Tools>[];
 };
 
-const abortController = new AbortController();
-const { signal } = abortController;
-
-// Handle Ctrl+C (SIGINT)
-process.on("SIGINT", () => {
-  abortController.abort();
-});
-
 export class Repl {
   private options: ReplOptions;
   constructor(options: ReplOptions) {
@@ -90,7 +82,24 @@ export class Repl {
       currentContextWindow = 0;
     });
 
+    let prevCb: (() => void) | null = null;
+
     while (true) {
+      const abortController = new AbortController();
+      const { signal } = abortController;
+
+      const cb = () => {
+        abortController.abort();
+      };
+
+      if (prevCb) {
+        process.removeListener("SIGINT", prevCb);
+      }
+
+      // Handle Ctrl+C (SIGINT)
+      process.on("SIGINT", cb);
+      prevCb = cb;
+
       const langModel = modelManager.getModel("repl");
       const modelConfig = modelManager.getModelMetadata("repl");
 
@@ -175,7 +184,7 @@ export class Repl {
           ],
           temperature: modelConfig.defaultTemperature,
           maxSteps: 60,
-          maxRetries: 5,
+          maxRetries: 2,
           providerOptions: aiConfig.getProviderOptions(),
           tools,
           // biome-ignore lint/style/useNamingConvention: <explanation>
