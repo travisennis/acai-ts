@@ -1,0 +1,2 @@
+- Use macos seatbelts/sandboxing as seen in openai codex
+- 
