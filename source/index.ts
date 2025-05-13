@@ -14,6 +14,7 @@ import { Repl } from "./repl.ts";
 import { initTerminal } from "./terminal/index.ts";
 import { TokenTracker } from "./token-tracker.ts";
 import { TokenCounter } from "./token-utils.ts";
+import { Cli } from "./cli.ts";
 
 const cli = meow(
   `
@@ -29,7 +30,7 @@ const cli = meow(
 
 	Examples
 	  $ acai --model anthopric:sonnet
-	  $ acai -p "one-shot prompt"
+	  $ acai -p "initial prompt"
 	  $ acai -p "one-shot prompt" -o
 `,
   {
@@ -128,6 +129,7 @@ async function main() {
     stateDir: appDir.ensurePath("audit"),
   });
   modelManager.setModel("repl", chosenModel);
+  modelManager.setModel("cli", chosenModel);
   modelManager.setModel("architect", chosenModel);
   modelManager.setModel("title-conversation", "anthropic:haiku");
   modelManager.setModel("conversation-summarizer", "anthropic:haiku");
@@ -203,6 +205,18 @@ async function main() {
     tokenCounter,
   });
 
+  if (cli.flags.oneshot) {
+    const cliProcess = new Cli({
+      promptManager,
+      config: appConfig,
+      messageHistory,
+      modelManager,
+      tokenTracker,
+      tokenCounter,
+    });
+    return (await asyncTry(cliProcess.run())).recover(handleError);
+  }
+
   const repl = new Repl({
     promptManager,
     terminal,
@@ -214,13 +228,7 @@ async function main() {
     tokenCounter,
   });
 
-  (
-    await asyncTry(
-      repl.run({
-        args: cli.flags,
-      }),
-    )
-  ).recover(handleError);
+  (await asyncTry(repl.run())).recover(handleError);
 }
 
 main();

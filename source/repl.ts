@@ -55,11 +55,7 @@ export class Repl {
     this.options = options;
   }
 
-  async run({
-    args,
-  }: {
-    args: Flags;
-  }) {
+  async run() {
     const {
       config,
       promptManager,
@@ -319,11 +315,6 @@ export class Repl {
         terminal.lineBreak(); // Add a final newline for clarity
 
         result.consumeStream();
-
-        // Only exit if explicitly requested by oneshot flag
-        if (args.oneshot === true) {
-          return;
-        }
       } catch (e) {
         if (isRecord(e) && isRecord(e["data"]) && "error" in e["data"]) {
           terminal.error(

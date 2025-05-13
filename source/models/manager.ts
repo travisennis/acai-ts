@@ -33,6 +33,7 @@ function getLanguageModel({
 
 type App =
   | "repl"
+  | "cli"
   | "architect"
   | "file-retiever"
   | "title-conversation"
