@@ -42,6 +42,9 @@ async function fileSystemCompleter(line: string): Promise<[string[], string]> {
       dirEntries = dirEntries.filter((entry) => entry.name.startsWith(base));
     }
 
+    // Filter out .backup files
+    dirEntries = dirEntries.filter((entry) => !entry.name.endsWith(".backup"));
+
     const hits = dirEntries
       .filter((entry) => entry.isFile() || entry.isDirectory())
       .map((entry) => {
