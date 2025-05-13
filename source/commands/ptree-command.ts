@@ -8,7 +8,7 @@ export const ptreeCommand = ({ terminal }: CommandOptions): ReplCommand => {
     result: "continue" as const,
     getSubCommands: () => Promise.resolve([]),
     execute: async () => {
-      await terminal.display(await directoryTree(process.cwd()));
+      terminal.display(await directoryTree(process.cwd()));
     },
   };
 };

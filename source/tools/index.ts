@@ -39,19 +39,19 @@ const sendDataHandler = (terminal: Terminal) => {
             "Tool Execution";
 
           terminal.write(`\n${indicator} `); // Write indicator without newline (sync)
-          await terminal.display(initMessage); // Display initial message (async)
+          terminal.display(initMessage); // Display initial message (async)
 
           for (const msg of messages) {
             if (msg.event === "tool-update") {
               if (msg.data.secondary && msg.data.secondary.length > 0) {
                 terminal.header(msg.data.primary, chalk.blue);
-                await terminal.display(msg.data.secondary.join("\n"), true);
+                terminal.display(msg.data.secondary.join("\n"), true);
                 terminal.hr(chalk.blue);
               } else {
-                await terminal.display(`└── ${msg.data.primary}`);
+                terminal.display(`└── ${msg.data.primary}`);
               }
             } else if (msg.event === "tool-completion") {
-              await terminal.display(`└── ${msg.data}`);
+              terminal.display(`└── ${msg.data}`);
             } else if (msg.event === "tool-error") {
               terminal.error(msg.data); // Use terminal.error for errors
             }
@@ -77,7 +77,8 @@ export async function initTools({
   terminal: Terminal;
   tokenCounter: TokenCounter;
 }) {
-  const sendDataFn = terminal ? sendDataHandler(terminal) : undefined;
+  const sendDataFn = sendDataHandler(terminal);
+
   const fsTools = await createFileSystemTools({
     workingDir: process.cwd(),
     terminal,
@@ -126,7 +127,7 @@ export async function initTools({
       }),
       execute: async ({ question }) => {
         terminal.lineBreak();
-        await terminal.display(question, true);
+        terminal.display(question, true);
         terminal.lineBreak();
         const result = await input({ message: "? " });
         terminal.lineBreak();

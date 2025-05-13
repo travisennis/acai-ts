@@ -519,7 +519,7 @@ export const createFileSystemTools = async ({
 
             terminal.lineBreak();
 
-            await terminal.display(result);
+            terminal.display(result);
 
             terminal.lineBreak();
 

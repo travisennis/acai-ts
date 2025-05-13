@@ -52,7 +52,7 @@ export const generateRulesCommand = ({
             await config.writeProjectLearnedRulesFile(updatedProjectRules);
             terminal.success("Selected rules saved to project learned rules.");
             terminal.lineBreak();
-            await terminal.display(rulesToAdd); // Display only the saved rules
+            terminal.display(rulesToAdd); // Display only the saved rules
           } else {
             terminal.warn("No rules selected to save.");
           }
