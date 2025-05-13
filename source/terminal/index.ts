@@ -12,13 +12,14 @@ import Table from "cli-table3";
 import notifier from "node-notifier";
 import ora from "ora";
 import terminalLink from "terminal-link";
+import wrapAnsi from "wrap-ansi";
 import { logger } from "../logger.ts";
 import {
   clearTerminal,
-  formatOutput,
   getTerminalSize,
   setTerminalTitle,
 } from "./formatting.ts";
+import { applyMarkdown } from "./markdown.ts";
 import type { SpinnerInstance, TerminalConfig } from "./types.ts";
 
 /**
@@ -172,9 +173,15 @@ export class Terminal {
   /**
    * Display formatted content
    */
-  async display(content: string, wrap = false): Promise<void> {
-    const formatted = await formatOutput(content, wrap);
+  display(content: string, wrap = false): void {
+    const formatted = applyMarkdown(content);
 
+    if (wrap) {
+      this.writeln(
+        wrapAnsi(formatted, this.terminalWidth - 6, { trim: false }),
+      );
+      return;
+    }
     this.writeln(formatted);
   }
 
@@ -288,7 +295,7 @@ export class Terminal {
 
     // Write the box
     process.stdout.write(
-      `${topBorder}\n${await formatOutput(contentLines, true)}\n${bottomBorder}\n`,
+      `${topBorder}\n${this.display(contentLines, true)}${bottomBorder}\n`,
     );
   }
 
