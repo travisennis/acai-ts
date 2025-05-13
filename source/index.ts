@@ -3,6 +3,7 @@ import { select } from "@inquirer/prompts";
 import { asyncTry } from "@travisennis/stdlib/try";
 import { isDefined } from "@travisennis/stdlib/typeguards";
 import meow from "meow";
+import { Cli } from "./cli.ts";
 import { CommandManager } from "./commands/manager.ts";
 import { config } from "./config.ts";
 import { logger } from "./logger.ts";
@@ -14,7 +15,6 @@ import { Repl } from "./repl.ts";
 import { initTerminal } from "./terminal/index.ts";
 import { TokenTracker } from "./token-tracker.ts";
 import { TokenCounter } from "./token-utils.ts";
-import { Cli } from "./cli.ts";
 
 const cli = meow(
   `
@@ -228,7 +228,7 @@ async function main() {
     tokenCounter,
   });
 
-  (await asyncTry(repl.run())).recover(handleError);
+  return (await asyncTry(repl.run())).recover(handleError);
 }
 
 main();
