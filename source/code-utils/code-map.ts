@@ -1,21 +1,8 @@
 import { readFileSync } from "node:fs";
-import {
-  type Node,
-  ScriptTarget,
-  type SourceFile,
-  type TypeNode,
-  createSourceFile,
-  forEachChild,
-  isClassDeclaration,
-  isFunctionDeclaration,
-  isImportDeclaration,
-  isInterfaceDeclaration,
-  isMethodDeclaration,
-  isMethodSignature,
-  isPropertyDeclaration,
-  isPropertySignature,
-  isTypeAliasDeclaration,
-} from "typescript";
+import { extname } from "node:path";
+import type Parser from "tree-sitter";
+import type { Query, SyntaxNode } from "tree-sitter";
+import { TreeSitterManager } from "./tree-sitter-manager.ts";
 
 interface FileStructure {
   imports: ImportInfo[];
@@ -73,26 +60,31 @@ export class CodeMap {
   }
 
   static fromFile(filePath: string): CodeMap {
+    const extension = extname(filePath);
+    const treeSitterManager = new TreeSitterManager();
     const sourceText = readFileSync(filePath, "utf8");
-    const sourceFile = createSourceFile(
-      filePath,
-      sourceText,
-      ScriptTarget.Latest,
-      true,
-    );
-    const structure = CodeMap.analyzeSourceFile(sourceFile);
-    return new CodeMap(structure);
+    const parser = treeSitterManager.getParser(extension);
+    const query = treeSitterManager.getQuery(extension);
+    if (parser && query) {
+      const tree = parser.parse(sourceText);
+      const structure = CodeMap.analyzeSourceTree(tree, query, sourceText);
+      return new CodeMap(structure);
+    }
+    throw new Error("Unsupported code file.");
   }
 
   static fromSource(source: string, fileName = "source.ts"): CodeMap {
-    const sourceFile = createSourceFile(
-      fileName,
-      source,
-      ScriptTarget.Latest,
-      true,
-    );
-    const structure = CodeMap.analyzeSourceFile(sourceFile);
-    return new CodeMap(structure);
+    const extension = extname(fileName);
+    const treeSitterManager = new TreeSitterManager();
+    const parser = treeSitterManager.getParser(extension);
+    const query = treeSitterManager.getQuery(extension);
+    if (parser && query) {
+      const tree = parser.parse(source);
+      // Note: fileName is not used by tree-sitter in this context but kept for interface consistency
+      const structure = CodeMap.analyzeSourceTree(tree, query, source);
+      return new CodeMap(structure);
+    }
+    throw new Error("Unsupported code file.");
   }
 
   getStructure(): FileStructure {
@@ -182,7 +174,11 @@ export class CodeMap {
     return output;
   }
 
-  private static analyzeSourceFile(sourceFile: SourceFile): FileStructure {
+  private static analyzeSourceTree(
+    tree: Parser.Tree,
+    query: Query,
+    sourceCode: string,
+  ): FileStructure {
     const structure: FileStructure = {
       imports: [],
       functions: [],
@@ -191,96 +187,327 @@ export class CodeMap {
       types: [],
     };
 
-    function getTypeAsString(type: TypeNode | undefined): string {
-      if (!type) {
-        return "any";
-      }
-      return type.getText(sourceFile);
+    // Define Tree-sitter queries for different constructs
+    // These queries are inspired by source/code-utils/code-mapper.ts and adapted for code-map.ts needs
+    //     const tsQuery = new Query(
+    //       TypeScript.typescript,
+    //       `
+    // (import_statement source: (string) @import.source) @import
+
+    // (function_declaration
+    //   name: (identifier) @function.name
+    //   parameters: (formal_parameters) @function.parameters
+    //   return_type: (type_annotation) @function.returnType
+    // ) @function
+
+    // (export_statement
+    //   declaration: (variable_declaration
+    //     (variable_declarator
+    //       name: (identifier) @function.name
+    //       value: (arrow_function
+    //                 parameters: (formal_parameters) @function.parameters
+    //                 return_type: (type_annotation) @function.returnType
+    //              )
+    //     ) @function
+    //   ))
+
+    // (export_statement
+    //   declaration: (lexical_declaration
+    //     (variable_declarator
+    //       name: (identifier) @function.name
+    //       value: (arrow_function
+    //                 parameters: (formal_parameters) @function.parameters
+    //                 return_type: (type_annotation) @function.returnType
+    //              )
+    //     ) @function
+    //   ))
+
+    // (class_declaration
+    //   name: (type_identifier) @class.name
+    // ) @class
+
+    // (public_field_definition
+    //   name: (property_identifier) @class.property.name
+    // ) @class.property
+
+    // (method_definition
+    //   name: (property_identifier) @class.method.name
+    // ) @class.method
+
+    // (interface_declaration
+    //   name: (type_identifier) @interface.name
+    // ) @interface
+
+    // (property_signature
+    //   name: (property_identifier) @interface.property.name
+    // ) @interface.property
+
+    // (method_signature
+    //   name: (property_identifier) @interface.method.name
+    // ) @interface.method
+
+    // (enum_declaration
+    //   name: (identifier) @name @definition.enum)
+
+    // (type_alias_declaration
+    //   name: (type_identifier) @type.name
+    //   value: (_) @type.value
+    // ) @type`,
+    //     );
+
+    const matches = query.matches(tree.rootNode);
+
+    function getNodeText(node: SyntaxNode | undefined | null): string {
+      return node ? sourceCode.slice(node.startIndex, node.endIndex) : "any";
     }
 
-    function visitNode(node: Node): void {
-      if (isFunctionDeclaration(node)) {
-        const functionInfo: FunctionInfo = {
-          name: node.name ? node.name.getText(sourceFile) : "anonymous",
-          parameters: node.parameters.map((param) => ({
-            name: param.name.getText(sourceFile),
-            type: getTypeAsString(param.type),
-          })),
-          returnType: getTypeAsString(node.type),
-        };
-        structure.functions.push(functionInfo);
-      } else if (isClassDeclaration(node)) {
-        const classInfo: ClassInfo = {
-          name: node.name ? node.name.getText(sourceFile) : "anonymous",
-          methods: [],
-          properties: [],
-        };
+    function getParameters(
+      paramsNode: SyntaxNode | undefined | null,
+    ): ParameterInfo[] {
+      if (!paramsNode) {
+        return [];
+      }
+      // Assuming formal_parameters contains parameter nodes directly or nested
+      // This might need refinement based on actual tree structure for parameters
+      return paramsNode.namedChildren
+        .filter(
+          (c) =>
+            c.type === "required_parameter" || c.type === "optional_parameter",
+        )
+        .map((paramNode) => {
+          const nameNode =
+            paramNode.childForFieldName("pattern") ||
+            paramNode.childForFieldName("name"); // 'name' for optional_parameter in some cases
+          const typeNode = paramNode.childForFieldName("type");
+          return {
+            name: getNodeText(nameNode),
+            type: getNodeText(typeNode?.lastChild || typeNode), // Handles type_annotation nesting
+          };
+        });
+    }
 
-        for (const member of node.members) {
-          if (isMethodDeclaration(member)) {
-            classInfo.methods.push({
-              name: member.name.getText(sourceFile),
-              parameters: member.parameters.map((param) => ({
-                name: param.name.getText(sourceFile),
-                type: getTypeAsString(param.type),
-              })),
-              returnType: getTypeAsString(member.type),
-            });
-          } else if (isPropertyDeclaration(member)) {
-            classInfo.properties.push({
-              name: member.name.getText(sourceFile),
-              type: getTypeAsString(member.type),
-            });
+    for (const match of matches) {
+      const captureName = match.captures[0]?.name; // e.g., "function", "class"
+      const node = match.captures[0]?.node;
+
+      if (captureName === "import") {
+        const sourceCapture = match.captures.find(
+          (c) => c.name === "import.source",
+        );
+        if (sourceCapture) {
+          structure.imports.push({
+            name: "", // Tree-sitter query doesn't easily provide named imports here, focusing on source file
+            fileName: getNodeText(sourceCapture.node).replace(
+              /^['"]|['"]$/g,
+              "",
+            ),
+          });
+        }
+      } else if (captureName === "definition.function") {
+        const nameNode = match.captures.find((c) => c.name === "name")?.node;
+        // const paramsNode = match.captures.find(
+        //   (c) => c.name === "function.parameters",
+        // )?.node;
+        // const returnTypeNode = match.captures.find(
+        //   (c) => c.name === "function.returnType",
+        // )?.node;
+        // if (nameNode?.parent) {
+        const paramsNode = node?.childForFieldName("parameters");
+        const returnTypeNode = node?.childForFieldName("return_type");
+        structure.functions.push({
+          name: getNodeText(nameNode),
+          parameters: getParameters(paramsNode),
+          returnType: getNodeText(returnTypeNode?.lastChild || returnTypeNode), // Handles type_annotation nesting
+        });
+        // }
+      } else if (captureName === "definition.class") {
+        const classNameNode = match.captures.find(
+          (c) => c.name === "name",
+        )?.node;
+
+        // Find or create class entry
+        let classInfo = structure.classes.find(
+          (c) => c.name === getNodeText(classNameNode),
+        );
+        if (!classInfo) {
+          classInfo = {
+            name: getNodeText(classNameNode),
+            methods: [],
+            properties: [],
+          };
+          structure.classes.push(classInfo);
+        }
+      } else if (captureName === "definition.property") {
+        const propNameNode = match.captures.find(
+          (c) => c.name === "name",
+        )?.node;
+
+        if (propNameNode?.parent) {
+          // Find the class this property belongs to
+          let classNode: Parser.SyntaxNode | null = propNameNode.parent;
+          while (classNode && !classNode.type.includes("class_declaration")) {
+            classNode = classNode.parent;
+          }
+
+          if (classNode) {
+            const className = getNodeText(classNode.childForFieldName("name"));
+            const classInfo = structure.classes.find(
+              (c) => c.name === className,
+            );
+
+            if (classInfo) {
+              // Get the property type if available
+              const typeNode = propNameNode.parent.childForFieldName("type");
+              classInfo.properties.push({
+                name: getNodeText(propNameNode),
+                type: typeNode
+                  ? getNodeText(typeNode.lastChild || typeNode)
+                  : "any",
+              });
+            }
           }
         }
+      } else if (captureName === "definition.method") {
+        const methodNameNode = match.captures.find(
+          (c) => c.name === "name",
+        )?.node;
 
-        structure.classes.push(classInfo);
-      } else if (isInterfaceDeclaration(node)) {
-        const interfaceInfo: InterfaceInfo = {
-          name: node.name.getText(sourceFile),
-          properties: [],
-          methods: [],
-        };
+        if (methodNameNode?.parent) {
+          // Find the class this method belongs to
+          let classNode: Parser.SyntaxNode | null = methodNameNode.parent;
+          while (classNode && !classNode.type.includes("class_declaration")) {
+            classNode = classNode.parent;
+          }
 
-        for (const member of node.members) {
-          if (isMethodSignature(member)) {
-            interfaceInfo.methods.push({
-              name: member.name.getText(sourceFile),
-              parameters: member.parameters.map((param) => ({
-                name: param.name.getText(sourceFile),
-                type: getTypeAsString(param.type),
-              })),
-              returnType: getTypeAsString(member.type),
-            });
-          } else if (isPropertySignature(member)) {
-            interfaceInfo.properties.push({
-              name: member.name.getText(sourceFile),
-              type: getTypeAsString(member.type),
-            });
+          if (classNode) {
+            const className = getNodeText(classNode.childForFieldName("name"));
+            const classInfo = structure.classes.find(
+              (c) => c.name === className,
+            );
+
+            if (classInfo) {
+              const paramsNode =
+                methodNameNode.parent.childForFieldName("parameters");
+              const returnTypeNode =
+                methodNameNode.parent.childForFieldName("return_type");
+
+              classInfo.methods.push({
+                name: getNodeText(methodNameNode),
+                parameters: getParameters(paramsNode),
+                returnType: returnTypeNode
+                  ? getNodeText(returnTypeNode.lastChild || returnTypeNode)
+                  : "any",
+              });
+            }
           }
         }
+      } else if (captureName === "definition.interface") {
+        console.info("NODE", node?.toString());
+        const interfaceNameNode = match.captures.find(
+          (c) => c.name === "name",
+        )?.node;
 
-        structure.interfaces.push(interfaceInfo);
-      } else if (isTypeAliasDeclaration(node)) {
+        // Find or create interface entry
+        let interfaceInfo = structure.interfaces.find(
+          (i) => i.name === getNodeText(interfaceNameNode),
+        );
+        if (!interfaceInfo) {
+          interfaceInfo = {
+            name: getNodeText(interfaceNameNode),
+            methods: [],
+            properties: [],
+          };
+          structure.interfaces.push(interfaceInfo);
+        }
+      } else if (captureName === "interface.property") {
+        const propNameNode = match.captures.find(
+          (c) => c.name === "name",
+        )?.node;
+
+        if (propNameNode?.parent) {
+          // Find the interface this property belongs to
+          let interfaceNode: Parser.SyntaxNode | null = propNameNode.parent;
+          while (
+            interfaceNode &&
+            !interfaceNode.type.includes("interface_declaration")
+          ) {
+            interfaceNode = interfaceNode.parent;
+          }
+
+          if (interfaceNode) {
+            const interfaceName = getNodeText(
+              interfaceNode.childForFieldName("name"),
+            );
+            const interfaceInfo = structure.interfaces.find(
+              (i) => i.name === interfaceName,
+            );
+
+            if (interfaceInfo) {
+              // Get the property type if available
+              const typeNode = propNameNode.parent.childForFieldName("type");
+              interfaceInfo.properties.push({
+                name: getNodeText(propNameNode),
+                type: typeNode
+                  ? getNodeText(typeNode.lastChild || typeNode)
+                  : "any",
+              });
+            }
+          }
+        }
+      } else if (captureName === "interface.method") {
+        const methodNameNode = match.captures.find(
+          (c) => c.name === "name",
+        )?.node;
+
+        if (methodNameNode?.parent) {
+          // Find the interface this method belongs to
+          let interfaceNode: Parser.SyntaxNode | null = methodNameNode.parent;
+          while (
+            interfaceNode &&
+            !interfaceNode.type.includes("interface_declaration")
+          ) {
+            interfaceNode = interfaceNode.parent;
+          }
+
+          if (interfaceNode) {
+            const interfaceName = getNodeText(
+              interfaceNode.childForFieldName("name"),
+            );
+            const interfaceInfo = structure.interfaces.find(
+              (i) => i.name === interfaceName,
+            );
+
+            if (interfaceInfo) {
+              const paramsNode =
+                methodNameNode.parent.childForFieldName("parameters");
+              const returnTypeNode =
+                methodNameNode.parent.childForFieldName("return_type") ??
+                methodNameNode.parent.childForFieldName("type");
+
+              interfaceInfo.methods.push({
+                name: getNodeText(methodNameNode),
+                parameters: getParameters(paramsNode),
+                returnType: returnTypeNode
+                  ? getNodeText(returnTypeNode.lastChild || returnTypeNode)
+                  : "any",
+              });
+            }
+          }
+        }
+      } else if (captureName === "definition.type") {
+        console.info("NODE", node?.toString());
+        const typeNameNode = match.captures.find(
+          (c) => c.name === "name",
+        )?.node;
+        const typeValueNode = match.captures.find(
+          (c) => c.name === "value",
+        )?.node;
         structure.types.push({
-          name: node.name.getText(sourceFile),
-          type: node.type.getText(sourceFile),
-        });
-      } else if (isImportDeclaration(node)) {
-        const importDecl = node;
-        const moduleSpecifier = importDecl.moduleSpecifier
-          .getText(sourceFile)
-          .replace(/^['"]|['"]$/g, "");
-        structure.imports.push({
-          name: "",
-          fileName: moduleSpecifier,
+          name: getNodeText(typeNameNode),
+          type: getNodeText(typeValueNode),
         });
       }
-
-      forEachChild(node, visitNode);
     }
-
-    visitNode(sourceFile);
     return structure;
   }
 }

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { extname, join } from "node:path";
 import { globby } from "globby";
 import Parser, { type SyntaxNode } from "tree-sitter";
@@ -6,10 +6,6 @@ import Java from "tree-sitter-java";
 import JavaScript from "tree-sitter-javascript";
 import Python from "tree-sitter-python";
 import TypeScript from "tree-sitter-typescript";
-import type {
-  TypeInfo,
-  TypeScriptTypeChecker,
-} from "./typescript-type-checker.ts";
 
 interface SymbolLocation {
   filePath: string;
@@ -27,21 +23,11 @@ interface Symbol {
   language: "typescript" | "javascript" | "python" | "java";
   definition: SymbolLocation;
   references: SymbolLocation[];
-  typeInfo?: TypeInfo; // Type information for this symbol
-  returnType?: TypeInfo; // Return type for functions
-  parameters?: Array<{
-    // Parameters for functions
-    name: string;
-    type?: TypeInfo;
-    defaultValue?: string;
-  }>;
-  heritage?: string[];
 }
 
 class CodeNavigator {
   private symbols: Map<string, Symbol> = new Map();
   private parsers: Map<string, Parser> = new Map();
-  private typeChecker: TypeScriptTypeChecker | null = null;
 
   constructor() {
     // Initialize parsers for each language
@@ -60,9 +46,6 @@ class CodeNavigator {
     const javaParser = new Parser();
     javaParser.setLanguage(Java);
     this.parsers.set("java", javaParser);
-
-    // Initialize TypeScript type checker
-    this.typeChecker = null; // new TypeScriptTypeChecker();
   }
 
   /**
@@ -71,19 +54,6 @@ class CodeNavigator {
   async indexProject(projectDir: string): Promise<void> {
     const files = await this.findAllFiles(projectDir);
 
-    // Initialize TypeScript compiler for the project
-    if (this.typeChecker) {
-      const tsConfigPath = join(projectDir, "tsconfig.json");
-      if (existsSync(tsConfigPath)) {
-        await this.typeChecker.initialize(projectDir, tsConfigPath);
-      } else {
-        // TODO: Handle case where tsconfig.json does not exist
-        console.warn(
-          "tsconfig.json not found in project root. TypeScript type checking may be incomplete.",
-        );
-      }
-    }
-
     // First pass: Find all definitions
     for (const file of files) {
       this.findDefinitionsInFile(file);
@@ -91,16 +61,7 @@ class CodeNavigator {
 
     // Second pass: Find all references
     for (const file of files) {
-      await this.findReferencesInFile(file);
-    }
-
-    // Third pass: Resolve types for TypeScript files
-    if (this.typeChecker) {
-      for (const [_name, symbol] of this.symbols.entries()) {
-        if (symbol.language === "typescript") {
-          await this.enrichSymbolWithTypeInfo(symbol);
-        }
-      }
+      this.findReferencesInFile(file);
     }
   }
 
@@ -132,6 +93,16 @@ class CodeNavigator {
 
     // Return definition and all references
     return [symbol.definition, ...symbol.references];
+  }
+
+  findSymbolsByFilePath(filePath: string): Symbol[] {
+    const result: Symbol[] = [];
+    for (const symbol of this.symbols.values()) {
+      if (symbol.definition.filePath === filePath) {
+        result.push(symbol);
+      }
+    }
+    return result;
   }
 
   /**
@@ -199,13 +170,19 @@ class CodeNavigator {
     }
 
     // Example: Find class definitions
-    this.findClassDefinitions(tree.rootNode, filePath, lang);
+    this.findClassDefinitions(tree.rootNode, filePath, lang, code);
 
     // Example: Find function definitions
-    this.findFunctionDefinitions(tree.rootNode, filePath, lang);
+    this.findFunctionDefinitions(tree.rootNode, filePath, lang, code);
 
     // Example: Find variable definitions
-    this.findVariableDefinitions(tree.rootNode, filePath, lang);
+    this.findVariableDefinitions(tree.rootNode, filePath, lang, code);
+
+    this.findInterfaceDefinitions(tree.rootNode, filePath, lang, code);
+
+    this.findTypeAliasDefintions(tree.rootNode, filePath, lang, code);
+
+    this.findEnumDefinitions(tree.rootNode, filePath, lang, code);
   }
 
   /**
@@ -246,6 +223,7 @@ class CodeNavigator {
     node: SyntaxNode,
     filePath: string,
     language: "typescript" | "javascript" | "python" | "java",
+    code: string,
   ): void {
     // Different node types for different languages
     const classNodeTypes = {
@@ -261,7 +239,7 @@ class CodeNavigator {
 
       if (nameNode) {
         const className = nameNode.text;
-        const loc = this.nodeToLocation(nameNode, filePath, "definition");
+        const loc = this.nodeToLocation(nameNode, filePath, "definition", code);
 
         this.symbols.set(className, {
           name: className,
@@ -277,7 +255,7 @@ class CodeNavigator {
     for (let i = 0; i < node.childCount; i++) {
       const child = node.child(i);
       if (child) {
-        this.findClassDefinitions(child, filePath, language);
+        this.findClassDefinitions(child, filePath, language, code);
       }
     }
   }
@@ -289,6 +267,7 @@ class CodeNavigator {
     node: SyntaxNode,
     filePath: string,
     language: "typescript" | "javascript" | "python" | "java",
+    code: string,
   ): void {
     // Different node types for different languages
     const funcNodeTypes = {
@@ -304,7 +283,7 @@ class CodeNavigator {
 
       if (nameNode) {
         const funcName = nameNode.text;
-        const loc = this.nodeToLocation(nameNode, filePath, "definition");
+        const loc = this.nodeToLocation(nameNode, filePath, "definition", code);
 
         this.symbols.set(funcName, {
           name: funcName,
@@ -320,7 +299,7 @@ class CodeNavigator {
     for (let i = 0; i < node.childCount; i++) {
       const child = node.child(i);
       if (child) {
-        this.findFunctionDefinitions(child, filePath, language);
+        this.findFunctionDefinitions(child, filePath, language, code);
       }
     }
   }
@@ -332,6 +311,7 @@ class CodeNavigator {
     node: SyntaxNode,
     filePath: string,
     language: "typescript" | "javascript" | "python" | "java",
+    code: string,
   ): void {
     // Different node types for different languages
     const varNodeTypes = {
@@ -347,7 +327,7 @@ class CodeNavigator {
 
       if (nameNode) {
         const varName = nameNode.text;
-        const loc = this.nodeToLocation(nameNode, filePath, "definition");
+        const loc = this.nodeToLocation(nameNode, filePath, "definition", code);
 
         this.symbols.set(varName, {
           name: varName,
@@ -363,7 +343,130 @@ class CodeNavigator {
     for (let i = 0; i < node.childCount; i++) {
       const child = node.child(i);
       if (child) {
-        this.findVariableDefinitions(child, filePath, language);
+        this.findVariableDefinitions(child, filePath, language, code);
+      }
+    }
+  }
+
+  private findTypeAliasDefintions(
+    node: Parser.SyntaxNode,
+    filePath: string,
+    language: "typescript" | "javascript" | "python" | "java",
+    code: string,
+  ) {
+    // Different node types for different languages
+    const varNodeTypes = {
+      typescript: ["type_alias_declaration"],
+      javascript: [""],
+      python: [""],
+      java: [""],
+    };
+
+    if (varNodeTypes[language].includes(node.type)) {
+      // Find the variable name (identifier node)
+      const nameNode = this.findNameNode(node, language);
+
+      if (nameNode) {
+        const varName = nameNode.text;
+        const loc = this.nodeToLocation(nameNode, filePath, "definition", code);
+
+        this.symbols.set(varName, {
+          name: varName,
+          type: "type",
+          language,
+          definition: loc,
+          references: [],
+        });
+      }
+    }
+
+    // Recursively search children
+    for (let i = 0; i < node.childCount; i++) {
+      const child = node.child(i);
+      if (child) {
+        this.findTypeAliasDefintions(child, filePath, language, code);
+      }
+    }
+  }
+
+  private findInterfaceDefinitions(
+    node: Parser.SyntaxNode,
+    filePath: string,
+    language: "typescript" | "javascript" | "python" | "java",
+    code: string,
+  ) {
+    // Different node types for different languages
+    const varNodeTypes = {
+      typescript: ["interface_declaration"],
+      javascript: [""],
+      python: [""],
+      java: ["interface_declaration"],
+    };
+
+    if (varNodeTypes[language].includes(node.type)) {
+      // Find the variable name (identifier node)
+      const nameNode = this.findNameNode(node, language);
+
+      if (nameNode) {
+        const varName = nameNode.text;
+        const loc = this.nodeToLocation(nameNode, filePath, "definition", code);
+
+        this.symbols.set(varName, {
+          name: varName,
+          type: "interface",
+          language,
+          definition: loc,
+          references: [],
+        });
+      }
+    }
+
+    // Recursively search children
+    for (let i = 0; i < node.childCount; i++) {
+      const child = node.child(i);
+      if (child) {
+        this.findInterfaceDefinitions(child, filePath, language, code);
+      }
+    }
+  }
+
+  private findEnumDefinitions(
+    node: Parser.SyntaxNode,
+    filePath: string,
+    language: "typescript" | "javascript" | "python" | "java",
+    code: string,
+  ) {
+    // Different node types for different languages
+    const varNodeTypes = {
+      typescript: ["enum_declaration"],
+      javascript: [""],
+      python: [""],
+      java: ["enum_declaration"],
+    };
+
+    if (varNodeTypes[language].includes(node.type)) {
+      // Find the variable name (identifier node)
+      const nameNode = this.findNameNode(node, language);
+
+      if (nameNode) {
+        const varName = nameNode.text;
+        const loc = this.nodeToLocation(nameNode, filePath, "definition", code);
+
+        this.symbols.set(varName, {
+          name: varName,
+          type: "enum",
+          language,
+          definition: loc,
+          references: [],
+        });
+      }
+    }
+
+    // Recursively search children
+    for (let i = 0; i < node.childCount; i++) {
+      const child = node.child(i);
+      if (child) {
+        this.findEnumDefinitions(child, filePath, language, code);
       }
     }
   }
@@ -390,11 +493,7 @@ class CodeNavigator {
           defLoc.startColumn !== node.startPosition.column
         ) {
           // Add as a reference
-          const refLoc = this.nodeToLocation(node, filePath, "reference");
-
-          // Add context (a snippet of code around the reference)
-          const lineStart = code.split("\n")[node.startPosition.row];
-          refLoc.context = lineStart?.trim();
+          const refLoc = this.nodeToLocation(node, filePath, "reference", code);
 
           symbol.references.push(refLoc);
         }
@@ -485,6 +584,13 @@ class CodeNavigator {
         if (node.type === "variable_declarator") {
           return node.childForFieldName("name");
         }
+
+        if (
+          node.type === "enum_declaration" ||
+          node.type === "interface_declaration"
+        ) {
+          return node.childForFieldName("name");
+        }
         break;
       }
       case "python": {
@@ -516,6 +622,13 @@ class CodeNavigator {
         if (node.type === "variable_declarator") {
           return node.childForFieldName("name");
         }
+
+        if (
+          node.type === "enum_declaration" ||
+          node.type === "interface_declaration"
+        ) {
+          return node.childForFieldName("name");
+        }
         break;
       }
       default:
@@ -532,84 +645,31 @@ class CodeNavigator {
     node: SyntaxNode,
     filePath: string,
     type: "definition" | "reference",
+    code: string,
   ): SymbolLocation {
+    // Add context (a snippet of code around the reference)
+    const startLine = node.startPosition.row;
+    const endLine = node.endPosition.row;
+    let context = "";
+    if (startLine === endLine) {
+      const firstLine = code.split("\n")[startLine];
+      context = firstLine?.trim() ?? "";
+    } else {
+      const lines = code
+        .split("\n")
+        .slice(node.startPosition.row, node.endPosition.row);
+      context = lines.join("\n");
+    }
+    context = code.slice(node.parent?.startIndex, node.parent?.endIndex);
     return {
       filePath,
-      startLine: node.startPosition.row,
+      startLine,
       startColumn: node.startPosition.column,
-      endLine: node.endPosition.row,
+      endLine,
       endColumn: node.endPosition.column,
       type,
+      context,
     };
-  }
-  /**
-   * Enrich a symbol with type information using TypeScript's type checker
-   */
-  private async enrichSymbolWithTypeInfo(symbol: Symbol): Promise<void> {
-    if (!this.typeChecker || symbol.language !== "typescript") {
-      return;
-    }
-
-    try {
-      // Handle different symbol types
-      switch (symbol.type) {
-        case "class":
-        case "interface": {
-          const classInfo = await this.typeChecker.getClassOrInterfaceInfo(
-            symbol.definition.filePath,
-            symbol.name,
-          );
-
-          if (classInfo) {
-            symbol.typeInfo = classInfo.typeInfo;
-            symbol.heritage = classInfo.heritage;
-            // Store member info in the typeInfo
-            if (classInfo.members.size > 0) {
-              symbol.typeInfo.members = classInfo.members;
-            }
-          }
-          break;
-        }
-
-        case "function": {
-          const funcInfo = await this.typeChecker.getFunctionInfo(
-            symbol.definition.filePath,
-            symbol.definition.startLine,
-            symbol.definition.startColumn,
-          );
-
-          if (funcInfo) {
-            symbol.returnType = funcInfo.returnType;
-            symbol.parameters = funcInfo.parameters.map((p) => ({
-              name: p.name,
-              type: p.type,
-            }));
-          }
-          break;
-        }
-
-        case "variable": {
-          const typeInfo = await this.typeChecker.getTypeAtLocation(
-            symbol.definition.filePath,
-            symbol.definition.startLine,
-            symbol.definition.startColumn,
-          );
-
-          if (typeInfo) {
-            symbol.typeInfo = typeInfo;
-          }
-          break;
-        }
-        default:
-          console.warn(`Unsupported symbol type: ${symbol.type}`);
-          break;
-      }
-    } catch (error) {
-      console.error(
-        `Error enriching symbol ${symbol.name} with type info:`,
-        error,
-      );
-    }
   }
 }
 
@@ -627,59 +687,11 @@ async function main() {
     222,
     17,
   );
-  console.info(
-    `Symbol: ${definition?.name}, Defintion: ${JSON.stringify(definition?.definition)}`,
-  );
 
   if (definition) {
-    // Display type information if available
-    if (definition.typeInfo) {
-      if (definition.typeInfo.isArray) {
-        console.info(
-          "definition.typeInfo.isArray: ",
-          definition.typeInfo.isArray,
-        );
-      }
-
-      if (definition.typeInfo.isUnion) {
-        console.info(
-          "definition.typeInfo.isUnion: ",
-          definition.typeInfo.isUnion,
-        );
-      }
-
-      if (definition.typeInfo.members && definition.typeInfo.members.size > 0) {
-        console.info(
-          "definition.typeInfo.members: ",
-          definition.typeInfo.members,
-        );
-        definition.typeInfo.members.forEach((memberType, memberName) => {
-          console.info(
-            `Member: ${memberName}, Type: ${JSON.stringify(memberType)}`,
-          );
-        });
-      }
-    }
-
-    if (definition.type === "function") {
-      // Display function information if available
-      if (definition.parameters) {
-        for (const param of definition.parameters) {
-          console.info("definition.parameters: ", param);
-        }
-      }
-
-      if (definition.returnType) {
-        console.info("definition.returnType: ", definition.returnType);
-      }
-    }
-
-    // Display class/interface information if available
-    if (definition.type === "class" || definition.type === "interface") {
-      if (definition.heritage && definition.heritage.length > 0) {
-        console.info("definition.heritage: ", definition.heritage);
-      }
-    }
+    console.info(
+      `Symbol: ${definition.name}, Definition: ${JSON.stringify(definition.definition)}`,
+    );
   } else {
     console.info("Definition not found.");
   }
@@ -692,6 +704,16 @@ async function main() {
       console.info("Usage context: ", usage.context);
     }
     console.info("Usage: ", usage);
+  }
+
+  // Find symbols by file path for source/code-utils/test.ts
+  // const testFilePath = join(process.cwd(), "source/code-utils/test.ts");
+  const file = process.argv.slice(2)[0];
+  if (file) {
+    const testFilePath = file; // "source/code-utils/test.ts";
+    const symbolsInTestFile = navigator.findSymbolsByFilePath(testFilePath);
+    console.info(`Symbols in ${testFilePath}:`);
+    console.dir(symbolsInTestFile, { depth: null });
   }
 }
 
