@@ -151,6 +151,64 @@ export async function initTools({
   return tools;
 }
 
+export async function initCliTools({
+  tokenCounter,
+}: {
+  tokenCounter: TokenCounter;
+}) {
+  const fsTools = await createFileSystemTools({
+    workingDir: process.cwd(),
+    terminal: undefined,
+    sendData: undefined,
+    tokenCounter,
+  });
+
+  const gitTools = await createGitTools({
+    workingDir: process.cwd(),
+    sendData: undefined,
+  });
+
+  const codeInterpreterTool = createCodeInterpreterTool({
+    sendData: undefined,
+  });
+
+  const grepTool = createGrepTools({
+    sendData: undefined,
+  });
+
+  const thinkTool = createThinkTools({
+    sendData: undefined,
+  });
+
+  const urlTools = createUrlTools({
+    sendData: undefined,
+    tokenCounter,
+  });
+
+  const webSearchTools = createWebSearchTools({
+    sendData: undefined,
+  });
+
+  const bashTools = createBashTools({
+    baseDir: process.cwd(),
+    sendData: undefined,
+    tokenCounter,
+  });
+
+  const tools = {
+    ...fsTools,
+    ...gitTools,
+    ...codeInterpreterTool,
+    ...grepTool,
+    ...thinkTool,
+    ...urlTools,
+    ...bashTools,
+    ...webSearchTools,
+  } as const;
+
+  return tools;
+}
+
 // biome-ignore lint/performance/noBarrelFile: <explanation>
 export * from "./code-interpreter.ts";
 export * from "./filesystem.ts";

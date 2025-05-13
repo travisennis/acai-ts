@@ -246,7 +246,7 @@ export async function directoryTree(dirPath: string): Promise<string> {
 
 interface FileSystemOptions {
   workingDir: string;
-  terminal: Terminal;
+  terminal?: Terminal;
   sendData?: SendData | undefined;
   tokenCounter: TokenCounter;
 }
@@ -504,53 +504,63 @@ export const createFileSystemTools = async ({
             allowedDirectory,
           );
 
-          terminal.lineBreak();
+          if (terminal) {
+            terminal.lineBreak();
 
-          terminal.writeln(`\n${chalk.blue.bold("●")} Editing file: ${path}`);
+            terminal.writeln(`\n${chalk.blue.bold("●")} Editing file: ${path}`);
 
-          terminal.lineBreak();
+            terminal.lineBreak();
 
-          const result = await applyFileEdits(validPath, edits, true);
+            const result = await applyFileEdits(validPath, edits, true);
 
-          terminal.writeln(
-            `The agent is proposing the following ${edits.length} edits:`,
-          );
+            terminal.writeln(
+              `The agent is proposing the following ${edits.length} edits:`,
+            );
 
-          terminal.lineBreak();
+            terminal.lineBreak();
 
-          await terminal.display(result);
+            await terminal.display(result);
 
-          terminal.lineBreak();
+            terminal.lineBreak();
 
-          const acceptEdits = await confirm({
-            message: "Accept these changes?",
-            default: false,
-          });
+            const acceptEdits = await confirm({
+              message: "Accept these changes?",
+              default: false,
+            });
 
-          terminal.lineBreak();
+            terminal.lineBreak();
 
-          if (acceptEdits) {
-            const finalEdits = await applyFileEdits(validPath, edits, false);
-            // Send completion message indicating success
+            if (acceptEdits) {
+              const finalEdits = await applyFileEdits(validPath, edits, false);
+              // Send completion message indicating success
+              sendData?.({
+                id,
+                event: "tool-completion",
+                data: "Edits accepted and applied successfully.",
+              });
+              return finalEdits;
+            }
+
+            const reason = await input({ message: "Feedback: " });
+
+            terminal.lineBreak();
+
+            // Send completion message indicating rejection
             sendData?.({
               id,
               event: "tool-completion",
-              data: "Edits accepted and applied successfully.",
+              data: `Edits rejected by user. Reason: ${reason}`,
             });
-            return finalEdits;
+            return `The user rejected these changes. Reason: ${reason}`;
           }
-
-          const reason = await input({ message: "Feedback: " });
-
-          terminal.lineBreak();
-
-          // Send completion message indicating rejection
+          const finalEdits = await applyFileEdits(validPath, edits, false);
+          // Send completion message indicating success
           sendData?.({
             id,
             event: "tool-completion",
-            data: `Edits rejected by user. Reason: ${reason}`,
+            data: "Edits accepted and applied successfully.",
           });
-          return `The user rejected these changes. Reason: ${reason}`;
+          return finalEdits;
         } catch (error) {
           sendData?.({
             event: "tool-error",
