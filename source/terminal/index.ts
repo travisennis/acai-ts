@@ -382,6 +382,11 @@ export class Terminal {
           this.activeSpinners.delete(id);
           return spinnerInstance;
         },
+        clear: () => {
+          spinner.clear();
+          this.activeSpinners.delete(id);
+          return spinnerInstance;
+        },
         stop: () => {
           spinner.stop();
           this.activeSpinners.delete(id);
@@ -426,6 +431,9 @@ export class Terminal {
         if (text) {
           this.info(text);
         }
+        return dummySpinner;
+      },
+      clear: () => {
         return dummySpinner;
       },
       stop: () => {

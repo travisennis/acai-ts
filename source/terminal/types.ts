@@ -73,6 +73,11 @@ export interface SpinnerInstance {
   info(text?: string): SpinnerInstance;
 
   /**
+   * Clear spinner without any indicator
+   */
+  clear(): SpinnerInstance;
+
+  /**
    * Stop spinner without any indicator
    */
   stop(): SpinnerInstance;
