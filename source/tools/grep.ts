@@ -61,10 +61,11 @@ export const createGrepTools = (
             contextLines,
             searchIgnored,
           });
+
           sendData?.({
             event: "tool-completion",
             id: uuid,
-            data: `Found results:\n${result}`,
+            data: `Found ${result.length} results.`,
           });
           return Promise.resolve(result);
         } catch (error) {

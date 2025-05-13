@@ -25,16 +25,16 @@ export const createWebSearchTools = ({
 
         const result = await search(query);
 
-        sendData?.({
-          id,
-          event: "tool-completion",
-          data: "Done",
-        });
-
         const sources = result.results.map(
           (source) =>
             `## ${source.title}\nURL: ${source.url}\n\n${source.text}`,
         );
+
+        sendData?.({
+          id,
+          event: "tool-completion",
+          data: `Found ${result.results.length} results.`,
+        });
 
         return `# Search Results:\n\n${sources.join("\n\n")}`;
       },
@@ -46,6 +46,7 @@ async function search(query: string) {
   const exa = new Exa(process.env["EXA_API_KEY"]);
 
   const result = await exa.searchAndContents(query, {
+    numResults: 5,
     text: true,
   });
 
