@@ -18,10 +18,9 @@ export const createWebSearchTools = ({
       parameters: z.object({
         query: z.string().describe("The search query."),
       }),
-      execute: async ({ query }) => {
-        const id = crypto.randomUUID();
+      execute: async ({ query }, { toolCallId }) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: `Web search: ${query}`,
         });
@@ -36,7 +35,7 @@ export const createWebSearchTools = ({
         const tokenCount = tokenCounter.count(resultText);
 
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-completion",
           data: `Found ${result.results.length} results. (${tokenCount} tokens)`,
         });

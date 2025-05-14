@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import path from "node:path";
 import { isUndefined } from "@travisennis/stdlib/typeguards";
 import { tool } from "ai";
@@ -105,21 +104,21 @@ export const createBashTools = ({
             `Command execution timeout in milliseconds. Default: ${DEFAULT_TIMEOUT}ms`,
           ),
       }),
-      execute: async ({ command, cwd, timeout }) => {
+      execute: async ({ command, cwd, timeout }, { toolCallId }) => {
         // Guard against null cwd and timeout
         const safeCwd = cwd == null ? baseDir : cwd;
         const safeTimeout = timeout == null ? DEFAULT_TIMEOUT : timeout;
-        const uuid = crypto.randomUUID();
+
         sendData?.({
           event: "tool-init",
-          id: uuid,
+          id: toolCallId,
           data: `Executing: ${command} in ${safeCwd}`,
         });
 
         // Validate command
         if (!isCommandAllowed(command)) {
           const errorMsg = `Command not allowed: ${command}. Allowed commands: ${ALLOWED_COMMANDS.join(", ")}`;
-          sendData?.({ event: "tool-error", id: uuid, data: errorMsg });
+          sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
           return errorMsg;
         }
 
@@ -127,14 +126,14 @@ export const createBashTools = ({
         if (hasCommandChaining(command)) {
           const errorMsg =
             "Command chaining is not allowed for security reasons";
-          sendData?.({ event: "tool-error", id: uuid, data: errorMsg });
+          sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
           return errorMsg;
         }
 
         // Validate working directory
         if (!isPathWithinBaseDir(safeCwd, baseDir)) {
           const errorMsg = `Working directory must be within the project directory: ${baseDir}`;
-          sendData?.({ event: "tool-error", id: uuid, data: errorMsg });
+          sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
           return errorMsg;
         }
 
@@ -153,7 +152,11 @@ export const createBashTools = ({
               const resolvedPath = path.resolve(safeCwd, part);
               if (!isPathWithinBaseDir(resolvedPath, baseDir)) {
                 const errorMsg = `Command argument references path outside the project directory: ${part} (resolved to ${resolvedPath})`;
-                sendData?.({ event: "tool-error", id: uuid, data: errorMsg });
+                sendData?.({
+                  event: "tool-error",
+                  id: toolCallId,
+                  data: errorMsg,
+                });
                 return errorMsg;
               }
             } catch (e) {
@@ -186,7 +189,7 @@ export const createBashTools = ({
 
           sendData?.({
             event: "tool-completion",
-            id: uuid,
+            id: toolCallId,
             data:
               tokenCount <= maxTokens
                 ? "Command executed successfully."
@@ -196,7 +199,7 @@ export const createBashTools = ({
         } catch (error) {
           sendData?.({
             event: "tool-error",
-            id: uuid,
+            id: toolCallId,
             data: `Command failed: ${(error as Error).message}`,
           });
           return `Command failed: ${(error as Error).message}`;

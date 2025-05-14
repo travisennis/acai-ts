@@ -38,20 +38,22 @@ export const createGrepTools = (
             "Pass null to use the default (false, don't search ignored files).",
           ),
       }),
-      execute: ({
-        pattern,
-        path,
-        recursive,
-        ignoreCase,
-        filePattern,
-        contextLines,
-        searchIgnored,
-      }) => {
-        const uuid = crypto.randomUUID();
+      execute: (
+        {
+          pattern,
+          path,
+          recursive,
+          ignoreCase,
+          filePattern,
+          contextLines,
+          searchIgnored,
+        },
+        { toolCallId },
+      ) => {
         try {
           sendData?.({
             event: "tool-init",
-            id: uuid,
+            id: toolCallId,
             data: `Using ripgrep to search for "${pattern}" in ${path}`,
           });
           const result = grepFiles(pattern, path, {
@@ -64,14 +66,14 @@ export const createGrepTools = (
 
           sendData?.({
             event: "tool-completion",
-            id: uuid,
+            id: toolCallId,
             data: `Found ${result.length} results.`,
           });
           return Promise.resolve(result);
         } catch (error) {
           sendData?.({
             event: "tool-error",
-            id: uuid,
+            id: toolCallId,
             data: `Error searching for "${pattern}" in ${path}`,
           });
           return Promise.resolve((error as Error).message);

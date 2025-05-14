@@ -1,5 +1,4 @@
 import _crypto from "node:crypto";
-import crypto from "node:crypto";
 import _fs from "node:fs";
 import _http from "node:http";
 import _https from "node:https";
@@ -54,18 +53,17 @@ export const createCodeInterpreterTool = ({
       parameters: z.object({
         code: z.string().describe("Javascript code to be executed."),
       }),
-      execute: ({ code }) => {
-        const uuid = crypto.randomUUID();
+      execute: ({ code }, { toolCallId }) => {
         try {
           sendData?.({
             event: "tool-init",
-            id: uuid,
+            id: toolCallId,
             data: "Initializing code interpreter environment",
           });
 
           sendData?.({
             event: "tool-update",
-            id: uuid,
+            id: toolCallId,
             data: { primary: "Executing...", secondary: [code.slice(0, 500)] },
           });
 
@@ -73,7 +71,7 @@ export const createCodeInterpreterTool = ({
 
           sendData?.({
             event: "tool-completion",
-            id: uuid,
+            id: toolCallId,
             data: "Code execution completed successfully",
           });
 
@@ -86,7 +84,7 @@ export const createCodeInterpreterTool = ({
 
           sendData?.({
             event: "tool-error",
-            id: uuid,
+            id: toolCallId,
             data: errorMessage,
           });
 

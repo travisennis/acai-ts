@@ -17,12 +17,11 @@ export const createUrlTools = (options: {
       parameters: z.object({
         url: z.string().describe("The URL to fetch content from."),
       }),
-      execute: async ({ url }, { abortSignal }) => {
-        const uuid = crypto.randomUUID();
+      execute: async ({ url }, { toolCallId, abortSignal }) => {
         try {
           sendData?.({
             event: "tool-init",
-            id: uuid,
+            id: toolCallId,
             data: `Reading URL: ${url}`,
           });
           logger.info(`Initiating fetch for URL: ${url}`);
@@ -30,7 +29,7 @@ export const createUrlTools = (options: {
           const tokenCount = options.tokenCounter.count(urlContent);
           sendData?.({
             event: "tool-completion",
-            id: uuid,
+            id: toolCallId,
             data: `Read URL successfully (${tokenCount} tokens)`,
           });
           logger.info(`Successfully read URL: ${url} (${tokenCount} tokens)`);
@@ -39,7 +38,7 @@ export const createUrlTools = (options: {
           const errorMessage = (error as Error).message;
           sendData?.({
             event: "tool-error",
-            id: uuid,
+            id: toolCallId,
             data: `Error reading URL ${url}: ${errorMessage}`,
           });
           logger.error(`Error reading URL ${url}: ${errorMessage}`);

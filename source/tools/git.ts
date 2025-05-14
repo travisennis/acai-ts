@@ -1,6 +1,6 @@
-import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { memoize } from "@travisennis/stdlib/functional";
 import { tool } from "ai";
 import { simpleGit } from "simple-git";
 import { z } from "zod";
@@ -95,10 +95,9 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
             "A comma-separated list of files to include in this commit. IMPORTANT: use absolute paths for all files",
           ),
       }),
-      execute: async ({ path, message, files }) => {
-        const id = crypto.randomUUID();
+      execute: async ({ path, message, files }, { toolCallId }) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: "Preparing to create git commit",
         });
@@ -112,7 +111,7 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
           if (status.files.length === 0) {
             const message = "No changes to commit.";
             sendData?.({
-              id,
+              id: toolCallId,
               event: "tool-error",
               data: message,
             });
@@ -124,7 +123,7 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
             const errorMessage =
               "Invalid commit message. Doesn't conform to Conventional Commits";
             sendData?.({
-              id,
+              id: toolCallId,
               event: "tool-error",
               data: errorMessage,
             });
@@ -134,7 +133,7 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
           if (!files || files.trim() === "") {
             const errorMessage = "No files provided.";
             sendData?.({
-              id,
+              id: toolCallId,
               event: "tool-error",
               data: errorMessage,
             });
@@ -147,7 +146,7 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
             .map((file) => sanitizePath(workingDir, file));
 
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-update",
             data: {
               primary: "Staging files:",
@@ -159,7 +158,7 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
           await git.add(fileArr);
           const commitResult = await git.commit(message);
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             data: `Commit created successfully: ${message}`,
           });
@@ -168,7 +167,7 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
         } catch (error) {
           const errorMessage = `Error creating commit: ${(error as Error).message}`;
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-error",
             data: errorMessage,
           });
@@ -199,23 +198,6 @@ function execFileNoThrow(
     throwOnError: false,
     preserveOutputOnError,
   });
-}
-
-function memoize<T extends (...args: any[]) => any>(fn: T): T {
-  const cache = new Map<string, ReturnType<T>>();
-
-  return ((...args: Parameters<T>): ReturnType<T> => {
-    const key = JSON.stringify(args);
-
-    if (cache.has(key)) {
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      return cache.get(key)!;
-    }
-
-    const result = fn(...args);
-    cache.set(key, result);
-    return result;
-  }) as T;
 }
 
 export const inGitDirectory = memoize(async (): Promise<boolean> => {

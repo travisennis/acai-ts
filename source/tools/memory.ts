@@ -2,7 +2,6 @@ import fs from "node:fs/promises";
 import { tool } from "ai";
 import { z } from "zod";
 import type { SendData } from "./types.ts";
-
 interface Entity {
   name: string;
   entityType: string;
@@ -217,17 +216,16 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
           }),
         ),
       }),
-      execute: async ({ entities }) => {
-        const id = crypto.randomUUID();
+      execute: async ({ entities }, { toolCallId }) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: `Creating ${entities.length} new entities`,
         });
         try {
           const result = await manager.createEntities(entities);
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             data: `Successfully created ${result.length} entities`,
           });
@@ -235,7 +233,7 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
         } catch (error) {
           const errorMessage = `Error creating entities: ${(error as Error).message}`;
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-error",
             data: errorMessage,
           });
@@ -260,17 +258,16 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
           }),
         ),
       }),
-      execute: async ({ relations }) => {
-        const id = crypto.randomUUID();
+      execute: async ({ relations }, { toolCallId }) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: `Creating ${relations.length} new relations`,
         });
         try {
           const result = await manager.createRelations(relations);
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             data: `Successfully created ${result.length} relations`,
           });
@@ -278,7 +275,7 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
         } catch (error) {
           const errorMessage = `Error creating relations: ${(error as Error).message}`;
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-error",
             data: errorMessage,
           });
@@ -302,17 +299,16 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
           }),
         ),
       }),
-      execute: async ({ observations }) => {
-        const id = crypto.randomUUID();
+      execute: async ({ observations }, { toolCallId }) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: "Adding new observations to entities",
         });
         try {
           const result = await manager.addObservations(observations);
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             data: `Successfully added observations to ${result.length} entities`,
           });
@@ -320,7 +316,7 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
         } catch (error) {
           const errorMessage = `Error adding observations: ${(error as Error).message}`;
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-error",
             data: errorMessage,
           });
@@ -337,17 +333,16 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
           .array(z.string())
           .describe("An array of entity names to delete"),
       }),
-      execute: async ({ entityNames }) => {
-        const id = crypto.randomUUID();
+      execute: async ({ entityNames }, { toolCallId }) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: `Deleting ${entityNames.length} entities`,
         });
         try {
           await manager.deleteEntities(entityNames);
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             data: "Entities deleted successfully",
           });
@@ -355,7 +350,7 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
         } catch (error) {
           const errorMessage = `Error deleting entities: ${(error as Error).message}`;
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-error",
             data: errorMessage,
           });
@@ -379,17 +374,16 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
           }),
         ),
       }),
-      execute: async ({ deletions }) => {
-        const id = crypto.randomUUID();
+      execute: async ({ deletions }, { toolCallId }) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: "Deleting observations from entities",
         });
         try {
           await manager.deleteObservations(deletions);
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             data: "Observations deleted successfully",
           });
@@ -397,7 +391,7 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
         } catch (error) {
           const errorMessage = `Error deleting observations: ${(error as Error).message}`;
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-error",
             data: errorMessage,
           });
@@ -421,17 +415,16 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
           }),
         ),
       }),
-      execute: async ({ relations }) => {
-        const id = crypto.randomUUID();
+      execute: async ({ relations }, { toolCallId }) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: `Deleting ${relations.length} relations`,
         });
         try {
           await manager.deleteRelations(relations);
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             data: "Relations deleted successfully",
           });
@@ -439,7 +432,7 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
         } catch (error) {
           const errorMessage = `Error deleting relations: ${(error as Error).message}`;
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-error",
             data: errorMessage,
           });
@@ -451,17 +444,16 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
     readGraph: tool({
       description: "Read the entire knowledge graph",
       parameters: z.object({}),
-      execute: async () => {
-        const id = crypto.randomUUID();
+      execute: async (_, { toolCallId }) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: "Reading knowledge graph",
         });
         try {
           const result = await manager.readGraph();
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             data: "Knowledge graph read successfully",
           });
@@ -469,7 +461,7 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
         } catch (error) {
           const errorMessage = `Error reading graph: ${(error as Error).message}`;
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-error",
             data: errorMessage,
           });
@@ -487,17 +479,16 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
             "The search query to match against entity names, types, and observation content",
           ),
       }),
-      execute: async ({ query }) => {
-        const id = crypto.randomUUID();
+      execute: async ({ query }, { toolCallId }) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: `Searching nodes with query: ${query}`,
         });
         try {
           const result = await manager.searchNodes(query);
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             data: `Found ${result.entities.length} matching entities`,
           });
@@ -505,7 +496,7 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
         } catch (error) {
           const errorMessage = `Error searching nodes: ${(error as Error).message}`;
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-error",
             data: errorMessage,
           });
@@ -521,17 +512,16 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
           .array(z.string())
           .describe("An array of entity names to retrieve"),
       }),
-      execute: async ({ names }) => {
-        const id = crypto.randomUUID();
+      execute: async ({ names }, { toolCallId }) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: `Opening nodes: ${names.join(", ")}`,
         });
         try {
           const result = await manager.openNodes(names);
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             data: `Successfully opened ${result.entities.length} nodes`,
           });
@@ -539,7 +529,7 @@ export const createKnowledgeGraphTools = (options: KnowledgeGraphOptions) => {
         } catch (error) {
           const errorMessage = `Error opening nodes: ${(error as Error).message}`;
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-error",
             data: errorMessage,
           });

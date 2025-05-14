@@ -315,15 +315,12 @@ export const createFileSystemTools = async ({
             "Maximum number of lines to read. Pass null to get all lines.",
           ),
       }),
-      execute: async ({
-        path: providedPath,
-        encoding,
-        startLine,
-        lineCount,
-      }) => {
-        const id = crypto.randomUUID();
+      execute: async (
+        { path: providedPath, encoding, startLine, lineCount },
+        { toolCallId },
+      ) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: `Reading file: ${providedPath}`,
         });
@@ -371,7 +368,7 @@ export const createFileSystemTools = async ({
           const result = tokenCount <= maxTokens ? file : maxTokenMessage;
 
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             // Include token count only if calculated (i.e., for text files)
             data:
@@ -396,10 +393,9 @@ export const createFileSystemTools = async ({
       parameters: z.object({
         paths: z.array(z.string()),
       }),
-      execute: async ({ paths }) => {
-        const id = crypto.randomUUID();
+      execute: async ({ paths }, { toolCallId }) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: `Reading files: ${paths.join(", ")}`,
         });
@@ -464,7 +460,7 @@ export const createFileSystemTools = async ({
             : `Read ${filesReadCount} of ${paths.length} files successfully (${totalTokens} total tokens). Files exceeding token limit were skipped.`;
 
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-completion",
           data: completionMessage,
         });
@@ -491,10 +487,9 @@ export const createFileSystemTools = async ({
           }),
         ),
       }),
-      execute: async ({ path, edits }) => {
-        const id = crypto.randomUUID();
+      execute: async ({ path, edits }, { toolCallId }) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: `Editing file: ${path}`,
         });
@@ -534,7 +529,7 @@ export const createFileSystemTools = async ({
               const finalEdits = await applyFileEdits(validPath, edits, false);
               // Send completion message indicating success
               sendData?.({
-                id,
+                id: toolCallId,
                 event: "tool-completion",
                 data: "Edits accepted and applied successfully.",
               });
@@ -547,7 +542,7 @@ export const createFileSystemTools = async ({
 
             // Send completion message indicating rejection
             sendData?.({
-              id,
+              id: toolCallId,
               event: "tool-completion",
               data: `Edits rejected by user. Reason: ${reason}`,
             });
@@ -556,7 +551,7 @@ export const createFileSystemTools = async ({
           const finalEdits = await applyFileEdits(validPath, edits, false);
           // Send completion message indicating success
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             data: "Edits accepted and applied successfully.",
           });
@@ -564,7 +559,7 @@ export const createFileSystemTools = async ({
         } catch (error) {
           sendData?.({
             event: "tool-error",
-            id: id,
+            id: toolCallId,
             data: `Failed to edit file: ${(error as Error).message}`,
           });
           return `Failed to edit file: ${(error as Error).message}`;
@@ -580,10 +575,9 @@ export const createFileSystemTools = async ({
           .string()
           .describe("The path to the file whose last edit should be undone."),
       }),
-      execute: async ({ path: userPath }) => {
-        const id = crypto.randomUUID();
+      execute: async ({ path: userPath }, { toolCallId }) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: `Undoing edit for file: ${userPath}`,
         });
@@ -612,7 +606,7 @@ export const createFileSystemTools = async ({
           await fs.writeFile(backupPath, "");
 
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             data: `Successfully restored ${userPath} from backup.`,
           });
@@ -620,7 +614,7 @@ export const createFileSystemTools = async ({
         } catch (error) {
           const errorMessage = `Error restoring from backup: ${(error as Error).message}`;
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-error",
             data: errorMessage,
           });
@@ -641,10 +635,12 @@ export const createFileSystemTools = async ({
           'Encoding format for saving the file. Use "utf-8" as default for text files',
         ),
       }),
-      execute: async ({ path: userPath, content, encoding }) => {
-        const id = crypto.randomUUID();
+      execute: async (
+        { path: userPath, content, encoding },
+        { toolCallId },
+      ) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: `Saving file: ${userPath}`,
         });
@@ -655,7 +651,7 @@ export const createFileSystemTools = async ({
           );
           await fs.writeFile(filePath, content, { encoding });
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             data: `File saved successfully: ${userPath}`,
           });
@@ -676,11 +672,10 @@ export const createFileSystemTools = async ({
         source: z.string(),
         destination: z.string(),
       }),
-      execute: async ({ source, destination }) => {
-        const id = crypto.randomUUID();
+      execute: async ({ source, destination }, { toolCallId }) => {
         try {
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-init",
             data: `Moving file from ${source} to ${destination}`,
           });
@@ -694,7 +689,7 @@ export const createFileSystemTools = async ({
           );
           await fs.rename(validSourcePath, validDestPath);
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             data: "Done",
           });
@@ -711,11 +706,10 @@ export const createFileSystemTools = async ({
       parameters: z.object({
         path: z.string().describe("The path."),
       }),
-      execute: async ({ path }) => {
-        const id = crypto.randomUUID();
+      execute: async ({ path }, { toolCallId }) => {
         try {
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-init",
             data: `Listing directory tree: ${path}`,
           });
@@ -724,7 +718,7 @@ export const createFileSystemTools = async ({
             allowedDirectory,
           );
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             data: "Done",
           });
@@ -741,10 +735,9 @@ export const createFileSystemTools = async ({
       parameters: z.object({
         path: z.string().describe("Absolute path to the file to delete"),
       }),
-      execute: async ({ path: userPath }) => {
-        const id = crypto.randomUUID();
+      execute: async ({ path: userPath }, { toolCallId }) => {
         sendData?.({
-          id,
+          id: toolCallId,
           event: "tool-init",
           data: `Deleting file: ${userPath}`,
         });
@@ -773,7 +766,7 @@ export const createFileSystemTools = async ({
           await fs.unlink(filePath);
 
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-completion",
             data: `File deleted successfully: ${userPath}. Backup created at ${backupPath}`,
           });
@@ -781,7 +774,7 @@ export const createFileSystemTools = async ({
         } catch (error) {
           const errorMessage = `Failed to delete file: ${(error as Error).message}`;
           sendData?.({
-            id,
+            id: toolCallId,
             event: "tool-error",
             data: errorMessage,
           });
