@@ -408,7 +408,7 @@ export class Repl {
       terminal.writeln(chalk.dim("Tools:"));
       for (const toolCalled of toolsCalled) {
         const colorFn = toolColors.get(toolCalled) ?? chalk.white;
-        terminal.write(colorFn("██"));
+        terminal.write(`${colorFn("██")} `);
       }
       terminal.lineBreak();
 
