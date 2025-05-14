@@ -268,9 +268,9 @@ export class Terminal {
   }
 
   header(header: string, chalkFn: ChalkInstance = chalk.green): void {
-    const width = process.stdout.columns - header.length - 6; // Adjusted for extra spaces
-    process.stdout.write(
-      chalkFn(`\n── ${header} ${"─".repeat(width > 0 ? width : 0)}  \n\n`),
+    const width = process.stdout.columns - header.length - 4; // Adjusted for extra spaces
+    this.writeln(
+      chalkFn(`── ${header} ${"─".repeat(width > 0 ? width : 0)}  `),
     );
   }
 
@@ -300,9 +300,7 @@ export class Terminal {
   }
 
   hr(chalkFn: ChalkInstance = chalk.gray): void {
-    process.stdout.write(
-      chalkFn(`\n${"─".repeat(process.stdout.columns - 1)} \n`),
-    );
+    this.writeln(chalkFn(`${"─".repeat(process.stdout.columns - 1)} `));
   }
 
   /**

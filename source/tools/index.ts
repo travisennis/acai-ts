@@ -38,7 +38,7 @@ const sendDataHandler = (terminal: Terminal) => {
             messages.find((m) => m.event === "tool-init")?.data ??
             "Tool Execution";
 
-          terminal.write(`\n${indicator} `); // Write indicator without newline (sync)
+          terminal.write(`${indicator} `); // Write indicator without newline (sync)
           terminal.display(initMessage); // Display initial message (async)
 
           for (const msg of messages) {
