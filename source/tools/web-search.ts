@@ -1,12 +1,15 @@
 import { tool } from "ai";
 import Exa from "exa-js";
 import { z } from "zod";
+import type { TokenCounter } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
 
 export const createWebSearchTools = ({
   sendData,
+  tokenCounter,
 }: {
   sendData?: SendData;
+  tokenCounter: TokenCounter;
 }) => {
   return {
     webSearch: tool({
@@ -29,14 +32,16 @@ export const createWebSearchTools = ({
           (source) =>
             `## ${source.title}\nURL: ${source.url}\n\n${source.text}`,
         );
+        const resultText = `# Search Results:\n\n${sources.join("\n\n")}`;
+        const tokenCount = tokenCounter.count(resultText);
 
         sendData?.({
           id,
           event: "tool-completion",
-          data: `Found ${result.results.length} results.`,
+          data: `Found ${result.results.length} results. (${tokenCount} tokens)`,
         });
 
-        return `# Search Results:\n\n${sources.join("\n\n")}`;
+        return resultText;
       },
     }),
   };

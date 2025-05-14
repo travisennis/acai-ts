@@ -110,6 +110,7 @@ export async function initTools({
 
   const webSearchTools = createWebSearchTools({
     sendData: sendDataFn,
+    tokenCounter,
   });
 
   const bashTools = createBashTools({
@@ -188,6 +189,7 @@ export async function initCliTools({
 
   const webSearchTools = createWebSearchTools({
     sendData: undefined,
+    tokenCounter,
   });
 
   const bashTools = createBashTools({
