@@ -9,7 +9,7 @@ export interface MyInterface {
 
 // Enum
 export enum MyEnum {
-  OptionA,
+  OptionA = 0,
   OptionB = "B",
   OptionC = 10,
 }
@@ -18,7 +18,7 @@ export enum MyEnum {
 export class MyClass implements MyInterface {
   public propertyA: string;
   private _propertyB: number;
-  static staticProperty: boolean = true;
+  static staticProperty = true;
 
   constructor(a: string, b: number) {
     this.propertyA = a;
@@ -74,10 +74,10 @@ export const myArrowFunction = (value: number): string => {
 };
 
 // Variable declaration
-const myVariable: MyTypeAlias = "a string";
+const _myVariable: MyTypeAlias = "a string";
 
 // Module-level variable
-let moduleVar: boolean = false;
+const _moduleVar = false;
 
 function localHelper(): void {
   // This is not exported

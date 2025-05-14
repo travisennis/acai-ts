@@ -7,7 +7,7 @@ export interface MyInterface {
 
 // Enum
 export enum MyEnum {
-  OptionA,
+  OptionA = 0,
   OptionB = "B",
   OptionC = 10,
 }
