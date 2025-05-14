@@ -119,7 +119,7 @@ function grepFiles(
     // Ripgrep is recursive by default, so we only need to add
     // --no-recursive if effectiveRecursive is explicitly false
     if (effectiveRecursive === false) {
-      command += " --no-recursive";
+      command += " --max-depth=0";
     }
 
     if (effectiveIgnoreCase) {
