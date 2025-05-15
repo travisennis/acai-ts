@@ -4,10 +4,9 @@
 - **Lint:** `npm run lint`
 - **Lint Single File:** `npm run lint -- path/to/file.ts`
 - **Format:** `npm run format`
-- **Fix Lint/Format:** `npm run lint:fix` (uses Biome)
+- **Fix Lint/Format:** `npm run lint:fix`
 - **Test:** `npm test`
-- **Run Single Test File:** `npm test -- test/path/to/your.test.ts`
-- **Run Tests by Name:** `npm test -- --test-name-pattern "your test name pattern"`
+- **Run Single Test File:** `node --test test/path/to/your.test.ts`
 - **Find Unused Code/Deps:** `npm run knip`
 
 ### Code Style & Guidelines
@@ -22,3 +21,4 @@
 - **Logging:** Avoid `console.log` for debugging; use a proper logger or remove before committing.
 - **Commits:** Follow the Conventional Commits standard for commit messages.
 - **Comments** Never add comments to the code explaining the edit you are making. Comments that help explain how code works are acceptable.
+- **Testing** Use `node:test` and `node:assert/strict` to write unit tests in the `./test` directory. Test directory should follow the same folder structure as source.
