@@ -317,17 +317,21 @@ export class Terminal {
    */
   table(
     data: [string, string | number][],
-    options: { header?: string[] } = {},
+    options: { header?: string[]; colWidths?: number[] } = {},
   ): void {
+    const { header, colWidths } = options;
     // Calculate column widths based on terminal width
     const padding = 5; // Account for table borders and padding
     const availableWidth = this.terminalWidth - padding;
-    const commandWidth = Math.max(10, Math.floor(availableWidth * 0.3)); // Ensure minimum width
-    const descriptionWidth = Math.max(15, Math.floor(availableWidth * 0.7)); // Ensure minimum width
+    const colCount = header?.length ?? 1;
+    const width = availableWidth / colCount;
+    const computedColWidths: number[] = colWidths
+      ? colWidths.map((percent) => Math.floor((percent / 100) * availableWidth))
+      : new Array(colCount).fill(width);
 
     const table = new Table({
-      head: options.header,
-      colWidths: [commandWidth, descriptionWidth],
+      head: header,
+      colWidths: computedColWidths,
       wordWrap: true, // Enable word wrapping for the description column
     });
 

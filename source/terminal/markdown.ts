@@ -1,6 +1,7 @@
 import { EOL } from "node:os";
 import chalk from "chalk";
 import { highlight, supportsLanguage } from "cli-highlight";
+import Table from "cli-table3";
 import { type Token, marked } from "marked";
 import { logger } from "../logger.ts";
 
@@ -103,10 +104,32 @@ function format(
       }
       return token.text;
     }
+    case "table": {
+      const header = Array.isArray(token.header)
+        ? token.header
+        : [token.header];
+      const rows = Array.isArray(token.rows) ? token.rows : [token.rows];
+
+      // Calculate column widths based on terminal width
+      const padding = 5; // Account for table borders and padding
+      const availableWidth = process.stdout.columns - padding;
+      const colCount = header?.length ?? 1;
+      const width = availableWidth / colCount;
+      const computedColWidths: number[] = new Array(colCount).fill(width);
+
+      const table = new Table({
+        head: header,
+        colWidths: computedColWidths,
+        wordWrap: true, // Enable word wrapping for the description column
+      });
+
+      table.push(...rows);
+
+      return table.toString();
+    }
     default:
       return "";
   }
-  // TODO: tables
 }
 
 const DEPTH_1_LIST_NUMBERS = [
@@ -163,6 +186,7 @@ const DEPTH_1_LIST_NUMBERS = [
   "ay",
   "az",
 ];
+
 const DEPTH_2_LIST_NUMBERS = [
   "i",
   "ii",
@@ -206,6 +230,37 @@ const DEPTH_2_LIST_NUMBERS = [
   "xl",
 ];
 
+function getDepth2ListNumber(i: number): string {
+  if (i <= 0) {
+    return "";
+  }
+  const romanNumerals = [
+    ["m", 1000],
+    ["cm", 900],
+    ["d", 500],
+    ["cd", 400],
+    ["c", 100],
+    ["xc", 90],
+    ["l", 50],
+    ["xl", 40],
+    ["x", 10],
+    ["ix", 9],
+    ["v", 5],
+    ["iv", 4],
+    ["i", 1],
+  ] as const;
+
+  let num = i;
+  let result = "";
+  for (const [roman, value] of romanNumerals) {
+    while (num >= value) {
+      result += roman;
+      num -= value;
+    }
+  }
+  return result;
+}
+
 function getListNumber(listDepth: number, orderedListNumber: number): string {
   switch (listDepth) {
     case 0:
@@ -214,7 +269,10 @@ function getListNumber(listDepth: number, orderedListNumber: number): string {
     case 2:
       return DEPTH_1_LIST_NUMBERS[orderedListNumber - 1] ?? "x"; // TODO: don't hard code the list
     case 3:
-      return DEPTH_2_LIST_NUMBERS[orderedListNumber - 1] ?? "x"; // TODO: don't hard code the list
+      return (
+        DEPTH_2_LIST_NUMBERS[orderedListNumber - 1] ??
+        getDepth2ListNumber(orderedListNumber)
+      );
     default:
       return orderedListNumber.toString();
   }

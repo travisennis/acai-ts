@@ -16,6 +16,7 @@ export function usageCommand({
       } else {
         terminal.table(entries, {
           header: ["App", "Tokens"],
+          colWidths: [30, 70],
         });
       }
 

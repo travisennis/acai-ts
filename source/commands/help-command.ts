@@ -18,6 +18,7 @@ export const helpCommand = (
 
       terminal.table(entries, {
         header: ["Command", "Description"],
+        colWidths: [30, 70],
       });
 
       return Promise.resolve();
