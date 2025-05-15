@@ -23,6 +23,7 @@ import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import type { TokenCounter } from "./token-utils.ts";
 import { getDiffStat, initTools } from "./tools/index.ts";
+import type { Message } from "./tools/types.ts";
 
 interface ReplOptions {
   messageHistory: MessageHistory;
@@ -33,6 +34,7 @@ interface ReplOptions {
   commands: CommandManager;
   config: Record<PropertyKey, unknown>;
   tokenCounter: TokenCounter;
+  toolEvents: Map<string, Message[]>;
 }
 
 type CompleteToolSet = AsyncReturnType<typeof initTools>;
@@ -63,6 +65,7 @@ export class Repl {
       messageHistory,
       commands,
       tokenCounter,
+      toolEvents,
     } = this.options;
 
     logger.info(config, "Config:");
@@ -161,7 +164,7 @@ export class Repl {
       const maxTokens = aiConfig.getMaxTokens();
 
       const tools = modelConfig.supportsToolCalling
-        ? await initTools({ terminal, tokenCounter })
+        ? await initTools({ terminal, tokenCounter, events: toolEvents })
         : undefined;
 
       try {
@@ -189,6 +192,7 @@ export class Repl {
             : undefined,
           abortSignal: signal,
           onFinish: async (result) => {
+            logger.debug("onFinish called");
             if (result.response.messages.length > 0) {
               messageHistory.appendResponseMessages(result.response.messages);
             }
@@ -256,7 +260,6 @@ export class Repl {
         let lastType: "reasoning" | "text-delta" | null = null;
 
         for await (const chunk of result.fullStream) {
-          terminal.write(chalk.red(chunk.type));
           // Handle text-related chunks (reasoning or text-delta)
           if (chunk.type === "reasoning" || chunk.type === "text-delta") {
             if (chunk.type === "reasoning") {
@@ -272,6 +275,13 @@ export class Repl {
               }
               accumulatedText += chunk.textDelta;
               lastType = "text-delta";
+            }
+          } else if (chunk.type === "tool-result") {
+            const messages = toolEvents.get(chunk.toolCallId);
+            if (messages) {
+              displayToolMessages(messages, terminal);
+            } else {
+              logger.warn(`No tool events found for ${chunk.toolCallId}`);
             }
           } else {
             // Close thinking tags when moving from reasoning to any other chunk type
@@ -399,6 +409,34 @@ export class Repl {
       terminal.lineBreak();
     }
   }
+}
+
+function displayToolMessages(messages: Message[], terminal: Terminal) {
+  const isError = messages[messages.length - 1]?.event === "tool-error";
+  const indicator = isError ? chalk.red.bold("●") : chalk.blue.bold("●");
+  const initMessage =
+    messages.find((m) => m.event === "tool-init")?.data ?? "Tool Execution";
+
+  terminal.write(`${indicator} `); // Write indicator without newline (sync)
+  terminal.display(initMessage); // Display initial message (async)
+
+  for (const msg of messages) {
+    if (msg.event === "tool-update") {
+      if (msg.data.secondary && msg.data.secondary.length > 0) {
+        terminal.header(msg.data.primary, chalk.blue);
+        terminal.display(msg.data.secondary.join("\n"), true);
+        terminal.hr(chalk.blue);
+      } else {
+        terminal.display(`└── ${msg.data.primary}`);
+      }
+    } else if (msg.event === "tool-completion") {
+      terminal.display(`└── ${msg.data}`);
+    } else if (msg.event === "tool-error") {
+      terminal.error(msg.data); // Use terminal.error for errors
+    }
+    // 'init' message already handled
+  }
+  terminal.lineBreak();
 }
 
 const toolCallRepair = (modelManager: ModelManager, terminal: Terminal) => {

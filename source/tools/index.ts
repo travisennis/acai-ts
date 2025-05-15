@@ -1,6 +1,5 @@
 import { input } from "@inquirer/prompts";
 import { tool } from "ai";
-import chalk from "chalk";
 import { z } from "zod";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../token-utils.ts";
@@ -14,58 +13,13 @@ import type { Message } from "./types.ts";
 import { createUrlTools } from "./url.ts";
 import { createWebSearchTools } from "./web-search.ts";
 
-const sendDataHandler = (terminal: Terminal) => {
-  const msgStore: Map<string, Message[]> = new Map();
-  let printChain = Promise.resolve();
+const sendDataHandler = (events: Map<string, Message[]>) => {
+  const msgStore: Map<string, Message[]> = events;
   return (msg: Message) => {
     if (msgStore.has(msg.id)) {
       msgStore.get(msg.id)?.push(msg);
     } else {
       msgStore.set(msg.id, [msg]);
-    }
-
-    if (msg.event === "tool-completion" || msg.event === "tool-error") {
-      const messages = msgStore.get(msg.id) ?? [];
-      msgStore.delete(msg.id);
-      printChain = printChain
-        .then(async () => {
-          // --- Printing logic for the current tool (uuid, messages) goes here ---
-          const isError = messages[messages.length - 1]?.event === "tool-error";
-          const indicator = isError
-            ? chalk.red.bold("●")
-            : chalk.blue.bold("●");
-          const initMessage =
-            messages.find((m) => m.event === "tool-init")?.data ??
-            "Tool Execution";
-
-          terminal.write(`${indicator} `); // Write indicator without newline (sync)
-          terminal.display(initMessage); // Display initial message (async)
-
-          for (const msg of messages) {
-            if (msg.event === "tool-update") {
-              if (msg.data.secondary && msg.data.secondary.length > 0) {
-                terminal.header(msg.data.primary, chalk.blue);
-                terminal.display(msg.data.secondary.join("\n"), true);
-                terminal.hr(chalk.blue);
-              } else {
-                terminal.display(`└── ${msg.data.primary}`);
-              }
-            } else if (msg.event === "tool-completion") {
-              terminal.display(`└── ${msg.data}`);
-            } else if (msg.event === "tool-error") {
-              terminal.error(msg.data); // Use terminal.error for errors
-            }
-            // 'init' message already handled
-          }
-          terminal.lineBreak(); // Add a line break after all messages for this tool (sync)
-          // --- End of printing logic ---
-        })
-        .catch((err) => {
-          // Catch potential errors within the printing logic itself
-          console.error("Error during terminal output:", err);
-          // Ensure the chain continues even if one print job fails
-          return Promise.resolve();
-        });
     }
   };
 };
@@ -73,11 +27,13 @@ const sendDataHandler = (terminal: Terminal) => {
 export async function initTools({
   terminal,
   tokenCounter,
+  events,
 }: {
   terminal: Terminal;
   tokenCounter: TokenCounter;
+  events: Map<string, Message[]>;
 }) {
-  const sendDataFn = sendDataHandler(terminal);
+  const sendDataFn = sendDataHandler(events);
 
   const fsTools = await createFileSystemTools({
     workingDir: process.cwd(),

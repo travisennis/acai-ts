@@ -7,6 +7,7 @@ export const initCommand = ({
   terminal,
   modelManager,
   tokenCounter,
+  toolEvents,
 }: CommandOptions): ReplCommand => {
   return {
     command: "/init",
@@ -30,7 +31,7 @@ Your current working directory is ${process.cwd()}
 Is directory a git repo: ${(await inGitDirectory()) ? "Yes" : "No"}
 Platform: ${platform()}`,
         maxSteps: 40,
-        tools: await initTools({ terminal, tokenCounter }),
+        tools: await initTools({ terminal, tokenCounter, events: toolEvents }),
       });
 
       for await (const text of result.textStream) {

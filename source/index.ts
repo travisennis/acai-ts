@@ -15,6 +15,7 @@ import { Repl } from "./repl.ts";
 import { initTerminal } from "./terminal/index.ts";
 import { TokenTracker } from "./token-tracker.ts";
 import { TokenCounter } from "./token-utils.ts";
+import type { Message } from "./tools/types.ts";
 
 const cli = meow(
   `
@@ -195,6 +196,8 @@ async function main() {
     promptManager.set(initialPromptInput);
   }
 
+  const toolEvents: Map<string, Message[]> = new Map();
+
   const commands = new CommandManager({
     promptManager,
     modelManager,
@@ -203,6 +206,7 @@ async function main() {
     tokenTracker,
     config,
     tokenCounter,
+    toolEvents,
   });
 
   if (cli.flags.oneshot) {
@@ -226,6 +230,7 @@ async function main() {
     tokenTracker,
     commands,
     tokenCounter,
+    toolEvents,
   });
 
   return (await asyncTry(repl.run())).recover(handleError);

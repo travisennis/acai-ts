@@ -5,6 +5,7 @@ import type { PromptManager } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../token-tracker.ts";
 import type { TokenCounter } from "../token-utils.ts";
+import type { Message } from "../tools/types.ts";
 
 export interface ReplCommand {
   command: string;
@@ -23,4 +24,5 @@ export interface CommandOptions {
   tokenTracker: TokenTracker;
   config: ConfigManager;
   tokenCounter: TokenCounter;
+  toolEvents: Map<string, Message[]>;
 }
