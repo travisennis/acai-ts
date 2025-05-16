@@ -12,6 +12,7 @@ import { createThinkTools } from "./think.ts";
 import type { Message } from "./types.ts";
 import { createUrlTools } from "./url.ts";
 import { createWebSearchTools } from "./web-search.ts";
+import { createMemoryTools } from "./memory.ts";
 
 const sendDataHandler = (events: Map<string, Message[]>) => {
   const msgStore: Map<string, Message[]> = events;
@@ -75,6 +76,10 @@ export async function initTools({
     tokenCounter,
   });
 
+  const memoryTools = createMemoryTools({
+    sendData: sendDataFn,
+  });
+
   const askUserTool = {
     askUser: tool({
       description:
@@ -104,6 +109,7 @@ export async function initTools({
     ...askUserTool,
     ...bashTools,
     ...webSearchTools,
+    ...memoryTools,
   } as const;
 
   return tools;
