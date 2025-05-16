@@ -85,7 +85,6 @@ function toolUsage() {
 1. Use \`editFile\` to edit existing files. The tool will ask the user for approval. If approved the tool will return the diff. If rejected, the tool will return the user's feedback as to why. Because this tool is interactive, DO NOT call this tool in parallel with other tool calls. Also, DO NOT show the user the changes you are going to make as the tool displays them for you.
 2. Use \`saveFile\` only for new files
 3. After code changes, ALWAYS run:
-   - format command using bashTool
    - build command using the bashTool
 4. Handle merge conflicts by clearly presenting both versions and suggesting a resolution
 
@@ -99,6 +98,7 @@ function toolUsage() {
 - Prefer the \`gitCommit\` tool over using \`bashTool(git commit)\`
 - All other git operations can be done via the \`bashTool\`
 - Check and report uncommitted changes before suggesting commits
+- Always run the format and lint commands using the bashTool before making commits.
 
 ### GitHub Integration
 - For GitHub Issues, use the GitHub CLI tools (gh) via the \`bashTool\`
