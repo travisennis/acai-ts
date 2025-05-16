@@ -8,11 +8,11 @@ import { createCodeInterpreterTool } from "./code-interpreter.ts";
 import { createFileSystemTools } from "./filesystem.ts";
 import { createGitTools } from "./git.ts";
 import { createGrepTools } from "./grep.ts";
+import { createMemoryTools } from "./memory.ts";
 import { createThinkTools } from "./think.ts";
 import type { Message } from "./types.ts";
 import { createUrlTools } from "./url.ts";
 import { createWebSearchTools } from "./web-search.ts";
-import { createMemoryTools } from "./memory.ts";
 
 const sendDataHandler = (events: Map<string, Message[]>) => {
   const msgStore: Map<string, Message[]> = events;
