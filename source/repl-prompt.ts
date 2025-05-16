@@ -2,6 +2,7 @@ import { readdir } from "node:fs/promises";
 import { parse, sep } from "node:path";
 import { type Interface, createInterface } from "node:readline/promises";
 import { asyncTry } from "@travisennis/stdlib/try";
+import clipboardy from "clipboardy";
 import type { CommandManager } from "./commands/manager.ts";
 import { logger } from "./logger.ts";
 
@@ -61,6 +62,8 @@ async function fileSystemCompleter(line: string): Promise<[string[], string]> {
 }
 
 export class ReplPrompt {
+  // biome-ignore lint/suspicious/noExplicitAny: Keypress listener signature
+  private keypressListener?: (str: string, key: any) => void;
   private rl: Interface;
   private history: string[];
   private maxHistory = 25;
@@ -109,6 +112,55 @@ export class ReplPrompt {
         return fileSystemCompleter(line); // [completions, line];
       },
     });
+
+    if (process.stdin.isTTY) {
+      this.keypressListener = async (
+        _str: string,
+        key: {
+          name: string;
+          ctrl: boolean;
+          meta: boolean;
+          shift: boolean;
+          sequence: string;
+        },
+      ) => {
+        // if (this.rl.closed) {
+        //   if (this.keypressListener) {
+        //     process.stdin.off("keypress", this.keypressListener);
+        //     this.keypressListener = undefined;
+        //   }
+        //   return;
+        // }
+
+        if (key?.ctrl && key.name === "v" && !key.meta && !key.shift) {
+          try {
+            const clipboardText = await clipboardy.read();
+            if (clipboardText) {
+              const currentLine = this.rl.line;
+              const cursorPos = this.rl.cursor;
+
+              const beforeCursor = currentLine.substring(0, cursorPos);
+              const afterCursor = currentLine.substring(cursorPos);
+
+              const newLine = beforeCursor + clipboardText + afterCursor;
+
+              // biome-ignore lint/suspicious/noExplicitAny: Accessing internal readline method
+              (this.rl as any).line = newLine;
+              // biome-ignore lint/suspicious/noExplicitAny: Accessing internal readline method
+              (this.rl as any).cursor = cursorPos + clipboardText.length;
+
+              // biome-ignore lint/suspicious/noExplicitAny: Accessing internal readline method
+              (this.rl as any)._refreshLine();
+            }
+          } catch (error) {
+            logger.error(
+              `Failed to paste from clipboard: ${(error as Error).message}`,
+            );
+          }
+        }
+      };
+      process.stdin.on("keypress", this.keypressListener);
+    }
   }
 
   async input() {
@@ -118,12 +170,17 @@ export class ReplPrompt {
   }
 
   close() {
+    if (this.keypressListener) {
+      process.stdin.off("keypress", this.keypressListener);
+      this.keypressListener = undefined;
+    }
     this.rl.close();
   }
 
   [Symbol.dispose]() {
     this.close();
   }
+
   // Function to save history
   saveHistory(input: string) {
     if (!input.trim()) {
