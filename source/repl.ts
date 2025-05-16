@@ -133,9 +133,9 @@ export class Repl {
             model: modelConfig,
           });
           promptManager.set(processedPrompt);
-
-          terminal.lineBreak();
         }
+
+        terminal.lineBreak();
       }
 
       // flag to see if the user prompt has added context
