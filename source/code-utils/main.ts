@@ -35,4 +35,6 @@ async function main() {
   }
 }
 
-main().catch(console.error);
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(console.error);
+}
