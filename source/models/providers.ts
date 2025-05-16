@@ -61,22 +61,30 @@ export const models = [
   ...xaiModelNames,
 ] as const;
 
-export type ModelName = (typeof models)[number];
+export type ModelName =
+  | (typeof models)[number]
+  | (`xai:${string}` & {})
+  | (`openai:${string}` & {})
+  | (`anthropic:${string}` & {})
+  | (`google:${string}` & {})
+  | (`deepseek:${string}` & {})
+  | (`openrouter:${string}` & {});
 
 export function isSupportedModel(model: unknown): model is ModelName {
   return (
-    models.includes(model as ModelName) ||
+    models.includes(model as (typeof models)[number]) ||
     (isString(model) &&
       (model.startsWith("openrouter:") ||
         model.startsWith("anthropic:") ||
         model.startsWith("openai:") ||
         model.startsWith("google:") ||
+        model.startsWith("xai:") ||
         model.startsWith("deepseek:")))
   );
 }
 
-export function languageModel(input: ModelName) {
-  return registry.languageModel(input);
+export function languageModel(model: ModelName) {
+  return registry.languageModel(model as (typeof models)[number]);
 }
 
 export interface ModelMetadata<T = ModelName> {

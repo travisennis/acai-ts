@@ -65,7 +65,10 @@ export class ModelManager {
         stateDir: this.stateDir,
       }),
     );
-    this.modelMetadataMap.set(app, modelRegistry[model]);
+    const modelMetadata = modelRegistry[model];
+    if (modelMetadata) {
+      this.modelMetadataMap.set(app, modelMetadata);
+    }
   }
 
   getModel(app: App) {
