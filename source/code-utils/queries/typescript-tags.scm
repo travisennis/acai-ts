@@ -39,7 +39,7 @@
     name: (property_identifier) @name) @definition.method)
 
 (public_field_definition
-  name: (property_identifier) @name) @defintion.property
+  name: (property_identifier) @name) @definition.property
 
 ; Exported function (variable declarator with function)
 (export_statement
