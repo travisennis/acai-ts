@@ -107,16 +107,23 @@ export class CodeMapper {
         } else if (captureName.startsWith("reference.")) {
           // e.g., "reference.class"
           primaryNode = node; // The node that constitutes the reference
-          const parts = captureName.split("."); // ["reference", "class"]
-          if (parts.length > 1) {
-            featureType = parts[1]; // "class" (the type being referenced)
-          }
+          featureType = captureName.substring("reference.".length); // "class"
           // For references, the 'name' is often the text of the reference itself
           // or a sub-node if the query is structured that way.
           // If a specific @name.reference.X capture exists, it will be handled by the "name." condition.
           // Otherwise, we might use the primaryNode's text for the name of the reference.
           if (!nameNode && primaryNode) {
-            featureName = primaryNode.text; // Use primaryNode's text if no specific name capture
+            // Default name for reference if no specific @name.reference capture
+            featureName = primaryNode.text;
+          }
+        } else {
+          // Handles other captures like "interface.property", "interface.method", "import", etc.
+          // These are assumed to be primary defining captures for their type if not 'name.*'.
+          if (!captureName.startsWith("name")) {
+            // Avoid re-processing 'name' if it didn't fit 'name.*' logic for some reason
+            primaryNode = node; // The full node for this type
+            featureType = captureName; // Use the full capture name as type, e.g., "interface.property"
+            // The @name capture within the same match should provide the featureName.
           }
         }
         // Add other conditions for different capture patterns if needed (e.g. "call.")
