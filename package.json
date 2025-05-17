@@ -18,7 +18,7 @@
     "lint:fix": "biome lint --unsafe --write",
     "lint:staged": "biome lint --error-on-warnings --no-errors-on-unmatched --staged",
     "prepare": "npm run compile",
-    "test": "node --test test/**/*.test.ts",
+    "test": "c8 node --test test/**/*.test.ts",
     "pretest": "npm run compile",
     "format": "biome check --formatter-enabled=true --linter-enabled=false --organize-imports-enabled=true --write ./source && biome format --write",
     "dev": "node --env-file=.env ./source/index.ts",
@@ -78,6 +78,7 @@
     "@types/marked-terminal": "^6.1.1",
     "@types/node": "^22.15.18",
     "@types/node-notifier": "^8.0.5",
+    "c8": "^10.1.3",
     "typescript": "^5.8.3"
   },
   "publishConfig": {
