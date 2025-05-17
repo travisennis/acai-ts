@@ -649,7 +649,11 @@ export const createFileSystemTools = async ({
             joinWorkingDir(userPath, workingDir),
             allowedDirectory,
           );
+
+          // Ensure parent directory exists
+          await fs.mkdir(path.dirname(filePath), { recursive: true });
           await fs.writeFile(filePath, content, { encoding });
+
           sendData?.({
             id: toolCallId,
             event: "tool-completion",
