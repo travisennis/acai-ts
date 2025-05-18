@@ -142,8 +142,8 @@ export class Repl {
       const hasAddedContext = promptManager.hasContext();
 
       if (hasAddedContext) {
-        terminal.lineBreak();
         terminal.info("Context will be added to prompt.");
+        terminal.lineBreak();
       }
 
       const userPrompt = promptManager.get();
