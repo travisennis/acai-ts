@@ -116,23 +116,24 @@ export class CodeMapper {
             // Default name for reference if no specific @name.reference capture
             featureName = primaryNode.text;
           }
-        } else {
+        } else if (!captureName.startsWith("name")) {
           // Handles other captures like "interface.property", "interface.method", "import", etc.
           // These are assumed to be primary defining captures for their type if not 'name.*'.
-          if (!captureName.startsWith("name")) {
-            // Avoid re-processing 'name' if it didn't fit 'name.*' logic for some reason
-            primaryNode = node; // The full node for this type
-            featureType = captureName; // Use the full capture name as type, e.g., "interface.property"
-            // The @name capture within the same match should provide the featureName.
-          }
+
+          // Avoid re-processing 'name' if it didn't fit 'name.*' logic for some reason
+          primaryNode = node; // The full node for this type
+          featureType = captureName; // Use the full capture name as type, e.g., "interface.property"
+          // The @name capture within the same match should provide the featureName.
         }
         // Add other conditions for different capture patterns if needed (e.g. "call.")
       }
 
       // Ensure we have a primary node to define the feature's code and position
       if (primaryNode && featureType) {
+        const normalizedPrimaryType =
+          normalizeType(featureType as keyof typeof typeMap) || featureType;
         features.push({
-          type: featureType,
+          type: normalizedPrimaryType,
           name: featureName, // Name of the definition itself, if applicable (e.g. class name for class def)
           code: sourceCode.slice(primaryNode.startIndex, primaryNode.endIndex),
           start: primaryNode.startPosition,
@@ -140,20 +141,16 @@ export class CodeMapper {
           filePath,
         });
         // If a separate name was captured (e.g. @name for a @definition.function match)
-        // and it's different from the primary feature's name (if the primary feature is also a named entity like a class)
-        // or if the featureName derived from nameNode is simply the name of the entity defined by primaryNode,
-        // create a separate, more specific "name" feature.
-        if (nameNode && featureName && featureType) {
-          // Ensure featureType is from the definition context
-          // Check if this name feature is distinct from the definition feature already added
-          // This avoids adding a duplicate if featureName from nameNode is the same as a name inferred for primaryNode
-          // For example, a class definition might have featureName as class name, and nameNode also as class name.
-          // We want a specific feature for the name identifier itself.
+        // create a separate, more specific "name" feature for the identifier itself.
+        if (nameNode && featureName) {
+          // The type of the name feature should be the same as its corresponding definition.
+          const normalizedNameType =
+            normalizeType(featureType as keyof typeof typeMap) || featureType;
           if (primaryNode !== nameNode) {
             // Only add if nameNode is truly a sub-component or different node
             features.push({
-              type: featureType, // Same type as the definition it names
-              name: featureName, // The text of the name identifier
+              type: normalizedNameType, // Same normalized type as the definition it names
+              name: nameNode.text, // The text of the name identifier itself
               code: nameNode.text, // Code is just the identifier itself
               start: nameNode.startPosition,
               end: nameNode.endPosition,
@@ -162,11 +159,12 @@ export class CodeMapper {
           }
         }
       } else if (nameNode && featureType && !primaryNode) {
-        // Fallback if only a name node was captured for a definition type (less ideal)
-        // This case might indicate a query that needs adjustment or a very simple named entity.
+        // Fallback if only a name node was captured (e.g. a reference not part of a larger definition context in this match)
+        const normalizedFallbackType =
+          normalizeType(featureType as keyof typeof typeMap) || featureType;
         features.push({
-          type: featureType,
-          name: featureName,
+          type: normalizedFallbackType,
+          name: featureName, // Should be nameNode.text if this is purely a name feature
           code: nameNode.text, // Code will just be the name itself
           start: nameNode.startPosition,
           end: nameNode.endPosition,
@@ -174,7 +172,19 @@ export class CodeMapper {
         });
       }
     }
-    return features;
+
+    // Deduplicate features based on path, type, name, and exact start/end positions
+    const uniqueFeatures: Feature[] = [];
+    const seenFeatures = new Set<string>();
+
+    for (const feature of features) {
+      const key = `${feature.filePath}:${feature.start.row}:${feature.start.column}:${feature.end.row}:${feature.end.column}:${feature.type}:${feature.name || ""}`;
+      if (!seenFeatures.has(key)) {
+        seenFeatures.add(key);
+        uniqueFeatures.push(feature);
+      }
+    }
+    return uniqueFeatures;
   }
 
   processFile(filePath: string) {

@@ -43,15 +43,22 @@
 (enum_declaration
   name: (identifier) @name) @definition.enum
 
-; Class methods
+; Instance Class methods
+; Order: optional modifiers [public/private/protected], optional "async", then name.
+; This pattern will not match methods with "static" in the typical static keyword position.
 (class_body
   (method_definition
+    (accessibility_modifier)?
+    ("async")?
     name: (property_identifier) @name) @definition.method)
 
 ; Static Class methods
+; Order: optional modifiers, optional "async", "static" keyword, then name.
 (class_body
   (method_definition
-    "static"
+    (accessibility_modifier)?
+    ("async")?
+    "static" ; The "static" keyword
     name: (property_identifier) @name) @definition.method)
 
 ; Class properties
