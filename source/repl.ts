@@ -280,6 +280,7 @@ export class Repl {
             const messages = toolEvents.get(chunk.toolCallId);
             if (messages) {
               displayToolMessages(messages, terminal);
+              toolEvents.delete(chunk.toolCallId);
             } else {
               logger.warn(`No tool events found for ${chunk.toolCallId}`);
             }
@@ -424,7 +425,7 @@ function displayToolMessages(messages: Message[], terminal: Terminal) {
     if (msg.event === "tool-update") {
       if (msg.data.secondary && msg.data.secondary.length > 0) {
         terminal.header(msg.data.primary, chalk.blue);
-        terminal.display(msg.data.secondary.join("\n"), true);
+        terminal.display(msg.data.secondary.join("\n").trim(), true);
         terminal.hr(chalk.blue);
       } else {
         terminal.display(`└── ${msg.data.primary}`);
