@@ -35,7 +35,7 @@ type App =
   | "repl"
   | "cli"
   | "architect"
-  | "file-retiever"
+  | "file-retriever"
   | "title-conversation"
   | "conversation-summarizer"
   | "conversation-analyzer"
