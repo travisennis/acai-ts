@@ -138,7 +138,9 @@ export class MyTestClass {
     if (incrementFeature) {
       strictEqual(
         incrementFeature.code,
-        "public increment(): void {\n    this.count++;\n  }",
+        `public increment(): void {
+    this.count++;
+  }`,
         "Code for increment method should be its full signature",
       );
       strictEqual(incrementFeature.filePath, tempFilePath);
@@ -152,7 +154,9 @@ export class MyTestClass {
     if (getNameFeature) {
       strictEqual(
         getNameFeature.code,
-        "public getName(): string {\n    return this.name;\n  }",
+        `public getName(): string {
+    return this.name;
+  }`,
         "Code for getName method should be its full signature",
       );
       strictEqual(getNameFeature.filePath, tempFilePath);
@@ -216,30 +220,30 @@ export interface MyInterface {
     );
     ok(interfaceNameFeature, "Should find the interface name feature");
 
-    const propertyAFeature = features.find(
+    const propertyFeatureA = features.find(
       (f) => f.type === "interface.property" && f.name === "propertyA",
     );
-    ok(propertyAFeature, "Should find propertyA feature");
-    if (propertyAFeature) {
+    ok(propertyFeatureA, "Should find propertyA feature");
+    if (propertyFeatureA) {
       strictEqual(
-        propertyAFeature.code,
+        propertyFeatureA.code,
         "propertyA: string",
         "Code for propertyA should be its full signature",
       );
-      strictEqual(propertyAFeature.filePath, tempFilePath);
+      strictEqual(propertyFeatureA.filePath, tempFilePath);
     }
 
-    const propertyBFeature = features.find(
+    const propertyFeatureB = features.find(
       (f) => f.type === "interface.property" && f.name === "propertyB",
     );
-    ok(propertyBFeature, "Should find propertyB feature");
-    if (propertyBFeature) {
+    ok(propertyFeatureB, "Should find propertyB feature");
+    if (propertyFeatureB) {
       strictEqual(
-        propertyBFeature.code,
+        propertyFeatureB.code,
         "propertyB: number",
         "Code for propertyB should be its full signature",
       );
-      strictEqual(propertyBFeature.filePath, tempFilePath);
+      strictEqual(propertyFeatureB.filePath, tempFilePath);
     }
 
     const methodSignatureFeature = features.find(
@@ -270,7 +274,7 @@ export enum MyTestEnum {
     const codeMapper = new CodeMapper(treeSitterManager);
     const features = codeMapper.processFile(tempFilePath);
 
-    // console.info('Actual Enum Features from CodeMapper:', JSON.stringify(features, null, 2)); // Debug line
+    // console.info("Actual Enum Features from CodeMapper:", JSON.stringify(features, null, 2)); // Debug line
 
     ok(Array.isArray(features), "Should return an array of features for enum");
     // Expected 2 features: enum (def+name)
@@ -309,13 +313,179 @@ export enum MyTestEnum {
     if (existsSync(tempFilePath)) {
       unlinkSync(tempFilePath);
     }
-    // Attempt to remove the directory if it\'s empty
+    // Attempt to remove the directory if it's empty
     // This might fail if other temp files are created by parallel tests or if not empty
     try {
       rmdirSync(tempTestDir);
     } catch (_e) {
       // console.warn(`Could not remove temp directory ${tempTestDir}: ${e.message}`);
     }
+  });
+
+  it("should process an advanced TypeScript class snippet with static members, getters, setters, and private methods", () => {
+    const advancedClassSnippet = `
+export class AdvancedClass {
+  public publicProp: string = "public";
+  private privateProp: number = 1;
+  static staticProp: boolean = true;
+
+  constructor() {
+    this.publicProp = "initialized";
+  }
+
+  get value(): number {
+    return this.privateProp;
+  }
+
+  set value(val: number) {
+    this.privateProp = val;
+  }
+
+  public publicMethod(): string {
+    return "public method";
+  }
+
+  private privateMethod(): void {
+    // private method
+  }
+
+  static staticMethod(): string {
+    return "static method called";
+  }
+}
+    `;
+    writeFileSync(tempFilePath, advancedClassSnippet, "utf8");
+
+    const treeSitterManager = new TreeSitterManager();
+    const codeMapper = new CodeMapper(treeSitterManager);
+    const features = codeMapper.processFile(tempFilePath);
+
+    // console.info("Advanced Class Features:", JSON.stringify(features, null, 2)); // Debug line
+
+    ok(
+      Array.isArray(features),
+      "Should return an array of features for advanced class",
+    );
+    // Expected 20 features:
+    // class (def+name) = 2
+    // publicProp (def+name) = 2
+    // privateProp (def+name) = 2
+    // staticProp (def+name) = 2
+    // constructor (def+name) = 2
+    // getter 'value' (def+name) = 2
+    // setter 'value' (def+name) = 2
+    // publicMethod (def+name) = 2
+    // privateMethod (def+name) = 2
+    // staticMethod (def+name) = 2
+    // Total = 20
+    deepStrictEqual(
+      features.length,
+      20,
+      "Expected 20 features for the advanced class snippet",
+    );
+
+    // Class definition
+    const classDefFeature = features.find(
+      (f) =>
+        f.type === "class" &&
+        f.name === "AdvancedClass" &&
+        f.code.startsWith("class AdvancedClass"),
+    );
+    ok(
+      classDefFeature,
+      "Should find the main AdvancedClass definition feature",
+    );
+
+    // Property: publicProp
+    const publicPropFeature = features.find(
+      (f) =>
+        f.type === "property" &&
+        f.name === "publicProp" &&
+        f.code.startsWith("public publicProp"),
+    );
+    ok(publicPropFeature, "Should find publicProp property definition feature");
+
+    // Property: privateProp
+    const privatePropFeature = features.find(
+      (f) =>
+        f.type === "property" &&
+        f.name === "privateProp" &&
+        f.code.startsWith("private privateProp"),
+    );
+    ok(
+      privatePropFeature,
+      "Should find privateProp property definition feature",
+    );
+    if (privatePropFeature) {
+      strictEqual(privatePropFeature.code, "private privateProp: number = 1");
+    }
+
+    // Property: staticProp
+    const staticPropFeature = features.find(
+      (f) =>
+        f.type === "property" &&
+        f.name === "staticProp" &&
+        f.code.startsWith("static staticProp"),
+    );
+    ok(staticPropFeature, "Should find staticProp property definition feature");
+    if (staticPropFeature) {
+      strictEqual(staticPropFeature.code, "static staticProp: boolean = true");
+    }
+
+    // Constructor
+    const constructorFeature = features.find(
+      (f) => f.type === "method" && f.name === "constructor",
+    );
+    ok(constructorFeature, "Should find constructor feature");
+
+    // Getter: value
+    const getterFeature = features.find(
+      (f) =>
+        f.type === "method" &&
+        f.name === "value" &&
+        f.code.startsWith("get value"),
+    );
+    ok(getterFeature, "Should find getter 'value' feature");
+
+    // Setter: value
+    const setterFeature = features.find(
+      (f) =>
+        f.type === "method" &&
+        f.name === "value" &&
+        f.code.startsWith("set value"),
+    );
+    ok(setterFeature, "Should find setter 'value' feature");
+
+    // Public method
+    const publicMethodFeature = features.find(
+      (f) => f.type === "method" && f.name === "publicMethod",
+    );
+    ok(publicMethodFeature, "Should find publicMethod feature");
+
+    // Private method
+    const privateMethodFeature = features.find(
+      (f) => f.type === "method" && f.name === "privateMethod",
+    );
+    ok(privateMethodFeature, "Should find privateMethod feature");
+
+    // Static method
+    const staticMethodFeature = features.find(
+      (f) =>
+        f.type === "method" &&
+        f.name === "staticMethod" &&
+        f.code.startsWith("static staticMethod"),
+    );
+    ok(staticMethodFeature, "Should find staticMethod feature");
+
+    // Check that staticMethod is not duplicated
+    const staticMethodFeatures = features.filter(
+      (f) => f.name === "staticMethod" && f.type === "method",
+    );
+    deepStrictEqual(
+      staticMethodFeatures.length,
+      2,
+      "Static method should have exactly two features (def + name)",
+    );
   });
 
   it("should process a TypeScript function snippet and extract features", () => {
@@ -344,8 +514,8 @@ export const myArrowFunction = (value: number): string => {
       Array.isArray(features),
       "Should return an array of features for functions",
     );
-    // Expected 2 features for \`myFunction\` (definition and name)
-    // Expected 2 features for \`myArrowFunction\` (definition and name)
+    // Expected 2 features for `myFunction` (definition and name)
+    // Expected 2 features for `myArrowFunction` (definition and name)
     deepStrictEqual(
       features.length,
       4,
