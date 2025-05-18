@@ -12,6 +12,7 @@ const openRouterClient = createOpenAI({
 const openrouterModels = {
   "deepseek-v3": openRouterClient("deepseek/deepseek-chat"),
   "deepseek-r1": openRouterClient("deepseek/deepseek-r1"),
+  "gemini-pro25": openRouterClient("google/gemini-2.5-pro-preview"),
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -55,5 +56,18 @@ export const openrouterModelRegistry: {
     costPerInputToken: 0, // Assuming free tier or unknown cost
     costPerOutputToken: 0, // Assuming free tier or unknown cost
     category: "balanced",
+  },
+  "openrouter:gemini-pro25": {
+    id: "openrouter:gemini-pro25",
+    provider: "openrouter",
+    contextWindow: 1000000,
+    maxOutputTokens: 64000,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0,
+    costPerOutputToken: 0,
+    category: "powerful",
   },
 };
