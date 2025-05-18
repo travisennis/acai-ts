@@ -56,11 +56,11 @@ export class MyTestClass {
     // console.info('Actual Class Features from CodeMapper:', JSON.stringify(features, null, 2)); // Debug line
 
     ok(Array.isArray(features), "Should return an array of features for class");
-    // Expected 12 features: class (def+name), 2 props (def+name each), 3 methods (def+name each)
+    // Expected 6 features: class def, 2 prop defs, 3 method defs
     deepStrictEqual(
       features.length,
-      12,
-      "Expected 12 features for the class snippet",
+      6,
+      "Expected 6 features for the class snippet",
     );
 
     // Class definition (full block)
@@ -79,15 +79,6 @@ export class MyTestClass {
         "Class def code should start correctly",
       );
     }
-
-    // Class name capture
-    const classNameFeature = features.find(
-      (f) =>
-        f.type === "class" &&
-        f.name === "MyTestClass" &&
-        f.code === "MyTestClass",
-    );
-    ok(classNameFeature, "Should find the class name feature");
 
     // Property: name
     const namePropFeature = features.find(
@@ -180,11 +171,11 @@ export interface MyInterface {
 
     ok(Array.isArray(features), "Should return an array of features");
 
-    // Expected 8 features: interface (def+name), 2 props (def+name each), 1 method (def+name)
+    // Expected 4 features: interface def, 2 prop defs, 1 method def
     deepStrictEqual(
       features.length,
-      8,
-      "Expected 8 features for the interface snippet",
+      4,
+      "Expected 4 features for the interface snippet",
     );
 
     const interfaceDefinitionFeature = features.find(
@@ -211,14 +202,6 @@ export interface MyInterface {
         "Code should end with a closing brace",
       );
     }
-
-    const interfaceNameFeature = features.find(
-      (f) =>
-        f.type === "interface" &&
-        f.name === "MyInterface" &&
-        f.code === "MyInterface", // Distinguishes the name capture
-    );
-    ok(interfaceNameFeature, "Should find the interface name feature");
 
     const propertyFeatureA = features.find(
       (f) => f.type === "interface.property" && f.name === "propertyA",
@@ -277,11 +260,11 @@ export enum MyTestEnum {
     // console.info("Actual Enum Features from CodeMapper:", JSON.stringify(features, null, 2)); // Debug line
 
     ok(Array.isArray(features), "Should return an array of features for enum");
-    // Expected 2 features: enum (def+name)
+    // Expected 1 feature: enum def
     deepStrictEqual(
       features.length,
-      2,
-      "Expected 2 features for the enum snippet",
+      1,
+      "Expected 1 feature for the enum snippet",
     );
 
     // Enum definition (full block)
@@ -300,13 +283,6 @@ export enum MyTestEnum {
         "Enum def code should start correctly",
       );
     }
-
-    // Enum name capture
-    const enumNameFeature = features.find(
-      (f) =>
-        f.type === "enum" && f.name === "MyTestEnum" && f.code === "MyTestEnum",
-    );
-    ok(enumNameFeature, "Should find the enum name feature");
   });
 
   after(() => {
@@ -366,22 +342,22 @@ export class AdvancedClass {
       Array.isArray(features),
       "Should return an array of features for advanced class",
     );
-    // Expected 20 features:
-    // class (def+name) = 2
-    // publicProp (def+name) = 2
-    // privateProp (def+name) = 2
-    // staticProp (def+name) = 2
-    // constructor (def+name) = 2
-    // getter 'value' (def+name) = 2
-    // setter 'value' (def+name) = 2
-    // publicMethod (def+name) = 2
-    // privateMethod (def+name) = 2
-    // staticMethod (def+name) = 2
-    // Total = 20
+    // Expected 10 features:
+    // class def = 1
+    // publicProp def = 1
+    // privateProp def = 1
+    // staticProp def = 1
+    // constructor def = 1
+    // getter 'value' def = 1
+    // setter 'value' def = 1
+    // publicMethod def = 1
+    // privateMethod def = 1
+    // staticMethod def = 1
+    // Total = 10
     deepStrictEqual(
       features.length,
-      20,
-      "Expected 20 features for the advanced class snippet",
+      10,
+      "Expected 10 features for the advanced class snippet",
     );
 
     // Class definition
@@ -483,8 +459,8 @@ export class AdvancedClass {
     );
     deepStrictEqual(
       staticMethodFeatures.length,
-      2,
-      "Static method should have exactly two features (def + name)",
+      1,
+      "Static method should have exactly one feature (def)",
     );
   });
 
@@ -514,12 +490,12 @@ export const myArrowFunction = (value: number): string => {
       Array.isArray(features),
       "Should return an array of features for functions",
     );
-    // Expected 2 features for `myFunction` (definition and name)
-    // Expected 2 features for `myArrowFunction` (definition and name)
+    // Expected 1 feature for `myFunction` (definition)
+    // Expected 1 feature for `myArrowFunction` (definition)
     deepStrictEqual(
       features.length,
-      4,
-      "Expected 4 features for the function snippet",
+      2,
+      "Expected 2 features for the function snippet",
     );
 
     // myFunction definition
@@ -534,15 +510,6 @@ export const myArrowFunction = (value: number): string => {
       strictEqual(myFunctionDef.filePath, tempFilePath);
     }
 
-    // myFunction name
-    const myFunctionName = features.find(
-      (f) =>
-        f.type === "function" &&
-        f.name === "myFunction" &&
-        f.code === "myFunction",
-    );
-    ok(myFunctionName, "Should find myFunction name feature");
-
     // myArrowFunction definition
     const myArrowFunctionDef = features.find(
       (f) =>
@@ -554,14 +521,5 @@ export const myArrowFunction = (value: number): string => {
     if (myArrowFunctionDef) {
       strictEqual(myArrowFunctionDef.filePath, tempFilePath);
     }
-
-    // myArrowFunction name
-    const myArrowFunctionName = features.find(
-      (f) =>
-        f.type === "function" &&
-        f.name === "myArrowFunction" &&
-        f.code === "myArrowFunction",
-    );
-    ok(myArrowFunctionName, "Should find myArrowFunction name feature");
   });
 });

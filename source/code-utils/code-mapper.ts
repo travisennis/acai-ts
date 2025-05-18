@@ -142,22 +142,22 @@ export class CodeMapper {
         });
         // If a separate name was captured (e.g. @name for a @definition.function match)
         // create a separate, more specific "name" feature for the identifier itself.
-        if (nameNode && featureName) {
-          // The type of the name feature should be the same as its corresponding definition.
-          const normalizedNameType =
-            normalizeType(featureType as keyof typeof typeMap) || featureType;
-          if (primaryNode !== nameNode) {
-            // Only add if nameNode is truly a sub-component or different node
-            features.push({
-              type: normalizedNameType, // Same normalized type as the definition it names
-              name: nameNode.text, // The text of the name identifier itself
-              code: nameNode.text, // Code is just the identifier itself
-              start: nameNode.startPosition,
-              end: nameNode.endPosition,
-              filePath,
-            });
-          }
-        }
+        // if (nameNode && featureName) {
+        //   // The type of the name feature should be the same as its corresponding definition.
+        //   const normalizedNameType =
+        //     normalizeType(featureType as keyof typeof typeMap) || featureType;
+        //   if (primaryNode !== nameNode) {
+        //     // Only add if nameNode is truly a sub-component or different node
+        //     features.push({
+        //       type: normalizedNameType, // Same normalized type as the definition it names
+        //       name: nameNode.text, // The text of the name identifier itself
+        //       code: nameNode.text, // Code is just the identifier itself
+        //       start: nameNode.startPosition,
+        //       end: nameNode.endPosition,
+        //       filePath,
+        //     });
+        //   }
+        // }
       } else if (nameNode && featureType && !primaryNode) {
         // Fallback if only a name node was captured (e.g. a reference not part of a larger definition context in this match)
         const normalizedFallbackType =
