@@ -172,7 +172,7 @@ const ProjectConfigSchema = z.object({
     .optional(),
   tools: z.object({
     maxTokens: z.number().default(30000),
-  }),
+  }).optional().default({ maxTokens: 30000 }),
   notify: z.boolean().optional().default(true),
 });
 
