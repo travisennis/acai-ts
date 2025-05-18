@@ -424,15 +424,21 @@ function displayToolMessages(messages: Message[], terminal: Terminal) {
   for (const msg of messages) {
     if (msg.event === "tool-update") {
       if (msg.data.secondary && msg.data.secondary.length > 0) {
-        terminal.header(msg.data.primary, chalk.blue);
-        terminal.display(msg.data.secondary.join("\n").trim(), true);
-        terminal.hr(chalk.blue);
+        terminal.display(`└── ${msg.data.primary}`);
+        terminal.display(
+          msg.data.secondary
+            .map((x) => `    ${x}`)
+            .join("\n")
+            .trim(),
+          true,
+        );
       } else {
         terminal.display(`└── ${msg.data.primary}`);
       }
     } else if (msg.event === "tool-completion") {
       terminal.display(`└── ${msg.data}`);
     } else if (msg.event === "tool-error") {
+      terminal.write("└── ");
       terminal.error(msg.data); // Use terminal.error for errors
     }
     // 'init' message already handled
