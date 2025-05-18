@@ -282,6 +282,10 @@ export enum MyTestEnum {
         enumDefFeature.code.startsWith("enum MyTestEnum"),
         "Enum def code should start correctly",
       );
+      ok(
+        enumDefFeature.code.trim().endsWith("}"),
+        "Enum def code should end with a closing brace",
+      );
     }
   });
 

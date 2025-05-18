@@ -1,0 +1,35 @@
+<codeMap>
+<filePath>examples/test.ts</filePath>
+<map>
+Functions:
+  myFunction(name: string, age: number): MyInterface
+  processEnum(option: MyEnum): void
+  myArrowFunction(value: number): string
+  localHelper(): void
+
+
+Classes:
+  MyClass
+    Property: propertyA: string
+    Property: _propertyB: number
+    Property: staticProperty: any
+    Method: constructor(a: string, b: number): any
+    Method: propertyB(): number
+    Method: propertyB(value: number): any
+    Method: methodSignature(param: boolean): string
+    Method: privateMethod(): void
+    Method: staticMethod(): string
+    Method: staticMethod(): string
+
+
+Interfaces:
+  MyInterface
+    Property: propertyA: string
+    Property: propertyB: number
+    Method: methodSignature(param: boolean): string
+
+
+Type Aliases:
+  MyTypeAlias = string | number | MyInterface
+</map>
+</codeMap>

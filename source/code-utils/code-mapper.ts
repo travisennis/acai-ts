@@ -19,6 +19,8 @@ const typeMap = {
   interface_declaration: "interface",
   // biome-ignore lint/style/useNamingConvention: <explanation>
   type_alias_declaration: "type",
+  // biome-ignore lint/style/useNamingConvention: <explanation>
+  enum_declaration: "enum",
 } as const;
 
 export function normalizeType(nodeType: keyof typeof typeMap) {

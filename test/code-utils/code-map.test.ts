@@ -86,23 +86,34 @@ export enum MyTestEnum {
       `Should contain <filePath>${fileName}</filePath>`,
     );
     strictEqual(
+      xmlOutput.includes("Enums:"),
+      true,
+      "Should contain Enums section",
+    );
+    strictEqual(
+      xmlOutput.includes("MyTestEnum"),
+      true,
+      "Should contain enum name MyTestEnum",
+    );
+    strictEqual(
+      xmlOutput.includes("Member: OptionA"),
+      true,
+      "Should contain OptionA member",
+    );
+    strictEqual(
+      xmlOutput.includes('Member: OptionB = "ValueB"'),
+      true,
+      "Should contain OptionB member with value",
+    );
+    strictEqual(
+      xmlOutput.includes("Member: OptionC = 10"),
+      true,
+      "Should contain OptionC member with value",
+    );
+    strictEqual(
       xmlOutput.includes("</codeMap>"),
       true,
       "Should contain </codeMap> tag",
-    );
-
-    // CodeMap.analyzeSourceTree does not have specific logic to create a structure.enums section.
-    // So, we don't expect to find "MyTestEnum" or its members in a structured way in the map content for now.
-    // The <map>...</map> section might be empty or only contain imports if any were present.
-    const mapContent = xmlOutput.substring(
-      xmlOutput.indexOf("<map>\n") + "\n<map>".length,
-      xmlOutput.indexOf("\n</map>"),
-    );
-    // Check if the map content is empty or only newlines/whitespace, effectively not listing the enum.
-    strictEqual(
-      mapContent.trim(),
-      "",
-      "Map content should be empty for a standalone enum as CodeMap does not explicitly process enums into its structure",
     );
   });
 

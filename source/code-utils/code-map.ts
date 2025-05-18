@@ -4,12 +4,23 @@ import type Parser from "tree-sitter";
 import type { Query, SyntaxNode } from "tree-sitter";
 import { TreeSitterManager } from "./tree-sitter-manager.ts";
 
+interface EnumMemberInfo {
+  name: string;
+  value?: string;
+}
+
+interface EnumInfo {
+  name: string;
+  members: EnumMemberInfo[];
+}
+
 interface FileStructure {
   imports: ImportInfo[];
   functions: FunctionInfo[];
   classes: ClassInfo[];
   interfaces: InterfaceInfo[];
   types: TypeInfo[];
+  enums: EnumInfo[];
 }
 
 interface ImportInfo {
@@ -156,6 +167,18 @@ export class CodeMap {
       for (const type of this.structure.types) {
         output += `  ${type.name} = ${type.type}\n`;
       }
+      output += "\n\n";
+    }
+
+    if (this.structure.enums.length > 0) {
+      output += "Enums:\n";
+      for (const enm of this.structure.enums) {
+        output += `  ${enm.name}\n`;
+        for (const member of enm.members) {
+          output += `    Member: ${member.name}${member.value ? ` = ${member.value}` : ""}\n`;
+        }
+      }
+      output += "\n\n";
     }
 
     switch (formatType) {
@@ -185,6 +208,7 @@ export class CodeMap {
       classes: [],
       interfaces: [],
       types: [],
+      enums: [],
     };
 
     // Define Tree-sitter queries for different constructs
@@ -549,6 +573,37 @@ export class CodeMap {
           name: getNodeText(typeNameNode),
           type: getNodeText(typeValueNode),
         });
+      } else if (captureName === "definition.enum") {
+        const enumNameNode = match.captures.find(
+          (c) => c.name === "name",
+        )?.node;
+        if (node && enumNameNode) {
+          // Added check for node
+
+          const enumInfo: EnumInfo = {
+            name: getNodeText(enumNameNode),
+            members: [],
+          };
+
+          const enumBodyNode = node.childForFieldName("body");
+          if (enumBodyNode) {
+            for (const memberNode of enumBodyNode.namedChildren) {
+              if (memberNode.type === "property_identifier") {
+                enumInfo.members.push({
+                  name: getNodeText(memberNode),
+                });
+              } else if (memberNode.type === "enum_assignment") {
+                const memberNameNode = memberNode.childForFieldName("name");
+                const memberValueNode = memberNode.childForFieldName("value");
+                enumInfo.members.push({
+                  name: getNodeText(memberNameNode),
+                  value: getNodeText(memberValueNode),
+                });
+              }
+            }
+          }
+          structure.enums.push(enumInfo);
+        }
       }
     }
     return structure;
