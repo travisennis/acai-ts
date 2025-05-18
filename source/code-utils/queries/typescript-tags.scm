@@ -53,12 +53,12 @@
     name: (property_identifier) @name) @definition.method)
 
 ; Static Class methods
-; Order: optional modifiers, optional "async", "static" keyword, then name.
+; Order: optional accessibility modifier, "static" keyword, optional "async", then name.
 (class_body
   (method_definition
     (accessibility_modifier)?
-    ("async")?
     "static" ; The "static" keyword
+    ("async")?
     name: (property_identifier) @name) @definition.method)
 
 ; Class properties
