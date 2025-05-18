@@ -425,10 +425,7 @@ function displayToolMessages(messages: Message[], terminal: Terminal) {
     if (msg.event === "tool-update") {
       if (msg.data.secondary && msg.data.secondary.length > 0) {
         terminal.display(`└── ${msg.data.primary}`);
-        terminal.display(
-          msg.data.secondary.map((x) => `    ${x}`).join("\n"),
-          true,
-        );
+        terminal.write(chalk.green(msg.data.secondary.join("\n")));
       } else {
         terminal.display(`└── ${msg.data.primary}`);
       }
