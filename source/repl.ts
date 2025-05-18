@@ -426,10 +426,7 @@ function displayToolMessages(messages: Message[], terminal: Terminal) {
       if (msg.data.secondary && msg.data.secondary.length > 0) {
         terminal.display(`└── ${msg.data.primary}`);
         terminal.display(
-          msg.data.secondary
-            .map((x) => `    ${x}`)
-            .join("\n")
-            .trim(),
+          msg.data.secondary.map((x) => `    ${x}`).join("\n"),
           true,
         );
       } else {
