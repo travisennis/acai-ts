@@ -133,12 +133,34 @@ export class CodeMapper {
       if (primaryNode && featureType) {
         features.push({
           type: featureType,
-          name: featureName, // Will be the text from nameNode if found, otherwise might be primaryNode.text for simple references
+          name: featureName, // Name of the definition itself, if applicable (e.g. class name for class def)
           code: sourceCode.slice(primaryNode.startIndex, primaryNode.endIndex),
           start: primaryNode.startPosition,
           end: primaryNode.endPosition,
           filePath,
         });
+        // If a separate name was captured (e.g. @name for a @definition.function match)
+        // and it's different from the primary feature's name (if the primary feature is also a named entity like a class)
+        // or if the featureName derived from nameNode is simply the name of the entity defined by primaryNode,
+        // create a separate, more specific "name" feature.
+        if (nameNode && featureName && featureType) {
+          // Ensure featureType is from the definition context
+          // Check if this name feature is distinct from the definition feature already added
+          // This avoids adding a duplicate if featureName from nameNode is the same as a name inferred for primaryNode
+          // For example, a class definition might have featureName as class name, and nameNode also as class name.
+          // We want a specific feature for the name identifier itself.
+          if (primaryNode !== nameNode) {
+            // Only add if nameNode is truly a sub-component or different node
+            features.push({
+              type: featureType, // Same type as the definition it names
+              name: featureName, // The text of the name identifier
+              code: nameNode.text, // Code is just the identifier itself
+              start: nameNode.startPosition,
+              end: nameNode.endPosition,
+              filePath,
+            });
+          }
+        }
       } else if (nameNode && featureType && !primaryNode) {
         // Fallback if only a name node was captured for a definition type (less ideal)
         // This case might indicate a query that needs adjustment or a very simple named entity.

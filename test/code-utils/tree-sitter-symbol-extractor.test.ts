@@ -21,15 +21,15 @@ export interface MyInterface {
     // Assertions based on the flat list structure observed.
     deepStrictEqual(
       actualSymbols.length,
-      5,
-      "Should find 5 symbols in total for the interface snippet",
+      8, // interface (def+name), 2 properties (def+name each), 1 method (def+name)
+      "Should find 8 symbols in total for the interface snippet",
     );
 
     const mainInterfaceSymbol = actualSymbols.find(
       (s) =>
         s.name === "MyInterface" &&
         s.type === "interface" &&
-        s.code?.includes("propertyA"), // Differentiate from the name-only symbol
+        s.code?.startsWith("interface MyInterface"), // Definition code won't include export
     );
     if (!mainInterfaceSymbol) {
       throw new Error("Main MyInterface symbol definition not found");
@@ -101,7 +101,7 @@ export enum MyTestEnum {
       (s) =>
         s.type === "enum" &&
         s.name === "MyTestEnum" &&
-        s.code?.includes("OptionA"),
+        s.code?.startsWith("enum MyTestEnum"),
     );
     if (!enumDefSymbol) {
       throw new Error("MyTestEnum definition symbol not found");
@@ -125,7 +125,7 @@ export enum MyTestEnum {
 
     deepStrictEqual(
       actualSymbols.length,
-      2,
+      2, // enum (def+name)
       "Expected 2 symbols for the enum snippet (definition and name)",
     );
   });
@@ -164,6 +164,7 @@ export class MyTestClass {
       (s) =>
         s.type === "class" &&
         s.name === "MyTestClass" &&
+        s.code?.startsWith("class MyTestClass") && // Definition code won't include export
         s.code?.includes("public name: string"),
     );
     if (!classDefSymbol) {
@@ -227,8 +228,78 @@ export class MyTestClass {
 
     deepStrictEqual(
       actualSymbols.length,
-      7,
-      "Expected 7 symbols for the class snippet",
+      12, // class (def+name), 2 properties (def+name each), 3 methods (def+name each)
+      "Expected 12 symbols for the class snippet",
     );
+  });
+
+  it("should extract symbols from a TypeScript function", async () => {
+    const treeSitterManager = new TreeSitterManager();
+    const extractor = new TreeSitterSymbolExtractor(treeSitterManager);
+
+    const codeSnippet = `
+export function myFunction(name: string, age?: number): MyInterface {
+  return {
+    propertyA: \`Name: \${name}\`,
+    propertyB: age || 30,
+    methodSignature: (p) => (p ? "Yes" : "No"),
+  };
+}
+
+export const myArrowFunction = (value: number): string => {
+  return \`Value is \${value}\`;
+};
+    `;
+
+    const actualSymbols = await extractor.extractSymbols(".ts", codeSnippet);
+    // console.info('Function Symbols:', JSON.stringify(actualSymbols, null, 2)); // Debug if needed
+
+    // Expected 2 symbols for myFunction (name and definition)
+    // Expected 2 symbols for myArrowFunction (name and definition)
+    deepStrictEqual(
+      actualSymbols.length,
+      4,
+      "Should find 4 symbols in total for the function snippet",
+    );
+
+    const myFunctionDefSymbol = actualSymbols.find(
+      (s) =>
+        s.name === "myFunction" &&
+        s.type === "function" &&
+        s.code?.startsWith("function myFunction"), // Definition code won't include export
+    );
+    if (!myFunctionDefSymbol) {
+      throw new Error("myFunction definition symbol not found");
+    }
+
+    const myFunctionNameSymbol = actualSymbols.find(
+      (s) =>
+        s.name === "myFunction" &&
+        s.type === "function" &&
+        s.code === "myFunction",
+    );
+    if (!myFunctionNameSymbol) {
+      throw new Error("myFunction name symbol not found");
+    }
+
+    const myArrowFunctionDefSymbol = actualSymbols.find(
+      (s) =>
+        s.name === "myArrowFunction" &&
+        s.type === "function" &&
+        s.code?.startsWith("myArrowFunction ="), // code is from variable_declarator
+    );
+    if (!myArrowFunctionDefSymbol) {
+      throw new Error("myArrowFunction definition symbol not found");
+    }
+
+    const myArrowFunctionNameSymbol = actualSymbols.find(
+      (s) =>
+        s.name === "myArrowFunction" &&
+        s.type === "function" &&
+        s.code === "myArrowFunction",
+    );
+    if (!myArrowFunctionNameSymbol) {
+      throw new Error("myArrowFunction name symbol not found");
+    }
   });
 });

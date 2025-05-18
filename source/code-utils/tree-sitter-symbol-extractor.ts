@@ -83,50 +83,108 @@ export class TreeSitterSymbolExtractor {
           continue;
         }
 
-        const symbolName = nodeCandidate.text;
+        const symbolName = nodeCandidate.text; // This is usually the @name capture
 
         let symbolType = "symbol";
-        let subtype: string | undefined;
-        let nodeForBodySpanAndCode: SyntaxNode = nodeCandidate;
+        // let subtype: string | undefined; // Not currently used robustly, but kept for potential future use
+        let nodeForMainSymbolCode = nodeCandidate; // Default to nameCandidate if no other defining node found
 
-        const definitionCaptureEntry = Object.entries(captures).find(([name]) =>
-          name.startsWith("definition."),
+        // Determine the primary defining capture for the main symbol
+        let mainDefiningCaptureName: string | undefined;
+        let mainDefiningNode: SyntaxNode | undefined;
+
+        // 1. Prioritize 'definition.*' captures
+        const definitionCap = Object.entries(captures).find(([capName]) =>
+          capName.startsWith("definition."),
         );
+        if (definitionCap) {
+          mainDefiningCaptureName = definitionCap[0];
+          mainDefiningNode = Array.isArray(definitionCap[1])
+            ? definitionCap[1][0]
+            : (definitionCap[1] as SyntaxNode);
+        }
 
-        if (definitionCaptureEntry) {
-          const [definitionCaptureName, capturedNodeOrNodes] =
-            definitionCaptureEntry;
-          const capturedNode = Array.isArray(capturedNodeOrNodes)
-            ? capturedNodeOrNodes[0]
-            : capturedNodeOrNodes;
-
-          if (capturedNode) {
-            nodeForBodySpanAndCode = capturedNode;
-            symbolType = definitionCaptureName.split(".").pop() || "symbol";
+        // 2. If no 'definition.*', find the first non-'name' capture (e.g., 'interface.property')
+        if (!mainDefiningNode) {
+          const nonNameCap = Object.entries(captures).find(
+            ([capName]) => !capName.startsWith("name"),
+          );
+          if (nonNameCap) {
+            mainDefiningCaptureName = nonNameCap[0];
+            mainDefiningNode = Array.isArray(nonNameCap[1])
+              ? nonNameCap[1][0]
+              : (nonNameCap[1] as SyntaxNode);
           }
+        }
+
+        // 3. Fallback if no other defining capture was found
+        if (!mainDefiningNode) {
+          mainDefiningNode = nodeCandidate; // The node from which symbolName was derived
+          // Try to find the capture name that yielded nodeCandidate, or default to 'symbol'
+          mainDefiningCaptureName =
+            Object.keys(captures).find((key) => {
+              const capNode = captures[key];
+              return (
+                (Array.isArray(capNode) ? capNode[0] : capNode) ===
+                mainDefiningNode
+              );
+            }) || "symbol";
+        } else if (!mainDefiningCaptureName) {
+          // if mainDefiningNode was set by fallback but capture name is still missing
+          mainDefiningCaptureName = "symbol";
+        }
+
+        // Ensure we have a node to get code from for the main symbol
+        nodeForMainSymbolCode = mainDefiningNode || nodeCandidate;
+        if (!nodeForMainSymbolCode) {
+          logger.debug(
+            "[EXTRACT] No node found for main symbol code. Skipping match.",
+          );
+          continue;
+        }
+
+        // Determine symbolType from the mainDefiningCaptureName
+        if (mainDefiningCaptureName.startsWith("definition.")) {
+          symbolType = mainDefiningCaptureName.substring("definition.".length);
+        } else if (mainDefiningCaptureName.includes(".")) {
+          // e.g., "interface.property"
+          symbolType = mainDefiningCaptureName; // Keep full string like "interface.property"
         } else {
-          const fallbackLabel = Object.keys(captures)[0] || "symbol";
-          symbolType = fallbackLabel.replace(/^definition\.|\\@/g, "");
+          symbolType = mainDefiningCaptureName; // e.g., "import" or fallback "symbol"
         }
 
-        const symbolStartLine = nodeForBodySpanAndCode.startPosition.row;
-        const symbolEndLine = nodeForBodySpanAndCode.endPosition.row;
-        const symbolCodeContent = sourceCode.substring(
-          nodeForBodySpanAndCode.startIndex,
-          nodeForBodySpanAndCode.endIndex,
-        );
-
-        const symbol: SymbolInfo = {
-          name: symbolName,
+        const mainSymbol: SymbolInfo = {
+          name: symbolName, // Name is from @name or nodeCandidate.text
           type: symbolType,
-          startLine: symbolStartLine,
-          endLine: symbolEndLine,
-          code: symbolCodeContent,
+          startLine: nodeForMainSymbolCode.startPosition.row,
+          endLine: nodeForMainSymbolCode.endPosition.row,
+          code: sourceCode.substring(
+            nodeForMainSymbolCode.startIndex,
+            nodeForMainSymbolCode.endIndex,
+          ),
         };
-        if (subtype) {
-          symbol.subtype = subtype;
+        symbols.push(mainSymbol);
+
+        // If an explicit @name capture exists and it's different from the main defining node,
+        // add a separate symbol for the name identifier itself.
+        const nameCaptureNode = captures["name"]
+          ? Array.isArray(captures["name"])
+            ? captures["name"][0]
+            : (captures["name"] as SyntaxNode)
+          : undefined;
+        if (
+          nameCaptureNode &&
+          mainDefiningNode &&
+          nameCaptureNode !== mainDefiningNode
+        ) {
+          symbols.push({
+            name: nameCaptureNode.text,
+            type: symbolType, // The name symbol has the same type as the definition it refers to
+            startLine: nameCaptureNode.startPosition.row,
+            endLine: nameCaptureNode.endPosition.row,
+            code: nameCaptureNode.text,
+          });
         }
-        symbols.push(symbol);
       }
     } catch (e) {
       logger.error(

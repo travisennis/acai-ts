@@ -56,11 +56,11 @@ export class MyTestClass {
     // console.info('Actual Class Features from CodeMapper:', JSON.stringify(features, null, 2)); // Debug line
 
     ok(Array.isArray(features), "Should return an array of features for class");
-    // Expected 7 features: class name, class def, name prop, count prop, constructor, increment method, getName method
+    // Expected 12 features: class (def+name), 2 props (def+name each), 3 methods (def+name each)
     deepStrictEqual(
       features.length,
-      7,
-      "Expected 7 features for the class snippet",
+      12,
+      "Expected 12 features for the class snippet",
     );
 
     // Class definition (full block)
@@ -68,6 +68,7 @@ export class MyTestClass {
       (f) =>
         f.type === "class" &&
         f.name === "MyTestClass" &&
+        f.code.startsWith("class MyTestClass") && // Definition code won't include export
         f.code.includes("public name: string"),
     );
     ok(classDefFeature, "Should find the main class definition feature");
@@ -175,17 +176,18 @@ export interface MyInterface {
 
     ok(Array.isArray(features), "Should return an array of features");
 
-    // Based on the behavior of typescript-tags.scm and previous tests, we expect 5 distinct features.
+    // Expected 8 features: interface (def+name), 2 props (def+name each), 1 method (def+name)
     deepStrictEqual(
       features.length,
-      5,
-      "Expected 5 features for the interface snippet",
+      8,
+      "Expected 8 features for the interface snippet",
     );
 
     const interfaceDefinitionFeature = features.find(
       (f) =>
         f.type === "interface" &&
         f.name === "MyInterface" &&
+        f.code.startsWith("interface MyInterface") && // Definition code won't include export
         f.code.includes("propertyA"), // Distinguishes the full definition
     );
     ok(
@@ -271,7 +273,7 @@ export enum MyTestEnum {
     // console.info('Actual Enum Features from CodeMapper:', JSON.stringify(features, null, 2)); // Debug line
 
     ok(Array.isArray(features), "Should return an array of features for enum");
-    // Expected 2 features: enum name, enum definition, as members are not separately captured by SCM for CodeMapper.
+    // Expected 2 features: enum (def+name)
     deepStrictEqual(
       features.length,
       2,
@@ -283,6 +285,7 @@ export enum MyTestEnum {
       (f) =>
         f.type === "enum" &&
         f.name === "MyTestEnum" &&
+        f.code.startsWith("enum MyTestEnum") && // Definition code won't include export
         f.code.includes("OptionA"),
     );
     ok(enumDefFeature, "Should find the main enum definition feature");
@@ -306,12 +309,89 @@ export enum MyTestEnum {
     if (existsSync(tempFilePath)) {
       unlinkSync(tempFilePath);
     }
-    // Attempt to remove the directory if it's empty
+    // Attempt to remove the directory if it\'s empty
     // This might fail if other temp files are created by parallel tests or if not empty
     try {
       rmdirSync(tempTestDir);
     } catch (_e) {
       // console.warn(`Could not remove temp directory ${tempTestDir}: ${e.message}`);
     }
+  });
+
+  it("should process a TypeScript function snippet and extract features", () => {
+    const functionSnippet = `
+export function myFunction(name: string, age?: number): MyInterface {
+  return {
+    propertyA: \`Name: \${name}\`,
+    propertyB: age || 30,
+    methodSignature: (p) => (p ? "Yes" : "No"),
+  };
+}
+
+export const myArrowFunction = (value: number): string => {
+  return \`Value is \${value}\`;
+};
+    `;
+    writeFileSync(tempFilePath, functionSnippet, "utf8");
+
+    const treeSitterManager = new TreeSitterManager();
+    const codeMapper = new CodeMapper(treeSitterManager);
+    const features = codeMapper.processFile(tempFilePath);
+
+    // console.info('Actual Function Features:', JSON.stringify(features, null, 2));
+
+    ok(
+      Array.isArray(features),
+      "Should return an array of features for functions",
+    );
+    // Expected 2 features for \`myFunction\` (definition and name)
+    // Expected 2 features for \`myArrowFunction\` (definition and name)
+    deepStrictEqual(
+      features.length,
+      4,
+      "Expected 4 features for the function snippet",
+    );
+
+    // myFunction definition
+    const myFunctionDef = features.find(
+      (f) =>
+        f.type === "function" &&
+        f.name === "myFunction" &&
+        f.code.startsWith("function myFunction"), // Definition code won't include export
+    );
+    ok(myFunctionDef, "Should find myFunction definition feature");
+    if (myFunctionDef) {
+      strictEqual(myFunctionDef.filePath, tempFilePath);
+    }
+
+    // myFunction name
+    const myFunctionName = features.find(
+      (f) =>
+        f.type === "function" &&
+        f.name === "myFunction" &&
+        f.code === "myFunction",
+    );
+    ok(myFunctionName, "Should find myFunction name feature");
+
+    // myArrowFunction definition
+    const myArrowFunctionDef = features.find(
+      (f) =>
+        f.type === "function" &&
+        f.name === "myArrowFunction" &&
+        f.code.startsWith("myArrowFunction ="), // code is from variable_declarator
+    );
+    ok(myArrowFunctionDef, "Should find myArrowFunction definition feature");
+    if (myArrowFunctionDef) {
+      strictEqual(myArrowFunctionDef.filePath, tempFilePath);
+    }
+
+    // myArrowFunction name
+    const myArrowFunctionName = features.find(
+      (f) =>
+        f.type === "function" &&
+        f.name === "myArrowFunction" &&
+        f.code === "myArrowFunction",
+    );
+    ok(myArrowFunctionName, "Should find myArrowFunction name feature");
   });
 });

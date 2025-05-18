@@ -312,8 +312,53 @@ export class CodeMap {
         //   (c) => c.name === "function.returnType",
         // )?.node;
         // if (nameNode?.parent) {
-        const paramsNode = node?.childForFieldName("parameters");
-        const returnTypeNode = node?.childForFieldName("return_type");
+        let functionNode = node;
+        // If the definition.function is a variable_declarator (e.g., for arrow functions),
+        // the actual function details are in its 'value' child.
+        if (
+          node?.type === "variable_declarator" ||
+          node?.type === "lexical_declaration" ||
+          node?.type === "variable_declaration"
+        ) {
+          // The SCM query for arrow functions might point to variable_declaration or lexical_declaration
+          // We need to find the actual arrow_function node.
+          let actualFunctionValueNode = node.childForFieldName("value");
+          if (
+            !actualFunctionValueNode &&
+            node.type === "variable_declaration" &&
+            node.firstNamedChild?.type === "variable_declarator"
+          ) {
+            actualFunctionValueNode =
+              node.firstNamedChild.childForFieldName("value");
+          } else if (
+            !actualFunctionValueNode &&
+            node.type === "lexical_declaration" &&
+            node.firstNamedChild?.type === "variable_declarator"
+          ) {
+            // This handles `export const myArrowFunction = ...` where definition.function might be on lexical_declaration
+            const varDeclarator = node
+              .descendantsOfType("variable_declarator")
+              .find(
+                (d) =>
+                  getNodeText(d.childForFieldName("name")) ===
+                  getNodeText(nameNode),
+              );
+            if (varDeclarator) {
+              actualFunctionValueNode =
+                varDeclarator.childForFieldName("value");
+            }
+          }
+
+          if (
+            actualFunctionValueNode?.type === "arrow_function" ||
+            actualFunctionValueNode?.type === "function_expression"
+          ) {
+            functionNode = actualFunctionValueNode;
+          }
+        }
+
+        const paramsNode = functionNode?.childForFieldName("parameters");
+        const returnTypeNode = functionNode?.childForFieldName("return_type");
         structure.functions.push({
           name: getNodeText(nameNode),
           parameters: getParameters(paramsNode),
@@ -402,7 +447,6 @@ export class CodeMap {
           }
         }
       } else if (captureName === "definition.interface") {
-        console.info("NODE", node?.toString());
         const interfaceNameNode = match.captures.find(
           (c) => c.name === "name",
         )?.node;
@@ -495,7 +539,6 @@ export class CodeMap {
           }
         }
       } else if (captureName === "definition.type") {
-        console.info("NODE", node?.toString());
         const typeNameNode = match.captures.find(
           (c) => c.name === "name",
         )?.node;

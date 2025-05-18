@@ -1,12 +1,29 @@
-;; tags.scm for TypeScript symbol extraction
-
-(import_statement source: (string) @import.source) @import
-
 ; functions
 (function_declaration
   name: (identifier) @name) @definition.function
 
-; classes (with optional modifiers like export)
+; Arrow function assigned to a const/let
+(lexical_declaration
+  (variable_declarator
+    name: (identifier) @name
+    value: (arrow_function)
+  ) @definition.function)
+
+; Arrow function assigned to a var
+(variable_declaration
+  (variable_declarator
+    name: (identifier) @name
+    value: (arrow_function)
+  ) @definition.function)
+
+; Function expression assigned to a var
+(variable_declaration
+  (variable_declarator
+    name: (identifier) @name
+    value: (function_expression)
+  ) @definition.function)
+
+; classes
 (class_declaration
   name: (type_identifier) @name) @definition.class
 
@@ -22,74 +39,34 @@
   name: (property_identifier) @name
 ) @interface.method
 
-
 ; enums
 (enum_declaration
   name: (identifier) @name) @definition.enum
 
-; Class methods (implementations, explicitly within class_body)
+; Class methods
 (class_body
   (method_definition
     name: (property_identifier) @name) @definition.method)
 
-; Static Class methods (implementations, explicitly within class_body)
+; Static Class methods
 (class_body
   (method_definition
     "static"
     name: (property_identifier) @name) @definition.method)
 
+; Class properties
 (public_field_definition
   name: (property_identifier) @name) @definition.property
-
-; Exported function (variable declarator with function)
-(export_statement
-  declaration: (variable_declaration
-    (variable_declarator
-      name: (identifier) @name
-      value: (function_expression)
-    ) @definition.function
-  ))
-
-; Exported function (variable declarator with arrow function)
-(export_statement
-  declaration: (variable_declaration
-    (variable_declarator
-      name: (identifier) @name
-      value: (arrow_function)
-    ) @definition.function
-  ))
-
-; Exported class
-(export_statement
-  declaration: (class_declaration
-    name: (type_identifier) @name @definition.class
-  ))
-
-; Exported interface
-(export_statement
-  declaration: (interface_declaration
-    name: (type_identifier) @name @definition.interface
-  ))
-
-; Exported enum
-(export_statement
-  declaration: (enum_declaration
-    name: (identifier) @name @definition.enum
-  ))
 
 ; Type alias
 (type_alias_declaration
     name: (type_identifier) @name
-    value: (_) @value
+    value: (_) @value ; Capturing the value node for type alias content
 ) @definition.type
 
-; Exported type alias
-(export_statement
-    declaration: (type_alias_declaration
-      name: (type_identifier) @name
-      value: (_) @value
-    ) @definition.type)
-
-; Namespace (try internal_module)
+; Namespace (internal_module)
 (internal_module
   name: (identifier) @name @definition.namespace)
+
+; Removed general export_statement capture to avoid overcounting features.
+; Export status can be checked by inspecting the parent node in the consuming code if necessary.

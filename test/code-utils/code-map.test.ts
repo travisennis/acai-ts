@@ -200,4 +200,57 @@ export class MyTestClass {
       "Should contain private property count",
     );
   });
+
+  it("should generate XML CodeMap for a TypeScript function snippet", () => {
+    const functionSnippet = `
+export function myFunction(name: string, age?: number): MyInterface {
+  return {
+    propertyA: \`Name: \${name}\`,
+    propertyB: age || 30,
+    methodSignature: (p) => (p ? "Yes" : "No"),
+  };
+}
+
+export const myArrowFunction = (value: number): string => {
+  return \`Value is \${value}\`;
+};
+    `;
+    const fileName = "test-function.ts";
+
+    const codeMap = CodeMap.fromSource(functionSnippet, fileName);
+    const xmlOutput = codeMap.format("xml", fileName);
+    // console.info('Function XML Output:\n', xmlOutput); // For debugging
+
+    ok(xmlOutput.length > 0, "XML output should not be empty");
+    strictEqual(
+      xmlOutput.includes("<codeMap>"),
+      true,
+      "Should contain <codeMap> tag",
+    );
+    strictEqual(
+      xmlOutput.includes(`<filePath>${fileName}</filePath>`),
+      true,
+      `Should contain <filePath>${fileName}</filePath>`,
+    );
+    strictEqual(
+      xmlOutput.includes("Functions:"),
+      true,
+      "Should contain Functions section",
+    );
+    strictEqual(
+      xmlOutput.includes("myFunction(name: string, age: number): MyInterface"),
+      true,
+      "Should contain myFunction signature",
+    );
+    strictEqual(
+      xmlOutput.includes("myArrowFunction(value: number): string"),
+      true,
+      "Should contain myArrowFunction signature",
+    );
+    strictEqual(
+      xmlOutput.includes("</codeMap>"),
+      true,
+      "Should contain </codeMap> tag",
+    );
+  });
 });
