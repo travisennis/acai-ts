@@ -425,7 +425,13 @@ function displayToolMessages(messages: Message[], terminal: Terminal) {
     if (msg.event === "tool-update") {
       if (msg.data.secondary && msg.data.secondary.length > 0) {
         terminal.display(`└── ${msg.data.primary}`);
-        terminal.write(chalk.green(msg.data.secondary.join("\n")));
+        const content = msg.data.secondary.join("\n");
+        if (isMarkdown(content)) {
+          terminal.display(content, true);
+        } else {
+          terminal.write(chalk.green(content));
+          terminal.lineBreak();
+        }
       } else {
         terminal.display(`└── ${msg.data.primary}`);
       }
@@ -438,6 +444,23 @@ function displayToolMessages(messages: Message[], terminal: Terminal) {
     // 'init' message already handled
   }
   terminal.lineBreak();
+}
+
+function isMarkdown(input: string): boolean {
+  // Simple heuristics: look for common markdown syntax
+  const markdownPatterns = [
+    /^#{1,6}\s/m, // headings
+    /(\*\*|__)(.*?)\1/, // bold
+    /(\*|_)(.*?)\1/, // italic
+    /`{1,3}[^`]+`{1,3}/, // inline code or code block
+    /\[(.*?)\]\((.*?)\)/, // links
+    /^>\s/m, // blockquote
+    /^-\s|\*\s|\+\s/m, // unordered list
+    /^\d+\.\s/m, // ordered list
+    /^---$/m, // horizontal rule
+    /!\[(.*?)\]\((.*?)\)/, // images
+  ];
+  return markdownPatterns.some((pattern) => pattern.test(input));
 }
 
 const toolCallRepair = (modelManager: ModelManager, terminal: Terminal) => {
