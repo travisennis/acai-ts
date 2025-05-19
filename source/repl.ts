@@ -247,7 +247,10 @@ export class Repl {
             terminal.hr();
           },
           onError: ({ error }) => {
-            logger.error(error, "Error on REPL streamText");
+            logger.error(
+              (error as any).responseBody,
+              "Error on REPL streamText",
+            );
             terminal.error(
               (error as Error).message.length > 100
                 ? `${(error as Error).message.slice(0, 100)}...`
