@@ -629,7 +629,15 @@ function updateFileRelations(
   content: TextDocument,
   _tokenCounter: TokenCounter,
 ) {
-  const map = CodeMap.fromSource(content.getText(), filePath);
+  let map: CodeMap | null = null;
+  try {
+    map = CodeMap.fromSource(content.getText(), filePath);
+  } catch (error) {
+    logger.warn(`Error generating CodeMap for ${filePath} in updateFileRelations: ${error instanceof Error ? error.message : String(error)}`);
+    fileRelations.set(filePath, []); // Set empty relations or handle as appropriate
+    return;
+  }
+
   const imports = map.getStructure().imports;
 
   const relatedFiles = imports
@@ -670,22 +678,27 @@ function getRelatedFilesContext(
         .find((d) => d.uri === relatedUri || d.uri.endsWith(related));
 
       if (doc) {
-        let contentToUse: string;
         try {
           const docText = doc.getText();
           const tokenCount = tokenCounter.count(docText);
           if (tokenCount > 500) {
-            const codeMap = CodeMap.fromSource(docText, doc.uri);
-            contentToUse = codeMap.format("markdown", doc.uri);
+            try {
+              const codeMap = CodeMap.fromSource(docText, doc.uri);
+              contentToUse = codeMap.format("markdown", doc.uri);
+            } catch (error) {
+              logger.warn(
+                `Error generating CodeMap for in-memory doc ${doc.uri} during related file context retrieval: ${error instanceof Error ? error.message : String(error)}. Using full text.`,
+              );
+              contentToUse = docText; // Fallback if codeMap generation fails
+            }
           } else {
             contentToUse = docText;
           }
-        } catch (error) {
+        } catch (error) { // This outer catch is for tokenCounter.count or other errors
           logger.warn(
-            `Error counting tokens or generating CodeMap for in-memory doc ${doc.uri}:`,
-            error,
+            `Error processing in-memory doc ${doc.uri} for related context: ${error instanceof Error ? error.message : String(error)}`,
           );
-          contentToUse = doc.getText();
+          contentToUse = doc.getText(); // Fallback to full text
         }
         context.push(formatFile(related, contentToUse, "markdown"));
       } else {
@@ -704,26 +717,31 @@ function getRelatedFilesContext(
             try {
               const tokenCount = tokenCounter.count(fileContent);
               if (tokenCount > 500) {
-                const codeMap = CodeMap.fromSource(fileContent, absolutePath);
-                contentToUse = codeMap.format("markdown", absolutePath);
+                try {
+                  const codeMap = CodeMap.fromSource(fileContent, absolutePath);
+                  contentToUse = codeMap.format("markdown", absolutePath);
+                } catch (error) {
+                  logger.warn(
+                    `Error generating CodeMap for ${absolutePath} during related file context retrieval: ${error instanceof Error ? error.message : String(error)}. Using full text.`,
+                  );
+                  contentToUse = fileContent; // Fallback
+                }
               } else {
                 contentToUse = fileContent;
               }
-            } catch (error) {
+            } catch (error) { // This catch is for tokenCounter.count or other errors
               logger.warn(
-                `Error counting tokens or generating CodeMap for ${absolutePath}:`,
-                error,
+                `Error processing file ${absolutePath} for related context: ${error instanceof Error ? error.message : String(error)}`,
               );
-              contentToUse = fileContent;
+              contentToUse = fileContent; // Fallback
             }
             context.push(formatFile(related, contentToUse, "markdown"));
           } else {
             logger.warn(`File does not exist on filesystem: ${absolutePath}`);
           }
-        } catch (error) {
+        } catch (error) { // This catch is for readFileSync or resolve errors
           logger.warn(
-            `Could not read related file from filesystem: ${related}`,
-            error,
+            `Could not read related file from filesystem: ${related}. Error: ${error instanceof Error ? error.message : String(error)}`,
           );
         }
       }
