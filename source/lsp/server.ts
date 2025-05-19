@@ -633,7 +633,9 @@ function updateFileRelations(
   try {
     map = CodeMap.fromSource(content.getText(), filePath);
   } catch (error) {
-    logger.warn(`Error generating CodeMap for ${filePath} in updateFileRelations: ${error instanceof Error ? error.message : String(error)}`);
+    logger.warn(
+      `Error generating CodeMap for ${filePath} in updateFileRelations: ${error instanceof Error ? error.message : String(error)}`,
+    );
     fileRelations.set(filePath, []); // Set empty relations or handle as appropriate
     return;
   }
@@ -668,6 +670,7 @@ function getRelatedFilesContext(
   const context: string[] = [];
 
   for (const related of relatedFiles) {
+    let contentToUse: string | undefined;
     try {
       const relatedUri = related.startsWith("file://")
         ? related
@@ -694,7 +697,8 @@ function getRelatedFilesContext(
           } else {
             contentToUse = docText;
           }
-        } catch (error) { // This outer catch is for tokenCounter.count or other errors
+        } catch (error) {
+          // This outer catch is for tokenCounter.count or other errors
           logger.warn(
             `Error processing in-memory doc ${doc.uri} for related context: ${error instanceof Error ? error.message : String(error)}`,
           );
@@ -713,7 +717,6 @@ function getRelatedFilesContext(
 
           if (existsSync(absolutePath)) {
             const fileContent = readFileSync(absolutePath, "utf8");
-            let contentToUse: string;
             try {
               const tokenCount = tokenCounter.count(fileContent);
               if (tokenCount > 500) {
@@ -729,7 +732,8 @@ function getRelatedFilesContext(
               } else {
                 contentToUse = fileContent;
               }
-            } catch (error) { // This catch is for tokenCounter.count or other errors
+            } catch (error) {
+              // This catch is for tokenCounter.count or other errors
               logger.warn(
                 `Error processing file ${absolutePath} for related context: ${error instanceof Error ? error.message : String(error)}`,
               );
@@ -739,7 +743,8 @@ function getRelatedFilesContext(
           } else {
             logger.warn(`File does not exist on filesystem: ${absolutePath}`);
           }
-        } catch (error) { // This catch is for readFileSync or resolve errors
+        } catch (error) {
+          // This catch is for readFileSync or resolve errors
           logger.warn(
             `Could not read related file from filesystem: ${related}. Error: ${error instanceof Error ? error.message : String(error)}`,
           );
