@@ -105,14 +105,14 @@ async function main() {
     }
   }
 
+  // : stdInPrompt && stdInPrompt.length > 0
+  //   ? stdInPrompt
   const initialPromptInput =
     cli.flags.prompt && cli.flags.prompt.length > 0
       ? cli.flags.prompt
       : positionalPrompt && positionalPrompt.length > 0
         ? positionalPrompt
-        : stdInPrompt && stdInPrompt.length > 0
-          ? stdInPrompt
-          : undefined;
+        : undefined;
 
   if (hasContinueOrResume && isDefined(initialPromptInput)) {
     console.error("Cannot use --continue or --resume with an initial prompt.");
@@ -194,6 +194,10 @@ async function main() {
   const promptManager = new PromptManager(tokenCounter);
   if (!hasContinueOrResume && isDefined(initialPromptInput)) {
     promptManager.set(initialPromptInput);
+  }
+
+  if (stdInPrompt) {
+    promptManager.addContext(stdInPrompt);
   }
 
   const toolEvents: Map<string, Message[]> = new Map();
