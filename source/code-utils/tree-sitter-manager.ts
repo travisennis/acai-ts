@@ -1,10 +1,9 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
-import { dirname } from "@travisennis/stdlib/desm";
 import Parser, { Query } from "tree-sitter";
 import Java from "tree-sitter-java";
 import TypeScript from "tree-sitter-typescript";
 import { logger } from "../logger.ts";
+import { tags as javaTags } from "./queries/java-tags.scm.ts";
+import { tags as typescriptTags } from "./queries/typescript-tags.scm.ts";
 
 export type SupportedLanguage = "typescript" | "tsx" | "java";
 export type SupportedExtension = ".ts" | ".tsx" | ".java";
@@ -18,9 +17,6 @@ const LANGUAGES: Record<SupportedExtension, SupportedLanguage> = {
   ".tsx": "tsx",
   ".java": "java",
 };
-
-// Adjust QUERIES_ROOT to be relative to this file, then go up two levels to project root, then into "queries"
-const QUERIES_ROOT = resolve(dirname(import.meta.url), "./queries");
 
 export class TreeSitterManager {
   private parsers: Map<SupportedExtension, Parser> = new Map();
@@ -57,24 +53,22 @@ export class TreeSitterManager {
         return this.queries.get(ext);
       }
 
-      const tagsPath: string = join(QUERIES_ROOT, `${lang}-tags.scm`);
-      logger.debug(
-        `getQuery: tags_path=${tagsPath} exists=${existsSync(tagsPath)}`,
-      );
-
-      if (!existsSync(tagsPath)) {
-        logger.warn(`getQuery: tags.scm not found at ${tagsPath}`);
-        return undefined;
-      }
-
       const parser = this.getParser(ext);
       if (!parser) {
         logger.warn(`getQuery: parser not found for ${ext}`);
         return undefined;
       }
 
+      let tagsContent: string;
+      if (ext === ".java") {
+        tagsContent = javaTags;
+      } else if (ext === ".ts") {
+        tagsContent = typescriptTags;
+      } else {
+        return undefined;
+      }
+
       try {
-        const tagsContent = readFileSync(tagsPath, "utf8");
         const query = new Query(parser.getLanguage(), tagsContent);
         this.queries.set(ext, query);
         logger.debug(`getQuery: Query loaded successfully for ext ${ext}`);

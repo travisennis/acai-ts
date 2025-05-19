@@ -1,4 +1,4 @@
-;; Java symbol queries (tree-sitter-java)
+export const tags = `;; Java symbol queries (tree-sitter-java)
 
 ;; Classes
 (class_declaration
@@ -23,3 +23,4 @@
 ;; Constructors
 (constructor_declaration
   name: (identifier) @name) @definition.method
+`;

@@ -1,3 +1,4 @@
+export const tags = `
 ; functions
 (function_declaration
   name: (identifier) @name) @definition.function
@@ -77,3 +78,4 @@
 
 ; Removed general export_statement capture to avoid overcounting features.
 ; Export status can be checked by inspecting the parent node in the consuming code if necessary.
+`;
