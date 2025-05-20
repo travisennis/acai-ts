@@ -173,13 +173,3 @@ export async function initCliTools({
 
   return tools;
 }
-
-// biome-ignore lint/performance/noBarrelFile: <explanation>
-export * from "./code-interpreter.ts";
-export * from "./filesystem.ts";
-export * from "./git.ts";
-export * from "./grep.ts";
-export * from "./memory.ts";
-export * from "./think.ts";
-export * from "./types.ts";
-export * from "./url.ts";

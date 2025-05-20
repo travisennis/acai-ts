@@ -22,7 +22,8 @@ import { ReplPrompt } from "./repl-prompt.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import type { TokenCounter } from "./token-utils.ts";
-import { getDiffStat, initTools } from "./tools/index.ts";
+import { getDiffStat } from "./tools/git.ts";
+import { initTools } from "./tools/index.ts";
 import type { Message } from "./tools/types.ts";
 
 interface ReplOptions {

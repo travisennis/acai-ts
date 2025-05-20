@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { formatFile, formatUrl } from "./formatting.ts";
 import type { ModelMetadata } from "./models/providers.ts";
-import { readUrl } from "./tools/index.ts";
+import { readUrl } from "./tools/url.ts";
 
 interface CommandContext {
   model: ModelMetadata;

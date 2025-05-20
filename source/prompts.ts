@@ -1,7 +1,7 @@
 import { platform } from "node:os";
 import { config } from "./config.ts";
 import { dedent } from "./dedent.ts";
-import { inGitDirectory } from "./tools/index.ts";
+import { inGitDirectory } from "./tools/git.ts";
 
 function intro() {
   return "You are acai, an AI-powered CLI assistant that accelerates software engineering workflows through intelligent command-line assistance.";
@@ -232,6 +232,20 @@ ${escalationProcedures()}
 ${await getRules()}
 
 ${responseInstructions()}
+
+${await environmentInfo()}
+`;
+
+  return prompt;
+}
+
+export async function minSystemPrompt() {
+  const prompt = dedent`
+${intro()}
+
+${instructions()}
+
+${await getRules()}
 
 ${await environmentInfo()}
 `;
