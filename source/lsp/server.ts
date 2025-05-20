@@ -631,7 +631,8 @@ function updateFileRelations(
 ) {
   let map: CodeMap | null = null;
   try {
-    map = CodeMap.fromSource(content.getText(), filePath);
+    const sourceText = content.getText();
+    map = CodeMap.fromSource(sourceText, filePath);
   } catch (error) {
     logger.warn(
       `Error generating CodeMap for ${filePath} in updateFileRelations: ${error instanceof Error ? error.message : String(error)}`,
@@ -641,7 +642,6 @@ function updateFileRelations(
   }
 
   const imports = map.getStructure().imports;
-
   const relatedFiles = imports
     .map((i) => i.fileName)
     .filter((path) => {
@@ -658,6 +658,9 @@ function updateFileRelations(
     });
 
   fileRelations.set(filePath, relatedFiles);
+  logger.debug(
+    `Set file relations for ${filePath}: ${JSON.stringify(fileRelations.get(filePath))}`,
+  );
 }
 
 // Retrieves context from related files
