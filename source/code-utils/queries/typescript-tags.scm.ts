@@ -1,4 +1,8 @@
 export const tags = `
+; imports
+(import_statement
+  source: (string) @import.source) @import
+
 ; functions
 (function_declaration
   name: (identifier) @name) @definition.function
