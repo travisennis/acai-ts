@@ -286,7 +286,9 @@ export function initConnection({
     // params.text the initial full content of the document.
   });
 
-  connection.onDidChangeWatchedFiles((_change) => {});
+  connection.onDidChangeWatchedFiles((_change) => {
+    // ignore
+  });
 
   connection.onDidChangeTextDocument((params) => {
     const textDocument = documents.get(params.textDocument.uri);
@@ -641,9 +643,9 @@ function updateFileRelations(
     return;
   }
 
-  const imports = map.getStructure().imports;
+  const imports = map.getSymbols().filter((s) => s.type === "import");
   const relatedFiles = imports
-    .map((i) => i.fileName)
+    .map((i) => i.source)
     .filter((path) => {
       const isRelative =
         !isNullOrUndefined(path) &&

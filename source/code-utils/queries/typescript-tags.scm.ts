@@ -1,7 +1,7 @@
 export const tags = `
 ; imports
 (import_statement
-  source: (string) @import.source) @import
+  source: (string) @import.source) @defintion.import
 
 ; functions
 (function_declaration
@@ -54,15 +54,6 @@ export const tags = `
 (class_body
   (method_definition
     (accessibility_modifier)?
-    ("async")?
-    name: (property_identifier) @name) @definition.method)
-
-; Static Class methods
-; Order: optional accessibility modifier, "static" keyword, optional "async", then name.
-(class_body
-  (method_definition
-    (accessibility_modifier)?
-    "static" ; The "static" keyword
     ("async")?
     name: (property_identifier) @name) @definition.method)
 

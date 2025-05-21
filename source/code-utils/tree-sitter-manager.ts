@@ -4,19 +4,7 @@ import TypeScript from "tree-sitter-typescript";
 import { logger } from "../logger.ts";
 import { tags as javaTags } from "./queries/java-tags.scm.ts";
 import { tags as typescriptTags } from "./queries/typescript-tags.scm.ts";
-
-export type SupportedLanguage = "typescript" | "tsx" | "java";
-export type SupportedExtension = ".ts" | ".tsx" | ".java";
-
-export function isSupportedExtension(ext: string): ext is SupportedExtension {
-  return ext === ".ts" || ext === ".tsx" || ext === ".java";
-}
-
-const LANGUAGES: Record<SupportedExtension, SupportedLanguage> = {
-  ".ts": "typescript",
-  ".tsx": "tsx",
-  ".java": "java",
-};
+import { type SupportedExtension, isSupportedExtension } from "./types.ts";
 
 export class TreeSitterManager {
   private parsers: Map<SupportedExtension, Parser> = new Map();
@@ -44,10 +32,6 @@ export class TreeSitterManager {
 
   getQuery(ext: string): Query | undefined {
     if (isSupportedExtension(ext)) {
-      const lang = LANGUAGES[ext];
-      if (!lang) {
-        return undefined;
-      }
       if (this.queries.has(ext)) {
         logger.debug(`getQuery: query cached for ext ${ext}`);
         return this.queries.get(ext);
@@ -59,12 +43,8 @@ export class TreeSitterManager {
         return undefined;
       }
 
-      let tagsContent: string;
-      if (ext === ".java") {
-        tagsContent = javaTags;
-      } else if (ext === ".ts") {
-        tagsContent = typescriptTags;
-      } else {
+      const tagsContent = this.getTags(ext);
+      if (!tagsContent) {
         return undefined;
       }
 
@@ -75,14 +55,22 @@ export class TreeSitterManager {
         return query;
       } catch (e) {
         logger.error(
+          e,
           `getQuery: Query compile error for ext ${ext}: ${e instanceof Error ? e.message : String(e)}`,
-        );
-        logger.error(
-          e instanceof Error && e.stack ? e.stack : "No stack trace available",
         );
       }
     }
     logger.debug(`getQuery: Extension ${ext} not supported.`);
     return undefined;
+  }
+
+  private getTags(ext: string): string | undefined {
+    let tagsContent: string | undefined;
+    if (ext === ".java") {
+      tagsContent = javaTags;
+    } else if (ext === ".ts") {
+      tagsContent = typescriptTags;
+    }
+    return tagsContent;
   }
 }
