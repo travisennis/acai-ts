@@ -160,6 +160,10 @@ export async function initCliTools({
     tokenCounter,
   });
 
+  const memoryTools = createMemoryTools({
+    sendData: undefined,
+  });
+
   const tools = {
     ...fsTools,
     ...gitTools,
@@ -169,6 +173,7 @@ export async function initCliTools({
     ...urlTools,
     ...bashTools,
     ...webSearchTools,
+    ...memoryTools,
   } as const;
 
   return tools;

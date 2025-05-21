@@ -9,7 +9,7 @@ import { logger } from "./logger.ts";
 import type { MessageHistory } from "./messages.ts";
 import { AiConfig } from "./models/ai-config.ts";
 import type { ModelManager } from "./models/manager.js";
-import { systemPrompt } from "./prompts.ts";
+import { minSystemPrompt } from "./prompts.ts";
 import type { PromptManager } from "./prompts/manager.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import type { TokenCounter } from "./token-utils.ts";
@@ -63,9 +63,7 @@ export class Cli {
 
     messageHistory.appendUserMessage(userMsg);
 
-    const finalSystemPrompt = await systemPrompt({
-      supportsToolCalling: modelConfig.supportsToolCalling,
-    });
+    const finalSystemPrompt = await minSystemPrompt();
 
     const aiConfig = new AiConfig({
       modelMetadata: modelConfig,
@@ -97,6 +95,15 @@ export class Cli {
         maxRetries: 2,
         providerOptions: aiConfig.getProviderOptions(),
         tools,
+        // biome-ignore lint/style/useNamingConvention: <explanation>
+        experimental_activeTools: [
+          "editFile",
+          "undoEdit",
+          "saveFile",
+          "moveFile",
+          "deleteFile",
+          "think",
+        ],
         // biome-ignore lint/style/useNamingConvention: <explanation>
         experimental_repairToolCall: modelConfig.supportsToolCalling
           ? toolCallRepair(modelManager)
