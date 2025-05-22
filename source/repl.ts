@@ -9,6 +9,7 @@ import {
   streamText,
 } from "ai";
 import chalk, { type ChalkInstance } from "chalk";
+import type z from "zod";
 import type { CommandManager } from "./commands/manager.ts";
 import { config as configManager } from "./config.ts";
 import { logger } from "./logger.ts";
@@ -497,7 +498,7 @@ const toolCallRepair = (modelManager: ModelManager, terminal: Terminal) => {
     try {
       const { object: repairedArgs } = await generateObject({
         model: modelManager.getModel("tool-repair"),
-        schema: tool.parameters, // Removed as any
+        schema: tool.parameters as z.ZodSchema<unknown>,
         prompt: [
           `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
           JSON.stringify(toolCall.args),

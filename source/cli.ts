@@ -5,6 +5,7 @@ import {
   generateObject,
   generateText,
 } from "ai";
+import type z from "zod";
 import { logger } from "./logger.ts";
 import type { MessageHistory } from "./messages.ts";
 import { AiConfig } from "./models/ai-config.ts";
@@ -146,7 +147,7 @@ const toolCallRepair = (modelManager: ModelManager) => {
     try {
       const { object: repairedArgs } = await generateObject({
         model: modelManager.getModel("tool-repair"),
-        schema: tool.parameters, // Removed as z.ZodSchema<any>
+        schema: tool.parameters as z.ZodSchema<unknown>,
         prompt: [
           `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
           JSON.stringify(toolCall.args),
