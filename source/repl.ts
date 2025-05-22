@@ -21,22 +21,12 @@ import { systemPrompt } from "./prompts.ts";
 import type { PromptManager } from "./prompts/manager.ts";
 import { ReplPrompt } from "./repl-prompt.ts";
 import type { Terminal } from "./terminal/index.ts";
+import { isMarkdown } from "./terminal/markdown-utils.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import type { TokenCounter } from "./token-utils.ts";
 import { getDiffStat } from "./tools/git.ts";
 import { initTools } from "./tools/index.ts";
 import type { Message } from "./tools/types.ts";
-
-const markdownHeaderRegex = /^#{1,6}\s/m;
-const markdownBoldRegex = /(\*\*|__)(.*?)\1/;
-const markdownItalicRegex = /(\*|_)(.*?)\1/;
-const markdownCodeRegex = /`{1,3}[^`]+`{1,3}/;
-const markdownLinkRegex = /\((.*?)\]\((.*?)\)/;
-const markdownBlockquoteRegex = /^>\s/m;
-const markdownUnorderedListRegex = /^-\s|\*\s|\+\s/m;
-const markdownOrderedListRegex = /^\d+\.\s/m;
-const markdownHorizontalRuleRegex = /^---$/m;
-const markdownImageRegex = /!\[(.*?)\]\((.*?)\)/;
 
 interface ReplOptions {
   messageHistory: MessageHistory;
@@ -462,22 +452,7 @@ function displayToolMessages(messages: Message[], terminal: Terminal) {
   terminal.lineBreak();
 }
 
-function isMarkdown(input: string): boolean {
-  // Simple heuristics: look for common markdown syntax
-  const markdownPatterns = [
-    markdownHeaderRegex, // headings
-    markdownBoldRegex, // bold
-    markdownItalicRegex, // italic
-    markdownCodeRegex, // inline code or code block
-    markdownLinkRegex, // links
-    markdownBlockquoteRegex, // blockquote
-    markdownUnorderedListRegex, // unordered list
-    markdownOrderedListRegex, // ordered list
-    markdownHorizontalRuleRegex, // horizontal rule
-    markdownImageRegex, // images
-  ];
-  return markdownPatterns.some((pattern) => pattern.test(input));
-}
+
 
 const toolCallRepair = (modelManager: ModelManager, terminal: Terminal) => {
   const fn: ToolCallRepairFunction<CompleteToolSet> = async ({
