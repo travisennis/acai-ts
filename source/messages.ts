@@ -363,7 +363,8 @@ export function normalizeMessagesForApi(
         // Otherwise, merge the current message with the last message
         result[result.indexOf(lastMessage)] = {
           ...lastMessage,
-          content: [...lastMessage.content, ...message.content],
+          // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+          content: [...lastMessage.content, ...message.content] as any, // #FIXME figure out what type this should be
         };
         continue;
       }
