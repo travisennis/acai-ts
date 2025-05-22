@@ -26,6 +26,17 @@ import { getDiffStat } from "./tools/git.ts";
 import { initTools } from "./tools/index.ts";
 import type { Message } from "./tools/types.ts";
 
+const markdownHeaderRegex = /^#{1,6}\s/m;
+const markdownBoldRegex = /(\*\*|__)(.*?)\1/;
+const markdownItalicRegex = /(\*|_)(.*?)\1/;
+const markdownCodeRegex = /`{1,3}[^`]+`{1,3}/;
+const markdownLinkRegex = /\((.*?)\]\((.*?)\)/;
+const markdownBlockquoteRegex = /^>\s/m;
+const markdownUnorderedListRegex = /^-\s|\*\s|\+\s/m;
+const markdownOrderedListRegex = /^\d+\.\s/m;
+const markdownHorizontalRuleRegex = /^---$/m;
+const markdownImageRegex = /!\[(.*?)\]\((.*?)\)/;
+
 interface ReplOptions {
   messageHistory: MessageHistory;
   promptManager: PromptManager;
@@ -249,7 +260,7 @@ export class Repl {
           },
           onError: ({ error }) => {
             logger.error(
-              (error as any).responseBody,
+              error, // Log the full error object
               "Error on REPL streamText",
             );
             terminal.error(
@@ -453,16 +464,16 @@ function displayToolMessages(messages: Message[], terminal: Terminal) {
 function isMarkdown(input: string): boolean {
   // Simple heuristics: look for common markdown syntax
   const markdownPatterns = [
-    /^#{1,6}\s/m, // headings
-    /(\*\*|__)(.*?)\1/, // bold
-    /(\*|_)(.*?)\1/, // italic
-    /`{1,3}[^`]+`{1,3}/, // inline code or code block
-    /\[(.*?)\]\((.*?)\)/, // links
-    /^>\s/m, // blockquote
-    /^-\s|\*\s|\+\s/m, // unordered list
-    /^\d+\.\s/m, // ordered list
-    /^---$/m, // horizontal rule
-    /!\[(.*?)\]\((.*?)\)/, // images
+    markdownHeaderRegex, // headings
+    markdownBoldRegex, // bold
+    markdownItalicRegex, // italic
+    markdownCodeRegex, // inline code or code block
+    markdownLinkRegex, // links
+    markdownBlockquoteRegex, // blockquote
+    markdownUnorderedListRegex, // unordered list
+    markdownOrderedListRegex, // ordered list
+    markdownHorizontalRuleRegex, // horizontal rule
+    markdownImageRegex, // images
   ];
   return markdownPatterns.some((pattern) => pattern.test(input));
 }
@@ -486,7 +497,7 @@ const toolCallRepair = (modelManager: ModelManager, terminal: Terminal) => {
     try {
       const { object: repairedArgs } = await generateObject({
         model: modelManager.getModel("tool-repair"),
-        schema: tool.parameters as any, // #FIXME
+        schema: tool.parameters, // Removed as any
         prompt: [
           `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
           JSON.stringify(toolCall.args),

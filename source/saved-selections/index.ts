@@ -4,6 +4,8 @@ import type { Range } from "vscode-languageserver";
 import { config } from "../config.ts";
 import { formatFile } from "../formatting.ts";
 
+const fileUrlRegex = /^file:\/\//;
+
 export interface Selection {
   documentUri: string;
   range: Range;
@@ -36,7 +38,7 @@ export async function getSavedSelections() {
     });
   } catch (error) {
     // Handle specific errors
-    if ((error as any).code === "ENOENT") {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       console.warn("No saved selections found.");
       return [];
     }
@@ -53,7 +55,7 @@ export async function getSavedSelections() {
 
 export function formatSelection(selection: Selection) {
   const absolutePath = selection.documentUri.startsWith("file://")
-    ? decodeURIComponent(selection.documentUri.replace(/^file:\/\//, ""))
+    ? decodeURIComponent(selection.documentUri.replace(fileUrlRegex, ""))
     : selection.documentUri;
   return formatFile(
     `${absolutePath}:${selection.range.start.line + 1}-${selection.range.end.line + 1}`,

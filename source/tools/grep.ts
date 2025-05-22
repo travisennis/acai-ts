@@ -151,7 +151,7 @@ function grepFiles(
     const result = execSync(command, { encoding: "utf-8" });
     return result;
   } catch (error) {
-    if ((error as any).status === 1) {
+    if (error instanceof Error && "status" in error && error.status === 1) {
       // Status 1 in ripgrep just means "no matches found"
       return "No matches found.";
     }

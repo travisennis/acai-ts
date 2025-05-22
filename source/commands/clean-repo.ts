@@ -4,6 +4,8 @@ import { globby } from "globby";
 import { logger } from "../logger.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
+const lineSplitRegex = /\r?\n/;
+
 // Helper function to read and filter .gitignore
 async function getFilteredIgnorePatterns(
   projectRoot: string,
@@ -13,7 +15,7 @@ async function getFilteredIgnorePatterns(
   try {
     const gitignoreContent = await fs.readFile(gitignorePath, "utf-8");
     ignorePatterns = gitignoreContent
-      .split(/\r?\n/) // Split by lines
+      .split(lineSplitRegex) // Split by lines
       .map((line) => line.trim())
       .filter((line) => line && !line.startsWith("#")) // Remove empty lines and comments
       .filter((line) => line !== "*.backup"); // <<< Filter out the specific backup pattern

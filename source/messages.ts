@@ -363,7 +363,7 @@ export function normalizeMessagesForApi(
         // Otherwise, merge the current message with the last message
         result[result.indexOf(lastMessage)] = {
           ...lastMessage,
-          content: [...lastMessage.content, ...message.content] as any,
+          content: [...lastMessage.content, ...message.content],
         };
         continue;
       }

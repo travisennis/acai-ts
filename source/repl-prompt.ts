@@ -6,6 +6,8 @@ import clipboardy from "clipboardy";
 import type { CommandManager } from "./commands/manager.ts";
 import { logger } from "./logger.ts";
 
+const whitespaceRegex = /\s+/;
+
 async function fileSystemCompleter(line: string): Promise<[string[], string]> {
   try {
     const words = line.split(" ");
@@ -81,7 +83,7 @@ export class ReplPrompt {
       historySize: this.maxHistory,
       completer: async (line): Promise<[string[], string]> => {
         const completions = commands.getCommands();
-        const words = line.trim().split(/\s+/);
+        const words = line.trim().split(whitespaceRegex);
         const firstWord = words[0] ?? "";
         const rest: string = words.slice(1).join(" ") ?? "";
 

@@ -15,7 +15,7 @@ function jsCodeInterpreter(
   code: string,
   permissions: readonly InterpreterPermission[],
 ) {
-  const context: Record<string, any> = { console };
+  const context: Record<string, unknown> = { console };
 
   if (permissions.includes("fs")) {
     context["fs"] = _fs;

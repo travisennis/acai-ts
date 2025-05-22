@@ -146,7 +146,7 @@ const toolCallRepair = (modelManager: ModelManager) => {
     try {
       const { object: repairedArgs } = await generateObject({
         model: modelManager.getModel("tool-repair"),
-        schema: tool.parameters as any, // #FIXME
+        schema: tool.parameters, // Removed as z.ZodSchema<any>
         prompt: [
           `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
           JSON.stringify(toolCall.args),

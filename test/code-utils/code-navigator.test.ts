@@ -7,6 +7,7 @@ import {
   type ClassSymbol,
   type FunctionSymbol,
   type TypeSymbol, // Added for completeness, though not directly in old tests
+  type ImportSymbol,
 } from "../../source/code-utils/code-navigator.ts";
 import { TreeSitterManager } from "../../source/code-utils/tree-sitter-manager.ts";
 
@@ -491,9 +492,11 @@ type MyInterface = { prop: string }; // type alias for context
       const navigator = new CodeNavigator(treeSitterManager);
       try {
         navigator.indexSource("test.unsupported", "content");
-      } catch (e: any) {
+      } catch (e) {
         ok(e instanceof Error);
-        ok(e.message.includes("No parser for extension: .unsupported"));
+        ok(
+          (e as Error).message.includes("No parser for extension: .unsupported"),
+        );
       }
     });
 
@@ -503,9 +506,11 @@ type MyInterface = { prop: string }; // type alias for context
         // This test requires a file to exist, so we'll mock readFile or handle appropriately
         // For now, assuming it would throw if parser is not found before readFile
         await navigator.indexFile("test.unsupported");
-      } catch (e: any) {
+      } catch (e) {
         ok(e instanceof Error);
-        ok(e.message.includes("No parser for extension: .unsupported"));
+        ok(
+          (e as Error).message.includes("No parser for extension: .unsupported"),
+        );
       }
     });
   });
@@ -529,57 +534,57 @@ import "./side-effect-import.ts"; // Side-effect import
 
       const myInterfaceImport = importSymbols.find(
         (s) => s.name === "MyInterface",
-      );
+      ) as ImportSymbol;
       ok(myInterfaceImport, "Should find import symbol for MyInterface");
       strictEqual(
-        (myInterfaceImport as any).source,
+        myInterfaceImport.source,
         "./my-interface.ts",
         "MyInterface source mismatch",
       );
 
       const anotherSymbolImport = importSymbols.find(
         (s) => s.name === "AnotherSymbol",
-      );
+      ) as ImportSymbol;
       ok(anotherSymbolImport, "Should find import symbol for AnotherSymbol");
       strictEqual(
-        (anotherSymbolImport as any).source,
+        anotherSymbolImport.source,
         "./my-interface.ts",
         "AnotherSymbol source mismatch",
       );
 
       const everythingImport = importSymbols.find(
         (s) => s.name === "Everything",
-      );
+      ) as ImportSymbol;
       ok(
         everythingImport,
         "Should find import symbol for Everything (namespace)",
       );
       strictEqual(
-        (everythingImport as any).source,
+        everythingImport.source,
         "./everything.ts",
         "Everything source mismatch",
       );
 
       const defaultExportImport = importSymbols.find(
         (s) => s.name === "DefaultExport",
-      );
+      ) as ImportSymbol;
       ok(defaultExportImport, "Should find import symbol for DefaultExport");
       strictEqual(
-        (defaultExportImport as any).source,
+        defaultExportImport.source,
         "./default-export.ts",
         "DefaultExport source mismatch",
       );
 
       // For side-effect import, name is empty, source is the path
       const sideEffectImport = importSymbols.find(
-        (s) => s.name === "" && (s as any).source === "./side-effect-import.ts",
-      );
+        (s) => s.name === "" && (s as ImportSymbol).source === "./side-effect-import.ts",
+      ) as ImportSymbol;
       ok(
         sideEffectImport,
         "Should find side-effect import symbol for ./side-effect-import.ts",
       );
       strictEqual(
-        (sideEffectImport as any).source,
+        sideEffectImport.source,
         "./side-effect-import.ts",
         "Side-effect import source mismatch",
       );

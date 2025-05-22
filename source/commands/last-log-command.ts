@@ -5,6 +5,8 @@ import { globby } from "globby";
 import { config } from "../config.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
+const isoDateRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/;
+
 // Function to find the most recent log file
 async function findMostRecentLog(logDir: string): Promise<string | null> {
   const logPattern = join(logDir, "*-repl-message.json");
@@ -21,9 +23,7 @@ async function findMostRecentLog(logDir: string): Promise<string | null> {
         return null; // Skip if filename is somehow undefined
       }
       // Match the ISO date string at the beginning of the filename
-      const match = filename.match(
-        /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/,
-      );
+      const match = filename.match(isoDateRegex);
       if (match?.[1]) {
         try {
           const date = new Date(match[1]);

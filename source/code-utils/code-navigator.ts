@@ -84,7 +84,7 @@ interface BaseSymbol {
   references: SymbolLocation[];
 }
 
-interface ImportSymbol extends BaseSymbol, ImportInfo {
+export interface ImportSymbol extends BaseSymbol, ImportInfo {
   type: "import";
   // Add any additional fields specific to imports if needed
 }
