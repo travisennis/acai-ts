@@ -485,4 +485,145 @@ type MyInterface = { prop: string }; // type alias for context
       strictEqual(typeAliasSymbol.typeValue, "{ prop: string }");
     });
   });
+
+  describe("Error Handling", () => {
+    it("should throw an error for unsupported file types on indexSource", () => {
+      const navigator = new CodeNavigator(treeSitterManager);
+      try {
+        navigator.indexSource("test.unsupported", "content");
+      } catch (e: any) {
+        ok(e instanceof Error);
+        ok(e.message.includes("No parser for extension: .unsupported"));
+      }
+    });
+
+    it("should throw an error for unsupported file types on findDefinitionsInFile", async () => {
+      const navigator = new CodeNavigator(treeSitterManager);
+      try {
+        // This test requires a file to exist, so we'll mock readFile or handle appropriately
+        // For now, assuming it would throw if parser is not found before readFile
+        await navigator.indexFile("test.unsupported");
+      } catch (e: any) {
+        ok(e instanceof Error);
+        ok(e.message.includes("No parser for extension: .unsupported"));
+      }
+    });
+  });
+
+  describe("Import Processing", () => {
+    it("should extract named, default, and namespace import symbols", () => {
+      const codeSnippet = `
+import { MyInterface, AnotherSymbol } from "./my-interface.ts";
+import * as Everything from "./everything.ts";
+import DefaultExport from "./default-export.ts";
+import "./side-effect-import.ts"; // Side-effect import
+      `;
+      const fileName = "test-imports.ts";
+      const navigator = new CodeNavigator(treeSitterManager);
+      navigator.indexSource(fileName, codeSnippet);
+      const symbols = navigator.findSymbolsByFilePath(fileName);
+
+      const importSymbols = symbols.filter((s) => s.type === "import");
+      // Expect: MyInterface, AnotherSymbol, Everything, DefaultExport, and one for side-effect
+      strictEqual(importSymbols.length, 5, "Should find 5 import symbols");
+
+      const myInterfaceImport = importSymbols.find(
+        (s) => s.name === "MyInterface",
+      );
+      ok(myInterfaceImport, "Should find import symbol for MyInterface");
+      strictEqual(
+        (myInterfaceImport as any).source,
+        "./my-interface.ts",
+        "MyInterface source mismatch",
+      );
+
+      const anotherSymbolImport = importSymbols.find(
+        (s) => s.name === "AnotherSymbol",
+      );
+      ok(anotherSymbolImport, "Should find import symbol for AnotherSymbol");
+      strictEqual(
+        (anotherSymbolImport as any).source,
+        "./my-interface.ts",
+        "AnotherSymbol source mismatch",
+      );
+
+      const everythingImport = importSymbols.find(
+        (s) => s.name === "Everything",
+      );
+      ok(
+        everythingImport,
+        "Should find import symbol for Everything (namespace)",
+      );
+      strictEqual(
+        (everythingImport as any).source,
+        "./everything.ts",
+        "Everything source mismatch",
+      );
+
+      const defaultExportImport = importSymbols.find(
+        (s) => s.name === "DefaultExport",
+      );
+      ok(defaultExportImport, "Should find import symbol for DefaultExport");
+      strictEqual(
+        (defaultExportImport as any).source,
+        "./default-export.ts",
+        "DefaultExport source mismatch",
+      );
+
+      // For side-effect import, name is empty, source is the path
+      const sideEffectImport = importSymbols.find(
+        (s) => s.name === "" && (s as any).source === "./side-effect-import.ts",
+      );
+      ok(
+        sideEffectImport,
+        "Should find side-effect import symbol for ./side-effect-import.ts",
+      );
+      strictEqual(
+        (sideEffectImport as any).source,
+        "./side-effect-import.ts",
+        "Side-effect import source mismatch",
+      );
+    });
+  });
+
+  describe("Type Alias Processing", () => {
+    it("should extract type alias symbols", () => {
+      const codeSnippet = `
+export type MyString = string;
+type MyObject = {
+  id: number;
+  name: string;
+};
+      `;
+      const fileName = "test-types.ts";
+      const navigator = new CodeNavigator(treeSitterManager);
+      navigator.indexSource(fileName, codeSnippet);
+      const symbols = navigator.findSymbolsByFilePath(fileName);
+
+      const typeSymbols = symbols.filter(
+        (s) => s.type === "type",
+      ) as TypeSymbol[];
+      strictEqual(typeSymbols.length, 2, "Should find 2 type alias symbols");
+
+      const myStringSymbol = typeSymbols.find((s) => s.name === "MyString");
+      ok(myStringSymbol, "Should find MyString type alias");
+      strictEqual(
+        myStringSymbol?.typeValue,
+        "string",
+        "MyString type value mismatch",
+      );
+
+      const myObjectSymbol = typeSymbols.find((s) => s.name === "MyObject");
+      ok(myObjectSymbol, "Should find MyObject type alias");
+      strictEqual(
+        myObjectSymbol?.typeValue.replace(/\s/g, ""),
+        "{id:number;name:string;}",
+        "MyObject type value mismatch",
+      );
+    });
+  });
+
+  // Add more tests for indexProject, findDefinitionAtPosition, findUsages if complex setups are feasible
+  // For example, findDefinitionAtPosition and findUsages would require a more integrated test
+  // with actual file system operations or a mocked file system.
 });

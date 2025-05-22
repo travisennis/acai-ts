@@ -1,7 +1,29 @@
 export const tags = `
-; imports
+; Imports
+; Named import: import { MyClass } from './my-module.ts';
+; Captures 'MyClass' as @name and './my-module.ts' as @import.source
 (import_statement
-  source: (string) @import.source) @defintion.import
+  (import_clause
+    (named_imports
+      (import_specifier name: (identifier) @name) @definition.import))
+  source: (string) @import.source)
+
+; Default import: import MyDefault from './my-module.ts';
+; Captures 'MyDefault' as @name and './my-module.ts' as @import.source
+(import_statement
+  (import_clause (identifier) @name)
+  source: (string) @import.source) @definition.import
+
+; Namespace import: import * as MyNamespace from './my-module.ts';
+; Captures 'MyNamespace' as @name and './my-module.ts' as @import.source
+(import_statement
+  (import_clause (namespace_import (identifier) @name))
+  source: (string) @import.source) @definition.import
+
+; Side-effect import (no name): import './my-module.ts';
+; Only captures the source.
+(import_statement
+  source: (string) @import.source) @definition.import.side_effect
 
 ; functions
 (function_declaration

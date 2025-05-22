@@ -270,23 +270,71 @@ export class CodeNavigator {
       }
 
       if (captureName === "definition.import") {
+        // From queries for named, default, namespace imports
+        const nameNode = match.captures.find((c) => c.name === "name")?.node;
         const sourceCapture = match.captures.find(
           (c) => c.name === "import.source",
         );
-        const primaryNode = node;
-        const featureName = "";
-        if (sourceCapture) {
+        // For these captures, 'node' is usually the import_specifier or the identifier of the default/namespace import.
+
+        if (nameNode && sourceCapture) {
+          const importSourceText = getNodeText(sourceCapture.node).replace(
+            /^['"]|['"]$/g,
+            "",
+          );
+          const featureName = getNodeText(nameNode);
+          // Key should be unique per imported symbol
+          const symbolKeyName = featureName;
+
           const loc = this.nodeToLocation(
-            primaryNode,
+            node, // Node associated with @definition.import (e.g., import_specifier)
             filePath,
             "definition",
             sourceCode,
           );
-          this.symbols.set(this.getSymbolKey(filePath, featureName), {
+
+          this.symbols.set(this.getSymbolKey(filePath, symbolKeyName), {
             name: featureName,
             type: "import",
             language: lang,
-            source: getNodeText(sourceCapture.node).replace(/^['"]|['"]$/g, ""),
+            source: importSourceText,
+            definition: loc,
+            references: [],
+          });
+        }
+      } else if (captureName === "definition.import.side_effect") {
+        // From query for side-effect imports
+        // For this capture, 'node' is the import_statement itself.
+        const sourceCapture = match.captures.find(
+          (c) => c.name === "import.source",
+        );
+
+        // Check if the import_statement node has an import_clause child.
+        // If it does, it means it was (or should have been) handled by a more specific import query.
+        const hasImportClause = node.children.some(
+          (child) => child.type === "import_clause",
+        );
+
+        if (sourceCapture && !hasImportClause) {
+          const importSourceText = getNodeText(sourceCapture.node).replace(
+            /^['"]|['"]$/g,
+            "",
+          );
+          const featureName = ""; // Side-effect imports have no name
+          const symbolKeyName = importSourceText; // Use source for key uniqueness
+
+          const loc = this.nodeToLocation(
+            node, // The import_statement node
+            filePath,
+            "definition",
+            sourceCode,
+          );
+
+          this.symbols.set(this.getSymbolKey(filePath, symbolKeyName), {
+            name: featureName,
+            type: "import",
+            language: lang,
+            source: importSourceText,
             definition: loc,
             references: [],
           });
