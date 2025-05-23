@@ -428,31 +428,55 @@ function displayToolMessages(messages: Message[], terminal: Terminal) {
   terminal.display(initMessage); // Display initial message (async)
 
   for (const msg of messages) {
-    if (msg.event === "tool-update") {
-      if (msg.data.secondary && msg.data.secondary.length > 0) {
-        terminal.display(`└── ${msg.data.primary}`);
-        const content = msg.data.secondary.join("\n");
-        if (isMarkdown(content)) {
-          terminal.display(content, true);
-        } else {
-          terminal.write(chalk.green(content));
-          terminal.lineBreak();
-        }
-      } else {
-        terminal.display(`└── ${msg.data.primary}`);
-      }
-    } else if (msg.event === "tool-completion") {
-      terminal.display(`└── ${msg.data}`);
-    } else if (msg.event === "tool-error") {
-      terminal.write("└── ");
-      terminal.error(msg.data); // Use terminal.error for errors
+    switch (msg.event) {
+      case "tool-update":
+        _handleToolUpdateMessage(msg.data, terminal);
+        break;
+      case "tool-completion":
+        _handleToolCompletionMessage(msg.data, terminal);
+        break;
+      case "tool-error":
+        _handleToolErrorMessage(msg.data, terminal);
+        break;
+      // 'tool-init' is handled before the loop, so no case needed here.
+      default:
+        // Optional: Log an unexpected event type for debugging, or do nothing.
+        logger.debug(`Unhandled tool message event: ${msg.event}`);
+        break;
     }
-    // 'init' message already handled
   }
   terminal.lineBreak();
 }
 
+// Helper function to handle tool update messages
+function _handleToolUpdateMessage(
+  data: { primary: string; secondary?: string[] },
+  terminal: Terminal,
+) {
+  if (data.secondary && data.secondary.length > 0) {
+    terminal.display(`└── ${data.primary}`);
+    const content = data.secondary.join("\n");
+    if (isMarkdown(content)) {
+      terminal.display(content, true);
+    } else {
+      terminal.write(chalk.green(content));
+      terminal.lineBreak();
+    }
+  } else {
+    terminal.display(`└── ${data.primary}`);
+  }
+}
 
+// Helper function to handle tool completion messages
+function _handleToolCompletionMessage(data: string, terminal: Terminal) {
+  terminal.display(`└── ${data}`);
+}
+
+// Helper function to handle tool error messages
+function _handleToolErrorMessage(data: string, terminal: Terminal) {
+  terminal.write("└── ");
+  terminal.error(data);
+}
 
 const toolCallRepair = (modelManager: ModelManager, terminal: Terminal) => {
   const fn: ToolCallRepairFunction<CompleteToolSet> = async ({
