@@ -109,41 +109,41 @@ export async function formatOutput(
 export function wordWrap(text: string, width: number): string {
   const lines = text.split("\n");
 
-  return lines
-    .map((line) => {
-      // If the line is a code block or already shorter than the width, leave it as is
-      if (line.trim().startsWith("┃") || line.length <= width) {
-        return line;
-      }
+  return lines.map((line) => wrapLine(line, width)).join("\n");
+}
 
-      // Word wrap the line
-      const words = line.split(" ");
-      const wrappedLines: string[] = [];
-      let currentLine = "";
+function wrapLine(line: string, width: number): string {
+  // If the line is a code block or already shorter than the width, leave it as is
+  if (line.trim().startsWith("┃") || line.length <= width) {
+    return line;
+  }
 
-      for (const word of words) {
-        // If adding this word would exceed the width
-        if (currentLine.length + word.length + 1 > width) {
-          // Add the current line to wrapped lines if it's not empty
-          if (currentLine) {
-            wrappedLines.push(currentLine);
-            currentLine = word;
-          } else {
-            // If the current line is empty, it means the word itself is longer than the width
-            wrappedLines.push(word);
-          }
-        } else {
-          // Add the word to the current line
-          currentLine = currentLine ? `${currentLine} ${word}` : word;
-        }
-      }
+  // Word wrap the line
+  const words = line.split(" ");
+  const wrappedLines: string[] = [];
+  let currentLine = "";
 
-      // Add the last line if it's not empty
+  for (const word of words) {
+    // If adding this word would exceed the width
+    if (currentLine.length + word.length + 1 > width) {
+      // Add the current line to wrapped lines if it's not empty
       if (currentLine) {
         wrappedLines.push(currentLine);
+        currentLine = word;
+      } else {
+        // If the current line is empty, it means the word itself is longer than the width
+        wrappedLines.push(word);
       }
+    } else {
+      // Add the word to the current line
+      currentLine = currentLine ? `${currentLine} ${word}` : word;
+    }
+  }
 
-      return wrappedLines.join("\n");
-    })
-    .join("\n");
+  // Add the last line if it's not empty
+  if (currentLine) {
+    wrappedLines.push(currentLine);
+  }
+
+  return wrappedLines.join("\n");
 }
