@@ -495,7 +495,9 @@ type MyInterface = { prop: string }; // type alias for context
       } catch (e) {
         ok(e instanceof Error);
         ok(
-          (e as Error).message.includes("No parser for extension: .unsupported"),
+          (e as Error).message.includes(
+            "No parser for extension: .unsupported",
+          ),
         );
       }
     });
@@ -509,7 +511,9 @@ type MyInterface = { prop: string }; // type alias for context
       } catch (e) {
         ok(e instanceof Error);
         ok(
-          (e as Error).message.includes("No parser for extension: .unsupported"),
+          (e as Error).message.includes(
+            "No parser for extension: .unsupported",
+          ),
         );
       }
     });
@@ -577,7 +581,9 @@ import "./side-effect-import.ts"; // Side-effect import
 
       // For side-effect import, name is empty, source is the path
       const sideEffectImport = importSymbols.find(
-        (s) => s.name === "" && (s as ImportSymbol).source === "./side-effect-import.ts",
+        (s) =>
+          s.name === "" &&
+          (s as ImportSymbol).source === "./side-effect-import.ts",
       ) as ImportSymbol;
       ok(
         sideEffectImport,

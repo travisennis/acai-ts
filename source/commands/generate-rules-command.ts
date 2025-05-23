@@ -72,7 +72,8 @@ export const generateRulesCommand = ({
         // Pass the config object available in CommandOptions scope
         await _processAndSaveRules(newRules, terminal, config);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         terminal.error(`Error generating rules: ${errorMessage}`);
         logger.error(error, "Error during rule generation:");
       }
