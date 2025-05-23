@@ -621,29 +621,60 @@ export class TerminalRenderer extends Renderer {
 
     const linkFn = this.o.link || identity;
     const hrefFn = this.o.href || identity;
-    const textTransform = this.emoji; // Apply emoji transformation
+    const textTransformFn = this.emoji; // Apply emoji transformation
 
-    const hasText = currentText && currentText !== currentHref;
-    let output = "";
-
-    // Use text from token if available and not empty
-    const linkText = currentText ? textTransform(currentText) : null;
-
+    let output: string;
     if (supportsHyperlinks.stdout) {
-      const displayLink = linkText ? hrefFn(linkText) : hrefFn(currentHref);
-      // Sanitize URL for ansiEscapes.link
-      const safeHref = currentHref.replace(/\+/g, "%20");
-      output = ansiEscapes.link(displayLink, safeHref);
+      output = this._renderAnsiHyperlink(
+        currentHref,
+        currentText || null, // Ensure null if undefined
+        hrefFn,
+        textTransformFn,
+      );
     } else {
-      if (linkText && hasText) {
-        output += `${linkText} (`;
-      }
-      output += hrefFn(currentHref);
-      if (linkText && hasText) {
-        output += ")";
-      }
+      output = this._renderFallbackLink(
+        currentHref,
+        currentText || null, // Ensure null if undefined
+        hrefFn,
+        textTransformFn,
+      );
     }
     return linkFn(output);
+  }
+
+  private _renderAnsiHyperlink(
+    href: string,
+    text: string | null,
+    hrefFn: ChalkInstance | ((text: string) => string),
+    textTransformFn: (text: string) => string,
+  ): string {
+    const linkDisplayText = text ? textTransformFn(text) : href;
+    // Apply hrefFn, which could be chalk or identity
+    const displayLink = hrefFn(linkDisplayText);
+    // Sanitize URL for ansiEscapes.link: encode spaces as %20
+    // Browsers and terminals are generally okay with other characters like ()[]'
+    const safeHref = href.replace(/ /g, "%20");
+    return ansiEscapes.link(displayLink, safeHref);
+  }
+
+  private _renderFallbackLink(
+    href: string,
+    text: string | null,
+    hrefFn: ChalkInstance | ((text: string) => string),
+    textTransformFn: (text: string) => string,
+  ): string {
+    let output = "";
+    const transformedText = text ? textTransformFn(text) : null;
+    const hasVisibleText = transformedText && transformedText !== href;
+
+    if (hasVisibleText) {
+      output += `${transformedText} (`;
+    }
+    output += hrefFn(href);
+    if (hasVisibleText) {
+      output += ")";
+    }
+    return output;
   }
 
   override image(
