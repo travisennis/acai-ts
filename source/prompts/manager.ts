@@ -40,30 +40,34 @@ export class PromptManager {
         this.prompt = undefined;
       }
 
-      if (Array.isArray(userMessage.content)) {
-        for (const part of userMessage.content) {
-          if (
-            typeof part === "object" &&
-            part !== null &&
-            "type" in part &&
-            part.type === "text"
-          ) {
-            // part is now known to be at least { type: "text" }, but we need .text and to add providerOptions
-            // We'll cast to TextPart from 'ai' and add providerOptions capability
-            const textPart = part as TextPart & {
-              providerOptions?: Record<string, unknown>;
+      return this._applyProviderOptionsToMessage(userMessage);
+    }
+    throw new Error("No prompt available.");
+  }
+
+  private _applyProviderOptionsToMessage(
+    userMessage: CoreUserMessage,
+  ): CoreUserMessage {
+    if (Array.isArray(userMessage.content)) {
+      for (const part of userMessage.content) {
+        if (
+          typeof part === "object" &&
+          part !== null &&
+          "type" in part &&
+          part.type === "text"
+        ) {
+          const textPart = part as TextPart & {
+            providerOptions?: Record<string, unknown>;
+          };
+          if (this.tokenCounter.count(textPart.text) > 4096) {
+            textPart.providerOptions = {
+              anthropic: { cacheControl: { type: "ephemeral" } },
             };
-            if (this.tokenCounter.count(textPart.text) > 4096) {
-              textPart.providerOptions = {
-                anthropic: { cacheControl: { type: "ephemeral" } },
-              };
-            }
           }
         }
       }
-      return userMessage;
     }
-    throw new Error("No prompt available.");
+    return userMessage;
   }
 
   isPending() {
