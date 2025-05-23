@@ -805,35 +805,8 @@ export class CodeNavigator {
     node: SyntaxNode,
     point: { row: number; column: number },
   ): SyntaxNode | null {
-    if (!(node.startPosition && node.endPosition)) {
-      return null;
-    }
-
-    // Check if point is within this node
-    if (
-      (node.startPosition.row < point.row ||
-        (node.startPosition.row === point.row &&
-          node.startPosition.column <= point.column)) &&
-      (node.endPosition.row > point.row ||
-        (node.endPosition.row === point.row &&
-          node.endPosition.column >= point.column))
-    ) {
-      // Check children
-      for (let i = 0; i < node.childCount; i++) {
-        const child = node.child(i);
-        if (child) {
-          const found = this.findNodeAtPosition(child, point);
-          if (found) {
-            return found;
-          }
-        }
-      }
-
-      // If no child contains the point, this node is the most specific one
-      return node;
-    }
-
-    return null;
+    // Use Tree-sitter's built-in method to find the smallest node at the given point
+    return node.descendantForPosition(point);
   }
 
   /**
