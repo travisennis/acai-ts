@@ -20,6 +20,15 @@ function addCacheControlToTools(body: string) {
 }
 
 const anthropicModels = {
+  opus: createAnthropic({
+    fetch(input, init) {
+      const body = init?.body;
+      if (body && typeof body === "string") {
+        init.body = addCacheControlToTools(body);
+      }
+      return fetch(input, init);
+    },
+  })("claude-4-opus-20250514"),
   sonnet: createAnthropic({
     fetch(input, init) {
       const body = init?.body;
@@ -28,8 +37,17 @@ const anthropicModels = {
       }
       return fetch(input, init);
     },
+  })("claude-4-sonnet-20250514"),
+  sonnet37: createAnthropic({
+    fetch(input, init) {
+      const body = init?.body;
+      if (body && typeof body === "string") {
+        init.body = addCacheControlToTools(body);
+      }
+      return fetch(input, init);
+    },
   })("claude-3-7-sonnet-20250219"),
-  "sonnet-token-efficient-tools": createAnthropic({
+  "sonnet37-token-efficient-tools": createAnthropic({
     headers: {
       "anthropic-version": "2023-06-01",
       "anthropic-beta": "token-efficient-tools-2025-02-19",
@@ -42,7 +60,7 @@ const anthropicModels = {
       return fetch(input, init);
     },
   })("claude-3-7-sonnet-20250219"),
-  "sonnet-128k": createAnthropic({
+  "sonnet37-128k": createAnthropic({
     headers: {
       "anthropic-version": "2023-06-01",
       "anthropic-beta": "output-128k-2025-02-19",
@@ -87,6 +105,19 @@ export const anthropicProvider = {
 export const anthropicModelRegistry: {
   [K in ModelName]: ModelMetadata<ModelName>;
 } = {
+  "anthropic:opus": {
+    id: "anthropic:opus",
+    provider: "anthropic",
+    contextWindow: 200000,
+    maxOutputTokens: 64000,
+    defaultTemperature: 0.3,
+    promptFormat: "xml",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.000015,
+    costPerOutputToken: 0.000075,
+    category: "powerful",
+  },
   "anthropic:sonnet": {
     id: "anthropic:sonnet",
     provider: "anthropic",
@@ -100,8 +131,8 @@ export const anthropicModelRegistry: {
     costPerOutputToken: 0.000015,
     category: "balanced",
   },
-  "anthropic:sonnet-token-efficient-tools": {
-    id: "anthropic:sonnet-token-efficient-tools",
+  "anthropic:sonnet37": {
+    id: "anthropic:sonnet37",
     provider: "anthropic",
     contextWindow: 200000,
     maxOutputTokens: 64000,
@@ -113,8 +144,21 @@ export const anthropicModelRegistry: {
     costPerOutputToken: 0.000015,
     category: "balanced",
   },
-  "anthropic:sonnet-128k": {
-    id: "anthropic:sonnet-128k",
+  "anthropic:sonnet37-token-efficient-tools": {
+    id: "anthropic:sonnet37-token-efficient-tools",
+    provider: "anthropic",
+    contextWindow: 200000,
+    maxOutputTokens: 64000,
+    defaultTemperature: 0.3,
+    promptFormat: "xml",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.000003,
+    costPerOutputToken: 0.000015,
+    category: "balanced",
+  },
+  "anthropic:sonnet37-128k": {
+    id: "anthropic:sonnet37-128k",
     provider: "anthropic",
     contextWindow: 200000,
     maxOutputTokens: 128000,
