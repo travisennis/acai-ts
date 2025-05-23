@@ -1,13 +1,51 @@
 import { checkbox } from "@inquirer/prompts";
-import { config } from "../config.ts";
 import { analyzeConversation } from "../conversation-analyzer.ts";
+import { logger } from "../logger.ts"; // Import logger
 import type { CommandOptions, ReplCommand } from "./types.ts";
+
+async function _processAndSaveRules(
+  newRules: string[] | null,
+  terminal: CommandOptions["terminal"],
+  config: CommandOptions["config"], // Simplified type
+) {
+  if (!newRules || newRules.length === 0) {
+    terminal.warn("No new generalizable rules were identified.");
+    return;
+  }
+
+  terminal.info("Generated potential rules:");
+  terminal.lineBreak();
+
+  const rulesToKeep = await checkbox({
+    message: "Select the rules you want to keep:",
+    choices: newRules.map((rule) => ({ name: rule, value: rule })),
+  });
+
+  if (rulesToKeep.length === 0) {
+    terminal.warn("No rules selected to save.");
+    return;
+  }
+
+  terminal.info("Saving selected rules...");
+  const existingRules = await config.readProjectLearnedRulesFile();
+  const rulesToAdd = rulesToKeep.join("\n");
+  const updatedProjectRules =
+    existingRules.endsWith("\n") || existingRules.length === 0
+      ? `${existingRules}${rulesToAdd}`
+      : `${existingRules}\n${rulesToAdd}`;
+
+  await config.writeProjectLearnedRulesFile(updatedProjectRules);
+  terminal.success("Selected rules saved to project learned rules.");
+  terminal.lineBreak();
+  terminal.display(rulesToAdd); // Display only the saved rules
+}
 
 export const generateRulesCommand = ({
   terminal,
   messageHistory,
   modelManager,
   tokenTracker,
+  config, // This is the config module from CommandOptions
 }: CommandOptions): ReplCommand => {
   return {
     command: "/generate-rules",
@@ -21,49 +59,22 @@ export const generateRulesCommand = ({
         return;
       }
 
-      terminal.lineBreak(); // Add line break before output
+      terminal.lineBreak();
       terminal.info("Analyzing conversation to generate rules...");
       try {
         const newRules = await analyzeConversation({
           modelManager,
-          messages: messageHistory.get(), // Pass current history
+          messages: messageHistory.get(),
           tokenTracker,
-          terminal, // Pass terminal for potential logging within analyzer if needed
+          terminal,
         });
 
-        if (newRules && newRules.length > 0) {
-          terminal.info("Generated potential rules:");
-          terminal.lineBreak();
-
-          const rulesToKeep = await checkbox({
-            message: "Select the rules you want to keep:",
-            choices: newRules.map((rule) => ({ name: rule, value: rule })),
-          });
-
-          if (rulesToKeep.length > 0) {
-            terminal.info("Saving selected rules...");
-            const existingRules = await config.readProjectLearnedRulesFile();
-            const rulesToAdd = rulesToKeep.join("\n");
-            const updatedProjectRules =
-              existingRules.endsWith("\n") || existingRules.length === 0
-                ? `${existingRules}${rulesToAdd}`
-                : `${existingRules}\n${rulesToAdd}`;
-
-            await config.writeProjectLearnedRulesFile(updatedProjectRules);
-            terminal.success("Selected rules saved to project learned rules.");
-            terminal.lineBreak();
-            terminal.display(rulesToAdd); // Display only the saved rules
-          } else {
-            terminal.warn("No rules selected to save.");
-          }
-        } else {
-          terminal.warn("No new generalizable rules were identified."); // Use warn for this case
-        }
+        // Pass the config object available in CommandOptions scope
+        await _processAndSaveRules(newRules, terminal, config);
       } catch (error) {
-        terminal.error(
-          `Error generating rules: ${error instanceof Error ? error.message : error}`,
-        );
-        console.error("Error during rule generation:", error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        terminal.error(`Error generating rules: ${errorMessage}`);
+        logger.error(error, "Error during rule generation:");
       }
     },
   };
