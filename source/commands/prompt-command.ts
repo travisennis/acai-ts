@@ -45,44 +45,30 @@ export const promptCommand = ({
       return [...userPrompts, ...projectPrompts];
     },
     execute: async (args: string[]) => {
-      if (!args || args.length === 0) {
+      const promptArg = args?.[0];
+      if (!promptArg) {
         terminal.warn(
           "Please provide a prompt type and name. Usage: /prompt user:optimize or /prompt project:optimize",
         );
         return;
       }
 
-      const promptArg = args[0] ?? "";
-      const [typeStr, promptName] = promptArg.split(":");
+      const [typeStr, promptName, ...rest] = promptArg.split(":");
 
-      if (!(typeStr && promptName)) {
+      if (!(typeStr && promptName) || rest.length > 0) {
         terminal.warn(
-          "Invalid prompt format. Use: /prompt user:name or /prompt project:name",
+          "Invalid prompt format. Use: /prompt user:name or /prompt project:name (e.g., /prompt user:my-prompt)",
         );
         return;
       }
 
-      let promptPath = "";
       const type = typeStr.toLowerCase();
 
       try {
-        if (type === "project") {
-          // Project prompts are stored in the project's .acai directory
-          promptPath = path.join(
-            config.project.ensurePath("prompts"),
-            `${promptName}.md`,
-          );
-        } else if (type === "user") {
-          // User prompts are stored in the global ~/.acai directory
-          promptPath = path.join(
-            config.app.ensurePath("prompts"),
-            `${promptName}.md`,
-          );
-        } else {
-          terminal.warn(
-            `Unknown prompt type: ${type}. Use 'user' or 'project'`,
-          );
-          return;
+        const promptPath = getPromptPath(type, promptName, config, terminal);
+
+        if (!promptPath) {
+          return; // Error already logged by getPromptPath
         }
 
         let promptContent: string;
@@ -112,3 +98,19 @@ export const promptCommand = ({
     },
   };
 };
+
+function getPromptPath(
+  type: string,
+  promptName: string,
+  config: CommandOptions["config"],
+  terminal: CommandOptions["terminal"],
+): string | null {
+  if (type === "project") {
+    return path.join(config.project.ensurePath("prompts"), `${promptName}.md`);
+  }
+  if (type === "user") {
+    return path.join(config.app.ensurePath("prompts"), `${promptName}.md`);
+  }
+  terminal.warn(`Unknown prompt type: ${type}. Use 'user' or 'project'`);
+  return null;
+}
