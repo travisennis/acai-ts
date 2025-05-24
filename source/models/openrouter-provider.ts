@@ -13,6 +13,8 @@ const openrouterModels = {
   "deepseek-v3": openRouterClient("deepseek/deepseek-chat"),
   "deepseek-r1": openRouterClient("deepseek/deepseek-r1"),
   "gemini-pro25": openRouterClient("google/gemini-2.5-pro-preview"),
+  sonnet4: openRouterClient("anthropic/claude-sonnet-4"),
+  opus4: openRouterClient("anthropic/claude-opus-4"),
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -69,5 +71,31 @@ export const openrouterModelRegistry: {
     costPerInputToken: 0,
     costPerOutputToken: 0,
     category: "powerful",
+  },
+  "openrouter:opus4": {
+    id: "openrouter:opus4",
+    provider: "openrouter",
+    contextWindow: 200000,
+    maxOutputTokens: 64000,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0,
+    costPerOutputToken: 0,
+    category: "powerful",
+  },
+  "openrouter:sonnet4": {
+    id: "openrouter:sonnet4",
+    provider: "openrouter",
+    contextWindow: 200000,
+    maxOutputTokens: 64000,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0,
+    costPerOutputToken: 0,
+    category: "balanced",
   },
 };
