@@ -24,7 +24,7 @@ import type { Terminal } from "./terminal/index.ts";
 import { isMarkdown } from "./terminal/markdown-utils.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import type { TokenCounter } from "./token-utils.ts";
-import { getDiffStat } from "./tools/git.ts";
+import { getDiffStat, inGitDirectory } from "./tools/git.ts"; // Modified import
 import { initTools } from "./tools/index.ts";
 import type { Message } from "./tools/types.ts";
 
@@ -211,12 +211,15 @@ export class Repl {
             // Create a more visual representation of steps/tool usage
             this.displayToolUse(result, terminal);
 
-            const stats = await getDiffStat();
-            terminal.writeln(
-              `${chalk.dim("Files changed:")} ${chalk.yellow(stats.filesChanged)} ` +
-                `${chalk.green(`+${stats.insertions}`)} ` + // Insertions first (green)
-                `${chalk.red(`-${stats.deletions}`)}`, // Deletions last (red)
-            );
+            if (await inGitDirectory()) {
+              // Added check
+              const stats = await getDiffStat();
+              terminal.writeln(
+                `${chalk.dim("Files changed:")} ${chalk.yellow(stats.filesChanged)} ` +
+                  `${chalk.green(`+${stats.insertions}`)} ` + // Insertions first (green)
+                  `${chalk.red(`-${stats.deletions}`)}`, // Deletions last (red)
+              );
+            }
 
             const outgoingTokens = isNumber(result.usage.promptTokens)
               ? result.usage.promptTokens
