@@ -11,7 +11,8 @@ const googleModels = {
   flash2lite: originalGoogle("gemini-2.0-flash-lite,"),
   flash2thinking: originalGoogle("gemini-2.0-flash-thinking-exp-01-21"),
   "pro25-free": originalGoogle("gemini-2.5-pro-exp-03-25"),
-  pro25: originalGoogle("gemini-2.5-pro-preview-05-06"),
+  "pro25-may": originalGoogle("gemini-2.5-pro-preview-05-06"),
+  pro25: originalGoogle("gemini-2.5-pro-preview-06-05"),
   flash25: originalGoogle("gemini-2.5-flash-preview-04-17"),
 } as const;
 
@@ -86,6 +87,19 @@ export const googleModelRegistry: Record<
   },
   "google:pro25": {
     id: "google:pro25",
+    provider: "google",
+    contextWindow: 1000000,
+    maxOutputTokens: 64000,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0,
+    costPerOutputToken: 0,
+    category: "powerful",
+  },
+  "google:pro25-may": {
+    id: "google:pro25-may",
     provider: "google",
     contextWindow: 1000000,
     maxOutputTokens: 64000,
