@@ -91,7 +91,10 @@ export const promptCommand = ({
           model: modelManager.getModelMetadata("repl"),
         });
 
-        promptManager.set(processedPrompt);
+        for (const context of processedPrompt.context) {
+          promptManager.addContext(context);
+        }
+        promptManager.set(processedPrompt.message);
       } catch (error) {
         terminal.error(`Error loading prompt: ${(error as Error).message}`);
       }

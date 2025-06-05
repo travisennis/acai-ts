@@ -1,11 +1,13 @@
 import { isString } from "@travisennis/stdlib/typeguards";
 import type { CoreUserMessage, TextPart } from "ai"; // Corrected import
-import { createUserMessage } from "../messages.ts";
+import { type UserMessageContentItem, createUserMessage } from "../messages.ts";
 import type { TokenCounter } from "../token-utils.ts";
+
+export type ContextItem = UserMessageContentItem;
 
 export class PromptManager {
   private prompt: string | undefined;
-  private context: string[];
+  private context: ContextItem[];
   private tokenCounter: TokenCounter;
 
   constructor(tokenCounter: TokenCounter) {
@@ -27,17 +29,17 @@ export class PromptManager {
   }
 
   getUserMessage(): CoreUserMessage {
-    // Added return type
-    const prompt = this.prompt;
-    if (isString(prompt) && prompt.trim().length > 0) {
+    const currentPrompt = this.prompt;
+    if (isString(currentPrompt) && currentPrompt.trim().length > 0) {
       let userMessage: CoreUserMessage;
       if (this.hasContext()) {
-        const context = this.getContext();
-        userMessage = createUserMessage(context, prompt);
-        this.clearAll(); // Clear context after using
+        // Pass context items and the prompt string to createUserMessage
+        userMessage = createUserMessage([...this.context], currentPrompt);
+        this.clearAll(); // Clear context and prompt after using
       } else {
-        userMessage = createUserMessage(prompt);
-        this.prompt = undefined;
+        // Pass an empty array for context items if no context
+        userMessage = createUserMessage([], currentPrompt);
+        this.prompt = undefined; // Clear only prompt if no context was used
       }
 
       return this._applyProviderOptionsToMessage(userMessage);
@@ -50,12 +52,7 @@ export class PromptManager {
   ): CoreUserMessage {
     if (Array.isArray(userMessage.content)) {
       for (const part of userMessage.content) {
-        if (
-          typeof part === "object" &&
-          part !== null &&
-          "type" in part &&
-          part.type === "text"
-        ) {
+        if (typeof part === "object" && part !== null && part.type === "text") {
           const textPart = part as TextPart & {
             providerOptions?: Record<string, unknown>;
           };
@@ -74,17 +71,12 @@ export class PromptManager {
     return isString(this.prompt) && this.prompt.trim().length > 0;
   }
 
-  // Renamed from addPendingContent to addContext
-  addContext(content: string): void {
-    this.context.push(content);
+  addContext(item: ContextItem): void {
+    this.context.push(item);
   }
 
   hasContext() {
     return this.context.length > 0;
-  }
-
-  getContext() {
-    return this.context.join("\n\n");
   }
 
   clearContext() {

@@ -58,7 +58,7 @@ export async function analyzeConversation({
   const learnedRules = await config.readCachedLearnedRulesFile();
   // Modified User Message within analyzeConversation
   messages.push(
-    createUserMessage(
+    createUserMessage([
       `Analyze this conversation based on the system instructions. Identify points where the user made significant corrections revealing general principles for agent improvement. Infer concise, broadly applicable rules (Always/Never) based *only* on these corrections.
 
 **Key Requirements:**
@@ -71,7 +71,7 @@ export async function analyzeConversation({
 <existing-rules>
 ${learnedRules}
 </existing-rules>`,
-    ),
+    ]),
   );
   const { text, usage } = await generateText({
     model: modelManager.getModel("conversation-analyzer"),

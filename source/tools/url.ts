@@ -25,7 +25,8 @@ export const createUrlTools = (options: {
             data: `Reading URL: ${url}`,
           });
           logger.info(`Initiating fetch for URL: ${url}`);
-          const urlContent = await readUrl(url, abortSignal);
+          const result = await readUrl(url, abortSignal);
+          const urlContent = result.data;
           const tokenCount = options.tokenCounter.count(urlContent);
           sendData?.({
             event: "tool-completion",
@@ -50,10 +51,31 @@ export const createUrlTools = (options: {
   };
 };
 
+export type ContentType =
+  | "text/plain"
+  | "text/html"
+  | "text/markdown"
+  | "application/json"
+  | "application/xml"
+  | "application/pdf"
+  | "image/png"
+  | "image/jpeg"
+  | "image/gif"
+  | "image/webp"
+  | "image/svg+xml"
+  | "audio/mpeg"
+  | "audio/wav"
+  | "video/mp4"
+  | "video/webm"
+  | "application/zip"
+  | "application/octet-stream";
+
+export type ReadUrlResult = { contentType: ContentType; data: string };
+
 export async function readUrl(
   url: string,
   abortSignal?: AbortSignal | undefined,
-): Promise<string> {
+): Promise<ReadUrlResult> {
   let initialResponse: Response;
   try {
     // Initial fetch to check content type and potentially use directly
@@ -73,7 +95,9 @@ export async function readUrl(
     throw new Error(`Error fetching initial data for ${url}: ${error}`);
   }
 
-  const contentType = initialResponse.headers.get("content-type") ?? "";
+  const contentType: ContentType =
+    (initialResponse.headers.get("content-type") as ContentType) ??
+    "text/plain";
   logger.debug(`Content-Type for ${url}: ${contentType}`);
 
   // If content type is HTML, try Jina first
@@ -103,7 +127,10 @@ export async function readUrl(
         logger.info(
           `Successfully fetched and processed HTML URL with Jina: ${url}`,
         );
-        return data;
+        return {
+          contentType,
+          data,
+        };
       }
       logger.warn(
         `Jina fetch failed for ${url} with status ${jinaResponse.status}: ${jinaResponse.statusText}. Falling back to direct fetch and clean.`,
@@ -130,7 +157,10 @@ export async function readUrl(
       logger.info(
         `Successfully cleaned HTML content for ${url} (length: ${processedText.length})`,
       );
-      return processedText;
+      return {
+        contentType,
+        data: processedText,
+      };
     } catch (cleanError) {
       logger.error(
         `Error cleaning HTML from fallback fetch for ${url}: ${cleanError}`,
@@ -145,18 +175,29 @@ export async function readUrl(
       `Fetched non-HTML content directly: ${url} (Content-Type: ${contentType})`,
     );
     try {
+      if (contentType.startsWith("image/")) {
+        const arrayBuffer = await initialResponse.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString("base64");
+        const base64Url = `data:${contentType};base64,${base64}`;
+        logger.debug(
+          `Returning base64 image data for ${url} (length: ${base64.length})`,
+        );
+        return {
+          contentType,
+          data: base64Url,
+        };
+      }
       const textContent = await initialResponse.text();
       logger.debug(
         `Returning raw text content for ${url} (length: ${textContent.length})`,
       );
-      return textContent;
+      return {
+        contentType,
+        data: textContent,
+      };
     } catch (textError) {
-      logger.error(
-        `Error reading text from non-HTML response for ${url}: ${textError}`,
-      );
-      throw new Error(
-        `Error reading text from non-HTML response for ${url}: ${textError}`,
-      );
+      logger.error(`Error reading response for ${url}: ${textError}`);
+      throw new Error(`Error reading response for ${url}: ${textError}`);
     }
   }
 }

@@ -7,22 +7,41 @@ import {
   type CoreMessage,
   type CoreToolMessage,
   type CoreUserMessage,
+  type ImagePart, // Added ImagePart
   type TextPart,
   generateText,
 } from "ai";
 import type { ModelManager } from "./models/manager.ts";
 import type { TokenTracker } from "./token-tracker.ts";
-export function createUserMessage(...content: string[]): CoreUserMessage {
+
+// Define a type for the items that can be passed in the first argument
+export type UserMessageContentItem = string | ImagePart;
+
+export function createUserMessage(
+  contentItems: UserMessageContentItem[],
+  prompt?: string,
+): CoreUserMessage {
+  const messageParts: (TextPart | ImagePart)[] = [];
+
+  // Process content items (images and pre-defined texts)
+  for (const item of contentItems) {
+    if (typeof item === "string") {
+      if (item.trim().length > 0) {
+        messageParts.push({ type: "text", text: item });
+      }
+    } else if (item.type === "image") {
+      messageParts.push(item);
+    }
+  }
+
+  // Add the main prompt text if provided
+  if (prompt && prompt.trim().length > 0) {
+    messageParts.push({ type: "text", text: prompt });
+  }
+
   return {
     role: "user",
-    content: content
-      .filter((c) => c?.trim().length > 0)
-      .map((c) => {
-        return {
-          type: "text",
-          text: c,
-        };
-      }),
+    content: messageParts,
   };
 }
 
@@ -130,7 +149,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
   appendUserMessage(msg: CoreUserMessage): void;
   appendUserMessage(msg: string | CoreUserMessage) {
     const now = new Date();
-    const msgObj = isString(msg) ? createUserMessage(msg) : msg;
+    const msgObj = isString(msg) ? createUserMessage([], msg) : msg;
     if (
       this.history.length === 0 &&
       msgObj.content &&
@@ -228,7 +247,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     if (additionalInstructions && additionalInstructions.trim().length > 0) {
       userPrompt += `\n\nAdditional Instructions: ${additionalInstructions}`;
     }
-    this.appendUserMessage(createUserMessage(userPrompt));
+    this.appendUserMessage(createUserMessage([], userPrompt));
     const { text, usage } = await generateText({
       model: this.modelManager.getModel(app),
       system:

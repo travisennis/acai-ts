@@ -135,7 +135,10 @@ export class Repl {
             baseDir: process.cwd(),
             model: modelConfig,
           });
-          promptManager.set(processedPrompt);
+          for (const context of processedPrompt.context) {
+            promptManager.addContext(context);
+          }
+          promptManager.set(processedPrompt.message);
         }
 
         terminal.lineBreak();
