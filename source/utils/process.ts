@@ -22,13 +22,15 @@ interface ExecuteOptions {
   maxBuffer?: number;
 }
 
-interface ExecuteResult {
+export interface ExecuteResult {
   /** Standard output from the command */
   stdout: string;
   /** Standard error from the command */
   stderr: string;
   /** Exit code (0 for success, non-zero for errors) */
   code: number;
+  /** The signal that terminated the process, if any */
+  signal?: NodeJS.Signals;
 }
 
 /**
@@ -94,6 +96,7 @@ export function executeCommand(
               stdout: preserveOutputOnError ? stdout : "",
               stderr: preserveOutputOnError ? stderr : "",
               code: errorCode,
+              signal: error.signal ?? undefined,
             };
 
             if (throwOnError) {

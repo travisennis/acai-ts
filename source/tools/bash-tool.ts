@@ -5,6 +5,7 @@ import { z } from "zod";
 import { config } from "../config.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import { executeCommand } from "../utils/process.ts";
+import type { ExecuteResult } from "../utils/process.ts";
 import type { SendData } from "./types.ts";
 
 // Whitelist of allowed commands
@@ -170,11 +171,22 @@ export const createBashTools = ({
         }
 
         try {
-          const result = format(await asyncExec(command, safeCwd, safeTimeout));
+          const result = await asyncExec(command, safeCwd, safeTimeout);
+          const formattedResult = format(result);
+
+          if (result.signal === "SIGTERM") {
+            const timeoutMessage = `Command timed out after ${safeTimeout}ms. This might be because the command is waiting for input.`;
+            sendData?.({
+              event: "tool-error",
+              id: toolCallId,
+              data: timeoutMessage,
+            });
+            return timeoutMessage;
+          }
 
           let tokenCount = 0;
           try {
-            tokenCount = tokenCounter.count(result);
+            tokenCount = tokenCounter.count(formattedResult);
           } catch (tokenError) {
             console.error("Error calculating token count:", tokenError);
             // Log or handle error, but don't block file return
@@ -185,7 +197,7 @@ export const createBashTools = ({
           const maxTokenMessage = `Output of commmand (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Please use adjust how you call the command to get back more specific results`;
 
           const finalResult =
-            tokenCount <= maxTokens ? result : maxTokenMessage;
+            tokenCount <= maxTokens ? formattedResult : maxTokenMessage;
 
           sendData?.({
             event: "tool-completion",
@@ -220,7 +232,7 @@ function asyncExec(
   command: string,
   cwd: string,
   timeout: number = DEFAULT_TIMEOUT,
-): Promise<{ stdout: string; stderr: string; code: number }> {
+): Promise<ExecuteResult> {
   try {
     const [cmd, ...args] = command.split(" ");
     if (isUndefined(cmd)) {
