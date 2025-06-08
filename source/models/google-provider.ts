@@ -90,7 +90,7 @@ export const googleModelRegistry: Record<
     provider: "google",
     contextWindow: 1000000,
     maxOutputTokens: 64000,
-    defaultTemperature: 0.5,
+    defaultTemperature: 0.7,
     promptFormat: "markdown",
     supportsReasoning: true,
     supportsToolCalling: true,
