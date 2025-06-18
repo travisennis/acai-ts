@@ -1,12 +1,12 @@
 import { isNumber, isRecord } from "@travisennis/stdlib/typeguards";
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import {
+  generateObject,
   NoSuchToolError,
   type StepResult,
+  streamText,
   type ToolCallRepairFunction,
   type ToolSet,
-  generateObject,
-  streamText,
 } from "ai";
 import chalk, { type ChalkInstance } from "chalk";
 import type z from "zod";
@@ -17,8 +17,8 @@ import { processPrompt } from "./mentions.ts";
 import type { MessageHistory } from "./messages.ts";
 import { AiConfig } from "./models/ai-config.ts";
 import type { ModelManager } from "./models/manager.js";
-import { systemPrompt } from "./prompts.ts";
 import type { PromptManager } from "./prompts/manager.ts";
+import { systemPrompt } from "./prompts.ts";
 import { ReplPrompt } from "./repl-prompt.ts";
 import type { Terminal } from "./terminal/index.ts";
 import { isMarkdown } from "./terminal/markdown-utils.ts";
@@ -192,7 +192,7 @@ export class Repl {
           maxRetries: 2,
           providerOptions: aiConfig.getProviderOptions(),
           tools,
-          // biome-ignore lint/style/useNamingConvention: <explanation>
+          // biome-ignore lint/style/useNamingConvention: third-party controlled
           experimental_repairToolCall: modelConfig.supportsToolCalling
             ? toolCallRepair(modelManager, terminal)
             : undefined,

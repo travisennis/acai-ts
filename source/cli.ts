@@ -1,17 +1,17 @@
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import {
-  NoSuchToolError,
-  type ToolCallRepairFunction,
   generateObject,
   generateText,
+  NoSuchToolError,
+  type ToolCallRepairFunction,
 } from "ai";
 import type z from "zod";
 import { logger } from "./logger.ts";
 import type { MessageHistory } from "./messages.ts";
 import { AiConfig } from "./models/ai-config.ts";
 import type { ModelManager } from "./models/manager.js";
-import { minSystemPrompt } from "./prompts.ts";
 import type { PromptManager } from "./prompts/manager.ts";
+import { minSystemPrompt } from "./prompts.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import type { TokenCounter } from "./token-utils.ts";
 import { initCliTools } from "./tools/index.ts";
@@ -96,7 +96,7 @@ export class Cli {
         maxRetries: 2,
         providerOptions: aiConfig.getProviderOptions(),
         tools,
-        // biome-ignore lint/style/useNamingConvention: <explanation>
+        // biome-ignore lint/style/useNamingConvention: third-party controlled
         experimental_activeTools: [
           "editFile",
           "undoEdit",
@@ -105,7 +105,7 @@ export class Cli {
           "deleteFile",
           "think",
         ],
-        // biome-ignore lint/style/useNamingConvention: <explanation>
+        // biome-ignore lint/style/useNamingConvention: third-party controlled
         experimental_repairToolCall: modelConfig.supportsToolCalling
           ? toolCallRepair(modelManager)
           : undefined,

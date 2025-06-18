@@ -1,6 +1,6 @@
 import { readdir } from "node:fs/promises";
 import { parse, sep } from "node:path";
-import { type Interface, createInterface } from "node:readline/promises";
+import { createInterface, type Interface } from "node:readline/promises";
 import { asyncTry } from "@travisennis/stdlib/try";
 import clipboardy from "clipboardy";
 import type { CommandManager } from "./commands/manager.ts";

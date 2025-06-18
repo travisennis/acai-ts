@@ -1,5 +1,5 @@
 import EventEmitter from "node:events";
-import { readFile, readdir, writeFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { isString } from "@travisennis/stdlib/typeguards";
 import {
@@ -7,9 +7,9 @@ import {
   type CoreMessage,
   type CoreToolMessage,
   type CoreUserMessage,
+  generateText,
   type ImagePart, // Added ImagePart
   type TextPart,
-  generateText,
 } from "ai";
 import type { ModelManager } from "./models/manager.ts";
 import type { TokenTracker } from "./token-tracker.ts";
@@ -382,7 +382,7 @@ export function normalizeMessagesForApi(
         // Otherwise, merge the current message with the last message
         result[result.indexOf(lastMessage)] = {
           ...lastMessage,
-          // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+          // biome-ignore lint/suspicious/noExplicitAny: can't figure out type
           content: [...lastMessage.content, ...message.content] as any, // #FIXME figure out what type this should be
         };
         continue;

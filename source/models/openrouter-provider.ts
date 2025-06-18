@@ -4,7 +4,7 @@ import { customProvider } from "ai";
 import type { ModelMetadata } from "./providers.ts";
 
 const openRouterClient = createOpenAI({
-  // biome-ignore lint/style/useNamingConvention: <explanation>
+  // biome-ignore lint/style/useNamingConvention: third-party controlled
   baseURL: "https://openrouter.ai/api/v1",
   apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
 });

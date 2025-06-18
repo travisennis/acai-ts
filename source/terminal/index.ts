@@ -496,6 +496,4 @@ export class Terminal {
 }
 
 // Re-export the types
-// biome-ignore lint/performance/noReExportAll: <explanation>
-// biome-ignore lint/performance/noBarrelFile: <explanation>
 export * from "./types.ts";

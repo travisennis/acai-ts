@@ -4,8 +4,8 @@ import { tool } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
 import type { TokenCounter } from "../token-utils.ts";
-import { executeCommand } from "../utils/process.ts";
 import type { ExecuteResult } from "../utils/process.ts";
+import { executeCommand } from "../utils/process.ts";
 import type { SendData } from "./types.ts";
 
 // Whitelist of allowed commands
@@ -224,7 +224,11 @@ export const createBashTools = ({
 function format({
   stdout,
   stderr,
-}: { stdout: string; stderr: string; code: number }) {
+}: {
+  stdout: string;
+  stderr: string;
+  code: number;
+}) {
   return `${stdout}\n${stderr}`;
 }
 

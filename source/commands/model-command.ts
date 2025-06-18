@@ -1,9 +1,9 @@
 import {
-  type ModelName,
-  type ModelProvider,
   formatModelInfo,
   getModelsByCategory,
   isValidModel,
+  type ModelName,
+  type ModelProvider,
   modelRegistry,
   models,
   providers,

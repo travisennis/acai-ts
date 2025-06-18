@@ -42,7 +42,10 @@ const writeAuditRecord = async (
 export const auditMessage = ({
   filePath = "messages",
   app = "default",
-}: { filePath: string; app: string }) => {
+}: {
+  filePath: string;
+  app: string;
+}) => {
   const middleware: LanguageModelV1Middleware = {
     wrapGenerate: async ({ doGenerate, params, model }) => {
       const result = await doGenerate();

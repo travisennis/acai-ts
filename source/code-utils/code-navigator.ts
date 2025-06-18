@@ -4,7 +4,7 @@ import { globby } from "globby";
 import type Parser from "tree-sitter";
 import type { Query, SyntaxNode } from "tree-sitter";
 import type { TreeSitterManager } from "./tree-sitter-manager.ts";
-import { type SupportedLanguage, extensionToLanguage } from "./types.ts";
+import { extensionToLanguage, type SupportedLanguage } from "./types.ts";
 
 export type SymbolType =
   | "import"

@@ -6,7 +6,10 @@ import { createTextDocuments, initConnection } from "./server.ts";
 export function initializeLsp({
   modelManager,
   tokenCounter,
-}: { modelManager: ModelManager; tokenCounter: TokenCounter }) {
+}: {
+  modelManager: ModelManager;
+  tokenCounter: TokenCounter;
+}) {
   try {
     const documents = createTextDocuments();
 

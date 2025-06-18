@@ -2,7 +2,7 @@ import { EOL } from "node:os";
 import chalk from "chalk";
 import { highlight, supportsLanguage } from "cli-highlight";
 import Table from "cli-table3";
-import { type Token, marked } from "marked";
+import { marked, type Token } from "marked";
 import { logger } from "../logger.ts";
 import { getListNumber } from "./markdown-utils.ts";
 

@@ -5,9 +5,9 @@ import {
   createRateLimitMiddleware,
 } from "../middleware/index.ts";
 import {
+  languageModel,
   type ModelMetadata,
   type ModelName,
-  languageModel,
   modelRegistry,
 } from "./providers.ts";
 

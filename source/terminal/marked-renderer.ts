@@ -30,7 +30,7 @@ function identity<T = string>(str: T): T {
   return str;
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: need any type to work with marked
 type AnyType = any;
 
 function compose<T extends AnyType[], R>(

@@ -1,12 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { isNullOrUndefined } from "@travisennis/stdlib/typeguards";
-import { Output, generateText } from "ai";
-import { type Range, TextDocument } from "vscode-languageserver-textdocument";
+import { generateText, Output } from "ai";
 import {
   type CodeAction,
   CodeActionKind,
   type CodeActionParams,
+  createConnection,
   type Diagnostic,
   type InitializeParams,
   type InitializeResult,
@@ -14,8 +14,8 @@ import {
   TextDocumentSyncKind,
   TextDocuments,
   TextEdit,
-  createConnection,
 } from "vscode-languageserver/node.js";
+import { type Range, TextDocument } from "vscode-languageserver-textdocument";
 import { z } from "zod";
 import { CodeMap } from "../code-utils/code-map.ts";
 import { dedent } from "../dedent.ts";
@@ -433,7 +433,7 @@ async function editAction(
       model: modelManager.getModel("lsp-code-action"),
       system: getEditSystemPrompt(),
       temperature: 0.3,
-      // biome-ignore lint/style/useNamingConvention: <explanation>
+      // biome-ignore lint/style/useNamingConvention: third-party controlled
       experimental_output: Output.object({
         schema: z.object({
           edits: z

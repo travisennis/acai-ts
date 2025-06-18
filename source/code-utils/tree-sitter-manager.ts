@@ -4,7 +4,7 @@ import TypeScript from "tree-sitter-typescript";
 import { logger } from "../logger.ts";
 import { tags as javaTags } from "./queries/java-tags.scm.ts";
 import { tags as typescriptTags } from "./queries/typescript-tags.scm.ts";
-import { type SupportedExtension, isSupportedExtension } from "./types.ts";
+import { isSupportedExtension, type SupportedExtension } from "./types.ts";
 
 export class TreeSitterManager {
   private parsers: Map<SupportedExtension, Parser> = new Map();

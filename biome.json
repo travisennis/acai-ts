@@ -1,21 +1,31 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
   "files": {
-    "ignore": ["dist/**/*.*", "coverage/**/*.*"],
+    "includes": ["source/**/*.*", "test/**/*.*"],
     "maxSize": 1048576
   },
-  "organizeImports": {
-    "enabled": true
-  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
     "rules": {
-      "complexity": { "all": true, "useLiteralKeys": "off" },
-      "correctness": { "all": true, "noNodejsModules": "off" },
-      "performance": { "all": true },
-      "security": { "all": true },
-      "suspicious": { "all": true, "noConsole": "off" },
-      "style": { "all": true },
+      "complexity": { "useLiteralKeys": "off" },
+      "correctness": { "noNodejsModules": "off" },
+      "performance": {},
+      "security": {},
+      "suspicious": { "noConsole": "off" },
+      "style": {
+        "noParameterAssign": "error",
+        "useAsConstAssertion": "error",
+        "useDefaultParameterLast": "error",
+        "useEnumInitializers": "error",
+        "useSelfClosingElements": "error",
+        "useSingleVarDeclarator": "error",
+        "noUnusedTemplateLiteral": "error",
+        "useNumberNamespace": "error",
+        "noInferrableTypes": "error",
+        "noUselessElse": "error",
+        "useNamingConvention": "error"
+      },
       "nursery": { "recommended": true }
     }
   },
@@ -41,6 +51,11 @@
     },
     "parser": {
       "unsafeParameterDecoratorsEnabled": true
+    }
+  },
+  "html": {
+    "formatter": {
+      "enabled": true
     }
   }
 }

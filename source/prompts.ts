@@ -94,7 +94,7 @@ function toolUsage() {
 - Example formats: 
   - \`feat(auth): add login validation\`
   - \`fix(parser): handle edge case with empty input\`
-  - The scope (the part in parentheses) MUST be a noun describing a section of the codebase and contain only letters, numbers, underscores (\_), or hyphens (-). Examples: \`(auth)\`, \`(ui-components)\`, \`(build_system)\`.
+  - The scope (the part in parentheses) MUST be a noun describing a section of the codebase and contain only letters, numbers, underscores (_), or hyphens (-). Examples: \`(auth)\`, \`(ui-components)\`, \`(build_system)\`.
 - Prefer the \`gitCommit\` tool over using \`bashTool(git commit)\`
 - All other git operations can be done via the \`bashTool\`
 - Check and report uncommitted changes before suggesting commits

@@ -20,7 +20,7 @@
     "prepare": "npm run compile",
     "test": "c8 node --no-warnings --test test/**/*.test.ts",
     "pretest": "npm run compile",
-    "format": "biome check --formatter-enabled=true --linter-enabled=false --organize-imports-enabled=true --write ./source && biome format --write",
+    "format": "biome check --formatter-enabled=true --linter-enabled=false --write ./source && biome format --write",
     "dev": "node --no-warnings --env-file=.env ./source/index.ts",
     "oxlint": "npx oxlint@latest --ignore-path .gitignore --deny correctness --deny suspicous --deny pedantic --deny style --node-plugin",
     "knip": "npx knip",
@@ -74,7 +74,7 @@
   },
   "devDependencies": {
     "@ai-sdk/provider": "^1.1.3",
-    "@biomejs/biome": "1.9.4",
+    "@biomejs/biome": "2.0.0",
     "@types/marked-terminal": "^6.1.1",
     "@types/node": "^24.0.3",
     "@types/node-notifier": "^8.0.5",

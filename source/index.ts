@@ -9,7 +9,7 @@ import { config } from "./config.ts";
 import { logger } from "./logger.ts";
 import { MessageHistory } from "./messages.ts";
 import { ModelManager } from "./models/manager.ts";
-import { type ModelName, isSupportedModel } from "./models/providers.ts";
+import { isSupportedModel, type ModelName } from "./models/providers.ts";
 import { PromptManager } from "./prompts/manager.ts";
 import { Repl } from "./repl.ts";
 import { initTerminal } from "./terminal/index.ts";

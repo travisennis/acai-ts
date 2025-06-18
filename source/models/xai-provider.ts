@@ -5,7 +5,7 @@ import type { ModelMetadata } from "./providers.ts";
 
 const xaiClient = createOpenAI({
   apiKey: process.env["X_AI_API_KEY"] ?? process.env["XAI_API_KEY"],
-  // biome-ignore lint/style/useNamingConvention: <explanation>
+  // biome-ignore lint/style/useNamingConvention: third-party controlled
   baseURL: "https://api.x.ai/v1",
 });
 

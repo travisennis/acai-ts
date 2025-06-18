@@ -1,4 +1,4 @@
-import { readFile, readdir } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path, { basename } from "node:path";
 import { processPrompt } from "../mentions.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
