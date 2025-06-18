@@ -44,7 +44,7 @@
     "cli-table3": "^0.6.5",
     "clipboardy": "^4.0.0",
     "diff": "^8.0.2",
-    "exa-js": "^1.8.12",
+    "exa-js": "^1.8.16",
     "globby": "^14.1.0",
     "ignore": "^7.0.5",
     "log-update": "^6.1.0",
@@ -70,7 +70,7 @@
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.12",
     "wrap-ansi": "^9.0.0",
-    "zod": "^3.25.65"
+    "zod": "^3.25.67"
   },
   "devDependencies": {
     "@ai-sdk/provider": "^1.1.3",
