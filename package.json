@@ -34,7 +34,7 @@
     "@ai-sdk/openai": "^1.3.22",
     "@crosscopy/clipboard": "^0.2.8",
     "@inquirer/prompts": "^7.5.3",
-    "@travisennis/stdlib": "^0.0.12",
+    "@travisennis/stdlib": "^0.0.13",
     "ai": "^4.3.16",
     "ansi-escapes": "^7.0.0",
     "ansi-regex": "^6.1.0",
@@ -74,7 +74,7 @@
   },
   "devDependencies": {
     "@ai-sdk/provider": "^1.1.3",
-    "@biomejs/biome": "2.0.0",
+    "@biomejs/biome": "2.0.2",
     "@types/marked-terminal": "^6.1.1",
     "@types/node": "^24.0.3",
     "@types/node-notifier": "^8.0.5",
