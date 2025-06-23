@@ -11,5 +11,6 @@
   },
   "tools": {
     "maxTokens": 30000
-  }
+  },
+  "notify": true
 }
