@@ -44,7 +44,7 @@
     "cli-table3": "^0.6.5",
     "clipboardy": "^4.0.0",
     "diff": "^8.0.2",
-    "exa-js": "^1.8.16",
+    "exa-js": "^1.8.17",
     "globby": "^14.1.0",
     "ignore": "^7.0.5",
     "log-update": "^6.1.0",
@@ -76,7 +76,7 @@
     "@ai-sdk/provider": "^1.1.3",
     "@biomejs/biome": "2.0.5",
     "@types/marked-terminal": "^6.1.1",
-    "@types/node": "^24.0.3",
+    "@types/node": "^24.0.4",
     "@types/node-notifier": "^8.0.5",
     "c8": "^10.1.3",
     "typescript": "^5.8.3"
