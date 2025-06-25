@@ -16,7 +16,7 @@ export const rulesCommand = ({ terminal }: CommandOptions): ReplCommand => {
       try {
         switch (subCommand) {
           case "view": {
-            const currentContent = await config.readRulesFile();
+            const currentContent = await config.readAgentsFile();
             if (currentContent) {
               terminal.writeln("--- Current Rules ---");
               terminal.writeln(currentContent);
@@ -36,16 +36,16 @@ export const rulesCommand = ({ terminal }: CommandOptions): ReplCommand => {
               terminal.writeln("Usage: /memory add <new memory text>");
               return;
             }
-            const currentContent = await config.readRulesFile();
+            const currentContent = await config.readAgentsFile();
             const updatedContent = currentContent
               ? `${currentContent.trim()}\n- ${newMemory}` // Ensure space after dash
               : `- ${newMemory}`; // Start with dash if new file
-            await config.writeRulesFile(updatedContent);
+            await config.writeAgentsFile(updatedContent);
             break;
           }
 
           case "edit": {
-            const currentContent = await config.readRulesFile();
+            const currentContent = await config.readAgentsFile();
             const updatedContent = await editor({
               message: "Edit rules:",
               postfix: "md",
@@ -54,7 +54,7 @@ export const rulesCommand = ({ terminal }: CommandOptions): ReplCommand => {
             // Check if the user cancelled the edit (editor returns the original content)
             // Or if the content is actually different
             if (updatedContent !== currentContent) {
-              await config.writeRulesFile(updatedContent);
+              await config.writeAgentsFile(updatedContent);
             } else {
               terminal.writeln("Edit cancelled or no changes made.");
             }

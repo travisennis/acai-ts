@@ -46,8 +46,8 @@ export class ConfigManager {
     }
   }
 
-  async readRulesFile(): Promise<string> {
-    const rulesPath = path.join(this.project.getPath(), "rules.md");
+  async readAgentsFile(): Promise<string> {
+    const rulesPath = path.join(process.cwd(), "AGENTS.md");
     try {
       return await fs.readFile(rulesPath, "utf8");
     } catch (error) {
@@ -58,8 +58,8 @@ export class ConfigManager {
     }
   }
 
-  async writeRulesFile(rules: string): Promise<void> {
-    const rulesPath = path.join(this.project.ensurePath(), "rules.md");
+  async writeAgentsFile(rules: string): Promise<void> {
+    const rulesPath = path.join(process.cwd(), "AGENTS.md");
     try {
       return await fs.writeFile(rulesPath, rules, "utf8");
     } catch (error) {

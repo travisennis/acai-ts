@@ -59,7 +59,7 @@ acai-lsp
 - `/files [pattern]` - Select files interactively or by pattern, adding content to prompt
 - `/commit [args]` - Generate Conventional Commits for current changes (accepts args for prompt customization)
 - `/review [PR#|local]` - Review a GitHub pull request or local changes
-- `/init` - Generate or improve `.acai/rules.md`
+- `/init` - Generate or improve `AGENTS.md`
 - `/editPrompt` - Edit the current prompt
 - `/paste` - Add clipboard contents to the next prompt
 - `/selections [use|edit|clear]` - Manage saved code selections
@@ -94,7 +94,7 @@ Acai supports project-specific configuration through a `.acai/acai.json` file in
 }
 ```
 
-You can also add project-specific rules in a `.acai/rules.md` file.
+You can also add project-specific rules in a `AGENTS.md` file.
 
 Project prompts can be stored in `.acai/prompts/` and context selections in `.acai/context/`.
 

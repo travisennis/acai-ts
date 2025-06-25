@@ -12,20 +12,20 @@ export const initCommand = ({
 }: CommandOptions): ReplCommand => {
   return {
     command: "/init",
-    description: "Creates the .acai/rules.md file.",
+    description: "Creates the AGENTS.md file.",
     result: "continue" as const,
     getSubCommands: () => Promise.resolve([]),
     execute: async () => {
       const result = streamText({
         model: modelManager.getModel("init-project"),
         temperature: 0.5,
-        prompt: `Please analyze this codebase and create a .acai/rules.md file containing:
+        prompt: `Please analyze this codebase and create a AGENTS.md file containing:
 1. Build/lint/test commands - especially for running a single test
 2. Code style guidelines including imports, formatting, types, naming conventions, error handling, etc.
 
 The file you create will be given to agentic coding agents (such as yourself) that operate in this repository. Make it about 20 lines long.
 
-If there's already a .acai/rules.md, improve it.
+If there's already a AGENTS.md, improve it.
 If there are Cursor rules (in .cursor/rules/ or .cursorrules) or Copilot rules (in .github/copilot-instructions.md), make sure to include them.
 
 Your current working directory is ${process.cwd()}
