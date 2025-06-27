@@ -8,7 +8,7 @@ function main() {
   const modelManager = new ModelManager({
     stateDir: config.app.ensurePath("audit"),
   });
-  modelManager.setModel("lsp-code-action", "openai:gpt-4-1");
+  modelManager.setModel("lsp-code-action", "google:pro25");
 
   const tokenCounter = new TokenCounter();
 

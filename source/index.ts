@@ -136,7 +136,7 @@ async function main() {
   modelManager.setModel("conversation-summarizer", "google:flash25");
   modelManager.setModel("file-retriever", "google:flash25");
   modelManager.setModel("tool-repair", "openai:gpt-4o-structured");
-  modelManager.setModel("conversation-analyzer", "google:flash2");
+  modelManager.setModel("conversation-analyzer", "google:flash25");
   modelManager.setModel("lsp-code-action", "google:pro25");
   modelManager.setModel("init-project", chosenModel);
   modelManager.setModel("task-agent", "google:flash25");
