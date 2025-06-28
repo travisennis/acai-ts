@@ -1,7 +1,4 @@
-import {
-  mkdir,
-  writeFile,
-} from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, normalize, resolve, sep } from "node:path";
 import { tool } from "ai";
 import { z } from "zod";

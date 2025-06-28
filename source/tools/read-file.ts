@@ -4,12 +4,9 @@ import { tool } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
 import type { TokenCounter } from "../token-utils.ts";
-import {
-  joinWorkingDir,
-  validatePath,
-} from "./filesystem-utils.ts";
-import { fileEncodingSchema } from "./types.ts";
+import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
+import { fileEncodingSchema } from "./types.ts";
 
 export const createReadFileTool = async ({
   workingDir,
