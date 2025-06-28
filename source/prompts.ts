@@ -1,7 +1,7 @@
 import { platform } from "node:os";
 import { config } from "./config.ts";
 import { dedent } from "./dedent.ts";
-import { inGitDirectory } from "./tools/git.ts";
+import { inGitDirectory } from "./tools/git-commit.ts";
 
 function intro() {
   return "You are acai, an AI-powered CLI assistant that accelerates software engineering workflows through intelligent command-line assistance.";
@@ -68,7 +68,7 @@ function toolUsage() {
 2. Use \`readFile\` to examine specific files
 3. Use \`grepFiles\` for finding code patterns or usages
 4. Use \`bashTool\` for runtime information when appropriate
-5. Use \`fetch\` to retrieve the contents of of text-based files (like code, documentation, or configuration) directly from a URL. Dos not support binary files.
+5. Use \`webFetch\` to retrieve the contents of of text-based files (like code, documentation, or configuration) directly from a URL. Dos not support binary files.
 6. Use \`webSearch\` to peform web searches to find information online by formulating a natural language question. Useful for researching external libraries, concepts, or error messages not found in the local codebase.
 7. Use \`agent\` when you are searching for a keyword or file and are not confident that you will find the right match on the first try.
 8. NEVER guess or make up answers about file content or codebase structure - use tools to gather accurate information.
