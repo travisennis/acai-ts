@@ -1,7 +1,7 @@
 import { platform } from "node:os";
 import { config } from "./config.ts";
 import { dedent } from "./dedent.ts";
-import { inGitDirectory } from "./tools/git-commit.ts";
+import { inGitDirectory } from "./tools/git-utils.ts";
 
 function intro() {
   return "You are acai, an AI-powered CLI assistant that accelerates software engineering workflows through intelligent command-line assistance.";

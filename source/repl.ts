@@ -24,7 +24,7 @@ import type { Terminal } from "./terminal/index.ts";
 import { isMarkdown } from "./terminal/markdown-utils.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import type { TokenCounter } from "./token-utils.ts";
-import { getDiffStat, inGitDirectory } from "./tools/git-commit.ts"; // Modified import
+import { getDiffStat, inGitDirectory } from "./tools/git-utils.ts"; // Modified import
 import { initAgents, initTools } from "./tools/index.ts";
 import type { Message } from "./tools/types.ts";
 
