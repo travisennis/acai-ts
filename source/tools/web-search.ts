@@ -4,7 +4,7 @@ import { z } from "zod";
 import type { TokenCounter } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
 
-export const createWebSearchTools = ({
+export const createWebSearchTool = ({
   sendData,
   tokenCounter,
 }: {

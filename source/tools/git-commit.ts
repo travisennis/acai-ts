@@ -59,8 +59,10 @@ function sanitizePath(workingDir: string, userPath: string): string {
   return resolvedPath;
 }
 
-
-export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
+export const createGitCommitTool = async ({
+  workingDir,
+  sendData,
+}: GitOptions) => {
   return {
     gitCommit: tool({
       description:
@@ -165,5 +167,3 @@ export const createGitTools = async ({ workingDir, sendData }: GitOptions) => {
     }),
   };
 };
-
-

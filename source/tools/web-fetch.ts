@@ -5,7 +5,7 @@ import { logger } from "../logger.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
 
-export const createUrlTools = (options: {
+export const createWebFetchTool = (options: {
   sendData?: SendData | undefined;
   tokenCounter: TokenCounter;
 }) => {

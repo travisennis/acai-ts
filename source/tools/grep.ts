@@ -3,7 +3,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import type { SendData } from "./types.ts";
 
-export const createGrepTools = (
+export const createGrepTool = (
   options: { sendData?: SendData | undefined } = {},
 ) => {
   const { sendData } = options;

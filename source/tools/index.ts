@@ -11,19 +11,19 @@ import { createCodeInterpreterTool } from "./code-interpreter.ts";
 import { createDeleteFileTool } from "./delete-file.ts";
 import { createDirectoryTreeTool } from "./directory-tree.ts";
 import { createEditFileTool } from "./edit-file.ts";
+import { createGitCommitTool } from "./git-commit.ts";
+import { createGrepTool } from "./grep.ts";
+import { createMemoryReadTool } from "./memory-read.ts";
+import { createMemoryWriteTool } from "./memory-write.ts";
 import { createMoveFileTool } from "./move-file.ts";
 import { createReadFileTool } from "./read-file.ts";
 import { createReadMultipleFilesTool } from "./read-multiple-files.ts";
 import { createSaveFileTool } from "./save-file.ts";
-import { createUndoEditTool } from "./undo-edit.ts";
-import { createGitTools } from "./git-commit.ts";
-import { createGrepTools } from "./grep.ts";
-import { createMemoryReadTool } from "./memory-read.ts";
-import { createMemoryWriteTool } from "./memory-write.ts";
-import { createThinkTools } from "./think.ts";
+import { createThinkTool } from "./think.ts";
 import type { Message } from "./types.ts";
-import { createUrlTools } from "./web-fetch.ts";
-import { createWebSearchTools } from "./web-search.ts";
+import { createUndoEditTool } from "./undo-edit.ts";
+import { createWebFetchTool } from "./web-fetch.ts";
+import { createWebSearchTool } from "./web-search.ts";
 
 const sendDataHandler = (events: Map<string, Message[]>) => {
   const msgStore: Map<string, Message[]> = events;
@@ -90,7 +90,7 @@ export async function initTools({
     sendData: sendDataFn,
   });
 
-  const gitTools = await createGitTools({
+  const gitCommitTool = await createGitCommitTool({
     workingDir: process.cwd(),
     sendData: sendDataFn,
   });
@@ -99,20 +99,20 @@ export async function initTools({
     sendData: sendDataFn,
   });
 
-  const grepTool = createGrepTools({
+  const grepTool = createGrepTool({
     sendData: sendDataFn,
   });
 
-  const thinkTool = createThinkTools({
+  const thinkTool = createThinkTool({
     sendData: sendDataFn,
   });
 
-  const urlTools = createUrlTools({
+  const webFetchTool = createWebFetchTool({
     sendData: sendDataFn,
     tokenCounter,
   });
 
-  const webSearchTools = createWebSearchTools({
+  const webSearchTool = createWebSearchTool({
     sendData: sendDataFn,
     tokenCounter,
   });
@@ -159,14 +159,14 @@ export async function initTools({
     ...moveFileTool,
     ...directoryTreeTool,
     ...deleteFileTool,
-    ...gitTools,
+    ...gitCommitTool,
     ...codeInterpreterTool,
     ...grepTool,
     ...thinkTool,
-    ...urlTools,
+    ...webFetchTool,
     ...askUserTool,
     ...bashTools,
-    ...webSearchTools,
+    ...webSearchTool,
     ...memoryReadTool,
     ...memoryWriteTool,
   } as const;
@@ -222,7 +222,7 @@ export async function initCliTools({
     sendData: undefined,
   });
 
-  const gitTools = await createGitTools({
+  const gitCommitTool = await createGitCommitTool({
     workingDir: process.cwd(),
     sendData: undefined,
   });
@@ -231,20 +231,20 @@ export async function initCliTools({
     sendData: undefined,
   });
 
-  const grepTool = createGrepTools({
+  const grepTool = createGrepTool({
     sendData: undefined,
   });
 
-  const thinkTool = createThinkTools({
+  const thinkTool = createThinkTool({
     sendData: undefined,
   });
 
-  const urlTools = createUrlTools({
+  const webFetchTool = createWebFetchTool({
     sendData: undefined,
     tokenCounter,
   });
 
-  const webSearchTools = createWebSearchTools({
+  const webSearchTool = createWebSearchTool({
     sendData: undefined,
     tokenCounter,
   });
@@ -272,13 +272,13 @@ export async function initCliTools({
     ...moveFileTool,
     ...directoryTreeTool,
     ...deleteFileTool,
-    ...gitTools,
+    ...gitCommitTool,
     ...codeInterpreterTool,
     ...grepTool,
     ...thinkTool,
-    ...urlTools,
+    ...webFetchTool,
     ...bashTools,
-    ...webSearchTools,
+    ...webSearchTool,
     ...memoryReadTool,
     ...memoryWriteTool,
   } as const;
