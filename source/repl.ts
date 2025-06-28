@@ -25,7 +25,7 @@ import { isMarkdown } from "./terminal/markdown-utils.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import type { TokenCounter } from "./token-utils.ts";
 import { getDiffStat, inGitDirectory } from "./tools/git.ts"; // Modified import
-import { initTools } from "./tools/index.ts";
+import { initAgents, initTools } from "./tools/index.ts";
 import type { Message } from "./tools/types.ts";
 
 interface ReplOptions {
@@ -40,7 +40,8 @@ interface ReplOptions {
   toolEvents: Map<string, Message[]>;
 }
 
-type CompleteToolSet = AsyncReturnType<typeof initTools>;
+type CompleteToolSet = AsyncReturnType<typeof initTools> &
+  AsyncReturnType<typeof initAgents>;
 
 type OnFinishResult<Tools extends ToolSet = CompleteToolSet> = Omit<
   StepResult<Tools>,
@@ -170,7 +171,20 @@ export class Repl {
       const maxTokens = aiConfig.getMaxTokens();
 
       const tools = modelConfig.supportsToolCalling
-        ? await initTools({ terminal, tokenCounter, events: toolEvents })
+        ? {
+            ...(await initTools({
+              terminal,
+              tokenCounter,
+              events: toolEvents,
+            })),
+            ...(await initAgents({
+              terminal,
+              modelManager,
+              tokenTracker,
+              tokenCounter,
+              events: toolEvents,
+            })),
+          }
         : undefined;
 
       try {

@@ -1,8 +1,11 @@
 import { input } from "@inquirer/prompts";
 import { tool } from "ai";
 import { z } from "zod";
+import type { ModelManager } from "../models/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
+import type { TokenTracker } from "../token-tracker.ts";
 import type { TokenCounter } from "../token-utils.ts";
+import { createAgentTools } from "./agent.ts";
 import { createBashTools } from "./bash-tool.ts";
 import { createCodeInterpreterTool } from "./code-interpreter.ts";
 import { createFileSystemTools } from "./filesystem.ts";
@@ -175,6 +178,34 @@ export async function initCliTools({
     ...webSearchTools,
     ...memoryTools,
   } as const;
+
+  return tools;
+}
+
+export async function initAgents({
+  modelManager,
+  tokenTracker,
+  tokenCounter,
+  events,
+}: {
+  terminal: Terminal;
+  modelManager: ModelManager;
+  tokenTracker: TokenTracker;
+  tokenCounter: TokenCounter;
+  events: Map<string, Message[]>;
+}) {
+  const sendDataFn = sendDataHandler(events);
+
+  const agentTools = createAgentTools({
+    modelManager,
+    tokenTracker,
+    tokenCounter,
+    sendData: sendDataFn,
+  });
+
+  const tools = {
+    ...agentTools,
+  };
 
   return tools;
 }

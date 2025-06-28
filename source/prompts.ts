@@ -70,9 +70,10 @@ function toolUsage() {
 4. Use \`bashTool\` for runtime information when appropriate
 5. Use \`fetch\` to retrieve the contents of of text-based files (like code, documentation, or configuration) directly from a URL. Dos not support binary files.
 6. Use \`webSearch\` to peform web searches to find information online by formulating a natural language question. Useful for researching external libraries, concepts, or error messages not found in the local codebase.
-7. NEVER guess or make up answers about file content or codebase structure - use tools to gather accurate information.
-8. If the user includes filenames or file paths in their prompt, you MUST read the content of those files before creating your response.
-9. If the user includes URLs in their prompt, you MUST fetch the content of those URLs before creating your response.
+7. Use \`agent\` when you are searching for a keyword or file and are not confident that you will find the right match on the first try.
+8. NEVER guess or make up answers about file content or codebase structure - use tools to gather accurate information.
+9. If the user includes filenames or file paths in their prompt, you MUST read the content of those files before creating your response.
+10. If the user includes URLs in their prompt, you MUST fetch the content of those URLs before creating your response.
 
 ### Planning & Reflection
 - You **MUST** plan extensively before each tool call
