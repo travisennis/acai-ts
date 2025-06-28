@@ -6,15 +6,15 @@ import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../token-tracker.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import { createAgentTools } from "./agent.ts";
-import { createBashTools } from "./bash-tool.ts";
+import { createBashTools } from "./bash.ts";
 import { createCodeInterpreterTool } from "./code-interpreter.ts";
 import { createFileSystemTools } from "./filesystem.ts";
-import { createGitTools } from "./git.ts";
+import { createGitTools } from "./git-commit.ts";
 import { createGrepTools } from "./grep.ts";
 import { createMemoryTools } from "./memory.ts";
 import { createThinkTools } from "./think.ts";
 import type { Message } from "./types.ts";
-import { createUrlTools } from "./url.ts";
+import { createUrlTools } from "./web-fetch.ts";
 import { createWebSearchTools } from "./web-search.ts";
 
 const sendDataHandler = (events: Map<string, Message[]>) => {
