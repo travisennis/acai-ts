@@ -1,6 +1,6 @@
 import { platform } from "node:os";
 import { streamText } from "ai";
-import { inGitDirectory } from "../tools/git.ts";
+import { inGitDirectory } from "../tools/git-commit.ts";
 import { initTools } from "../tools/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 

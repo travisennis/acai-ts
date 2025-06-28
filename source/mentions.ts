@@ -4,7 +4,7 @@ import { isString } from "@travisennis/stdlib/typeguards";
 import { formatFile, formatUrl } from "./formatting.ts";
 import type { ModelMetadata } from "./models/providers.ts";
 import type { ContextItem } from "./prompts/manager.ts";
-import { type ReadUrlResult, readUrl } from "./tools/url.ts";
+import { type ReadUrlResult, readUrl } from "./tools/web-fetch.ts";
 
 interface CommandContext {
   model: ModelMetadata;
