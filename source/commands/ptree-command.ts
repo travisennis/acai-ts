@@ -1,4 +1,4 @@
-import { directoryTree } from "../tools/filesystem.ts";
+import { directoryTree } from "../tools/filesystem-utils.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const ptreeCommand = ({ terminal }: CommandOptions): ReplCommand => {

@@ -8,10 +8,18 @@ import type { TokenCounter } from "../token-utils.ts";
 import { createAgentTools } from "./agent.ts";
 import { createBashTools } from "./bash.ts";
 import { createCodeInterpreterTool } from "./code-interpreter.ts";
-import { createFileSystemTools } from "./filesystem.ts";
+import { createDeleteFileTool } from "./delete-file.ts";
+import { createDirectoryTreeTool } from "./directory-tree.ts";
+import { createEditFileTool } from "./edit-file.ts";
+import { createMoveFileTool } from "./move-file.ts";
+import { createReadFileTool } from "./read-file.ts";
+import { createReadMultipleFilesTool } from "./read-multiple-files.ts";
+import { createSaveFileTool } from "./save-file.ts";
+import { createUndoEditTool } from "./undo-edit.ts";
 import { createGitTools } from "./git-commit.ts";
 import { createGrepTools } from "./grep.ts";
-import { createMemoryTools } from "./memory.ts";
+import { createMemoryReadTool } from "./memory-read.ts";
+import { createMemoryWriteTool } from "./memory-write.ts";
 import { createThinkTools } from "./think.ts";
 import type { Message } from "./types.ts";
 import { createUrlTools } from "./web-fetch.ts";
@@ -39,11 +47,47 @@ export async function initTools({
 }) {
   const sendDataFn = sendDataHandler(events);
 
-  const fsTools = await createFileSystemTools({
+  const readFileTool = await createReadFileTool({
+    workingDir: process.cwd(),
+    sendData: sendDataFn,
+    tokenCounter,
+  });
+
+  const readMultipleFilesTool = await createReadMultipleFilesTool({
+    workingDir: process.cwd(),
+    sendData: sendDataFn,
+    tokenCounter,
+  });
+
+  const editFileTool = await createEditFileTool({
     workingDir: process.cwd(),
     terminal,
     sendData: sendDataFn,
-    tokenCounter,
+  });
+
+  const undoEditTool = await createUndoEditTool({
+    workingDir: process.cwd(),
+    sendData: sendDataFn,
+  });
+
+  const saveFileTool = await createSaveFileTool({
+    workingDir: process.cwd(),
+    sendData: sendDataFn,
+  });
+
+  const moveFileTool = await createMoveFileTool({
+    workingDir: process.cwd(),
+    sendData: sendDataFn,
+  });
+
+  const directoryTreeTool = await createDirectoryTreeTool({
+    workingDir: process.cwd(),
+    sendData: sendDataFn,
+  });
+
+  const deleteFileTool = await createDeleteFileTool({
+    workingDir: process.cwd(),
+    sendData: sendDataFn,
   });
 
   const gitTools = await createGitTools({
@@ -79,7 +123,11 @@ export async function initTools({
     tokenCounter,
   });
 
-  const memoryTools = createMemoryTools({
+  const memoryReadTool = createMemoryReadTool({
+    sendData: sendDataFn,
+  });
+
+  const memoryWriteTool = createMemoryWriteTool({
     sendData: sendDataFn,
   });
 
@@ -103,7 +151,14 @@ export async function initTools({
   };
 
   const tools = {
-    ...fsTools,
+    ...readFileTool,
+    ...readMultipleFilesTool,
+    ...editFileTool,
+    ...undoEditTool,
+    ...saveFileTool,
+    ...moveFileTool,
+    ...directoryTreeTool,
+    ...deleteFileTool,
     ...gitTools,
     ...codeInterpreterTool,
     ...grepTool,
@@ -112,7 +167,8 @@ export async function initTools({
     ...askUserTool,
     ...bashTools,
     ...webSearchTools,
-    ...memoryTools,
+    ...memoryReadTool,
+    ...memoryWriteTool,
   } as const;
 
   return tools;
@@ -123,11 +179,47 @@ export async function initCliTools({
 }: {
   tokenCounter: TokenCounter;
 }) {
-  const fsTools = await createFileSystemTools({
+  const readFileTool = await createReadFileTool({
+    workingDir: process.cwd(),
+    sendData: undefined,
+    tokenCounter,
+  });
+
+  const readMultipleFilesTool = await createReadMultipleFilesTool({
+    workingDir: process.cwd(),
+    sendData: undefined,
+    tokenCounter,
+  });
+
+  const editFileTool = await createEditFileTool({
     workingDir: process.cwd(),
     terminal: undefined,
     sendData: undefined,
-    tokenCounter,
+  });
+
+  const undoEditTool = await createUndoEditTool({
+    workingDir: process.cwd(),
+    sendData: undefined,
+  });
+
+  const saveFileTool = await createSaveFileTool({
+    workingDir: process.cwd(),
+    sendData: undefined,
+  });
+
+  const moveFileTool = await createMoveFileTool({
+    workingDir: process.cwd(),
+    sendData: undefined,
+  });
+
+  const directoryTreeTool = await createDirectoryTreeTool({
+    workingDir: process.cwd(),
+    sendData: undefined,
+  });
+
+  const deleteFileTool = await createDeleteFileTool({
+    workingDir: process.cwd(),
+    sendData: undefined,
   });
 
   const gitTools = await createGitTools({
@@ -163,12 +255,23 @@ export async function initCliTools({
     tokenCounter,
   });
 
-  const memoryTools = createMemoryTools({
+  const memoryReadTool = createMemoryReadTool({
+    sendData: undefined,
+  });
+
+  const memoryWriteTool = createMemoryWriteTool({
     sendData: undefined,
   });
 
   const tools = {
-    ...fsTools,
+    ...readFileTool,
+    ...readMultipleFilesTool,
+    ...editFileTool,
+    ...undoEditTool,
+    ...saveFileTool,
+    ...moveFileTool,
+    ...directoryTreeTool,
+    ...deleteFileTool,
     ...gitTools,
     ...codeInterpreterTool,
     ...grepTool,
@@ -176,7 +279,8 @@ export async function initCliTools({
     ...urlTools,
     ...bashTools,
     ...webSearchTools,
-    ...memoryTools,
+    ...memoryReadTool,
+    ...memoryWriteTool,
   } as const;
 
   return tools;
