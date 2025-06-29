@@ -1,6 +1,6 @@
 # @travisennis/acai
 
-Acai is an interactive CLI tool that assists with software engineering tasks using AI. It provides an intelligent command-line interface that can help with code analysis, file manipulation, git operations, LSP integration, log searching, and more.
+Acai is an interactive CLI tool that assists with software engineering tasks using AI. It provides an intelligent command-line interface that can help with code analysis, file manipulation, git operations, log searching, and more.
 
 ## Features
 
@@ -12,7 +12,7 @@ Acai is an interactive CLI tool that assists with software engineering tasks usi
 - Code interpreter for JavaScript execution
 - Token usage tracking and optimization
 - Prompt optimization and file retrieval
-- Language Server Protocol (LSP) server for editor integration
+
 - Log searching capabilities (`searchLogs` tool)
 - Efficient multi-edit code editor (`codeEditor` tool)
 - Enhanced UI/Output (syntax highlighting for diffs, improved tables, smoother streaming)
@@ -45,8 +45,7 @@ acai -p "What files contain the term 'toolCallRepair'?" -o
 # Pipe input
 echo "How many TypeScript files are in this project?" | acai
 
-# Start the Language Server Protocol server
-acai-lsp
+
 ```
 
 ## Interactive CLI Commands

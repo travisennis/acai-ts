@@ -4,8 +4,7 @@
   "description": "An AI assistant for developing software.",
   "type": "module",
   "bin": {
-    "acai": "./dist/index.js",
-    "acai-lsp": "./dist/lsp.js"
+    "acai": "./dist/index.js"
   },
   "keywords": ["cli", "ai", "llm", "coding", "assistant"],
   "author": "Travis Ennis",
@@ -67,8 +66,7 @@
     "tree-sitter-python": "0.23.4",
     "tree-sitter-typescript": "0.23.2",
     "ts-pattern": "^5.7.1",
-    "vscode-languageserver": "^9.0.1",
-    "vscode-languageserver-textdocument": "^1.0.12",
+
     "wrap-ansi": "^9.0.0",
     "zod": "^3.25.67"
   },
