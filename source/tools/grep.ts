@@ -64,10 +64,15 @@ export const createGrepTool = (
             searchIgnored,
           });
 
+          const matchCount =
+            result === "No matches found."
+              ? 0
+              : result.trim().split("\n").length;
+
           sendData?.({
             event: "tool-completion",
             id: toolCallId,
-            data: `Found ${result.length} results.`,
+            data: `Found ${matchCount} matches.`,
           });
           return Promise.resolve(result);
         } catch (error) {
