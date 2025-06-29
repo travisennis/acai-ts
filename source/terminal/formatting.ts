@@ -4,27 +4,8 @@
  * Provides functions for formatting and displaying text in the terminal.
  */
 
-import chalk from "chalk";
-import { Marked } from "marked";
-import { TerminalRenderer } from "./marked-renderer.ts";
 
-const marked = new Marked().setOptions({
-  // Define custom renderer
-  renderer: new TerminalRenderer({
-    strong: chalk.blue.bold,
-    tab: 2,
-  }),
-});
 
-const wrapMarked = new Marked().setOptions({
-  // Define custom renderer
-  renderer: new TerminalRenderer({
-    strong: chalk.blue.bold,
-    tab: 2,
-    width: Math.max(80, process.stdout.columns - 6),
-    reflowText: true,
-  }),
-});
 
 /**
  * Clear the terminal screen
@@ -83,24 +64,6 @@ export function getTerminalSize(): { rows: number; columns: number } {
   }
 
   return defaultSize;
-}
-
-/**
- * Format output for display in the terminal
- */
-export async function formatOutput(
-  text: string,
-  wrap = false,
-): Promise<string> {
-  if (!text) {
-    return "";
-  }
-
-  const formattedText = wrap
-    ? await wrapMarked.parse(text)
-    : await marked.parse(text);
-
-  return formattedText.trimEnd();
 }
 
 /**
