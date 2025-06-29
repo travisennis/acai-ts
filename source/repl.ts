@@ -260,12 +260,13 @@ export class Repl {
               }
             }
 
-            if (currentContextWindow > 70000) {
-              await messageHistory.summarizeAndReset();
-              logger.info(
-                `Condensing history from ${currentContextWindow} to 0 (not true)`,
-              );
-            }
+            // comment out auto-summarization for now. it's been causing issues.
+            // if (currentContextWindow > 70000) {
+            //   logger.info(
+            //     `Condensing history from ${currentContextWindow} to 0`,
+            //   );
+            //   await messageHistory.summarizeAndReset();
+            // }
 
             terminal.hr();
           },
