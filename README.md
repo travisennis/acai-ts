@@ -62,7 +62,6 @@ acai-lsp
 - `/init` - Generate or improve `AGENTS.md`
 - `/editPrompt` - Edit the current prompt
 - `/paste` - Add clipboard contents to the next prompt
-- `/selections [use|edit|clear]` - Manage saved code selections
 - `/ptree` - Show project directory tree
 - `/prompt user:name|project:name` - Load saved prompts
 - `/rules [view|add <text>|edit]` - View or edit persistent project rules/memories (formerly /memory)

@@ -29,7 +29,7 @@ import { resetCommand } from "./reset-command.ts";
 import { reviewCommand } from "./review-command.ts";
 import { rulesCommand } from "./rules-command.ts";
 import { saveCommand } from "./save-command.ts";
-import { selectionsCommand } from "./selections-command.ts";
+
 import type { CommandOptions, ReplCommand } from "./types.ts";
 import { usageCommand } from "./usage-command.ts";
 
@@ -97,7 +97,6 @@ export class CommandManager {
       resetCommand(options),
       reviewCommand(options),
       saveCommand(options),
-      selectionsCommand(options),
       rulesCommand(options),
       modelCommand(options),
       usageCommand(options),

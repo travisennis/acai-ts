@@ -26,8 +26,8 @@ import {
 } from "../formatting.ts";
 import { logger } from "../logger.ts";
 import type { ModelManager } from "../models/manager.ts";
-import { type Selection, saveSelection } from "../saved-selections/index.ts";
 import type { TokenCounter } from "../token-utils.ts";
+
 import {
   type EmbeddedInstructions,
   parseInstructions,
@@ -173,21 +173,6 @@ export function initConnection({
     };
     codeActions.push(editAction);
 
-    // Create the Save code action
-    const saveAction: CodeAction = {
-      title: "Acai - Save",
-      kind: CodeActionKind.QuickFix,
-      diagnostics: params.context.diagnostics,
-      data: {
-        id: "ai.save",
-        documentUri: params.textDocument.uri,
-        range,
-        diagnostics: params.context.diagnostics,
-      },
-      isPreferred: false,
-    };
-    codeActions.push(saveAction);
-
     return codeActions;
   });
 
@@ -231,10 +216,6 @@ export function initConnection({
             data,
             tokenCounter,
           );
-          break;
-        }
-        case "ai.save": {
-          await saveAction(textDocument, range, documentUri, params);
           break;
         }
         default: {
@@ -353,37 +334,6 @@ export function initConnection({
   }
 
   return connection;
-}
-
-async function saveAction(
-  textDocument: TextDocument,
-  range: Range,
-  documentUri: string,
-  params: CodeAction,
-) {
-  // Get the text from the range where the code action was triggered
-  const documentText = textDocument.getText(range);
-
-  const selection: Selection = {
-    documentUri,
-    range,
-    documentText,
-  };
-
-  try {
-    await saveSelection(selection);
-    logger.info("Selection saved successfully");
-  } catch (error) {
-    logger.error("Error saving selection:", error);
-    // Optionally, you can set an error message on the code action
-    params.diagnostics = [
-      {
-        range: range,
-        message: "Failed to save selection. Please try again.",
-      },
-    ];
-    throw error;
-  }
 }
 
 async function editAction(
