@@ -17,7 +17,7 @@ import { exitCommand } from "./exit-command.ts";
 import { filesCommand } from "./files-command.ts";
 import { generateRulesCommand } from "./generate-rules-command.ts";
 import { helpCommand } from "./help-command.ts";
-import { imageCommand } from "./image-command.ts";
+
 import { initCommand } from "./init-command.ts";
 import { lastLogCommand } from "./last-log-command.ts";
 import { modelCommand } from "./model-command.ts";
@@ -90,7 +90,7 @@ export class CommandManager {
       exitCommand(options),
       filesCommand(options),
       initCommand(options),
-      imageCommand(options),
+
       pasteCommand(options),
       promptCommand(options),
       ptreeCommand(options),
