@@ -228,7 +228,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     }
   }
 
-  private getFirstUserMessage(): CoreUserMessage | undefined {
+  getFirstUserMessage(): CoreUserMessage | undefined {
     const firstUser = this.get().find(
       (msg): msg is CoreUserMessage => msg.role === "user",
     );
@@ -243,7 +243,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
 
     // summarize message history
     let userPrompt =
-      "Provide a detailed summary of our conversation above. Focus on information that would be helpful for continuing the conversation, including what we did and why, what we're currently doing, which files we're working on, and what we're going to do next. You need to provide enough information that another coding agent can pick up where we left off. Only return the summary with no preamble.";
+      "Provide a detailed summary of our conversation above. Focus on information that would be helpful for continuing the conversation, including what was the orginal tasks, what we have done so far and why, which files we're working on, and what we're going to do next. You need to provide enough information that another coding agent can you use your sumamry to pick up where you have left off. Only return the summary with no preamble.";
     if (additionalInstructions && additionalInstructions.trim().length > 0) {
       userPrompt += `\n\nAdditional Instructions: ${additionalInstructions}`;
     }
@@ -257,15 +257,9 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
 
     this.tokenTracker.trackUsage(app, usage);
 
-    const firstUserMessage = this.getFirstUserMessage();
-
     //clear messages
     this.clear();
 
-    // reset messages with the first user message, if found, and the summary
-    if (firstUserMessage) {
-      this.appendUserMessage(firstUserMessage);
-    }
     this.appendAssistantMessage(createAssistantMessage(text));
   }
 
