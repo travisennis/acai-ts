@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+
 import { generateText, tool } from "ai";
 import { z } from "zod";
 import { AiConfig } from "../models/ai-config.ts";
@@ -48,15 +48,13 @@ export const createAgentTools = (options: {
     agent: tool({
       description: getToolDescription(),
       parameters: inputSchema,
-      execute: async ({ prompt }, { abortSignal }) => {
-        const uuid = crypto.randomUUID();
+      execute: async ({ prompt }, { abortSignal, toolCallId }) => {
+        sendData?.({
+          event: "tool-init",
+          id: toolCallId,
+          data: "Initializing the agent tool.",
+        });
         try {
-          sendData?.({
-            event: "tool-init",
-            id: uuid,
-            data: "Initializing the agent tool.",
-          });
-
           const modelConfig = modelManager.getModelMetadata("task-agent");
           const aiConfig = new AiConfig({
             modelMetadata: modelConfig,
@@ -81,7 +79,7 @@ export const createAgentTools = (options: {
 
           sendData?.({
             event: "tool-completion",
-            id: uuid,
+            id: toolCallId,
             data: "Finished running the agent tool.",
           });
 
@@ -89,7 +87,7 @@ export const createAgentTools = (options: {
         } catch (error) {
           sendData?.({
             event: "tool-error",
-            id: uuid,
+            id: toolCallId,
             data: "Error running agent tool.",
           });
           return Promise.resolve((error as Error).message);
