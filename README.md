@@ -107,7 +107,7 @@ Once in the REPL, you can type your prompts or use commands:
 
 For a list of available commands, type `/help` within the REPL.
 
-##  Interactive CLI Commands
+## Interactive CLI Commands
 
 - `/help` - Shows usage information
 - `/reset` - Saves chat history and resets the conversation
@@ -127,7 +127,6 @@ For a list of available commands, type `/help` within the REPL.
 - `/pr-comments [PR#] [instructions]` - Add review comments to a GitHub PR
 - `/usage` - Show token usage breakdown
 - `/clear` - Clears the terminal screen for the current session
-- `/usage` - Show token usage breakdown
 
 ## Configuration
 
