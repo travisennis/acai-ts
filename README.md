@@ -1,4 +1,3 @@
-```markdown
 # Acai: AI-Powered Software Development Assistant
 
 ![Project Status](https://img.shields.io/badge/Status-Active-brightgreen)
