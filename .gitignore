@@ -61,6 +61,4 @@ typings/
 dist
 
 # acai directories
-.acai/context
-.acai/scripts
-.acai/docs
+.scratchpad

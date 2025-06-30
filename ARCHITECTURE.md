@@ -8,29 +8,11 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 ├── acai-ts
 │   ├── .acai
 │   │   ├── acai.json
-│   │   ├── context
-│   │   │   └── selections.json
-│   │   ├── docs
-│   │   │   ├── available-tools.txt
-│   │   │   ├── cognitive_complexity_refactoring_progress.md
-│   │   │   ├── deleted_tools.md
-│   │   │   ├── deleted_tools_88ced9ef.md
-│   │   │   ├── image-pasting.md
-│   │   │   ├── issue-4-plan.md
-│   │   │   ├── marked-renderer-debug.md
-│   │   │   ├── marked-renderer-refactor-plan.md
-│   │   │   ├── memory-use-cases.md
-│   │   │   ├── refactoring-tools.md
-│   │   │   ├── system_prompt.txt
 │   │   ├── memory
 │   │   ├── prompts
 │   │   │   └── update-architecture-document.md
 │   │   ├── rules
 │   │   │   └── learned-rules.md
-│   │   ├── scripts
-│   │   │   ├── generateSystemPrompt.ts
-│   │   │   ├── list-tools.mjs
-│   │   │   └── p5_geometric_shapes.js
 │   ├── .gitignore
 │   ├── .ignore
 │   ├── AGENTS.md
