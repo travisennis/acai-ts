@@ -156,15 +156,6 @@ export class ConfigManager {
 
 // Type definitions
 const ProjectConfigSchema = z.object({
-  commands: z
-    .object({
-      build: z.string().optional(),
-      lint: z.string().optional(),
-      format: z.string().optional(),
-      test: z.string().optional(),
-      install: z.string().optional(),
-    })
-    .optional(),
   logs: z
     .object({
       path: z.string(),

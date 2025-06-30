@@ -135,18 +135,12 @@ Acai supports project-specific configuration through a `.acai/acai.json` file in
 
 ```json
 {
-  "build": "npm run build",
-  "test": "npm run test",
-  "lint": "npm run lint",
-  "format": "npm run format",
-  "install": "npm install",
-  "logPath": "~/.acai/logs/acai.log", // Optional: Customize log file location
-  "notify": true, // Optional: Enable/disable system notifications (default: false)
-  "maxTokens": { // Optional: Set max token limits per tool
-    "readFile": 10000
+  "logs": { // Optional: Customize log file location
+    "path": "~/.acai/logs/acai.log"
   },
-  "google": { // Optional: Google-specific settings
-    "thinkingBudget": 5000 // Example: Limit tokens for Gemini's internal thinking
+  "notify": true, // Optional: Enable/disable system notifications (default: false)
+  "tools": { // Optional: Set a global max token limit for all tools
+    "maxTokens": 30000 
   }
 }
 ```
