@@ -1,113 +1,162 @@
-# @travisennis/acai
+```markdown
+# Acai: AI-Powered Software Development Assistant
 
-Acai is an interactive CLI tool that assists with software engineering tasks using AI. It provides an intelligent command-line interface that can help with code analysis, file manipulation, git operations, log searching, and more.
+![Project Status](https://img.shields.io/badge/Status-Active-brightgreen)
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
+<!-- Add more badges as appropriate, e.g., build status, version, etc. -->
 
-## Features
+## 🚀 Overview
 
-- Interactive chat interface with AI assistance
-- Support for various AI models (Anthropic Claude, OpenAI GPT, Google Gemini [Pro 2.5, Flash 2.5], DeepSeek, XAI Grok, OpenAI [O3, O4-mini]) - Default: Google Gemini Pro 2.5
-- File system operations (read with token limits, write, delete, search, grep, list, tree)
-- Git integration (status, commit, diff, log, branch, show) with improved output (JSON status, diff stats)
-- Code tooling (build, test, lint (including single file), format, install dependencies)
-- Code interpreter for JavaScript execution
-- Token usage tracking and optimization
-- Prompt optimization and file retrieval
+Acai is a powerful **AI-driven command-line interface (CLI) tool** designed to assist software developers in their daily tasks. It acts as an intelligent assistant, capable of understanding natural language prompts, interacting with your codebase, and automating various development workflows.
 
-- Log searching capabilities (`searchLogs` tool)
-- Efficient multi-edit code editor (`codeEditor` tool)
-- Enhanced UI/Output (syntax highlighting for diffs, improved tables, smoother streaming)
-- Context preservation across sessions
-- Persistent project rules and user memories
-- Web search capabilities (`webSearch` tool)
-- Execute whitelisted shell commands (`bashTool` tool)
-- @Mentions for easy file/URL context injection
-- System notifications on task completion (configurable)
-- Enhanced `fetch` tool for better URL content retrieval
+### Core Functionality:
 
-## Installation
+*   **Interactive AI Assistant:** Engage in a conversational REPL (Read-Eval-Print Loop) to get assistance with coding, debugging, refactoring, and more.
+*   **Codebase Interaction:** Read, edit, and navigate files; search code; and understand project structure.
+*   **Git Integration:** Generate conventional commits, review pull requests, and manage local changes.
+*   **Extensible Tooling:** Utilizes a suite of internal tools (e.g., `bash`, `codeInterpreter`, `webSearch`, `gitCommit`) to perform actions.
+*   **Multi-Model Support:** Seamlessly switch between various AI providers (e.g., OpenAI, Google, Anthropic, DeepSeek, OpenRouter).
+*   **Context Management:** Automatically incorporates relevant file content, clipboard data, and conversation history into AI prompts.
+*   **Configurable & Learnable:** Customize behavior through project-specific rules and learn from user corrections.
+
+## ✨ Features
+
+*   **Conversational REPL:** Intuitive command-line interface for interacting with the AI.
+*   **File System Operations:** Read, write, edit, move, and delete files.
+*   **Code Navigation & Analysis:** Leverage Tree-sitter for intelligent code understanding.
+*   **Git Workflow Automation:** Streamline commit messages and code reviews.
+*   **Web Integration:** Perform web searches and fetch content from URLs.
+*   **Extensible Commands:** A rich set of built-in commands (`/files`, `/edit`, `/commit`, `/model`, `/help`, etc.).
+*   **Token Usage Tracking:** Monitor AI token consumption.
+*   **Configurable AI Models:** Easily switch between different LLM providers and models.
+
+## 🛠️ Technologies Used
+
+Acai is built primarily with **TypeScript** and runs on **Node.js**. Key technologies and dependencies include:
+
+*   **TypeScript:** For type-safe and scalable code.
+*   **Node.js:** The JavaScript runtime environment.
+*   **AI SDK (`@ai-sdk/*`):** For integrating with various Large Language Models (LLMs) like OpenAI, Google Gemini, Anthropic, DeepSeek, and OpenRouter.
+*   **Tree-sitter:** For robust and efficient code parsing and syntax analysis across multiple programming languages (TypeScript, JavaScript, Java, Python).
+*   **`chalk`, `ora`, `log-update`:** For rich and interactive terminal output.
+*   **`meow`, `@inquirer/prompts`:** For building the command-line interface and interactive prompts.
+*   **`simple-git`:** For Git operations.
+*   **`ripgrep` (via `grep.ts` tool):** For fast file content searching.
+*   **`marked`:** For rendering Markdown in the terminal.
+*   **`pino`:** For structured logging.
+*   **`zod`:** For schema validation.
+*   **`biomejs/biome`:** For code formatting and linting.
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+*   Node.js (v18 or higher recommended)
+*   npm (Node Package Manager)
+*   Git
+*   (Optional) API keys for desired AI providers (e.g., OpenAI, Google, Anthropic) configured in a `.env` file.
+
+### Installation
 
 ```bash
-npm install @travisennis/acai
+# Clone the repository
+git clone https://github.com/travisennis/acai-ts.git # Assuming this is the repo URL
+cd acai-ts
+
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+
+# Link the CLI tool globally (optional, for easy access)
+npm link
 ```
 
-## Usage
+### Usage
+
+To start the Acai REPL:
 
 ```bash
-# Start interactive mode with default model
 acai
-
-# Specify a model
-acai --model anthropic:sonnet
-
-# One-shot mode
-acai -p "What files contain the term 'toolCallRepair'?" -o
-
-# Pipe input
-echo "How many TypeScript files are in this project?" | acai
-
-
 ```
 
-## Interactive CLI Commands
+Once in the REPL, you can type your prompts or use commands:
 
-- `/help` - Shows usage information
-- `/reset` - Saves chat history and resets the conversation
-- `/save` - Saves chat history
-- `/compact` - Saves, summarizes and resets the chat history
-- `/exit` or `/bye` - Exits and saves chat history
-- `/files [pattern]` - Select files interactively or by pattern, adding content to prompt
-- `/commit [args]` - Generate Conventional Commits for current changes (accepts args for prompt customization)
-- `/review [PR#|local]` - Review a GitHub pull request or local changes
-- `/init` - Generate or improve `AGENTS.md`
-- `/editPrompt` - Edit the current prompt
-- `/paste` - Add clipboard contents to the next prompt
-- `/ptree` - Show project directory tree
-- `/prompt user:name|project:name` - Load saved prompts
-- `/rules [view|add <text>|edit]` - View or edit persistent project rules/memories (formerly /memory)
-- `/model [provider:model|category|provider]` - List or switch models
-- `/pr-comments [PR#] [instructions]` - Add review comments to a GitHub PR
-- `/usage` - Show token usage breakdown
-- `/clear` - Clears the terminal screen for the current session
-- `/usage` - Show token usage breakdown
-
-## Configuration
-
-Acai supports project-specific configuration through a `.acai/acai.json` file in your project directory:
-
-```json
-{
-  "build": "npm run build",
-  "test": "npm run test",
-  "lint": "npm run lint",
-  "format": "npm run format",
-  "install": "npm install",
-  "logPath": "~/.acai/logs/acai.log", // Optional: Customize log file location
-  "notify": true, // Optional: Enable/disable system notifications (default: false)
-  "maxTokens": { // Optional: Set max token limits per tool
-    "readFile": 10000
-  },
-  "google": { // Optional: Google-specific settings
-    "thinkingBudget": 5000 // Example: Limit tokens for Gemini's internal thinking
-  }
-}
+```
+> How do I read a file in Node.js?
+> /files add source/index.ts
+> /edit source/cli.ts "Change this function name"
+> /help
 ```
 
-You can also add project-specific rules in a `AGENTS.md` file.
+For a list of available commands, type `/help` within the REPL.
 
-Project prompts can be stored in `.acai/prompts/` and context selections in `.acai/context/`.
+## ⚙️ Development
 
-### Logs
+### Available NPM Scripts
 
-Application logs are stored in:
-- `~/.acai/logs/`
+Here's a list of useful `npm` scripts for development:
 
-## Requirements
+| Script        | Description                                                              |
+| :------------ | :----------------------------------------------------------------------- |
+| `npm run build` | Compiles the TypeScript source code to JavaScript.                       |
+| `npm run clean` | Removes the `dist/` directory.                                           |
+| `npm run compile` | Compiles TypeScript files (`tsc --pretty`).                              |
+| `npm run lint`  | Runs Biome linter to check for code style and quality issues.            |
+| `npm run lint:fix` | Automatically fixes linting issues using Biome.                          |
+| `npm run test`  | Runs unit tests with code coverage using `c8`.                           |
+| `npm run format` | Formats the codebase using Biome.                                        |
+| `npm run dev`   | Starts the application in development mode (watches for changes).        |
+| `npm run oxlint` | Runs Oxlint for additional code quality checks.                          |
+| `npm run knip`  | Detects unused files, dependencies, and exports.                         |
+| `npm run check` | Interactively checks for and updates outdated npm packages.              |
+| `npm run cpd`   | Checks for copy-pasted code using `jscpd`.                               |
 
-- Node.js 18.x or higher
-- Git
-- Ripgrep (`rg` command)
-- GitHub CLI (`gh` command)
+### Code Structure
 
-## License
+The project is organized as follows:
 
-MIT
+```
+.
+├── .acai/             # Internal configuration, context, and temporary files
+├── source/            # Main application source code
+│   ├── cli.ts         # CLI entry point
+│   ├── code-utils/    # Code parsing and navigation utilities (Tree-sitter)
+│   ├── commands/      # Implementations of REPL commands (e.g., /edit, /commit)
+│   ├── middleware/    # AI request/response middleware (logging, rate limiting)
+│   ├── models/        # AI model providers and management
+│   ├── prompts/       # Prompt generation and management
+│   ├── terminal/      # Terminal output formatting and rendering
+│   ├── tools/         # AI-callable tools (filesystem, git, web, bash, etc.)
+│   └── ...            # Other core modules (config, logger, repl, token tracking)
+├── test/              # Unit tests
+├── ARCHITECTURE.md    # Detailed architectural overview and flow diagrams
+├── AGENTS.md          # Project-specific AI rules and guidelines
+├── TODO.md            # Project roadmap and planned features
+├── package.json       # Project metadata, dependencies, and scripts
+└── README.md          # This file
+```
+
+For a more in-depth understanding of the project's architecture and internal flows, please refer to the [ARCHITECTURE.md](ARCHITECTURE.md) document.
+
+## 📚 Documentation & Examples
+
+*   **[ARCHITECTURE.md](ARCHITECTURE.md):** Provides a comprehensive overview of the project's architecture, including file descriptions and Mermaid flow diagrams.
+*   **[AGENTS.md](AGENTS.md):** Contains specific rules and guidelines for the AI agent's behavior within this project.
+*   **In-app `/help` command:** Use `/help` within the Acai REPL for a list of available commands and their usage.
+*   **`source/commands/` directory:** Review the TypeScript files in this directory to understand how each REPL command is implemented.
+*   **`source/tools/` directory:** Explore the available tools that the AI can leverage.
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) (if it exists, otherwise remove this line) for guidelines on how to contribute.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 📞 Contact
+
+For questions or feedback, please open an issue on the GitHub repository.
+```
