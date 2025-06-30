@@ -67,7 +67,20 @@ export const createGrepTool = (
           const matchCount =
             result === "No matches found."
               ? 0
-              : result.trim().split("\n").length;
+              : result
+                  .trim()
+                  .split("\n")
+                  .filter((line) => {
+                    if (line === "--") {
+                      return false;
+                    }
+                    // A match line from ripgrep with --line-number has the format:
+                    // path:linenumber:match
+                    // A context line has the format:
+                    // path-linenumber-match
+                    // This regex distinguishes between them by looking for the colon after the line number.
+                    return /^(.+?):(\d+):(.*)$/.test(line);
+                  }).length;
 
           sendData?.({
             event: "tool-completion",
