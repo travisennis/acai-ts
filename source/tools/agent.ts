@@ -1,4 +1,3 @@
-
 import { generateText, tool } from "ai";
 import { z } from "zod";
 import { AiConfig } from "../models/ai-config.ts";

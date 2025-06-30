@@ -4,9 +4,6 @@
  * Provides functions for formatting and displaying text in the terminal.
  */
 
-
-
-
 /**
  * Clear the terminal screen
  */
