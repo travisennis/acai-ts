@@ -235,34 +235,6 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     return firstUser;
   }
 
-  async summarizeAndReset(additionalInstructions?: string) {
-    const app = "conversation-summarizer";
-
-    // save existing message history
-    await this.save();
-
-    // summarize message history
-    let userPrompt =
-      "Provide a detailed summary of our conversation above. Focus on information that would be helpful for continuing the conversation, including what was the orginal tasks, what we have done so far and why, which files we're working on, and what we're going to do next. You need to provide enough information that another coding agent can you use your sumamry to pick up where you have left off. Only return the summary with no preamble.";
-    if (additionalInstructions && additionalInstructions.trim().length > 0) {
-      userPrompt += `\n\nAdditional Instructions: ${additionalInstructions}`;
-    }
-    this.appendUserMessage(createUserMessage([], userPrompt));
-    const { text, usage } = await generateText({
-      model: this.modelManager.getModel(app),
-      system:
-        "You are a helpful AI assistant tasked with summarizing conversations so that a coding agent such as yourself can understand what actions have been taken on a code base and what future work still needs to be done.",
-      messages: this.get(),
-    });
-
-    this.tokenTracker.trackUsage(app, usage);
-
-    //clear messages
-    this.clear();
-
-    this.appendAssistantMessage(createAssistantMessage(text));
-  }
-
   static async load(
     stateDir: string,
     count = 10, // Add count parameter with default
