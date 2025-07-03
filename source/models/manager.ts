@@ -34,17 +34,12 @@ function getLanguageModel({
 type App =
   | "repl"
   | "cli"
-  | "architect"
-  | "file-retriever"
   | "title-conversation"
   | "conversation-summarizer"
   | "conversation-analyzer"
   | "tool-repair"
-  | "lsp-code-action"
   | "init-project"
-  | "task-agent"
-  | "explain-code"
-  | "code-editor";
+  | "task-agent";
 
 export class ModelManager {
   private modelMap: Map<App, LanguageModel>;

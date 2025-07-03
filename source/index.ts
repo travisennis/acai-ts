@@ -131,17 +131,12 @@ async function main() {
   });
   modelManager.setModel("repl", chosenModel);
   modelManager.setModel("cli", chosenModel);
-  modelManager.setModel("architect", chosenModel);
   modelManager.setModel("title-conversation", "google:flash25");
   modelManager.setModel("conversation-summarizer", "google:flash25");
-  modelManager.setModel("file-retriever", "google:flash25");
   modelManager.setModel("tool-repair", "openai:gpt-4o-structured");
   modelManager.setModel("conversation-analyzer", "google:flash25");
-  modelManager.setModel("lsp-code-action", "google:pro25");
   modelManager.setModel("init-project", chosenModel);
   modelManager.setModel("task-agent", "google:flash25");
-  modelManager.setModel("explain-code", "deepseek:deepseek-reasoner");
-  modelManager.setModel("code-editor", "google:flash2");
 
   const tokenTracker = new TokenTracker();
   const tokenCounter = new TokenCounter();
