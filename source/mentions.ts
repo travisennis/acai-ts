@@ -134,12 +134,13 @@ export async function processPrompt(
     }
   }
 
+  let processedMessage = message;
   // Process shell commands
   for (const match of shellMatches) {
     const command = match[1];
     if (command) {
       const output = await processShellCommand(command);
-      message = message.replace(match[0], output);
+      processedMessage = processedMessage.replace(match[0], output);
     }
   }
 
@@ -165,7 +166,7 @@ export async function processPrompt(
   }
 
   return {
-    message,
+    message: processedMessage,
     context,
   };
 }
