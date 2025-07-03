@@ -5,6 +5,7 @@ import { formatFile, formatUrl } from "./formatting.ts";
 import type { ModelMetadata } from "./models/providers.ts";
 import type { ContextItem } from "./prompts/manager.ts";
 import { type ReadUrlResult, readUrl } from "./tools/web-fetch.ts";
+import { executeCommand } from "./utils/process.ts";
 
 interface CommandContext {
   model: ModelMetadata;
@@ -48,6 +49,23 @@ async function processFileCommand(context: CommandContext): Promise<string> {
   }
 }
 
+async function processShellCommand(command: string): Promise<string> {
+  try {
+    const { stdout, stderr, code } = await executeCommand(command, {
+      shell: true,
+    });
+    if (code === 0) {
+      return stdout;
+    }
+    return `Error executing command: ${command}\n${stderr}`;
+  } catch (error) {
+    if (error instanceof Error) {
+      return `Error executing command ${command}: ${error.message}`;
+    }
+    return `Error executing command ${command}: An unknown error occurred.`;
+  }
+}
+
 // Returns the formatted string or an error message string
 async function processUrlCommand(
   context: CommandContext,
@@ -79,10 +97,12 @@ export async function processPrompt(
 ): Promise<{ message: string; context: ContextItem[] }> {
   const fileRegex = /@([^\s@]+(?:\.[\w\d]+))/g;
   const urlRegex = /@(https?:\/\/[^\s]+)/g;
+  const shellRegex = /!`([^`]+)`/g;
 
   // Collect all matches for files and urls
   const fileMatches = Array.from(message.matchAll(fileRegex));
   const urlMatches = Array.from(message.matchAll(urlRegex));
+  const shellMatches = Array.from(message.matchAll(shellRegex));
 
   const mentionProcessingPromises: Promise<
     string | (ReadUrlResult & { source: string })
@@ -111,6 +131,15 @@ export async function processPrompt(
         match: firstMatch,
       };
       mentionProcessingPromises.push(processUrlCommand(context));
+    }
+  }
+
+  // Process shell commands
+  for (const match of shellMatches) {
+    const command = match[1];
+    if (command) {
+      const output = await processShellCommand(command);
+      message = message.replace(match[0], output);
     }
   }
 
