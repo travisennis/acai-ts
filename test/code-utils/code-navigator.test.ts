@@ -1,13 +1,13 @@
-import { describe, it } from "node:test";
 import { ok, strictEqual } from "node:assert/strict";
+import { describe, it } from "node:test";
 import {
-  CodeNavigator,
-  type InterfaceSymbol,
-  type EnumSymbol,
   type ClassSymbol,
+  CodeNavigator,
+  type EnumSymbol,
   type FunctionSymbol,
-  type TypeSymbol, // Added for completeness, though not directly in old tests
   type ImportSymbol,
+  type InterfaceSymbol,
+  type TypeSymbol, // Added for completeness, though not directly in old tests
 } from "../../source/code-utils/code-navigator.ts";
 import { TreeSitterManager } from "../../source/code-utils/tree-sitter-manager.ts";
 

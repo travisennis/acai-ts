@@ -1,5 +1,5 @@
-import { describe, it } from "node:test";
 import { ok, strictEqual } from "node:assert/strict";
+import { describe, it } from "node:test";
 import { CodeMap } from "../../source/code-utils/code-map.ts";
 
 describe("CodeMap", () => {
