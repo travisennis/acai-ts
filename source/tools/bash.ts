@@ -52,7 +52,7 @@ function isCommandAllowed(command: string): boolean {
 const patterns = [
   /(?<!&)&&/, // &&
   /(?<!\|)\|\|/, // ||
-  /(?<!\|)\|/, // |
+  // / (?<!\|)\|/, // | // pipe is allowed
   /;/, // ;
   /`/, // backticks
   /\$\(/, // $(
@@ -68,6 +68,11 @@ function hasCommandChaining(command: string): boolean {
     .replace(/"([^"\\]|\\.)*"/g, "");
   // detect unquoted chaining operators
   return patterns.some((re) => re.test(stripped));
+}
+
+function areAllPipelineCommandsAllowed(command: string): boolean {
+  const commands = command.split("|").map((c) => c.trim());
+  return commands.every(isCommandAllowed);
 }
 
 // Ensure path is within base directory
@@ -120,17 +125,20 @@ export const createBashTool = ({
           data: `Executing: ${command} in ${safeCwd}`,
         });
 
-        // Validate command
-        if (!isCommandAllowed(command)) {
-          const errorMsg = `Command not allowed: ${command}. Allowed commands: ${ALLOWED_COMMANDS.join(", ")}`;
+        // Check for disallowed command chaining (e.g., &&, ;, etc.)
+        if (hasCommandChaining(command)) {
+          const errorMsg =
+            "Command chaining with operators like &&, ;, ||, <, >, etc. is not allowed.";
           sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
           return errorMsg;
         }
 
-        // Check for command chaining
-        if (hasCommandChaining(command)) {
-          const errorMsg =
-            "Command chaining is not allowed for security reasons";
+        // Validate all commands in the potential pipeline.
+        // This handles both single commands and piped commands.
+        if (!areAllPipelineCommandsAllowed(command)) {
+          const errorMsg = `Command not allowed. Each command in a pipeline must be in the approved list: ${ALLOWED_COMMANDS.join(
+            ", ",
+          )}`;
           sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
           return errorMsg;
         }
