@@ -3,12 +3,16 @@ import { tool } from "ai";
 import { z } from "zod";
 import type { SendData } from "./types.ts";
 
+export const GrepTool = {
+  name: "grepFiles" as const,
+};
+
 export const createGrepTool = (
   options: { sendData?: SendData | undefined } = {},
 ) => {
   const { sendData } = options;
   return {
-    grepFiles: tool({
+    [GrepTool.name]: tool({
       description: "Search files for patterns using ripgrep",
       parameters: z.object({
         pattern: z.string().describe("The regex pattern to search for"),

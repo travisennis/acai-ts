@@ -9,6 +9,10 @@ import { tool } from "ai";
 import { z } from "zod";
 import type { SendData } from "./types.ts";
 
+export const CodeInterpreterTool = {
+  name: "codeInterpreter" as const,
+};
+
 type InterpreterPermission = "fs" | "net" | "os" | "crypto" | "process";
 
 function jsCodeInterpreter(
@@ -47,7 +51,7 @@ export const createCodeInterpreterTool = ({
   sendData?: SendData | undefined;
 }>) => {
   return {
-    codeInterpreter: tool({
+    [CodeInterpreterTool.name]: tool({
       description:
         "Executes Javascript code. The code will be executed in a node:vm environment. This tool will respond with the output of the execution or time out after 120.0 seconds. In order to return a result from running this code, use a return statement. Do not use console.log. The code will run inside of self-executing anonymous function: `(function() { <code> })()` Internet access for this session is disabled. Do not make external web requests or API calls as they will fail. Fileystem access for this vm is disabled. Do not make filesystem calls as they will fail. Don't use require.",
       parameters: z.object({

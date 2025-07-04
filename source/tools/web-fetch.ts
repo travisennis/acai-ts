@@ -5,13 +5,17 @@ import { logger } from "../logger.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
 
+export const WebFetchTool = {
+  name: "webFetch" as const,
+};
+
 export const createWebFetchTool = (options: {
   sendData?: SendData | undefined;
   tokenCounter: TokenCounter;
 }) => {
   const { sendData } = options;
   return {
-    webFetch: tool({
+    [WebFetchTool.name]: tool({
       description:
         "Fetches the content of a given URL. It intelligently handles HTML content by attempting to use a specialized service for cleaner extraction, falling back to local cleaning if needed. For non-HTML content (like plain text or markdown), it fetches the raw content directly. IMPORTANT: Does not retrieve binary files.",
       parameters: z.object({

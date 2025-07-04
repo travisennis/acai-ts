@@ -5,6 +5,10 @@ import { z } from "zod";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import { fileEncodingSchema, type SendData } from "./types.ts";
 
+export const SaveFileTool = {
+  name: "saveFile" as const,
+};
+
 export const createSaveFileTool = async ({
   workingDir,
   sendData,
@@ -14,7 +18,7 @@ export const createSaveFileTool = async ({
 }) => {
   const allowedDirectory = workingDir;
   return {
-    saveFile: tool({
+    [SaveFileTool.name]: tool({
       description:
         "Create a new file or completely overwrite an existing file with new content. " +
         "Use with caution as it will overwrite existing files without warning. " +

@@ -5,6 +5,10 @@ import { z } from "zod";
 import { config } from "../config.ts";
 import type { SendData } from "./types.ts";
 
+export const MemoryWriteTool = {
+  name: "memoryWrite" as const,
+};
+
 const MEMORY_DIR = config.app.ensurePath("memory");
 
 export const createMemoryWriteTool = (
@@ -96,6 +100,6 @@ export const createMemoryWriteTool = (
   });
 
   return {
-    memoryWrite: memoryWriteTool,
+    [MemoryWriteTool.name]: memoryWriteTool,
   };
 };

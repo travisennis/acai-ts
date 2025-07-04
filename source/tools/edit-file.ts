@@ -10,6 +10,10 @@ import {
 } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
 
+export const EditFileTool = {
+  name: "editFile" as const,
+};
+
 export const createEditFileTool = async ({
   workingDir,
   terminal,
@@ -21,7 +25,7 @@ export const createEditFileTool = async ({
 }) => {
   const allowedDirectory = workingDir;
   return {
-    editFile: tool({
+    [EditFileTool.name]: tool({
       description:
         "Make line-based edits to a text file. Each edit replaces exact line sequences " +
         "with new content. Creates a backup file (.backup) before saving changes. " +

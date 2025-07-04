@@ -8,6 +8,10 @@ import type { ExecuteResult } from "../utils/process.ts";
 import { executeCommand } from "../utils/process.ts";
 import type { SendData } from "./types.ts";
 
+export const BashTool = {
+  name: "bash" as const,
+};
+
 // Whitelist of allowed commands
 const ALLOWED_COMMANDS = [
   "ls",
@@ -84,7 +88,7 @@ export const createBashTool = ({
   tokenCounter: TokenCounter;
 }) => {
   return {
-    bash: tool({
+    [BashTool.name]: tool({
       description: `Execute bash commands and return their output. Limited to a whitelist of safe commands: ${ALLOWED_COMMANDS.join(", ")}. Commands will only execute within the project directory for security. Always specify absolute paths to avoid errors.`,
       parameters: z.object({
         command: z

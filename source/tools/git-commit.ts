@@ -6,6 +6,10 @@ import { simpleGit } from "simple-git";
 import { z } from "zod";
 import type { SendData } from "./types.ts";
 
+export const GitCommitTool = {
+  name: "gitCommit" as const,
+};
+
 const CONVENTIONAL_COMMIT_MESSAGE =
   /^(feat|fix|docs|style|refactor|perf|test|chore)(\([\w-]+\))?!?: .+/;
 
@@ -64,7 +68,7 @@ export const createGitCommitTool = async ({
   sendData,
 }: GitOptions) => {
   return {
-    gitCommit: tool({
+    [GitCommitTool.name]: tool({
       description:
         "Commits a new git changeset for the given files with the provided commit message. It will stage the files given if they aren't already staged. The commit message should adhere to the Conventional Commits standard. (Git command: `git add` + `git commit`)",
       parameters: z.object({

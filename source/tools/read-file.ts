@@ -8,6 +8,10 @@ import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
 import { fileEncodingSchema } from "./types.ts";
 
+export const ReadFileTool = {
+  name: "readFile" as const,
+};
+
 export const createReadFileTool = async ({
   workingDir,
   sendData,
@@ -19,7 +23,7 @@ export const createReadFileTool = async ({
 }) => {
   const allowedDirectory = workingDir;
   return {
-    readFile: tool({
+    [ReadFileTool.name]: tool({
       description:
         "Read the complete contents of a file from the file system unless startLine and lineCount are given to read a file selection. " +
         "Handles various text encodings and provides detailed error messages " +

@@ -5,6 +5,10 @@ import { z } from "zod";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
 
+export const DeleteFileTool = {
+  name: "deleteFile" as const,
+};
+
 export const createDeleteFileTool = async ({
   workingDir,
   sendData,
@@ -14,7 +18,7 @@ export const createDeleteFileTool = async ({
 }) => {
   const allowedDirectory = workingDir;
   return {
-    deleteFile: tool({
+    [DeleteFileTool.name]: tool({
       description:
         "Delete a file. Creates a backup (.backup) before deleting, allowing for potential restoration.",
       parameters: z.object({

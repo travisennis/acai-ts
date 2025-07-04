@@ -4,6 +4,10 @@ import { z } from "zod";
 import type { TokenCounter } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
 
+export const WebSearchTool = {
+  name: "webSearch" as const,
+};
+
 export const createWebSearchTool = ({
   sendData,
   tokenCounter,
@@ -12,7 +16,7 @@ export const createWebSearchTool = ({
   tokenCounter: TokenCounter;
 }) => {
   return {
-    webSearch: tool({
+    [WebSearchTool.name]: tool({
       description:
         "Searches the web and returns match documents with their title, url, and text content. The query should be formulated as a natural language question.",
       parameters: z.object({

@@ -2,6 +2,10 @@ import { tool } from "ai";
 import { z } from "zod";
 import type { SendData } from "./types.ts";
 
+export const ThinkTool = {
+  name: "think" as const,
+};
+
 const toolDescription = `Use the tool to think about something. It will not obtain new information or make any changes to the repository, but just log the thought. Use it when complex reasoning or brainstorming is needed.
 Common use cases:
 1. When exploring a repository and discovering the source of a bug, call this tool to brainstorm several unique ways of fixing the bug, and assess which change(s) are likely to be simplest and most effective
@@ -17,7 +21,7 @@ export const createThinkTool = (
 ) => {
   const { sendData } = options;
   return {
-    think: tool({
+    [ThinkTool.name]: tool({
       description: toolDescription,
       parameters: z.object({
         thought: z.string().describe("Your thought"),

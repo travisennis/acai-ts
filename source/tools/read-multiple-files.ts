@@ -5,6 +5,10 @@ import type { TokenCounter } from "../token-utils.ts";
 import { readFileAndCountTokens } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
 
+export const ReadMultipleFilesTool = {
+  name: "readMultipleFiles" as const,
+};
+
 export const createReadMultipleFilesTool = async ({
   workingDir,
   sendData,
@@ -16,7 +20,7 @@ export const createReadMultipleFilesTool = async ({
 }) => {
   const allowedDirectory = workingDir;
   return {
-    readMultipleFiles: tool({
+    [ReadMultipleFilesTool.name]: tool({
       description:
         "Read the contents of multiple files simultaneously. This is more " +
         "efficient than reading files one by one when you need to analyze " +

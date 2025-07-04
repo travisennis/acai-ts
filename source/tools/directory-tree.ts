@@ -7,6 +7,10 @@ import {
 } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
 
+export const DirectoryTreeTool = {
+  name: "directoryTree" as const,
+};
+
 export const createDirectoryTreeTool = async ({
   workingDir,
   sendData,
@@ -16,7 +20,7 @@ export const createDirectoryTreeTool = async ({
 }) => {
   const allowedDirectory = workingDir;
   return {
-    directoryTree: tool({
+    [DirectoryTreeTool.name]: tool({
       description:
         "Get a directory tree structure for a given path. This tool will ignore any directories or files listed in a .gitignore file. Use this tool when you need to see a complete directory tree for a project. This can be used to get an understanding of how a project is organized and what files are available before using other file system tools.",
       parameters: z.object({

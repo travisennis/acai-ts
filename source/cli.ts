@@ -14,7 +14,13 @@ import type { PromptManager } from "./prompts/manager.ts";
 import { minSystemPrompt } from "./prompts.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import type { TokenCounter } from "./token-utils.ts";
+import { DeleteFileTool } from "./tools/delete-file.ts";
+import { EditFileTool } from "./tools/edit-file.ts";
 import { initCliTools } from "./tools/index.ts";
+import { MoveFileTool } from "./tools/move-file.ts";
+import { SaveFileTool } from "./tools/save-file.ts";
+import { ThinkTool } from "./tools/think.ts";
+import { UndoEditTool } from "./tools/undo-edit.ts";
 
 interface CliOptions {
   messageHistory: MessageHistory;
@@ -98,12 +104,12 @@ export class Cli {
         tools,
         // biome-ignore lint/style/useNamingConvention: third-party controlled
         experimental_activeTools: [
-          "editFile",
-          "undoEdit",
-          "saveFile",
-          "moveFile",
-          "deleteFile",
-          "think",
+          EditFileTool.name,
+          UndoEditTool.name,
+          SaveFileTool.name,
+          MoveFileTool.name,
+          DeleteFileTool.name,
+          ThinkTool.name,
         ],
         // biome-ignore lint/style/useNamingConvention: third-party controlled
         experimental_repairToolCall: modelConfig.supportsToolCalling

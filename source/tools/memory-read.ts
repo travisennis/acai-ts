@@ -5,6 +5,10 @@ import { z } from "zod";
 import { config } from "../config.ts";
 import type { SendData } from "./types.ts";
 
+export const MemoryReadTool = {
+  name: "memoryRead" as const,
+};
+
 const MEMORY_DIR = config.app.ensurePath("memory");
 
 // Helper to check if a file exists
@@ -162,6 +166,6 @@ export const createMemoryReadTool = (
   });
 
   return {
-    memoryRead: memoryReadTool,
+    [MemoryReadTool.name]: memoryReadTool,
   };
 };

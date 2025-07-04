@@ -5,6 +5,10 @@ import { z } from "zod";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
 
+export const UndoEditTool = {
+  name: "undoEdit" as const,
+};
+
 export const createUndoEditTool = async ({
   workingDir,
   sendData,
@@ -14,7 +18,7 @@ export const createUndoEditTool = async ({
 }) => {
   const allowedDirectory = workingDir;
   return {
-    undoEdit: tool({
+    [UndoEditTool.name]: tool({
       description:
         "Reverts the last edit made to a file using the editFile tool by restoring from its backup file (.backup).",
       parameters: z.object({

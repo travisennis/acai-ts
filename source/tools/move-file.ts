@@ -4,6 +4,10 @@ import { z } from "zod";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
 
+export const MoveFileTool = {
+  name: "moveFile" as const,
+};
+
 export const createMoveFileTool = async ({
   workingDir,
   sendData,
@@ -13,7 +17,7 @@ export const createMoveFileTool = async ({
 }) => {
   const allowedDirectory = workingDir;
   return {
-    moveFile: tool({
+    [MoveFileTool.name]: tool({
       description:
         "Move or rename files and directories. Can move files between directories " +
         "and rename them in a single operation. If the destination exists, the " +
