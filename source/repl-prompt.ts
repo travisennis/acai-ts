@@ -167,7 +167,21 @@ export class ReplPrompt {
 
   async input() {
     const input = await this.rl.question("> ");
-    this.saveHistory(input);
+
+    // The readline interface automatically adds the input to the history.
+    // We need to handle two things:
+    // 1. Don't save empty lines.
+    // 2. Enforce max history size.
+    if (!input.trim()) {
+      // Last entry was this empty input, so remove it.
+      this.history.pop();
+    } else {
+      // A valid command was added. Trim history if needed.
+      while (this.history.length > this.maxHistory) {
+        this.history.shift();
+      }
+    }
+
     return input;
   }
 
@@ -181,18 +195,5 @@ export class ReplPrompt {
 
   [Symbol.dispose]() {
     this.close();
-  }
-
-  // Function to save history
-  saveHistory(input: string) {
-    if (!input.trim()) {
-      return; // Ignore empty input
-    }
-    if (this.history[this.history.length - 1] !== input) {
-      this.history.push(input);
-      if (this.history.length > this.maxHistory) {
-        this.history.shift(); // Keep history size limited
-      }
-    }
   }
 }
