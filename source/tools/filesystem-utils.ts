@@ -191,30 +191,25 @@ async function generateDirectoryTree(
   ig: Ignore,
   level = 1,
 ): Promise<string> {
-  try {
-    const name = path.basename(dirPath);
-    let output = `${getIndent(level, false)}${name}\n`;
+  const name = path.basename(dirPath);
+  let output = `${getIndent(level, false)}${name}\n`;
 
-    const items = await fs.readdir(dirPath);
-    const filteredItems = ig.filter(items);
+  const items = await fs.readdir(dirPath);
+  const filteredItems = ig.filter(items);
 
-    for (let i = 0; i < filteredItems.length; i++) {
-      const item = filteredItems[i] ?? "";
-      const itemPath = path.join(dirPath, item);
-      const isLast = i === items.length - 1;
-      const stats = await fs.stat(itemPath);
+  for (let i = 0; i < filteredItems.length; i++) {
+    const item = filteredItems[i] ?? "";
+    const itemPath = path.join(dirPath, item);
+    const isLast = i === items.length - 1;
+    const stats = await fs.stat(itemPath);
 
-      if (stats.isDirectory()) {
-        output += await generateDirectoryTree(itemPath, ig, level + 1);
-      } else {
-        output += `${getIndent(level + 1, isLast)}${item}\n`;
-      }
+    if (stats.isDirectory()) {
+      output += await generateDirectoryTree(itemPath, ig, level + 1);
+    } else {
+      output += `${getIndent(level + 1, isLast)}${item}\n`;
     }
-    return output;
-  } catch (error) {
-    console.error(`Error reading directory: ${dirPath}`, error);
-    return `Error reading directory: ${dirPath}: ${(error as Error).message}`;
   }
+  return output;
 }
 
 /**
