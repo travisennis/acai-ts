@@ -27,13 +27,14 @@ export const createDirectoryTreeTool = async ({
         path: z.string().describe("The path."),
       }),
       execute: async ({ path }, { toolCallId }) => {
+        let validPath: string;
         try {
           sendData?.({
             id: toolCallId,
             event: "tool-init",
             data: `Listing directory tree: ${path}`,
           });
-          const validPath = await validatePath(
+          validPath = await validatePath(
             joinWorkingDir(path, workingDir),
             allowedDirectory,
           );
@@ -42,10 +43,10 @@ export const createDirectoryTreeTool = async ({
             event: "tool-completion",
             data: "Done",
           });
-          return directoryTree(validPath);
         } catch (error) {
           return `Failed to show directory tree: ${(error as Error).message}`;
         }
+        return directoryTree(validPath);
       },
     }),
   };
