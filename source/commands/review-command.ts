@@ -13,9 +13,9 @@ export const reviewCommand = ({
         promptManager.set(
           `You are an expert code reviewer. Follow these steps:
 
-      1. If no PR number is provided in the args, use bashTool("gh pr list") to show open PRs
-      2. If a PR number is provided, use bashTool("gh pr view <number>") to get PR details
-      3. Use bashTool("gh pr diff <number>") to get the diff
+      1. If no PR number is provided in the args, use bash("gh pr list") to show open PRs
+      2. If a PR number is provided, use bash("gh pr view <number>") to get PR details
+      3. Use bash("gh pr diff <number>") to get the diff
       4. Analyze the changes and provide a thorough code review that includes:
          - Overview of what the PR does
          - Analysis of code quality and style

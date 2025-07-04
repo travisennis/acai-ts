@@ -9,7 +9,7 @@ import type { SendData } from "./types.ts";
 
 const TOOLS = [
   "grepFiles",
-  "bashTool",
+  "bash",
   "readFile",
   "readMultipleFiles",
   "directoryTree",
@@ -22,7 +22,7 @@ export function getToolDescription(): string {
   return `Launch a new agent that has access to the following tools: ${toolNames}. When you are searching for a keyword or file and are not confident that you will find the right match on the first try, use the Agent tool to perform the search for you. For example:
 
 - If you are searching for a keyword like "config" or "logger", the Agent tool is appropriate
-- If you want to read a specific file path, use the readFile or appropriate command via the bashTool instead of this tool, to find the match more quickly
+- If you want to read a specific file path, use the readFile or appropriate command via the bash tool instead of this tool, to find the match more quickly
 - If you are searching for a specific class definition like "class Foo", use the grepFiles tool instead, to find the match more quickly
 
 Usage notes:

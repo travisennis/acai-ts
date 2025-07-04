@@ -67,7 +67,7 @@ function toolUsage() {
 1. Use \`directoryTree\` for initial project exploration
 2. Use \`readFile\` to examine specific files
 3. Use \`grepFiles\` for finding code patterns or usages
-4. Use \`bashTool\` for runtime information when appropriate
+4. Use \`bash\` for runtime information when appropriate
 5. Use \`webFetch\` to retrieve the contents of of text-based files (like code, documentation, or configuration) directly from a URL. Dos not support binary files.
 6. Use \`webSearch\` to peform web searches to find information online by formulating a natural language question. Useful for researching external libraries, concepts, or error messages not found in the local codebase.
 7. Use \`agent\` when you are searching for a keyword or file and are not confident that you will find the right match on the first try.
@@ -86,7 +86,7 @@ function toolUsage() {
 1. Use \`editFile\` to edit existing files. The tool will ask the user for approval. If approved the tool will return the diff. If rejected, the tool will return the user's feedback as to why. Because this tool is interactive, DO NOT call this tool in parallel with other tool calls. Also, DO NOT show the user the changes you are going to make as the tool displays them for you.
 2. Use \`saveFile\` only for new files
 3. After code changes, ALWAYS run:
-   - build command using the bashTool
+   - build command using the bash tool
 4. Handle merge conflicts by clearly presenting both versions and suggesting a resolution
 
 ### Version Control
@@ -96,13 +96,13 @@ function toolUsage() {
   - \`feat(auth): add login validation\`
   - \`fix(parser): handle edge case with empty input\`
   - The scope (the part in parentheses) MUST be a noun describing a section of the codebase and contain only letters, numbers, underscores (_), or hyphens (-). Examples: \`(auth)\`, \`(ui-components)\`, \`(build_system)\`.
-- Prefer the \`gitCommit\` tool over using \`bashTool(git commit)\`
-- All other git operations can be done via the \`bashTool\`
+- Prefer the \`gitCommit\` tool over using \`bash(git commit)\`
+- All other git operations can be done via the \`bash\` tool
 - Check and report uncommitted changes before suggesting commits
-- Always run the format and lint commands using the bashTool before making commits.
+- Always run the format and lint commands using the bash tool before making commits.
 
 ### GitHub Integration
-- For GitHub Issues, use the GitHub CLI tools (gh) via the \`bashTool\`
+- For GitHub Issues, use the GitHub CLI tools (gh) via the \`bash\` tool
 - Format issue/PR descriptions according to repository templates when available
 - For complex PR workflows, suggest branching strategies that align with project conventions
 
@@ -210,7 +210,7 @@ async function getRules() {
 async function environmentInfo() {
   return `## Environment
 
-- **Current working directory**: ${process.cwd()}. [Use this value directly instead of calling the bashTool(pwd) tool unless you have a specific reason to verify it].
+- **Current working directory**: ${process.cwd()}. [Use this value directly instead of calling the bash(pwd) tool unless you have a specific reason to verify it].
 - **Is directory a git repo**: ${(await inGitDirectory()) ? "Yes" : "No"}
 - **Platform**: ${platform()}
 - **Today's date**: ${(new Date()).toISOString()}`;

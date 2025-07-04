@@ -21,7 +21,7 @@ Current working directory: ${process.cwd()}
 
 ${await getGitStatus()}
 
-Use bashTool("git diff --cached") if there are staged changes or bashTool("git diff") if there are not.`,
+Use bash("git diff --cached") if there are staged changes or bash("git diff") if there are not.`,
       );
       return Promise.resolve();
     },

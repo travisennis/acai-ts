@@ -6,7 +6,7 @@ import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../token-tracker.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import { createAgentTools } from "./agent.ts";
-import { createBashTools } from "./bash.ts";
+import { createBashTool } from "./bash.ts";
 import { createCodeInterpreterTool } from "./code-interpreter.ts";
 import { createDeleteFileTool } from "./delete-file.ts";
 import { createDirectoryTreeTool } from "./directory-tree.ts";
@@ -117,7 +117,7 @@ export async function initTools({
     tokenCounter,
   });
 
-  const bashTools = createBashTools({
+  const bashTool = createBashTool({
     baseDir: process.cwd(),
     sendData: sendDataFn,
     tokenCounter,
@@ -165,7 +165,7 @@ export async function initTools({
     ...thinkTool,
     ...webFetchTool,
     ...askUserTool,
-    ...bashTools,
+    ...bashTool,
     ...webSearchTool,
     ...memoryReadTool,
     ...memoryWriteTool,
@@ -249,7 +249,7 @@ export async function initCliTools({
     tokenCounter,
   });
 
-  const bashTools = createBashTools({
+  const bashTool = createBashTool({
     baseDir: process.cwd(),
     sendData: undefined,
     tokenCounter,
@@ -277,7 +277,7 @@ export async function initCliTools({
     ...grepTool,
     ...thinkTool,
     ...webFetchTool,
-    ...bashTools,
+    ...bashTool,
     ...webSearchTool,
     ...memoryReadTool,
     ...memoryWriteTool,
