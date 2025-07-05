@@ -73,7 +73,7 @@
     "tree-sitter-typescript": "0.23.2",
     "ts-pattern": "^5.7.1",
     "wrap-ansi": "^9.0.0",
-    "zod": "^3.25.71"
+    "zod": "^3.25.74"
   },
   "devDependencies": {
     "@ai-sdk/provider": "^1.1.3",
