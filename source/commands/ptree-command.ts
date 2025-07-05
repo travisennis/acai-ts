@@ -1,5 +1,5 @@
-import path from "node:path";
 import fs from "node:fs/promises";
+import path from "node:path";
 import { globby } from "globby";
 import { directoryTree } from "../tools/filesystem-utils.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
@@ -25,12 +25,16 @@ export const ptreeCommand = ({ terminal }: CommandOptions): ReplCommand => {
       try {
         const stats = await fs.stat(dirPath);
         if (!stats.isDirectory()) {
-          terminal.error(`Error: '${targetPath || dirPath}' is not a directory.`);
+          terminal.error(
+            `Error: '${targetPath || dirPath}' is not a directory.`,
+          );
           return;
         }
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-          terminal.error(`Error: Directory not found at '${targetPath || dirPath}'`);
+          terminal.error(
+            `Error: Directory not found at '${targetPath || dirPath}'`,
+          );
           return;
         }
         throw error;

@@ -78,14 +78,21 @@ export const createEditFileTool = async ({
 
             let userChoice: string;
             if (autoAcceptEdits) {
-              terminal.writeln(chalk.green("✓ Auto-accepting edits (all future edits will be accepted)"));
+              terminal.writeln(
+                chalk.green(
+                  "✓ Auto-accepting edits (all future edits will be accepted)",
+                ),
+              );
               userChoice = "accept";
             } else {
               userChoice = await select({
                 message: "What would you like to do with these changes?",
                 choices: [
                   { name: "Accept these changes", value: "accept" },
-                  { name: "Accept all future edits (including these)", value: "accept-all" },
+                  {
+                    name: "Accept all future edits (including these)",
+                    value: "accept-all",
+                  },
                   { name: "Reject these changes", value: "reject" },
                 ],
                 default: "accept",
@@ -96,7 +103,9 @@ export const createEditFileTool = async ({
 
             if (userChoice === "accept-all") {
               autoAcceptEdits = true;
-              terminal.writeln(chalk.yellow("✓ Auto-accept mode enabled for all future edits"));
+              terminal.writeln(
+                chalk.yellow("✓ Auto-accept mode enabled for all future edits"),
+              );
               terminal.lineBreak();
             }
 
