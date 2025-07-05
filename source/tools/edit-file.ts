@@ -1,4 +1,4 @@
-import { confirm, input } from "@inquirer/prompts";
+import { input, select } from "@inquirer/prompts";
 import { tool } from "ai";
 import chalk from "chalk";
 import { z } from "zod";
@@ -24,13 +24,14 @@ export const createEditFileTool = async ({
   sendData?: SendData;
 }) => {
   const allowedDirectory = workingDir;
+  let autoAcceptEdits = false;
   return {
     [EditFileTool.name]: tool({
       description:
         "Make line-based edits to a text file. Each edit replaces exact line sequences " +
         "with new content. Creates a backup file (.backup) before saving changes. " +
         "Returns a git-style diff showing the changes made. " +
-        "Only works within allowed directories.",
+        "Only works within allowed directories. Supports auto-accept mode for all future edits.",
       parameters: z.object({
         path: z.string().describe("The path of the file to edit."),
         edits: z.array(
@@ -75,14 +76,31 @@ export const createEditFileTool = async ({
 
             terminal.lineBreak();
 
-            const acceptEdits = await confirm({
-              message: "Accept these changes?",
-              default: false,
-            });
+            let userChoice: string;
+            if (autoAcceptEdits) {
+              terminal.writeln(chalk.green("✓ Auto-accepting edits (all future edits will be accepted)"));
+              userChoice = "accept";
+            } else {
+              userChoice = await select({
+                message: "What would you like to do with these changes?",
+                choices: [
+                  { name: "Accept these changes", value: "accept" },
+                  { name: "Accept all future edits (including these)", value: "accept-all" },
+                  { name: "Reject these changes", value: "reject" },
+                ],
+                default: "accept",
+              });
+            }
 
             terminal.lineBreak();
 
-            if (acceptEdits) {
+            if (userChoice === "accept-all") {
+              autoAcceptEdits = true;
+              terminal.writeln(chalk.yellow("✓ Auto-accept mode enabled for all future edits"));
+              terminal.lineBreak();
+            }
+
+            if (userChoice === "accept" || userChoice === "accept-all") {
               const finalEdits = await applyFileEdits(validPath, edits, false);
               // Send completion message indicating success
               sendData?.({
