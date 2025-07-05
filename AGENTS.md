@@ -6,7 +6,7 @@
 - **Format:** `npm run format`
 - **Fix Lint/Format:** `npm run lint:fix`
 - **Test:** `npm test`
-- **Run Single Test File:** `node --test test/path/to/your.test.ts`
+- **Run Single Test File:** `node --no-warnings --test test/path/to/your.test.ts`
 - **Find Unused Code/Deps:** `npm run knip`
 
 ### Code Style & Guidelines
