@@ -121,6 +121,7 @@ export async function initTools({
     baseDir: process.cwd(),
     sendData: sendDataFn,
     tokenCounter,
+    terminal,
   });
 
   const memoryReadTool = createMemoryReadTool({
@@ -253,6 +254,7 @@ export async function initCliTools({
     baseDir: process.cwd(),
     sendData: undefined,
     tokenCounter,
+    terminal: undefined,
   });
 
   const memoryReadTool = createMemoryReadTool({

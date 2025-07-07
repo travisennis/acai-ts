@@ -1,8 +1,11 @@
 import path from "node:path";
+import { input, select } from "@inquirer/prompts";
 import { isUndefined } from "@travisennis/stdlib/typeguards";
 import { tool } from "ai";
+import chalk from "chalk";
 import { z } from "zod";
 import { config } from "../config.ts";
+import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import type { ExecuteResult } from "../utils/process.ts";
 import { executeCommand } from "../utils/process.ts";
@@ -87,14 +90,17 @@ export const createBashTool = ({
   baseDir,
   sendData,
   tokenCounter,
+  terminal,
 }: {
   baseDir: string;
   sendData?: SendData | undefined;
   tokenCounter: TokenCounter;
+  terminal?: Terminal;
 }) => {
+  let autoAcceptCommands = false;
   return {
     [BashTool.name]: tool({
-      description: `Execute bash commands and return their output. Limited to a whitelist of safe commands: ${ALLOWED_COMMANDS.join(", ")}. Commands will only execute within the project directory for security. Always specify absolute paths to avoid errors.`,
+      description: `Execute bash commands and return their output. Limited to a whitelist of safe commands: ${ALLOWED_COMMANDS.join(", ")}. Commands will only execute within the project directory for security. Always specify absolute paths to avoid errors. In interactive mode, prompts for user approval before executing commands with auto-accept option.`,
       parameters: z.object({
         command: z
           .string()
@@ -179,6 +185,64 @@ export const createBashTool = ({
                 e,
               );
             }
+          }
+        }
+
+        // Prompt user for command execution approval (only in interactive mode)
+        if (terminal) {
+          terminal.lineBreak();
+          terminal.writeln(
+            `${chalk.blue.bold("●")} About to execute command: ${chalk.cyan(command)}`,
+          );
+          terminal.writeln(`${chalk.gray("Working directory:")} ${safeCwd}`);
+          terminal.lineBreak();
+
+          let userChoice: string;
+          if (autoAcceptCommands) {
+            terminal.writeln(
+              chalk.green(
+                "✓ Auto-accepting command (all future commands will be accepted)",
+              ),
+            );
+            userChoice = "accept";
+          } else {
+            userChoice = await select({
+              message: "What would you like to do with this command?",
+              choices: [
+                { name: "Execute this command", value: "accept" },
+                {
+                  name: "Execute all future commands (including this)",
+                  value: "accept-all",
+                },
+                { name: "Reject this command", value: "reject" },
+              ],
+              default: "accept",
+            });
+          }
+
+          terminal.lineBreak();
+
+          if (userChoice === "accept-all") {
+            autoAcceptCommands = true;
+            terminal.writeln(
+              chalk.yellow(
+                "✓ Auto-accept mode enabled for all future commands",
+              ),
+            );
+            terminal.lineBreak();
+          }
+
+          if (userChoice === "reject") {
+            const reason = await input({ message: "Feedback: " });
+            terminal.lineBreak();
+
+            const rejectionMsg = `Command rejected by user. Reason: ${reason}`;
+            sendData?.({
+              event: "tool-completion",
+              id: toolCallId,
+              data: rejectionMsg,
+            });
+            return rejectionMsg;
           }
         }
 
