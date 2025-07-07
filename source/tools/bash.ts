@@ -91,13 +91,15 @@ export const createBashTool = ({
   sendData,
   tokenCounter,
   terminal,
+  autoAcceptAll,
 }: {
   baseDir: string;
   sendData?: SendData | undefined;
   tokenCounter: TokenCounter;
   terminal?: Terminal;
+  autoAcceptAll: boolean;
 }) => {
-  let autoAcceptCommands = false;
+  let autoAcceptCommands = autoAcceptAll;
   return {
     [BashTool.name]: tool({
       description: `Execute bash commands and return their output. Limited to a whitelist of safe commands: ${ALLOWED_COMMANDS.join(", ")}. Commands will only execute within the project directory for security. Always specify absolute paths to avoid errors. In interactive mode, prompts for user approval before executing commands with auto-accept option.`,
@@ -248,7 +250,6 @@ export const createBashTool = ({
 
         try {
           const result = await asyncExec(command, safeCwd, safeTimeout);
-          const formattedResult = format(result);
 
           if (result.signal === "SIGTERM") {
             const timeoutMessage = `Command timed out after ${safeTimeout}ms. This might be because the command is waiting for input.`;
@@ -260,6 +261,8 @@ export const createBashTool = ({
             return timeoutMessage;
           }
 
+          const formattedResult = format(result);
+
           let tokenCount = 0;
           try {
             tokenCount = tokenCounter.count(formattedResult);
@@ -270,7 +273,7 @@ export const createBashTool = ({
 
           const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
           // Adjust max token check message if line selection was used
-          const maxTokenMessage = `Output of commmand (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Please use adjust how you call the command to get back more specific results`;
+          const maxTokenMessage = `Output of commmand (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Please adjust how you call the command to get back more specific results`;
 
           const finalResult =
             tokenCount <= maxTokens ? formattedResult : maxTokenMessage;

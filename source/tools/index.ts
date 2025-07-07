@@ -40,10 +40,12 @@ export async function initTools({
   terminal,
   tokenCounter,
   events,
+  autoAcceptAll,
 }: {
   terminal: Terminal;
   tokenCounter: TokenCounter;
   events: Map<string, Message[]>;
+  autoAcceptAll: boolean;
 }) {
   const sendDataFn = sendDataHandler(events);
 
@@ -63,6 +65,7 @@ export async function initTools({
     workingDir: process.cwd(),
     terminal,
     sendData: sendDataFn,
+    autoAcceptAll,
   });
 
   const undoEditTool = await createUndoEditTool({
@@ -122,6 +125,7 @@ export async function initTools({
     sendData: sendDataFn,
     tokenCounter,
     terminal,
+    autoAcceptAll,
   });
 
   const memoryReadTool = createMemoryReadTool({
@@ -196,6 +200,7 @@ export async function initCliTools({
     workingDir: process.cwd(),
     terminal: undefined,
     sendData: undefined,
+    autoAcceptAll: true,
   });
 
   const undoEditTool = await createUndoEditTool({
@@ -255,6 +260,7 @@ export async function initCliTools({
     sendData: undefined,
     tokenCounter,
     terminal: undefined,
+    autoAcceptAll: true,
   });
 
   const memoryReadTool = createMemoryReadTool({

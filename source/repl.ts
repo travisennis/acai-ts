@@ -38,6 +38,7 @@ interface ReplOptions {
   config: Record<PropertyKey, unknown>;
   tokenCounter: TokenCounter;
   toolEvents: Map<string, Message[]>;
+  autoAcceptAll: boolean;
 }
 
 type CompleteToolSet = AsyncReturnType<typeof initTools> &
@@ -70,6 +71,7 @@ export class Repl {
       commands,
       tokenCounter,
       toolEvents,
+      autoAcceptAll,
     } = this.options;
 
     logger.info(config, "Config:");
@@ -175,6 +177,7 @@ export class Repl {
             ...(await initTools({
               terminal,
               tokenCounter,
+              autoAcceptAll,
               events: toolEvents,
             })),
             ...(await initAgents({

@@ -28,6 +28,7 @@ const cli = meow(
     --oneshot, -o  Run once and exit
     --continue Load the most recent conversation
     --resume Select a recent conversation to resume
+    --autoAcceptAll Accept all commands and edits without prompting
 
 	Examples
 	  $ acai --model anthopric:sonnet
@@ -55,6 +56,10 @@ const cli = meow(
         default: false,
       },
       resume: {
+        type: "boolean",
+        default: false,
+      },
+      autoAcceptAll: {
         type: "boolean",
         default: false,
       },
@@ -230,6 +235,7 @@ async function main() {
     commands,
     tokenCounter,
     toolEvents,
+    autoAcceptAll: cli.flags.autoAcceptAll,
   });
 
   return (await asyncTry(repl.run())).recover(handleError);

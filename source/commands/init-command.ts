@@ -32,7 +32,12 @@ Your current working directory is ${process.cwd()}
 Is directory a git repo: ${(await inGitDirectory()) ? "Yes" : "No"}
 Platform: ${platform()}`,
         maxSteps: 40,
-        tools: await initTools({ terminal, tokenCounter, events: toolEvents }),
+        tools: await initTools({
+          terminal,
+          tokenCounter,
+          events: toolEvents,
+          autoAcceptAll: true,
+        }),
       });
 
       for await (const text of result.textStream) {

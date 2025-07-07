@@ -18,13 +18,15 @@ export const createEditFileTool = async ({
   workingDir,
   terminal,
   sendData,
+  autoAcceptAll,
 }: {
   workingDir: string;
   terminal?: Terminal;
   sendData?: SendData;
+  autoAcceptAll: boolean;
 }) => {
   const allowedDirectory = workingDir;
-  let autoAcceptEdits = false;
+  let autoAcceptEdits = autoAcceptAll;
   return {
     [EditFileTool.name]: tool({
       description:
