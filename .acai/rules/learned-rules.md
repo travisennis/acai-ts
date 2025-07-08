@@ -2,4 +2,5 @@
 - Always explicitly ask for user confirmation before committing changes.
 - Always replace usages console.log with usages of console.info.
 - Always run a build after making code changes to verify correctness.
-- Always use the most efficient workflow to complete tasks. (The agent performed unnecessary undo/redo operations.)
+- Always use the most efficient workflow to complete tasks.
+- Always stage changes before attempting to commit them.
