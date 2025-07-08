@@ -17,6 +17,7 @@ export const BashTool = {
 
 // Whitelist of allowed commands
 const ALLOWED_COMMANDS = [
+  "chmod",
   "ls",
   "cat",
   "grep",
@@ -208,6 +209,7 @@ export const createBashTool = ({
             );
             userChoice = "accept";
           } else {
+            await new Promise((resolve) => setTimeout(resolve, 250));
             userChoice = await select({
               message: "What would you like to do with this command?",
               choices: [

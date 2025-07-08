@@ -144,6 +144,7 @@ export async function initTools({
         question: z.string().describe("The question to ask the user."),
       }),
       execute: async ({ question }) => {
+        await new Promise((resolve) => setTimeout(resolve, 250));
         terminal.lineBreak();
         terminal.display(question, true);
         terminal.lineBreak();
