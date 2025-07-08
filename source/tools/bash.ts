@@ -74,8 +74,8 @@ function hasCommandChaining(command: string): boolean {
   return patterns.some((re) => re.test(stripped));
 }
 
-function areAllPipelineCommandsAllowed(command: string): boolean {
-  const commands = command.split("|").map((c) => c.trim());
+function areAllChainedCommandsAllowed(command: string): boolean {
+  const commands = command.split(/[|&]/).map((c) => c.trim());
   return commands.every(isCommandAllowed);
 }
 
@@ -144,7 +144,7 @@ export const createBashTool = ({
 
         // Validate all commands in the potential pipeline.
         // This handles both single commands and piped commands.
-        if (!areAllPipelineCommandsAllowed(command)) {
+        if (!areAllChainedCommandsAllowed(command)) {
           const errorMsg = `Command not allowed. Each command in a pipeline must be in the approved list: ${ALLOWED_COMMANDS.join(
             ", ",
           )}`;
