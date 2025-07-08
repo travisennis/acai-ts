@@ -209,7 +209,7 @@ export const createBashTool = ({
             );
             userChoice = "accept";
           } else {
-            await new Promise((resolve) => setTimeout(resolve, 250));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
             userChoice = await select({
               message: "What would you like to do with this command?",
               choices: [
