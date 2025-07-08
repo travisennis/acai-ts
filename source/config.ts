@@ -32,18 +32,34 @@ export class ConfigManager {
     this.app = new DirectoryProvider(path.join(homedir(), ".acai"));
   }
 
-  // Project config helpers
-  async readProjectConfig(): Promise<ProjectConfig> {
-    const configPath = path.join(this.project.getPath(), "acai.json");
+  private async _readConfig(
+    configPath: string,
+  ): Promise<Partial<ProjectConfig>> {
     try {
       const data = await fs.readFile(configPath, "utf8");
       return jsonParser(ProjectConfigSchema).parse(data);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return ProjectConfigSchema.parse({});
+        return {};
       }
       throw error;
     }
+  }
+
+  // Project config helpers
+  async readProjectConfig(): Promise<ProjectConfig> {
+    const appConfigPath = path.join(this.app.getPath(), "acai.json");
+    const projectConfigPath = path.join(this.project.getPath(), "acai.json");
+
+    const appConfig = await this._readConfig(appConfigPath);
+    const projectConfig = await this._readConfig(projectConfigPath);
+
+    const mergedConfig = {
+      ...appConfig,
+      ...projectConfig,
+    };
+
+    return ProjectConfigSchema.parse(mergedConfig);
   }
 
   async readAgentsFile(): Promise<string> {

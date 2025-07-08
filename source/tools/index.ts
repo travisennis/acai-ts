@@ -93,8 +93,6 @@ export async function initTools({
     sendData: sendDataFn,
   });
 
-
-
   const codeInterpreterTool = createCodeInterpreterTool({
     sendData: sendDataFn,
   });
@@ -225,8 +223,6 @@ export async function initCliTools({
     workingDir: process.cwd(),
     sendData: undefined,
   });
-
-
 
   const codeInterpreterTool = createCodeInterpreterTool({
     sendData: undefined,
