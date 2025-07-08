@@ -20,5 +20,6 @@
 - **Error Handling:** Implement robust error handling (try/catch, result patterns, etc.).
 - **Logging:** Avoid `console.log` for debugging; use a proper logger or remove before committing.
 - **Commits:** Follow the Conventional Commits standard for commit messages.
+- **Commit Message Length:** Keep commit message lines (header, body, and footer) under 100 characters.
 - **Comments** Never add comments to the code explaining the edit you are making. Comments that help explain how code works are acceptable.
 - **Testing** Use `node:test` and `node:assert/strict` to write unit tests in the `./test` directory. Test directory should follow the same folder structure as source.
