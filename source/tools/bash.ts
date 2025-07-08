@@ -34,6 +34,7 @@ const ALLOWED_COMMANDS = [
   "sort",
   "head",
   "tail",
+  "sleep",
   // "test",
   "npm",
   "npx",
