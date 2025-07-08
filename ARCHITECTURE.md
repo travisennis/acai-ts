@@ -240,7 +240,7 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 | **directory-tree.ts** | This file implements the `directoryTree` tool for getting a directory tree structure for a given path. |
 | **edit-file.ts** | This file implements the `editFile` tool for modifying file contents with path validation and backup mechanisms. |
 | **filesystem-utils.ts** | This file likely contains general utility functions for file system operations used by various tools. |
-| **git-commit.ts** | This file implements the `gitCommit` tool for performing Git commits using the `simple-git` library. |
+
 | **git-utils.ts** | This file likely contains utility functions for Git operations, such as getting diff statistics or checking if a directory is a Git repository. |
 | **grep.ts** | This file implements the `grepFiles` tool using `ripgrep` (`rg`) for searching file contents based on a regex pattern. |
 | **index.ts** | This file initializes and exports all available tools as a single object, including the `askUser` tool and mechanisms for tools to report progress. |

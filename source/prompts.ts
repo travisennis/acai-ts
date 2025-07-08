@@ -6,7 +6,7 @@ import { BashTool } from "./tools/bash.ts";
 import { CodeInterpreterTool } from "./tools/code-interpreter.ts";
 import { DirectoryTreeTool } from "./tools/directory-tree.ts";
 import { EditFileTool } from "./tools/edit-file.ts";
-import { GitCommitTool } from "./tools/git-commit.ts";
+
 import { inGitDirectory } from "./tools/git-utils.ts";
 import { GrepTool } from "./tools/grep.ts";
 import { ReadFileTool } from "./tools/read-file.ts";
@@ -101,17 +101,7 @@ function toolUsage() {
    - build command using the \`${BashTool.name}\` tool
 4. Handle merge conflicts by clearly presenting both versions and suggesting a resolution
 
-### Version Control
-- Use \`${GitCommitTool.name}\` with Conventional Commit standards
-- Breaking changes must be noted with \`BREAKING CHANGE\` in footer
-- Example formats: 
-  - \`feat(auth): add login validation\`
-  - \`fix(parser): handle edge case with empty input\`
-  - The scope (the part in parentheses) MUST be a noun describing a section of the codebase and contain only letters, numbers, underscores (_), or hyphens (-). Examples: \`(auth)\`, \`(ui-components)\`, \`(build_system)\`.
-- Prefer the \`${GitCommitTool.name}\` tool over using \`${BashTool.name}(git commit)\`
-- All other git operations can be done via the \`${BashTool.name}\` tool
-- Check and report uncommitted changes before suggesting commits
-- Always run the format and lint commands using the \`${BashTool.name}\` tool before making commits.
+
 
 ### GitHub Integration
 - For GitHub Issues, use the GitHub CLI tools (gh) via the \`${BashTool.name}\` tool

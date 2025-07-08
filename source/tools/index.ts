@@ -11,7 +11,7 @@ import { createCodeInterpreterTool } from "./code-interpreter.ts";
 import { createDeleteFileTool } from "./delete-file.ts";
 import { createDirectoryTreeTool } from "./directory-tree.ts";
 import { createEditFileTool } from "./edit-file.ts";
-import { createGitCommitTool } from "./git-commit.ts";
+
 import { createGrepTool } from "./grep.ts";
 import { createMemoryReadTool } from "./memory-read.ts";
 import { createMemoryWriteTool } from "./memory-write.ts";
@@ -93,10 +93,7 @@ export async function initTools({
     sendData: sendDataFn,
   });
 
-  const gitCommitTool = await createGitCommitTool({
-    workingDir: process.cwd(),
-    sendData: sendDataFn,
-  });
+
 
   const codeInterpreterTool = createCodeInterpreterTool({
     sendData: sendDataFn,
@@ -165,7 +162,7 @@ export async function initTools({
     ...moveFileTool,
     ...directoryTreeTool,
     ...deleteFileTool,
-    ...gitCommitTool,
+
     ...codeInterpreterTool,
     ...grepTool,
     ...thinkTool,
@@ -229,10 +226,7 @@ export async function initCliTools({
     sendData: undefined,
   });
 
-  const gitCommitTool = await createGitCommitTool({
-    workingDir: process.cwd(),
-    sendData: undefined,
-  });
+
 
   const codeInterpreterTool = createCodeInterpreterTool({
     sendData: undefined,
@@ -281,7 +275,7 @@ export async function initCliTools({
     ...moveFileTool,
     ...directoryTreeTool,
     ...deleteFileTool,
-    ...gitCommitTool,
+
     ...codeInterpreterTool,
     ...grepTool,
     ...thinkTool,

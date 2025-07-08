@@ -13,7 +13,7 @@ Acai is a powerful **AI-driven command-line interface (CLI) tool** designed to a
 *   **Interactive AI Assistant:** Engage in a conversational REPL (Read-Eval-Print Loop) to get assistance with coding, debugging, refactoring, and more.
 *   **Codebase Interaction:** Read, edit, and navigate files; search code; and understand project structure.
 *   **Git Integration:** Generate conventional commits, review pull requests, and manage local changes.
-*   **Extensible Tooling:** Utilizes a suite of internal tools (e.g., `bash`, `codeInterpreter`, `webSearch`, `gitCommit`) to perform actions.
+*   **Extensible Tooling:** Utilizes a suite of internal tools (e.g., `bash`, `codeInterpreter`, `webSearch`) to perform actions.
 *   **Multi-Model Support:** Seamlessly switch between various AI providers (e.g., OpenAI, Google, Anthropic, DeepSeek, OpenRouter).
 *   **Context Management:** Automatically incorporates relevant file content, clipboard data, and conversation history into AI prompts.
 *   **Configurable & Learnable:** Customize behavior through project-specific rules and learn from user corrections.
