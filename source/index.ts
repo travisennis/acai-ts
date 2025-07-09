@@ -129,19 +129,19 @@ async function main() {
 
   const chosenModel: ModelName = isSupportedModel(cli.flags.model)
     ? cli.flags.model
-    : "google:pro25";
+    : "openrouter:sonnet4";
 
   const modelManager = new ModelManager({
     stateDir: appDir.ensurePath("audit"),
   });
   modelManager.setModel("repl", chosenModel);
   modelManager.setModel("cli", chosenModel);
-  modelManager.setModel("title-conversation", "google:flash25");
-  modelManager.setModel("conversation-summarizer", "google:flash25");
+  modelManager.setModel("title-conversation", "openrouter:gemini-flash25");
+  modelManager.setModel("conversation-summarizer", "openrouter:gemini-flash25");
   modelManager.setModel("tool-repair", "openai:gpt-4o-structured");
-  modelManager.setModel("conversation-analyzer", "google:flash25");
+  modelManager.setModel("conversation-analyzer", "openrouter:gemini-flash25");
   modelManager.setModel("init-project", chosenModel);
-  modelManager.setModel("task-agent", "google:flash25");
+  modelManager.setModel("task-agent", "openrouter:gemini-flash25");
 
   const tokenTracker = new TokenTracker();
   const tokenCounter = new TokenCounter();
