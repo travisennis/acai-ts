@@ -71,7 +71,7 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0,
     costPerOutputToken: 0,
-    category: "powerful",
+    category: "fast",
   },
   "openrouter:gemini-pro25": {
     id: "openrouter:gemini-pro25",
