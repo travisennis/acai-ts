@@ -4,3 +4,4 @@
 - Always run a build after making code changes to verify correctness.
 - Always use the most efficient workflow to complete tasks.
 - Always stage changes before attempting to commit them.
+- Never amend git commits without approval from the user.
