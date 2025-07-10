@@ -136,9 +136,10 @@ export async function applyFileEdits(
   for (const edit of edits) {
     const { oldText, newText } = edit; // Use literal oldText and newText
 
-    if (modifiedContent.includes(oldText)) {
-      // Literal replacement of the first occurrence
-      modifiedContent = modifiedContent.replace(oldText, newText);
+    const normalizedContent = normalizeLineEndings(modifiedContent);
+    const normalizedOldText = normalizeLineEndings(oldText);
+    if (normalizedContent.includes(normalizedOldText)) {
+      modifiedContent = normalizedContent.replace(normalizedOldText, newText);
     } else {
       // If literal match is not found, throw an error.
       // The previous complex fallback logic is removed to ensure literal matching.
