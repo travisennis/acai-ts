@@ -194,6 +194,9 @@ export const createBashTool = ({
 
         // Prompt user for command execution approval (only in interactive mode)
         if (terminal) {
+          if (!autoAcceptCommands) {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          }
           terminal.lineBreak();
           terminal.writeln(
             `${chalk.blue.bold("●")} About to execute command: ${chalk.cyan(command)}`,
@@ -210,7 +213,6 @@ export const createBashTool = ({
             );
             userChoice = "accept";
           } else {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
             userChoice = await select({
               message: "What would you like to do with this command?",
               choices: [
