@@ -104,7 +104,7 @@ export const createBashTool = ({
   let autoAcceptCommands = autoAcceptAll;
   return {
     [BashTool.name]: tool({
-      description: `Execute bash commands and return their output. Limited to a whitelist of safe commands: ${ALLOWED_COMMANDS.join(", ")}. Commands will only execute within the project directory for security. Always specify absolute paths to avoid errors. In interactive mode, prompts for user approval before executing commands with auto-accept option.`,
+      description: `Execute bash commands and return their output. Limited to a whitelist of safe commands: ${ALLOWED_COMMANDS.join(", ")}. Commands will only execute within the project directory for security. Always specify absolute paths to avoid errors.`,
       parameters: z.object({
         command: z
           .string()
