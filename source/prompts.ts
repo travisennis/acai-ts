@@ -204,7 +204,7 @@ async function getRules() {
     if (!rules) {
       result += "## Project Rules:\n\n";
     }
-    result += `${learnedRules}`;
+    result += `### Important rules to follow\n\n${learnedRules}`;
   }
   return result.trim();
 }
