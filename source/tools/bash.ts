@@ -268,6 +268,15 @@ export const createBashTool = ({
 
           const formattedResult = format(result);
 
+          sendData?.({
+            event: "tool-update",
+            id: toolCallId,
+            data: {
+              primary: "Result",
+              secondary: formattedResult.split("\n").slice(-5),
+            },
+          });
+
           let tokenCount = 0;
           try {
             tokenCount = tokenCounter.count(formattedResult);
