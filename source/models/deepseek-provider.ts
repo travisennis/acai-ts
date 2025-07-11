@@ -41,11 +41,11 @@ export const deepseekModelRegistry: {
     id: "deepseek:deepseek-reasoner",
     provider: "deepseek",
     contextWindow: 128000,
-    maxOutputTokens: 8000,
+    maxOutputTokens: 32768,
     defaultTemperature: 0.6,
     promptFormat: "bracket",
     supportsReasoning: true,
-    supportsToolCalling: false, // Check if this model supports tools
+    supportsToolCalling: true, // Check if this model supports tools
     costPerInputToken: 0.00000055, // Check official pricing
     costPerOutputToken: 0.00000219, // Check official pricing
     category: "balanced",

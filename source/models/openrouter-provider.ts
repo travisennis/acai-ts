@@ -56,11 +56,11 @@ export const openrouterModelRegistry: {
     id: "openrouter:deepseek-r1",
     provider: "openrouter",
     contextWindow: 128000,
-    maxOutputTokens: 8000,
+    maxOutputTokens: 32768,
     defaultTemperature: 0.6,
     promptFormat: "bracket",
     supportsReasoning: true,
-    supportsToolCalling: false,
+    supportsToolCalling: true,
     costPerInputToken: 0, // Assuming free tier or unknown cost
     costPerOutputToken: 0, // Assuming free tier or unknown cost
     category: "balanced",
