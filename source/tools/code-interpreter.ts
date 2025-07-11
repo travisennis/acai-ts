@@ -19,7 +19,12 @@ function jsCodeInterpreter(
   code: string,
   permissions: readonly InterpreterPermission[],
 ) {
-  const context: Record<string, unknown> = { console };
+  const logs: string[] = [];
+  const context: Record<string, unknown> = {};
+
+  context["console"] = {
+    log: (input: string) => logs.push(input),
+  };
 
   if (permissions.includes("fs")) {
     context["fs"] = _fs;
@@ -40,7 +45,16 @@ function jsCodeInterpreter(
 
   const options = { timeout: 120 * 1000 }; // Timeout in milliseconds
 
-  return runInNewContext(`(function() { ${code} })()`, context, options);
+  const result = runInNewContext(
+    `(function() { ${code} })()`,
+    context,
+    options,
+  );
+
+  return {
+    result,
+    logs,
+  };
 }
 
 export const createCodeInterpreterTool = ({
@@ -53,7 +67,7 @@ export const createCodeInterpreterTool = ({
   return {
     [CodeInterpreterTool.name]: tool({
       description:
-        "Executes Javascript code. The code will be executed in a node:vm environment. This tool will respond with the output of the execution or time out after 120.0 seconds. In order to return a result from running this code, use a return statement. Do not use console.log. The code will run inside of self-executing anonymous function: `(function() { <code> })()` Internet access for this session is disabled. Do not make external web requests or API calls as they will fail. Fileystem access for this vm is disabled. Do not make filesystem calls as they will fail. Don't use require.",
+        "Executes Javascript code. The code will be executed in a node:vm environment. This tool will respond with the output of the execution or time out after 120.0 seconds. In order to return a result from running this code, use a return statement. Logs will be returned when `console.log` is used. The code will run inside of self-executing anonymous function: `(function() { <code> })()` Internet access for this session is disabled. Do not make external web requests or API calls as they will fail. Fileystem access for this vm is disabled. Do not make filesystem calls as they will fail. Don't use require.",
       parameters: z.object({
         code: z.string().describe("Javascript code to be executed."),
       }),
@@ -68,7 +82,12 @@ export const createCodeInterpreterTool = ({
           sendData?.({
             event: "tool-update",
             id: toolCallId,
-            data: { primary: "Executing...", secondary: [code.slice(0, 500)] },
+            data: {
+              primary: "Executing...",
+              secondary: [
+                `${"`".repeat(3)} javascript\n${code.slice(0, 500)}${"`".repeat(3)}`,
+              ],
+            },
           });
 
           const result = jsCodeInterpreter(code, permissions ?? []);
