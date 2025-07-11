@@ -109,12 +109,15 @@ export const createMemoryReadTool = (
     parameters: z.object({
       filePath: z
         .string()
-        .optional()
+        .nullable()
         .describe(
           'Optional path to a specific memory file to read, relative to the memory directory. Cannot use ".." or absolute paths.',
         ),
     }),
-    execute: async ({ filePath }: { filePath?: string }, { toolCallId }) => {
+    execute: async (
+      { filePath }: { filePath: string | null },
+      { toolCallId },
+    ) => {
       sendData?.({
         event: "tool-init",
         id: toolCallId,
