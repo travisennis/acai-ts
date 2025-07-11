@@ -21,6 +21,7 @@ const openrouterModels = {
   "gemini-pro25": openRouterClient("google/gemini-2.5-pro"),
   sonnet4: openRouterClient("anthropic/claude-sonnet-4"),
   opus4: openRouterClient("anthropic/claude-opus-4"),
+  "gpt-4.1": openRouterClient("openai/gpt-4.1"),
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -115,6 +116,19 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0,
     costPerOutputToken: 0,
+    category: "balanced",
+  },
+  "openrouter:gpt-4.1": {
+    id: "openrouter:gpt-4.1",
+    provider: "openai",
+    contextWindow: 1000000,
+    maxOutputTokens: 32768,
+    defaultTemperature: 0.3,
+    promptFormat: "markdown",
+    supportsReasoning: false,
+    supportsToolCalling: true,
+    costPerInputToken: 0.000002,
+    costPerOutputToken: 0.000008,
     category: "balanced",
   },
 };
