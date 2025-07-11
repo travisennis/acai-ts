@@ -22,6 +22,7 @@ const openrouterModels = {
   sonnet4: openRouterClient("anthropic/claude-sonnet-4"),
   opus4: openRouterClient("anthropic/claude-opus-4"),
   "gpt-4.1": openRouterClient("openai/gpt-4.1"),
+  "cypher-alpha": openRouterClient("openrouter/cypher-alpha:free"),
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -129,6 +130,19 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000002,
     costPerOutputToken: 0.000008,
+    category: "balanced",
+  },
+  "openrouter:cypher-alpha": {
+    id: "openrouter:cypher-alpha",
+    provider: "openrouter",
+    contextWindow: 1000000,
+    maxOutputTokens: 10000,
+    defaultTemperature: 0.3,
+    promptFormat: "markdown",
+    supportsReasoning: false,
+    supportsToolCalling: true,
+    costPerInputToken: 0,
+    costPerOutputToken: 0,
     category: "balanced",
   },
 };
