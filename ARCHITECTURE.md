@@ -27,15 +27,6 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 │   ├── package.json
 │   ├── source
 │   │   ├── cli.ts
-│   │   ├── code-utils
-│   │   │   ├── code-map.ts
-│   │   │   ├── code-navigator.ts
-│   │   │   ├── queries
-│   │   │   │   ├── java-tags.scm.ts
-│   │   │   │   └── typescript-tags.scm.ts
-│   │   │   ├── tree-sitter-manager.ts
-│   │   │   ├── types.ts
-│   │   │   └── utils.ts
 │   │   ├── commands
 │   │   │   ├── application-log-command.ts
 │   │   │   ├── clean-repo.ts
@@ -108,7 +99,6 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 │   │   │   ├── directory-tree.ts
 │   │   │   ├── edit-file.ts
 │   │   │   ├── filesystem-utils.ts
-│   │   │   ├── git-commit.ts
 │   │   │   ├── git-utils.ts
 │   │   │   ├── grep.ts
 │   │   │   ├── index.ts
@@ -126,9 +116,6 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 │   │   ├── utils
 │   │   │   └── process.ts
 │   ├── test
-│   │   ├── code-utils
-│   │   │   ├── code-map.test.ts
-│   │   │   └── code-navigator.test.ts
 │   │   ├── terminal
 │   │   │   └── markdown-utils.test.ts
 │   ├── tsconfig.json
@@ -140,23 +127,7 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 | :--- | :--- |
 | **.acai** | This directory serves as the central location for Acai's internal state, configuration, and temporary files. |
 | **acai.json** | This file contains project-specific configuration for the Acai CLI tool, including custom commands and tool settings. |
-| **selections.json** | This file stores saved code selections made by the user via the `/selections` command or LSP actions. |
-| **available-tools.txt** | This file likely lists the tools available for the Acai AI agent to utilize. |
-| **cognitive_complexity_refactoring_progress.md** | This markdown file likely tracks progress or notes related to refactoring efforts focused on reducing cognitive complexity. |
-| **deleted_tools.md** | This markdown file documents tools that have been removed from the Acai project. |
-| **deleted_tools_88ced9ef.md** | This markdown file is likely a versioned or backup copy documenting tools that have been removed from the Acai project. |
-| **image-pasting.md** | This markdown file likely contains notes or documentation related to image pasting functionality within the application. |
-| **issue-4-plan.md** | This markdown file outlines the plan for addressing a specific project issue identified as 'issue 4'. |
-| **marked-renderer-debug.md** | This markdown file likely contains debugging notes or information related to the `marked` renderer used for terminal output. |
-| **marked-renderer-refactor-plan.md** | This markdown file outlines the plan for refactoring the `marked` renderer component responsible for terminal output. |
-| **memory-use-cases.md** | This markdown file describes various use cases for the memory feature within the Acai application. |
-| **refactoring-tools.md** | This markdown file likely contains notes or plans related to refactoring the tools used in the project. |
-| **system_prompt.txt** | This file likely contains the base system prompt provided to the AI model to guide its behavior. |
-| **update-architecture-document.md** | This markdown file likely contains notes or a plan for updating the main `ARCHITECTURE.md` document. |
 | **learned-rules.md** | This file stores rules learned by Acai based on user corrections and feedback, aiming to improve its future behavior. |
-| **generateSystemPrompt.ts** | This TypeScript script is responsible for dynamically generating the main system prompt for the AI model. |
-| **list-tools.mjs** | This JavaScript module likely lists or manages the available tools that the Acai agent can invoke. |
-| **p5_geometric_shapes.js** | This JavaScript file appears to be an example or utility related to p5.js for geometric shapes, possibly for testing or demonstration purposes. |
 | **.gitignore** | This file specifies intentionally untracked files and directories that Git should ignore during version control. |
 | **.ignore** | This file is likely used by file watching or search tools (like ripgrep) to specify files and directories to ignore beyond `.gitignore`. |
 | **AGENTS.md** | This markdown file likely contains project-specific rules, guidelines, and commands for Acai to follow. |
@@ -167,12 +138,6 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 | **knip.json** | This file is the configuration for Knip, a tool used to detect unused files, dependencies, and exports in the project. |
 | **package-lock.json** | This file records the exact versions of all installed Node.js dependencies, ensuring reproducible builds across different environments. |
 | **package.json** | This file defines project metadata (name, version), dependencies, development scripts, and binary entry points for the Node.js project. |
-| **cli.ts** | This TypeScript file is likely the main entry point for the Acai command-line interface application. |
-| **code-map.ts** | This file provides the `CodeMap` class to analyze TypeScript source code and generate a structural map, which is used by the LSP for context gathering. |
-| **code-navigator.ts** | This file likely provides functionality for navigating through code, possibly related to the code map or Language Server Protocol (LSP) features. |
-| **java-tags.scm.ts** | This file likely contains Tree-sitter grammar definitions or queries specific to Java, used for code parsing and tagging. |
-| **typescript-tags.scm.ts** | This file likely contains Tree-sitter grammar definitions or queries specific to TypeScript, used for code parsing and tagging. |
-| **tree-sitter-manager.ts** | This file likely manages Tree-sitter parsers for different programming languages, enabling efficient syntax analysis. |
 | **types.ts** | This file defines common TypeScript types and interfaces used across various modules within the application. |
 | **utils.ts** | This file contains general utility functions that are used throughout the application. |
 | **application-log-command.ts** | This file implements a REPL command related to viewing or managing application logs. |
@@ -256,8 +221,6 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 | **web-fetch.ts** | This file implements the `fetch` tool for retrieving content from URLs, handling HTML cleaning and plain text fetching. |
 | **web-search.ts** | This file implements the `webSearch` tool using the Exa (Metaphor) API for performing web searches. |
 | **process.ts** | This file provides a robust promise-based wrapper (`executeCommand`) around Node.js `child_process.execFile` for executing external commands with options for timeout and error handling. |
-| **code-map.test.ts** | This file contains unit tests for the `code-map.ts` module, ensuring its functionality for analyzing TypeScript source code. |
-| **code-navigator.test.ts** | This file contains unit tests for the `code-navigator.ts` module, verifying its code navigation capabilities. |
 | **markdown-utils.test.ts** | This file contains unit tests for the `markdown-utils.ts` module, ensuring the correctness of its Markdown utility functions. |
 | **tsconfig.json** | This file is the configuration for the TypeScript compiler (`tsc`), specifying compiler options like target ECMAScript version, module system, and strict type-checking rules. |
 
