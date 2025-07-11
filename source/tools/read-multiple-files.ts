@@ -1,4 +1,5 @@
 import { tool } from "ai";
+import chalk from "chalk";
 import { z } from "zod";
 import { config } from "../config.ts";
 import type { TokenCounter } from "../token-utils.ts";
@@ -34,7 +35,7 @@ export const createReadMultipleFilesTool = async ({
         sendData?.({
           id: toolCallId,
           event: "tool-init",
-          data: `Reading files: ${paths.join(", ")}`,
+          data: `Reading files: ${paths.map((p) => chalk.cyan(p)).join(", ")}`,
         });
         const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
         const results = await Promise.all(

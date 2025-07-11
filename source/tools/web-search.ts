@@ -1,4 +1,5 @@
 import { tool } from "ai";
+import chalk from "chalk";
 import Exa from "exa-js";
 import { z } from "zod";
 import type { TokenCounter } from "../token-utils.ts";
@@ -26,7 +27,7 @@ export const createWebSearchTool = ({
         sendData?.({
           id: toolCallId,
           event: "tool-init",
-          data: `Web search: ${query}`,
+          data: `Web search: ${chalk.cyan(query)}`,
         });
 
         const result = await search(query);

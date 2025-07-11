@@ -1,4 +1,5 @@
 import { tool } from "ai";
+import chalk from "chalk";
 import { type CheerioAPI, load } from "cheerio";
 import { z } from "zod";
 import { logger } from "../logger.ts";
@@ -26,7 +27,7 @@ export const createWebFetchTool = (options: {
           sendData?.({
             event: "tool-init",
             id: toolCallId,
-            data: `Reading URL: ${url}`,
+            data: `Reading URL: ${chalk.cyan(url)}`,
           });
           logger.info(`Initiating fetch for URL: ${url}`);
           const result = await readUrl(url, abortSignal);

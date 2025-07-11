@@ -1,5 +1,7 @@
 import { execSync } from "node:child_process";
+import { inspect } from "node:util";
 import { tool } from "ai";
+import chalk from "chalk";
 import { z } from "zod";
 import type { SendData } from "./types.ts";
 
@@ -58,7 +60,7 @@ export const createGrepTool = (
           sendData?.({
             event: "tool-init",
             id: toolCallId,
-            data: `Using ripgrep to search for "${pattern}" in ${path}`,
+            data: `Searching codebase for "${chalk.cyan(inspect(pattern))}" in ${chalk.cyan(path)}`,
           });
           const result = grepFiles(pattern, path, {
             recursive,
@@ -89,7 +91,7 @@ export const createGrepTool = (
           sendData?.({
             event: "tool-completion",
             id: toolCallId,
-            data: `Found ${matchCount} matches.`,
+            data: `Found ${chalk.cyan(matchCount)} matches.`,
           });
           return Promise.resolve(result);
         } catch (error) {

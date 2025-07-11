@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import { tool } from "ai";
+import chalk from "chalk";
 import { z } from "zod";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
@@ -30,7 +31,7 @@ export const createUndoEditTool = async ({
         sendData?.({
           id: toolCallId,
           event: "tool-init",
-          data: `Undoing edit for file: ${userPath}`,
+          data: `Undoing edit for file: ${chalk.cyan(userPath)}`,
         });
         try {
           const filePath = await validatePath(

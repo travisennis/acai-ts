@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import { tool } from "ai";
+import chalk from "chalk";
 import { z } from "zod";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
@@ -28,7 +29,7 @@ export const createDeleteFileTool = async ({
         sendData?.({
           id: toolCallId,
           event: "tool-init",
-          data: `Deleting file: ${userPath}`,
+          data: `Deleting file: ${chalk.cyan(userPath)}`,
         });
         try {
           const filePath = await validatePath(

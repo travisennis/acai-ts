@@ -51,7 +51,7 @@ export const createEditFileTool = async ({
         sendData?.({
           id: toolCallId,
           event: "tool-init",
-          data: `Editing file: ${path}`,
+          data: `Editing file: ${chalk.cyan(path)}`,
         });
         try {
           const validPath = await validatePath(
@@ -60,16 +60,16 @@ export const createEditFileTool = async ({
           );
 
           if (terminal) {
-            terminal.lineBreak();
-
-            terminal.writeln(`\n${chalk.blue.bold("●")} Editing file: ${path}`);
+            terminal.writeln(
+              `\n${chalk.blue.bold("●")} Proposing file changes: ${chalk.cyan(path)}`,
+            );
 
             terminal.lineBreak();
 
             const result = await applyFileEdits(validPath, edits, true);
 
             terminal.writeln(
-              `The agent is proposing the following ${edits.length} edits:`,
+              `The agent is proposing the following ${chalk.cyan(edits.length)} edits:`,
             );
 
             terminal.lineBreak();

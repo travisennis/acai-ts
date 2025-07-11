@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { tool } from "ai";
+import chalk from "chalk";
 import { z } from "zod";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import { fileEncodingSchema, type SendData } from "./types.ts";
@@ -45,7 +46,7 @@ export const createSaveFileTool = async ({
         sendData?.({
           id: toolCallId,
           event: "tool-init",
-          data: `Saving file: ${userPath}`,
+          data: `Saving file: ${chalk.cyan(userPath)}`,
         });
         try {
           const filePath = await validatePath(

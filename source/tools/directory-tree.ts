@@ -1,4 +1,5 @@
 import { tool } from "ai";
+import chalk from "chalk";
 import { z } from "zod";
 import {
   directoryTree,
@@ -32,7 +33,7 @@ export const createDirectoryTreeTool = async ({
           sendData?.({
             id: toolCallId,
             event: "tool-init",
-            data: `Listing directory tree: ${path}`,
+            data: `Listing directory tree: ${chalk.cyan(path)}`,
           });
           validPath = await validatePath(
             joinWorkingDir(path, workingDir),

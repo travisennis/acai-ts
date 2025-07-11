@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import { isNumber } from "@travisennis/stdlib/typeguards";
 import { tool } from "ai";
+import chalk from "chalk";
 import { z } from "zod";
 import { config } from "../config.ts";
 import type { TokenCounter } from "../token-utils.ts";
@@ -64,7 +65,7 @@ export const createReadFileTool = async ({
         sendData?.({
           id: toolCallId,
           event: "tool-init",
-          data: `Reading file: ${providedPath}`,
+          data: `Reading file: ${chalk.cyan(providedPath)}${startLine ? chalk.cyan(`:${startLine}`) : ""}${lineCount ? chalk.cyan(`:${lineCount}`) : ""}`,
         });
         try {
           const filePath = await validatePath(
@@ -115,7 +116,7 @@ export const createReadFileTool = async ({
             // Include token count only if calculated (i.e., for text files)
             data:
               tokenCount <= maxTokens
-                ? `File read successfully: ${providedPath}${tokenCount > 0 ? ` (${tokenCount} tokens)` : ""}`
+                ? `File read successfully ${tokenCount > 0 ? ` (${tokenCount} tokens)` : ""}`
                 : result,
           });
           return result;

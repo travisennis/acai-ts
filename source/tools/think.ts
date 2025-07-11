@@ -32,7 +32,7 @@ export const createThinkTool = (
         sendData?.({
           event: "tool-init",
           id: toolCallId,
-          data: "Logging thought",
+          data: "Logging Thought",
         });
         sendData?.({
           event: "tool-update",

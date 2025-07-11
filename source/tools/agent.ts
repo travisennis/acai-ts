@@ -1,4 +1,5 @@
 import { generateText, tool } from "ai";
+import chalk from "chalk";
 import { z } from "zod";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
@@ -60,7 +61,7 @@ export const createAgentTools = (options: {
         sendData?.({
           event: "tool-init",
           id: toolCallId,
-          data: "Initializing the agent tool.",
+          data: `Initializing agent with prompt: ${chalk.cyan(prompt)}`,
         });
         try {
           const modelConfig = modelManager.getModelMetadata("task-agent");
