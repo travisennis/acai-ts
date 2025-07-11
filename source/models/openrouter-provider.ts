@@ -15,8 +15,8 @@ const openRouterClient = createOpenAI({
 });
 
 const openrouterModels = {
-  "deepseek-v3": openRouterClient("deepseek/deepseek-chat"),
-  "deepseek-r1": openRouterClient("deepseek/deepseek-r1"),
+  "deepseek-v3": openRouterClient("deepseek/deepseek-chat-v3-0324:free"),
+  "deepseek-r1": openRouterClient("deepseek/deepseek-r1-0528:free"),
   "gemini-flash25": openRouterClient("google/gemini-2.5-flash"),
   "gemini-pro25": openRouterClient("google/gemini-2.5-pro"),
   sonnet4: openRouterClient("anthropic/claude-sonnet-4"),
