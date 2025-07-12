@@ -9,7 +9,7 @@ import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import type { ExecuteResult } from "../utils/process.ts";
 import { executeCommand } from "../utils/process.ts";
-import { CommandValidation } from "./command-validation";
+import { CommandValidation } from "./command-validation.ts";
 import type { SendData } from "./types.ts";
 
 export const BashTool = {
