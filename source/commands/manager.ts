@@ -7,7 +7,6 @@ import type { TokenTracker } from "../token-tracker.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import type { Message } from "../tools/types.ts";
 import { applicationLogCommand } from "./application-log-command.ts";
-import { cleanRepoCommand } from "./clean-repo.ts";
 import { clearCommand } from "./clear-command.ts";
 import { commitCommand } from "./commit-command.ts";
 import { compactCommand } from "./compact-command.ts";
@@ -17,7 +16,6 @@ import { exitCommand } from "./exit-command.ts";
 import { filesCommand } from "./files-command.ts";
 import { generateRulesCommand } from "./generate-rules-command.ts";
 import { helpCommand } from "./help-command.ts";
-
 import { initCommand } from "./init-command.ts";
 import { lastLogCommand } from "./last-log-command.ts";
 import { modelCommand } from "./model-command.ts";
@@ -29,7 +27,6 @@ import { resetCommand } from "./reset-command.ts";
 import { reviewCommand } from "./review-command.ts";
 import { rulesCommand } from "./rules-command.ts";
 import { saveCommand } from "./save-command.ts";
-
 import type { CommandOptions, ReplCommand } from "./types.ts";
 import { usageCommand } from "./usage-command.ts";
 
@@ -81,7 +78,6 @@ export class CommandManager {
 
     // Register all commands
     const cmds = [
-      cleanRepoCommand(options),
       clearCommand(options),
       commitCommand(options),
       compactCommand(options),

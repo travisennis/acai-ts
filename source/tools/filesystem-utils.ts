@@ -103,20 +103,6 @@ export interface FileEdit {
   newText: string;
 }
 
-async function backupFile(filePath: string): Promise<void> {
-  /**
-   * Create a backup of a file before editing.
-   */
-  const backupPath = `${filePath}.backup`;
-  try {
-    const content = await fs.readFile(filePath, "utf8");
-    await fs.writeFile(backupPath, content);
-  } catch (error) {
-    // If we can't create a backup, just log the error
-    console.error(`Failed to create backup of ${filePath}: ${error}`);
-  }
-}
-
 export async function applyFileEdits(
   filePath: string,
   edits: FileEdit[],
@@ -160,8 +146,6 @@ export async function applyFileEdits(
   const formattedDiff = `${"`".repeat(numBackticks)}diff\n${diff}${"`".repeat(numBackticks)}\n\n`;
 
   if (!dryRun) {
-    // Create backup before writing changes
-    await backupFile(filePath);
     // Write the modified content (which has literal newlines from newText, and preserves original newlines not part of oldText/newText)
     await fs.writeFile(filePath, modifiedContent, "utf-8");
   }
