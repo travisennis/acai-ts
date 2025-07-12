@@ -11,7 +11,6 @@ import { createCodeInterpreterTool } from "./code-interpreter.ts";
 import { createDeleteFileTool } from "./delete-file.ts";
 import { createDirectoryTreeTool } from "./directory-tree.ts";
 import { createEditFileTool } from "./edit-file.ts";
-
 import { createGrepTool } from "./grep.ts";
 import { createMemoryReadTool } from "./memory-read.ts";
 import { createMemoryWriteTool } from "./memory-write.ts";
@@ -21,7 +20,6 @@ import { createReadMultipleFilesTool } from "./read-multiple-files.ts";
 import { createSaveFileTool } from "./save-file.ts";
 import { createThinkTool } from "./think.ts";
 import type { Message } from "./types.ts";
-import { createUndoEditTool } from "./undo-edit.ts";
 import { createWebFetchTool } from "./web-fetch.ts";
 import { createWebSearchTool } from "./web-search.ts";
 
@@ -66,11 +64,6 @@ export async function initTools({
     terminal,
     sendData: sendDataFn,
     autoAcceptAll,
-  });
-
-  const undoEditTool = await createUndoEditTool({
-    workingDir: process.cwd(),
-    sendData: sendDataFn,
   });
 
   const saveFileTool = await createSaveFileTool({
@@ -155,7 +148,7 @@ export async function initTools({
     ...readFileTool,
     ...readMultipleFilesTool,
     ...editFileTool,
-    ...undoEditTool,
+
     ...saveFileTool,
     ...moveFileTool,
     ...directoryTreeTool,
@@ -197,11 +190,6 @@ export async function initCliTools({
     terminal: undefined,
     sendData: undefined,
     autoAcceptAll: true,
-  });
-
-  const undoEditTool = await createUndoEditTool({
-    workingDir: process.cwd(),
-    sendData: undefined,
   });
 
   const saveFileTool = await createSaveFileTool({
@@ -266,7 +254,7 @@ export async function initCliTools({
     ...readFileTool,
     ...readMultipleFilesTool,
     ...editFileTool,
-    ...undoEditTool,
+
     ...saveFileTool,
     ...moveFileTool,
     ...directoryTreeTool,

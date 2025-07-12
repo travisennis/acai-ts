@@ -20,8 +20,7 @@ export const createDeleteFileTool = async ({
   const allowedDirectory = workingDir;
   return {
     [DeleteFileTool.name]: tool({
-      description:
-        "Delete a file. Creates a backup (.backup) before deleting, allowing for potential restoration.",
+      description: "Delete a file permanently.",
       parameters: z.object({
         path: z.string().describe("Absolute path to the file to delete"),
       }),
@@ -37,7 +36,7 @@ export const createDeleteFileTool = async ({
             allowedDirectory,
           );
 
-          // Check if file exists before attempting backup/delete
+          // Check if file exists before attempting delete
           if (!existsSync(filePath)) {
             throw new Error(`File not found: ${filePath}`);
           }
@@ -48,19 +47,15 @@ export const createDeleteFileTool = async ({
             throw new Error(`Path is a directory, not a file: ${filePath}`);
           }
 
-          // Create backup before deleting
-          const backupPath = `${filePath}.backup`;
-          await fs.copyFile(filePath, backupPath);
-
           // Delete the original file
           await fs.unlink(filePath);
 
           sendData?.({
             id: toolCallId,
             event: "tool-completion",
-            data: `File deleted successfully: ${userPath}. Backup created at ${backupPath}`,
+            data: `File deleted successfully: ${userPath}`,
           });
-          return `Successfully deleted ${filePath}. Backup created at ${backupPath}`;
+          return `Successfully deleted ${filePath}`;
         } catch (error) {
           const errorMessage = `Failed to delete file: ${(error as Error).message}`;
           sendData?.({

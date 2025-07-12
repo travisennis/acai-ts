@@ -20,7 +20,6 @@ import { initCliTools } from "./tools/index.ts";
 import { MoveFileTool } from "./tools/move-file.ts";
 import { SaveFileTool } from "./tools/save-file.ts";
 import { ThinkTool } from "./tools/think.ts";
-import { UndoEditTool } from "./tools/undo-edit.ts";
 
 interface CliOptions {
   messageHistory: MessageHistory;
@@ -105,7 +104,6 @@ export class Cli {
         // biome-ignore lint/style/useNamingConvention: third-party controlled
         experimental_activeTools: [
           EditFileTool.name,
-          UndoEditTool.name,
           SaveFileTool.name,
           MoveFileTool.name,
           DeleteFileTool.name,

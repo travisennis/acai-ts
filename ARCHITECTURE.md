@@ -29,7 +29,6 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 │   │   ├── cli.ts
 │   │   ├── commands
 │   │   │   ├── application-log-command.ts
-│   │   │   ├── clean-repo.ts
 │   │   │   ├── clear-command.ts
 │   │   │   ├── commit-command.ts
 │   │   │   ├── compact-command.ts
@@ -203,9 +202,8 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 | **code-interpreter.ts** | This file implements the `codeInterpreter` tool for executing sandboxed JavaScript code using Node.js `vm`. |
 | **delete-file.ts** | This file implements the `deleteFile` tool for removing files from the file system. |
 | **directory-tree.ts** | This file implements the `directoryTree` tool for getting a directory tree structure for a given path. |
-| **edit-file.ts** | This file implements the `editFile` tool for modifying file contents with path validation and backup mechanisms. |
+| **edit-file.ts** | This file implements the `editFile` tool for modifying file contents with path validation. |
 | **filesystem-utils.ts** | This file likely contains general utility functions for file system operations used by various tools. |
-
 | **git-utils.ts** | This file likely contains utility functions for Git operations, such as getting diff statistics or checking if a directory is a Git repository. |
 | **grep.ts** | This file implements the `grepFiles` tool using `ripgrep` (`rg`) for searching file contents based on a regex pattern. |
 | **index.ts** | This file initializes and exports all available tools as a single object, including the `askUser` tool and mechanisms for tools to report progress. |
@@ -217,7 +215,6 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 | **save-file.ts** | This file implements the `saveFile` tool for writing content to a specified file. |
 | **think.ts** | This file implements the `think` tool, a no-op tool allowing the AI to log its thought process for transparency. |
 | **types.ts** | This file defines common types used for tool communication, specifically the `Message` union type and the `SendData` function signature for progress reporting. |
-| **undo-edit.ts** | This file implements the `undoEdit` tool for reverting file modifications, likely using a backup mechanism. |
 | **web-fetch.ts** | This file implements the `fetch` tool for retrieving content from URLs, handling HTML cleaning and plain text fetching. |
 | **web-search.ts** | This file implements the `webSearch` tool using the Exa (Metaphor) API for performing web searches. |
 | **process.ts** | This file provides a robust promise-based wrapper (`executeCommand`) around Node.js `child_process.execFile` for executing external commands with options for timeout and error handling. |
