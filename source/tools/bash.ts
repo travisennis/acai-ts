@@ -9,6 +9,7 @@ import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import type { ExecuteResult } from "../utils/process.ts";
 import { executeCommand } from "../utils/process.ts";
+import { CommandValidation } from "./command-validation";
 import type { SendData } from "./types.ts";
 
 export const BashTool = {
@@ -19,6 +20,7 @@ export const BashTool = {
 const ALLOWED_COMMANDS = [
   "chmod",
   "ls",
+  "pwd",
   "cat",
   "grep",
   "find",
@@ -47,38 +49,8 @@ const ALLOWED_COMMANDS = [
 // Command execution timeout in milliseconds
 const DEFAULT_TIMEOUT = 10 * 60 * 1000; // 10 minutes
 
-// Check if command is in the allowed list
-function isCommandAllowed(command: string): boolean {
-  const baseCommand = command.split(" ")[0] || "";
-  return ALLOWED_COMMANDS.includes(baseCommand);
-}
-
-// command chaining patterns
-const patterns = [
-  /(?<!&)&&/, // &&
-  /(?<!\|)\|\|/, // ||
-  // / (?<!\|)\|/, // | // pipe is allowed
-  /;/, // ;
-  /`/, // backticks
-  /\$\(/, // $(
-  />/, // redirect out
-  /</, // redirect in
-];
-
-// Check for command chaining attempts
-function hasCommandChaining(command: string): boolean {
-  // strip out single- and double-quoted segments
-  const stripped = command
-    .replace(/'([^'\\]|\\.)*'/g, "")
-    .replace(/"([^"\\]|\\.)*"/g, "");
-  // detect unquoted chaining operators
-  return patterns.some((re) => re.test(stripped));
-}
-
-function areAllChainedCommandsAllowed(command: string): boolean {
-  const commands = command.split(/[|&]/).map((c) => c.trim());
-  return commands.every(isCommandAllowed);
-}
+// Initialize command validator with allowed commands
+const commandValidator = new CommandValidation(ALLOWED_COMMANDS);
 
 // Ensure path is within base directory
 function isPathWithinBaseDir(requestedPath: string, baseDir: string): boolean {
@@ -135,20 +107,9 @@ export const createBashTool = ({
           data: `Executing: ${command} in ${safeCwd}`,
         });
 
-        // Check for disallowed command chaining (e.g., &&, ;, etc.)
-        if (hasCommandChaining(command)) {
-          const errorMsg =
-            "Command chaining with operators like &&, ;, ||, <, >, etc. is not allowed.";
-          sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
-          return errorMsg;
-        }
-
-        // Validate all commands in the potential pipeline.
-        // This handles both single commands and piped commands.
-        if (!areAllChainedCommandsAllowed(command)) {
-          const errorMsg = `Command not allowed. Each command in a pipeline must be in the approved list: ${ALLOWED_COMMANDS.join(
-            ", ",
-          )}`;
+        // Validate command using CommandValidation
+        if (!commandValidator.isValid(command)) {
+          const errorMsg = `Command not allowed. Ensure all sub-commands are in the approved list: ${ALLOWED_COMMANDS.join(", ")} and no unsafe operators (>, <, \`, $()) are used.`;
           sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
           return errorMsg;
         }
