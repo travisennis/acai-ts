@@ -24,6 +24,7 @@ const openrouterModels = {
   "gpt-4.1": openRouterClient("openai/gpt-4.1"),
   "cypher-alpha": openRouterClient("openrouter/cypher-alpha:free"),
   "kimi-k2": openRouterClient("moonshotai/kimi-k2"),
+  "devstral-medium": openRouterClient("mistralai/devstral-medium"),
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -157,6 +158,19 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000057,
     costPerOutputToken: 0.0000023,
+    category: "balanced",
+  },
+  "openrouter:devstral-medium": {
+    id: "openrouter:devstral-medium",
+    provider: "openrouter",
+    contextWindow: 131000,
+    maxOutputTokens: 131000,
+    defaultTemperature: 0.3,
+    promptFormat: "markdown",
+    supportsReasoning: false,
+    supportsToolCalling: true,
+    costPerInputToken: 0.0000004,
+    costPerOutputToken: 0.000002,
     category: "balanced",
   },
 };
