@@ -101,8 +101,6 @@ function toolUsage() {
    - build command using the \`${BashTool.name}\` tool
 4. Handle merge conflicts by clearly presenting both versions and suggesting a resolution
 
-
-
 ### GitHub Integration
 - For GitHub Issues, use the GitHub CLI tools (gh) via the \`${BashTool.name}\` tool
 - Format issue/PR descriptions according to repository templates when available
