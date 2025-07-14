@@ -1,12 +1,13 @@
-import { createOpenAI } from "@ai-sdk/openai";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { objectKeys } from "@travisennis/stdlib/object";
 import { customProvider } from "ai";
 import type { ModelMetadata } from "./providers.ts";
 
-const openRouterClient = createOpenAI({
+const openRouterClient = createOpenAICompatible({
+  name: "openrouter",
+  apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
   // biome-ignore lint/style/useNamingConvention: third-party controlled
   baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
   headers: {
     // biome-ignore lint/style/useNamingConvention: api header name
     HTTP_Referer: "https://github.com/travisennis/acai-ts",
@@ -24,6 +25,7 @@ const openrouterModels = {
   "gpt-4.1": openRouterClient("openai/gpt-4.1"),
   "cypher-alpha": openRouterClient("openrouter/cypher-alpha:free"),
   "kimi-k2": openRouterClient("moonshotai/kimi-k2"),
+  "kimi-k2-free": openRouterClient("moonshotai/kimi-k2:free"),
   "devstral-medium": openRouterClient("mistralai/devstral-medium"),
 } as const;
 
@@ -123,7 +125,7 @@ export const openrouterModelRegistry: {
   },
   "openrouter:gpt-4.1": {
     id: "openrouter:gpt-4.1",
-    provider: "openai",
+    provider: "openrouter",
     contextWindow: 1000000,
     maxOutputTokens: 32768,
     defaultTemperature: 0.3,
@@ -158,6 +160,19 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000057,
     costPerOutputToken: 0.0000023,
+    category: "balanced",
+  },
+  "openrouter:kimi-k2-free": {
+    id: "openrouter:kimi-k2-free",
+    provider: "openrouter",
+    contextWindow: 65536,
+    maxOutputTokens: 65536,
+    defaultTemperature: 0.3,
+    promptFormat: "markdown",
+    supportsReasoning: false,
+    supportsToolCalling: true,
+    costPerInputToken: 0,
+    costPerOutputToken: 0,
     category: "balanced",
   },
   "openrouter:devstral-medium": {

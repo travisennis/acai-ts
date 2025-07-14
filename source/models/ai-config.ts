@@ -19,7 +19,11 @@ export class AiConfig {
     const maxTokens =
       modelConfig.provider === "anthropic" && modelConfig.supportsReasoning
         ? modelConfig.maxOutputTokens - thinkingLevel.tokenBudget
-        : modelConfig.maxOutputTokens;
+        : modelConfig.provider === "openrouter" &&
+            (modelConfig.id.includes("kimi") ||
+              modelConfig.id.includes("devstral"))
+          ? modelConfig.maxOutputTokens * 0.75
+          : modelConfig.maxOutputTokens;
     return maxTokens;
   }
 
