@@ -86,7 +86,6 @@ export class CommandManager {
       exitCommand(options),
       filesCommand(options),
       initCommand(options),
-
       pasteCommand(options),
       promptCommand(options),
       ptreeCommand(options),
