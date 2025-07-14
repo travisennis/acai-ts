@@ -41,7 +41,7 @@
     "@crosscopy/clipboard": "^0.2.8",
     "@inquirer/prompts": "^7.6.0",
     "@travisennis/stdlib": "^0.0.13",
-    "ai": "^4.3.17",
+    "ai": "^4.3.18",
     "ansi-escapes": "^7.0.0",
     "ansi-regex": "^6.1.0",
     "chalk": "^5.4.1",
