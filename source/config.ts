@@ -63,7 +63,7 @@ export class ConfigManager {
   }
 
   async readAgentsFile(): Promise<string> {
-    const rulesPath = path.join(process.cwd(), "AGENT.md");
+    const rulesPath = path.join(process.cwd(), "AGENTS.md");
     try {
       return await fs.readFile(rulesPath, "utf8");
     } catch (error) {
@@ -75,7 +75,7 @@ export class ConfigManager {
   }
 
   async writeAgentsFile(rules: string): Promise<void> {
-    const rulesPath = path.join(process.cwd(), "AGENT.md");
+    const rulesPath = path.join(process.cwd(), "AGENTS.md");
     try {
       return await fs.writeFile(rulesPath, rules, "utf8");
     } catch (error) {
