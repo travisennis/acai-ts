@@ -23,7 +23,7 @@ const openrouterModels = {
   sonnet4: openRouterClient("anthropic/claude-sonnet-4"),
   opus4: openRouterClient("anthropic/claude-opus-4"),
   "gpt-4.1": openRouterClient("openai/gpt-4.1"),
-  "kimi-k2": openRouterClient("moonshotai/kimi-k2"),
+  "kimi-k2": openRouterClient("moonshotai/kimi-k2:nitro"),
   "kimi-k2-free": openRouterClient("moonshotai/kimi-k2:free"),
   "devstral-medium": openRouterClient("mistralai/devstral-medium"),
 } as const;
