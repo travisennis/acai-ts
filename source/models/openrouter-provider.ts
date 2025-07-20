@@ -9,8 +9,7 @@ const openRouterClient = createOpenAICompatible({
   // biome-ignore lint/style/useNamingConvention: third-party controlled
   baseURL: "https://openrouter.ai/api/v1",
   headers: {
-    // biome-ignore lint/style/useNamingConvention: api header name
-    HTTP_Referer: "https://github.com/travisennis/acai-ts",
+    "HTTP-Referer": "https://github.com/travisennis/acai-ts",
     "X-Title": "acai",
   },
 });
