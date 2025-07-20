@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { isString } from "@travisennis/stdlib/typeguards";
 import { formatFile, formatUrl } from "./formatting.ts";
+import type { FormatType } from "./formatting.ts";
 import type { ModelMetadata } from "./models/providers.ts";
 import type { ContextItem } from "./prompts/manager.ts";
 import { type ReadUrlResult, readUrl } from "./tools/web-fetch.ts";
@@ -11,6 +12,47 @@ interface CommandContext {
   model: ModelMetadata;
   baseDir: string;
   match: string;
+}
+
+// Helper function to recursively read all files in a directory
+async function readDirectoryRecursive(
+  dirPath: string,
+  format: FormatType,
+): Promise<string> {
+  const allContents: string[] = [];
+
+  async function readDir(
+    currentPath: string,
+    relativePath = "",
+  ): Promise<void> {
+    const entries = await fs.readdir(currentPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = path.join(currentPath, entry.name);
+      const relativeFilePath = path.join(relativePath, entry.name);
+
+      if (entry.isDirectory()) {
+        await readDir(fullPath, relativeFilePath);
+      } else if (entry.isFile()) {
+        try {
+          const fileContents = await fs.readFile(fullPath, "utf8");
+          allContents.push(formatFile(relativeFilePath, fileContents, format));
+        } catch (error) {
+          allContents.push(
+            `Error reading file ${relativeFilePath}: ${error instanceof Error ? error.message : "Unknown error"}`,
+          );
+        }
+      }
+    }
+  }
+
+  await readDir(dirPath);
+
+  if (allContents.length === 0) {
+    return `Directory ${path.basename(dirPath)} is empty or contains no readable files.`;
+  }
+
+  return allContents.join("\n\n");
 }
 
 // Returns the formatted string or an error message string
@@ -29,23 +71,36 @@ async function processFileCommand(context: CommandContext): Promise<string> {
       return `Error: Access denied. Attempted to read file outside the allowed directory: ${filePath}`;
     }
 
-    const fileContents = await fs.readFile(resolvedFilePath, "utf8");
-    return formatFile(filePath, fileContents, format);
+    // Check if path exists
+    const stats = await fs.stat(resolvedFilePath);
+
+    // If it's a directory, read all files recursively
+    if (stats.isDirectory()) {
+      return await readDirectoryRecursive(resolvedFilePath, format);
+    }
+
+    // If it's a file, process as before
+    if (stats.isFile()) {
+      const fileContents = await fs.readFile(resolvedFilePath, "utf8");
+      return formatFile(filePath, fileContents, format);
+    }
+
+    return `Error: ${filePath} is neither a regular file nor directory.`;
   } catch (error) {
-    // Improved type checking for errors
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "ENOENT"
-    ) {
-      return `Error: File not found: ${filePath}\nPlease check that the file path is correct and the file exists.`;
+    // Handle both ENOENT (file not found) and permission errors
+    if (error && typeof error === "object" && "code" in error) {
+      if (error.code === "ENOENT") {
+        return `Error: File or directory not found: ${filePath}\nPlease check that the path is correct and exists.`;
+      }
+      if (error.code === "EACCES") {
+        return `Error: Permission denied accessing: ${filePath}`;
+      }
     }
     if (error instanceof Error) {
-      return `Error reading file ${filePath}: ${error.message}`;
+      return `Error accessing ${filePath}: ${error.message}`;
     }
     // Fallback for unknown error types
-    return `Error reading file ${filePath}: An unknown error occurred.`;
+    return `Error accessing ${filePath}: An unknown error occurred.`;
   }
 }
 

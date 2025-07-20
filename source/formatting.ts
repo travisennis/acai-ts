@@ -34,7 +34,7 @@ export function removeHtmlTags(text: string) {
 
 const MD_TRIPLE_QUOTE = "```";
 
-type FormatType = "xml" | "markdown" | "bracket";
+export type FormatType = "xml" | "markdown" | "bracket";
 
 const codeBlockExtensions: Record<string, string> = {
   js: "javascript",

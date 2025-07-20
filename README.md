@@ -22,12 +22,14 @@ Acai is a powerful **AI-driven command-line interface (CLI) tool** designed to a
 
 *   **Conversational REPL:** Intuitive command-line interface for interacting with the AI.
 *   **File System Operations:** Read, write, edit, move, and delete files.
+*   **File & Directory Mentions:** Include file contents and entire directories in prompts using `@filename` and `@dirname` syntax.
 *   **Code Navigation & Analysis:** Leverage Tree-sitter for intelligent code understanding.
 *   **Git Workflow Automation:** Streamline commit messages and code reviews.
 *   **Web Integration:** Perform web searches and fetch content from URLs.
 *   **Extensible Commands:** A rich set of built-in commands (`/files`, `/edit`, `/commit`, `/model`, `/help`, etc.).
 *   **Token Usage Tracking:** Monitor AI token consumption.
 *   **Configurable AI Models:** Easily switch between different LLM providers and models.
+*   **Shell Integration:** Execute shell commands inline using `!`command`` syntax.
 
 ## 🛠️ Technologies Used
 
@@ -103,6 +105,24 @@ Once in the REPL, you can type your prompts or use commands:
 > /edit source/cli.ts "Change this function name"
 > /help
 ```
+
+### Prompt Mentions & Special Syntax
+
+You can reference files and directories directly in your prompts:
+
+```
+> Explain the purpose of @source/index.ts
+> What patterns do you see in @source/tools/ directory
+> Find security issues in @config/ directory
+> Check if `!ls -la` shows any suspicious files
+> Analyze @README.md for typos
+```
+
+**Supported syntax:**
+- `@filename` - Include contents of a specific file
+- `@dirname` - Recursively include all files in a directory
+- `@http://example.com` - Fetch and include web content
+- ``!`command` `` - Execute shell command and include output
 
 For a list of available commands, type `/help` within the REPL.
 
