@@ -24,32 +24,13 @@ export async function getDiffStat() {
   }
 }
 
-const MS_IN_SECOND = 1000;
-const SECONDS_IN_MINUTE = 60;
-
-/**
- * executeCommand wrapper that always resolves (never throws)
- */
-function execFileNoThrow(
-  file: string,
-  args: string[],
-  abortSignal?: AbortSignal,
-  timeout = 10 * SECONDS_IN_MINUTE * MS_IN_SECOND,
-  preserveOutputOnError = true,
-): Promise<{ stdout: string; stderr: string; code: number }> {
-  return executeCommand([file, ...args], {
-    cwd: process.cwd(),
-    timeout,
-    abortSignal,
-    throwOnError: false,
-    preserveOutputOnError,
-  });
-}
-
 export const inGitDirectory = memoize(async (): Promise<boolean> => {
-  const { code } = await execFileNoThrow("git", [
-    "rev-parse",
-    "--is-inside-work-tree",
-  ]);
+  const { code } = await executeCommand(
+    ["git", "rev-parse", "--is-inside-work-tree"],
+    {
+      cwd: process.cwd(),
+      throwOnError: false,
+    },
+  );
   return code === 0;
 });

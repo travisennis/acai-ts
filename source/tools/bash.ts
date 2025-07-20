@@ -1,13 +1,13 @@
 import path from "node:path";
 import { input, select } from "@inquirer/prompts";
-import { isUndefined } from "@travisennis/stdlib/typeguards";
+
 import { tool } from "ai";
 import chalk from "chalk";
 import { z } from "zod";
 import { config } from "../config.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../token-utils.ts";
-import type { ExecuteResult } from "../utils/process.ts";
+
 import { executeCommand } from "../utils/process.ts";
 import { CommandValidation } from "./command-validation.ts";
 import type { SendData } from "./types.ts";
@@ -215,7 +215,12 @@ export const createBashTool = ({
         }
 
         try {
-          const result = await asyncExec(command, safeCwd, safeTimeout);
+          const result = await executeCommand(command, {
+            cwd: safeCwd,
+            timeout: safeTimeout,
+            shell: true,
+            throwOnError: false,
+          });
 
           if (result.signal === "SIGTERM") {
             const timeoutMessage = `Command timed out after ${safeTimeout}ms. This might be because the command is waiting for input.`;
@@ -284,35 +289,4 @@ function format({
   code: number;
 }) {
   return `${stdout}\n${stderr}`;
-}
-
-function asyncExec(
-  command: string,
-  cwd: string,
-  timeout: number = DEFAULT_TIMEOUT,
-): Promise<ExecuteResult> {
-  try {
-    const [cmd, ...args] = command.split(" ");
-    if (isUndefined(cmd)) {
-      return Promise.resolve({
-        stdout: "",
-        stderr: "Missing command",
-        code: 1,
-      });
-    }
-
-    return executeCommand([cmd, ...args], {
-      cwd,
-      timeout,
-      shell: true,
-      throwOnError: false,
-    });
-  } catch (error) {
-    console.error(error);
-    return Promise.resolve({
-      stdout: "",
-      stderr: "Error executing command",
-      code: 1,
-    });
-  }
 }
