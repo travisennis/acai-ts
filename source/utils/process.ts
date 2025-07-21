@@ -3,7 +3,7 @@ import { isUndefined } from "@travisennis/stdlib/typeguards";
 
 const MS_IN_SECOND = 1000;
 const SECONDS_IN_MINUTE = 60;
-const DEFAULT_TIMEOUT = 10 * SECONDS_IN_MINUTE * MS_IN_SECOND;
+const DEFAULT_TIMEOUT = 2 * SECONDS_IN_MINUTE * MS_IN_SECOND;
 
 interface ExecuteOptions {
   /** Working directory where the command will be executed */
