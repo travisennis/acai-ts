@@ -25,6 +25,7 @@ const openrouterModels = {
   "kimi-k2": openRouterClient("moonshotai/kimi-k2:nitro"),
   "kimi-k2-free": openRouterClient("moonshotai/kimi-k2:free"),
   "devstral-medium": openRouterClient("mistralai/devstral-medium"),
+  "qwen3-coder": openRouterClient("qwen/qwen3-coder"),
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -165,6 +166,19 @@ export const openrouterModelRegistry: {
     provider: "openrouter",
     contextWindow: 131000,
     maxOutputTokens: 8192,
+    defaultTemperature: 0.3,
+    promptFormat: "markdown",
+    supportsReasoning: false,
+    supportsToolCalling: true,
+    costPerInputToken: 0.0000004,
+    costPerOutputToken: 0.000002,
+    category: "balanced",
+  },
+  "openrouter:qwen3-coder": {
+    id: "openrouter:qwen3-coder",
+    provider: "openrouter",
+    contextWindow: 262000,
+    maxOutputTokens: 66000,
     defaultTemperature: 0.3,
     promptFormat: "markdown",
     supportsReasoning: false,
