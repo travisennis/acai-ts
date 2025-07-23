@@ -136,7 +136,7 @@ Ask the user if they want to update Github with the review comments:
 - If YES: Proceed to update Github
 - If NO: Complete workflow without updating
 
-### 11. Workflow Completion Summary
+### 10. Workflow Completion Summary
 Display final summary:
 - Review analysis completed
 - GitHub update status (if attempted)
