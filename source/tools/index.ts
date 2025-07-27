@@ -1,6 +1,3 @@
-import { input } from "@inquirer/prompts";
-import { tool } from "ai";
-import { z } from "zod";
 import type { ModelManager } from "../models/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../token-tracker.ts";
@@ -124,41 +121,18 @@ export async function initTools({
     sendData: sendDataFn,
   });
 
-  const askUserTool = {
-    askUser: tool({
-      description:
-        "A tool to ask the user for input. Use this to ask the user for clarification or permission when you need it. This tool will display the question to the user, so you DO NOT need to return the question separately.",
-      parameters: z.object({
-        question: z.string().describe("The question to ask the user."),
-      }),
-      execute: async ({ question }) => {
-        await new Promise((resolve) => setTimeout(resolve, 250));
-        terminal.lineBreak();
-        terminal.display(question, true);
-        terminal.lineBreak();
-        const result = await input({ message: "? " });
-        terminal.lineBreak();
-
-        return result;
-      },
-    }),
-  };
-
   const tools = {
     ...readFileTool,
     ...readMultipleFilesTool,
     ...editFileTool,
-
     ...saveFileTool,
     ...moveFileTool,
     ...directoryTreeTool,
     ...deleteFileTool,
-
     ...codeInterpreterTool,
     ...grepTool,
     ...thinkTool,
     ...webFetchTool,
-    ...askUserTool,
     ...bashTool,
     ...webSearchTool,
     ...memoryReadTool,
@@ -254,12 +228,10 @@ export async function initCliTools({
     ...readFileTool,
     ...readMultipleFilesTool,
     ...editFileTool,
-
     ...saveFileTool,
     ...moveFileTool,
     ...directoryTreeTool,
     ...deleteFileTool,
-
     ...codeInterpreterTool,
     ...grepTool,
     ...thinkTool,
