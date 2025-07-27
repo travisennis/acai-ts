@@ -6,7 +6,6 @@ import { BashTool } from "./tools/bash.ts";
 import { CodeInterpreterTool } from "./tools/code-interpreter.ts";
 import { DirectoryTreeTool } from "./tools/directory-tree.ts";
 import { EditFileTool } from "./tools/edit-file.ts";
-
 import { inGitDirectory } from "./tools/git-utils.ts";
 import { GrepTool } from "./tools/grep.ts";
 import { ReadFileTool } from "./tools/read-file.ts";
@@ -142,56 +141,6 @@ When you encounter situations beyond your capabilities:
 4. Use the \`askUser\` tool to get guidance on complex decisions`;
 }
 
-function responseInstructions() {
-  return `## Response Templates
-
-### For Direct Questions
-\`\`\`
-[concise answer without preamble]
-\`\`\`
-
-### For Code Requests
-\`\`\`
-[code snippet]
-
-Explanation (if requested): [brief explanation]
-\`\`\`
-
-### For Project Navigation
-\`\`\`
-[relevant file/directory information]
-\`\`\`
-
-### For Error Resolution
-\`\`\`
-Error: [specific error message]
-Location: [file and line number]
-Fix: [suggested solution]
-\`\`\`
-
-## Examples of Good Responses
-
-**User:** How do I run the tests?
-**acai:** \`npm test\`
-
-**User:** What's in the package.json file?
-**acai:**
-\`\`\`json
-{
-  "name": "acai-ts",
-  "version": "1.0.0",
-  ...
-}
-\`\`\`
-
-**User:** Can you create a utility function to parse CSV files?
-**acai:** Planning implementation... would you prefer a stream-based or in-memory approach?
-
-**User:** What's causing the TypeError in the auth module?
-**acai:**
-Line 42 passes undefined to \`validateToken()\`. Add null check before function call.`;
-}
-
 async function getRules() {
   const rules = (await config.readAgentsFile()).trim();
   const learnedRules = (await config.readProjectLearnedRulesFile()).trim();
@@ -232,8 +181,6 @@ ${supportsToolCalling ? toolUsage() : ""}
 ${escalationProcedures()}
 
 ${await getRules()}
-
-${responseInstructions()}
 
 ${await environmentInfo()}
 `;
