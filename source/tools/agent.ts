@@ -27,7 +27,7 @@ const TOOLS = [
 
 type ToolName = (typeof TOOLS)[number];
 
-export function getToolDescription(): string {
+function getToolDescription(): string {
   const toolNames = TOOLS.join(", ");
   return `Launch a new agent that has access to the following tools: ${toolNames}. When you are searching for a keyword or file and are not confident that you will find the right match on the first try, use the ${AgentTool.name} tool to perform the search for you. For example:
 

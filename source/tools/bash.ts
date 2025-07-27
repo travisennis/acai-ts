@@ -1,13 +1,11 @@
 import path from "node:path";
 import { input, select } from "@inquirer/prompts";
-
 import { tool } from "ai";
 import chalk from "chalk";
 import { z } from "zod";
 import { config } from "../config.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../token-utils.ts";
-
 import { executeCommand } from "../utils/process.ts";
 import { CommandValidation } from "./command-validation.ts";
 import type { SendData } from "./types.ts";
