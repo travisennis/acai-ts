@@ -39,7 +39,7 @@
     "@ai-sdk/openai": "^1.3.23",
     "@ai-sdk/openai-compatible": "^0.2.16",
     "@crosscopy/clipboard": "^0.2.8",
-    "@inquirer/prompts": "^7.7.1",
+    "@inquirer/prompts": "^7.8.0",
     "@travisennis/stdlib": "^0.0.13",
     "ai": "^4.3.19",
     "ansi-escapes": "^7.0.0",
