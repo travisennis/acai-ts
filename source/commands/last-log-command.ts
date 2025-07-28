@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { editor } from "@inquirer/prompts";
+import chalk from "chalk";
 import { globby } from "globby";
 import { config } from "../config.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
@@ -70,13 +71,13 @@ export const lastLogCommand = ({ terminal }: CommandOptions): ReplCommand => {
 
         // Use the editor prompt to display the content (read-only)
         await editor({
-          message: `Viewing ${mostRecentLog}`,
+          message: `Viewing ${chalk.green(mostRecentLog)}`,
           postfix: ".json", // Set postfix for syntax highlighting if editor supports it
           default: content,
           // By not providing an onSubmit or similar handler to write the file,
           // and not calling writeFileSync after, this effectively becomes read-only.
         });
-        terminal.info(`Closed log view for: ${mostRecentLog}`);
+        terminal.info("Closed log view");
       } catch (error) {
         terminal.error(
           `Error reading or displaying log file ${mostRecentLog}: ${error}`,
