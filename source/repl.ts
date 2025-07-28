@@ -478,16 +478,18 @@ function _handleToolUpdateMessage(
   terminal: Terminal,
 ) {
   if (data.secondary && data.secondary.length > 0) {
-    terminal.display(`└── ${data.primary}`);
     const content = data.secondary.join("\n");
-    terminal.hr();
-    if (isMarkdown(content)) {
-      terminal.display(content, true);
-    } else {
-      terminal.write(chalk.green(content));
-      terminal.lineBreak();
+    if (content.trim().length !== 0) {
+      terminal.display(`└── ${data.primary}`);
+      terminal.hr();
+      if (isMarkdown(content)) {
+        terminal.display(content, true);
+      } else {
+        terminal.write(chalk.green(content));
+        terminal.lineBreak();
+      }
+      terminal.hr();
     }
-    terminal.hr();
   } else {
     terminal.display(`└── ${data.primary}`);
   }
