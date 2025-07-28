@@ -140,7 +140,7 @@ For a list of available commands, type `/help` within the REPL.
 - `/editPrompt` - Edit the current prompt
 - `/paste` - Add clipboard contents to the next prompt
 - `/ptree` - Show project directory tree
-- `/prompt user:name|project:name` - Load saved prompts
+- `/prompt <name>` - Load saved prompts. Project prompts override user prompts.
 - `/rules [view|add <text>|edit]` - View or edit persistent project rules/memories (formerly /memory)
 - `/model [provider:model|category|provider]` - List or switch models
 - `/pr-comments [PR#] [instructions]` - Add review comments to a GitHub PR
