@@ -12,18 +12,17 @@ export const promptCommand = ({
   return {
     command: "/prompt",
     description:
-      "Loads and executes user (global) and project (local) prompts.",
+      "Loads and executes prompts. Project prompts override user prompts with the same name.",
     result: "use" as const,
     getSubCommands: async (): Promise<string[]> => {
       const getPromptNamesFromDir = async (
         dirPath: string,
-        type: "user" | "project",
       ): Promise<string[]> => {
         try {
           const dirents = await readdir(dirPath, { withFileTypes: true });
           return dirents
             .filter((dirent) => dirent.isFile() && dirent.name.endsWith(".md"))
-            .map((dirent) => `${type}:${basename(dirent.name, ".md")}`);
+            .map((dirent) => basename(dirent.name, ".md"));
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code === "ENOENT") {
             return []; // Directory doesn't exist, return empty array
@@ -36,55 +35,54 @@ export const promptCommand = ({
       const userPromptDir = config.app.ensurePath("prompts"); // User prompts are global (~/.acai/prompts)
       const projectPromptDir = config.project.ensurePath("prompts"); // Project prompts are local (./.acai/prompts)
 
-      const userPrompts = await getPromptNamesFromDir(userPromptDir, "user");
-      const projectPrompts = await getPromptNamesFromDir(
-        projectPromptDir,
-        "project",
-      );
+      const userPrompts = await getPromptNamesFromDir(userPromptDir);
+      const projectPrompts = await getPromptNamesFromDir(projectPromptDir);
 
-      return [...userPrompts, ...projectPrompts];
+      // Combine and deduplicate, with project prompts taking precedence
+      const allPrompts = new Set([...userPrompts, ...projectPrompts]);
+      return Array.from(allPrompts).sort();
     },
     execute: async (args: string[]) => {
-      const promptArg = args?.[0];
-      if (!promptArg) {
+      const promptName = args?.[0];
+      if (!promptName) {
         terminal.warn(
-          "Please provide a prompt type and name. Usage: /prompt user:optimize or /prompt project:optimize",
+          "Please provide a prompt name. Usage: /prompt <prompt-name>",
         );
         return;
       }
 
-      const [typeStr, promptName, ...rest] = promptArg.split(":");
-
-      if (!(typeStr && promptName) || rest.length > 0) {
+      // Check for old format and provide helpful error
+      if (promptName.includes(":")) {
         terminal.warn(
-          "Invalid prompt format. Use: /prompt user:name or /prompt project:name (e.g., /prompt user:my-prompt)",
+          "The old format (user:name or project:name) is no longer supported. Use: /prompt <prompt-name>",
         );
         return;
       }
-
-      const type = typeStr.toLowerCase();
 
       try {
-        const promptPath = getPromptPath(type, promptName, config, terminal);
+        const promptResult = await findPrompt(promptName, config);
 
-        if (!promptPath) {
-          return; // Error already logged by getPromptPath
+        if (!promptResult) {
+          terminal.error(
+            `Prompt not found: ${promptName}. Available prompts can be seen with tab completion.`,
+          );
+          return;
         }
 
         let promptContent: string;
         try {
-          promptContent = await readFile(promptPath, "utf8");
+          promptContent = await readFile(promptResult.path, "utf8");
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code === "ENOENT") {
             terminal.error(
-              `Prompt not found: ${promptName} (${type}). Looked in: ${promptPath}`,
+              `Prompt file not found: ${promptName} at ${promptResult.path}`,
             );
             return;
           }
           throw error;
         }
 
-        terminal.info(`Loaded ${type} prompt: ${promptName}`);
+        terminal.info(`Loaded ${promptResult.type} prompt: ${promptName}`);
 
         const processedPrompt = await processPrompt(promptContent, {
           baseDir: process.cwd(),
@@ -102,18 +100,39 @@ export const promptCommand = ({
   };
 };
 
-function getPromptPath(
-  type: string,
+async function findPrompt(
   promptName: string,
   config: CommandOptions["config"],
-  terminal: CommandOptions["terminal"],
-): string | null {
-  if (type === "project") {
-    return path.join(config.project.ensurePath("prompts"), `${promptName}.md`);
+): Promise<{ path: string; type: "project" | "user" } | null> {
+  // Check project prompts first (they take precedence)
+  const projectPath = path.join(
+    config.project.ensurePath("prompts"),
+    `${promptName}.md`,
+  );
+
+  try {
+    await readFile(projectPath, "utf8");
+    return { path: projectPath, type: "project" };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error; // Re-throw non-file-not-found errors
+    }
   }
-  if (type === "user") {
-    return path.join(config.app.ensurePath("prompts"), `${promptName}.md`);
+
+  // Check user prompts if not found in project
+  const userPath = path.join(
+    config.app.ensurePath("prompts"),
+    `${promptName}.md`,
+  );
+
+  try {
+    await readFile(userPath, "utf8");
+    return { path: userPath, type: "user" };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error; // Re-throw non-file-not-found errors
+    }
   }
-  terminal.warn(`Unknown prompt type: ${type}. Use 'user' or 'project'`);
-  return null;
+
+  return null; // Prompt not found in either location
 }
