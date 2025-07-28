@@ -94,7 +94,7 @@ export class ReplPrompt {
             matchingCommands[0] ?? "",
           );
           const hits = subCompletions.filter(
-            (sc) => typeof sc === "string" && sc.startsWith(rest),
+            (sc) => sc.startsWith(rest) || rest === "*",
           );
           if (hits.length > 0) {
             return [hits.map((h) => `${firstWord} ${h}`), line];
