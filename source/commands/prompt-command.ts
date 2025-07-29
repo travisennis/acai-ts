@@ -46,7 +46,7 @@ export const promptCommand = ({
       const promptName = args?.[0];
       if (!promptName) {
         terminal.warn(
-          "Please provide a prompt name. Usage: /prompt <prompt-name>",
+          "Please provide a prompt name. Usage: /prompt <prompt-name> [input...]",
         );
         return;
       }
@@ -54,7 +54,7 @@ export const promptCommand = ({
       // Check for old format and provide helpful error
       if (promptName.includes(":")) {
         terminal.warn(
-          "The old format (user:name or project:name) is no longer supported. Use: /prompt <prompt-name>",
+          "The old format (user:name or project:name) is no longer supported. Use: /prompt <prompt-name> [input...]",
         );
         return;
       }
@@ -82,7 +82,19 @@ export const promptCommand = ({
           throw error;
         }
 
+        // Combine remaining arguments into a single string for input
+        const inputArgs = args.slice(1);
+        const inputString = inputArgs.join(" ");
+
+        // Replace {{INPUT}} placeholder with the input string
+        if (promptContent.includes("{{INPUT}}")) {
+          promptContent = promptContent.replace(/{{INPUT}}/g, inputString);
+        }
+
         terminal.info(`Loaded ${promptResult.type} prompt: ${promptName}`);
+        if (inputArgs.length > 0) {
+          terminal.info(`Input: "${inputString}"`);
+        }
 
         const processedPrompt = await processPrompt(promptContent, {
           baseDir: process.cwd(),
