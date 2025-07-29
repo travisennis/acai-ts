@@ -25,7 +25,6 @@ const ALLOWED_COMMANDS = [
   "echo",
   "mkdir",
   "touch",
-  // "rm",
   "cp",
   "mv",
   "pwd",
@@ -35,13 +34,13 @@ const ALLOWED_COMMANDS = [
   "head",
   "tail",
   "sleep",
-  // "test",
   "npm",
   "npx",
   "node",
   "git",
   "gh",
   "rg",
+  "jq",
 ];
 
 // Command execution timeout in milliseconds
