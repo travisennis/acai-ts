@@ -63,9 +63,9 @@ export class ConfigManager {
   }
 
   async readAgentsFile(): Promise<string> {
-    const rulesPath = path.join(process.cwd(), "AGENTS.md");
+    const agentsPath = path.join(process.cwd(), "AGENTS.md");
     try {
-      return await fs.readFile(rulesPath, "utf8");
+      return await fs.readFile(agentsPath, "utf8");
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         return "";
@@ -75,9 +75,9 @@ export class ConfigManager {
   }
 
   async writeAgentsFile(rules: string): Promise<void> {
-    const rulesPath = path.join(process.cwd(), "AGENTS.md");
+    const agentsPath = path.join(process.cwd(), "AGENTS.md");
     try {
-      return await fs.writeFile(rulesPath, rules, "utf8");
+      return await fs.writeFile(agentsPath, rules, "utf8");
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         return;
