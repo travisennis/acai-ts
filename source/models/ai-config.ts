@@ -1,6 +1,46 @@
 import type { LanguageModelV1ProviderMetadata } from "@ai-sdk/provider";
 import type { ModelMetadata } from "./providers.ts";
-import { calculateThinkingLevel } from "./reasoning.ts";
+
+type Effort = "none" | "low" | "medium" | "high";
+
+const THINKING_TIERS: {
+  pattern: RegExp;
+  budget: number;
+  effort: Effort;
+}[] = [
+  {
+    pattern:
+      /\b(ultrathink|think super hard|think really hard|think intensely)\b/i,
+    budget: 31999,
+    effort: "high",
+  },
+  {
+    pattern: /\b(megathink|think (very )?hard|think (a lot|more|about it))\b/i,
+    budget: 10000,
+    effort: "medium",
+  },
+  {
+    pattern: /\bthink\b/i, // Catch-all for standalone "think"
+    budget: 4000,
+    effort: "low",
+  },
+];
+
+function calculateThinkingLevel(userInput: string): {
+  tokenBudget: number;
+  effort: Effort;
+} {
+  let tokenBudget = 0; // Default
+  let effort: Effort = "none";
+  for (const tier of THINKING_TIERS) {
+    if (tier.pattern.test(userInput)) {
+      tokenBudget = tier.budget;
+      effort = tier.effort;
+      break; // Use highest priority match
+    }
+  }
+  return { tokenBudget, effort };
+}
 
 export class AiConfig {
   private modelMetadata: ModelMetadata;
@@ -27,7 +67,7 @@ export class AiConfig {
     const modelConfig = this.modelMetadata;
     const thinkingLevel = calculateThinkingLevel(this.prompt);
 
-    if (modelConfig.supportsReasoning) {
+    if (modelConfig.supportsReasoning && thinkingLevel.effort !== "none") {
       switch (modelConfig.provider) {
         case "anthropic":
           return {
@@ -41,17 +81,23 @@ export class AiConfig {
         case "openai":
           return { openai: { reasoningEffort: thinkingLevel.effort } };
         case "google": {
-          // Only flash25 currently supports the thinking budget
-          if (modelConfig.id === "google:flash25") {
-            return {
-              google: {
-                thinkingConfig: {
-                  thinkingBudget: thinkingLevel.tokenBudget,
-                },
+          return {
+            google: {
+              thinkingConfig: {
+                thinkingBudget: thinkingLevel.tokenBudget,
               },
-            };
-          }
-          return {};
+            },
+          };
+        }
+        case "openrouter": {
+          return {
+            openrouter: {
+              reasoning: {
+                enabled: true,
+                effort: thinkingLevel.effort,
+              },
+            },
+          };
         }
         default:
           return {};
