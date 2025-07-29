@@ -8,7 +8,6 @@ import type { TokenCounter } from "../token-utils.ts";
 import type { Message } from "../tools/types.ts";
 import { applicationLogCommand } from "./application-log-command.ts";
 import { clearCommand } from "./clear-command.ts";
-import { commitCommand } from "./commit-command.ts";
 import { compactCommand } from "./compact-command.ts";
 import { editCommand } from "./edit-command.ts";
 import { editPromptCommand } from "./edit-prompt-command.ts";
@@ -20,11 +19,9 @@ import { initCommand } from "./init-command.ts";
 import { lastLogCommand } from "./last-log-command.ts";
 import { modelCommand } from "./model-command.ts";
 import { pasteCommand } from "./paste-command.ts";
-import { prCommentsCommand } from "./pr-comments-command.ts";
 import { promptCommand } from "./prompt-command.ts";
 import { ptreeCommand } from "./ptree-command.ts";
 import { resetCommand } from "./reset-command.ts";
-import { reviewCommand } from "./review-command.ts";
 import { rulesCommand } from "./rules-command.ts";
 import { saveCommand } from "./save-command.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
@@ -79,7 +76,6 @@ export class CommandManager {
     // Register all commands
     const cmds = [
       clearCommand(options),
-      commitCommand(options),
       compactCommand(options),
       editCommand(options),
       editPromptCommand(options),
@@ -90,12 +86,10 @@ export class CommandManager {
       promptCommand(options),
       ptreeCommand(options),
       resetCommand(options),
-      reviewCommand(options),
       saveCommand(options),
       rulesCommand(options),
       modelCommand(options),
       usageCommand(options),
-      prCommentsCommand(options),
       lastLogCommand(options),
       generateRulesCommand(options),
       applicationLogCommand(options),
