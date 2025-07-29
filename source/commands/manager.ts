@@ -20,7 +20,6 @@ import { lastLogCommand } from "./last-log-command.ts";
 import { modelCommand } from "./model-command.ts";
 import { pasteCommand } from "./paste-command.ts";
 import { promptCommand } from "./prompt-command.ts";
-import { ptreeCommand } from "./ptree-command.ts";
 import { resetCommand } from "./reset-command.ts";
 import { rulesCommand } from "./rules-command.ts";
 import { saveCommand } from "./save-command.ts";
@@ -84,7 +83,6 @@ export class CommandManager {
       initCommand(options),
       pasteCommand(options),
       promptCommand(options),
-      ptreeCommand(options),
       resetCommand(options),
       saveCommand(options),
       rulesCommand(options),
