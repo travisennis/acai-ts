@@ -27,6 +27,7 @@ const openrouterModels = {
   "devstral-medium": openRouterClient("mistralai/devstral-medium"),
   "qwen3-coder": openRouterClient("qwen/qwen3-coder"),
   "qwen3-coder-free": openRouterClient("qwen/qwen3-coder:free"),
+  "glm-4.5": openRouterClient("z-ai/glm-4.5"),
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -199,6 +200,19 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000004,
     costPerOutputToken: 0.000002,
+    category: "balanced",
+  },
+  "openrouter:glm-4.5": {
+    id: "openrouter:glm-4.5",
+    provider: "openrouter",
+    contextWindow: 128000,
+    maxOutputTokens: 96000,
+    defaultTemperature: 0.7,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.0000006,
+    costPerOutputToken: 0.0000022,
     category: "balanced",
   },
 };
