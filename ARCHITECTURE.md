@@ -45,7 +45,6 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 │   │   │   ├── paste-command.ts
 │   │   │   ├── pr-comments-command.ts
 │   │   │   ├── prompt-command.ts
-│   │   │   ├── ptree-command.ts
 │   │   │   ├── reset-command.ts
 │   │   │   ├── review-command.ts
 │   │   │   ├── rules-command.ts
@@ -157,9 +156,7 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 | **paste-command.ts** | This file implements the `/paste` REPL command, which adds the contents of the clipboard to the next prompt. |
 | **pr-comments-command.ts** | This file implements the `/pr-comments` REPL command, used to add review comments to a GitHub pull request. |
 | **prompt-command.ts** | This file implements the `/prompt` REPL command, used to load previously saved prompts. |
-| **ptree-command.ts** | This file implements the `/ptree` REPL command, which displays the project directory tree. |
 | **reset-command.ts** | This file implements the `/reset` REPL command, which saves the current chat history and then resets the conversation. |
-| **review-command.ts** | This file implements the `/review` REPL command, used to review a GitHub pull request or local changes. |
 | **rules-command.ts** | This file implements the `/rules` REPL command, used to view or edit persistent project rules and memories. |
 | **save-command.ts** | This file implements the `/save` REPL command, which saves the current chat history. |
 | **types.ts** | This file defines common TypeScript types and interfaces used across the REPL commands module. |

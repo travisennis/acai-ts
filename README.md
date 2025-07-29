@@ -139,7 +139,6 @@ For a list of available commands, type `/help` within the REPL.
 - `/init` - Generate or improve `AGENTS.md`
 - `/editPrompt` - Edit the current prompt
 - `/paste` - Add clipboard contents to the next prompt
-- `/ptree` - Show project directory tree
 - `/prompt <name>` - Load saved prompts. Project prompts override user prompts.
 - `/rules [view|add <text>|edit]` - View or edit persistent project rules/memories (formerly /memory)
 - `/model [provider:model|category|provider]` - List or switch models
