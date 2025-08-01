@@ -4,9 +4,6 @@ import { customProvider } from "ai";
 import type { ModelMetadata } from "./providers.ts";
 
 const googleModels = {
-  "flash25-search": originalGoogle("gemini-2.5-flash", {
-    useSearchGrounding: true,
-  }),
   flash25lite: originalGoogle("gemini-2.5-flash-lite-preview-06-17"),
   pro25: originalGoogle("gemini-2.5-pro"),
   flash25: originalGoogle("gemini-2.5-flash"),
@@ -41,19 +38,6 @@ export const googleModelRegistry: Record<
     costPerInputToken: 0,
     costPerOutputToken: 0,
     category: "fast",
-  },
-  "google:flash25-search": {
-    id: "google:flash25-search",
-    provider: "google",
-    contextWindow: 1000000,
-    maxOutputTokens: 8192,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "balanced",
   },
   "google:pro25": {
     id: "google:pro25",

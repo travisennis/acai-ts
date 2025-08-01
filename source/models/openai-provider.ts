@@ -4,9 +4,6 @@ import { customProvider } from "ai";
 import type { ModelMetadata } from "./providers.ts";
 
 const openaiModels = {
-  "gpt-4.1-structured": originalOpenAi("gpt-4.1", {
-    structuredOutputs: true,
-  }),
   "gpt-4.1": originalOpenAi("gpt-4.1"),
   o3: originalOpenAi.responses("o3"),
   "o4-mini": originalOpenAi.responses("o4-mini"),
@@ -29,19 +26,6 @@ export const openaiProvider = {
 export const openaiModelRegistry: {
   [K in ModelName]: ModelMetadata<ModelName>;
 } = {
-  "openai:gpt-4.1-structured": {
-    id: "openai:gpt-4.1-structured",
-    provider: "openai",
-    contextWindow: 1000000,
-    maxOutputTokens: 32768,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.000002,
-    costPerOutputToken: 0.000008,
-    category: "balanced",
-  },
   "openai:gpt-4.1": {
     id: "openai:gpt-4.1",
     provider: "openai",

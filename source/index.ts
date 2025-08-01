@@ -138,7 +138,7 @@ async function main() {
   modelManager.setModel("cli", chosenModel);
   modelManager.setModel("title-conversation", "openrouter:gemini-flash25");
   modelManager.setModel("conversation-summarizer", "openrouter:gemini-flash25");
-  modelManager.setModel("tool-repair", "openai:gpt-4.1-structured");
+  modelManager.setModel("tool-repair", "openai:gpt-4.1");
   modelManager.setModel("conversation-analyzer", "openrouter:gemini-flash25");
   modelManager.setModel("init-project", chosenModel);
   modelManager.setModel("task-agent", "openrouter:gemini-flash25");
