@@ -9,6 +9,7 @@ import type { Message } from "../tools/types.ts";
 import { applicationLogCommand } from "./application-log-command.ts";
 import { clearCommand } from "./clear-command.ts";
 import { compactCommand } from "./compact-command.ts";
+import { copyCommand } from "./copy-command.ts";
 import { editCommand } from "./edit-command.ts";
 import { editPromptCommand } from "./edit-prompt-command.ts";
 import { exitCommand } from "./exit-command.ts";
@@ -91,6 +92,7 @@ export class CommandManager {
       lastLogCommand(options),
       generateRulesCommand(options),
       applicationLogCommand(options),
+      copyCommand(options),
     ];
 
     // Add help command with access to all commands
