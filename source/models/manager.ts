@@ -1,4 +1,4 @@
-import type { LanguageModel } from "ai";
+import type { LanguageModelV2 } from "@ai-sdk/provider";
 import { wrapLanguageModel } from "ai";
 import {
   auditMessage,
@@ -42,7 +42,7 @@ type App =
   | "task-agent";
 
 export class ModelManager {
-  private modelMap: Map<App, LanguageModel>;
+  private modelMap: Map<App, LanguageModelV2>;
   private modelMetadataMap: Map<App, ModelMetadata>;
   private stateDir: string;
   constructor({ stateDir }: { stateDir: string }) {

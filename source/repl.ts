@@ -107,7 +107,7 @@ export class Repl {
       const langModel = modelManager.getModel("repl");
       const modelConfig = modelManager.getModelMetadata("repl");
 
-      terminal.writeln(chalk.dim(langModel.toString()));
+      terminal.writeln(chalk.dim(langModel.modelId));
       terminal.displayProgressBar(
         currentContextWindow,
         modelConfig.contextWindow,
