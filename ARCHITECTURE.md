@@ -54,6 +54,7 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 │   │   │   ├── application-log-command.ts
 │   │   │   ├── clear-command.ts
 │   │   │   ├── compact-command.ts
+│   │   │   ├── copy-command.ts
 │   │   │   ├── edit-command.ts
 │   │   │   ├── edit-prompt-command.ts
 │   │   │   ├── exit-command.ts
@@ -134,6 +135,7 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 │   │   │   └── process.ts
 │   ├── test
 │   │   ├── commands
+│   │   │   └── copy-command.test.ts
 │   │   ├── terminal
 │   │   │   └── markdown-utils.test.ts
 │   │   ├── tools
@@ -165,6 +167,7 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 | **application-log-command.ts** | Command for viewing application logs |
 | **clear-command.ts** | Implements the `/clear` REPL command to clear the terminal screen |
 | **compact-command.ts** | Implements the `/compact` REPL command to save, summarize, and reset chat history |
+| **copy-command.ts** | Implements `/copy` to copy the last assistant response to the system clipboard |
 | **edit-command.ts** | Command for editing files directly within the REPL |
 | **edit-prompt-command.ts** | Command to modify the current prompt before sending to AI |
 | **exit-command.ts** | Implements the `/exit` command to exit the application |
@@ -174,6 +177,7 @@ This document outlines the architecture of the Acai CLI tool, a powerful AI-driv
 | **init-command.ts** | Command to initialize or improve the AGENTS.md file |
 | **last-log-command.ts** | Command to view the most recent application log entries |
 | **manager.ts** | Defines the CommandManager class that registers and routes commands |
+| Registers `/copy` alongside other commands |
 | **model-command.ts** | Command to list available AI models or switch between them |
 | **paste-command.ts** | Implements the `/paste` command to add clipboard contents to the next prompt |
 | **prompt-command.ts** | Command to load previously saved prompts |
