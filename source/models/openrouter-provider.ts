@@ -28,6 +28,7 @@ const openrouterModels = {
   "qwen3-coder": openRouterClient("qwen/qwen3-coder"),
   "qwen3-coder-free": openRouterClient("qwen/qwen3-coder:free"),
   "glm-4.5": openRouterClient("z-ai/glm-4.5"),
+  "horizon-alpha": openRouterClient("openrouter/horizon-alpha"),
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -213,6 +214,19 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000006,
     costPerOutputToken: 0.0000022,
+    category: "balanced",
+  },
+  "openrouter:horizon-alpha": {
+    id: "openrouter:horizon-alpha",
+    provider: "openrouter",
+    contextWindow: 256000,
+    maxOutputTokens: 128000,
+    defaultTemperature: 0.7,
+    promptFormat: "markdown",
+    supportsReasoning: false,
+    supportsToolCalling: true,
+    costPerInputToken: 0,
+    costPerOutputToken: 0,
     category: "balanced",
   },
 };
