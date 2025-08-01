@@ -101,7 +101,7 @@ export const createBashTool = ({
         sendData?.({
           event: "tool-init",
           id: toolCallId,
-          data: `Executing: ${command} in ${safeCwd}`,
+          data: `Executing: ${chalk.cyan(command)} in ${chalk.cyan(safeCwd)}`,
         });
 
         // Validate command using CommandValidation
