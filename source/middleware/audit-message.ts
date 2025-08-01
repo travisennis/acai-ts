@@ -1,16 +1,17 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type {
-  LanguageModelUsage,
-  LanguageModelV1Middleware,
-  LanguageModelV1Prompt,
-  LanguageModelV1StreamPart,
-} from "ai";
+  LanguageModelV2Middleware,
+  LanguageModelV2Prompt,
+  LanguageModelV2StreamPart,
+  LanguageModelV2TextPart,
+} from "@ai-sdk/provider";
+import type { LanguageModelUsage } from "ai";
 
 interface AuditRecord {
   model: string;
   app: string;
-  messages: LanguageModelV1Prompt;
+  messages: LanguageModelV2Prompt;
   usage: LanguageModelUsage;
   timestamp: number;
 }
@@ -46,7 +47,7 @@ export const auditMessage = ({
   filePath: string;
   app: string;
 }) => {
-  const middleware: LanguageModelV1Middleware = {
+  const middleware: LanguageModelV2Middleware = {
     wrapGenerate: async ({ doGenerate, params, model }) => {
       const result = await doGenerate();
 
@@ -58,15 +59,12 @@ export const auditMessage = ({
           content: [
             {
               type: "text",
-              text: result.text ?? "no response",
-            },
+              // biome-ignore lint/suspicious/noExplicitAny: work-around on type issue
+              text: (result as any).text,
+            } as LanguageModelV2TextPart,
           ],
         }),
-        usage: {
-          ...result.usage,
-          totalTokens:
-            result.usage.promptTokens + result.usage.completionTokens,
-        },
+        usage: result.usage,
         timestamp: Date.now(),
       };
 
@@ -79,18 +77,19 @@ export const auditMessage = ({
       const { stream, ...rest } = await doStream();
 
       let generatedText = "";
-      let usage: Omit<LanguageModelUsage, "totalTokens"> = {
-        promptTokens: 0,
-        completionTokens: 0,
+      let usage: LanguageModelUsage = {
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
       };
 
       const transformStream = new TransformStream<
-        LanguageModelV1StreamPart,
-        LanguageModelV1StreamPart
+        LanguageModelV2StreamPart,
+        LanguageModelV2StreamPart
       >({
         transform(chunk, controller) {
           if (chunk.type === "text-delta") {
-            generatedText += chunk.textDelta;
+            generatedText += chunk.delta;
           }
           if (chunk.type === "finish") {
             usage = chunk.usage;
@@ -116,10 +115,7 @@ export const auditMessage = ({
                   },
                 ]
               : [...params.prompt],
-            usage: {
-              ...usage,
-              totalTokens: usage.completionTokens + usage.promptTokens,
-            },
+            usage,
             timestamp: Date.now(),
           };
 

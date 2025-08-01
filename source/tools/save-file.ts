@@ -24,7 +24,7 @@ export const createSaveFileTool = async ({
         "Create a new file or completely overwrite an existing file with new content. " +
         "Use with caution as it will overwrite existing files without warning. " +
         "Handles text content with proper encoding. Only works within allowed directories.",
-      parameters: z.object({
+      inputSchema: z.object({
         path: z.string().describe("Absolute path to file to save to"),
         content: z.string().describe("Content to save in the file"),
         encoding: fileEncodingSchema.describe(

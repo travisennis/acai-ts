@@ -16,7 +16,7 @@ export const createGrepTool = (
   return {
     [GrepTool.name]: tool({
       description: "Search files for patterns using ripgrep",
-      parameters: z.object({
+      inputSchema: z.object({
         pattern: z.string().describe("The regex pattern to search for"),
         path: z.string().describe("The path to search in"),
         recursive: z

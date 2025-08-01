@@ -33,7 +33,7 @@ export const createEditFileTool = async ({
         "Make line-based edits to a text file. Each edit replaces exact line sequences " +
         "with new content. Returns a git-style diff showing the changes made. " +
         "Only works within allowed directories.",
-      parameters: z.object({
+      inputSchema: z.object({
         path: z.string().describe("The path of the file to edit."),
         edits: z.array(
           z.object({

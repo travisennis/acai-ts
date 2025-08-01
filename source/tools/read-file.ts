@@ -30,7 +30,7 @@ export const createReadFileTool = async ({
         "Handles various text encodings and provides detailed error messages " +
         "if the file cannot be read. Use this tool when you need to examine " +
         "the contents of a single file. Only works within allowed directories.",
-      parameters: z.object({
+      inputSchema: z.object({
         path: z.string().describe("Absolute path to file to read"),
         encoding: fileEncodingSchema.describe(
           'Encoding format for reading the file. Use "utf-8" as default for text files',

@@ -24,7 +24,7 @@ export const createMoveFileTool = async ({
         "and rename them in a single operation. If the destination exists, the " +
         "operation will fail. Works across different directories and can be used " +
         "for simple renaming within the same directory. Both source and destination must be within allowed directories.",
-      parameters: z.object({
+      inputSchema: z.object({
         source: z.string(),
         destination: z.string(),
       }),

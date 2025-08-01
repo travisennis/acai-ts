@@ -21,7 +21,7 @@ export const createDeleteFileTool = async ({
   return {
     [DeleteFileTool.name]: tool({
       description: "Delete a file permanently.",
-      parameters: z.object({
+      inputSchema: z.object({
         path: z.string().describe("Absolute path to the file to delete"),
       }),
       execute: async ({ path: userPath }, { toolCallId }) => {

@@ -1,4 +1,4 @@
-import type { LanguageModelV1ProviderMetadata } from "@ai-sdk/provider";
+import type { SharedV2ProviderMetadata } from "@ai-sdk/provider";
 import type { ModelMetadata } from "./providers.ts";
 
 type Effort = "none" | "low" | "medium" | "high";
@@ -63,7 +63,7 @@ export class AiConfig {
     return maxTokens;
   }
 
-  getProviderOptions(): LanguageModelV1ProviderMetadata {
+  getProviderOptions(): SharedV2ProviderMetadata {
     const modelConfig = this.modelMetadata;
     const thinkingLevel = calculateThinkingLevel(this.prompt);
 

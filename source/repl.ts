@@ -4,6 +4,7 @@ import {
   generateObject,
   NoSuchToolError,
   type StepResult,
+  stepCountIs,
   streamText,
   type ToolCallRepairFunction,
   type ToolSet,
@@ -106,7 +107,7 @@ export class Repl {
       const langModel = modelManager.getModel("repl");
       const modelConfig = modelManager.getModelMetadata("repl");
 
-      terminal.writeln(chalk.dim(langModel.modelId));
+      terminal.writeln(chalk.dim(langModel.toString()));
       terminal.displayProgressBar(
         currentContextWindow,
         modelConfig.contextWindow,
@@ -193,7 +194,7 @@ export class Repl {
       try {
         const result = streamText({
           model: langModel,
-          maxTokens,
+          maxOutputTokens: maxTokens,
           messages: [
             {
               role: "system",
@@ -205,7 +206,7 @@ export class Repl {
             ...messageHistory.get(),
           ],
           temperature: modelConfig.defaultTemperature,
-          maxSteps: 60,
+          stopWhen: stepCountIs(60),
           maxRetries: 2,
           providerOptions: aiConfig.getProviderOptions(),
           tools,
@@ -241,11 +242,11 @@ export class Repl {
               );
             }
 
-            const outgoingTokens = isNumber(result.usage.promptTokens)
-              ? result.usage.promptTokens
+            const outgoingTokens = isNumber(result.usage.inputTokens)
+              ? result.usage.inputTokens
               : 0;
-            const incomingTokens = isNumber(result.usage.completionTokens)
-              ? result.usage.completionTokens
+            const incomingTokens = isNumber(result.usage.outputTokens)
+              ? result.usage.outputTokens
               : 0;
             const tokenSummary = `Tokens: ↑ ${outgoingTokens} ↓ ${incomingTokens}`;
             terminal.writeln(chalk.dim(tokenSummary));
@@ -287,24 +288,24 @@ export class Repl {
         });
 
         let accumulatedText = "";
-        let lastType: "reasoning" | "text-delta" | null = null;
+        let lastType: "reasoning" | "text" | null = null;
 
         for await (const chunk of result.fullStream) {
           // Handle text-related chunks (reasoning or text-delta)
-          if (chunk.type === "reasoning" || chunk.type === "text-delta") {
-            if (chunk.type === "reasoning") {
+          if (chunk.type === "reasoning-delta" || chunk.type === "text-delta") {
+            if (chunk.type === "reasoning-delta") {
               if (lastType !== "reasoning") {
                 terminal.writeln(chalk.dim("<think>"));
               }
-              terminal.write(chalk.dim(chunk.textDelta)); // Stream reasoning directly
+              terminal.write(chalk.dim(chunk.text)); // Stream reasoning directly
               lastType = "reasoning";
             } else if (chunk.type === "text-delta") {
               if (lastType === "reasoning") {
                 // Finishing reasoning: Print </think>
                 terminal.writeln(chalk.dim("\n</think>\n"));
               }
-              accumulatedText += chunk.textDelta;
-              lastType = "text-delta";
+              accumulatedText += chunk.text;
+              lastType = "text";
             }
           } else if (chunk.type === "tool-result") {
             const messages = toolEvents.get(chunk.toolCallId);
@@ -395,9 +396,9 @@ export class Repl {
     for (const step of result.steps) {
       let currentToolCalls: Array<{ toolName: string }> = [];
 
-      if (step.stepType === "tool-result" && step.toolResults) {
+      if (step.toolResults.length > 0) {
         currentToolCalls = step.toolResults;
-      } else if (step.stepType === "initial" && step.toolCalls) {
+      } else if (step.toolCalls.length > 0) {
         currentToolCalls = step.toolCalls;
       }
 
@@ -510,7 +511,7 @@ const toolCallRepair = (modelManager: ModelManager, terminal: Terminal) => {
   const fn: ToolCallRepairFunction<CompleteToolSet> = async ({
     toolCall,
     tools,
-    parameterSchema,
+    inputSchema,
     error,
   }) => {
     if (NoSuchToolError.isInstance(error)) {
@@ -525,12 +526,12 @@ const toolCallRepair = (modelManager: ModelManager, terminal: Terminal) => {
     try {
       const { object: repairedArgs } = await generateObject({
         model: modelManager.getModel("tool-repair"),
-        schema: tool.parameters as z.ZodSchema<unknown>,
+        schema: tool.inputSchema as z.ZodSchema<unknown>,
         prompt: [
           `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
-          JSON.stringify(toolCall.args),
+          JSON.stringify(toolCall.input),
           "The tool accepts the following schema:",
-          JSON.stringify(parameterSchema(toolCall)),
+          JSON.stringify(inputSchema(toolCall)),
           "Please fix the arguments.",
         ].join("\n"),
       });

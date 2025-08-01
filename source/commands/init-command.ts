@@ -1,5 +1,5 @@
 import { platform } from "node:os";
-import { streamText } from "ai";
+import { stepCountIs, streamText } from "ai";
 import { inGitDirectory } from "../tools/git-utils.ts";
 import { initTools } from "../tools/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
@@ -31,7 +31,7 @@ If there are Cursor rules (in .cursor/rules/ or .cursorrules) or Copilot rules (
 Your current working directory is ${process.cwd()}
 Is directory a git repo: ${(await inGitDirectory()) ? "Yes" : "No"}
 Platform: ${platform()}`,
-        maxSteps: 40,
+        stopWhen: stepCountIs(40),
         tools: await initTools({
           terminal,
           tokenCounter,

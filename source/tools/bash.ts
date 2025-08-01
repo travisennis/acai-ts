@@ -74,7 +74,7 @@ export const createBashTool = ({
   return {
     [BashTool.name]: tool({
       description: `Execute bash commands and return their output. Limited to a whitelist of safe commands: ${ALLOWED_COMMANDS.join(", ")}. Commands will only execute within the project directory for security. Always specify absolute paths to avoid errors.`,
-      parameters: z.object({
+      inputSchema: z.object({
         command: z
           .string()
           .describe(

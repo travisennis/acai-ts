@@ -20,7 +20,7 @@ export const createWebSearchTool = ({
     [WebSearchTool.name]: tool({
       description:
         "Searches the web and returns match documents with their title, url, and text content. The query should be formulated as a natural language question.",
-      parameters: z.object({
+      inputSchema: z.object({
         query: z.string().describe("The search query."),
       }),
       execute: async ({ query }, { toolCallId }) => {

@@ -1,5 +1,5 @@
 import { isString } from "@travisennis/stdlib/typeguards";
-import type { CoreUserMessage, TextPart } from "ai"; // Corrected import
+import type { TextPart, UserModelMessage } from "ai"; // Corrected import
 import { createUserMessage, type UserMessageContentItem } from "../messages.ts";
 import type { TokenCounter } from "../token-utils.ts";
 
@@ -28,10 +28,10 @@ export class PromptManager {
     throw new Error("No prompt available.");
   }
 
-  getUserMessage(): CoreUserMessage {
+  getUserMessage(): UserModelMessage {
     const currentPrompt = this.prompt;
     if (isString(currentPrompt) && currentPrompt.trim().length > 0) {
-      let userMessage: CoreUserMessage;
+      let userMessage: UserModelMessage;
       if (this.hasContext()) {
         // Pass context items and the prompt string to createUserMessage
         userMessage = createUserMessage([...this.context], currentPrompt);
@@ -48,8 +48,8 @@ export class PromptManager {
   }
 
   private _applyProviderOptionsToMessage(
-    userMessage: CoreUserMessage,
-  ): CoreUserMessage {
+    userMessage: UserModelMessage,
+  ): UserModelMessage {
     if (Array.isArray(userMessage.content)) {
       for (const part of userMessage.content) {
         if (typeof part === "object" && part !== null && part.type === "text") {

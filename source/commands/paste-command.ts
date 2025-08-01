@@ -27,7 +27,7 @@ export const pasteCommand = ({
           promptManager.addContext({
             type: "image",
             image: base64DataUrl,
-            mimeType,
+            mediaType: mimeType,
           });
 
           terminal.success(

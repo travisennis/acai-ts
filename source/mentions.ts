@@ -210,7 +210,7 @@ export async function processPrompt(
     } else if (mention.data.startsWith("data")) {
       context.push({
         type: "image",
-        mimeType: mention.contentType,
+        mediaType: mention.contentType,
         image: mention.data,
       });
     } else {

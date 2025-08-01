@@ -3,6 +3,7 @@ import {
   generateObject,
   generateText,
   NoSuchToolError,
+  stepCountIs,
   type ToolCallRepairFunction,
 } from "ai";
 import type z from "zod";
@@ -85,7 +86,7 @@ export class Cli {
     try {
       const result = await generateText({
         model: langModel,
-        maxTokens,
+        maxOutputTokens: maxTokens,
         messages: [
           {
             role: "system",
@@ -97,7 +98,7 @@ export class Cli {
           ...messageHistory.get(),
         ],
         temperature: modelConfig.defaultTemperature,
-        maxSteps: 60,
+        stopWhen: stepCountIs(60),
         maxRetries: 2,
         providerOptions: aiConfig.getProviderOptions(),
         tools,
@@ -140,7 +141,7 @@ const toolCallRepair = (modelManager: ModelManager) => {
   const fn: ToolCallRepairFunction<CompleteToolSet> = async ({
     toolCall,
     tools,
-    parameterSchema,
+    inputSchema,
     error,
   }) => {
     if (NoSuchToolError.isInstance(error)) {
@@ -151,12 +152,12 @@ const toolCallRepair = (modelManager: ModelManager) => {
     try {
       const { object: repairedArgs } = await generateObject({
         model: modelManager.getModel("tool-repair"),
-        schema: tool.parameters as z.ZodSchema<unknown>,
+        schema: tool.inputSchema as z.ZodSchema<unknown>,
         prompt: [
           `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
-          JSON.stringify(toolCall.args),
+          JSON.stringify(toolCall.input),
           "The tool accepts the following schema:",
-          JSON.stringify(parameterSchema(toolCall)),
+          JSON.stringify(inputSchema(toolCall)),
           "Please fix the arguments.",
         ].join("\n"),
       });

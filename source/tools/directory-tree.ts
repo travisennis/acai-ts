@@ -24,7 +24,7 @@ export const createDirectoryTreeTool = async ({
     [DirectoryTreeTool.name]: tool({
       description:
         "Get a directory tree structure for a given path. This tool will ignore any directories or files listed in a .gitignore file. Use this tool when you need to see a complete directory tree for a project. This can be used to get an understanding of how a project is organized and what files are available before using other file system tools.",
-      parameters: z.object({
+      inputSchema: z.object({
         path: z.string().describe("The path."),
       }),
       execute: async ({ path }, { toolCallId }) => {

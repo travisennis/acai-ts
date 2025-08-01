@@ -28,7 +28,7 @@ export const createReadMultipleFilesTool = async ({
         "or compare multiple files. Each file's content is returned with its " +
         "path as a reference. Failed reads for individual files won't stop " +
         "the entire operation. Only works within allowed directories.",
-      parameters: z.object({
+      inputSchema: z.object({
         paths: z.array(z.string()),
       }),
       execute: async ({ paths }, { toolCallId }) => {

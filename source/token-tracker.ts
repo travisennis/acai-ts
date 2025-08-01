@@ -25,16 +25,14 @@ export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
   getTotalUsage(): LanguageModelUsage {
     return this.usages.reduce(
       (acc, { usage }) => {
-        acc.promptTokens += isNumber(usage.promptTokens)
-          ? usage.promptTokens
-          : 0;
-        acc.completionTokens += isNumber(usage.completionTokens)
-          ? usage.completionTokens
+        acc.inputTokens += isNumber(usage.inputTokens) ? usage.inputTokens : 0;
+        acc.outputTokens += isNumber(usage.outputTokens)
+          ? usage.outputTokens
           : 0;
         acc.totalTokens += isNumber(usage.totalTokens) ? usage.totalTokens : 0;
         return acc;
       },
-      { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
     );
   }
 
@@ -43,18 +41,18 @@ export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
       .filter(({ tool }) => tool === app)
       .reduce(
         (acc, { usage }) => {
-          acc.promptTokens += isNumber(usage.promptTokens)
-            ? usage.promptTokens
+          acc.inputTokens += isNumber(usage.inputTokens)
+            ? usage.inputTokens
             : 0;
-          acc.completionTokens += isNumber(usage.completionTokens)
-            ? usage.completionTokens
+          acc.outputTokens += isNumber(usage.outputTokens)
+            ? usage.outputTokens
             : 0;
           acc.totalTokens += isNumber(usage.totalTokens)
             ? usage.totalTokens
             : 0;
           return acc;
         },
-        { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
       );
   }
 

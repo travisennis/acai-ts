@@ -106,7 +106,7 @@ export const createMemoryReadTool = (
   const memoryReadTool = tool({
     description:
       'Read from memory files. If no path is provided, lists all files and shows content of "index.md".',
-    parameters: z.object({
+    inputSchema: z.object({
       filePath: z
         .string()
         .nullable()

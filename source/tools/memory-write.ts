@@ -18,7 +18,7 @@ export const createMemoryWriteTool = (
 
   const memoryWriteTool = tool({
     description: "Write content to a memory file.",
-    parameters: z.object({
+    inputSchema: z.object({
       filePath: z
         .string()
         .describe(

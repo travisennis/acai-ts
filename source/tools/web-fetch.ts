@@ -19,7 +19,7 @@ export const createWebFetchTool = (options: {
     [WebFetchTool.name]: tool({
       description:
         "Fetches the content of a given URL. It intelligently handles HTML content by attempting to use a specialized service for cleaner extraction, falling back to local cleaning if needed. For non-HTML content (like plain text or markdown), it fetches the raw content directly. IMPORTANT: Does not retrieve binary files.",
-      parameters: z.object({
+      inputSchema: z.object({
         url: z.string().describe("The URL to fetch content from."),
       }),
       execute: async ({ url }, { toolCallId, abortSignal }) => {

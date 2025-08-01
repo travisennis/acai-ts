@@ -1,11 +1,11 @@
-import type { LanguageModelV1Middleware } from "ai";
+import type { LanguageModelV2Middleware } from "@ai-sdk/provider";
 import pThrottle from "p-throttle";
 
 export const createRateLimitMiddleware = ({
   requestsPerMinute,
 }: {
   requestsPerMinute: number;
-}): LanguageModelV1Middleware => {
+}): LanguageModelV2Middleware => {
   const throttle = pThrottle({
     limit: requestsPerMinute,
     interval: 60 * 1000, // 1 minute

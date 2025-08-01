@@ -1,4 +1,4 @@
-import { type CoreMessage, generateText } from "ai";
+import { type ModelMessage, generateText } from "ai";
 import { config } from "./config.ts";
 import { createUserMessage } from "./messages.ts";
 import type { ModelManager } from "./models/manager.ts";
@@ -51,7 +51,7 @@ export async function analyzeConversation({
   tokenTracker,
 }: {
   modelManager: ModelManager;
-  messages: CoreMessage[];
+  messages: ModelMessage[];
   terminal?: Terminal | undefined;
   tokenTracker: TokenTracker;
 }): Promise<string[]> {
@@ -75,7 +75,7 @@ ${learnedRules}
   );
   const { text, usage } = await generateText({
     model: modelManager.getModel("conversation-analyzer"),
-    maxTokens: 8192,
+    maxOutputTokens: 8192,
     system: await system(),
     messages: messages,
   });

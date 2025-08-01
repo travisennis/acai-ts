@@ -1,4 +1,4 @@
-import { generateText, tool } from "ai";
+import { generateText, stepCountIs, tool } from "ai";
 import chalk from "chalk";
 import { z } from "zod";
 import { AiConfig } from "../models/ai-config.ts";
@@ -56,7 +56,7 @@ export const createAgentTools = (options: {
   return {
     [AgentTool.name]: tool({
       description: getToolDescription(),
-      parameters: inputSchema,
+      inputSchema: inputSchema,
       execute: async ({ prompt }, { abortSignal, toolCallId }) => {
         sendData?.({
           event: "tool-init",
@@ -72,11 +72,11 @@ export const createAgentTools = (options: {
 
           const { text, usage } = await generateText({
             model: modelManager.getModel("task-agent"),
-            maxTokens: aiConfig.getMaxTokens(),
+            maxOutputTokens: aiConfig.getMaxTokens(),
             system:
               "You are a code search assistant that will be given a task that will require you to search a code base to find relevant code and files.",
             prompt: prompt,
-            maxSteps: 30,
+            stopWhen: stepCountIs(30),
             providerOptions: aiConfig.getProviderOptions(),
             tools: await initCliTools({ tokenCounter }),
             abortSignal: abortSignal,

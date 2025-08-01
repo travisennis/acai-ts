@@ -23,7 +23,7 @@ export const createThinkTool = (
   return {
     [ThinkTool.name]: tool({
       description: toolDescription,
-      parameters: z.object({
+      inputSchema: z.object({
         thought: z.string().describe("Your thought"),
       }),
       execute: ({ thought }, { toolCallId }) => {
