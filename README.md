@@ -134,17 +134,24 @@ For a list of available commands, type `/help` within the REPL.
 - `/compact` - Saves, summarizes and resets the chat history
 - `/exit` or `/bye` - Exits and saves chat history
 - `/files [pattern]` - Select files interactively or by pattern, adding content to prompt
-- `/commit [args]` - Generate Conventional Commits for current changes (accepts args for prompt customization)
-- `/review [PR#|local]` - Review a GitHub pull request or local changes
 - `/init` - Generate or improve `AGENTS.md`
 - `/editPrompt` - Edit the current prompt
 - `/paste` - Add clipboard contents to the next prompt
 - `/prompt <name>` - Load saved prompts. Project prompts override user prompts.
 - `/rules [view|add <text>|edit]` - View or edit persistent project rules/memories (formerly /memory)
 - `/model [provider:model|category|provider]` - List or switch models
-- `/pr-comments [PR#] [instructions]` - Add review comments to a GitHub PR
 - `/usage` - Show token usage breakdown
 - `/clear` - Clears the terminal screen for the current session
+- `/lastLog` - Show the last application log entries
+- `/appLog` - Show or follow the application log
+- `/generateRules` - Analyze the current conversation and suggest project rules
+- `/edit <path> "<change description>"` - Edit a file with AI assistance
+- `/copy` - Copy the last assistant response to the system clipboard
+
+Clipboard notes:
+- macOS: uses `pbcopy`
+- Windows: uses `clip`
+- Linux: tries `xclip`, falls back to `xsel`
 
 ## Configuration
 
