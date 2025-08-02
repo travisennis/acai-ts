@@ -27,7 +27,7 @@ export const createCodeInterpreterTool = ({
           .int()
           .min(1)
           .max(60)
-          .optional()
+          .nullable()
           .describe("Execution timeout in seconds (1-60). Default 5."),
       }),
       execute: async ({ code, timeoutSeconds }, { toolCallId }) => {
