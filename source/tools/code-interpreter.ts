@@ -1,7 +1,7 @@
+import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { randomUUID } from "node:crypto";
-import { spawn } from "node:child_process";
 import process from "node:process";
 import { tool } from "ai";
 import { z } from "zod";
@@ -55,11 +55,17 @@ export const createCodeInterpreterTool = ({
             throw new Error("No code provided");
           }
 
-          const timeoutMs = Math.min(Math.max((timeoutSeconds ?? 5) * 1000, 1000), 60000);
+          const timeoutMs = Math.min(
+            Math.max((timeoutSeconds ?? 5) * 1000, 1000),
+            60000,
+          );
 
           const tmpBase = join(workingDirectory, ".acai-ci-tmp");
           await mkdir(tmpBase, { recursive: true });
-          const scriptPath = join(tmpBase, `temp_script_${Date.now()}_${randomUUID()}.mjs`);
+          const scriptPath = join(
+            tmpBase,
+            `temp_script_${Date.now()}_${randomUUID()}.mjs`,
+          );
 
           await writeFile(scriptPath, code, { encoding: "utf8" });
 
@@ -96,15 +102,18 @@ export const createCodeInterpreterTool = ({
           child.stdout.setEncoding("utf8");
           child.stderr.setEncoding("utf8");
 
-          child.stdout.on("data", chunk => {
+          child.stdout.on("data", (chunk) => {
             stdout += String(chunk);
           });
-          child.stderr.on("data", chunk => {
+          child.stderr.on("data", (chunk) => {
             stderr += String(chunk);
           });
 
-          const completed = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
-            child.on("error", err => reject(err));
+          const completed = await new Promise<{
+            code: number | null;
+            signal: NodeJS.Signals | null;
+          }>((resolve, reject) => {
+            child.on("error", (err) => reject(err));
             child.on("close", (code, signal) => resolve({ code, signal }));
           });
 
@@ -119,7 +128,9 @@ export const createCodeInterpreterTool = ({
           }
 
           if (completed.code === null) {
-            throw new Error(`Process terminated by signal ${completed.signal ?? "unknown"}`);
+            throw new Error(
+              `Process terminated by signal ${completed.signal ?? "unknown"}`,
+            );
           }
 
           if (completed.code !== 0) {
@@ -141,9 +152,11 @@ export const createCodeInterpreterTool = ({
 
           return JSON.stringify(result, null, 2);
         } catch (err) {
-          const errorMessage = (err as Error).name === "ETIMEDOUT" || (err as Error).message.includes("timed out")
-            ? "Script timed out"
-            : `Error: ${(err as Error).message}`;
+          const errorMessage =
+            (err as Error).name === "ETIMEDOUT" ||
+            (err as Error).message.includes("timed out")
+              ? "Script timed out"
+              : `Error: ${(err as Error).message}`;
 
           sendData?.({
             event: "tool-error",
