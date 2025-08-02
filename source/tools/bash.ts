@@ -14,6 +14,73 @@ export const BashTool = {
   name: "bash" as const,
 };
 
+type Token = { raw: string; unquoted: string };
+
+function tokenize(inputStr: string): Token[] {
+  const tokens: Token[] = [];
+  let current = "";
+  let inSingle = false;
+  let inDouble = false;
+  for (let i = 0; i < inputStr.length; i++) {
+    const ch: string = inputStr[i] as string;
+    if (ch === "'" && !inDouble) {
+      inSingle = !inSingle;
+      current += ch;
+      continue;
+    }
+    if (ch === '"' && !inSingle) {
+      inDouble = !inDouble;
+      current += ch;
+      continue;
+    }
+    if (!inSingle && !inDouble && /\s/.test(ch)) {
+      if (current.length > 0) {
+        const raw = current;
+        const unquoted = raw.replace(/^['"]|['"]$/g, "");
+        tokens.push({ raw, unquoted });
+        current = "";
+      }
+      continue;
+    }
+    if (ch === "\\" && inDouble && i + 1 < inputStr.length) {
+      const next = inputStr[i + 1];
+      if (next === '"' || next === "\\") {
+        current += next;
+        i++;
+        continue;
+      }
+    }
+    current += ch;
+  }
+  if (current.length > 0) {
+    const raw = current;
+    const unquoted = raw.replace(/^['"]|['"]$/g, "");
+    tokens.push({ raw, unquoted });
+  }
+  return tokens;
+}
+
+function shouldSkipPathValidation(tokens: Token[], index: number): boolean {
+  if (index === 0) return false;
+  const cmd = tokens[0]?.unquoted;
+  if (cmd !== "git") return false;
+  const sub = tokens[1]?.unquoted;
+  if (
+    sub !== "commit" &&
+    sub !== "tag" &&
+    !(sub === "notes" && tokens[2]?.unquoted === "add")
+  ) {
+    return false;
+  }
+  const prev = tokens[index - 1]?.unquoted;
+  if (prev === "-m" || prev === "--message") return true;
+  return false;
+}
+
+function looksLikeUrl(str: string): boolean {
+  return str.startsWith("http://") || str.startsWith("https://");
+}
+
 // Whitelist of allowed commands
 const ALLOWED_COMMANDS = [
   "chmod",
@@ -119,10 +186,20 @@ export const createBashTool = ({
         }
 
         // Validate command arguments for paths outside baseDir
-        const parts = command.split(" ");
-        for (const part of parts) {
-          // Basic check for potential paths (absolute or relative)
-          // Also check arguments containing '/' that don't look like options (start with '-')
+        const tokens = tokenize(command);
+        for (let i = 0; i < tokens.length; i++) {
+          const token = tokens[i];
+          if (token == null) continue;
+          const part = token.unquoted;
+
+          if (shouldSkipPathValidation(tokens, i)) {
+            continue;
+          }
+
+          if (looksLikeUrl(part)) {
+            continue;
+          }
+
           if (
             part.startsWith("/") ||
             part.includes("../") ||
@@ -141,10 +218,9 @@ export const createBashTool = ({
                 return errorMsg;
               }
             } catch (e) {
-              // Ignore errors during path resolution (e.g., invalid characters)
-              console.warn(
+              console.info(
                 `Could not resolve potential path argument: ${part}`,
-                e,
+                e as unknown as string,
               );
             }
           }
