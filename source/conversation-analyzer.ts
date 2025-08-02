@@ -1,4 +1,4 @@
-import { type ModelMessage, generateText } from "ai";
+import { generateText, type ModelMessage } from "ai";
 import { config } from "./config.ts";
 import { createUserMessage } from "./messages.ts";
 import type { ModelManager } from "./models/manager.ts";
