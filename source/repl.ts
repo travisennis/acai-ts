@@ -242,25 +242,32 @@ export class Repl {
               );
             }
 
-            const outgoingTokens = isNumber(result.usage.inputTokens)
-              ? result.usage.inputTokens
+            const total = (result as { totalUsage?: typeof result.usage }).totalUsage ?? result.usage;
+            const outgoingTokens = isNumber(total.inputTokens)
+              ? total.inputTokens
               : 0;
-            const incomingTokens = isNumber(result.usage.outputTokens)
-              ? result.usage.outputTokens
+            const incomingTokens = isNumber(total.outputTokens)
+              ? total.outputTokens
               : 0;
             const tokenSummary = `Tokens: ↑ ${outgoingTokens} ↓ ${incomingTokens}`;
             terminal.writeln(chalk.dim(tokenSummary));
 
-            // this tracks the usage of every step in the call to streamText. it's a cumulative usage.
-            tokenTracker.trackUsage("repl", result.usage);
+            // Track aggregate usage across all steps when available
+            tokenTracker.trackUsage("repl", total);
 
-            // this gets the usage of the final step. This more accurately reflex what will be in the context window in the next loop
-            for (const step of result.steps) {
-              if (step.finishReason === "stop") {
-                const usage = step.usage;
-                currentContextWindow = Number.isNaN(usage.totalTokens)
-                  ? 0
-                  : (usage.totalTokens ?? 0);
+            // Derive current context window from final step usage
+            const finalTotalTokens = result.usage.totalTokens;
+            if (isNumber(finalTotalTokens)) {
+              currentContextWindow = finalTotalTokens ?? 0;
+            } else {
+              // Fallback: find the stopped step
+              for (const step of result.steps) {
+                if (step.finishReason === "stop") {
+                  const usage = step.usage;
+                  currentContextWindow = Number.isNaN(usage.totalTokens)
+                    ? 0
+                    : (usage.totalTokens ?? 0);
+                }
               }
             }
 
