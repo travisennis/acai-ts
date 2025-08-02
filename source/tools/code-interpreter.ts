@@ -1,10 +1,8 @@
-import _crypto from "node:crypto";
-import _fs from "node:fs";
-import _http from "node:http";
-import _https from "node:https";
-import _os from "node:os";
-import _process from "node:process";
-import { runInNewContext } from "node:vm";
+import { mkdir, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { randomUUID } from "node:crypto";
+import { spawn } from "node:child_process";
+import process from "node:process";
 import { tool } from "ai";
 import { z } from "zod";
 import type { SendData } from "./types.ts";
@@ -13,65 +11,28 @@ export const CodeInterpreterTool = {
   name: "codeInterpreter" as const,
 };
 
-type InterpreterPermission = "fs" | "net" | "os" | "crypto" | "process";
-
-function jsCodeInterpreter(
-  code: string,
-  permissions: readonly InterpreterPermission[],
-) {
-  const logs: string[] = [];
-  const context: Record<string, unknown> = {};
-
-  context["console"] = {
-    log: (input: string) => logs.push(input),
-  };
-
-  if (permissions.includes("fs")) {
-    context["fs"] = _fs;
-  }
-  if (permissions.includes("net")) {
-    context["http"] = _http;
-    context["https"] = _https;
-  }
-  if (permissions.includes("os")) {
-    context["os"] = _os;
-  }
-  if (permissions.includes("crypto")) {
-    context["crypto"] = _crypto;
-  }
-  if (permissions.includes("process")) {
-    context["process"] = _process;
-  }
-
-  const options = { timeout: 120 * 1000 }; // Timeout in milliseconds
-
-  const result = runInNewContext(
-    `(function() { ${code} })()`,
-    context,
-    options,
-  );
-
-  return {
-    result,
-    logs,
-  };
-}
-
 export const createCodeInterpreterTool = ({
-  permissions = [],
   sendData,
 }: Readonly<{
-  permissions?: readonly InterpreterPermission[];
   sendData?: SendData | undefined;
 }>) => {
   return {
     [CodeInterpreterTool.name]: tool({
       description:
-        "Executes Javascript code. The code will be executed in a node:vm environment. This tool will respond with the output of the execution or time out after 120.0 seconds. In order to return a result from running this code, use a return statement. Logs will be returned when `console.log` is used. The code will run inside of self-executing anonymous function: `(function() { <code> })()` Internet access for this session is disabled. Do not make external web requests or API calls as they will fail. Fileystem access for this vm is disabled. Do not make filesystem calls as they will fail. Don't use require.",
+        "Executes JavaScript code in a separate Node.js process using Node's Permission Model. By default, the child process has no permissions except read/write within the current working directory. The tool returns stdout, stderr, and exitCode. Use console.log/console.error to produce output. Timeout defaults to 5 seconds and can be extended up to 60 seconds.",
       inputSchema: z.object({
-        code: z.string().describe("Javascript code to be executed."),
+        code: z.string().describe("JavaScript code to be executed."),
+        timeoutSeconds: z
+          .number()
+          .int()
+          .min(1)
+          .max(60)
+          .optional()
+          .describe("Execution timeout in seconds (1-60). Default 5."),
       }),
-      execute: ({ code }, { toolCallId }) => {
+      execute: async ({ code, timeoutSeconds }, { toolCallId }) => {
+        const workingDirectory = process.cwd();
+
         try {
           sendData?.({
             event: "tool-init",
@@ -90,7 +51,87 @@ export const createCodeInterpreterTool = ({
             },
           });
 
-          const result = jsCodeInterpreter(code, permissions ?? []);
+          if (code.trim().length === 0) {
+            throw new Error("No code provided");
+          }
+
+          const timeoutMs = Math.min(Math.max((timeoutSeconds ?? 5) * 1000, 1000), 60000);
+
+          const tmpBase = join(workingDirectory, ".acai-ci-tmp");
+          await mkdir(tmpBase, { recursive: true });
+          const scriptPath = join(tmpBase, `temp_script_${Date.now()}_${randomUUID()}.mjs`);
+
+          await writeFile(scriptPath, code, { encoding: "utf8" });
+
+          const args = [
+            "--permission",
+            `--allow-fs-read=${workingDirectory}`,
+            `--allow-fs-write=${workingDirectory}`,
+            scriptPath,
+          ];
+
+          const child = spawn(process.execPath, args, {
+            cwd: workingDirectory,
+            // do not rely solely on spawn's timeout; we implement manual timeout below
+            stdio: "pipe",
+            env: Object.assign({}, process.env, {
+              // biome-ignore lint/style/useNamingConvention: Environment variable keys are uppercase by convention
+              NO_COLOR: "true",
+              // biome-ignore lint/style/useNamingConvention: Environment variable keys are uppercase by convention
+              NODE_OPTIONS: "",
+            } as Record<string, string>),
+          });
+
+          let stdout = "";
+          let stderr = "";
+          let timedOut = false;
+
+          const timer = setTimeout(() => {
+            timedOut = true;
+            try {
+              child.kill("SIGKILL");
+            } catch {}
+          }, timeoutMs);
+
+          child.stdout.setEncoding("utf8");
+          child.stderr.setEncoding("utf8");
+
+          child.stdout.on("data", chunk => {
+            stdout += String(chunk);
+          });
+          child.stderr.on("data", chunk => {
+            stderr += String(chunk);
+          });
+
+          const completed = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
+            child.on("error", err => reject(err));
+            child.on("close", (code, signal) => resolve({ code, signal }));
+          });
+
+          clearTimeout(timer);
+
+          // Cleanup temp file/directory
+          await rm(scriptPath, { force: true });
+          await rm(tmpBase, { force: true, recursive: true });
+
+          if (timedOut) {
+            throw new Error("Script timed out");
+          }
+
+          if (completed.code === null) {
+            throw new Error(`Process terminated by signal ${completed.signal ?? "unknown"}`);
+          }
+
+          if (completed.code !== 0) {
+            const message = `Process exited with code ${completed.code}. Stderr: ${stderr.trim()}`;
+            throw new Error(message);
+          }
+
+          const result = {
+            stdout: stdout.trim(),
+            stderr: stderr.trim(),
+            exitCode: completed.code ?? -1,
+          };
 
           sendData?.({
             event: "tool-completion",
@@ -98,12 +139,11 @@ export const createCodeInterpreterTool = ({
             data: "Code execution completed successfully",
           });
 
-          return Promise.resolve(JSON.stringify(result, null, 2));
+          return JSON.stringify(result, null, 2);
         } catch (err) {
-          const errorMessage =
-            (err as Error).name === "TimeoutError"
-              ? "Script timed out"
-              : `Error: ${err}`;
+          const errorMessage = (err as Error).name === "ETIMEDOUT" || (err as Error).message.includes("timed out")
+            ? "Script timed out"
+            : `Error: ${(err as Error).message}`;
 
           sendData?.({
             event: "tool-error",
@@ -111,7 +151,7 @@ export const createCodeInterpreterTool = ({
             data: errorMessage,
           });
 
-          return Promise.resolve(errorMessage);
+          return errorMessage;
         }
       },
     }),
