@@ -1,5 +1,4 @@
 import Clipboard from "@crosscopy/clipboard";
-import clipboardy from "clipboardy";
 import { formatBlock } from "../formatting.ts";
 import { logger } from "../logger.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
@@ -36,7 +35,7 @@ export const pasteCommand = ({
           return;
         }
 
-        const clipboardContent = await clipboardy.read();
+        const clipboardContent = await Clipboard.getText();
         if (!clipboardContent || clipboardContent.trim() === "") {
           terminal.warn("Clipboard is empty.");
           return;

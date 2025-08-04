@@ -1,8 +1,8 @@
 import { readdir } from "node:fs/promises";
 import { parse, sep } from "node:path";
 import { createInterface, type Interface } from "node:readline/promises";
+import Clipboard from "@crosscopy/clipboard";
 import { asyncTry } from "@travisennis/stdlib/try";
-import clipboardy from "clipboardy";
 import type { CommandManager } from "./commands/manager.ts";
 import { logger } from "./logger.ts";
 
@@ -133,7 +133,7 @@ export class ReplPrompt {
 
         if (key?.ctrl && key.name === "v" && !key.meta && !key.shift) {
           try {
-            const clipboardText = await clipboardy.read();
+            const clipboardText = await Clipboard.getText();
             if (clipboardText) {
               const currentLine = this.rl.line;
               const cursorPos = this.rl.cursor;
