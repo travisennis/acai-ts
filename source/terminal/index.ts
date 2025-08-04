@@ -9,7 +9,6 @@ import { readFileSync } from "node:fs";
 import { join } from "@travisennis/stdlib/desm";
 import chalk, { type ChalkInstance } from "chalk";
 import Table from "cli-table3";
-import notifier from "node-notifier";
 import ora from "ora";
 import terminalLink from "terminal-link";
 import wrapAnsi from "wrap-ansi";
@@ -87,17 +86,25 @@ export class Terminal {
    */
   detectCapabilities() {
     // Check if the terminal is interactive
-    this.isInteractive = process.stdout.isTTY && process.stdin.isTTY;
+    this.isInteractive = Boolean(process.stdout.isTTY && process.stdin.isTTY);
 
-    // Check color support
-    if (this.config.useColors && !chalk.level) {
-      logger.warn("Terminal does not support colors, disabling color output");
+    // Check color support using Chalk's supportsColor
+    const sc = (chalk as unknown as { supportsColor?: { level: number } })
+      .supportsColor;
+    const colorSupported = Boolean(sc && sc.level > 0);
+
+    if (this.config.useColors && !colorSupported) {
+      logger.warn(
+        { level: sc?.level ?? 0 },
+        "Terminal lacks color support; disabling colors",
+      );
       this.config.useColors = false;
     }
 
     logger.debug(
       {
         isInteractive: this.isInteractive,
+        chalkLevel: sc?.level ?? 0,
         colorSupport: this.config.useColors ? "yes" : "no",
         size: `${this.terminalWidth}x${this.terminalHeight}`,
       },
@@ -174,15 +181,7 @@ export class Terminal {
    * Display formatted content
    */
   display(content: string, wrap = false): void {
-    const formatted = applyMarkdown(content);
-
-    if (wrap) {
-      this.writeln(
-        wrapAnsi(formatted, this.terminalWidth - 6, { trim: false }),
-      );
-      return;
-    }
-    this.writeln(formatted);
+    this.writeln(this.formatMarkdown(content, wrap));
   }
 
   /**
@@ -241,17 +240,25 @@ export class Terminal {
   }
 
   /**
-   * Emits an audible alert sound in the terminal using system notifications.
+   * Emits an alert.
    */
   alert(): void {
-    // Only emit alert in interactive terminals to avoid issues in CI/scripts
-    if (this.isInteractive) {
-      notifier.notify({
-        title: "Acai Alert",
-        message: `The current task has finished in ${process.cwd()}`,
-        sound: true,
-        wait: false,
-      });
+    if (!this.isInteractive) {
+      return;
+    }
+
+    const t = "acai";
+    const b = "";
+    try {
+      process.stdout.write("\x07");
+      const esc = "\u001b";
+      const bel = "\u0007";
+      const safe = (s: string) =>
+        s.replaceAll("\u0007", "").replaceAll("\u001b", "");
+      const payload = `${esc}]777;notify;${safe(t)};${safe(b)}${bel}`;
+      process.stdout.write(payload);
+    } catch (err) {
+      logger.warn({ err }, "Failed to emit alert");
     }
   }
 
@@ -268,39 +275,39 @@ export class Terminal {
   }
 
   header(header: string, chalkFn: ChalkInstance = chalk.green): void {
-    const width = process.stdout.columns - header.length - 4; // Adjusted for extra spaces
-    this.writeln(
-      chalkFn(`── ${header} ${"─".repeat(width > 0 ? width : 0)}  `),
-    );
+    const cols = this.terminalWidth > 0 ? this.terminalWidth : 80;
+    const width = Math.max(0, cols - header.length - 4);
+    this.writeln(chalkFn(`── ${header} ${"─".repeat(width)}  `));
   }
 
   async box(header: string, content: string): Promise<void> {
-    const width = process.stdout.columns - 4; // Account for box borders
+    const cols = this.terminalWidth > 0 ? this.terminalWidth : 80;
+    const width = Math.max(4, cols - 4);
     const paddedHeader = ` ${header} `;
-    const headerStartPos = 1; //Math.floor((width - paddedHeader.length) / 2);
+    const headerStartPos = 1;
 
     // Top border with header
-    const topBorder = `┌${"─".repeat(headerStartPos)}${paddedHeader}${"─".repeat(width - headerStartPos - paddedHeader.length)}┐`;
+    const topBorder = `┌${"─".repeat(headerStartPos)}${paddedHeader}${"─".repeat(Math.max(0, width - headerStartPos - paddedHeader.length))}┐`;
 
-    // Content lines with side borders
-    const contentLines = content
+    // Prepare inner content: format markdown first, then wrap to inner width
+    const innerWidth = Math.max(1, width - 2);
+    const formatted = applyMarkdown(content);
+    const wrapped = wrapAnsi(formatted, innerWidth, { trim: false });
+    const contentLines = wrapped
       .split("\n")
-      .map((line) => {
-        return `│ ${line.padEnd(width - 2)} │`;
-      })
+      .map((line) => `│ ${line.padEnd(innerWidth)} │`)
       .join("\n");
 
     // Bottom border
     const bottomBorder = `└${"─".repeat(width)}┘`;
 
     // Write the box
-    process.stdout.write(
-      `${topBorder}\n${this.display(contentLines, true)}${bottomBorder}\n`,
-    );
+    this.writeln(`${topBorder}\n${contentLines}\n${bottomBorder}`);
   }
 
   hr(chalkFn: ChalkInstance = chalk.gray): void {
-    this.writeln(chalkFn(`${"─".repeat(process.stdout.columns - 1)} `));
+    const cols = this.terminalWidth > 0 ? this.terminalWidth : 80;
+    this.writeln(chalkFn(`${"─".repeat(Math.max(1, cols - 1))} `));
   }
 
   /**
@@ -452,7 +459,7 @@ export class Terminal {
    * @param total The target value.
    */
   displayProgressBar(current: number, total: number): void {
-    const terminalWidth = process.stdout.columns || 80; // Default to 80 if columns not available
+    const terminalWidth = this.terminalWidth > 0 ? this.terminalWidth : 80; // Default to 80 if columns not available
 
     // Function to format numbers concisely (e.g., 1.2K, 5M)
     const formatNumber = (num: number): string => {
@@ -473,7 +480,10 @@ export class Terminal {
     const progressText = `${currentFormatted}/${totalFormatted}`;
     const progressTextLength = progressText.length + 1; // Add 1 for space
 
-    const progressBarMaxWidth = terminalWidth - progressTextLength - 1;
+    const progressBarMaxWidth = Math.max(
+      1,
+      terminalWidth - progressTextLength - 1,
+    );
 
     const percentage = total === 0 ? 1 : current / total;
     const filledWidth = Math.max(
@@ -492,6 +502,16 @@ export class Terminal {
 
     // Use \r to move cursor to the beginning of the line for updates
     this.writeln(`\r${filledBar}${emptyBar} ${progressText}  `);
+  }
+
+  private formatMarkdown(content: string, wrap = false): string {
+    const columns = this.terminalWidth;
+    const formatted = applyMarkdown(content);
+
+    if (wrap) {
+      return wrapAnsi(formatted, columns - 6, { trim: false });
+    }
+    return formatted;
   }
 }
 
