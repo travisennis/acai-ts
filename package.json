@@ -4,7 +4,7 @@
   "description": "An AI assistant for developing software.",
   "type": "module",
   "bin": {
-    "acai": "./dist/index.js"
+    "acai": "dist/index.js"
   },
   "keywords": [
     "cli",
@@ -46,7 +46,6 @@
     "cheerio": "^1.1.2",
     "cli-highlight": "^2.1.11",
     "cli-table3": "^0.6.5",
-    "clipboardy": "^4.0.0",
     "diff": "^8.0.2",
     "exa-js": "^1.8.26",
     "globby": "^14.1.0",
