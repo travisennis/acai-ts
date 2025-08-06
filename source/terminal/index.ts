@@ -88,23 +88,9 @@ export class Terminal {
     // Check if the terminal is interactive
     this.isInteractive = Boolean(process.stdout.isTTY && process.stdin.isTTY);
 
-    // Check color support using Chalk's supportsColor
-    const sc = (chalk as unknown as { supportsColor?: { level: number } })
-      .supportsColor;
-    const colorSupported = Boolean(sc && sc.level > 0);
-
-    if (this.config.useColors && !colorSupported) {
-      logger.warn(
-        { level: sc?.level ?? 0 },
-        "Terminal lacks color support; disabling colors",
-      );
-      this.config.useColors = false;
-    }
-
     logger.debug(
       {
         isInteractive: this.isInteractive,
-        chalkLevel: sc?.level ?? 0,
         colorSupport: this.config.useColors ? "yes" : "no",
         size: `${this.terminalWidth}x${this.terminalHeight}`,
       },
