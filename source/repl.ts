@@ -242,7 +242,9 @@ export class Repl {
               );
             }
 
-            const total = (result as { totalUsage?: typeof result.usage }).totalUsage ?? result.usage;
+            const total =
+              (result as { totalUsage?: typeof result.usage }).totalUsage ??
+              result.usage;
             const outgoingTokens = isNumber(total.inputTokens)
               ? total.inputTokens
               : 0;
