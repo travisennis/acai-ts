@@ -40,7 +40,7 @@ Acai is built primarily with **TypeScript** and runs on **Node.js**. Key technol
 *   **AI SDK (`@ai-sdk/*`):** For integrating with various Large Language Models (LLMs) like OpenAI, Google Gemini, Anthropic, DeepSeek, and OpenRouter.
 *   **Tree-sitter:** For robust and efficient code parsing and syntax analysis across multiple programming languages (TypeScript, JavaScript, Java, Python).
 *   **`chalk`, `ora`, `log-update`:** For rich and interactive terminal output.
-*   **`meow`, `@inquirer/prompts`:** For building the command-line interface and interactive prompts.
+*   **`@inquirer/prompts`:** For interactive prompts; CLI args parsed with Node's `util.parseArgs`.
 *   **`simple-git`:** For Git operations.
 *   **`ripgrep` (via `grep.ts` tool):** For fast file content searching.
 *   **`marked`:** For rendering Markdown in the terminal.
