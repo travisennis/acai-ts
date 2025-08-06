@@ -1,8 +1,8 @@
 import { text } from "node:stream/consumers";
+import { parseArgs } from "node:util";
 import { select } from "@inquirer/prompts";
 import { asyncTry } from "@travisennis/stdlib/try";
 import { isDefined } from "@travisennis/stdlib/typeguards";
-import meow from "meow";
 import { Cli } from "./cli.ts";
 import { CommandManager } from "./commands/manager.ts";
 import { config } from "./config.ts";
@@ -16,56 +16,44 @@ import { initTerminal } from "./terminal/index.ts";
 import { TokenTracker } from "./token-tracker.ts";
 import { TokenCounter } from "./token-utils.ts";
 import type { Message } from "./tools/types.ts";
+import { getPackageVersion } from "./version.ts";
 
-const cli = meow(
-  `
-	Usage
-	  $ acai <input>
+const helpText = `
+Usage
+  $ acai <input>
 
-	Options
-    --model, -m  Sets the model to use
-    --prompt, -p  Sets the prompt
-    --oneshot, -o  Run once and exit
-    --continue Load the most recent conversation
-    --resume Select a recent conversation to resume
-    --autoAcceptAll Accept all commands and edits without prompting
+Options
+  --model, -m        Sets the model to use
+  --prompt, -p       Sets the prompt
+  --oneshot, -o      Run once and exit
+  --continue         Load the most recent conversation
+  --resume           Select a recent conversation to resume
+  --autoAcceptAll    Accept all commands and edits without prompting
+  --help, -h         Show help
+  --version, -v      Show version
 
-	Examples
-	  $ acai --model anthopric:sonnet
-	  $ acai -p "initial prompt"
-	  $ acai -p "one-shot prompt" -o
-`,
-  {
-    importMeta: import.meta, // This is required
-    flags: {
-      model: {
-        type: "string",
-        shortFlag: "m",
-      },
-      prompt: {
-        type: "string",
-        shortFlag: "p",
-      },
-      oneshot: {
-        type: "boolean",
-        shortFlag: "o",
-        default: false,
-      },
-      continue: {
-        type: "boolean",
-        default: false,
-      },
-      resume: {
-        type: "boolean",
-        default: false,
-      },
-      autoAcceptAll: {
-        type: "boolean",
-        default: false,
-      },
-    },
+Examples
+  $ acai --model anthopric:sonnet
+  $ acai -p "initial prompt"
+  $ acai -p "one-shot prompt" -o
+`;
+
+const parsed = parseArgs({
+  options: {
+    model: { type: "string", short: "m" },
+    prompt: { type: "string", short: "p" },
+    oneshot: { type: "boolean", short: "o", default: false },
+    continue: { type: "boolean", default: false },
+    resume: { type: "boolean", default: false },
+    autoAcceptAll: { type: "boolean", default: false },
+    help: { type: "boolean", short: "h" },
+    version: { type: "boolean", short: "v" },
   },
-);
+  allowPositionals: true,
+});
+
+const flags = parsed.values;
+const input = parsed.positionals;
 
 /**
  * Global error handler function.
@@ -76,29 +64,39 @@ export function handleError(error: Error): void {
   logger.error({ error: error.name }, error.message, error);
 }
 
-export type Flags = typeof cli.flags;
+export type Flags = typeof flags;
 
 async function main() {
   const appConfig = await config.readAppConfig("acai");
+
+  if (flags.version === true) {
+    console.info(getPackageVersion());
+    process.exit(0);
+  }
+
+  if (flags.help === true) {
+    console.info(helpText);
+    process.exit(0);
+  }
 
   const appDir = config.app;
   const messageHistoryDir = appDir.ensurePath("message-history");
 
   // --- Argument Validation ---
-  if (cli.flags.continue && cli.flags.resume) {
+  if (flags.continue === true && flags.resume === true) {
     console.error("Cannot use --continue and --resume flags together.");
     process.exit(1);
   }
 
-  const hasContinueOrResume = cli.flags.continue || cli.flags.resume;
+  const hasContinueOrResume = flags.continue === true || flags.resume === true;
 
-  if (hasContinueOrResume && cli.flags.oneshot) {
+  if (hasContinueOrResume && flags.oneshot === true) {
     console.error("Cannot use --continue or --resume with --oneshot.");
     process.exit(1);
   }
 
   // --- Determine Initial Prompt (potential conflict) ---
-  const positionalPrompt = cli.input.at(0);
+  const positionalPrompt = input.at(0);
   let stdInPrompt: string | undefined;
   // Check if there's data available on stdin
   if (!process.stdin.isTTY) {
@@ -110,11 +108,9 @@ async function main() {
     }
   }
 
-  // : stdInPrompt && stdInPrompt.length > 0
-  //   ? stdInPrompt
   const initialPromptInput =
-    cli.flags.prompt && cli.flags.prompt.length > 0
-      ? cli.flags.prompt
+    typeof flags.prompt === "string" && flags.prompt.length > 0
+      ? flags.prompt
       : positionalPrompt && positionalPrompt.length > 0
         ? positionalPrompt
         : undefined;
@@ -127,8 +123,8 @@ async function main() {
   const terminal = initTerminal();
   terminal.setTitle(`acai: ${process.cwd()}`);
 
-  const chosenModel: ModelName = isSupportedModel(cli.flags.model)
-    ? cli.flags.model
+  const chosenModel: ModelName = isSupportedModel(flags.model)
+    ? (flags.model as ModelName)
     : "openrouter:sonnet4";
 
   const modelManager = new ModelManager({
@@ -153,7 +149,7 @@ async function main() {
   });
   messageHistory.on("update-title", (title) => terminal.setTitle(title));
 
-  if (cli.flags.continue) {
+  if (flags.continue === true) {
     const histories = await MessageHistory.load(messageHistoryDir, 1);
     const latestHistory = histories.at(0);
     if (latestHistory) {
@@ -164,7 +160,7 @@ async function main() {
     } else {
       logger.info("No previous conversation found to continue.");
     }
-  } else if (cli.flags.resume) {
+  } else if (flags.resume === true) {
     const histories = await MessageHistory.load(messageHistoryDir, 10);
     if (histories.length > 0) {
       const choice = await select({
@@ -213,7 +209,7 @@ async function main() {
     toolEvents,
   });
 
-  if (cli.flags.oneshot) {
+  if (flags.oneshot === true) {
     const cliProcess = new Cli({
       promptManager,
       config: appConfig,
@@ -235,7 +231,7 @@ async function main() {
     commands,
     tokenCounter,
     toolEvents,
-    autoAcceptAll: cli.flags.autoAcceptAll,
+    autoAcceptAll: flags.autoAcceptAll === true,
   });
 
   return (await asyncTry(repl.run())).recover(handleError);

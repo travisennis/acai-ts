@@ -52,7 +52,6 @@
     "ignore": "^7.0.5",
     "log-update": "^6.1.0",
     "marked": "16.1.2",
-    "meow": "^13.2.0",
     "node-notifier": "^10.0.1",
     "ora": "^8.2.0",
     "p-throttle": "^7.0.0",

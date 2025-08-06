@@ -5,14 +5,13 @@
  * Handles input/output, formatting, and display.
  */
 
-import { readFileSync } from "node:fs";
-import { join } from "@travisennis/stdlib/desm";
 import chalk, { type ChalkInstance } from "chalk";
 import Table from "cli-table3";
 import ora from "ora";
 import terminalLink from "terminal-link";
 import wrapAnsi from "wrap-ansi";
 import { logger } from "../logger.ts";
+import { getPackageVersion } from "../version.ts";
 import {
   clearTerminal,
   getTerminalSize,
@@ -119,10 +118,7 @@ export class Terminal {
   displayWelcome(): void {
     this.clear();
 
-    const packageJson = JSON.parse(
-      readFileSync(join(import.meta.url, "..", "..", "package.json"), "utf8"),
-    );
-    const version = packageJson.version;
+    const version = getPackageVersion();
 
     this.writeln(chalk.magenta(this.getLogo()));
     this.lineBreak();
