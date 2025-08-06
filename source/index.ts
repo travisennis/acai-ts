@@ -16,6 +16,7 @@ import { initTerminal } from "./terminal/index.ts";
 import { TokenTracker } from "./token-tracker.ts";
 import { TokenCounter } from "./token-utils.ts";
 import type { Message } from "./tools/types.ts";
+import { getPackageVersion } from "./version.ts";
 
 const helpText = `
 Usage
@@ -69,12 +70,7 @@ async function main() {
   const appConfig = await config.readAppConfig("acai");
 
   if (flags.version === true) {
-    const version = process.env["npm_package_version"];
-    if (typeof version === "string" && version.length > 0) {
-      console.info(version);
-    } else {
-      console.info("version unavailable");
-    }
+    console.info(getPackageVersion());
     process.exit(0);
   }
 
