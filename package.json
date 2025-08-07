@@ -31,7 +31,8 @@
     "oxlint": "npx oxlint@latest --ignore-path .gitignore --deny correctness --deny suspicous --deny pedantic --deny style --node-plugin",
     "knip": "npx knip",
     "check": "npx npm-check-updates --interactive --format group",
-    "cpd": "npx jscpd ./source"
+    "cpd": "npx jscpd ./source",
+    "typecheck:staged": "tsc --noEmit --pretty false -p tsconfig.json"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.1",
