@@ -5,3 +5,5 @@
 - Always use the most efficient workflow to complete tasks.
 - Always stage changes before attempting to commit them.
 - Never amend git commits without approval from the user.
+- Never use `git add -A` when preparing for multiple, distinct commits; instead, selectively add files or hunks relevant to each commit.
+- Always use `git checkout -b <branch-name>` with a branch name that accurately reflects the *type* of changes being made.
