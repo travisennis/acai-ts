@@ -63,3 +63,4 @@ dist
 # acai directories
 .scratchpad
 .ai
+.acai-ci-tmp
