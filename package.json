@@ -22,6 +22,7 @@
     "lint": "biome lint",
     "lint:fix": "biome lint --unsafe --write",
     "lint:staged": "biome lint --error-on-warnings --no-errors-on-unmatched --staged",
+    "format:staged": "biome check --staged --formatter-enabled=true --linter-enabled=false --no-errors-on-unmatched",
     "prepare": "husky",
     "test": "c8 node --no-warnings --test test/**/*.test.ts",
     "pretest": "npm run compile",
