@@ -25,7 +25,12 @@ import type { Terminal } from "./terminal/index.ts";
 import { isMarkdown } from "./terminal/markdown-utils.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import type { TokenCounter } from "./token-utils.ts";
-import { getDiffStat, inGitDirectory } from "./tools/git-utils.ts"; // Modified import
+import {
+  getCurrentBranch,
+  getDiffStat,
+  hasUncommittedChanges,
+  inGitDirectory,
+} from "./tools/git-utils.ts"; // Modified import
 import { initAgents, initTools } from "./tools/index.ts";
 import type { Message } from "./tools/types.ts";
 
@@ -107,6 +112,17 @@ export class Repl {
       const langModel = modelManager.getModel("repl");
       const modelConfig = modelManager.getModelMetadata("repl");
 
+      const currentDir = process.cwd().split("/").pop() || process.cwd();
+      const branch = await getCurrentBranch();
+
+      let branchDisplay = "";
+      if (branch) {
+        const hasChanges = await hasUncommittedChanges();
+        const asterisk = hasChanges ? "*" : "";
+        branchDisplay = ` ${chalk.gray(branch + asterisk)}`;
+      }
+
+      terminal.writeln(`${chalk.blue(currentDir)}${branchDisplay}`);
       terminal.writeln(chalk.dim(langModel.modelId));
       terminal.displayProgressBar(
         currentContextWindow,
