@@ -34,3 +34,37 @@ export const inGitDirectory = memoize(async (): Promise<boolean> => {
   );
   return code === 0;
 });
+
+/**
+ * Check if there are uncommitted changes
+ */
+export async function hasUncommittedChanges(): Promise<boolean> {
+  if (!(await inGitDirectory())) {
+    return false;
+  }
+
+  const git = simpleGit(process.cwd());
+  try {
+    const status = await git.status();
+    return status.files.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get the current git branch name
+ */
+export async function getCurrentBranch(): Promise<string | null> {
+  if (!(await inGitDirectory())) {
+    return null;
+  }
+
+  const git = simpleGit(process.cwd());
+  try {
+    const branch = await git.revparse(["--abbrev-ref", "HEAD"]);
+    return branch.trim();
+  } catch {
+    return null;
+  }
+}
