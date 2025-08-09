@@ -43,7 +43,7 @@ export function initTerminal(config: Partial<TerminalConfig> = {}): Terminal {
 
     return terminal;
   } catch (error) {
-    logger.warn("Error initializing terminal interface:", error);
+    logger.warn(error, "Error initializing terminal interface:");
 
     // Return a basic terminal interface even if there was an error
     return terminal;

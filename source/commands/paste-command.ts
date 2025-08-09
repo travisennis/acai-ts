@@ -55,7 +55,7 @@ export const pasteCommand = ({
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         terminal.error(`Error processing clipboard content: ${message}`);
-        logger.error(error, "Paste command error:", error);
+        logger.error(error, "Paste command error:");
       }
     },
   };

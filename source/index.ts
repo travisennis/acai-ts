@@ -61,7 +61,7 @@ const input = parsed.positionals;
  * @throws {Error} Rethrows the error after logging it.
  */
 export function handleError(error: Error): void {
-  logger.error({ error: error.name }, error.message, error);
+  logger.error({ error: error }, error.message);
 }
 
 export type Flags = typeof flags;
