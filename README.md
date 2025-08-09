@@ -52,11 +52,30 @@ Acai is built primarily with **TypeScript** and runs on **Node.js**. Key technol
 
 ### Prerequisites
 
-*   Node.js 18.x or higher
+**Required:**
+*   Node.js 18.20.0 or higher
 *   Git
-*   Ripgrep (`rg` command)
-*   GitHub CLI (`gh` command)
-*   (Optional) API keys for desired AI providers (e.g., OpenAI, Google, Anthropic) configured in a `.env` file.
+*   [Ripgrep](https://github.com/BurntSushi/ripgrep) (`rg` command) - Fast file content searching
+*   [GitHub CLI](https://cli.github.com/) (`gh` command) - Git operations and repository management
+
+**Installation of system dependencies:**
+
+```bash
+# macOS (using Homebrew)
+brew install ripgrep gh
+
+# Ubuntu/Debian
+sudo apt install ripgrep gh
+
+# Windows (using Chocolatey)
+choco install ripgrep gh
+
+# Or using winget
+winget install BurntSushi.ripgrep GitHub.cli
+```
+
+**Optional but recommended:**
+*   API keys for AI providers (see Environment Variables section below)
 
 ### Installation for Users
 
@@ -74,12 +93,82 @@ cd acai-ts
 # Install dependencies
 npm install
 
+# Set up environment variables (see Environment Variables section)
+cp .env.example .env  # If .env.example exists, or create .env manually
+# Edit .env file with your API keys
+
 # Build the project
 npm run build
 
 # Link the CLI tool globally (optional, for easy access)
 npm link
 ```
+
+## Environment Variables
+
+Acai supports various AI providers and web services through environment variables. Create a `.env` file in your project root or set these variables in your shell environment.
+
+### AI Provider API Keys
+
+```bash
+# OpenAI (GPT models)
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Anthropic (Claude models)
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# Google (Gemini models)
+GOOGLE_API_KEY=your_google_api_key_here
+
+# DeepSeek
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
+
+# X.AI (Grok models)
+X_AI_API_KEY=your_xai_api_key_here
+# Alternative name also supported:
+# XAI_API_KEY=your_xai_api_key_here
+
+# OpenRouter (Access to multiple models)
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+```
+
+### Web Service API Keys (Optional)
+
+```bash
+# Exa (for web search functionality)
+EXA_API_KEY=your_exa_api_key_here
+
+# Jina Reader (for enhanced web content extraction)
+JINA_READER_API_KEY=your_jina_api_key_here
+```
+
+### Application Configuration
+
+```bash
+# Logging level (optional, defaults to "debug")
+# Options: trace, debug, info, warn, error, fatal
+LOG_LEVEL=info
+```
+
+### Example .env File
+
+```bash
+# Core AI providers (at least one recommended)
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Optional: Additional providers
+GOOGLE_API_KEY=...
+OPENROUTER_API_KEY=sk-or-...
+
+# Optional: Web services
+EXA_API_KEY=...
+
+# Optional: Application settings
+LOG_LEVEL=info
+```
+
+**Note:** You need at least one AI provider API key to use Acai. The tool will work with any combination of the supported providers.
 
 ### Usage
 
@@ -155,30 +244,82 @@ Clipboard notes:
 
 ## Configuration
 
+### Project Configuration
+
 Acai supports project-specific configuration through a `.acai/acai.json` file in your project directory:
 
 ```json
 {
-  "logs": { // Optional: Customize log file location
-    "path": "~/.acai/logs/acai.log"
+  "logs": {
+    "path": "~/.acai/logs/acai.log"  // Optional: Custom log file location
   },
-  "notify": true, // Optional: Enable/disable system notifications (default: false)
-  "tools": { // Optional: Set a global max token limit for all tools
-    "maxTokens": 30000 
+  "notify": true,  // Optional: Enable system notifications (default: false)
+  "tools": {
+    "maxTokens": 30000  // Optional: Global max token limit for tools
   }
 }
 ```
 
-You can also add project-specific rules in a `AGENTS.md` file.
+### Project-Specific Customization
 
-Project prompts can be stored in `.acai/prompts/` and context selections in `.acai/context/`.
+- **Rules/Guidelines**: Add project-specific AI behavior rules in `AGENTS.md`
+- **Custom Prompts**: Store reusable prompts in `.acai/prompts/`
+- **Context Selections**: Save file/directory selections in `.acai/context/`
+- **Memory/Rules**: Persistent project rules stored in `.acai/rules/`
 
-### Logs
+### Global Configuration
 
-Application logs are stored in:
-- `~/.acai/logs/`
+Global application settings are stored in:
+- **Configuration**: `~/.acai/`
+- **Logs**: `~/.acai/logs/acai.log`
+- **Message History**: `~/.acai/message-history/`
+
+### Environment-Specific Setup
+
+For development, you can use different configurations:
+
+```bash
+# Development with .env file
+npm run dev
+
+# Production
+acai
+
+# Custom log level
+LOG_LEVEL=warn acai
+```
 
 ## ⚙️ Development
+
+### Development Environment Setup
+
+1. **Clone and install dependencies:**
+   ```bash
+   git clone https://github.com/travisennis/acai-ts.git
+   cd acai-ts
+   npm install
+   ```
+
+2. **Set up environment variables:**
+   ```bash
+   # Create .env file with your API keys
+   touch .env
+   # Add your API keys (see Environment Variables section above)
+   ```
+
+3. **Development workflow:**
+   ```bash
+   # Run in development mode (uses .env file)
+   npm run dev
+   
+   # Build and test
+   npm run build
+   npm test
+   
+   # Code quality
+   npm run lint
+   npm run format
+   ```
 
 ### Available NPM Scripts
 
@@ -193,7 +334,7 @@ Here's a list of useful `npm` scripts for development:
 | `npm run lint:fix` | Automatically fixes linting issues using Biome.                          |
 | `npm run test`  | Runs unit tests with code coverage using `c8`.                           |
 | `npm run format` | Formats the codebase using Biome.                                        |
-| `npm run dev`   | Starts the application in development mode (watches for changes).        |
+| `npm run dev`   | Starts the application in development mode (loads .env file automatically). |
 | `npm run oxlint` | Runs Oxlint for additional code quality checks.                          |
 | `npm run knip`  | Detects unused files, dependencies, and exports.                         |
 | `npm run check` | Interactively checks for and updates outdated npm packages.              |
