@@ -135,7 +135,8 @@ OPENROUTER_API_KEY=your_openrouter_api_key_here
 ### Web Service API Keys (Optional)
 
 ```bash
-# Exa (for web search functionality)
+# Exa (for enhanced web search functionality)
+# Optional: Falls back to DuckDuckGo search if not provided
 EXA_API_KEY=your_exa_api_key_here
 
 # Jina Reader (for enhanced web content extraction)
@@ -161,14 +162,16 @@ ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_API_KEY=...
 OPENROUTER_API_KEY=sk-or-...
 
-# Optional: Web services
-EXA_API_KEY=...
+# Optional: Web services (fallbacks available if not provided)
+EXA_API_KEY=...  # Falls back to DuckDuckGo search
 
 # Optional: Application settings
 LOG_LEVEL=info
 ```
 
 **Note:** You need at least one AI provider API key to use Acai. The tool will work with any combination of the supported providers.
+
+**Web Search:** The web search functionality works without any API keys by using DuckDuckGo as a fallback. Providing an EXA_API_KEY enables enhanced search capabilities with more detailed content extraction.
 
 ### Usage
 
