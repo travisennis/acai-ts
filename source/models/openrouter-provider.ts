@@ -29,6 +29,7 @@ const openrouterModels = {
   "qwen3-coder": openRouterClient("qwen/qwen3-coder"),
   "qwen3-coder-free": openRouterClient("qwen/qwen3-coder:free"),
   "glm-4.5": openRouterClient("z-ai/glm-4.5"),
+  "gpt-5": openRouterClient("openai/gpt-5"),
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -228,5 +229,18 @@ export const openrouterModelRegistry: {
     costPerInputToken: 0.0000006,
     costPerOutputToken: 0.0000022,
     category: "balanced",
+  },
+  "openrouter:gpt-5": {
+    id: "openrouter:gpt-5",
+    provider: "openrouter",
+    contextWindow: 400000,
+    maxOutputTokens: 128000,
+    defaultTemperature: 0.3,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000125,
+    costPerOutputToken: 0.00001,
+    category: "powerful",
   },
 };
