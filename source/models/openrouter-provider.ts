@@ -221,7 +221,7 @@ export const openrouterModelRegistry: {
     id: "openrouter:glm-4.5",
     provider: "openrouter",
     contextWindow: 128000,
-    maxOutputTokens: 96000,
+    maxOutputTokens: 8192,
     defaultTemperature: 0.7,
     promptFormat: "markdown",
     supportsReasoning: true,
