@@ -49,6 +49,7 @@
     "cli-highlight": "^2.1.11",
     "cli-table3": "^0.6.5",
     "diff": "^8.0.2",
+    "duck-duck-scrape": "^2.2.7",
     "exa-js": "^1.8.27",
     "globby": "^14.1.0",
     "ignore": "^7.0.5",

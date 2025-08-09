@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import chalk from "chalk";
+import { SafeSearchType, type SearchResult, search } from "duck-duck-scrape";
 import Exa from "exa-js";
 import { z } from "zod";
 import type { TokenCounter } from "../token-utils.ts";
@@ -30,7 +31,7 @@ export const createWebSearchTool = ({
           data: `Web search: ${chalk.cyan(query)}`,
         });
 
-        const result = await search(query);
+        const result = await performSearch(query);
 
         const sources = result.results.map(
           (source) =>
@@ -51,54 +52,50 @@ export const createWebSearchTool = ({
   };
 };
 
-async function search(query: string) {
-  const exa = new Exa(process.env["EXA_API_KEY"]);
+async function performSearch(query: string) {
+  // Check if EXA API key is available
+  const hasExaApiKey =
+    process.env["EXA_API_KEY"] && process.env["EXA_API_KEY"].trim() !== "";
 
-  const result = await exa.searchAndContents(query, {
-    numResults: 5,
-    text: true,
-  });
-
-  return result;
+  if (hasExaApiKey) {
+    // Use Exa search
+    try {
+      const exa = new Exa(process.env["EXA_API_KEY"]);
+      const result = await exa.searchAndContents(query, {
+        numResults: 5,
+        text: true,
+      });
+      return result;
+    } catch (error) {
+      // If Exa fails, fall back to duck duck scrape
+      console.info("Exa search failed, falling back to DuckDuckGo:", error);
+      return await searchWithDuckDuckGo(query);
+    }
+  } else {
+    // Use DuckDuckGo search as fallback
+    console.info("EXA_API_KEY not set, using DuckDuckGo search");
+    return await searchWithDuckDuckGo(query);
+  }
 }
 
-// function parseMetadata(providerMetadata: ProviderMetadata | undefined) {
-//   const metadata = providerMetadata?.["google"] as
-//     | GoogleGenerativeAIProviderMetadata
-//     | undefined;
+async function searchWithDuckDuckGo(query: string) {
+  try {
+    const searchResults = await search(query, {
+      safeSearch: SafeSearchType.MODERATE,
+    });
 
-//   // Extract sources from grounding metadata
-//   const sourceMap = new Map<
-//     string,
-//     { title: string; url: string; snippet: string }
-//   >();
+    // Transform duck-duck-scrape results to match Exa format
+    // Take only first 5 results to match Exa behavior
+    const results = searchResults.results
+      .slice(0, 5)
+      .map((result: SearchResult) => ({
+        title: result.title,
+        url: result.url,
+        text: result.description || "",
+      }));
 
-//   // Get grounding metadata from response
-//   const chunks = metadata?.groundingMetadata?.groundingChunks || [];
-//   const supports = metadata?.groundingMetadata?.groundingSupports || [];
-
-//   chunks.forEach((chunk, index: number) => {
-//     if (chunk.web?.uri && chunk.web?.title) {
-//       const url = chunk.web.uri;
-//       if (!sourceMap.has(url)) {
-//         // Find snippets that reference this chunk
-//         const snippets = supports
-//           .filter((support) => support.groundingChunkIndices?.includes(index))
-//           .map((support) => support.segment.text)
-//           .join(" ");
-
-//         sourceMap.set(url, {
-//           title: chunk.web.title,
-//           url: url,
-//           snippet: snippets || "",
-//         });
-//       }
-//     }
-//   });
-
-//   const sources = Array.from(sourceMap.values());
-
-//   return {
-//     sources,
-//   };
-// }
+    return { results };
+  } catch (error) {
+    throw new Error(`Failed to perform web search: ${error}`);
+  }
+}
