@@ -15,8 +15,10 @@ const openRouterClient = createOpenAICompatible({
 });
 
 const openrouterModels = {
-  "deepseek-v3": openRouterClient("deepseek/deepseek-chat-v3-0324:free"),
-  "deepseek-r1": openRouterClient("deepseek/deepseek-r1-0528:free"),
+  "deepseek-v3": openRouterClient("deepseek/deepseek-chat-v3-0324"),
+  "deepseek-r1": openRouterClient("deepseek/deepseek-r1-0528"),
+  "deepseek-v3-free": openRouterClient("deepseek/deepseek-chat-v3-0324:free"),
+  "deepseek-r1-free": openRouterClient("deepseek/deepseek-r1-0528:free"),
   "gemini-flash25": openRouterClient("google/gemini-2.5-flash"),
   "gemini-pro25": openRouterClient("google/gemini-2.5-pro"),
   sonnet4: openRouterClient("anthropic/claude-sonnet-4"),
@@ -30,6 +32,7 @@ const openrouterModels = {
   "qwen3-coder-free": openRouterClient("qwen/qwen3-coder:free"),
   "glm-4.5": openRouterClient("z-ai/glm-4.5"),
   "gpt-5": openRouterClient("openai/gpt-5"),
+  "gpt-5-mini": openRouterClient("openai/gpt-5-mini"),
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -63,6 +66,32 @@ export const openrouterModelRegistry: {
   },
   "openrouter:deepseek-r1": {
     id: "openrouter:deepseek-r1",
+    provider: "openrouter",
+    contextWindow: 128000,
+    maxOutputTokens: 32768,
+    defaultTemperature: 0.6,
+    promptFormat: "bracket",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0, // Assuming free tier or unknown cost
+    costPerOutputToken: 0, // Assuming free tier or unknown cost
+    category: "balanced",
+  },
+  "openrouter:deepseek-v3-free": {
+    id: "openrouter:deepseek-v3-free",
+    provider: "openrouter",
+    contextWindow: 128000,
+    maxOutputTokens: 8000,
+    defaultTemperature: 0.3,
+    promptFormat: "bracket",
+    supportsReasoning: false,
+    supportsToolCalling: true,
+    costPerInputToken: 0, // Assuming free tier or unknown cost
+    costPerOutputToken: 0, // Assuming free tier or unknown cost
+    category: "balanced",
+  },
+  "openrouter:deepseek-r1-free": {
+    id: "openrouter:deepseek-r1-free",
     provider: "openrouter",
     contextWindow: 128000,
     maxOutputTokens: 32768,
@@ -242,5 +271,18 @@ export const openrouterModelRegistry: {
     costPerInputToken: 0.00000125,
     costPerOutputToken: 0.00001,
     category: "powerful",
+  },
+  "openrouter:gpt-5-mini": {
+    id: "openrouter:gpt-5-mini",
+    provider: "openrouter",
+    contextWindow: 200000,
+    maxOutputTokens: 64000,
+    defaultTemperature: 0.3,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000015,
+    costPerOutputToken: 0.0000006,
+    category: "balanced",
   },
 };
