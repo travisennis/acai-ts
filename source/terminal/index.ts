@@ -148,8 +148,6 @@ export class Terminal {
     );
 
     this.lineBreak();
-
-    this.hr();
   }
 
   /**

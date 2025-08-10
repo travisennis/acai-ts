@@ -122,6 +122,7 @@ export class Repl {
         branchDisplay = ` ${chalk.gray(branch + asterisk)}`;
       }
 
+      terminal.hr();
       terminal.writeln(`${chalk.blue(currentDir)}${branchDisplay}`);
       terminal.writeln(chalk.dim(langModel.modelId));
       terminal.displayProgressBar(
