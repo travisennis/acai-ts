@@ -9,7 +9,7 @@ export const MemoryReadTool = {
   name: "memoryRead" as const,
 };
 
-const MEMORY_DIR = config.app.ensurePath("memory");
+const MEMORY_DIR = config.app.ensurePathSync("memory");
 
 // Helper to check if a file exists
 // Moved to module level as it does not use sendData

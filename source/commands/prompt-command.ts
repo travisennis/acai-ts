@@ -32,8 +32,8 @@ export const promptCommand = ({
         }
       };
 
-      const userPromptDir = config.app.ensurePath("prompts"); // User prompts are global (~/.acai/prompts)
-      const projectPromptDir = config.project.ensurePath("prompts"); // Project prompts are local (./.acai/prompts)
+      const userPromptDir = config.app.ensurePathSync("prompts"); // User prompts are global (~/.acai/prompts)
+      const projectPromptDir = config.project.ensurePathSync("prompts"); // Project prompts are local (./.acai/prompts)
 
       const userPrompts = await getPromptNamesFromDir(userPromptDir);
       const projectPrompts = await getPromptNamesFromDir(projectPromptDir);
@@ -118,7 +118,7 @@ async function findPrompt(
 ): Promise<{ path: string; type: "project" | "user" } | null> {
   // Check project prompts first (they take precedence)
   const projectPath = path.join(
-    config.project.ensurePath("prompts"),
+    config.project.ensurePathSync("prompts"),
     `${promptName}.md`,
   );
 
@@ -133,7 +133,7 @@ async function findPrompt(
 
   // Check user prompts if not found in project
   const userPath = path.join(
-    config.app.ensurePath("prompts"),
+    config.app.ensurePathSync("prompts"),
     `${promptName}.md`,
   );
 

@@ -16,7 +16,15 @@ export class DirectoryProvider {
     return subdir ? path.join(this.baseDir, subdir) : this.baseDir;
   }
 
-  ensurePath(subdir?: string): string {
+  // Async-by-default: prefer non-blocking filesystem operations.
+  async ensurePath(subdir?: string): Promise<string> {
+    const dirPath = this.getPath(subdir);
+    await fs.mkdir(dirPath, { recursive: true });
+    return dirPath;
+  }
+
+  // Synchronous helper for call-sites that require immediate directory availability.
+  ensurePathSync(subdir?: string): string {
     const dirPath = this.getPath(subdir);
     mkdirSync(dirPath, { recursive: true });
     return dirPath;
@@ -102,10 +110,8 @@ export class ConfigManager {
   }
 
   async writeProjectLearnedRulesFile(rules: string): Promise<void> {
-    const rulesPath = path.join(
-      this.project.ensurePath("rules"),
-      "learned-rules.md",
-    );
+    const rulesDir = await this.project.ensurePath("rules");
+    const rulesPath = path.join(rulesDir, "learned-rules.md");
     try {
       return await fs.writeFile(rulesPath, rules, "utf8");
     } catch (error) {
@@ -130,10 +136,8 @@ export class ConfigManager {
   }
 
   async writeCachedLearnedRulesFile(rules: string): Promise<void> {
-    const rulesPath = path.join(
-      this.app.ensurePath("rules"),
-      "learned-rules.md",
-    );
+    const rulesDir = await this.app.ensurePath("rules");
+    const rulesPath = path.join(rulesDir, "learned-rules.md");
     try {
       return await fs.writeFile(rulesPath, rules, "utf8");
     } catch (error) {
@@ -170,7 +174,7 @@ export class ConfigManager {
       return await this.readAppConfig(configName);
     } catch {
       // Create directory and default config if missing
-      this.app.ensurePath();
+      await this.app.ensurePath();
 
       const defaultConfig = {
         logs: {
@@ -191,7 +195,7 @@ export class ConfigManager {
     configName: string,
     data: Record<PropertyKey, unknown>,
   ): Promise<void> {
-    this.app.ensurePath();
+    await this.app.ensurePath();
     const configPath = path.join(this.app.getPath(), `${configName}.json`);
     await fs.writeFile(configPath, JSON.stringify(data, null, 2));
   }

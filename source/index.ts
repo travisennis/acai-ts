@@ -80,7 +80,7 @@ async function main() {
   }
 
   const appDir = config.app;
-  const messageHistoryDir = appDir.ensurePath("message-history");
+  const messageHistoryDir = await appDir.ensurePath("message-history");
 
   // --- Argument Validation ---
   if (flags.continue === true && flags.resume === true) {
@@ -128,7 +128,7 @@ async function main() {
     : "openrouter:sonnet4";
 
   const modelManager = new ModelManager({
-    stateDir: appDir.ensurePath("audit"),
+    stateDir: await appDir.ensurePath("audit"),
   });
   modelManager.setModel("repl", chosenModel);
   modelManager.setModel("cli", chosenModel);

@@ -9,7 +9,7 @@ export const MemoryWriteTool = {
   name: "memoryWrite" as const,
 };
 
-const MEMORY_DIR = config.app.ensurePath("memory");
+const MEMORY_DIR = config.app.ensurePathSync("memory");
 
 export const createMemoryWriteTool = (
   options: { sendData?: SendData | undefined } = {},
