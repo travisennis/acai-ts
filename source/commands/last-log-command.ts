@@ -58,7 +58,7 @@ export const lastLogCommand = ({ terminal }: CommandOptions): ReplCommand => {
     result: "continue" as const,
     getSubCommands: () => Promise.resolve([]),
     execute: async () => {
-      const logDir = config.app.ensurePath("audit");
+      const logDir = config.app.ensurePathSync("audit");
       const mostRecentLog = await findMostRecentLog(logDir);
 
       if (!mostRecentLog) {

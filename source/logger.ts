@@ -5,7 +5,7 @@ import { config } from "./config.ts";
 const transport = pino.transport({
   target: "pino-roll",
   options: {
-    file: join(config.app.ensurePath("logs"), "acai.log"),
+    file: join(config.app.ensurePathSync("logs"), "acai.log"),
     size: "10m",
     symlink: true,
     limit: {
