@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "@travisennis/stdlib/desm";
 
-export function getPackageVersion(fallback = "version unavailable"): string {
+export function getPackageVersion(fallback = "unavailable"): string {
   try {
     const pkgPath = join(import.meta.url, "..", "package.json");
     const pkgRaw = readFileSync(pkgPath, "utf8");
