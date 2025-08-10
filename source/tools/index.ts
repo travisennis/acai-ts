@@ -66,6 +66,8 @@ export async function initTools({
   const saveFileTool = await createSaveFileTool({
     workingDir: process.cwd(),
     sendData: sendDataFn,
+    terminal,
+    autoAcceptAll,
   });
 
   const moveFileTool = await createMoveFileTool({
@@ -169,6 +171,8 @@ export async function initCliTools({
   const saveFileTool = await createSaveFileTool({
     workingDir: process.cwd(),
     sendData: undefined,
+    terminal: undefined,
+    autoAcceptAll: true,
   });
 
   const moveFileTool = await createMoveFileTool({
