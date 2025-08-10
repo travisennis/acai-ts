@@ -67,7 +67,7 @@ export function handleError(error: Error): void {
 export type Flags = typeof flags;
 
 async function main() {
-  const appConfig = await config.readAppConfig("acai");
+  const appConfig = await config.ensureAppConfig("acai");
 
   if (flags.version === true) {
     console.info(getPackageVersion());

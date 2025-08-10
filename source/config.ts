@@ -160,6 +160,33 @@ export class ConfigManager {
     }
   }
 
+  async ensureAppConfig(
+    configName: string,
+  ): Promise<Record<PropertyKey, unknown>> {
+    const configPath = path.join(this.app.getPath(), `${configName}.json`);
+
+    try {
+      await fs.access(configPath);
+      return await this.readAppConfig(configName);
+    } catch {
+      // Create directory and default config if missing
+      this.app.ensurePath();
+
+      const defaultConfig = {
+        logs: {
+          path: path.join(this.app.getPath(), "logs", "current.log"),
+        },
+        tools: {
+          maxTokens: 30000,
+        },
+        notify: true,
+      };
+
+      await fs.writeFile(configPath, JSON.stringify(defaultConfig, null, 2));
+      return defaultConfig;
+    }
+  }
+
   async writeAppConfig(
     configName: string,
     data: Record<PropertyKey, unknown>,
