@@ -6,7 +6,7 @@ import { BashTool } from "./tools/bash.ts";
 import { CodeInterpreterTool } from "./tools/code-interpreter.ts";
 import { DirectoryTreeTool } from "./tools/directory-tree.ts";
 import { EditFileTool } from "./tools/edit-file.ts";
-import { inGitDirectory } from "./tools/git-utils.ts";
+import { getCurrentBranch, inGitDirectory } from "./tools/git-utils.ts";
 import { GrepTool } from "./tools/grep.ts";
 import { ReadFileTool } from "./tools/read-file.ts";
 import { SaveFileTool } from "./tools/save-file.ts";
@@ -100,10 +100,16 @@ async function getRules() {
 }
 
 async function environmentInfo() {
+  const gitDirectory = await inGitDirectory();
+  let gitSection = `- **Is directory a git repo**: ${gitDirectory ? "Yes" : "No"}`;
+  if (gitDirectory) {
+    gitSection += `\n- ** Current git branch**: ${await getCurrentBranch()}`;
+  }
+
   return `## Environment
 
 - **Current working directory**: ${process.cwd()}. [Use this value directly instead of calling the \`${BashTool.name}(pwd)\` tool unless you have a specific reason to verify it].
-- **Is directory a git repo**: ${(await inGitDirectory()) ? "Yes" : "No"}
+${gitSection}
 - **Platform**: ${platform()}
 - **Today's date**: ${(new Date()).toISOString()}`;
 }
