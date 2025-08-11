@@ -111,7 +111,7 @@ const ALLOWED_COMMANDS = [
 ];
 
 // Command execution timeout in milliseconds
-const DEFAULT_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+const DEFAULT_TIMEOUT = 1.5 * 60 * 1000; // 1.5 minutes
 
 // Initialize command validator with allowed commands
 const commandValidator = new CommandValidation(ALLOWED_COMMANDS);
