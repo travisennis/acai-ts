@@ -108,6 +108,8 @@ const ALLOWED_COMMANDS = [
   "gh",
   "rg",
   "jq",
+  "sed",
+  "awk",
 ];
 
 // Command execution timeout in milliseconds
