@@ -1,4 +1,6 @@
+import { readFile } from "node:fs/promises";
 import { platform } from "node:os";
+import path from "node:path";
 import { config } from "./config.ts";
 import { dedent } from "./dedent.ts";
 import { AgentTool } from "./tools/agent.ts";
@@ -18,7 +20,17 @@ function intro() {
   return "You are acai, an AI-powered CLI assistant that accelerates software engineering workflows through intelligent command-line assistance.";
 }
 
-function instructions() {
+async function instructions() {
+  const systemMdPath = path.join(config.project.getPath(), "system.md");
+  try {
+    const content = await readFile(systemMdPath, "utf8");
+    if (content.trim()) {
+      return content;
+    }
+  } catch {
+    // system.md doesn't exist or is empty, use default instructions
+  }
+
   return `## Core Principles
 
 - **CLI-Optimized**: Be concise and direct - responses appear in a terminal.
@@ -72,15 +84,22 @@ function toolUsage() {
 - Use \`${ThinkTool.name}\` for structured reasoning on complex problems
 - Outline multi-step tasks before execution
 
+### Bash Commands (\`${BashTool.name}\`)
+- Execute bash commands within project directory only
+- Always specify absolute paths to avoid errors
+- You have access to the Github CLI
+
 ### Code Interpreter (\`${CodeInterpreterTool.name}\`)
-- Use for calculations, data manipulation, or algorithm prototyping
-- Return results via \`return\`; no filesystem/network access`;
+- Executes JavaScript code in a separate Node.js process using Node's Permission Model
+- By default, the child process has no permissions except read/write within the current working directory
+- Returns stdout, stderr, and exitCode
+- Use console.log/console.error to produce outpu`;
 }
 
 function escalationProcedures() {
   return `## Escalation
 
-- If stuck, state the limitation, suggest alternatives, and use \`askUser\` for guidance`;
+- If stuck, state the limitation, suggest alternatives, and ask the user for guidance`;
 }
 
 async function getRules() {
@@ -122,7 +141,7 @@ export async function systemPrompt(options?: {
   const prompt = dedent`
 ${intro()}
 
-${instructions()}
+${await instructions()}
 
 ${supportsToolCalling ? toolUsage() : ""}
 
@@ -140,7 +159,7 @@ export async function minSystemPrompt() {
   const prompt = dedent`
 ${intro()}
 
-${instructions()}
+${await instructions()}
 
 ${await getRules()}
 
