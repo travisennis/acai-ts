@@ -16,9 +16,9 @@
   "author": "Travis Ennis",
   "license": "MIT",
   "scripts": {
-    "build": "npm run compile",
+    "build": "tsc --pretty -p tsconfig.build.json",
     "clean": "rm -rf ./dist/",
-    "compile": "tsc --pretty",
+    "compile": "tsc --pretty -p tsconfig.json",
     "lint": "biome lint",
     "lint:fix": "biome lint --unsafe --write",
     "lint:staged": "biome lint --error-on-warnings --no-errors-on-unmatched --staged",
@@ -32,7 +32,7 @@
     "knip": "npx knip",
     "check": "npx npm-check-updates --interactive --format group",
     "cpd": "npx jscpd ./source",
-    "typecheck:staged": "tsc --noEmit --pretty false -p tsconfig.json"
+    "typecheck:staged": "tsc --noEmit --pretty -p tsconfig.json"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.1",
