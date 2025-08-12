@@ -3,6 +3,7 @@ import chalk from "chalk";
 import { highlight, supportsLanguage } from "cli-highlight";
 import Table from "cli-table3";
 import { marked, type Token } from "marked";
+import terminalLink from "terminal-link";
 import { logger } from "../logger.ts";
 import { getListNumber } from "./markdown-utils.ts";
 
@@ -27,7 +28,10 @@ function format(
   switch (token.type) {
     case "blockquote":
       return chalk.dim.italic(
-        (token.tokens ?? []).map((_) => format(_)).join(""),
+        (token.tokens ?? [])
+          .map((_) => format(_))
+          .map((l) => `  ${l}`)
+          .join(""),
       );
     case "code": {
       if (token.lang && supportsLanguage(token.lang)) {
@@ -72,10 +76,17 @@ function format(
       }
     case "hr":
       return "---";
-    case "image":
-      return `[Image: ${token.title}: ${token.href}]`;
+    case "image": {
+      const alt = (token.title ?? token.text ?? "").toString().trim();
+      if (alt.length > 0) {
+        return `[Image: ${alt} (${token.href})]`;
+      }
+      return `[Image: ${token.href}]`;
+    }
     case "link":
-      return chalk.blue(token.href);
+      return terminalLink(token.text, token.href, {
+        fallback: (text, url) => `${text} (${url})`,
+      });
     case "list": {
       return token.items
         .map((_: Token, index: number) =>
@@ -113,22 +124,34 @@ function format(
 
       // Calculate column widths based on terminal width
       const padding = 5; // Account for table borders and padding
-      const availableWidth = process.stdout.columns - padding;
+      const availableWidth = Math.max(
+        10,
+        (process.stdout.columns || 80) - padding,
+      );
       const colCount = header?.length ?? 1;
-      const width = availableWidth / colCount;
+      const width = Math.max(
+        10,
+        Math.floor(availableWidth / Math.max(1, colCount)),
+      );
       const computedColWidths: number[] = new Array(colCount).fill(width);
 
       const table = new Table({
-        head: header,
+        head: header.map((h) => h.text),
         colWidths: computedColWidths,
         wordWrap: true, // Enable word wrapping for the description column
       });
 
-      table.push(...rows);
+      table.push(
+        ...rows.map((row) => row.map((c: { text: string }) => c.text)),
+      );
 
-      return table.toString();
+      return `${table.toString()}\n`;
+    }
+    case "del": {
+      return chalk.strikethrough(token.text);
     }
     default:
+      console.log(token.type);
       return "";
   }
 }
