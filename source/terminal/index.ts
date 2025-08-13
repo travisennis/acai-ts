@@ -8,7 +8,6 @@
 import chalk, { type ChalkInstance } from "chalk";
 import Table from "cli-table3";
 import ora from "ora";
-import terminalLink from "terminal-link";
 import wrapAnsi from "wrap-ansi";
 import { logger } from "../logger.ts";
 import { getPackageVersion } from "../version.ts";
@@ -16,6 +15,7 @@ import {
   clearTerminal,
   getTerminalSize,
   setTerminalTitle,
+  link as terminalLink,
 } from "./formatting.ts";
 import { applyMarkdown } from "./markdown.ts";
 import type { SpinnerInstance, TerminalConfig } from "./types.ts";
@@ -296,9 +296,7 @@ export class Terminal {
    * Create a clickable link in the terminal if supported
    */
   link(text: string, url: string): string {
-    return terminalLink(text, url, {
-      fallback: (text, url) => `${text} (${url})`,
-    });
+    return terminalLink(text, url);
   }
 
   /**

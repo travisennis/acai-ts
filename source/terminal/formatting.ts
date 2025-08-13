@@ -4,6 +4,8 @@
  * Provides functions for formatting and displaying text in the terminal.
  */
 
+import chalk from "chalk";
+
 /**
  * Clear the terminal screen
  */
@@ -107,3 +109,13 @@ function wrapLine(line: string, width: number): string {
 
   return wrappedLines.join("\n");
 }
+
+// const ESC = "\u001B[";
+const OSC = "\u001B]";
+const BEL = "\u0007";
+const SEP = ";";
+
+export const link = (text: string, url: string) =>
+  chalk.underline.blue(
+    [OSC, "8", SEP, SEP, url, BEL, text, OSC, "8", SEP, SEP, BEL].join(""),
+  );
