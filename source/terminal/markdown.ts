@@ -3,8 +3,8 @@ import chalk from "chalk";
 import { highlight, supportsLanguage } from "cli-highlight";
 import Table from "cli-table3";
 import { marked, type Token } from "marked";
-import terminalLink from "terminal-link";
 import { logger } from "../logger.ts";
+import { link as terminalLink } from "./formatting.ts";
 import { getListNumber } from "./markdown-utils.ts";
 
 function logError(msg: string) {
@@ -84,9 +84,7 @@ function format(
       return `[Image: ${token.href}]`;
     }
     case "link":
-      return terminalLink(token.text, token.href, {
-        fallback: (text, url) => `${text} (${url})`,
-      });
+      return terminalLink(token.text, token.href);
     case "list": {
       return token.items
         .map((_: Token, index: number) =>
