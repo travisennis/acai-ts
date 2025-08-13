@@ -259,25 +259,39 @@ export class Terminal {
   header(header: string, chalkFn: ChalkInstance = chalk.green): void {
     const cols = this.terminalWidth > 0 ? this.terminalWidth : 80;
     const width = Math.max(0, cols - header.length - 4);
-    this.writeln(chalkFn(`── ${header} ${"─".repeat(width)}  `));
+    this.writeln(chalkFn(`\n── ${header} ${"─".repeat(width)}  `));
   }
 
   async box(header: string, content: string): Promise<void> {
     const cols = this.terminalWidth > 0 ? this.terminalWidth : 80;
     const width = Math.max(4, cols - 4);
+
+    // Helper to strip ANSI sequences for accurate visible-width calculation
+    const stripAnsi = (s: string): string =>
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: need to detect ansi control characters
+      s.replace(/\x1B\[[0-?]*[ -/]*[@-~]/g, "");
+
     const paddedHeader = ` ${header} `;
+    const headerVisibleLen = stripAnsi(paddedHeader).length;
     const headerStartPos = 1;
 
-    // Top border with header
-    const topBorder = `┌${"─".repeat(headerStartPos)}${paddedHeader}${"─".repeat(Math.max(0, width - headerStartPos - paddedHeader.length))}┐`;
+    // Top border with header (use visible header length)
+    const leftDashes = headerStartPos;
+    const rightDashes = Math.max(0, width - leftDashes - headerVisibleLen);
+    const topBorder = `┌${"─".repeat(leftDashes)}${paddedHeader}${"─".repeat(rightDashes)}┐`;
 
     // Prepare inner content: format markdown first, then wrap to inner width
     const innerWidth = Math.max(1, width - 2);
     const formatted = applyMarkdown(content);
     const wrapped = wrapAnsi(formatted, innerWidth, { trim: false });
+
     const contentLines = wrapped
       .split("\n")
-      .map((line) => `│ ${line.padEnd(innerWidth)} │`)
+      .map((line) => {
+        const visibleLen = stripAnsi(line).length;
+        const padCount = Math.max(0, innerWidth - visibleLen);
+        return `│ ${line}${" ".repeat(padCount)} │`;
+      })
       .join("\n");
 
     // Bottom border
@@ -311,11 +325,16 @@ export class Terminal {
     const { header, colWidths } = options;
     // Calculate column widths based on terminal width
     const padding = 5; // Account for table borders and padding
-    const availableWidth = this.terminalWidth - padding;
+    const availableWidth = Math.max(10, this.terminalWidth - padding);
     const colCount = header?.length ?? 1;
-    const width = availableWidth / colCount;
+    const width = Math.max(
+      10,
+      Math.floor(availableWidth / Math.max(1, colCount)),
+    );
     const computedColWidths: number[] = colWidths
-      ? colWidths.map((percent) => Math.floor((percent / 100) * availableWidth))
+      ? colWidths.map((percent) =>
+          Math.max(10, Math.floor((percent / 100) * availableWidth)),
+        )
       : new Array(colCount).fill(width);
 
     const table = new Table({
