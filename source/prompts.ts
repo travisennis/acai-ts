@@ -73,7 +73,7 @@ function toolUsage() {
 - Use \`${GrepTool.name}\` for code pattern searches
 - Use \`${WebFetchTool.name}\` for text-based URLs provided in the prompt
 - Use \`${WebSearchTool.name}\` for external research (e.g., libraries, errors)
-- Use \`${AgentTool.name}\` for iterative keyword/file searches. Use this if you need to explorer the project fo find what you are looking for.
+- Use \`${AgentTool.name}\` for iterative keyword/file searches. Use this if you need to explore the project fo find what you are looking for.
 - If file contents or URLs are provided in the prompt, use them directly without re-fetching
 - Always verify file contents before suggesting changes unless provided in the prompt
 
