@@ -46,7 +46,9 @@ export const createGrepTool = (
         literal: z
           .boolean()
           .nullable()
-          .describe("Pass true to search as a fixed string (no regex). Pass null to auto-detect."),
+          .describe(
+            "Pass true to search as a fixed string (no regex). Pass null to auto-detect.",
+          ),
       }),
       execute: (
         {
@@ -80,14 +82,14 @@ export const createGrepTool = (
               if (likelyUnbalancedRegex(pattern)) {
                 effectiveLiteral = true;
                 sendData?.({
-                  event: "tool-warning",
+                  event: "tool-update",
                   id: toolCallId,
-                  data: `Pattern appears to contain unbalanced regex metacharacters; using fixed-string mode (-F).`,
+                  data: "Pattern appears to contain unbalanced regex metacharacters; using fixed-string mode (-F).",
                 });
               } else {
                 effectiveLiteral = false;
               }
-            } catch (err) {
+            } catch (_err) {
               effectiveLiteral = false;
             }
           }
@@ -143,15 +145,53 @@ interface GrepOptions {
 }
 
 function likelyUnbalancedRegex(pattern: string): boolean {
-  const counts: Record<string, number> = { '(': 0, ')': 0, '[': 0, ']': 0, '{': 0, '}': 0 };
+  const counts = {
+    openParen: 0,
+    closeParen: 0,
+    openBracket: 0,
+    closeBracket: 0,
+    openBrace: 0,
+    closeBrace: 0,
+  };
   let escaped = false;
   for (let i = 0; i < pattern.length; i++) {
     const ch = pattern[i];
-    if (escaped) { escaped = false; continue; }
-    if (ch === '\\') { escaped = true; continue; }
-    if (ch in counts) counts[ch] += 1;
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escaped = true;
+      continue;
+    }
+    switch (ch) {
+      case "(":
+        counts.openParen++;
+        break;
+      case ")":
+        counts.closeParen++;
+        break;
+      case "[":
+        counts.openBracket++;
+        break;
+      case "]":
+        counts.closeBracket++;
+        break;
+      case "{":
+        counts.openBrace++;
+        break;
+      case "}":
+        counts.closeBrace++;
+        break;
+      default:
+        break;
+    }
   }
-  return (counts['('] !== counts[')']) || (counts['['] !== counts[']']) || (counts['{'] !== counts['}']);
+  return (
+    counts.openParen !== counts.closeParen ||
+    counts.openBracket !== counts.closeBracket ||
+    counts.openBrace !== counts.closeBrace
+  );
 }
 
 /**
@@ -176,7 +216,10 @@ function grepFiles(
       options.searchIgnored === null ? false : options.searchIgnored;
     const effectiveFilePattern = options.filePattern;
     const effectiveContextLines = options.contextLines;
-    const effectiveLiteral = options.literal === null || options.literal === undefined ? false : options.literal;
+    const effectiveLiteral =
+      options.literal === null || options.literal === undefined
+        ? false
+        : options.literal;
 
     let command = "rg --line-number";
 
@@ -210,9 +253,14 @@ function grepFiles(
     const result = execSync(command, { encoding: "utf-8" });
     return result;
   } catch (error) {
-    if (error instanceof Error && "status" in error && (error as any).status === 1) {
+    if (
+      error instanceof Error &&
+      "status" in error &&
+      (error as unknown as { status?: number }).status === 1
+    ) {
       return "No matches found.";
     }
+
     throw new Error(`Error executing ripgrep: ${(error as Error).message}`);
   }
 }
