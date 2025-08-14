@@ -15,6 +15,7 @@ import { editPromptCommand } from "./edit-prompt-command.ts";
 import { exitCommand } from "./exit-command.ts";
 import { filesCommand } from "./files-command.ts";
 import { generateRulesCommand } from "./generate-rules-command.ts";
+import { healthCommand } from "./health-command.ts";
 import { helpCommand } from "./help-command.ts";
 import { initCommand } from "./init-command.ts";
 import { lastLogCommand } from "./last-log-command.ts";
@@ -81,6 +82,7 @@ export class CommandManager {
       editPromptCommand(options),
       exitCommand(options),
       filesCommand(options),
+      healthCommand(options),
       initCommand(options),
       pasteCommand(options),
       promptCommand(options),

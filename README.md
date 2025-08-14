@@ -118,7 +118,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 
 # Google (Gemini models)
-GOOGLE_API_KEY=your_google_api_key_here
+GOOGLE_GENERATIVE_AI_API_KEY=your_google_api_key_here
 
 # DeepSeek
 DEEPSEEK_API_KEY=your_deepseek_api_key_here
@@ -159,7 +159,7 @@ OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 
 # Optional: Additional providers
-GOOGLE_API_KEY=...
+GOOGLE_GENERATIVE_AI_API_KEY=...
 OPENROUTER_API_KEY=sk-or-...
 
 # Optional: Web services (fallbacks available if not provided)
