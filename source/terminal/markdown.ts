@@ -149,7 +149,6 @@ function format(
       return chalk.strikethrough(token.text);
     }
     default:
-      console.log(token.type);
       return "";
   }
 }
