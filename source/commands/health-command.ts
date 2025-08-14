@@ -4,7 +4,7 @@ export function healthCommand({ terminal }: CommandOptions): ReplCommand {
   return {
     command: "/health",
     description: "Show application health status and environment variables",
-    result: "continue",
+    result: "continue" as const,
     getSubCommands: () => Promise.resolve([]),
     execute() {
       // Define the environment variables we care about
@@ -52,11 +52,8 @@ export function healthCommand({ terminal }: CommandOptions): ReplCommand {
         colWidths: [30, 15, 55],
       });
 
-      // Count how many are set
-      const setCount = envVars.filter((envVar) => {
-        const value = process.env[envVar.name];
-        return value !== undefined && value !== null && value.trim() !== "";
-      }).length;
+      // Count how many are set (derived from envStatus to avoid re-checking process.env)
+      const setCount = envStatus.filter((row) => row[1] === "✓ Set").length;
       const totalCount = envVars.length;
 
       terminal.info(
