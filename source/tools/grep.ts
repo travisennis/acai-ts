@@ -84,7 +84,9 @@ export const createGrepTool = (
                 sendData?.({
                   event: "tool-update",
                   id: toolCallId,
-                  data: "Pattern appears to contain unbalanced regex metacharacters; using fixed-string mode (-F).",
+                  data: {
+                    primary: "Pattern appears to contain unbalanced regex metacharacters; using fixed-string mode (-F).",
+                  },
                 });
               } else {
                 effectiveLiteral = false;
