@@ -43,6 +43,12 @@ export const createGrepTool = (
           .describe(
             "Pass null to use the default (false, don't search ignored files).",
           ),
+        literal: z
+          .boolean()
+          .nullable()
+          .describe(
+            "Pass true to search as a fixed string (no regex). Pass null to auto-detect.",
+          ),
       }),
       execute: (
         {
@@ -53,6 +59,7 @@ export const createGrepTool = (
           filePattern,
           contextLines,
           searchIgnored,
+          literal,
         },
         { toolCallId },
       ) => {
@@ -62,12 +69,41 @@ export const createGrepTool = (
             id: toolCallId,
             data: `Searching codebase for "${chalk.cyan(inspect(pattern))}" in ${chalk.cyan(path)}`,
           });
+
+          // Normalize literal option: if null => auto-detect using heuristic
+          let effectiveLiteral: boolean | null = null;
+          if (literal === true) {
+            effectiveLiteral = true;
+          } else if (literal === false) {
+            effectiveLiteral = false;
+          } else {
+            // auto-detect
+            try {
+              if (likelyUnbalancedRegex(pattern)) {
+                effectiveLiteral = true;
+                sendData?.({
+                  event: "tool-update",
+                  id: toolCallId,
+                  data: {
+                    primary:
+                      "Pattern appears to contain unbalanced regex metacharacters; using fixed-string mode (-F).",
+                  },
+                });
+              } else {
+                effectiveLiteral = false;
+              }
+            } catch (_err) {
+              effectiveLiteral = false;
+            }
+          }
+
           const result = grepFiles(pattern, path, {
             recursive,
             ignoreCase,
             filePattern,
             contextLines,
             searchIgnored,
+            literal: effectiveLiteral,
           });
 
           const matchCount =
@@ -80,11 +116,6 @@ export const createGrepTool = (
                     if (line === "--") {
                       return false;
                     }
-                    // A match line from ripgrep with --line-number has the format:
-                    // path:linenumber:match
-                    // A context line has the format:
-                    // path-linenumber-match
-                    // This regex distinguishes between them by looking for the colon after the line number.
                     return /^(.+?):(\d+):(.*)$/.test(line);
                   }).length;
 
@@ -113,6 +144,57 @@ interface GrepOptions {
   filePattern?: string | null;
   contextLines?: number | null;
   searchIgnored?: boolean | null;
+  literal?: boolean | null;
+}
+
+function likelyUnbalancedRegex(pattern: string): boolean {
+  const counts = {
+    openParen: 0,
+    closeParen: 0,
+    openBracket: 0,
+    closeBracket: 0,
+    openBrace: 0,
+    closeBrace: 0,
+  };
+  let escaped = false;
+  for (let i = 0; i < pattern.length; i++) {
+    const ch = pattern[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escaped = true;
+      continue;
+    }
+    switch (ch) {
+      case "(":
+        counts.openParen++;
+        break;
+      case ")":
+        counts.closeParen++;
+        break;
+      case "[":
+        counts.openBracket++;
+        break;
+      case "]":
+        counts.closeBracket++;
+        break;
+      case "{":
+        counts.openBrace++;
+        break;
+      case "}":
+        counts.closeBrace++;
+        break;
+      default:
+        break;
+    }
+  }
+  return (
+    counts.openParen !== counts.closeParen ||
+    counts.openBracket !== counts.closeBracket ||
+    counts.openBrace !== counts.closeBrace
+  );
 }
 
 /**
@@ -123,62 +205,81 @@ interface GrepOptions {
  * @param options - Additional options for the grep command
  * @returns The result of the grep command
  */
-function grepFiles(
+export function buildGrepCommand(
+  pattern: string,
+  path: string,
+  options: GrepOptions = {},
+): string {
+  const effectiveRecursive =
+    options.recursive === null ? true : options.recursive;
+  const effectiveIgnoreCase =
+    options.ignoreCase === null ? false : options.ignoreCase;
+  const effectiveSearchIgnored =
+    options.searchIgnored === null ? false : options.searchIgnored;
+  const effectiveFilePattern = options.filePattern;
+  const effectiveContextLines = options.contextLines;
+
+  // Determine literal handling: if options.literal is explicitly provided, use it.
+  // If null/undefined, auto-detect unbalanced regexes and prefer fixed-strings.
+  let effectiveLiteral: boolean;
+  if (options.literal === true) {
+    effectiveLiteral = true;
+  } else if (options.literal === false) {
+    effectiveLiteral = false;
+  } else {
+    effectiveLiteral = likelyUnbalancedRegex(pattern);
+  }
+
+  let command = "rg --line-number";
+
+  if (effectiveRecursive === false) {
+    command += " --max-depth=0";
+  }
+
+  if (effectiveIgnoreCase) {
+    command += " --ignore-case";
+  }
+
+  if (effectiveContextLines !== null && effectiveContextLines !== undefined) {
+    command += ` --context=${effectiveContextLines}`;
+  }
+
+  if (effectiveFilePattern !== null && effectiveFilePattern !== undefined) {
+    command += ` --glob=${JSON.stringify(effectiveFilePattern)}`;
+  }
+
+  if (effectiveSearchIgnored) {
+    command += " --no-ignore";
+  }
+
+  if (effectiveLiteral) {
+    command += " -F";
+  }
+
+  command += ` ${JSON.stringify(pattern)}`;
+  command += ` ${path}`;
+
+  return command;
+}
+
+export function grepFiles(
   pattern: string,
   path: string,
   options: GrepOptions = {},
 ): string {
   try {
-    // Handle null values by providing defaults
-    const effectiveRecursive =
-      options.recursive === null ? true : options.recursive;
-    const effectiveIgnoreCase =
-      options.ignoreCase === null ? false : options.ignoreCase;
-    const effectiveSearchIgnored =
-      options.searchIgnored === null ? false : options.searchIgnored;
-    const effectiveFilePattern = options.filePattern;
-    const effectiveContextLines = options.contextLines;
-
-    // Build the ripgrep command
-    let command = "rg --line-number";
-
-    // Ripgrep is recursive by default, so we only need to add
-    // --no-recursive if effectiveRecursive is explicitly false
-    if (effectiveRecursive === false) {
-      command += " --max-depth=0";
-    }
-
-    if (effectiveIgnoreCase) {
-      command += " --ignore-case";
-    }
-
-    if (effectiveContextLines !== null && effectiveContextLines !== undefined) {
-      command += ` --context=${effectiveContextLines}`;
-    }
-
-    // Add pattern (escaped for shell)
-    command += ` ${JSON.stringify(pattern)}`;
-
-    // Add path
-    command += ` ${path}`;
-
-    // Add file pattern if specified
-    if (effectiveFilePattern !== null && effectiveFilePattern !== undefined) {
-      command += ` --glob=${JSON.stringify(effectiveFilePattern)}`;
-    }
-
-    if (effectiveSearchIgnored) {
-      command += " --no-ignore";
-    }
-
-    // Execute the command
+    const command = buildGrepCommand(pattern, path, options);
     const result = execSync(command, { encoding: "utf-8" });
     return result;
   } catch (error) {
-    if (error instanceof Error && "status" in error && error.status === 1) {
-      // Status 1 in ripgrep just means "no matches found"
+    if (
+      error instanceof Error &&
+      "status" in error &&
+      (error as unknown as { status?: number }).status === 1
+    ) {
       return "No matches found.";
     }
+
     throw new Error(`Error executing ripgrep: ${(error as Error).message}`);
   }
 }
