@@ -317,31 +317,75 @@ export class Terminal {
    * Display a table of data
    */
   table(
-    data: [string, string | number][],
+    data: (string | number)[][],
     options: { header?: string[]; colWidths?: number[] } = {},
   ): void {
     const { header, colWidths } = options;
+
+    // Determine number of columns from data or header
+    let colCount = header?.length;
+    if (colCount === undefined) {
+      colCount = data.length > 0 && data[0] ? data[0].length : 1;
+    }
+
     // Calculate column widths based on terminal width
     const padding = 5; // Account for table borders and padding
-    const availableWidth = Math.max(10, this.terminalWidth - padding);
-    const colCount = header?.length ?? 1;
-    const width = Math.max(
-      10,
-      Math.floor(availableWidth / Math.max(1, colCount)),
-    );
-    const computedColWidths: number[] = colWidths
-      ? colWidths.map((percent) =>
-          Math.max(10, Math.floor((percent / 100) * availableWidth)),
-        )
-      : new Array(colCount).fill(width);
+    const availableWidth = Math.max(20, this.terminalWidth - padding);
+
+    let computedColWidths: number[];
+
+    if (colWidths && colWidths.length === colCount) {
+      // Use provided percentages
+      computedColWidths = colWidths.map((percent) =>
+        Math.max(10, Math.floor((percent / 100) * availableWidth)),
+      );
+    } else {
+      // Distribute width evenly with minimum width per column
+      const minColWidth = 15;
+      const maxColsThatFit = Math.floor(availableWidth / minColWidth);
+      const actualColCount = Math.min(colCount, maxColsThatFit);
+
+      if (actualColCount === 1) {
+        computedColWidths = [availableWidth];
+      } else {
+        // Calculate base width and distribute remaining pixels
+        const baseWidth = Math.floor(availableWidth / actualColCount);
+        const remainder = availableWidth % actualColCount;
+        computedColWidths = Array(actualColCount).fill(baseWidth);
+
+        // Distribute remainder pixels to first few columns
+        for (let i = 0; i < remainder && i < actualColCount; i++) {
+          computedColWidths[i] = (computedColWidths[i] || 0) + 1;
+        }
+      }
+
+      // If we have fewer computed widths than columns, extend the array
+      while (computedColWidths.length < colCount) {
+        computedColWidths.push(minColWidth);
+      }
+    }
 
     const table = new Table({
       head: header,
       colWidths: computedColWidths,
-      wordWrap: true, // Enable word wrapping for the description column
+      wordWrap: true,
+      wrapOnWordBoundary: true,
     });
 
-    table.push(...data);
+    // Ensure all data rows have the same number of columns
+    const normalizedData = data.map((row) => {
+      if (row.length < colCount) {
+        // Pad with empty strings if row has fewer columns
+        return [...row, ...Array(colCount - row.length).fill("")];
+      }
+      if (row.length > colCount) {
+        // Truncate if row has more columns
+        return row.slice(0, colCount);
+      }
+      return row;
+    });
+
+    table.push(...normalizedData);
 
     this.writeln(table.toString());
   }
