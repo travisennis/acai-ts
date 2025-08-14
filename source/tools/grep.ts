@@ -205,54 +205,70 @@ function likelyUnbalancedRegex(pattern: string): boolean {
  * @param options - Additional options for the grep command
  * @returns The result of the grep command
  */
-function grepFiles(
+export function buildGrepCommand(
+  pattern: string,
+  path: string,
+  options: GrepOptions = {},
+): string {
+  const effectiveRecursive =
+    options.recursive === null ? true : options.recursive;
+  const effectiveIgnoreCase =
+    options.ignoreCase === null ? false : options.ignoreCase;
+  const effectiveSearchIgnored =
+    options.searchIgnored === null ? false : options.searchIgnored;
+  const effectiveFilePattern = options.filePattern;
+  const effectiveContextLines = options.contextLines;
+
+  // Determine literal handling: if options.literal is explicitly provided, use it.
+  // If null/undefined, auto-detect unbalanced regexes and prefer fixed-strings.
+  let effectiveLiteral: boolean;
+  if (options.literal === true) {
+    effectiveLiteral = true;
+  } else if (options.literal === false) {
+    effectiveLiteral = false;
+  } else {
+    effectiveLiteral = likelyUnbalancedRegex(pattern);
+  }
+
+  let command = "rg --line-number";
+
+  if (effectiveRecursive === false) {
+    command += " --max-depth=0";
+  }
+
+  if (effectiveIgnoreCase) {
+    command += " --ignore-case";
+  }
+
+  if (effectiveContextLines !== null && effectiveContextLines !== undefined) {
+    command += ` --context=${effectiveContextLines}`;
+  }
+
+  if (effectiveFilePattern !== null && effectiveFilePattern !== undefined) {
+    command += ` --glob=${JSON.stringify(effectiveFilePattern)}`;
+  }
+
+  if (effectiveSearchIgnored) {
+    command += " --no-ignore";
+  }
+
+  if (effectiveLiteral) {
+    command += " -F";
+  }
+
+  command += ` ${JSON.stringify(pattern)}`;
+  command += ` ${path}`;
+
+  return command;
+}
+
+export function grepFiles(
   pattern: string,
   path: string,
   options: GrepOptions = {},
 ): string {
   try {
-    const effectiveRecursive =
-      options.recursive === null ? true : options.recursive;
-    const effectiveIgnoreCase =
-      options.ignoreCase === null ? false : options.ignoreCase;
-    const effectiveSearchIgnored =
-      options.searchIgnored === null ? false : options.searchIgnored;
-    const effectiveFilePattern = options.filePattern;
-    const effectiveContextLines = options.contextLines;
-    const effectiveLiteral =
-      options.literal === null || options.literal === undefined
-        ? false
-        : options.literal;
-
-    let command = "rg --line-number";
-
-    if (effectiveRecursive === false) {
-      command += " --max-depth=0";
-    }
-
-    if (effectiveIgnoreCase) {
-      command += " --ignore-case";
-    }
-
-    if (effectiveContextLines !== null && effectiveContextLines !== undefined) {
-      command += ` --context=${effectiveContextLines}`;
-    }
-
-    if (effectiveFilePattern !== null && effectiveFilePattern !== undefined) {
-      command += ` --glob=${JSON.stringify(effectiveFilePattern)}`;
-    }
-
-    if (effectiveSearchIgnored) {
-      command += " --no-ignore";
-    }
-
-    if (effectiveLiteral) {
-      command += " -F";
-    }
-
-    command += ` ${JSON.stringify(pattern)}`;
-    command += ` ${path}`;
-
+    const command = buildGrepCommand(pattern, path, options);
     const result = execSync(command, { encoding: "utf-8" });
     return result;
   } catch (error) {
