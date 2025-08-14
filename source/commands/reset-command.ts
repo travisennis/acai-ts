@@ -6,6 +6,7 @@ export const resetCommand = ({
 }: CommandOptions): ReplCommand => {
   return {
     command: "/reset",
+    aliases: ["/new"],
     description: "Saves the chat history and then resets it.",
     result: "continue" as const,
     getSubCommands: () => Promise.resolve([]),
