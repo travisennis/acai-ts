@@ -11,6 +11,7 @@ import { EditFileTool } from "./tools/edit-file.ts";
 import { getCurrentBranch, inGitDirectory } from "./tools/git-utils.ts";
 import { GrepTool } from "./tools/grep.ts";
 import { ReadFileTool } from "./tools/read-file.ts";
+import { ReadMultipleFilesTool } from "./tools/read-multiple-files.ts";
 import { SaveFileTool } from "./tools/save-file.ts";
 import { ThinkTool } from "./tools/think.ts";
 import { WebFetchTool } from "./tools/web-fetch.ts";
@@ -68,11 +69,11 @@ function toolUsage() {
 
 ### Information Gathering
 - Use \`${DirectoryTreeTool.name}\` for project structure
-- Use \`${ReadFileTool.name}\` for file contents if filenames are provided in the prompt
+- Use \`${ReadFileTool.name}\` or \`${ReadMultipleFilesTool.name}\` for file contents if filenames are provided in the prompt
 - Use \`${GrepTool.name}\` for code pattern searches
 - Use \`${WebFetchTool.name}\` for text-based URLs provided in the prompt
 - Use \`${WebSearchTool.name}\` for external research (e.g., libraries, errors)
-- Use \`${AgentTool.name}\` for iterative keyword/file searches
+- Use \`${AgentTool.name}\` for iterative keyword/file searches. Use this if you need to explorer the project fo find what you are looking for.
 - If file contents or URLs are provided in the prompt, use them directly without re-fetching
 - Always verify file contents before suggesting changes unless provided in the prompt
 
