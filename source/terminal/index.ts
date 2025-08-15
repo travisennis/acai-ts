@@ -15,6 +15,7 @@ import {
   clearTerminal,
   getTerminalSize,
   setTerminalTitle,
+  stripAnsi,
   link as terminalLink,
 } from "./formatting.ts";
 import { applyMarkdown } from "./markdown.ts";
@@ -267,9 +268,6 @@ export class Terminal {
     const width = Math.max(4, cols - 4);
 
     // Helper to strip ANSI sequences for accurate visible-width calculation
-    const stripAnsi = (s: string): string =>
-      // biome-ignore lint/suspicious/noControlCharactersInRegex: need to detect ansi control characters
-      s.replace(/\x1B\[[0-?]*[ -/]*[@-~]/g, "");
 
     const paddedHeader = ` ${header} `;
     const headerVisibleLen = stripAnsi(paddedHeader).length;
@@ -310,7 +308,7 @@ export class Terminal {
    * Create a clickable link in the terminal if supported
    */
   link(text: string, url: string): string {
-    return terminalLink(text, url);
+    return chalk.underline.blue(terminalLink(text, url));
   }
 
   /**

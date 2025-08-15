@@ -3,8 +3,7 @@
  *
  * Provides functions for formatting and displaying text in the terminal.
  */
-
-import chalk from "chalk";
+import { supportsHyperlinks } from "./supports-hyperlinks.ts";
 
 /**
  * Clear the terminal screen
@@ -110,12 +109,60 @@ function wrapLine(line: string, width: number): string {
   return wrappedLines.join("\n");
 }
 
-// const ESC = "\u001B[";
-const OSC = "\u001B]";
-const BEL = "\u0007";
-const SEP = ";";
+export const ESC = "\u001B[";
+export const OSC = "\u001B]";
+export const BEL = "\u0007";
+export const SEP = ";";
 
-export const link = (text: string, url: string) =>
-  chalk.underline.blue(
-    [OSC, "8", SEP, SEP, url, BEL, text, OSC, "8", SEP, SEP, BEL].join(""),
-  );
+export const link = (text: string, url: string) => {
+  if (supportsHyperlinks.stdout) {
+    return [OSC, "8", SEP, SEP, url, BEL, text, OSC, "8", SEP, SEP, BEL].join(
+      "",
+    );
+  }
+  return `[${text}](${url})`;
+};
+
+export const image = (
+  data: string | Buffer,
+  options: {
+    width?: number | string;
+    height?: number | string;
+    preserveAspectRatio?: boolean;
+  } = {},
+) => {
+  let returnValue = `${OSC}1337;File=inline=1`;
+
+  if (options.width) {
+    returnValue += `;width=${options.width}`;
+  }
+
+  if (options.height) {
+    returnValue += `;height=${options.height}`;
+  }
+
+  if (options.preserveAspectRatio === false) {
+    returnValue += ";preserveAspectRatio=0";
+  }
+
+  return `${returnValue}:${Buffer.from(data).toString("base64")}${BEL}`;
+};
+
+export function ansiRegex({ onlyFirst = false } = {}) {
+  // Valid string terminator sequences are BEL, ESC\, and 0x9c
+  const st = "(?:\\u0007|\\u001B\\u005C|\\u009C)";
+  const pattern = [
+    `[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?${st})`,
+    "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-nq-uy=><~]))",
+  ].join("|");
+
+  return new RegExp(pattern, onlyFirst ? undefined : "g");
+}
+
+/**
+ * Strip ANSI escape sequences from a string
+ */
+export function stripAnsi(s: string): string {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: need to detect ansi control characters
+  return s.replace(/\x1B\[[0-?]*[ -/]*[@-~]/g, "");
+}
