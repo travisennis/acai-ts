@@ -125,7 +125,7 @@ async function main() {
 
   const chosenModel: ModelName = isSupportedModel(flags.model)
     ? (flags.model as ModelName)
-    : "openrouter:sonnet4";
+    : "openrouter:glm-4.5";
 
   const modelManager = new ModelManager({
     stateDir: await appDir.ensurePath("audit"),
