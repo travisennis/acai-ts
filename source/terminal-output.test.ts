@@ -87,6 +87,16 @@ function testTerminalOutput(): void {
     "| Header 1 | Header 2 | Header 3 |\n|----------|----------|----------|\n| Cell 1   | Cell 2   | Cell 3   |\n| Cell 4   | Cell 5   | Cell 6   |",
   );
 
+  // Table with wrapping text
+  terminal.display(
+    "| Long Header That Wraps | Another Long Header That Will Wrap | Third Long Header For Testing |\n|-------------------------|----------------------------------|-----------------------------|\n| This cell contains a lot of text that should naturally wrap when displayed in the terminal, testing the wrapping functionality of the table renderer. | This is another cell with substantial content that will definitely require multiple lines to display properly in the terminal output. | The third column also has extensive text content that needs to wrap correctly to maintain readability and proper table formatting. |\n| Short text | Medium length text content that might wrap | Very long text content here that extends beyond normal cell width and requires proper line wrapping to display correctly without breaking the table structure |",
+  );
+
+  // Table with multiple lines in each cell
+  terminal.display(
+    "| Column 1 | Column 2 | Column 3 |\n|----------|----------|----------|\n| Line 1<br>Line 2<br>Line 3 | First line<br>Second line<br>Third line | Row 1 Col 3<br>Row 2 Col 3<br>Row 3 Col 3 |\n| Multi-line<br>cell content | Another<br>multi-line<br>cell example | Final<br>multi-line<br>cell |",
+  );
+
   // Paragraphs
   terminal.display(
     "This is a paragraph with some **bold** and *italic* text. " +
@@ -205,10 +215,7 @@ console.log(fibonacci(10)); // 55
 
   terminal.box(
     "Markdown Block",
-    `
-This paragraph contains **bold text**, *italic text*, \`inline code\`, 
-~~strikethrough text~~, [a link](https://example.com), and ![an image](image.jpg).
-`,
+    "This paragraph contains **bold text**, *italic text*, `inline code`, ~~strikethrough text~~, [a link](https://example.com), and ![an image](image.jpg).",
   );
 
   // Horizontal rule
