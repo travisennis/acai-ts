@@ -89,8 +89,7 @@ function toolUsage() {
 - Execute bash commands within project directory only
 - Always specify absolute paths to avoid errors
 - You have access to the Github CLI
-- **Background Processes:** Use background processes (via \`&\`) for commands that are unlikely to stop on their own, e.g. \`node server.js &\`. If unsure, ask the user.
-- **Interactive Commands:** Try to avoid shell commands that are likely to require user interaction (e.g. \`git rebase -i\`). Use non-interactive versions of commands (e.g. \`npm init -y\` instead of \`npm init\`) when available, and otherwise remind the user that interactive shell commands are not supported and may cause hangs until canceled by the user.
+- Try to avoid shell commands that are likely to require user interaction (e.g. \`git rebase -i\`). Use non-interactive versions of commands (e.g. \`npm init -y\` instead of \`npm init\`) when available, and otherwise remind the user that interactive shell commands are not supported and may cause hangs until canceled by the user.
 
 ### Code Interpreter (\`${CodeInterpreterTool.name}\`)
 - Executes JavaScript code in a separate Node.js process using Node's Permission Model
