@@ -61,6 +61,43 @@ export async function getDiffStat() {
   }
 }
 
+export async function getGitStatus() {
+  // Git status processing (optimized)
+  const result = await executeCommand(["git", "status", "--porcelain"], {
+    cwd: process.cwd(),
+    throwOnError: false,
+  });
+
+  let added = 0;
+  let modified = 0;
+  let deleted = 0;
+  let untracked = 0;
+
+  if (result.code === 0) {
+    const lines = result.stdout.split("\n");
+
+    for (const line of lines) {
+      if (!line) continue;
+      const s = line.slice(0, 2);
+      if (s[0] === "A" || s === "M ") added++;
+      else if (s[1] === "M" || s === " M") modified++;
+      else if (s[0] === "D" || s === " D") deleted++;
+      else if (s === "??") untracked++;
+    }
+
+    // if (added) gitStatus += ` +${added}`;
+    // if (modified) gitStatus += ` ~${modified}`;
+    // if (deleted) gitStatus += ` -${deleted}`;
+    // if (untracked) gitStatus += ` ?${untracked}`;
+  }
+  return {
+    added,
+    modified,
+    deleted,
+    untracked,
+  };
+}
+
 export const inGitDirectory = memoize(async (): Promise<boolean> => {
   const { code } = await executeCommand(
     ["git", "rev-parse", "--is-inside-work-tree"],

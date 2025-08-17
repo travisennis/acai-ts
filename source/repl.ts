@@ -28,6 +28,7 @@ import type { TokenCounter } from "./token-utils.ts";
 import {
   getCurrentBranch,
   getDiffStat,
+  getGitStatus,
   hasUncommittedChanges,
   inGitDirectory,
 } from "./tools/git-utils.ts"; // Modified import
@@ -112,18 +113,8 @@ export class Repl {
       const langModel = modelManager.getModel("repl");
       const modelConfig = modelManager.getModelMetadata("repl");
 
-      const currentDir = process.cwd().split("/").pop() || process.cwd();
-      const branch = await getCurrentBranch();
-
-      let branchDisplay = "";
-      if (branch) {
-        const hasChanges = await hasUncommittedChanges();
-        const asterisk = hasChanges ? "*" : "";
-        branchDisplay = ` ${chalk.gray(branch + asterisk)}`;
-      }
-
       terminal.hr();
-      terminal.writeln(`${chalk.blue(currentDir)}${branchDisplay}`);
+      terminal.writeln(await getProjectStatusLine());
       terminal.writeln(chalk.dim(langModel.modelId));
       terminal.displayProgressBar(
         currentContextWindow,
@@ -248,16 +239,6 @@ export class Repl {
 
             // Create a more visual representation of steps/tool usage
             this.displayToolUse(result, terminal);
-
-            if (await inGitDirectory()) {
-              // Added check
-              const stats = await getDiffStat();
-              terminal.writeln(
-                `${chalk.dim("Files changed:")} ${chalk.yellow(stats.filesChanged)} ` +
-                  `${chalk.green(`+${stats.insertions}`)} ` + // Insertions first (green)
-                  `${chalk.red(`-${stats.deletions}`)}`, // Deletions last (red)
-              );
-            }
 
             const total =
               (result as { totalUsage?: typeof result.usage }).totalUsage ??
@@ -570,3 +551,34 @@ const toolCallRepair = (modelManager: ModelManager, terminal: Terminal) => {
   };
   return fn;
 };
+
+async function getProjectStatusLine() {
+  //
+  const currentDir = process.cwd().split("/").pop() || process.cwd();
+  const branch = await getCurrentBranch();
+
+  let gitStatus = "";
+  if (branch) {
+    const hasChanges = await hasUncommittedChanges();
+    const asterisk = hasChanges ? "*" : "";
+    gitStatus = ` ${chalk.gray(branch + asterisk)}`;
+  }
+
+  if (await inGitDirectory()) {
+    // Added check
+    const stats = await getDiffStat();
+    const fileChanges = await getGitStatus();
+    let fileStatus = "";
+    if (fileChanges.added) fileStatus += ` +${fileChanges.added}`;
+    if (fileChanges.modified) fileStatus += ` ~${fileChanges.modified}`;
+    if (fileChanges.deleted) fileStatus += ` -${fileChanges.deleted}`;
+    if (fileChanges.untracked) fileStatus += ` ?${fileChanges.untracked}`;
+    gitStatus +=
+      " " +
+      `${chalk.dim("[")}${chalk.yellow(fileStatus)} ` +
+      `${chalk.green(`+${stats.insertions}`)} ` + // Insertions first (green)
+      `${chalk.red(`-${stats.deletions}`)}${chalk.dim("]")}`; // Deletions last (red)
+  }
+
+  return `${chalk.blue(currentDir)}${gitStatus}`;
+}
