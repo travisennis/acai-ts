@@ -1,8 +1,10 @@
 import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
+import { input, select } from "@inquirer/prompts";
 import { tool } from "ai";
 import chalk from "chalk";
 import { z } from "zod";
+import type { Terminal } from "../terminal/index.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
 
@@ -13,11 +15,17 @@ export const DeleteFileTool = {
 export const createDeleteFileTool = async ({
   workingDir,
   sendData,
+  terminal,
+  autoAcceptAll,
 }: {
   workingDir: string;
   sendData?: SendData;
+  terminal?: Terminal;
+  autoAcceptAll?: boolean;
 }) => {
   const allowedDirectory = workingDir;
+  let autoAcceptDeletes = autoAcceptAll ?? false;
+
   return {
     [DeleteFileTool.name]: tool({
       description: "Delete a file permanently.",
@@ -47,13 +55,74 @@ export const createDeleteFileTool = async ({
             throw new Error(`Path is a directory, not a file: ${filePath}`);
           }
 
-          // Delete the original file
+          if (terminal) {
+            terminal.writeln(
+              `\n${chalk.red.bold("●")} Proposing file deletion: ${chalk.cyan(userPath)}`,
+            );
+
+            terminal.lineBreak();
+            terminal.writeln("This action cannot be undone.");
+            terminal.lineBreak();
+
+            let userChoice: string;
+            if (autoAcceptDeletes) {
+              terminal.writeln(
+                chalk.green(
+                  "✓ Auto-accepting deletions (all future deletions will be accepted)",
+                ),
+              );
+              userChoice = "accept";
+            } else {
+              userChoice = await select({
+                message: "What would you like to do with this file?",
+                choices: [
+                  { name: "Accept and delete this file", value: "accept" },
+                  {
+                    name: "Accept all future deletions (including this)",
+                    value: "accept-all",
+                  },
+                  { name: "Reject this deletion", value: "reject" },
+                ],
+                default: "accept",
+              });
+            }
+
+            terminal.lineBreak();
+
+            if (userChoice === "accept-all") {
+              autoAcceptDeletes = true;
+              terminal.writeln(
+                chalk.yellow(
+                  "✓ Auto-accept mode enabled for all future deletions",
+                ),
+              );
+              terminal.lineBreak();
+            }
+
+            if (userChoice === "reject") {
+              const reason = await input({ message: "Feedback: " });
+
+              terminal.lineBreak();
+
+              sendData?.({
+                id: toolCallId,
+                event: "tool-completion",
+                data: `Deletion rejected by user. Reason: ${reason}`,
+              });
+
+              return `The user rejected this deletion. Reason: ${reason}`;
+            }
+
+            // If accepted, proceed to delete file
+          }
+
+          // Delete the file
           await fs.unlink(filePath);
 
           sendData?.({
             id: toolCallId,
             event: "tool-completion",
-            data: `File deleted successfully: ${userPath}`,
+            data: "File deleted successfully",
           });
           return `Successfully deleted ${filePath}`;
         } catch (error) {

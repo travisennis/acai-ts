@@ -6,6 +6,7 @@ import { dedent } from "./dedent.ts";
 import { AgentTool } from "./tools/agent.ts";
 import { BashTool } from "./tools/bash.ts";
 import { CodeInterpreterTool } from "./tools/code-interpreter.ts";
+import { DeleteFileTool } from "./tools/delete-file.ts";
 import { DirectoryTreeTool } from "./tools/directory-tree.ts";
 import { EditFileTool } from "./tools/edit-file.ts";
 import { getCurrentBranch, inGitDirectory } from "./tools/git-utils.ts";
@@ -78,8 +79,9 @@ function toolUsage() {
 - Always verify file contents before suggesting changes unless provided in the prompt
 
 ### Code Modification
-- Use \`${EditFileTool.name}\` for existing file edits (requires user approval)
-- Use \`${SaveFileTool.name}\` for new files only
+- Use \`${EditFileTool.name}\` to edit existing files
+- Use \`${SaveFileTool.name}\` to create new files only
+- Use \`${DeleteFileTool.name}\` to delete files
 
 ### Planning & Complex Tasks
 - Use \`${ThinkTool.name}\` for structured reasoning on complex problems

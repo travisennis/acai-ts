@@ -83,6 +83,8 @@ export async function initTools({
   const deleteFileTool = await createDeleteFileTool({
     workingDir: process.cwd(),
     sendData: sendDataFn,
+    terminal,
+    autoAcceptAll,
   });
 
   const codeInterpreterTool = createCodeInterpreterTool({
@@ -188,6 +190,8 @@ export async function initCliTools({
   const deleteFileTool = await createDeleteFileTool({
     workingDir: process.cwd(),
     sendData: undefined,
+    terminal: undefined,
+    autoAcceptAll: true,
   });
 
   const codeInterpreterTool = createCodeInterpreterTool({
