@@ -243,14 +243,20 @@ export class Repl {
             const total =
               (result as { totalUsage?: typeof result.usage }).totalUsage ??
               result.usage;
-            const outgoingTokens = isNumber(total.inputTokens)
+            const inputTokens = isNumber(total.inputTokens)
               ? total.inputTokens
               : 0;
-            const incomingTokens = isNumber(total.outputTokens)
+            const outputTokens = isNumber(total.outputTokens)
               ? total.outputTokens
               : 0;
-            const tokenSummary = `Tokens: ↑ ${outgoingTokens} ↓ ${incomingTokens}`;
+            const tokenSummary = `Tokens: ↑ ${inputTokens} ↓ ${outputTokens}`;
             terminal.writeln(chalk.dim(tokenSummary));
+
+            const inputCost = modelConfig.costPerInputToken * inputTokens;
+            const outputCost = modelConfig.costPerOutputToken * outputTokens;
+            terminal.writeln(
+              chalk.dim(`Cost: $${(inputCost + outputCost).toFixed(2)}`),
+            );
 
             // Track aggregate usage across all steps when available
             tokenTracker.trackUsage("repl", total);
@@ -328,8 +334,8 @@ export class Repl {
               terminal.write(chalk.dim("\n</think>\n\n"));
             }
             // if there is accumulatedText, display it
-            if (accumulatedText) {
-              terminal.writeln(`${chalk.blue.bold("●")} Response:`);
+            if (accumulatedText.trim()) {
+              terminal.writeln(`${chalk.blue.bold("● Response:")}`);
               terminal.display(accumulatedText, true);
               terminal.lineBreak();
             }
@@ -344,8 +350,8 @@ export class Repl {
         }
 
         // if there is accumulatedText, display it
-        if (accumulatedText) {
-          terminal.writeln(`${chalk.green.bold("●")} Response:`);
+        if (accumulatedText.trim()) {
+          terminal.writeln(`${chalk.green.bold("● Response:")}`);
           terminal.display(accumulatedText, true);
           terminal.lineBreak();
         }
@@ -429,6 +435,7 @@ export class Repl {
     }
 
     if (toolsCalled.length > 0) {
+      terminal.lineBreak();
       terminal.writeln(chalk.dim("Tools:"));
       for (const toolCalled of toolsCalled) {
         const colorFn = toolColors.get(toolCalled) ?? chalk.white;
