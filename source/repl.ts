@@ -575,7 +575,7 @@ async function getProjectStatusLine() {
     if (fileChanges.untracked) fileStatus += ` ?${fileChanges.untracked}`;
     gitStatus +=
       " " +
-      `${chalk.dim("[")}${chalk.yellow(fileStatus)} ` +
+      `${chalk.dim("[")}${chalk.yellow(fileStatus.trim())} ` +
       `${chalk.green(`+${stats.insertions}`)} ` + // Insertions first (green)
       `${chalk.red(`-${stats.deletions}`)}${chalk.dim("]")}`; // Deletions last (red)
   }

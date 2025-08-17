@@ -536,7 +536,10 @@ export class Terminal {
     );
     const emptyWidth = Math.max(0, progressBarMaxWidth - filledWidth);
 
-    const a = chalk.yellow("─"); //"█"
+    const a =
+      filledWidth / progressBarMaxWidth > 0.5
+        ? chalk.red("─")
+        : chalk.yellow("─"); //"█"
     const b = chalk.gray("─"); // "░"
     const filledBar = a.repeat(filledWidth);
     const emptyBar = b.repeat(emptyWidth);
