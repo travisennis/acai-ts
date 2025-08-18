@@ -9,8 +9,6 @@ import { createDeleteFileTool } from "./delete-file.ts";
 import { createDirectoryTreeTool } from "./directory-tree.ts";
 import { createEditFileTool } from "./edit-file.ts";
 import { createGrepTool } from "./grep.ts";
-import { createMemoryReadTool } from "./memory-read.ts";
-import { createMemoryWriteTool } from "./memory-write.ts";
 import { createMoveFileTool } from "./move-file.ts";
 import { createReadFileTool } from "./read-file.ts";
 import { createReadMultipleFilesTool } from "./read-multiple-files.ts";
@@ -117,14 +115,6 @@ export async function initTools({
     autoAcceptAll,
   });
 
-  const memoryReadTool = createMemoryReadTool({
-    sendData: sendDataFn,
-  });
-
-  const memoryWriteTool = createMemoryWriteTool({
-    sendData: sendDataFn,
-  });
-
   const tools = {
     ...readFileTool,
     ...readMultipleFilesTool,
@@ -139,8 +129,6 @@ export async function initTools({
     ...webFetchTool,
     ...bashTool,
     ...webSearchTool,
-    ...memoryReadTool,
-    ...memoryWriteTool,
   } as const;
 
   return tools;
@@ -224,14 +212,6 @@ export async function initCliTools({
     autoAcceptAll: true,
   });
 
-  const memoryReadTool = createMemoryReadTool({
-    sendData: undefined,
-  });
-
-  const memoryWriteTool = createMemoryWriteTool({
-    sendData: undefined,
-  });
-
   const tools = {
     ...readFileTool,
     ...readMultipleFilesTool,
@@ -246,8 +226,6 @@ export async function initCliTools({
     ...webFetchTool,
     ...bashTool,
     ...webSearchTool,
-    ...memoryReadTool,
-    ...memoryWriteTool,
   } as const;
 
   return tools;
