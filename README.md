@@ -52,7 +52,7 @@ Acai is built primarily with **TypeScript** and runs on **Node.js**. Key technol
 ### Prerequisites
 
 **Required:**
-*   Node.js 18.20.0 or higher
+*   Node.js 20 or higher
 *   Git
 *   [Ripgrep](https://github.com/BurntSushi/ripgrep) (`rg` command) - Fast file content searching
 *   [GitHub CLI](https://cli.github.com/) (`gh` command) - Git operations and repository management
