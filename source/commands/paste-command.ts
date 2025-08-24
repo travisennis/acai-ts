@@ -9,6 +9,7 @@ export const pasteCommand = ({
   terminal,
   modelManager,
   promptManager,
+  tokenCounter,
 }: CommandOptions): ReplCommand => {
   return {
     command: "/paste",
@@ -41,16 +42,18 @@ export const pasteCommand = ({
           return;
         }
 
-        promptManager.addContext(
-          formatBlock(
-            clipboardContent,
-            "clipboard",
-            modelManager.getModelMetadata("repl").promptFormat,
-          ),
+        const content = formatBlock(
+          clipboardContent,
+          "clipboard",
+          modelManager.getModelMetadata("repl").promptFormat,
         );
 
+        promptManager.addContext(content);
+
+        const tokenCount = tokenCounter.count(content);
+
         terminal.success(
-          "Clipboard content will be added to your next prompt.",
+          `Clipboard content will be added to your next prompt. (${tokenCount} tokens)"`,
         );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
