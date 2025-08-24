@@ -16,6 +16,7 @@ const openRouterClient = createOpenAICompatible({
 
 const openrouterModels = {
   "deepseek-v3": openRouterClient("deepseek/deepseek-chat-v3-0324"),
+  "deepseek-v3-1": openRouterClient("deepseek/deepseek-chat-v3.1"),
   "deepseek-r1": openRouterClient("deepseek/deepseek-r1-0528"),
   "deepseek-v3-free": openRouterClient("deepseek/deepseek-chat-v3-0324:free"),
   "deepseek-r1-free": openRouterClient("deepseek/deepseek-r1-0528:free"),
@@ -89,6 +90,19 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0, // Assuming free tier or unknown cost
     costPerOutputToken: 0, // Assuming free tier or unknown cost
+    category: "balanced",
+  },
+  "openrouter:deepseek-v3-1": {
+    id: "openrouter:deepseek-v3-1",
+    provider: "openrouter",
+    contextWindow: 163840,
+    maxOutputTokens: 8000,
+    defaultTemperature: 0.3,
+    promptFormat: "bracket",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.0000002,
+    costPerOutputToken: 0.0000008,
     category: "balanced",
   },
   "openrouter:deepseek-r1-free": {
