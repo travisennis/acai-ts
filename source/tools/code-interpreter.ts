@@ -11,6 +11,17 @@ export const CodeInterpreterTool = {
   name: "codeInterpreter" as const,
 };
 
+const toolDescription = `Executes JavaScript code in a separate Node.js process using Node's Permission Model. By default, the child process has no permissions except read/write within the current working directory. The tool returns stdout, stderr, and exitCode. Use console.log/console.error to produce output.
+
+⚠️ **IMPORTANT**: This tool uses ES Modules (ESM) only.
+- Use \`import\` statements, NOT \`require()\`
+- Examples: \`import fs from 'node:fs'\` NOT \`const fs = require('fs')\`
+- Add file extensions for relative imports: \`import { utils } from './utils.js'\`
+
+These scripts are run in the \`${process.cwd}/.acai-ci-tmp\`. Keep this in mind if you intend to import or reference files from this project in your script.
+
+Timeout defaults to 5 seconds and can be extended up to 60 seconds.`;
+
 export const createCodeInterpreterTool = ({
   sendData,
 }: Readonly<{
@@ -18,8 +29,7 @@ export const createCodeInterpreterTool = ({
 }>) => {
   return {
     [CodeInterpreterTool.name]: tool({
-      description:
-        "Executes JavaScript code in a separate Node.js process using Node's Permission Model. By default, the child process has no permissions except read/write within the current working directory. The tool returns stdout, stderr, and exitCode. Use console.log/console.error to produce output. Use ESM and DO NOT not use commonjs-style require calls. Timeout defaults to 5 seconds and can be extended up to 60 seconds.",
+      description: toolDescription,
       inputSchema: z.object({
         code: z.string().describe("JavaScript code to be executed."),
         timeoutSeconds: z
