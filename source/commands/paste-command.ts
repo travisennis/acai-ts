@@ -53,7 +53,7 @@ export const pasteCommand = ({
         const tokenCount = tokenCounter.count(content);
 
         terminal.success(
-          `Clipboard content will be added to your next prompt. (${tokenCount} tokens)"`,
+          `Clipboard content will be added to your next prompt. (${tokenCount} tokens)`,
         );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
