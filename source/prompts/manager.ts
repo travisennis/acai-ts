@@ -87,4 +87,17 @@ export class PromptManager {
     this.clearContext();
     this.prompt = undefined;
   }
+
+  getContextTokenCount(): number {
+    let totalTokens = 0;
+
+    for (const item of this.context) {
+      if (typeof item === "string") {
+        totalTokens += this.tokenCounter.count(item);
+      }
+      // Skip ImagePart items as they don't contain countable text
+    }
+
+    return totalTokens;
+  }
 }

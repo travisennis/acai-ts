@@ -160,7 +160,10 @@ export class Repl {
       const hasAddedContext = promptManager.hasContext();
 
       if (hasAddedContext) {
-        terminal.info("Context will be added to prompt.");
+        const contextTokenCount = promptManager.getContextTokenCount();
+        terminal.info(
+          `Context will be added to prompt. (${contextTokenCount} tokens)`,
+        );
         terminal.lineBreak();
       }
 
