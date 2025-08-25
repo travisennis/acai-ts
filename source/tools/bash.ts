@@ -115,9 +115,6 @@ const ALLOWED_COMMANDS = [
 // Command execution timeout in milliseconds
 const DEFAULT_TIMEOUT = 1.5 * 60 * 1000; // 1.5 minutes
 
-// Initialize command validator with allowed commands
-const commandValidator = new CommandValidation(ALLOWED_COMMANDS);
-
 // Ensure path is within base directory
 function isPathWithinBaseDir(requestedPath: string, baseDir: string): boolean {
   const normalizedRequestedPath = path.normalize(requestedPath);
@@ -125,6 +122,9 @@ function isPathWithinBaseDir(requestedPath: string, baseDir: string): boolean {
 
   return normalizedRequestedPath.startsWith(normalizedBaseDir);
 }
+
+// Initialize command validator with allowed commands
+const commandValidator = new CommandValidation(ALLOWED_COMMANDS);
 
 export const createBashTool = ({
   baseDir,
@@ -145,6 +145,18 @@ export const createBashTool = ({
       description: `Execute bash commands and return their output. Limited to a whitelist of safe commands: ${ALLOWED_COMMANDS.join(", ")}. Commands will only execute within the project directory for security. Always specify absolute paths to avoid errors.`,
       inputSchema: z.object({
         command: z.string().describe("Full CLI command to execute."),
+        args: z
+          .array(z.string())
+          .optional()
+          .describe(
+            "Optional explicit argv array. When provided, the command will be executed without a shell using the provided args.",
+          ),
+        mode: z
+          .enum(["auto", "args", "shell"])
+          .default("auto")
+          .describe(
+            "Execution mode: 'auto' = prefer execFile with argv when safe, 'args' = require argv and run without shell, 'shell' = run via shell.",
+          ),
         cwd: z
           .string()
           .nullable()
@@ -158,23 +170,34 @@ export const createBashTool = ({
             `Command execution timeout in milliseconds. Default: ${DEFAULT_TIMEOUT}ms`,
           ),
       }),
-      execute: async ({ command, cwd, timeout }, { toolCallId }) => {
+      execute: async (
+        { command, args, mode, cwd, timeout },
+        { toolCallId },
+      ) => {
         // Guard against null cwd and timeout
         const safeCwd = cwd == null ? baseDir : cwd;
         const safeTimeout = timeout == null ? DEFAULT_TIMEOUT : timeout;
 
-        sendData?.({
-          event: "tool-init",
-          id: toolCallId,
-          data: `Executing: ${chalk.cyan(command)} in ${chalk.cyan(safeCwd)}`,
-        });
+        const originalCommand = command;
 
-        // Validate command using CommandValidation
-        if (!commandValidator.isValid(command)) {
-          const errorMsg = `Command not allowed. Ensure all sub-commands are in the approved list: ${ALLOWED_COMMANDS.join(", ")} and no unsafe operators (>, <, \`, $()) are used.`;
-          sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
-          return errorMsg;
+        // Helper: POSIX-safe shell quoting for a single arg
+        function shellQuoteArg(arg: string): string {
+          if (arg.length === 0) return "''";
+          // Characters that require quoting
+          if (!/[ \t\n\r`"$\\|&;<>*?()[\]{}]/.test(arg)) return arg;
+          if (!arg.includes("'")) return `'${arg}'`;
+          // Replace single quotes with the POSIX-safe sequence: '\''
+          return `'${arg.replace(/'/g, `'\\''`)}'`;
         }
+
+        function buildQuotedCommandFromTokens(tokens: Token[]): string {
+          return tokens.map((t) => shellQuoteArg(t.unquoted)).join(" ");
+        }
+
+        // Determine tokens for validation
+        const tokensForValidation: Token[] = args
+          ? args.map((a) => ({ raw: a, unquoted: a }))
+          : tokenize(command);
 
         // Validate working directory
         if (!isPathWithinBaseDir(safeCwd, baseDir)) {
@@ -183,14 +206,32 @@ export const createBashTool = ({
           return errorMsg;
         }
 
-        // Validate command arguments for paths outside baseDir
-        const tokens = tokenize(command);
-        for (let i = 0; i < tokens.length; i++) {
-          const token = tokens[i];
+        // Use CommandValidation to decide if shell operators are present and to validate subcommands
+        const isValidWithOperators = commandValidator.isValid(command);
+        const requiresShell = !isValidWithOperators;
+
+        // Validate base command allowed (fallback)
+        const baseCmd = args?.[0] || tokenize(command)[0]?.unquoted || "";
+        if (!ALLOWED_COMMANDS.includes(baseCmd)) {
+          const errorMsg = `Command not allowed. Base command '${baseCmd}' is not in the approved list: ${ALLOWED_COMMANDS.join(", ")}`;
+          sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
+          return errorMsg;
+        }
+
+        // If this command requires shell and we're in auto mode without a terminal, reject and instruct caller
+        if (requiresShell && mode === "auto" && !terminal) {
+          const errorMsg = `Command appears to use shell operators (pipes, redirects, command substitution). In non-interactive mode provide explicit args or set mode='shell' to run via shell.`;
+          sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
+          return errorMsg;
+        }
+
+        // Validate path-like arguments
+        for (let i = 0; i < tokensForValidation.length; i++) {
+          const token = tokensForValidation[i];
           if (token == null) continue;
           const part = token.unquoted;
 
-          if (shouldSkipPathValidation(tokens, i)) {
+          if (shouldSkipPathValidation(tokensForValidation, i)) {
             continue;
           }
 
@@ -231,7 +272,7 @@ export const createBashTool = ({
           }
           terminal.lineBreak();
           terminal.writeln(
-            `${chalk.blue.bold("●")} About to execute command: ${chalk.cyan(command)}`,
+            `${chalk.blue.bold("●")} About to execute command: ${chalk.cyan(originalCommand)}`,
           );
           terminal.writeln(`${chalk.gray("Working directory:")} ${safeCwd}`);
           terminal.lineBreak();
@@ -285,8 +326,83 @@ export const createBashTool = ({
           }
         }
 
+        // Execute according to mode and safety
         try {
-          const result = await executeCommand(command, {
+          // If explicit args provided and mode allows, run without shell
+          if (args && (mode === "args" || mode === "auto")) {
+            sendData?.({
+              event: "tool-init",
+              id: toolCallId,
+              data: `Executing (argv spawn): ${chalk.cyan(baseCmd)} ${chalk.cyan(args.slice(1).join(" "))} in ${chalk.cyan(safeCwd)}`,
+            });
+
+            const result = await executeCommand(
+              [baseCmd, ...(args.slice(1) as string[])],
+              {
+                cwd: safeCwd,
+                timeout: safeTimeout,
+                shell: false,
+                throwOnError: false,
+              },
+            );
+
+            if (result.signal === "SIGTERM") {
+              const timeoutMessage = `Command timed out after ${safeTimeout}ms. This might be because the command is waiting for input.`;
+              sendData?.({
+                event: "tool-error",
+                id: toolCallId,
+                data: timeoutMessage,
+              });
+              return timeoutMessage;
+            }
+
+            const formattedResult = format(result);
+
+            sendData?.({
+              event: "tool-update",
+              id: toolCallId,
+              data: {
+                primary: "Result",
+                secondary: formattedResult.split("\n").slice(-5),
+              },
+            });
+
+            let tokenCount = 0;
+            try {
+              tokenCount = tokenCounter.count(formattedResult);
+            } catch (tokenError) {
+              console.error("Error calculating token count:", tokenError);
+            }
+
+            const maxTokens = (await config.readProjectConfig()).tools
+              .maxTokens;
+            const maxTokenMessage = `Output of command (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Please adjust how you call the command to get back more specific results`;
+
+            const finalResult =
+              tokenCount <= maxTokens ? formattedResult : maxTokenMessage;
+
+            sendData?.({
+              event: "tool-completion",
+              id: toolCallId,
+              data:
+                tokenCount <= maxTokens
+                  ? "Command executed successfully."
+                  : `Output of commmand (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}).`,
+            });
+            return finalResult;
+          }
+
+          // Otherwise, build quoted command and run via shell
+          const tokens = tokenize(command);
+          const quoted = buildQuotedCommandFromTokens(tokens);
+
+          sendData?.({
+            event: "tool-init",
+            id: toolCallId,
+            data: `Executing (shell): ${chalk.cyan(quoted)} in ${chalk.cyan(safeCwd)}`,
+          });
+
+          const result = await executeCommand(quoted, {
             cwd: safeCwd,
             timeout: safeTimeout,
             shell: true,
