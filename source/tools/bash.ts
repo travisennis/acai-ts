@@ -184,7 +184,7 @@ export const createBashTool = ({
         function shellQuoteArg(arg: string): string {
           if (arg.length === 0) return "''";
           // Characters that require quoting
-          if (!/[ \t\n\r`"$\\|&;<>*?()\[\]{}]/.test(arg)) return arg;
+          if (!/[ \t\n\r`"$\\|&;<>*?()[\]{}]/.test(arg)) return arg;
           if (!arg.includes("'")) return `'${arg}'`;
           // Replace single quotes with the POSIX-safe sequence: '\''
           return `'${arg.replace(/'/g, `'\\''`)}'`;
@@ -211,7 +211,7 @@ export const createBashTool = ({
         const requiresShell = !isValidWithOperators;
 
         // Validate base command allowed (fallback)
-        const baseCmd = (args && args[0]) || tokenize(command)[0]?.unquoted || "";
+        const baseCmd = args?.[0] || tokenize(command)[0]?.unquoted || "";
         if (!ALLOWED_COMMANDS.includes(baseCmd)) {
           const errorMsg = `Command not allowed. Base command '${baseCmd}' is not in the approved list: ${ALLOWED_COMMANDS.join(", ")}`;
           sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
