@@ -35,6 +35,7 @@ const openrouterModels = {
   "gpt-5": openRouterClient("openai/gpt-5"),
   "gpt-5-mini": openRouterClient("openai/gpt-5-mini"),
   "gpt-oss-120b": openRouterClient("openai/gpt-oss-120b"),
+  "grok-code-fast-1": openRouterClient("x-ai/grok-code-fast-1"),
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -299,6 +300,19 @@ export const openrouterModelRegistry: {
     costPerInputToken: 0.00000015,
     costPerOutputToken: 0.0000006,
     category: "balanced",
+  },
+  "openrouter:grok-code-fast-1": {
+    id: "openrouter:grok-code-fast-1",
+    provider: "openrouter",
+    contextWindow: 256000,
+    maxOutputTokens: 10000,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.0000002,
+    costPerOutputToken: 0.0000015,
+    category: "fast",
   },
   "openrouter:gpt-oss-120b": {
     id: "openrouter:gpt-oss-120b",
