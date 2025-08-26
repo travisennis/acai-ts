@@ -8,41 +8,53 @@ describe("CommandValidation", () => {
 
   describe("Valid Commands", () => {
     it("allows ls && pwd", () => {
-      assert.strictEqual(validator.isValid("ls && pwd"), true);
+      const result = validator.isValid("ls && pwd");
+      assert.strictEqual(result.isValid, true);
     });
 
     it("allows echo 'hi' || ls", () => {
-      assert.strictEqual(validator.isValid("echo 'hi' || ls"), true);
+      const result = validator.isValid("echo 'hi' || ls");
+      assert.strictEqual(result.isValid, true);
     });
 
     it("allows ls; pwd", () => {
-      assert.strictEqual(validator.isValid("ls; pwd"), true);
+      const result = validator.isValid("ls; pwd");
+      assert.strictEqual(result.isValid, true);
     });
 
     it("allows ls | grep .ts", () => {
-      assert.strictEqual(validator.isValid("ls | grep .ts"), true);
+      const result = validator.isValid("ls | grep .ts");
+      assert.strictEqual(result.isValid, true);
     });
 
     it("allows sleep 1 &", () => {
-      assert.strictEqual(validator.isValid("sleep 1 &"), true);
+      const result = validator.isValid("sleep 1 &");
+      assert.strictEqual(result.isValid, true);
     });
   });
 
   describe("Invalid Commands", () => {
-    it("blocks ls > file (unsafe operator)", () => {
-      assert.strictEqual(validator.isValid("ls > file"), false);
+    it("allows ls > file (redirects are now permitted)", () => {
+      const result = validator.isValid("ls > file");
+      assert.strictEqual(result.isValid, true);
     });
 
     it("blocks echo $(date) (unsafe operator)", () => {
-      assert.strictEqual(validator.isValid("echo $(date)"), false);
+      const result = validator.isValid("echo $(date)");
+      assert.strictEqual(result.isValid, false);
+      assert.ok(result.error?.includes("dangerous patterns"));
     });
 
     it("blocks rm -rf / (disallowed command)", () => {
-      assert.strictEqual(validator.isValid("rm -rf /"), false);
+      const result = validator.isValid("rm -rf /");
+      assert.strictEqual(result.isValid, false);
+      assert.ok(result.error?.includes("not allowed"));
     });
 
     it("blocks empty command", () => {
-      assert.strictEqual(validator.isValid(""), false);
+      const result = validator.isValid("");
+      assert.strictEqual(result.isValid, false);
+      assert.ok(result.error?.includes("cannot be empty"));
     });
   });
 });

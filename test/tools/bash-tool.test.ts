@@ -43,12 +43,12 @@ describe("bash tool path validation for git message flags", () => {
 
   it("rejects absolute path in git add", async () => {
     const res = await run("git add /etc/hosts");
-    assert.ok(res.includes("references path outside"));
+    assert.ok(res.includes("resolves outside the project directory"));
   });
 
   it("rejects commit -F with file outside", async () => {
     const res = await run("git commit -F /tmp/message.txt");
-    assert.ok(res.includes("references path outside"));
+    assert.ok(res.includes("resolves outside the project directory"));
   });
 
   it("handles multiple -m flags", async () => {
