@@ -207,13 +207,13 @@ export const createBashTool = ({
         if (terminal) {
           if (!autoAcceptCommands) {
             await new Promise((resolve) => setTimeout(resolve, 1000));
+            terminal.lineBreak();
+            terminal.writeln(
+              `${chalk.blue.bold("●")} About to execute command: ${chalk.cyan(command)}`,
+            );
+            terminal.writeln(`${chalk.gray("Working directory:")} ${safeCwd}`);
+            terminal.lineBreak();
           }
-          terminal.lineBreak();
-          terminal.writeln(
-            `${chalk.blue.bold("●")} About to execute command: ${chalk.cyan(command)}`,
-          );
-          terminal.writeln(`${chalk.gray("Working directory:")} ${safeCwd}`);
-          terminal.lineBreak();
 
           let userChoice: string;
           if (autoAcceptCommands) {
