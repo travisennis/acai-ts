@@ -480,10 +480,14 @@ function displayToolMessages(messages: Message[], terminal: Terminal) {
       case "tool-error":
         _handleToolErrorMessage(msg.data, terminal);
         break;
-      // 'tool-init' is handled before the loop, so no case needed here.
+      case "tool-init":
+        // 'tool-init' is handled before the loop, so nothing to do here.
+        break;
       default:
         // Optional: Log an unexpected event type for debugging, or do nothing.
-        logger.debug(`Unhandled tool message event: ${msg.event}`);
+        logger.debug(
+          `Unhandled tool message event: ${(msg as { event: string }).event}`,
+        );
         break;
     }
   }
