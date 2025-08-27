@@ -3,9 +3,17 @@
   "version": "0.0.1",
   "description": "An AI assistant for developing software.",
   "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
-    "acai": "dist/index.js"
+    "acai": "dist/index.js",
+    "@travisennis/acai": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "keywords": [
     "cli",
     "ai",
@@ -17,12 +25,13 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc --pretty -p tsconfig.build.json",
-    "clean": "rm -rf ./dist/",
+    "clean": "rm -rf ./dist/ ./tsconfig.build.tsbuildinfo",
     "compile": "tsc --pretty -p tsconfig.json",
     "lint": "biome lint",
     "lint:fix": "biome lint --unsafe --write",
     "lint:staged": "biome lint --error-on-warnings --no-errors-on-unmatched --staged",
     "format:staged": "biome check --staged --formatter-enabled=true --linter-enabled=false --no-errors-on-unmatched",
+    "prepack": "npm run clean && npm run build",
     "prepare": "husky",
     "test": "c8 node --no-warnings --test test/**/*.test.ts",
     "pretest": "npm run compile",
