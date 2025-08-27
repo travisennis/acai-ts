@@ -1,5 +1,7 @@
 Manage the ./ARCHITECTURE.md document for this project. If file doesn't exist create it. If it does exist make sure it is up-to-date and reflects the current state of the project.
 
+When generating the project structure and file descriptions, ignore dot directories (directories starting with '.').
+
 The main header of the document should be Acai Architecture.
 
 Include a Project Structure that is the current directory tree for the entire project.
