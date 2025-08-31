@@ -168,6 +168,139 @@ describe("code-interpreter tool", () => {
     });
   });
 
+  describe("Code type validation", () => {
+    it("detects TypeScript syntax and prevents execution with wrong type", async () => {
+      const tsCode = `
+        interface User { name: string; }
+        const user: User = { name: "test" };
+        console.log(user.name);
+      `;
+
+      const res = await runTool({
+        code: tsCode,
+        type: "JavaScript", // Wrong type
+      });
+
+      assert.equal(res.ok, false);
+      assert.match(
+        String(res.value),
+        /TypeScript syntax.*specified as JavaScript/,
+      );
+      assert.match(String(res.value), /interface/);
+    });
+
+    it("allows TypeScript syntax with correct type", async () => {
+      const tsCode = `
+        interface User { name: string; }
+        const user: User = { name: "test" };
+        console.log(user.name);
+      `;
+
+      const res = await runTool({
+        code: tsCode,
+        type: "Typescript", // Correct type
+      });
+
+      assert.equal(res.ok, true);
+      assert.equal(
+        (
+          res.value as { stdout: string; stderr: string; exitCode: number }
+        ).stdout.trim(),
+        "test",
+      );
+    });
+
+    it("allows plain JavaScript with JavaScript type", async () => {
+      const jsCode = `
+        const user = { name: "test" };
+        console.log(user.name);
+      `;
+
+      const res = await runTool({
+        code: jsCode,
+        type: "JavaScript",
+      });
+
+      assert.equal(res.ok, true);
+      assert.equal(
+        (
+          res.value as { stdout: string; stderr: string; exitCode: number }
+        ).stdout.trim(),
+        "test",
+      );
+    });
+
+    it("detects various TypeScript patterns", async () => {
+      const patterns = [
+        {
+          code: "type Result = { success: boolean };",
+          pattern: "type alias",
+        },
+        {
+          code: "function log<T>(item: T): void {}",
+          pattern: "generics",
+        },
+        {
+          code: "enum Status { Active, Inactive }",
+          pattern: "enum",
+        },
+        {
+          code: "const user: { name: string } = { name: 'test' };",
+          pattern: "type annotations",
+        },
+      ];
+
+      for (const { code, pattern } of patterns) {
+        const res = await runTool({
+          code,
+          type: "JavaScript",
+        });
+
+        assert.equal(res.ok, false);
+        assert.match(String(res.value), new RegExp(pattern));
+      }
+    });
+
+    it("allows JavaScript code with null type (defaults to JavaScript)", async () => {
+      const jsCode = `
+        const message = "Hello, world!";
+        console.log(message);
+      `;
+
+      const res = await runTool({
+        code: jsCode,
+        type: null,
+      });
+
+      assert.equal(res.ok, true);
+      assert.equal(
+        (
+          res.value as { stdout: string; stderr: string; exitCode: number }
+        ).stdout.trim(),
+        "Hello, world!",
+      );
+    });
+
+    it("rejects TypeScript code with null type (defaults to JavaScript)", async () => {
+      const tsCode = `
+        interface Message { text: string; }
+        const msg: Message = { text: "Hello" };
+        console.log(msg.text);
+      `;
+
+      const res = await runTool({
+        code: tsCode,
+        type: null,
+      });
+
+      assert.equal(res.ok, false);
+      assert.match(
+        String(res.value),
+        /TypeScript syntax.*specified as JavaScript/,
+      );
+    });
+  });
+
   // Clean up any test files that might have been created
   after(() => {
     const testFiles = ["ts_test.txt", "tmp_test_file.txt"];
