@@ -269,7 +269,7 @@ export const createBashTool = ({
           const result = await executeCommand(command, {
             cwd: safeCwd,
             timeout: safeTimeout,
-            shell: true,
+            shell: false,
             throwOnError: false,
           });
 
