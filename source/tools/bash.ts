@@ -147,7 +147,7 @@ export const createBashTool = ({
 
   return {
     [BashTool.name]: tool({
-      description: `Execute bash commands and return their output. Limited to a whitelist of safe commands: ${ALLOWED_COMMANDS.join(", ")}. Commands will only execute within the project directory for security. Always specify absolute paths to avoid errors.`,
+      description: `Execute commands without a shell. Restrictions: no pipes (|), redirects (>, >>, <, <<), chaining (&&, ||, ;), background (&), or command substitution (\`...\`, $()). Pass a single allowed base command with quoted args. Compose by running multiple tool calls or using program flags (e.g., rg, jq). Commands execute only within the project directory. Always use absolute paths. Allowed commands: ${ALLOWED_COMMANDS.join(", ")}.`,
       inputSchema: z.object({
         command: z.string().describe("Full CLI command to execute."),
         cwd: z
@@ -269,7 +269,7 @@ export const createBashTool = ({
           const result = await executeCommand(command, {
             cwd: safeCwd,
             timeout: safeTimeout,
-            shell: true,
+            shell: false,
             throwOnError: false,
           });
 

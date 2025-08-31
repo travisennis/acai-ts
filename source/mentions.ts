@@ -107,7 +107,7 @@ async function processFileCommand(context: CommandContext): Promise<string> {
 async function processShellCommand(command: string): Promise<string> {
   try {
     const { stdout, stderr, code } = await executeCommand(command, {
-      shell: true,
+      shell: false,
     });
     if (code === 0) {
       return stdout;

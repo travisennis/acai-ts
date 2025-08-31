@@ -88,10 +88,12 @@ function toolUsage() {
 - Outline multi-step tasks before execution
 
 ### Bash Commands (\`${BashTool.name}\`)
-- Execute bash commands within project directory only
-- Always specify absolute paths to avoid errors
-- You have access to the Github CLI
-- Try to avoid shell commands that are likely to require user interaction (e.g. \`git rebase -i\`). Use non-interactive versions of commands (e.g. \`npm init -y\` instead of \`npm init\`) when available, and otherwise remind the user that interactive shell commands are not supported and may cause hangs until canceled by the user.
+- Shell is disabled. Do NOT use: |, >, >>, <, <<, ;, &&, ||, &, \`...\`, $().
+- Run a single allowed command with quoted args; no command substitution or chaining.
+- Compose multi-step flows via multiple tool calls or program flags (rg, jq, grep options, etc.).
+- For large gh/git messages, prefer --message-file instead of inlining big strings.
+- Commands execute only within the project directory; always use absolute paths.
+- Avoid interactive commands; prefer non-interactive flags (e.g., npm init -y).
 
 ### Code Interpreter (\`${CodeInterpreterTool.name}\`)
 - Executes JavaScript code in a separate Node.js process using Node's Permission Model
