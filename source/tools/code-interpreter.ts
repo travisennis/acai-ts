@@ -11,7 +11,7 @@ export const CodeInterpreterTool = {
   name: "codeInterpreter" as const,
 };
 
-const toolDescription = `Executes JavaScript code in a separate Node.js process using Node's Permission Model. By default, the child process has no permissions except read/write within the current working directory. The tool returns stdout, stderr, and exitCode. Use console.log/console.error to produce output.
+const toolDescription = `Executes JavaScript or Typescript code in a separate Node.js process using Node's Permission Model. By default, the child process has no permissions except read/write within the current working directory. The tool returns stdout, stderr, and exitCode. Use console.log/console.error to produce output.
 
 ⚠️ **IMPORTANT**: This tool uses ES Modules (ESM) only.
 - Use \`import\` statements, NOT \`require()\`
@@ -31,7 +31,13 @@ export const createCodeInterpreterTool = ({
     [CodeInterpreterTool.name]: tool({
       description: toolDescription,
       inputSchema: z.object({
-        code: z.string().describe("JavaScript code to be executed."),
+        code: z
+          .string()
+          .describe("The JavaScript or Typescript code to be executed."),
+        type: z
+          .enum(["JavaScript", "Typescript"])
+          .nullable()
+          .describe("The type of code. Either Javascript or Typescript."),
         timeoutSeconds: z
           .number()
           .int()
@@ -40,7 +46,7 @@ export const createCodeInterpreterTool = ({
           .nullable()
           .describe("Execution timeout in seconds (1-60). Default 5."),
       }),
-      execute: async ({ code, timeoutSeconds }, { toolCallId }) => {
+      execute: async ({ code, type, timeoutSeconds }, { toolCallId }) => {
         const workingDirectory = process.cwd();
 
         try {
@@ -50,13 +56,15 @@ export const createCodeInterpreterTool = ({
             data: "Initializing code interpreter environment",
           });
 
+          const scriptType = (type ?? "JavaScript").toLowerCase();
+
           sendData?.({
             event: "tool-update",
             id: toolCallId,
             data: {
               primary: "Executing...",
               secondary: [
-                `${"`".repeat(3)} javascript\n${code.slice(0, 500)}${"`".repeat(3)}`,
+                `${"`".repeat(3)} ${scriptType}}\n${code.slice(0, 500)}${"`".repeat(3)}`,
               ],
             },
           });
@@ -72,9 +80,10 @@ export const createCodeInterpreterTool = ({
 
           const tmpBase = join(workingDirectory, ".acai-ci-tmp");
           await mkdir(tmpBase, { recursive: true });
+          const ext = type === "JavaScript" ? ".mjs" : ".ts";
           const scriptPath = join(
             tmpBase,
-            `temp_script_${Date.now()}_${randomUUID()}.mjs`,
+            `temp_script_${Date.now()}_${randomUUID()}${ext}`,
           );
 
           await writeFile(scriptPath, code, { encoding: "utf8" });
