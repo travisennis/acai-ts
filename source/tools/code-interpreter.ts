@@ -11,7 +11,12 @@ export const CodeInterpreterTool = {
   name: "codeInterpreter" as const,
 };
 
-const toolDescription = `Executes JavaScript or Typescript code in a separate Node.js process using Node's Permission Model. By default, the child process has no permissions except read/write within the current working directory. The tool returns stdout, stderr, and exitCode. Use console.log/console.error to produce output.
+const toolDescription = `Executes JavaScript or Typescript code in a separate Node.js process using Node's Permission Model. 
+
+⚠️ **IMPORTANT TYPE SELECTION**:
+- Use "JavaScript" for plain JavaScript code (no TypeScript syntax)
+- Use "Typescript" for code containing interfaces, type annotations, generics, etc.
+- Code type is automatically validated before execution
 
 ⚠️ **IMPORTANT**: This tool uses ES Modules (ESM) only.
 - Use \`import\` statements, NOT \`require()\`
@@ -21,6 +26,86 @@ const toolDescription = `Executes JavaScript or Typescript code in a separate No
 These scripts are run in the \`${process.cwd}/.acai-ci-tmp\`. Keep this in mind if you intend to import or reference files from this project in your script.
 
 Timeout defaults to 5 seconds and can be extended up to 60 seconds.`;
+
+/**
+ * Detects if code contains TypeScript syntax patterns
+ */
+function containsTypeScriptSyntax(code: string): boolean {
+  // Common TypeScript patterns that don't exist in JavaScript
+  const tsPatterns = [
+    // Type annotations
+    /:\s*[a-zA-Z]\w*(?:\s*\[])?\s*(?=[,;=)])/g, // Type annotations after variables/parameters (including any, string[], etc.)
+    /:\s*\{[^}]*\}\s*(?=[,;=)])/g, // Object type annotations
+    /:\s*\([^)]*\)\s*=>/g, // Function type annotations
+
+    // Type declarations
+    /^\s*interface\s+\w+/gm, // Interface declarations
+    /^\s*type\s+\w+\s*=/gm, // Type aliases
+    /^\s*enum\s+\w+/gm, // Enum declarations
+
+    // Generic types
+    /<\s*[A-Z]\w*(?:\s*,\s*[A-Z]\w*)*\s*>/g, // Generic type parameters
+    /\w+\s*<\s*[^<>]+?\s*>/g, // Generic type usage
+
+    // TypeScript-specific keywords (in specific contexts)
+    /\b(?:implements|extends\s+[A-Z]\w*|readonly|private|protected|public)\b/g,
+
+    // Utility types
+    /\b(?:Partial|Required|Pick|Omit|Record|Exclude|Extract)\b/g,
+  ];
+
+  return tsPatterns.some((pattern) => pattern.test(code));
+}
+
+/**
+ * Validates that code content matches the specified type
+ */
+function validateCodeTypeMatch(
+  code: string,
+  specifiedType: string | null,
+): string | null {
+  if (!code?.trim()) {
+    return "No code provided";
+  }
+
+  const detectedType = containsTypeScriptSyntax(code)
+    ? "Typescript"
+    : "JavaScript";
+  const expectedType = specifiedType ?? "JavaScript";
+
+  // If TypeScript syntax detected but JavaScript specified
+  if (detectedType === "Typescript" && expectedType === "JavaScript") {
+    return `Code contains TypeScript syntax but is specified as JavaScript. Please either:
+1. Change type to "Typescript", or
+2. Remove TypeScript syntax (interfaces, type annotations, generics, etc.)
+
+Detected TypeScript patterns: ${getTypeScriptPatternsFound(code).join(", ")}`;
+  }
+
+  // If no TypeScript syntax but TypeScript specified (warning, not error)
+  if (detectedType === "JavaScript" && expectedType === "Typescript") {
+    // This is not an error, just potentially unnecessary
+    return null;
+  }
+
+  return null;
+}
+
+/**
+ * Identifies specific TypeScript patterns found in code
+ */
+function getTypeScriptPatternsFound(code: string): string[] {
+  const patterns: string[] = [];
+
+  if (/\binterface\s+\w+/.test(code)) patterns.push("interface");
+  if (/\btype\s+\w+\s*=/.test(code)) patterns.push("type alias");
+  if (/:\s*[a-zA-Z]\w*(?:\s*\[])?\s*(?=[,;=)])/g.test(code))
+    patterns.push("type annotations");
+  if (/<\s*[A-Z]\w*\s*>/.test(code)) patterns.push("generics");
+  if (/\benum\s+\w+/.test(code)) patterns.push("enum");
+
+  return patterns;
+}
 
 export const createCodeInterpreterTool = ({
   sendData,
@@ -50,6 +135,17 @@ export const createCodeInterpreterTool = ({
         const workingDirectory = process.cwd();
 
         try {
+          // Pre-execution validation
+          const validationError = validateCodeTypeMatch(code, type);
+          if (validationError) {
+            sendData?.({
+              event: "tool-error",
+              id: toolCallId,
+              data: validationError,
+            });
+            return validationError;
+          }
+
           sendData?.({
             event: "tool-init",
             id: toolCallId,
