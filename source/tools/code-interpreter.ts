@@ -34,7 +34,7 @@ function containsTypeScriptSyntax(code: string): boolean {
   // Common TypeScript patterns that don't exist in JavaScript
   const tsPatterns = [
     // Type annotations
-    /:\s*[A-Z]\w*\s*(?=[,;=)])/g, // Type annotations after variables/parameters
+    /:\s*[a-zA-Z]\w*(?:\s*\[])?\s*(?=[,;=)])/g, // Type annotations after variables/parameters (including any, string[], etc.)
     /:\s*\{[^}]*\}\s*(?=[,;=)])/g, // Object type annotations
     /:\s*\([^)]*\)\s*=>/g, // Function type annotations
 
@@ -99,7 +99,7 @@ function getTypeScriptPatternsFound(code: string): string[] {
 
   if (/\binterface\s+\w+/.test(code)) patterns.push("interface");
   if (/\btype\s+\w+\s*=/.test(code)) patterns.push("type alias");
-  if (/:\s*[A-Z]\w*\s*(?=[,;=)])/g.test(code))
+  if (/:\s*[a-zA-Z]\w*(?:\s*\[])?\s*(?=[,;=)])/g.test(code))
     patterns.push("type annotations");
   if (/<\s*[A-Z]\w*\s*>/.test(code)) patterns.push("generics");
   if (/\benum\s+\w+/.test(code)) patterns.push("enum");
