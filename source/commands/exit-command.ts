@@ -2,6 +2,7 @@ import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const exitCommand = ({
   messageHistory,
+  terminal,
 }: CommandOptions): ReplCommand => {
   return {
     command: "/exit",
@@ -10,6 +11,7 @@ export const exitCommand = ({
     result: "break" as const,
     getSubCommands: () => Promise.resolve([]),
     execute: async () => {
+      terminal.clear();
       if (!messageHistory.isEmpty()) {
         await messageHistory.save();
       }
