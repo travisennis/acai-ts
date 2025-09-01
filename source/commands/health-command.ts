@@ -57,7 +57,7 @@ export function healthCommand({ terminal }: CommandOptions): ReplCommand {
       const totalCount = envVars.length;
 
       terminal.info(
-        `\nSummary: ${setCount}/${totalCount} environment variables are set`,
+        `Summary: ${setCount}/${totalCount} environment variables are set`,
       );
 
       if (setCount === 0) {
