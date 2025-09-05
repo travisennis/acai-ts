@@ -81,24 +81,28 @@ export function tokenize(input: string): ParseResult<Token[]> {
       return disallow("Command substitution $() is not allowed");
     }
 
-    // Quotes
+    // Quotes - add opening quote to buffer
     if (!inDouble && ch === "'" && !inSingle) {
       inSingle = true;
+      buf += ch;
       i += 1;
       continue;
     }
     if (inSingle && ch === "'") {
       inSingle = false;
+      buf += ch;
       i += 1;
       continue;
     }
     if (!inSingle && ch === '"' && !inDouble) {
       inDouble = true;
+      buf += ch;
       i += 1;
       continue;
     }
     if (inDouble && ch === '"') {
       inDouble = false;
+      buf += ch;
       i += 1;
       continue;
     }
@@ -119,12 +123,18 @@ export function tokenize(input: string): ParseResult<Token[]> {
         i += 4; // length of 2>&1
         continue;
       }
+      let operatorFound = false;
       for (const op of ["||", "&&", ">>", "2>>", "2>", ">", "<", "|", ";"]) {
         if (input.startsWith(op, i)) {
           flushWord();
           tokens.push({ kind: "OP", value: op });
           i += op.length;
+          operatorFound = true;
+          break;
         }
+      }
+      if (operatorFound) {
+        continue;
       }
       if (ch === "&") {
         return disallow("Backgrounding '&' is not allowed");
@@ -508,19 +518,24 @@ export async function execute(
 
       const onStdout = (chunk: Buffer) => {
         if (!outWriter) {
-          if (stdoutAcc.length < opts.maxOutputBytes) {
-            stdoutAcc += chunk.toString("utf8");
+          const chunkStr = chunk.toString("utf8");
+          const remaining = opts.maxOutputBytes - stdoutAcc.length;
+          if (remaining > 0) {
+            stdoutAcc += chunkStr.substring(0, remaining);
           }
         }
       };
       const onStderr = (chunk: Buffer) => {
+        const chunkStr = chunk.toString("utf8");
         if (mergeToStdout && !outWriter) {
-          if (stdoutAcc.length < opts.maxOutputBytes) {
-            stdoutAcc += chunk.toString("utf8");
+          const remaining = opts.maxOutputBytes - stdoutAcc.length;
+          if (remaining > 0) {
+            stdoutAcc += chunkStr.substring(0, remaining);
           }
         } else if (!errWriter) {
-          if (stderrAcc.length < opts.maxOutputBytes) {
-            stderrAcc += chunk.toString("utf8");
+          const remaining = opts.maxOutputBytes - stderrAcc.length;
+          if (remaining > 0) {
+            stderrAcc += chunkStr.substring(0, remaining);
           }
         }
       };

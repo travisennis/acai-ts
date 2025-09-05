@@ -138,7 +138,7 @@ function validatePaths(
 // Initialize command validator with allowed commands
 const commandValidator = new CommandValidation(ALLOWED_COMMANDS);
 
-export const createBashTool = ({
+export const createBashTool = async ({
   baseDir,
   sendData,
   tokenCounter,
@@ -153,13 +153,14 @@ export const createBashTool = ({
 }) => {
   let autoAcceptCommands = autoAcceptAll;
 
-  // Enhanced safe-shell defaults
+  // Read safe-shell config from project config
+  const projectConfig = await config.readProjectConfig();
   const safeShellConfig = {
-    allowPipes: true,
-    allowChaining: true,
-    allowRedirection: true,
-    maxSegments: 6,
-    maxOutputBytes: 2_000_000,
+    allowPipes: projectConfig.tools.bash?.allowPipes ?? true,
+    allowChaining: projectConfig.tools.bash?.allowChaining ?? true,
+    allowRedirection: projectConfig.tools.bash?.allowRedirection ?? true,
+    maxSegments: projectConfig.tools.bash?.maxSegments ?? 6,
+    maxOutputBytes: projectConfig.tools.bash?.maxOutputBytes ?? 2_000_000,
   } as const;
 
   return {
