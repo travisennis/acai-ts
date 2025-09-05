@@ -31,23 +31,36 @@ export const createReadMultipleFilesTool = async ({
       inputSchema: z.object({
         paths: z.array(z.string()),
       }),
-      execute: async ({ paths }, { toolCallId }) => {
+      execute: async ({ paths }, { toolCallId, abortSignal }) => {
+        // Check if execution has been aborted
+        if (abortSignal?.aborted) {
+          throw new Error("Multiple file reading aborted");
+        }
         sendData?.({
           id: toolCallId,
           event: "tool-init",
           data: `Reading files: ${paths.map((p) => chalk.cyan(p)).join(", ")}`,
         });
+        if (abortSignal?.aborted) {
+          throw new Error("Multiple file reading aborted before reading files");
+        }
+
         const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
         const results = await Promise.all(
-          paths.map((filePath) =>
-            readFileAndCountTokens(
+          paths.map((filePath) => {
+            if (abortSignal?.aborted) {
+              throw new Error(
+                "Multiple file reading aborted during file processing",
+              );
+            }
+            return readFileAndCountTokens(
               filePath,
               workingDir,
               allowedDirectory,
               tokenCounter,
               maxTokens,
-            ),
-          ),
+            );
+          }),
         );
         let totalTokens = 0;
         let filesReadCount = 0;

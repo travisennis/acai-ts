@@ -93,13 +93,33 @@ export class Repl {
     });
 
     let prevCb: (() => void) | null = null;
+    let sigintCount = 0;
+    let lastSigintTime = 0;
+    const SigintResetDelay = 1000; // Reset count after 1 second of no SIGINT
 
     while (true) {
       const abortController = new AbortController();
       const { signal } = abortController;
 
       const cb = () => {
-        abortController.abort();
+        const now = Date.now();
+
+        // Reset count if it's been more than the delay since last SIGINT
+        if (now - lastSigintTime > SigintResetDelay) {
+          sigintCount = 0;
+        }
+
+        lastSigintTime = now;
+        sigintCount++;
+
+        if (sigintCount === 1) {
+          abortController.abort();
+          terminal.warn(
+            "Aborting current operation... Press Ctrl+C again to force exit",
+          );
+        } else {
+          process.exit(1);
+        }
       };
 
       if (prevCb) {

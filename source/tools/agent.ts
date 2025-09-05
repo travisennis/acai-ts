@@ -58,6 +58,10 @@ export const createAgentTools = (options: {
       description: getToolDescription(),
       inputSchema: inputSchema,
       execute: async ({ prompt }, { abortSignal, toolCallId }) => {
+        if (abortSignal?.aborted) {
+          throw new Error("Agent execution aborted");
+        }
+
         sendData?.({
           event: "tool-init",
           id: toolCallId,

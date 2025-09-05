@@ -163,7 +163,14 @@ export const createBashTool = ({
             `Command execution timeout in milliseconds. Default: ${DEFAULT_TIMEOUT}ms`,
           ),
       }),
-      execute: async ({ command, cwd, timeout }, { toolCallId }) => {
+      execute: async (
+        { command, cwd, timeout },
+        { toolCallId, abortSignal },
+      ) => {
+        // Check if execution has been aborted
+        if (abortSignal?.aborted) {
+          throw new Error("Command execution aborted");
+        }
         // Guard against null cwd and timeout
         const safeCwd = cwd == null ? baseDir : cwd;
         const safeTimeout = timeout == null ? DEFAULT_TIMEOUT : timeout;
@@ -250,6 +257,9 @@ export const createBashTool = ({
             terminal.lineBreak();
           }
 
+          if (abortSignal?.aborted) {
+            throw new Error("Command execution aborted during user input");
+          }
           if (userChoice === "reject") {
             const reason = await input({ message: "Feedback: " });
             terminal.lineBreak();
@@ -266,6 +276,9 @@ export const createBashTool = ({
 
         // Execute command
         try {
+          if (abortSignal?.aborted) {
+            throw new Error("Command execution aborted before execution");
+          }
           const result = await executeCommand(command, {
             cwd: safeCwd,
             timeout: safeTimeout,

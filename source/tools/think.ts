@@ -26,7 +26,11 @@ export const createThinkTool = (
       inputSchema: z.object({
         thought: z.string().describe("Your thought"),
       }),
-      execute: ({ thought }, { toolCallId }) => {
+      execute: ({ thought }, { toolCallId, abortSignal }) => {
+        // Check if execution has been aborted
+        if (abortSignal?.aborted) {
+          throw new Error("Thinking process aborted");
+        }
         // Replace literal '\\n' with actual newline characters
         const formattedThought = thought.replace(/\\n/g, "\n");
         sendData?.({

@@ -60,18 +60,30 @@ export const createReadFileTool = async ({
           startLine: number | null;
           lineCount: number | null;
         },
-        { toolCallId },
+        { toolCallId, abortSignal },
       ) => {
+        // Check if execution has been aborted
+        if (abortSignal?.aborted) {
+          throw new Error("File reading aborted");
+        }
         sendData?.({
           id: toolCallId,
           event: "tool-init",
           data: `Reading file: ${chalk.cyan(providedPath)}${startLine ? chalk.cyan(`:${startLine}`) : ""}${lineCount ? chalk.cyan(`:${lineCount}`) : ""}`,
         });
         try {
+          if (abortSignal?.aborted) {
+            throw new Error("File reading aborted before path validation");
+          }
+
           const filePath = await validatePath(
             joinWorkingDir(providedPath, workingDir),
             allowedDirectory,
           );
+
+          if (abortSignal?.aborted) {
+            throw new Error("File reading aborted before file read");
+          }
 
           let file = await fs.readFile(filePath, { encoding });
 

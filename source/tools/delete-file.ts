@@ -32,13 +32,21 @@ export const createDeleteFileTool = async ({
       inputSchema: z.object({
         path: z.string().describe("Absolute path to the file to delete"),
       }),
-      execute: async ({ path: userPath }, { toolCallId }) => {
+      execute: async ({ path: userPath }, { toolCallId, abortSignal }) => {
+        // Check if execution has been aborted
+        if (abortSignal?.aborted) {
+          throw new Error("File deletion aborted");
+        }
         sendData?.({
           id: toolCallId,
           event: "tool-init",
           data: `Deleting file: ${chalk.cyan(userPath)}`,
         });
         try {
+          if (abortSignal?.aborted) {
+            throw new Error("File deletion aborted before path validation");
+          }
+
           const filePath = await validatePath(
             joinWorkingDir(userPath, workingDir),
             allowedDirectory,
@@ -63,6 +71,10 @@ export const createDeleteFileTool = async ({
             terminal.lineBreak();
             terminal.writeln("This action cannot be undone.");
             terminal.lineBreak();
+
+            if (abortSignal?.aborted) {
+              throw new Error("File deletion aborted during user input");
+            }
 
             let userChoice: string;
             if (autoAcceptDeletes) {

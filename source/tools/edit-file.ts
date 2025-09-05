@@ -46,13 +46,21 @@ export const createEditFileTool = async ({
           }),
         ),
       }),
-      execute: async ({ path, edits }, { toolCallId }) => {
+      execute: async ({ path, edits }, { toolCallId, abortSignal }) => {
+        // Check if execution has been aborted
+        if (abortSignal?.aborted) {
+          throw new Error("File editing aborted");
+        }
         sendData?.({
           id: toolCallId,
           event: "tool-init",
           data: `Editing file: ${chalk.cyan(path)}`,
         });
         try {
+          if (abortSignal?.aborted) {
+            throw new Error("File editing aborted before path validation");
+          }
+
           const validPath = await validatePath(
             joinWorkingDir(path, workingDir),
             allowedDirectory,
@@ -76,6 +84,10 @@ export const createEditFileTool = async ({
             terminal.display(result);
 
             terminal.lineBreak();
+
+            if (abortSignal?.aborted) {
+              throw new Error("File editing aborted during user input");
+            }
 
             let userChoice: string;
             if (autoAcceptEdits) {

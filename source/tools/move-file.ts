@@ -28,21 +28,44 @@ export const createMoveFileTool = async ({
         source: z.string(),
         destination: z.string(),
       }),
-      execute: async ({ source, destination }, { toolCallId }) => {
+      execute: async ({ source, destination }, { toolCallId, abortSignal }) => {
+        // Check if execution has been aborted
+        if (abortSignal?.aborted) {
+          throw new Error("File move aborted");
+        }
         try {
+          if (abortSignal?.aborted) {
+            throw new Error("File move aborted before path validation");
+          }
+
           sendData?.({
             id: toolCallId,
             event: "tool-init",
             data: `Moving file from ${chalk.cyan(source)} to ${chalk.cyan(destination)}`,
           });
+
+          if (abortSignal?.aborted) {
+            throw new Error("File move aborted during path validation");
+          }
+
           const validSourcePath = await validatePath(
             joinWorkingDir(source, workingDir),
             allowedDirectory,
           );
+
+          if (abortSignal?.aborted) {
+            throw new Error("File move aborted after source validation");
+          }
+
           const validDestPath = await validatePath(
             joinWorkingDir(destination, workingDir),
             allowedDirectory,
           );
+
+          if (abortSignal?.aborted) {
+            throw new Error("File move aborted before file operation");
+          }
+
           await fs.rename(validSourcePath, validDestPath);
           sendData?.({
             id: toolCallId,

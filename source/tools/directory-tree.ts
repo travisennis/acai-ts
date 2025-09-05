@@ -27,14 +27,29 @@ export const createDirectoryTreeTool = async ({
       inputSchema: z.object({
         path: z.string().describe("The path."),
       }),
-      execute: async ({ path }, { toolCallId }) => {
+      execute: async ({ path }, { toolCallId, abortSignal }) => {
+        // Check if execution has been aborted
+        if (abortSignal?.aborted) {
+          throw new Error("Directory tree listing aborted");
+        }
         let validPath: string;
         try {
+          if (abortSignal?.aborted) {
+            throw new Error(
+              "Directory tree listing aborted before path validation",
+            );
+          }
+
           sendData?.({
             id: toolCallId,
             event: "tool-init",
             data: `Listing directory tree: ${chalk.cyan(path)}`,
           });
+
+          if (abortSignal?.aborted) {
+            throw new Error("Directory tree listing aborted during validation");
+          }
+
           validPath = await validatePath(
             joinWorkingDir(path, workingDir),
             allowedDirectory,

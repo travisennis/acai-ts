@@ -131,7 +131,14 @@ export const createCodeInterpreterTool = ({
           .nullable()
           .describe("Execution timeout in seconds (1-60). Default 5."),
       }),
-      execute: async ({ code, type, timeoutSeconds }, { toolCallId }) => {
+      execute: async (
+        { code, type, timeoutSeconds },
+        { toolCallId, abortSignal },
+      ) => {
+        // Check if execution has been aborted
+        if (abortSignal?.aborted) {
+          throw new Error("Code interpretation aborted");
+        }
         const workingDirectory = process.cwd();
 
         try {
@@ -169,6 +176,10 @@ export const createCodeInterpreterTool = ({
             throw new Error("No code provided");
           }
 
+          if (abortSignal?.aborted) {
+            throw new Error("Code interpretation aborted before execution");
+          }
+
           const timeoutMs = Math.min(
             Math.max((timeoutSeconds ?? 5) * 1000, 1000),
             60000,
@@ -202,6 +213,16 @@ export const createCodeInterpreterTool = ({
               NODE_OPTIONS: "",
             } as Record<string, string>),
           });
+
+          // Handle abort signal by killing the child process
+          if (abortSignal) {
+            abortSignal.addEventListener("abort", () => {
+              try {
+                child.kill("SIGKILL");
+              } catch {}
+              throw new Error("Code interpretation aborted during execution");
+            });
+          }
 
           let stdout = "";
           let stderr = "";

@@ -49,14 +49,22 @@ export const createSaveFileTool = async ({
           content: string;
           encoding: z.infer<typeof fileEncodingSchema>;
         },
-        { toolCallId },
+        { toolCallId, abortSignal },
       ) => {
+        // Check if execution has been aborted
+        if (abortSignal?.aborted) {
+          throw new Error("File saving aborted");
+        }
         sendData?.({
           id: toolCallId,
           event: "tool-init",
           data: `Saving file: ${chalk.cyan(userPath)}`,
         });
         try {
+          if (abortSignal?.aborted) {
+            throw new Error("File saving aborted before path validation");
+          }
+
           const filePath = await validatePath(
             joinWorkingDir(userPath, workingDir),
             allowedDirectory,
@@ -72,6 +80,10 @@ export const createSaveFileTool = async ({
             terminal.lineBreak();
             terminal.display(content);
             terminal.lineBreak();
+
+            if (abortSignal?.aborted) {
+              throw new Error("File saving aborted during user input");
+            }
 
             let userChoice: string;
             if (autoAcceptSaves) {

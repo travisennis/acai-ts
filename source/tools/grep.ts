@@ -61,8 +61,12 @@ export const createGrepTool = (
           searchIgnored,
           literal,
         },
-        { toolCallId },
+        { toolCallId, abortSignal },
       ) => {
+        // Check if execution has been aborted
+        if (abortSignal?.aborted) {
+          throw new Error("Grep search aborted");
+        }
         try {
           sendData?.({
             event: "tool-init",
