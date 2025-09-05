@@ -38,10 +38,12 @@ describe("/health command", () => {
 
     // Should have called table method with data
     assert(tables.length > 0);
+    assert(tables[0] !== undefined);
     assert(tables[0].length > 0);
 
     // Check that each row has variable name, status, and description (3 columns)
     const firstRow = tables[0][0];
+    assert(firstRow !== undefined);
     assert(firstRow.length === 3); // Should have 3 columns
     assert(typeof firstRow[0] === "string"); // Variable name
     assert(firstRow[1] === "✓ Set" || firstRow[1] === "✗ Not set"); // Status
@@ -124,7 +126,7 @@ describe("/health command", () => {
     } as unknown as CommandOptions;
 
     // Set an environment variable
-    process.env.OPENAI_API_KEY = "test-key";
+    process.env["OPENAI_API_KEY"] = "test-key";
 
     const cmd = healthCommand(options);
     await cmd.execute([]);
@@ -135,6 +137,6 @@ describe("/health command", () => {
     );
 
     // Clean up
-    delete process.env.OPENAI_API_KEY;
+    delete process.env["OPENAI_API_KEY"];
   });
 });

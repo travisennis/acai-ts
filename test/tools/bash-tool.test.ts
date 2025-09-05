@@ -1,10 +1,20 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { config } from "../../source/config.ts";
+import { TokenCounter } from "../../source/token-utils.ts";
 import { createBashTool } from "../../source/tools/bash.ts";
 
 // Minimal token counter mock
-const tokenCounter = { count: (s: string) => s.length } as const;
+class MockTokenCounter extends TokenCounter {
+  override count(s: string) {
+    return s.length;
+  }
+  override free() {
+    // noop
+  }
+}
+
+const tokenCounter = new MockTokenCounter();
 
 await config.readProjectConfig();
 
