@@ -1,4 +1,4 @@
-Your task it to add a new model to the ./source/model/openrouter-provider.ts.
+Your task it to add a new model to the ./source/models/openrouter-provider.ts.
 
 I want you to accomplish this by writing a javascript script and executing it with the code-interpreter tool.
 
