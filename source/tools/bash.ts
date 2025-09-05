@@ -7,7 +7,6 @@ import { config } from "../config.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import { executeCommand } from "../utils/process.ts";
-import { CommandValidation } from "./command-validation.ts";
 import {
   execute as execGraph,
   parse as parseGraph,
@@ -15,7 +14,8 @@ import {
   tokenize,
   type ValidationContext,
   validate as validateGraph,
-} from "./safe-shell.ts";
+} from "../utils/safe-shell.ts";
+import { CommandValidation } from "./command-validation.ts";
 import type { SendData } from "./types.ts";
 
 export const BashTool = {
