@@ -8,6 +8,14 @@ import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import { executeCommand } from "../utils/process.ts";
 import { CommandValidation } from "./command-validation.ts";
+import {
+  execute as execGraph,
+  parse as parseGraph,
+  type SequenceNode,
+  tokenize,
+  type ValidationContext,
+  validate as validateGraph,
+} from "./safe-shell.ts";
 import type { SendData } from "./types.ts";
 
 export const BashTool = {
@@ -145,9 +153,18 @@ export const createBashTool = ({
 }) => {
   let autoAcceptCommands = autoAcceptAll;
 
+  // Enhanced safe-shell defaults
+  const safeShellConfig = {
+    allowPipes: true,
+    allowChaining: true,
+    allowRedirection: true,
+    maxSegments: 6,
+    maxOutputBytes: 2_000_000,
+  } as const;
+
   return {
     [BashTool.name]: tool({
-      description: `Execute commands without a shell. Restrictions: no pipes (|), redirects (>, >>, <, <<), chaining (&&, ||, ;), background (&), or command substitution (\`...\`, $()). Pass a single allowed base command with quoted args. Compose by running multiple tool calls or using program flags (e.g., rg, jq). Commands execute only within the project directory. Always use absolute paths. Allowed commands: ${ALLOWED_COMMANDS.join(", ")}.`,
+      description: `Execute commands without a shell. Powerful but safe: supports pipes (|), conditional chaining (&&, ||, ;), and redirection (> >> < 2> 2>>) using a sandboxed executor (no command substitution, no backgrounding, no subshells). Commands execute only within the project directory. Always use absolute paths. Allowed commands: ${ALLOWED_COMMANDS.join(", ")}.`,
       inputSchema: z.object({
         command: z.string().describe("Full CLI command to execute."),
         cwd: z
@@ -167,11 +184,9 @@ export const createBashTool = ({
         { command, cwd, timeout },
         { toolCallId, abortSignal },
       ) => {
-        // Check if execution has been aborted
         if (abortSignal?.aborted) {
           throw new Error("Command execution aborted");
         }
-        // Guard against null cwd and timeout
         const safeCwd = cwd == null ? baseDir : cwd;
         const safeTimeout = timeout == null ? DEFAULT_TIMEOUT : timeout;
 
@@ -181,33 +196,69 @@ export const createBashTool = ({
           data: `Executing: ${chalk.cyan(command)} in ${chalk.cyan(safeCwd)}`,
         });
 
-        // Validate working directory
         if (!isPathWithinBaseDir(safeCwd, baseDir)) {
           const errorMsg = `Working directory must be within the project directory: ${baseDir}`;
           sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
           return errorMsg;
         }
 
-        // Validate command using improved validation
-        const commandValidation = commandValidator.isValid(command);
-        if (!commandValidation.isValid) {
-          sendData?.({
-            event: "tool-error",
-            id: toolCallId,
-            data: commandValidation.error ?? "Unknown error.",
-          });
-          return commandValidation.error ?? "Unknown error.";
+        // Parse via safe-shell for enhanced features; fallback to single-command path
+        let useGraph = true;
+        let ast: SequenceNode | null = null;
+        const tokenized = tokenize(command);
+        if (!tokenized.ok) {
+          useGraph = false;
+        } else {
+          const parsed = parseGraph(tokenized.value);
+          if (!parsed.ok) {
+            useGraph = false;
+          } else {
+            ast = parsed.value;
+          }
         }
 
-        // Validate paths
-        const pathValidation = validatePaths(command, baseDir, safeCwd);
-        if (!pathValidation.isValid) {
-          sendData?.({
-            event: "tool-error",
-            id: toolCallId,
-            data: pathValidation.error ?? "Unknown error.",
-          });
-          return pathValidation.error ?? "Unknown error.";
+        if (useGraph && ast) {
+          const validationCtx: ValidationContext = {
+            allowedCommands: ALLOWED_COMMANDS,
+            baseDir,
+            cwd: safeCwd,
+            config: {
+              allowPipes: safeShellConfig.allowPipes,
+              allowChaining: safeShellConfig.allowChaining,
+              allowRedirection: safeShellConfig.allowRedirection,
+              maxSegments: safeShellConfig.maxSegments,
+              maxOutputBytes: safeShellConfig.maxOutputBytes,
+            },
+          };
+          const validated = validateGraph(ast, validationCtx);
+          if (!validated.ok) {
+            sendData?.({
+              event: "tool-error",
+              id: toolCallId,
+              data: validated.error,
+            });
+            return validated.error;
+          }
+        } else {
+          // Strict legacy validation
+          const commandValidation = commandValidator.isValid(command);
+          if (!commandValidation.isValid) {
+            sendData?.({
+              event: "tool-error",
+              id: toolCallId,
+              data: commandValidation.error ?? "Unknown error.",
+            });
+            return commandValidation.error ?? "Unknown error.";
+          }
+          const pathValidation = validatePaths(command, baseDir, safeCwd);
+          if (!pathValidation.isValid) {
+            sendData?.({
+              event: "tool-error",
+              id: toolCallId,
+              data: pathValidation.error ?? "Unknown error.",
+            });
+            return pathValidation.error ?? "Unknown error.";
+          }
         }
 
         // Prompt user for command execution approval (only in interactive mode)
@@ -263,7 +314,6 @@ export const createBashTool = ({
           if (userChoice === "reject") {
             const reason = await input({ message: "Feedback: " });
             terminal.lineBreak();
-
             const rejectionMsg = `Command rejected by user. Reason: ${reason}`;
             sendData?.({
               event: "tool-completion",
@@ -274,29 +324,48 @@ export const createBashTool = ({
           }
         }
 
-        // Execute command
+        // Execute
         try {
           if (abortSignal?.aborted) {
             throw new Error("Command execution aborted before execution");
           }
-          const result = await executeCommand(command, {
-            cwd: safeCwd,
-            timeout: safeTimeout,
-            shell: false,
-            throwOnError: false,
-          });
 
-          if (result.signal === "SIGTERM") {
-            const timeoutMessage = `Command timed out after ${safeTimeout}ms. This might be because the command is waiting for input.`;
-            sendData?.({
-              event: "tool-error",
-              id: toolCallId,
-              data: timeoutMessage,
+          let formattedResult = "";
+          if (useGraph && ast) {
+            const res = await execGraph(ast, {
+              cwd: safeCwd,
+              timeoutMs: safeTimeout,
+              abortSignal,
+              maxOutputBytes: safeShellConfig.maxOutputBytes,
             });
-            return timeoutMessage;
+            if (res.signal === "SIGTERM") {
+              const timeoutMessage = `Command timed out after ${safeTimeout}ms. This might be because the command is waiting for input.`;
+              sendData?.({
+                event: "tool-error",
+                id: toolCallId,
+                data: timeoutMessage,
+              });
+              return timeoutMessage;
+            }
+            formattedResult = `${res.stdout}\n${res.stderr}`;
+          } else {
+            const result = await executeCommand(command, {
+              cwd: safeCwd,
+              timeout: safeTimeout,
+              shell: false,
+              throwOnError: false,
+            });
+            if (result.signal === "SIGTERM") {
+              const timeoutMessage = `Command timed out after ${safeTimeout}ms. This might be because the command is waiting for input.`;
+              sendData?.({
+                event: "tool-error",
+                id: toolCallId,
+                data: timeoutMessage,
+              });
+              return timeoutMessage;
+            }
+            formattedResult = format(result);
           }
-
-          const formattedResult = format(result);
 
           sendData?.({
             event: "tool-update",
@@ -311,12 +380,11 @@ export const createBashTool = ({
           try {
             tokenCount = tokenCounter.count(formattedResult);
           } catch (tokenError) {
-            console.error("Error calculating token count:", tokenError);
+            console.info("Error calculating token count:", tokenError);
           }
 
           const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
           const maxTokenMessage = `Output of command (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Please adjust how you call the command to get back more specific results`;
-
           const finalResult =
             tokenCount <= maxTokens ? formattedResult : maxTokenMessage;
 
@@ -331,11 +399,7 @@ export const createBashTool = ({
           return finalResult;
         } catch (error) {
           const errorMsg = `Command failed: ${(error as Error).message}`;
-          sendData?.({
-            event: "tool-error",
-            id: toolCallId,
-            data: errorMsg,
-          });
+          sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
           return errorMsg;
         }
       },
