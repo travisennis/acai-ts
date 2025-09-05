@@ -91,7 +91,10 @@ function toolUsage() {
 - Shell is disabled. Do NOT use: |, >, >>, <, <<, ;, &&, ||, &, \`...\`, $().
 - Run a single allowed command with quoted args; no command substitution or chaining.
 - Compose multi-step flows via multiple tool calls or program flags (rg, jq, grep options, etc.).
-- For large gh/git messages, prefer --message-file instead of inlining big strings.
+- For large gh/git messages with newlines, use --file with a temporary file:
+  1. Create temp file with ${SaveFileTool.name}
+  2. Use git commit --file /path/to/temp/file
+  3. Clean up with ${DeleteFileTool.name}
 - Commands execute only within the project directory; always use absolute paths.
 - Avoid interactive commands; prefer non-interactive flags (e.g., npm init -y).
 
