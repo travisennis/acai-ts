@@ -36,18 +36,19 @@ test("DirectoryProvider.ensurePath async and sync create directories", async () 
 
 test("ConfigManager.ensureAppConfig creates default app config in HOME", async () => {
   await withTempDir(async (tmpHome) => {
-    const oldHome = process.env.HOME;
+    const oldHome = process.env["HOME"];
     try {
-      process.env.HOME = tmpHome;
+      process.env["HOME"] = tmpHome;
 
       const mgr = new ConfigManager();
       const cfg = await mgr.ensureAppConfig("acai");
 
       // Defaults expected
-      assert.equal((cfg as Record<string, unknown>).notify, true);
+      assert.equal((cfg as Record<string, unknown>)["notify"], true);
       assert.equal(
-        ((cfg as Record<string, unknown>).tools as Record<string, unknown>)
-          .maxTokens as number,
+        ((cfg as Record<string, unknown>)["tools"] as Record<string, unknown>)[
+          "maxTokens"
+        ] as number,
         30000,
       );
 
@@ -56,7 +57,7 @@ test("ConfigManager.ensureAppConfig creates default app config in HOME", async (
       assert.equal(data.notify, true);
       assert.equal(data.tools.maxTokens, 30000);
     } finally {
-      if (oldHome !== undefined) process.env.HOME = oldHome;
+      if (oldHome !== undefined) process.env["HOME"] = oldHome;
     }
   });
 });
@@ -90,9 +91,9 @@ test("writeProjectLearnedRulesFile creates project rules file inside .acai", asy
 
 test("writeCachedLearnedRulesFile and readCachedLearnedRulesFile in HOME", async () => {
   await withTempDir(async (tmpHome) => {
-    const oldHome = process.env.HOME;
+    const oldHome = process.env["HOME"];
     try {
-      process.env.HOME = tmpHome;
+      process.env["HOME"] = tmpHome;
       const mgr = new ConfigManager();
 
       await mgr.writeCachedLearnedRulesFile("cached rules\nabc");
@@ -105,16 +106,16 @@ test("writeCachedLearnedRulesFile and readCachedLearnedRulesFile in HOME", async
       const missing = await mgr.readCachedLearnedRulesFile();
       assert.equal(missing, "");
     } finally {
-      if (oldHome !== undefined) process.env.HOME = oldHome;
+      if (oldHome !== undefined) process.env["HOME"] = oldHome;
     }
   });
 });
 
 test("readAppConfig returns {} for missing and throws for malformed", async () => {
   await withTempDir(async (tmpHome) => {
-    const oldHome = process.env.HOME;
+    const oldHome = process.env["HOME"];
     try {
-      process.env.HOME = tmpHome;
+      process.env["HOME"] = tmpHome;
       const mgr = new ConfigManager();
 
       const missing = await mgr.readAppConfig("nonexistent");
@@ -134,17 +135,17 @@ test("readAppConfig returns {} for missing and throws for malformed", async () =
       }
       assert.equal(threw, true, "readAppConfig should throw on malformed JSON");
     } finally {
-      if (oldHome !== undefined) process.env.HOME = oldHome;
+      if (oldHome !== undefined) process.env["HOME"] = oldHome;
     }
   });
 });
 
 test("readProjectConfig merges app and project configs with project precedence", async () => {
   await withTempDir(async (tmpHome) => {
-    const oldHome = process.env.HOME;
+    const oldHome = process.env["HOME"];
     const oldCwd = process.cwd();
     try {
-      process.env.HOME = tmpHome;
+      process.env["HOME"] = tmpHome;
       const projectDir = path.join(tmpHome, "proj");
       await fs.mkdir(projectDir, { recursive: true });
       process.chdir(projectDir);
@@ -174,7 +175,7 @@ test("readProjectConfig merges app and project configs with project precedence",
       assert.equal(merged.tools.maxTokens, 50);
       assert.equal(merged.notify, false);
     } finally {
-      if (oldHome !== undefined) process.env.HOME = oldHome;
+      if (oldHome !== undefined) process.env["HOME"] = oldHome;
       process.chdir(oldCwd);
     }
   });
