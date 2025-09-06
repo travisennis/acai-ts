@@ -1,7 +1,7 @@
 ### Commands
 
 - **Build:** `npm run build`
-- **Typecheck:** `npm run compile`
+- **Typecheck:** `npm run typecheck`
 - **Lint:** `npm run lint`
 - **Lint Single File:** `npm run lint -- path/to/file.ts`
 - **Format:** `npm run format`
