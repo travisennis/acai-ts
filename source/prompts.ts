@@ -88,9 +88,9 @@ function toolUsage() {
 - Outline multi-step tasks before execution
 
 ### Bash Commands (\`${BashTool.name}\`)
-- Shell is disabled. Do NOT use: |, >, >>, <, <<, ;, &&, ||, &, \`...\`, $().
-- Run a single allowed command with quoted args; no command substitution or chaining.
-- Compose multi-step flows via multiple tool calls or program flags (rg, jq, grep options, etc.).
+- Execute commands with a sandboxed executor that supports pipes (|), conditional chaining (&&, ||, ;), and redirection (> >> < 2> 2>>).
+- Command substitution, backgrounding, and subshells are disabled for security.
+- Run single commands or compose multi-step flows using shell operators.
 - For large gh/git messages with newlines, use --file with a temporary file:
   1. Create temp file with ${SaveFileTool.name}
   2. Use git commit --file /path/to/temp/file
