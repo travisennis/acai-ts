@@ -53,6 +53,11 @@
       "unsafeParameterDecoratorsEnabled": true
     }
   },
+  "json": {
+    "formatter": {
+      "enabled": true
+    }
+  },
   "html": {
     "formatter": {
       "enabled": true
