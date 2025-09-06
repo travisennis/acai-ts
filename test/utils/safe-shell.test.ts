@@ -3,8 +3,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { after, before, describe, it } from "node:test";
 import {
+  type CommandNode,
   execute,
+  type PipelineNode,
   parse,
+  type SequenceNode,
+  type Token,
   tokenize,
   type ValidationContext,
   validate,
@@ -159,7 +163,7 @@ describe("safe-shell tokenizer", () => {
 
 describe("safe-shell parser", () => {
   it("parses simple command", () => {
-    const tokens = [
+    const tokens: Token[] = [
       { kind: "WORD", value: "echo" },
       { kind: "WORD", value: "hello" },
     ];
@@ -173,7 +177,7 @@ describe("safe-shell parser", () => {
   });
 
   it("parses pipeline", () => {
-    const tokens = [
+    const tokens: Token[] = [
       { kind: "WORD", value: "echo" },
       { kind: "WORD", value: "hello" },
       { kind: "OP", value: "|" },
@@ -187,13 +191,13 @@ describe("safe-shell parser", () => {
       assert.equal(res.value.items.length, 1);
       assert.equal(res.value.items[0].commands.length, 3);
       assert.deepEqual(res.value.items[0].commands[0].argv, ["echo", "hello"]);
-      assert.deepEqual(res.value.items[0].commands[1].argv, ["sort"]);
-      assert.deepEqual(res.value.items[0].commands[2].argv, ["uniq"]);
+      assert.deepEqual(res.value.items[0].commands[1]?.argv, ["sort"]);
+      assert.deepEqual(res.value.items[0].commands[2]?.argv, ["uniq"]);
     }
   });
 
   it("parses chained commands", () => {
-    const tokens = [
+    const tokens: Token[] = [
       { kind: "WORD", value: "echo" },
       { kind: "WORD", value: "start" },
       { kind: "OP", value: "&&" },
@@ -209,13 +213,16 @@ describe("safe-shell parser", () => {
       assert.equal(res.value.items.length, 3);
       assert.deepEqual(res.value.connectors, ["&&", "||"]);
       assert.deepEqual(res.value.items[0].commands[0].argv, ["echo", "start"]);
-      assert.deepEqual(res.value.items[1].commands[0].argv, ["echo", "middle"]);
-      assert.deepEqual(res.value.items[2].commands[0].argv, ["echo", "end"]);
+      assert.deepEqual(res.value.items[1]?.commands[0]?.argv, [
+        "echo",
+        "middle",
+      ]);
+      assert.deepEqual(res.value.items[2]?.commands[0]?.argv, ["echo", "end"]);
     }
   });
 
   it("parses commands with redirections", () => {
-    const tokens = [
+    const tokens: Token[] = [
       { kind: "WORD", value: "echo" },
       { kind: "WORD", value: "hello" },
       { kind: "OP", value: ">" },
@@ -239,7 +246,7 @@ describe("safe-shell parser", () => {
   });
 
   it("parses commands with stderr merge", () => {
-    const tokens = [
+    const tokens: Token[] = [
       { kind: "WORD", value: "echo" },
       { kind: "WORD", value: "hello" },
       { kind: "OP", value: "2>&1" },
@@ -253,7 +260,7 @@ describe("safe-shell parser", () => {
   });
 
   it("rejects unexpected tokens", () => {
-    const tokens = [
+    const tokens: Token[] = [
       { kind: "WORD", value: "echo" },
       { kind: "OP", value: "&&" },
       { kind: "OP", value: "||" },
@@ -279,7 +286,7 @@ describe("safe-shell validator", () => {
   };
 
   it("allows valid commands", () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -287,9 +294,9 @@ describe("safe-shell validator", () => {
               argv: ["echo", "hello"],
               redirs: {},
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = validate(ast, baseCtx);
@@ -297,7 +304,7 @@ describe("safe-shell validator", () => {
   });
 
   it("rejects disallowed commands", () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -305,9 +312,9 @@ describe("safe-shell validator", () => {
               argv: ["rm", "-rf", "/"],
               redirs: {},
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = validate(ast, baseCtx);
@@ -316,7 +323,7 @@ describe("safe-shell validator", () => {
   });
 
   it("rejects too many segments", () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -327,9 +334,9 @@ describe("safe-shell validator", () => {
             { argv: ["echo", "5"], redirs: {} },
             { argv: ["echo", "6"], redirs: {} },
             { argv: ["echo", "7"], redirs: {} },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = validate(ast, {
@@ -341,15 +348,15 @@ describe("safe-shell validator", () => {
   });
 
   it("rejects pipes when disabled", () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
             { argv: ["echo", "hello"], redirs: {} },
             { argv: ["sort"], redirs: {} },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = validate(ast, {
@@ -361,11 +368,21 @@ describe("safe-shell validator", () => {
   });
 
   it("rejects chaining when disabled", () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
-        { commands: [{ argv: ["echo", "1"], redirs: {} }] },
-        { commands: [{ argv: ["echo", "2"], redirs: {} }] },
-      ],
+        {
+          commands: [{ argv: ["echo", "1"], redirs: {} }] as [
+            CommandNode,
+            ...CommandNode[],
+          ],
+        },
+        {
+          commands: [{ argv: ["echo", "2"], redirs: {} }] as [
+            CommandNode,
+            ...CommandNode[],
+          ],
+        },
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: ["&&"],
     };
     const res = validate(ast, {
@@ -377,7 +394,7 @@ describe("safe-shell validator", () => {
   });
 
   it("rejects redirections when disabled", () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -385,9 +402,9 @@ describe("safe-shell validator", () => {
               argv: ["echo", "hello"],
               redirs: { stdoutFile: { path: "out.txt", append: false } },
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = validate(ast, {
@@ -399,7 +416,7 @@ describe("safe-shell validator", () => {
   });
 
   it("rejects paths outside base directory", () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -407,9 +424,9 @@ describe("safe-shell validator", () => {
               argv: ["cat", "/etc/passwd"],
               redirs: {},
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = validate(ast, baseCtx);
@@ -418,7 +435,7 @@ describe("safe-shell validator", () => {
   });
 
   it("rejects redirection paths outside base directory", () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -426,9 +443,9 @@ describe("safe-shell validator", () => {
               argv: ["echo", "hello"],
               redirs: { stdoutFile: { path: "/etc/out.txt", append: false } },
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = validate(ast, baseCtx);
@@ -437,7 +454,7 @@ describe("safe-shell validator", () => {
   });
 
   it("allows paths within base directory", () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -445,9 +462,9 @@ describe("safe-shell validator", () => {
               argv: ["cat", "file.txt"],
               redirs: {},
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = validate(ast, baseCtx);
@@ -455,7 +472,7 @@ describe("safe-shell validator", () => {
   });
 
   it("allows relative paths within base directory", () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -463,9 +480,9 @@ describe("safe-shell validator", () => {
               argv: ["cat", "./file.txt"],
               redirs: {},
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = validate(ast, baseCtx);
@@ -473,7 +490,7 @@ describe("safe-shell validator", () => {
   });
 
   it("ignores URLs", () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -481,9 +498,9 @@ describe("safe-shell validator", () => {
               argv: ["echo", "https://example.com/path"],
               redirs: {},
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = validate(ast, baseCtx);
@@ -491,7 +508,7 @@ describe("safe-shell validator", () => {
   });
 
   it("ignores options", () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -499,9 +516,9 @@ describe("safe-shell validator", () => {
               argv: ["find", ".", "-type", "f"],
               redirs: {},
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = validate(ast, baseCtx);
@@ -523,7 +540,7 @@ describe("safe-shell executor", () => {
   });
 
   it("executes simple command", async () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -531,9 +548,9 @@ describe("safe-shell executor", () => {
               argv: ["echo", "hello world"],
               redirs: {},
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = await execute(ast, {
@@ -546,16 +563,16 @@ describe("safe-shell executor", () => {
   });
 
   it("executes pipeline", async () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
             { argv: ["echo", "hello\nworld\nhello"], redirs: {} },
             { argv: ["sort"], redirs: {} },
             { argv: ["uniq"], redirs: {} },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = await execute(ast, {
@@ -568,11 +585,21 @@ describe("safe-shell executor", () => {
   });
 
   it("handles && chaining (success case)", async () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
-        { commands: [{ argv: ["echo", "first"], redirs: {} }] },
-        { commands: [{ argv: ["echo", "second"], redirs: {} }] },
-      ],
+        {
+          commands: [{ argv: ["echo", "first"], redirs: {} }] as [
+            CommandNode,
+            ...CommandNode[],
+          ],
+        },
+        {
+          commands: [{ argv: ["echo", "second"], redirs: {} }] as [
+            CommandNode,
+            ...CommandNode[],
+          ],
+        },
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: ["&&"],
     };
     const res = await execute(ast, {
@@ -585,11 +612,21 @@ describe("safe-shell executor", () => {
   });
 
   it("handles && chaining (failure case)", async () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
-        { commands: [{ argv: ["false"], redirs: {} }] },
-        { commands: [{ argv: ["echo", "should not run"], redirs: {} }] },
-      ],
+        {
+          commands: [{ argv: ["false"], redirs: {} }] as [
+            CommandNode,
+            ...CommandNode[],
+          ],
+        },
+        {
+          commands: [{ argv: ["echo", "should not run"], redirs: {} }] as [
+            CommandNode,
+            ...CommandNode[],
+          ],
+        },
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: ["&&"],
     };
     const res = await execute(ast, {
@@ -602,11 +639,21 @@ describe("safe-shell executor", () => {
   });
 
   it("handles || chaining (success case)", async () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
-        { commands: [{ argv: ["true"], redirs: {} }] },
-        { commands: [{ argv: ["echo", "should not run"], redirs: {} }] },
-      ],
+        {
+          commands: [{ argv: ["true"], redirs: {} }] as [
+            CommandNode,
+            ...CommandNode[],
+          ],
+        },
+        {
+          commands: [{ argv: ["echo", "should not run"], redirs: {} }] as [
+            CommandNode,
+            ...CommandNode[],
+          ],
+        },
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: ["||"],
     };
     const res = await execute(ast, {
@@ -619,11 +666,21 @@ describe("safe-shell executor", () => {
   });
 
   it("handles || chaining (failure case)", async () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
-        { commands: [{ argv: ["false"], redirs: {} }] },
-        { commands: [{ argv: ["echo", "fallback"], redirs: {} }] },
-      ],
+        {
+          commands: [{ argv: ["false"], redirs: {} }] as [
+            CommandNode,
+            ...CommandNode[],
+          ],
+        },
+        {
+          commands: [{ argv: ["echo", "fallback"], redirs: {} }] as [
+            CommandNode,
+            ...CommandNode[],
+          ],
+        },
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: ["||"],
     };
     const res = await execute(ast, {
@@ -636,7 +693,7 @@ describe("safe-shell executor", () => {
   });
 
   it("handles input redirection", async () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -644,9 +701,9 @@ describe("safe-shell executor", () => {
               argv: ["sort"],
               redirs: { stdinFile: "input.txt" },
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = await execute(ast, {
@@ -659,7 +716,7 @@ describe("safe-shell executor", () => {
   });
 
   it("handles output redirection", async () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -667,9 +724,9 @@ describe("safe-shell executor", () => {
               argv: ["echo", "test output"],
               redirs: { stdoutFile: { path: "output.txt", append: false } },
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = await execute(ast, {
@@ -683,7 +740,7 @@ describe("safe-shell executor", () => {
   });
 
   it("handles append redirection", async () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -691,9 +748,9 @@ describe("safe-shell executor", () => {
               argv: ["echo", "first"],
               redirs: { stdoutFile: { path: "append.txt", append: false } },
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     await execute(ast, {
@@ -702,7 +759,7 @@ describe("safe-shell executor", () => {
       maxOutputBytes: 1000,
     });
 
-    const ast2 = {
+    const ast2: SequenceNode = {
       items: [
         {
           commands: [
@@ -710,9 +767,9 @@ describe("safe-shell executor", () => {
               argv: ["echo", "second"],
               redirs: { stdoutFile: { path: "append.txt", append: true } },
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     await execute(ast2, {
@@ -726,7 +783,7 @@ describe("safe-shell executor", () => {
   });
 
   it("handles stderr redirection", async () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -734,9 +791,9 @@ describe("safe-shell executor", () => {
               argv: ["sh", "-c", "echo error >&2"],
               redirs: { stderrFile: { path: "stderr.txt", append: false } },
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = await execute(ast, {
@@ -750,7 +807,7 @@ describe("safe-shell executor", () => {
   });
 
   it("handles stderr merge to stdout", async () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -758,9 +815,9 @@ describe("safe-shell executor", () => {
               argv: ["sh", "-c", "echo stdout; echo stderr >&2"],
               redirs: { mergeStderrToStdout: true },
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = await execute(ast, {
@@ -774,7 +831,7 @@ describe("safe-shell executor", () => {
   });
 
   it("handles timeouts", async () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -782,9 +839,9 @@ describe("safe-shell executor", () => {
               argv: ["sleep", "10"],
               redirs: {},
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = await execute(ast, {
@@ -797,7 +854,7 @@ describe("safe-shell executor", () => {
   });
 
   it("respects output byte limits", async () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -809,9 +866,9 @@ describe("safe-shell executor", () => {
               ],
               redirs: {},
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = await execute(ast, {
@@ -824,7 +881,7 @@ describe("safe-shell executor", () => {
   });
 
   it("handles command failures", async () => {
-    const ast = {
+    const ast: SequenceNode = {
       items: [
         {
           commands: [
@@ -832,9 +889,9 @@ describe("safe-shell executor", () => {
               argv: ["false"],
               redirs: {},
             },
-          ],
+          ] as [CommandNode, ...CommandNode[]],
         },
-      ],
+      ] as [PipelineNode, ...PipelineNode[]],
       connectors: [],
     };
     const res = await execute(ast, {

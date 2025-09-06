@@ -46,8 +46,8 @@ export type ParseResult<T> =
 
 // Tokenizer --------------------------------------------------------------
 
-type TokKind = "WORD" | "OP";
-interface Token {
+export type TokKind = "WORD" | "OP";
+export interface Token {
   kind: TokKind;
   value: string;
 }
