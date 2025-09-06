@@ -182,6 +182,13 @@ export class ConfigManager {
         },
         tools: {
           maxTokens: 30000,
+          bash: {
+            allowPipes: true,
+            allowChaining: true,
+            allowRedirection: true,
+            maxSegments: 6,
+            maxOutputBytes: 2_000_000,
+          },
         },
         notify: true,
       };
@@ -211,9 +218,34 @@ const ProjectConfigSchema = z.object({
   tools: z
     .object({
       maxTokens: z.number().default(30000),
+      bash: z
+        .object({
+          allowPipes: z.boolean().default(true),
+          allowChaining: z.boolean().default(true),
+          allowRedirection: z.boolean().default(true),
+          maxSegments: z.number().default(6),
+          maxOutputBytes: z.number().default(2_000_000),
+        })
+        .optional()
+        .default({
+          allowPipes: true,
+          allowChaining: true,
+          allowRedirection: true,
+          maxSegments: 6,
+          maxOutputBytes: 2_000_000,
+        }),
     })
     .optional()
-    .default({ maxTokens: 30000 }),
+    .default({
+      maxTokens: 30000,
+      bash: {
+        allowPipes: true,
+        allowChaining: true,
+        allowRedirection: true,
+        maxSegments: 6,
+        maxOutputBytes: 2_000_000,
+      },
+    }),
   notify: z.boolean().optional().default(true),
 });
 

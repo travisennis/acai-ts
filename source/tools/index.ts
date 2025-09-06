@@ -107,7 +107,7 @@ export async function initTools({
     tokenCounter,
   });
 
-  const bashTool = createBashTool({
+  const bashTool = await createBashTool({
     baseDir: process.cwd(),
     sendData: sendDataFn,
     tokenCounter,
@@ -204,7 +204,7 @@ export async function initCliTools({
     tokenCounter,
   });
 
-  const bashTool = createBashTool({
+  const bashTool = await createBashTool({
     baseDir: process.cwd(),
     sendData: undefined,
     tokenCounter,

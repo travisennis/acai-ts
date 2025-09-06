@@ -20,8 +20,8 @@ await config.readProjectConfig();
 
 const baseDir = process.cwd();
 
-describe("bash tool path validation for git message flags", () => {
-  const { bash } = createBashTool({
+describe("bash tool path validation for git message flags", async () => {
+  const { bash } = await createBashTool({
     baseDir,
     tokenCounter,
     autoAcceptAll: true,
