@@ -32,7 +32,9 @@ export const createEditFileTool = async ({
       description:
         "Make line-based edits to a text file. Each edit replaces exact line sequences " +
         "with new content. Returns a git-style diff showing the changes made. " +
-        "Only works within allowed directories.",
+        "Only works within allowed directories. " +
+        "Note: Special characters in oldText must be properly escaped for JSON (e.g., backticks as \\`...\\`). " +
+        "Multi-line strings require exact character-by-character matching including whitespace.",
       inputSchema: z.object({
         path: z.string().describe("The path of the file to edit."),
         edits: z.array(
@@ -40,7 +42,9 @@ export const createEditFileTool = async ({
             oldText: z
               .string()
               .describe(
-                "Text to search for - must match exactly and enough context must be provided to uniquely match the target text",
+                "Text to search for - must match exactly and enough context must be provided to uniquely match the target text. " +
+                  "Special characters require JSON escaping: backticks (\\`...\\`), quotes, backslashes. " +
+                  "For multi-line content, include exact newlines and indentation.",
               ),
             newText: z.string().describe("Text to replace with"),
           }),
