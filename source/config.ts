@@ -234,6 +234,16 @@ const ProjectConfigSchema = z.object({
           maxSegments: 6,
           maxOutputBytes: 2_000_000,
         }),
+      dynamicTools: z
+        .object({
+          enabled: z.boolean().default(true),
+          maxTools: z.number().default(10),
+        })
+        .optional()
+        .default({
+          enabled: true,
+          maxTools: 10,
+        }),
     })
     .optional()
     .default({
@@ -244,6 +254,10 @@ const ProjectConfigSchema = z.object({
         allowRedirection: true,
         maxSegments: 6,
         maxOutputBytes: 2_000_000,
+      },
+      dynamicTools: {
+        enabled: true,
+        maxTools: 10,
       },
     }),
   notify: z.boolean().optional().default(true),

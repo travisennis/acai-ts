@@ -7,6 +7,7 @@ import { createBashTool } from "./bash.ts";
 import { createCodeInterpreterTool } from "./code-interpreter.ts";
 import { createDeleteFileTool } from "./delete-file.ts";
 import { createDirectoryTreeTool } from "./directory-tree.ts";
+import { loadDynamicTools } from "./dynamic-tool-loader.ts";
 import { createEditFileTool } from "./edit-file.ts";
 import { createGrepTool } from "./grep.ts";
 import { createMoveFileTool } from "./move-file.ts";
@@ -115,6 +116,11 @@ export async function initTools({
     autoAcceptAll,
   });
 
+  const dynamicTools = await loadDynamicTools({
+    baseDir: process.cwd(),
+    sendData: sendDataFn,
+  });
+
   const tools = {
     ...readFileTool,
     ...readMultipleFilesTool,
@@ -129,6 +135,7 @@ export async function initTools({
     ...webFetchTool,
     ...bashTool,
     ...webSearchTool,
+    ...dynamicTools,
   } as const;
 
   return tools;
@@ -212,6 +219,11 @@ export async function initCliTools({
     autoAcceptAll: true,
   });
 
+  const dynamicTools = await loadDynamicTools({
+    baseDir: process.cwd(),
+    sendData: undefined,
+  });
+
   const tools = {
     ...readFileTool,
     ...readMultipleFilesTool,
@@ -226,6 +238,7 @@ export async function initCliTools({
     ...webFetchTool,
     ...bashTool,
     ...webSearchTool,
+    ...dynamicTools,
   } as const;
 
   return tools;
