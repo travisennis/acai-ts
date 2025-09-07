@@ -19,9 +19,11 @@ import { healthCommand } from "./health-command.ts";
 import { helpCommand } from "./help-command.ts";
 import { initCommand } from "./init-command.ts";
 import { lastLogCommand } from "./last-log-command.ts";
+import { listToolsCommand } from "./list-tools-command.ts";
 import { modelCommand } from "./model-command.ts";
 import { pasteCommand } from "./paste-command.ts";
 import { promptCommand } from "./prompt-command.ts";
+import { reloadToolsCommand } from "./reload-tools-command.ts";
 import { resetCommand } from "./reset-command.ts";
 import { rulesCommand } from "./rules-command.ts";
 import { saveCommand } from "./save-command.ts";
@@ -95,6 +97,8 @@ export class CommandManager {
       generateRulesCommand(options),
       applicationLogCommand(options),
       copyCommand(options),
+      listToolsCommand(options),
+      reloadToolsCommand(options),
     ];
 
     // Add help command with access to all commands
