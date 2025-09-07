@@ -48,6 +48,7 @@
     "@ai-sdk/anthropic": "^2.0.12",
     "@ai-sdk/deepseek": "^1.0.15",
     "@ai-sdk/google": "^2.0.12",
+    "@ai-sdk/groq": "^2.0.17",
     "@ai-sdk/openai": "^2.0.24",
     "@ai-sdk/openai-compatible": "^1.0.15",
     "@crosscopy/clipboard": "^0.2.8",
