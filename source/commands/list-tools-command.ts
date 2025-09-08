@@ -10,7 +10,6 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
     getSubCommands: async () => [],
     async execute(_args: string[]) {
       const { terminal } = options;
-      terminal.writeln("Loading tools...");
 
       try {
         const tools = await initTools({
@@ -29,6 +28,7 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
         const toolNames = Object.keys({ ...tools, ...agentTools }).sort();
 
         terminal.writeln("Available tools:");
+        terminal.lineBreak();
 
         // Separate static and dynamic tools
         const staticTools = [];

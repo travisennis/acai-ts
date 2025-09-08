@@ -240,7 +240,6 @@ For a list of available commands, type `/help` within the REPL.
 - `/edit <path> "<change description>"` - Edit a file with AI assistance
 - `/copy` - Copy the last assistant response to the system clipboard
 - `/list-tools` or `/lt` - List all available static and dynamic tools
-- `/reload-tools` or `/rt` - Rescan dynamic tools
 
 Clipboard notes:
 - macOS: uses `pbcopy`
@@ -297,16 +296,19 @@ Create `./.acai/tools/run-tests.js`:
 const { spawn } = require('node:child_process');
 
 if (process.env.TOOL_ACTION === 'describe') {
-  console.log(`
-name: run-tests
-description: Run tests in a project workspace with proper output formatting
-parameters:
-  - name: dir
-    type: string
-    description: the workspace directory to run tests in
-    required: false
-    default: "."
-  `);
+  console.log(JSON.stringify({
+    name: 'run-tests',
+    description: 'Run tests in the specified directory',
+    parameters: [
+      {
+        name: 'dir',
+        type: 'string',
+        description: 'Directory to run tests in (default: current directory)',
+        required: false,
+        default: '.'
+      }
+    ]
+  }, null, 2));
   process.exit(0);
 }
 
@@ -335,7 +337,7 @@ if (process.env.TOOL_ACTION === 'execute') {
 
 ### Loading Tools
 
-Dynamic tools are loaded automatically on startup. Use `/reload-tools` to rescan without restarting.
+Dynamic tools are loaded automatically on each user input.
 
 For more details, see the implementation in `source/tools/dynamic-tool-loader.ts`.
 
