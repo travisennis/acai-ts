@@ -14,7 +14,7 @@ Acai is a powerful **AI-driven command-line interface (CLI) tool** designed to a
 *   **Codebase Interaction:** Read, edit, and navigate files; search code; and understand project structure.
 *   **Git Integration:** Generate conventional commits, review pull requests, and manage local changes.
 *   **Extensible Tooling:** Utilizes a suite of internal tools (e.g., `bash`, `codeInterpreter`, `webSearch`) to perform actions.
-*   **Multi-Model Support:** Seamlessly switch between various AI providers (e.g., OpenAI, Google, Anthropic, DeepSeek, OpenRouter).
+*   **Multi-Model Support:** Seamlessly switch between various AI providers (e.g., OpenAI, Google, Anthropic, DeepSeek, Groq, OpenRouter).
 *   **Context Management:** Automatically incorporates relevant file content, clipboard data, and conversation history into AI prompts.
 *   **Configurable & Learnable:** Customize behavior through project-specific rules and learn from user corrections.
 
@@ -38,7 +38,7 @@ Acai is built primarily with **TypeScript** and runs on **Node.js**. Key technol
 
 *   **TypeScript:** For type-safe and scalable code.
 *   **Node.js:** The JavaScript runtime environment.
-*   **AI SDK (`@ai-sdk/*`):** For integrating with various Large Language Models (LLMs) like OpenAI, Google Gemini, Anthropic, DeepSeek, and OpenRouter.
+*   **AI SDK (`@ai-sdk/*`):** For integrating with various Large Language Models (LLMs) like OpenAI, Google Gemini, Anthropic, DeepSeek, Groq, and OpenRouter.
 *   **Tree-sitter:** For robust and efficient code parsing and syntax analysis across multiple programming languages (TypeScript, JavaScript, Java, Python).
 *   **`chalk`, `ora`, `log-update`:** For rich and interactive terminal output.
 *   **`@inquirer/prompts`:** For interactive prompts; CLI args parsed with Node's `util.parseArgs`.
@@ -123,6 +123,9 @@ GOOGLE_GENERATIVE_AI_API_KEY=your_google_api_key_here
 # DeepSeek
 DEEPSEEK_API_KEY=your_deepseek_api_key_here
 
+# Groq (Kimi models)
+GROQ_API_KEY=your_groq_api_key_here
+
 # X.AI (Grok models)
 X_AI_API_KEY=your_xai_api_key_here
 # Alternative name also supported:
@@ -160,6 +163,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 # Optional: Additional providers
 GOOGLE_GENERATIVE_AI_API_KEY=...
+GROQ_API_KEY=...
 OPENROUTER_API_KEY=sk-or-...
 
 # Optional: Web services (fallbacks available if not provided)

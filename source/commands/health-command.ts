@@ -17,6 +17,7 @@ export function healthCommand({ terminal }: CommandOptions): ReplCommand {
           description: "Google (Gemini models)",
         },
         { name: "DEEPSEEK_API_KEY", description: "DeepSeek" },
+        { name: "GROQ_API_KEY", description: "Groq (Kimi models)" },
         { name: "X_AI_API_KEY", description: "X.AI (Grok models)" },
         { name: "XAI_API_KEY", description: "X.AI (Grok models - alt)" },
         {
