@@ -17,6 +17,11 @@ import {
   googleProvider,
 } from "./google-provider.ts";
 import {
+  groqModelNames,
+  groqModelRegistry,
+  groqProvider,
+} from "./groq-provider.ts";
+import {
   openaiModelNames,
   openaiModelRegistry,
   openaiProvider,
@@ -36,6 +41,7 @@ export const providers = [
   "anthropic",
   "openai",
   "google",
+  "groq",
   "deepseek",
   "openrouter",
   "xai",
@@ -47,6 +53,7 @@ const registry = createProviderRegistry({
   ...anthropicProvider,
   ...deepseekProvider,
   ...googleProvider,
+  ...groqProvider,
   ...openaiProvider,
   ...openrouterProvider,
   ...xaiProvider,
@@ -56,6 +63,7 @@ export const models = [
   ...anthropicModelNames,
   ...openaiModelNames,
   ...googleModelNames,
+  ...groqModelNames,
   ...deepseekModelNames,
   ...openrouterModelNames,
   ...xaiModelNames,
@@ -67,6 +75,7 @@ export type ModelName =
   | (`openai:${string}` & {})
   | (`anthropic:${string}` & {})
   | (`google:${string}` & {})
+  | (`groq:${string}` & {})
   | (`deepseek:${string}` & {})
   | (`openrouter:${string}` & {});
 
@@ -78,6 +87,7 @@ export function isSupportedModel(model: unknown): model is ModelName {
         model.startsWith("anthropic:") ||
         model.startsWith("openai:") ||
         model.startsWith("google:") ||
+        model.startsWith("groq:") ||
         model.startsWith("xai:") ||
         model.startsWith("deepseek:")))
   );
@@ -108,6 +118,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   ...anthropicModelRegistry,
   ...openaiModelRegistry,
   ...googleModelRegistry,
+  ...groqModelRegistry,
   ...deepseekModelRegistry,
   ...openrouterModelRegistry,
   ...xaiModelRegistry,
@@ -124,6 +135,7 @@ export function getModelsByProvider(): Record<ModelProvider, ModelMetadata[]> {
     anthropic: [],
     openai: [],
     google: [],
+    groq: [],
     deepseek: [],
     openrouter: [],
     xai: [],
