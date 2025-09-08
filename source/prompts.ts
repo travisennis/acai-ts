@@ -91,9 +91,9 @@ function toolUsage() {
 - Execute commands with a sandboxed executor that supports pipes (|), conditional chaining (&&, ||, ;), and redirection (> >> < 2> 2>>).
 - Command substitution, backgrounding, and subshells are disabled for security.
 - Run single commands or compose multi-step flows using shell operators.
-- For large gh/git messages with newlines, use --file with a temporary file:
-  1. Create temp file with ${SaveFileTool.name}
-  2. Use git commit --file /path/to/temp/file
+- For large gh/git messages with newlines:
+  1. Create temp file with ${SaveFileTool.name} in the project's .tmp directory
+  2. Use git commit --file path/to/temp/file or gh pr create --title "Title of PR" --body-file path/to/temp/file
   3. Clean up with ${DeleteFileTool.name}
 - Commands execute only within the project directory; always use absolute paths.
 - Avoid interactive commands; prefer non-interactive flags (e.g., npm init -y).

@@ -64,3 +64,4 @@ dist
 .scratchpad
 .ai
 .acai-ci-tmp
+.tmp
