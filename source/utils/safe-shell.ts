@@ -384,6 +384,17 @@ export function validate(
 }
 
 // Execution --------------------------------------------------------------
+// Strip outer quotes from arguments since spawn() doesn't need shell-style quote processing
+function stripOuterQuotes(arg: string): string {
+  if (arg.length >= 2) {
+    const first = arg[0];
+    const last = arg[arg.length - 1];
+    if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
+      return arg.slice(1, -1);
+    }
+  }
+  return arg;
+}
 
 export interface ExecOptions {
   cwd: string;
@@ -440,8 +451,10 @@ export async function execute(
     for (let j = 0; j < pipe.commands.length; j++) {
       const cmd = pipe.commands[j] as CommandNode;
       const [exe, ...args] = cmd.argv;
+      // Strip outer quotes from arguments since spawn() doesn't process shell quotes
+      const strippedArgs = args.map(stripOuterQuotes);
       const stdio: ("pipe" | "ignore")[] = ["pipe", "pipe", "pipe"];
-      const p = spawn(exe, args, {
+      const p = spawn(exe, strippedArgs, {
         cwd: opts.cwd,
         stdio,
         signal: opts.abortSignal,
