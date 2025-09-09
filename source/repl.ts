@@ -9,7 +9,6 @@ import {
   type ToolCallRepairFunction,
   type ToolSet,
 } from "ai";
-import chalk, { type ChalkInstance } from "chalk";
 import type z from "zod";
 import type { CommandManager } from "./commands/manager.ts";
 import { config as configManager } from "./config.ts";
@@ -21,6 +20,7 @@ import type { ModelManager } from "./models/manager.js";
 import type { PromptManager } from "./prompts/manager.ts";
 import { systemPrompt } from "./prompts.ts";
 import { ReplPrompt } from "./repl-prompt.ts";
+import chalk, { type ChalkInstance } from "./terminal/chalk.ts";
 import type { Terminal } from "./terminal/index.ts";
 import { isMarkdown } from "./terminal/markdown-utils.ts";
 import type { TokenTracker } from "./token-tracker.ts";

@@ -1,8 +1,8 @@
 import { generateText, stepCountIs, tool } from "ai";
-import chalk from "chalk";
 import { z } from "zod";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
+import chalk from "../terminal/chalk.ts";
 import type { TokenTracker } from "../token-tracker.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import { BashTool } from "./bash.ts";

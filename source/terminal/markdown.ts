@@ -1,10 +1,11 @@
 import { EOL } from "node:os";
-import chalk from "chalk";
-import { highlight, supportsLanguage } from "cli-highlight";
 import Table from "cli-table3";
 import { marked, type Token } from "marked";
 import { logger } from "../logger.ts";
+import chalk from "./chalk.ts";
+import { DEFAULT_THEME } from "./default-theme.ts";
 import { link as terminalLink } from "./formatting.ts";
+import { highlight, supportsLanguage } from "./highlight/index.ts";
 import { getListNumber } from "./markdown-utils.ts";
 
 function logError(msg: string) {
@@ -35,12 +36,20 @@ function format(
       );
     case "code": {
       if (token.lang && supportsLanguage(token.lang)) {
-        return highlight(token.text, { language: token.lang }) + EOL;
+        return (
+          highlight(token.text, {
+            language: token.lang,
+            theme: DEFAULT_THEME,
+          }) + EOL
+        );
       }
       logError(
         `Language not supported while highlighting code, falling back to markdown: ${token.lang}`,
       );
-      return highlight(token.text, { language: "markdown" }) + EOL;
+      return (
+        highlight(token.text, { language: "markdown", theme: DEFAULT_THEME }) +
+        EOL
+      );
     }
     case "codespan":
       // inline code

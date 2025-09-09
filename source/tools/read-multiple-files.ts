@@ -1,7 +1,7 @@
 import { tool } from "ai";
-import chalk from "chalk";
 import { z } from "zod";
 import { config } from "../config.ts";
+import chalk from "../terminal/chalk.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import { readFileAndCountTokens } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";

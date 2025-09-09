@@ -5,12 +5,11 @@
  * Handles input/output, formatting, and display.
  */
 
-import chalk, { type ChalkInstance } from "chalk";
 import Table from "cli-table3";
-import ora from "ora";
 import wrapAnsi from "wrap-ansi";
 import { logger } from "../logger.ts";
 import { getPackageVersion } from "../version.ts";
+import chalk, { type ChalkInstance } from "./chalk.ts";
 import {
   clearTerminal,
   getTerminalSize,
@@ -19,7 +18,7 @@ import {
   link as terminalLink,
 } from "./formatting.ts";
 import { applyMarkdown } from "./markdown.ts";
-import type { SpinnerInstance, TerminalConfig } from "./types.ts";
+import type { TerminalConfig } from "./types.ts";
 
 /**
  * Initialize the terminal interface
@@ -56,7 +55,6 @@ export function initTerminal(config: Partial<TerminalConfig> = {}): Terminal {
  */
 export class Terminal {
   private config: TerminalConfig;
-  private activeSpinners: Map<string, SpinnerInstance> = new Map();
   private terminalWidth: number;
   private terminalHeight: number;
   private isInteractive: boolean;
@@ -386,112 +384,6 @@ export class Terminal {
     table.push(...normalizedData);
 
     this.writeln(table.toString());
-  }
-
-  /**
-   * Create a spinner for showing progress
-   */
-  spinner(text: string, id = "default"): SpinnerInstance {
-    // Clean up existing spinner with the same ID
-    if (this.activeSpinners.has(id)) {
-      this.activeSpinners.get(id)?.stop();
-      this.activeSpinners.delete(id);
-    }
-
-    // Create spinner only if progress indicators are enabled and terminal is interactive
-    if (this.config.showProgressIndicators && this.isInteractive) {
-      const spinner = ora({
-        text,
-        spinner: "dots",
-        color: "cyan",
-      }).start();
-
-      const spinnerInstance: SpinnerInstance = {
-        id,
-        update: (newText: string) => {
-          spinner.text = newText;
-          return spinnerInstance;
-        },
-        succeed: (text?: string) => {
-          spinner.succeed(text);
-          this.activeSpinners.delete(id);
-          return spinnerInstance;
-        },
-        fail: (text?: string) => {
-          spinner.fail(text);
-          this.activeSpinners.delete(id);
-          return spinnerInstance;
-        },
-        warn: (text?: string) => {
-          spinner.warn(text);
-          this.activeSpinners.delete(id);
-          return spinnerInstance;
-        },
-        info: (text?: string) => {
-          spinner.info(text);
-          this.activeSpinners.delete(id);
-          return spinnerInstance;
-        },
-        clear: () => {
-          spinner.clear();
-          this.activeSpinners.delete(id);
-          return spinnerInstance;
-        },
-        stop: () => {
-          spinner.stop();
-          this.activeSpinners.delete(id);
-          return spinnerInstance;
-        },
-      };
-
-      this.activeSpinners.set(id, spinnerInstance);
-      return spinnerInstance;
-    }
-    // Fallback for non-interactive terminals or when progress indicators are disabled
-    console.info(text);
-
-    // Return a dummy spinner
-    const dummySpinner: SpinnerInstance = {
-      id,
-      update: (newText: string) => {
-        if (newText !== text) {
-          console.info(newText);
-        }
-        return dummySpinner;
-      },
-      succeed: (text?: string) => {
-        if (text) {
-          this.success(text);
-        }
-        return dummySpinner;
-      },
-      fail: (text?: string) => {
-        if (text) {
-          this.error(text);
-        }
-        return dummySpinner;
-      },
-      warn: (text?: string) => {
-        if (text) {
-          this.warn(text);
-        }
-        return dummySpinner;
-      },
-      info: (text?: string) => {
-        if (text) {
-          this.info(text);
-        }
-        return dummySpinner;
-      },
-      clear: () => {
-        return dummySpinner;
-      },
-      stop: () => {
-        return dummySpinner;
-      },
-    };
-
-    return dummySpinner;
   }
 
   /**

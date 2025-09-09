@@ -1,8 +1,8 @@
 import { tool } from "ai";
-import chalk from "chalk";
 import { type CheerioAPI, load } from "cheerio";
 import { z } from "zod";
 import { logger } from "../logger.ts";
+import chalk from "../terminal/chalk.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
 

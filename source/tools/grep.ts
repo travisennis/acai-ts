@@ -1,8 +1,8 @@
 import { execSync } from "node:child_process";
 import { inspect } from "node:util";
 import { tool } from "ai";
-import chalk from "chalk";
 import { z } from "zod";
+import chalk from "../terminal/chalk.ts";
 import type { SendData } from "./types.ts";
 
 export const GrepTool = {
