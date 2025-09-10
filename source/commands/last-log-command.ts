@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { editor } from "@inquirer/prompts";
-import chalk from "chalk";
 import { globby } from "globby";
 import { config } from "../config.ts";
+import chalk from "../terminal/chalk.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 const isoDateRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/;

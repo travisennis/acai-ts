@@ -1,7 +1,7 @@
 import { input, select } from "@inquirer/prompts";
 import { tool } from "ai";
-import chalk from "chalk";
 import { z } from "zod";
+import chalk from "../terminal/chalk.ts";
 import type { Terminal } from "../terminal/index.ts";
 import {
   applyFileEdits,

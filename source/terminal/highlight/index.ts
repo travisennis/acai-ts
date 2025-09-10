@@ -1,0 +1,134 @@
+import type { AnyNode, Element, Text } from "domhandler";
+import hljs from "highlight.js";
+import * as parse5 from "parse5";
+import { adapter as htmlparser2Adapter } from "parse5-htmlparser2-tree-adapter";
+import type { Theme } from "./theme.ts";
+
+function colorizeNode(node: AnyNode, theme: Theme, context?: string): string {
+  switch (node.type) {
+    case "text": {
+      const text = (node as Text).data;
+      if (context === undefined) {
+        return (theme.default || plain)(text);
+      }
+      return text;
+    }
+    case "tag": {
+      const element = node as Element;
+      const hljsClass = /hljs-(\w+)/.exec(element.attribs?.["class"] || "");
+      if (hljsClass) {
+        const token = hljsClass[1];
+        if (token) {
+          const nodeData =
+            element.childNodes
+              ?.map((childNode) => colorizeNode(childNode, theme, token))
+              .join("") || "";
+          const themeToken = (
+            theme as Record<string, (codePart: string) => string>
+          )[token];
+          const themeFn = themeToken || plain;
+          return themeFn(nodeData);
+        }
+      }
+
+      // Return the data itself when the class name isn't prefixed with a highlight.js token prefix.
+      // This is common in instances of sublanguages (JSX, Markdown Code Blocks, etc.)
+      return (
+        element.childNodes
+          ?.map((childNode) => colorizeNode(childNode, theme))
+          .join("") || ""
+      );
+    }
+  }
+  throw new Error(`Invalid node type ${node.type}`);
+}
+
+function colorize(code: string, theme: Theme): string {
+  const fragment = parse5.parseFragment(code, {
+    treeAdapter: htmlparser2Adapter,
+  });
+  return (
+    fragment.childNodes
+      ?.map((node: AnyNode) => colorizeNode(node, theme))
+      .join("") || ""
+  );
+}
+
+/**
+ * Options passed to [[highlight]]
+ */
+export interface HighlightOptions {
+  /**
+   * Can be a name, file extension, alias etc. If omitted, tries to auto-detect language.
+   */
+  language?: string;
+
+  /**
+   * When present and evaluates to a true value, forces highlighting to finish even in case of
+   * detecting illegal syntax for the language instead of throwing an exception.
+   */
+  ignoreIllegals?: boolean;
+
+  /**
+   * Optional array of language names and aliases restricting detection to only those languages.
+   */
+  languageSubset?: string[];
+
+  /**
+   * Supply a custom theme where you override language tokens with own formatter functions. Every
+   * token that is not overriden falls back to the [[DEFAULT_THEME]]
+   */
+  theme: Theme;
+}
+
+/**
+ * Apply syntax highlighting to `code` with ASCII color codes. The language is automatically
+ * detected if not set.
+ *
+ * ```ts
+ * import {highlight} from './terminal/highlight/index.ts';
+ * import * as fs from 'node:fs';
+ *
+ * fs.readFile('package.json', 'utf-8', (err: any, json: string) => {
+ *     console.log('package.json:');
+ *     console.log(highlight(json));
+ * });
+ * ```
+ *
+ * @param code The code to highlight
+ * @param options Optional options
+ */
+export function highlight(code: string, options: HighlightOptions): string {
+  let html: string;
+  if (options.language) {
+    html = hljs.highlight(code, {
+      language: options.language,
+      ignoreIllegals: options.ignoreIllegals,
+    }).value;
+  } else {
+    html = hljs.highlightAuto(code, options.languageSubset).value;
+  }
+  return colorize(html, options.theme);
+}
+
+/**
+ * Returns all supported languages
+ */
+export function listLanguages(): string[] {
+  return hljs.listLanguages();
+}
+
+/**
+ * Returns true if the language is supported
+ * @param name A language name, alias or file extension
+ */
+export function supportsLanguage(name: string): boolean {
+  return !!hljs.getLanguage(name);
+}
+
+/**
+ * Identity function for tokens that should not be styled (returns the input string as-is).
+ */
+export const plain = (codePart: string): string => codePart;
+
+export default highlight;
