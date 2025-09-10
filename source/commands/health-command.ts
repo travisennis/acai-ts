@@ -1,6 +1,10 @@
+import { execSync } from "node:child_process";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export function healthCommand({ terminal }: CommandOptions): ReplCommand {
+export function healthCommand(
+  { terminal }: CommandOptions,
+  execFn = execSync,
+): ReplCommand {
   return {
     command: "/health",
     description: "Show application health status and environment variables",
@@ -67,6 +71,46 @@ export function healthCommand({ terminal }: CommandOptions): ReplCommand {
         );
       } else {
         terminal.info("✓ At least one AI provider is configured.");
+      }
+
+      // Check for required bash tools
+      const tools = [
+        { name: "git", command: "git --version" },
+        { name: "gh", command: "gh --version" },
+        { name: "rg", command: "rg --version" },
+      ];
+
+      const toolStatus: string[][] = tools.map((tool) => {
+        let status = "✗ Not installed";
+        try {
+          execFn(tool.command, { stdio: "ignore", timeout: 5000 });
+          status = "✓ Installed";
+        } catch (_error) {
+          // Ignore error, tool is not installed
+        }
+        return [tool.name, status];
+      });
+
+      terminal.info("\nBash Tools Status:");
+      terminal.table(toolStatus, {
+        header: ["Tool", "Status"],
+        colWidths: [15, 20],
+      });
+
+      const installedCount = toolStatus.filter(
+        (row) => row[1] === "✓ Installed",
+      ).length;
+      const totalTools = tools.length;
+      terminal.info(
+        `Tool Summary: ${installedCount}/${totalTools} tools are installed.`,
+      );
+
+      if (installedCount < totalTools) {
+        terminal.warn(
+          "⚠️  Some tools are missing. Install them for full functionality.",
+        );
+      } else {
+        terminal.info("✓ All required tools are installed.");
       }
 
       return Promise.resolve();

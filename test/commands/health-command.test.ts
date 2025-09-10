@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import type { ExecSyncOptions, execSync } from "node:child_process";
 import { describe, it } from "node:test";
 import { healthCommand } from "../../source/commands/health-command.ts";
 import type { CommandOptions } from "../../source/commands/types.ts";
@@ -138,5 +139,105 @@ describe("/health command", () => {
 
     // Clean up
     delete process.env["OPENAI_API_KEY"];
+  });
+
+  describe("bash tools status", () => {
+    it("displays bash tools status when all tools are installed", async () => {
+      const outputs: string[] = [];
+      const tables: string[][][] = [];
+
+      const mockExecSync = ((command: string, _options?: ExecSyncOptions) => {
+        if (
+          command === "git --version" ||
+          command === "gh --version" ||
+          command === "rg --version"
+        ) {
+          return Buffer.from("");
+        }
+        throw new Error("Unexpected command");
+      }) as typeof execSync;
+
+      const options = {
+        terminal: {
+          info: (msg: string) => outputs.push(msg),
+          success: (_msg: string) => outputs.push("success"),
+          error: (_msg: string) => outputs.push("error"),
+          warn: (_msg: string) => outputs.push("warn"),
+          table: (
+            data: string[][],
+            options?: { header?: string[]; colWidths?: number[] },
+          ) => {
+            tables.push(data);
+            outputs.push(`tool_table:${options?.header?.join(",")}`);
+          },
+        },
+      } as unknown as CommandOptions;
+
+      const cmd = healthCommand(options, mockExecSync);
+      await cmd.execute([]);
+
+      // Should display bash tools status
+      assert(outputs.some((o) => o.includes("Bash Tools Status")));
+
+      // Should display tool summary with all installed
+      assert(outputs.some((o) => o.includes("3/3 tools are installed")));
+
+      // Should show success message
+      assert(
+        outputs.some((o) => o.includes("All required tools are installed")),
+      );
+
+      // Should have called table with tool data
+      assert(tables.length > 0);
+      const toolTable = tables.find(
+        (t) => t.length > 0 && t[0] && t[0].length > 0 && t[0][0] === "git",
+      );
+      assert(toolTable !== undefined);
+      assert(toolTable[0] !== undefined);
+      const firstRow = toolTable[0];
+      assert(firstRow[1] === "✓ Installed");
+    });
+
+    it("displays warning when some tools are missing", async () => {
+      const outputs: string[] = [];
+
+      const mockExecSync = ((command: string, _options?: ExecSyncOptions) => {
+        if (command === "rg --version") {
+          throw new Error("rg not found");
+        }
+        return Buffer.from("");
+      }) as typeof execSync;
+
+      const options = {
+        terminal: {
+          info: (msg: string) => outputs.push(msg),
+          success: (_msg: string) => outputs.push("success"),
+          error: (_msg: string) => outputs.push("error"),
+          warn: (msg: string) => outputs.push(msg),
+          table: (
+            _data: string[][],
+            _options?: { header?: string[]; colWidths?: number[] },
+          ) => {
+            outputs.push("tool_table");
+          },
+        },
+      } as unknown as CommandOptions;
+
+      const cmd = healthCommand(options, mockExecSync);
+      await cmd.execute([]);
+
+      // Should display bash tools status
+      assert(outputs.some((o) => o.includes("Bash Tools Status")));
+
+      // Should display tool summary with some missing
+      assert(outputs.some((o) => o.includes("2/3 tools are installed")));
+
+      // Should show warning
+      assert(
+        outputs.some(
+          (o) => o.includes("Some tools are missing") && o.includes("⚠️"),
+        ),
+      );
+    });
   });
 });
