@@ -43,13 +43,10 @@ export const createDeleteFileTool = async ({
           data: `Deleting file: ${chalk.cyan(userPath)}`,
         });
         try {
-          if (abortSignal?.aborted) {
-            throw new Error("File deletion aborted before path validation");
-          }
-
           const filePath = await validatePath(
             joinWorkingDir(userPath, workingDir),
             allowedDirectory,
+            abortSignal,
           );
 
           // Check if file exists before attempting delete
@@ -57,6 +54,10 @@ export const createDeleteFileTool = async ({
             throw new Error(`File not found: ${filePath}`);
           }
 
+          // Pre-check for stat
+          if (abortSignal?.aborted) {
+            throw new Error("File deletion aborted before stat");
+          }
           // Ensure it's a file, not a directory
           const stats = await fs.stat(filePath);
           if (stats.isDirectory()) {
@@ -72,10 +73,6 @@ export const createDeleteFileTool = async ({
             terminal.writeln("This action cannot be undone.");
             terminal.lineBreak();
 
-            if (abortSignal?.aborted) {
-              throw new Error("File deletion aborted during user input");
-            }
-
             let userChoice: string;
             if (autoAcceptDeletes) {
               terminal.writeln(
@@ -85,18 +82,28 @@ export const createDeleteFileTool = async ({
               );
               userChoice = "accept";
             } else {
-              userChoice = await select({
-                message: "What would you like to do with this file?",
-                choices: [
-                  { name: "Accept and delete this file", value: "accept" },
+              try {
+                userChoice = await select(
                   {
-                    name: "Accept all future deletions (including this)",
-                    value: "accept-all",
+                    message: "What would you like to do with this file?",
+                    choices: [
+                      { name: "Accept and delete this file", value: "accept" },
+                      {
+                        name: "Accept all future deletions (including this)",
+                        value: "accept-all",
+                      },
+                      { name: "Reject this deletion", value: "reject" },
+                    ],
+                    default: "accept",
                   },
-                  { name: "Reject this deletion", value: "reject" },
-                ],
-                default: "accept",
-              });
+                  { signal: abortSignal },
+                );
+              } catch (e) {
+                if ((e as Error).name === "AbortError") {
+                  throw new Error("File deletion aborted during user input");
+                }
+                throw e;
+              }
             }
 
             terminal.lineBreak();
@@ -112,7 +119,18 @@ export const createDeleteFileTool = async ({
             }
 
             if (userChoice === "reject") {
-              const reason = await input({ message: "Feedback: " });
+              let reason: string;
+              try {
+                reason = await input(
+                  { message: "Feedback: " },
+                  { signal: abortSignal },
+                );
+              } catch (e) {
+                if ((e as Error).name === "AbortError") {
+                  throw new Error("File deletion aborted during user input");
+                }
+                throw e;
+              }
 
               terminal.lineBreak();
 
@@ -128,7 +146,11 @@ export const createDeleteFileTool = async ({
             // If accepted, proceed to delete file
           }
 
-          // Delete the file
+          // Pre-side-effect check
+          if (abortSignal?.aborted) {
+            throw new Error("File deletion aborted before unlink");
+          }
+          // Delete the file with signal
           await fs.unlink(filePath);
 
           sendData?.({

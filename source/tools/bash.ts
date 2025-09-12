@@ -185,150 +185,177 @@ export const createBashTool = async ({
         { command, cwd, timeout },
         { toolCallId, abortSignal },
       ) => {
-        if (abortSignal?.aborted) {
-          throw new Error("Command execution aborted");
-        }
-        const safeCwd = cwd == null ? baseDir : cwd;
-        const safeTimeout = timeout == null ? DEFAULT_TIMEOUT : timeout;
-
-        sendData?.({
-          event: "tool-init",
-          id: toolCallId,
-          data: `Executing: ${chalk.cyan(command)} in ${chalk.cyan(safeCwd)}`,
-        });
-
-        if (!isPathWithinBaseDir(safeCwd, baseDir)) {
-          const errorMsg = `Working directory must be within the project directory: ${baseDir}`;
-          sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
-          return errorMsg;
-        }
-
-        // Parse via safe-shell for enhanced features; fallback to single-command path
-        let useGraph = true;
-        let ast: SequenceNode | null = null;
-        const tokenized = tokenize(command);
-        if (!tokenized.ok) {
-          useGraph = false;
-        } else {
-          const parsed = parseGraph(tokenized.value);
-          if (!parsed.ok) {
-            useGraph = false;
-          } else {
-            ast = parsed.value;
-          }
-        }
-
-        if (useGraph && ast) {
-          const validationCtx: ValidationContext = {
-            allowedCommands: ALLOWED_COMMANDS,
-            baseDir,
-            cwd: safeCwd,
-            config: {
-              allowPipes: safeShellConfig.allowPipes,
-              allowChaining: safeShellConfig.allowChaining,
-              allowRedirection: safeShellConfig.allowRedirection,
-              maxSegments: safeShellConfig.maxSegments,
-              maxOutputBytes: safeShellConfig.maxOutputBytes,
-            },
-          };
-          const validated = validateGraph(ast, validationCtx);
-          if (!validated.ok) {
-            sendData?.({
-              event: "tool-error",
-              id: toolCallId,
-              data: validated.error,
-            });
-            return validated.error;
-          }
-        } else {
-          // Strict legacy validation
-          const commandValidation = commandValidator.isValid(command);
-          if (!commandValidation.isValid) {
-            sendData?.({
-              event: "tool-error",
-              id: toolCallId,
-              data: commandValidation.error ?? "Unknown error.",
-            });
-            return commandValidation.error ?? "Unknown error.";
-          }
-          const pathValidation = validatePaths(command, baseDir, safeCwd);
-          if (!pathValidation.isValid) {
-            sendData?.({
-              event: "tool-error",
-              id: toolCallId,
-              data: pathValidation.error ?? "Unknown error.",
-            });
-            return pathValidation.error ?? "Unknown error.";
-          }
-        }
-
-        // Prompt user for command execution approval (only in interactive mode)
-        if (terminal) {
-          if (!autoAcceptCommands) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            terminal.lineBreak();
-            terminal.writeln(
-              `${chalk.blue.bold("●")} About to execute command: ${chalk.cyan(command)}`,
-            );
-            terminal.writeln(`${chalk.gray("Working directory:")} ${safeCwd}`);
-            terminal.lineBreak();
-          }
-
-          let userChoice: string;
-          if (autoAcceptCommands) {
-            terminal.writeln(
-              chalk.green(
-                "✓ Auto-accepting command (all future commands will be accepted)",
-              ),
-            );
-            userChoice = "accept";
-          } else {
-            userChoice = await select({
-              message: "What would you like to do with this command?",
-              choices: [
-                { name: "Execute this command", value: "accept" },
-                {
-                  name: "Execute all future commands (including this)",
-                  value: "accept-all",
-                },
-                { name: "Reject this command", value: "reject" },
-              ],
-              default: "accept",
-            });
-          }
-
-          terminal.lineBreak();
-
-          if (userChoice === "accept-all") {
-            autoAcceptCommands = true;
-            terminal.writeln(
-              chalk.yellow(
-                "✓ Auto-accept mode enabled for all future commands",
-              ),
-            );
-            terminal.lineBreak();
-          }
-
-          if (abortSignal?.aborted) {
-            throw new Error("Command execution aborted during user input");
-          }
-          if (userChoice === "reject") {
-            const reason = await input({ message: "Feedback: " });
-            terminal.lineBreak();
-            const rejectionMsg = `Command rejected by user. Reason: ${reason}`;
-            sendData?.({
-              event: "tool-completion",
-              id: toolCallId,
-              data: rejectionMsg,
-            });
-            return rejectionMsg;
-          }
-        }
-
-        // Execute
         try {
           if (abortSignal?.aborted) {
-            throw new Error("Command execution aborted before execution");
+            throw new Error("Command execution aborted");
+          }
+          const safeCwd = cwd == null ? baseDir : cwd;
+          const safeTimeout = timeout == null ? DEFAULT_TIMEOUT : timeout;
+
+          sendData?.({
+            event: "tool-init",
+            id: toolCallId,
+            data: `Executing: ${chalk.cyan(command)} in ${chalk.cyan(safeCwd)}`,
+          });
+
+          if (!isPathWithinBaseDir(safeCwd, baseDir)) {
+            const errorMsg = `Working directory must be within the project directory: ${baseDir}`;
+            sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
+            return errorMsg;
+          }
+
+          // Parse via safe-shell for enhanced features; fallback to single-command path
+          let useGraph = true;
+          let ast: SequenceNode | null = null;
+          const tokenized = tokenize(command, abortSignal);
+          if (!tokenized.ok) {
+            useGraph = false;
+          } else {
+            const parsed = parseGraph(tokenized.value, abortSignal);
+            if (!parsed.ok) {
+              useGraph = false;
+            } else {
+              ast = parsed.value;
+            }
+          }
+
+          if (useGraph && ast) {
+            const validationCtx: ValidationContext = {
+              allowedCommands: ALLOWED_COMMANDS,
+              baseDir,
+              cwd: safeCwd,
+              config: {
+                allowPipes: safeShellConfig.allowPipes,
+                allowChaining: safeShellConfig.allowChaining,
+                allowRedirection: safeShellConfig.allowRedirection,
+                maxSegments: safeShellConfig.maxSegments,
+                maxOutputBytes: safeShellConfig.maxOutputBytes,
+              },
+            };
+            const validated = validateGraph(ast, validationCtx, abortSignal);
+            if (!validated.ok) {
+              sendData?.({
+                event: "tool-error",
+                id: toolCallId,
+                data: validated.error,
+              });
+              return validated.error;
+            }
+          } else {
+            // Strict legacy validation
+            const commandValidation = commandValidator.isValid(command);
+            if (!commandValidation.isValid) {
+              sendData?.({
+                event: "tool-error",
+                id: toolCallId,
+                data: commandValidation.error ?? "Unknown error.",
+              });
+              return commandValidation.error ?? "Unknown error.";
+            }
+            const pathValidation = validatePaths(command, baseDir, safeCwd);
+            if (!pathValidation.isValid) {
+              sendData?.({
+                event: "tool-error",
+                id: toolCallId,
+                data: pathValidation.error ?? "Unknown error.",
+              });
+              return pathValidation.error ?? "Unknown error.";
+            }
+          }
+
+          // Prompt user for command execution approval (only in interactive mode)
+          if (terminal) {
+            if (!autoAcceptCommands) {
+              await new Promise((resolve, reject) => {
+                const timeoutId = setTimeout(resolve, 1000);
+                abortSignal?.addEventListener("abort", () => {
+                  clearTimeout(timeoutId);
+                  reject(new Error("Delay aborted"));
+                });
+              });
+              terminal.lineBreak();
+              terminal.writeln(
+                `${chalk.blue.bold("●")} About to execute command: ${chalk.cyan(command)}`,
+              );
+              terminal.writeln(
+                `${chalk.gray("Working directory:")} ${safeCwd}`,
+              );
+              terminal.lineBreak();
+            }
+
+            let userChoice: string;
+            if (autoAcceptCommands) {
+              terminal.writeln(
+                chalk.green(
+                  "✓ Auto-accepting command (all future commands will be accepted)",
+                ),
+              );
+              userChoice = "accept";
+            } else {
+              try {
+                userChoice = await select(
+                  {
+                    message: "What would you like to do with this command?",
+                    choices: [
+                      { name: "Execute this command", value: "accept" },
+                      {
+                        name: "Execute all future commands (including this)",
+                        value: "accept-all",
+                      },
+                      { name: "Reject this command", value: "reject" },
+                    ],
+                    default: "accept",
+                  },
+                  {
+                    signal: abortSignal,
+                  },
+                );
+              } catch (e) {
+                if ((e as Error).name === "AbortError") {
+                  throw new Error(
+                    "Command execution aborted during user input",
+                  );
+                }
+                throw e;
+              }
+            }
+
+            terminal.lineBreak();
+
+            if (userChoice === "accept-all") {
+              autoAcceptCommands = true;
+              terminal.writeln(
+                chalk.yellow(
+                  "✓ Auto-accept mode enabled for all future commands",
+                ),
+              );
+              terminal.lineBreak();
+            }
+
+            if (userChoice === "reject") {
+              let reason: string;
+              try {
+                reason = await input(
+                  { message: "Feedback: " },
+                  { signal: abortSignal },
+                );
+              } catch (e) {
+                if ((e as Error).name === "AbortError") {
+                  throw new Error(
+                    "Command execution aborted during user input",
+                  );
+                }
+                throw e;
+              }
+              terminal.lineBreak();
+              const rejectionMsg = `Command rejected by user. Reason: ${reason}`;
+              sendData?.({
+                event: "tool-completion",
+                id: toolCallId,
+                data: rejectionMsg,
+              });
+              return rejectionMsg;
+            }
           }
 
           let formattedResult = "";
@@ -353,6 +380,7 @@ export const createBashTool = async ({
             const result = await executeCommand(command, {
               cwd: safeCwd,
               timeout: safeTimeout,
+              abortSignal,
               shell: false,
               throwOnError: false,
             });

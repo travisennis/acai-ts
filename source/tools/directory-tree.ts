@@ -46,13 +46,10 @@ export const createDirectoryTreeTool = async ({
             data: `Listing directory tree: ${chalk.cyan(path)}`,
           });
 
-          if (abortSignal?.aborted) {
-            throw new Error("Directory tree listing aborted during validation");
-          }
-
           validPath = await validatePath(
             joinWorkingDir(path, workingDir),
             allowedDirectory,
+            abortSignal,
           );
           sendData?.({
             id: toolCallId,

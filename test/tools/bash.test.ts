@@ -66,3 +66,30 @@ describe("bash tool path validation for git message flags", async () => {
     assert.ok(!res.includes("references path outside"));
   });
 });
+
+describe("bash tool abort signal handling", async () => {
+  const mockSendData = () => {};
+
+  it("aborts execution on signal", async () => {
+    const ac = new AbortController();
+    const tool = await createBashTool({
+      baseDir,
+      sendData: mockSendData,
+      tokenCounter,
+      autoAcceptAll: true,
+    });
+    ac.abort();
+    const { bash } = tool;
+    const toolImpl = bash as unknown as {
+      execute: (
+        args: { command: string; cwd: string | null; timeout: number | null },
+        meta: { toolCallId: string; abortSignal?: AbortSignal },
+      ) => Promise<string>;
+    };
+    const result = await toolImpl.execute(
+      { command: "sleep 10", cwd: null, timeout: null },
+      { toolCallId: "t1", abortSignal: ac.signal },
+    );
+    assert.match(result, /aborted/);
+  });
+});

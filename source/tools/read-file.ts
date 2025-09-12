@@ -72,13 +72,10 @@ export const createReadFileTool = async ({
           data: `Reading file: ${chalk.cyan(providedPath)}${startLine ? chalk.cyan(`:${startLine}`) : ""}${lineCount ? chalk.cyan(`:${lineCount}`) : ""}`,
         });
         try {
-          if (abortSignal?.aborted) {
-            throw new Error("File reading aborted before path validation");
-          }
-
           const filePath = await validatePath(
             joinWorkingDir(providedPath, workingDir),
             allowedDirectory,
+            abortSignal,
           );
 
           if (abortSignal?.aborted) {

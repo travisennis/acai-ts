@@ -92,43 +92,17 @@ export class Repl {
       currentContextWindow = 0;
     });
 
-    let prevCb: (() => void) | null = null;
-    let sigintCount = 0;
-    let lastSigintTime = 0;
-    const SigintResetDelay = 1000; // Reset count after 1 second of no SIGINT
+    let currentAbortController: AbortController | null = null;
+
+    // Handle Ctrl+C (SIGINT)
+    process.on("SIGINT", () => {
+      console.log("CTRL-C Pressed");
+      currentAbortController?.abort();
+    });
 
     while (true) {
-      const abortController = new AbortController();
-      const { signal } = abortController;
-
-      const cb = () => {
-        const now = Date.now();
-
-        // Reset count if it's been more than the delay since last SIGINT
-        if (now - lastSigintTime > SigintResetDelay) {
-          sigintCount = 0;
-        }
-
-        lastSigintTime = now;
-        sigintCount++;
-
-        if (sigintCount === 1) {
-          abortController.abort();
-          terminal.warn(
-            "Aborting current operation... Press Ctrl+C again to force exit",
-          );
-        } else {
-          process.exit(1);
-        }
-      };
-
-      if (prevCb) {
-        process.removeListener("SIGINT", prevCb);
-      }
-
-      // Handle Ctrl+C (SIGINT)
-      process.on("SIGINT", cb);
-      prevCb = cb;
+      currentAbortController = new AbortController();
+      const { signal } = currentAbortController;
 
       const langModel = modelManager.getModel("repl");
       const modelConfig = modelManager.getModelMetadata("repl");
@@ -246,6 +220,9 @@ export class Repl {
             ? toolCallRepair(modelManager, terminal)
             : undefined,
           abortSignal: signal,
+          onAbort(_event) {
+            terminal.warn("Operation aborted by user.");
+          },
           onFinish: async (result) => {
             logger.debug("onFinish called");
             if (result.response.messages.length > 0) {

@@ -61,13 +61,10 @@ export const createEditFileTool = async ({
           data: `Editing file: ${chalk.cyan(path)}`,
         });
         try {
-          if (abortSignal?.aborted) {
-            throw new Error("File editing aborted before path validation");
-          }
-
           const validPath = await validatePath(
             joinWorkingDir(path, workingDir),
             allowedDirectory,
+            abortSignal,
           );
 
           if (terminal) {
@@ -77,7 +74,12 @@ export const createEditFileTool = async ({
 
             terminal.lineBreak();
 
-            const result = await applyFileEdits(validPath, edits, true);
+            const result = await applyFileEdits(
+              validPath,
+              edits,
+              true,
+              abortSignal,
+            );
 
             terminal.writeln(
               `The agent is proposing the following ${chalk.cyan(edits.length)} edits:`,
@@ -89,10 +91,6 @@ export const createEditFileTool = async ({
 
             terminal.lineBreak();
 
-            if (abortSignal?.aborted) {
-              throw new Error("File editing aborted during user input");
-            }
-
             let userChoice: string;
             if (autoAcceptEdits) {
               terminal.writeln(
@@ -102,18 +100,28 @@ export const createEditFileTool = async ({
               );
               userChoice = "accept";
             } else {
-              userChoice = await select({
-                message: "What would you like to do with these changes?",
-                choices: [
-                  { name: "Accept these changes", value: "accept" },
+              try {
+                userChoice = await select(
                   {
-                    name: "Accept all future edits (including these)",
-                    value: "accept-all",
+                    message: "What would you like to do with these changes?",
+                    choices: [
+                      { name: "Accept these changes", value: "accept" },
+                      {
+                        name: "Accept all future edits (including these)",
+                        value: "accept-all",
+                      },
+                      { name: "Reject these changes", value: "reject" },
+                    ],
+                    default: "accept",
                   },
-                  { name: "Reject these changes", value: "reject" },
-                ],
-                default: "accept",
-              });
+                  { signal: abortSignal },
+                );
+              } catch (e) {
+                if ((e as Error).name === "AbortError") {
+                  throw new Error("File editing aborted during user input");
+                }
+                throw e;
+              }
             }
 
             terminal.lineBreak();
@@ -127,7 +135,12 @@ export const createEditFileTool = async ({
             }
 
             if (userChoice === "accept" || userChoice === "accept-all") {
-              const finalEdits = await applyFileEdits(validPath, edits, false);
+              const finalEdits = await applyFileEdits(
+                validPath,
+                edits,
+                false,
+                abortSignal,
+              );
               // Send completion message indicating success
               sendData?.({
                 id: toolCallId,
@@ -137,7 +150,18 @@ export const createEditFileTool = async ({
               return finalEdits;
             }
 
-            const reason = await input({ message: "Feedback: " });
+            let reason: string;
+            try {
+              reason = await input(
+                { message: "Feedback: " },
+                { signal: abortSignal },
+              );
+            } catch (e) {
+              if ((e as Error).name === "AbortError") {
+                throw new Error("File editing aborted during user input");
+              }
+              throw e;
+            }
 
             terminal.lineBreak();
 
@@ -149,7 +173,12 @@ export const createEditFileTool = async ({
             });
             return `The user rejected these changes. Reason: ${reason}`;
           }
-          const finalEdits = await applyFileEdits(validPath, edits, false);
+          const finalEdits = await applyFileEdits(
+            validPath,
+            edits,
+            false,
+            abortSignal,
+          );
           // Send completion message indicating success
           sendData?.({
             id: toolCallId,

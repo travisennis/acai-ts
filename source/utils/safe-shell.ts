@@ -52,7 +52,14 @@ export interface Token {
   value: string;
 }
 
-export function tokenize(input: string): ParseResult<Token[]> {
+export function tokenize(
+  input: string,
+  abortSignal?: AbortSignal,
+): ParseResult<Token[]> {
+  if (abortSignal?.aborted) {
+    return { ok: false, error: "Command parsing aborted" };
+  }
+
   const tokens: Token[] = [];
   let i = 0;
   const n = input.length;
@@ -153,7 +160,14 @@ export function tokenize(input: string): ParseResult<Token[]> {
 
 // Parser --------------------------------------------------------------
 
-export function parse(tokens: Token[]): ParseResult<SequenceNode> {
+export function parse(
+  tokens: Token[],
+  abortSignal?: AbortSignal,
+): ParseResult<SequenceNode> {
+  if (abortSignal?.aborted) {
+    return { ok: false, error: "Command parsing aborted" };
+  }
+
   let i = 0;
 
   function expectWord(): ParseResult<string> {
@@ -281,7 +295,11 @@ export function parse(tokens: Token[]): ParseResult<SequenceNode> {
 export function validate(
   ast: SequenceNode,
   ctx: ValidationContext,
+  abortSignal?: AbortSignal,
 ): ParseResult<null> {
+  if (abortSignal?.aborted) {
+    return { ok: false, error: "Command validation aborted" };
+  }
   let segmentCount = 0;
   const { allowedCommands, baseDir, cwd, config } = ctx;
 
@@ -414,6 +432,14 @@ export async function execute(
   ast: SequenceNode,
   opts: ExecOptions,
 ): Promise<ExecResult> {
+  if (opts.abortSignal?.aborted) {
+    return {
+      stdout: "",
+      stderr: "Command execution aborted",
+      code: 130,
+      signal: "SIGINT",
+    };
+  }
   let stdoutAcc = "";
   let stderrAcc = "";
   let overallCode = 0;
@@ -518,7 +544,14 @@ export async function execute(
 
     // Capture outputs with size limits
     const cleanup: Array<() => void> = [];
-    await new Promise<void>((resolve) => {
+    await new Promise<void>((resolve, _reject) => {
+      const abortHandler = () => {
+        killAll(procs);
+        clearTimeout(timeout);
+        resolve();
+      };
+      opts.abortSignal?.addEventListener("abort", abortHandler);
+
       const timeout = setTimeout(
         () => {
           timedOut = true;
@@ -527,7 +560,10 @@ export async function execute(
         },
         Math.max(1, opts.timeoutMs - (Date.now() - startTime)),
       );
-      cleanup.push(() => clearTimeout(timeout));
+      cleanup.push(() => {
+        clearTimeout(timeout);
+        opts.abortSignal?.removeEventListener("abort", abortHandler);
+      });
 
       const onStdout = (chunk: Buffer) => {
         if (!outWriter) {
@@ -562,7 +598,12 @@ export async function execute(
         for (const p of procs) {
           p.once("exit", () => {
             remaining -= 1;
-            if (remaining === 0) resolve();
+            if (remaining === 0) {
+              for (const fn of cleanup) {
+                fn();
+              }
+              resolve();
+            }
           });
         }
       };

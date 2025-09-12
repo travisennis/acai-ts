@@ -30,7 +30,11 @@ export function expandHome(filepath: string): string {
 export async function validatePath(
   requestedPath: string,
   allowedDirectory: string,
+  abortSignal?: AbortSignal,
 ): Promise<string> {
+  if (abortSignal?.aborted) {
+    throw new Error("Path validation aborted");
+  }
   const expandedPath = expandHome(requestedPath);
   const absolute = path.isAbsolute(expandedPath)
     ? path.resolve(expandedPath)
@@ -107,9 +111,16 @@ export async function applyFileEdits(
   filePath: string,
   edits: FileEdit[],
   dryRun = false,
+  abortSignal?: AbortSignal,
 ): Promise<string> {
-  // Read file content literally
-  const originalContent = await fs.readFile(filePath, "utf-8");
+  if (abortSignal?.aborted) {
+    throw new Error("File edit operation aborted");
+  }
+  // Read file content literally with signal
+  const originalContent = await fs.readFile(filePath, {
+    encoding: "utf-8",
+    signal: abortSignal,
+  });
 
   if (edits.find((edit) => edit.oldText.length === 0)) {
     throw new Error(
@@ -120,6 +131,9 @@ export async function applyFileEdits(
   // Apply edits sequentially
   let modifiedContent = originalContent;
   for (const edit of edits) {
+    if (abortSignal?.aborted) {
+      throw new Error("File edit operation aborted during processing");
+    }
     const { oldText, newText } = edit; // Use literal oldText and newText
 
     const normalizedContent = normalizeLineEndings(modifiedContent);
@@ -129,9 +143,7 @@ export async function applyFileEdits(
     } else {
       // If literal match is not found, throw an error.
       // The previous complex fallback logic is removed to ensure literal matching.
-      throw new Error(
-        `Could not find literal match for edit:\n${edit.oldText}`,
-      );
+      throw new Error("Could not find literal match for old text.");
     }
   }
 
@@ -146,8 +158,14 @@ export async function applyFileEdits(
   const formattedDiff = `${"`".repeat(numBackticks)}diff\n${diff}${"`".repeat(numBackticks)}\n\n`;
 
   if (!dryRun) {
-    // Write the modified content (which has literal newlines from newText, and preserves original newlines not part of oldText/newText)
-    await fs.writeFile(filePath, modifiedContent, "utf-8");
+    if (abortSignal?.aborted) {
+      throw new Error("File edit operation aborted before writing");
+    }
+    // Write the modified content with signal
+    await fs.writeFile(filePath, modifiedContent, {
+      encoding: "utf-8",
+      signal: abortSignal,
+    });
   }
 
   return formattedDiff;

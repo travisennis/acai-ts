@@ -168,6 +168,17 @@ export function executeCommand(
       : Promise.resolve(result);
   }
 
+  if (abortSignal?.aborted) {
+    const result: ExecuteResult = {
+      stdout: "",
+      stderr: "Command execution aborted",
+      code: 130,
+    };
+    return throwOnError
+      ? Promise.reject(new Error("Command execution aborted"))
+      : Promise.resolve(result);
+  }
+
   return new Promise<ExecuteResult>((resolve, reject) => {
     try {
       execFile(
@@ -182,12 +193,19 @@ export function executeCommand(
         },
         (error, stdout, stderr) => {
           if (error) {
-            const errorCode = typeof error.code === "number" ? error.code : 1;
+            let errorCode = typeof error.code === "number" ? error.code : 1;
+            let errorSignal = error.signal ?? undefined;
+
+            if (error.name === "AbortError") {
+              errorCode = 130;
+              errorSignal = "SIGINT";
+            }
+
             const result: ExecuteResult = {
               stdout: preserveOutputOnError ? stdout : "",
               stderr: preserveOutputOnError ? stderr : "",
               code: errorCode,
-              signal: error.signal ?? undefined,
+              signal: errorSignal,
             };
 
             if (throwOnError) {

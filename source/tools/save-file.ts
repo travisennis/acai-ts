@@ -61,13 +61,10 @@ export const createSaveFileTool = async ({
           data: `Saving file: ${chalk.cyan(userPath)}`,
         });
         try {
-          if (abortSignal?.aborted) {
-            throw new Error("File saving aborted before path validation");
-          }
-
           const filePath = await validatePath(
             joinWorkingDir(userPath, workingDir),
             allowedDirectory,
+            abortSignal,
           );
 
           if (terminal) {
@@ -81,10 +78,6 @@ export const createSaveFileTool = async ({
             terminal.display(content);
             terminal.lineBreak();
 
-            if (abortSignal?.aborted) {
-              throw new Error("File saving aborted during user input");
-            }
-
             let userChoice: string;
             if (autoAcceptSaves) {
               terminal.writeln(
@@ -94,18 +87,28 @@ export const createSaveFileTool = async ({
               );
               userChoice = "accept";
             } else {
-              userChoice = await select({
-                message: "What would you like to do with this file?",
-                choices: [
-                  { name: "Accept and save this file", value: "accept" },
+              try {
+                userChoice = await select(
                   {
-                    name: "Accept all future saves (including this)",
-                    value: "accept-all",
+                    message: "What would you like to do with this file?",
+                    choices: [
+                      { name: "Accept and save this file", value: "accept" },
+                      {
+                        name: "Accept all future saves (including this)",
+                        value: "accept-all",
+                      },
+                      { name: "Reject this save", value: "reject" },
+                    ],
+                    default: "accept",
                   },
-                  { name: "Reject this save", value: "reject" },
-                ],
-                default: "accept",
-              });
+                  { signal: abortSignal },
+                );
+              } catch (e) {
+                if ((e as Error).name === "AbortError") {
+                  throw new Error("File saving aborted during user input");
+                }
+                throw e;
+              }
             }
 
             terminal.lineBreak();
@@ -119,7 +122,18 @@ export const createSaveFileTool = async ({
             }
 
             if (userChoice === "reject") {
-              const reason = await input({ message: "Feedback: " });
+              let reason: string;
+              try {
+                reason = await input(
+                  { message: "Feedback: " },
+                  { signal: abortSignal },
+                );
+              } catch (e) {
+                if ((e as Error).name === "AbortError") {
+                  throw new Error("File saving aborted during user input");
+                }
+                throw e;
+              }
 
               terminal.lineBreak();
 
@@ -135,9 +149,16 @@ export const createSaveFileTool = async ({
             // If accepted, proceed to write file
           }
 
+          // Pre-side-effect check
+          if (abortSignal?.aborted) {
+            throw new Error("File saving aborted before writing");
+          }
           // Ensure parent directory exists
           await fs.mkdir(path.dirname(filePath), { recursive: true });
-          await fs.writeFile(filePath, content, { encoding });
+          await fs.writeFile(filePath, content, {
+            encoding,
+            signal: abortSignal,
+          });
 
           sendData?.({
             id: toolCallId,
