@@ -75,10 +75,10 @@ if (process.env.TOOL_ACTION === 'execute') {
     });
 
     // Verify tool was loaded
-    assert.ok(tools["dynamic:test-integration"], "Test tool should be loaded");
+    assert.ok(tools["dynamic-test-integration"], "Test tool should be loaded");
 
     // Test tool execution
-    const tool = tools["dynamic:test-integration"];
+    const tool = tools["dynamic-test-integration"];
     const toolImpl = tool as unknown as {
       execute: (
         args: { message: string; count?: number },
@@ -131,10 +131,10 @@ test("Dynamic tool integration - run-tests tool", async () => {
   });
 
   // Verify run-tests tool was loaded
-  assert.ok(tools["dynamic:run-tests"], "Run-tests tool should be loaded");
+  assert.ok(tools["dynamic-run-tests"], "Run-tests tool should be loaded");
 
   // Test tool execution with default parameters
-  const tool = tools["dynamic:run-tests"];
+  const tool = tools["dynamic-run-tests"];
   const toolImpl = tool as unknown as {
     execute: (
       args: { dir?: string },

@@ -101,7 +101,7 @@ export function createDynamicTool(
   sendData?: SendData,
 ) {
   const inputSchema = generateZodSchema(metadata.parameters);
-  const toolName = `dynamic:${metadata.name}`;
+  const toolName = `dynamic-${metadata.name}`;
 
   return {
     [toolName]: tool({

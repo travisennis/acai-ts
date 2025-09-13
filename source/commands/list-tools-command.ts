@@ -35,7 +35,7 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
         const dynamicTools = [];
 
         for (const toolName of toolNames) {
-          if (toolName.startsWith("dynamic:")) {
+          if (toolName.startsWith("dynamic-")) {
             dynamicTools.push(toolName);
           } else {
             staticTools.push(toolName);
