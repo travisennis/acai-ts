@@ -18,9 +18,13 @@ export const createGrepTool = (options: {
   const { sendData, tokenCounter } = options;
   return {
     [GrepTool.name]: tool({
-      description: "Search files for patterns using ripgrep",
+      description: `Search files for patterns using ripgrep (rg). Uses glob patterns for file filtering (e.g., "*.ts", "**/*.test.ts"). Auto-detects unbalanced regex patterns and falls back to fixed-string search for safety.`,
       inputSchema: z.object({
-        pattern: z.string().describe("The regex pattern to search for"),
+        pattern: z
+          .string()
+          .describe(
+            "The search pattern (regex by default, or fixed-string if literal=true or auto-detected as unbalanced)",
+          ),
         path: z.string().describe("The path to search in"),
         recursive: z
           .boolean()
@@ -35,7 +39,9 @@ export const createGrepTool = (options: {
         filePattern: z
           .string()
           .nullable()
-          .describe("Pass null if no file pattern filter is needed."),
+          .describe(
+            "Glob pattern to filter files (e.g., '*.ts', '**/*.test.js'). Pass null for no filtering.",
+          ),
         contextLines: z
           .number()
           .nullable()
@@ -50,7 +56,7 @@ export const createGrepTool = (options: {
           .boolean()
           .nullable()
           .describe(
-            "Pass true to search as a fixed string (no regex). Pass null to auto-detect.",
+            "Pass true for fixed-string search (-F), false for regex, null to auto-detect unbalanced patterns like mismatched parentheses/brackets.",
           ),
       }),
       execute: async (
