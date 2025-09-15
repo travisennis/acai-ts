@@ -1,6 +1,8 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { config } from "../config.ts";
 import chalk from "../terminal/chalk.ts";
+import { manageOutput, type TokenCounter } from "../token-utils.ts";
 import {
   directoryTree,
   joinWorkingDir,
@@ -15,9 +17,11 @@ export const DirectoryTreeTool = {
 export const createDirectoryTreeTool = async ({
   workingDir,
   sendData,
+  tokenCounter,
 }: {
   workingDir: string;
   sendData?: SendData;
+  tokenCounter: TokenCounter;
 }) => {
   const allowedDirectory = workingDir;
   return {
@@ -51,15 +55,32 @@ export const createDirectoryTreeTool = async ({
             allowedDirectory,
             abortSignal,
           );
+
+          const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
+
+          const rawTree = await directoryTree(validPath);
+          const managed = manageOutput(rawTree, {
+            tokenCounter,
+            threshold: maxTokens,
+          });
+
+          if (managed.truncated) {
+            sendData?.({
+              id: toolCallId,
+              event: "tool-update",
+              data: { primary: managed.warning },
+            });
+          }
+
           sendData?.({
             id: toolCallId,
             event: "tool-completion",
             data: "Done",
           });
+          return managed.content;
         } catch (error) {
           return `Failed to show directory tree: ${(error as Error).message}`;
         }
-        return directoryTree(validPath);
       },
     }),
   };

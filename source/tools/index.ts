@@ -77,6 +77,7 @@ export async function initTools({
   const directoryTreeTool = await createDirectoryTreeTool({
     workingDir: process.cwd(),
     sendData: sendDataFn,
+    tokenCounter,
   });
 
   const deleteFileTool = await createDeleteFileTool({
@@ -92,6 +93,7 @@ export async function initTools({
 
   const grepTool = createGrepTool({
     sendData: sendDataFn,
+    tokenCounter,
   });
 
   const thinkTool = createThinkTool({
@@ -180,6 +182,7 @@ export async function initCliTools({
   const directoryTreeTool = await createDirectoryTreeTool({
     workingDir: process.cwd(),
     sendData: undefined,
+    tokenCounter,
   });
 
   const deleteFileTool = await createDeleteFileTool({
@@ -195,6 +198,7 @@ export async function initCliTools({
 
   const grepTool = createGrepTool({
     sendData: undefined,
+    tokenCounter,
   });
 
   const thinkTool = createThinkTool({

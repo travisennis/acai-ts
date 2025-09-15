@@ -2,17 +2,20 @@ import { execSync } from "node:child_process";
 import { inspect } from "node:util";
 import { tool } from "ai";
 import { z } from "zod";
+import { config } from "../config.ts";
 import chalk from "../terminal/chalk.ts";
+import { manageOutput, type TokenCounter } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
 
 export const GrepTool = {
   name: "grepFiles" as const,
 };
 
-export const createGrepTool = (
-  options: { sendData?: SendData | undefined } = {},
-) => {
-  const { sendData } = options;
+export const createGrepTool = (options: {
+  sendData?: SendData | undefined;
+  tokenCounter: TokenCounter;
+}) => {
+  const { sendData, tokenCounter } = options;
   return {
     [GrepTool.name]: tool({
       description: "Search files for patterns using ripgrep",
@@ -50,7 +53,7 @@ export const createGrepTool = (
             "Pass true to search as a fixed string (no regex). Pass null to auto-detect.",
           ),
       }),
-      execute: (
+      execute: async (
         {
           pattern,
           path,
@@ -101,7 +104,7 @@ export const createGrepTool = (
             }
           }
 
-          const result = grepFiles(pattern, path, {
+          const rawResult = grepFiles(pattern, path, {
             recursive,
             ignoreCase,
             filePattern,
@@ -110,13 +113,28 @@ export const createGrepTool = (
             literal: effectiveLiteral,
           });
 
+          const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
+
+          const managed = manageOutput(rawResult, {
+            tokenCounter,
+            threshold: maxTokens,
+          });
+
+          if (managed.truncated) {
+            sendData?.({
+              event: "tool-update",
+              id: toolCallId,
+              data: { primary: managed.warning },
+            });
+          }
+
           const matchCount =
-            result === "No matches found."
+            managed.content === "No matches found."
               ? 0
-              : result
+              : managed.content
                   .trim()
                   .split("\n")
-                  .filter((line) => {
+                  .filter((line: string) => {
                     if (line === "--") {
                       return false;
                     }
@@ -128,7 +146,7 @@ export const createGrepTool = (
             id: toolCallId,
             data: `Found ${chalk.cyan(matchCount)} matches.`,
           });
-          return Promise.resolve(result);
+          return Promise.resolve(managed.content);
         } catch (error) {
           sendData?.({
             event: "tool-error",
