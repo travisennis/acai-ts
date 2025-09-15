@@ -3,6 +3,7 @@ import { platform } from "node:os";
 import path from "node:path";
 import { config } from "./config.ts";
 import { dedent } from "./dedent.ts";
+import { getShell } from "./terminal/index.ts";
 import { AgentTool } from "./tools/agent.ts";
 import { BashTool } from "./tools/bash.ts";
 import { CodeInterpreterTool } from "./tools/code-interpreter.ts";
@@ -139,6 +140,7 @@ async function environmentInfo() {
 - **Current working directory**: ${process.cwd()}. [Use this value directly instead of calling the \`${BashTool.name}(pwd)\` tool unless you have a specific reason to verify it].
 ${gitSection}
 - **Platform**: ${platform()}
+- **Shell**: ${getShell()}
 - **Today's date**: ${(new Date()).toISOString()}`;
 }
 

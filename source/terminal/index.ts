@@ -20,6 +20,10 @@ import {
 import { applyMarkdown } from "./markdown.ts";
 import type { TerminalConfig } from "./types.ts";
 
+export function getShell() {
+  return process.env["ZSH_VERSION"] ? "zsh" : process.env["SHELL"] || "bash";
+}
+
 /**
  * Initialize the terminal interface
  */
