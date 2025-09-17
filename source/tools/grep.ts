@@ -80,7 +80,7 @@ export const createGrepTool = (options: {
           sendData?.({
             event: "tool-init",
             id: toolCallId,
-            data: `Searching codebase for "${chalk.cyan(inspect(pattern))}" in ${chalk.cyan(path)}`,
+            data: `Searching codebase for ${chalk.cyan(inspect(pattern))}${filePattern ? ` with file pattern ${chalk.cyan(filePattern)}` : ""} in ${chalk.cyan(path)}`,
           });
 
           // Normalize literal option: if null => auto-detect using heuristic
