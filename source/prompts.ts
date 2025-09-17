@@ -90,7 +90,6 @@ function toolUsage() {
 
 ### Bash Commands (\`${BashTool.name}\`)
 - Execute commands with a sandboxed executor that supports pipes (|), conditional chaining (&&, ||, ;), and redirection (> >> < 2> 2>>).
-- Command substitution, backgrounding, and subshells are disabled for security.
 - Run single commands or compose multi-step flows using shell operators.
 - For large gh/git messages with newlines:
   1. Create temp file with ${SaveFileTool.name} in the project's .tmp directory
