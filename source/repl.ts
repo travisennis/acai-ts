@@ -46,6 +46,7 @@ interface ReplOptions {
   tokenCounter: TokenCounter;
   toolEvents: Map<string, Message[]>;
   autoAcceptAll: boolean;
+  showLastMessage: boolean; // For displaying last message when continuing/resuming
 }
 
 type CompleteToolSet = AsyncReturnType<typeof initTools> &
@@ -63,8 +64,11 @@ Details for all steps.
 
 export class Repl {
   private options: ReplOptions;
+  private showLastMessage: boolean;
+
   constructor(options: ReplOptions) {
     this.options = options;
+    this.showLastMessage = options.showLastMessage;
   }
 
   async run() {
@@ -107,6 +111,7 @@ export class Repl {
       const langModel = modelManager.getModel("repl");
       const modelConfig = modelManager.getModelMetadata("repl");
 
+      // agent header/status line
       terminal.hr();
       terminal.writeln(await getProjectStatusLine());
       terminal.writeln(chalk.dim(langModel.modelId));
@@ -114,6 +119,20 @@ export class Repl {
         currentContextWindow,
         modelConfig.contextWindow,
       );
+
+      // Display last message when continuing/resuming a conversation
+      if (this.showLastMessage) {
+        const lastMessage = messageHistory.getLastMessage();
+        if (lastMessage) {
+          terminal.lineBreak();
+          terminal.writeln(chalk.dim("Continuing conversation:"));
+          terminal.display(lastMessage);
+          terminal.lineBreak();
+          terminal.hr();
+        }
+        // don't show the last message after showing it once
+        this.showLastMessage = false;
+      }
 
       if (!promptManager.isPending()) {
         // For interactive input

@@ -233,6 +233,9 @@ async function main() {
     tokenCounter,
     toolEvents,
     autoAcceptAll: flags.autoAcceptAll === true,
+    showLastMessage: hasContinueOrResume
+      ? !!(messageHistory.get() && messageHistory.get().length > 0)
+      : false,
   });
 
   return (await asyncTry(repl.run())).recover(handleError);

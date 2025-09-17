@@ -230,6 +230,53 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     return firstUser;
   }
 
+  /**
+   * Extracts the last message from the conversation history for display purposes.
+   * Prioritizes assistant messages, falls back to user messages if no assistant messages exist.
+   */
+  getLastMessage(): string | null {
+    const messages = this.get();
+    if (messages.length === 0) {
+      return null;
+    }
+
+    // Find the last assistant message, or fall back to last user message
+    const reversedMessages = [...messages].reverse();
+    const lastAssistant = reversedMessages.find(
+      (msg): msg is AssistantModelMessage => msg.role === "assistant",
+    );
+    const lastUser = reversedMessages.find(
+      (msg): msg is UserModelMessage => msg.role === "user",
+    );
+
+    const targetMessage = lastAssistant || lastUser;
+    if (!targetMessage) {
+      return null;
+    }
+
+    // Extract text content from the message
+    if (Array.isArray(targetMessage.content)) {
+      const textParts = targetMessage.content.filter(
+        (part): part is TextPart =>
+          part.type === "text" && part.text.trim().length > 0,
+      );
+      if (textParts.length === 0) {
+        return null;
+      }
+      return textParts.map((part) => part.text).join("\n");
+    }
+
+    // Handle string content (though this should be rare with current implementation)
+    if (
+      typeof targetMessage.content === "string" &&
+      targetMessage.content.trim().length > 0
+    ) {
+      return targetMessage.content;
+    }
+
+    return null;
+  }
+
   static async load(
     stateDir: string,
     count = 10, // Add count parameter with default
