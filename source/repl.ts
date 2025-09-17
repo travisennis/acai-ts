@@ -13,7 +13,7 @@ import type z from "zod";
 import type { CommandManager } from "./commands/manager.ts";
 import { config as configManager } from "./config.ts";
 import { logger } from "./logger.ts";
-import { processPrompt } from "./mentions.ts";
+import { PromptError, processPrompt } from "./mentions.ts";
 import type { MessageHistory } from "./messages.ts";
 import { AiConfig } from "./models/ai-config.ts";
 import type { ModelManager } from "./models/manager.js";
@@ -137,14 +137,31 @@ export class Repl {
 
         // if there is no pending prompt then use the user's input. otherwise, the prompt was loaded from a command
         if (!promptManager.isPending()) {
-          const processedPrompt = await processPrompt(userInput, {
-            baseDir: process.cwd(),
-            model: modelConfig,
-          });
-          for (const context of processedPrompt.context) {
-            promptManager.addContext(context);
+          try {
+            const processedPrompt = await processPrompt(userInput, {
+              baseDir: process.cwd(),
+              model: modelConfig,
+            });
+            for (const context of processedPrompt.context) {
+              promptManager.addContext(context);
+            }
+            promptManager.set(processedPrompt.message);
+          } catch (error) {
+            if (error instanceof PromptError) {
+              terminal.error(`Prompt processing failed: ${error.message}`);
+              if (
+                error.cause &&
+                typeof error.cause === "object" &&
+                "command" in error.cause &&
+                typeof error.cause.command === "string"
+              ) {
+                terminal.error(`Command: ${error.cause.command}`);
+              }
+              terminal.lineBreak();
+              continue; // Continue the REPL loop
+            }
+            throw error; // Re-throw other errors
           }
-          promptManager.set(processedPrompt.message);
         }
 
         terminal.lineBreak();
