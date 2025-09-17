@@ -78,6 +78,10 @@ export function healthCommand(
         { name: "git", command: "git --version" },
         { name: "gh", command: "gh --version" },
         { name: "rg", command: "rg --version" },
+        { name: "fd", command: "fd --version" },
+        { name: "ast-grep", command: "ast-grep --version" },
+        { name: "jq", command: "jq --version" },
+        { name: "yq", command: "yq --version" },
       ];
 
       const toolStatus: string[][] = tools.map((tool) => {

@@ -150,7 +150,11 @@ describe("/health command", () => {
         if (
           command === "git --version" ||
           command === "gh --version" ||
-          command === "rg --version"
+          command === "rg --version" ||
+          command === "fd --version" ||
+          command === "ast-grep --version" ||
+          command === "jq --version" ||
+          command === "yq --version"
         ) {
           return Buffer.from("");
         }
@@ -180,7 +184,7 @@ describe("/health command", () => {
       assert(outputs.some((o) => o.includes("Bash Tools Status")));
 
       // Should display tool summary with all installed
-      assert(outputs.some((o) => o.includes("3/3 tools are installed")));
+      assert(outputs.some((o) => o.includes("7/7 tools are installed")));
 
       // Should show success message
       assert(
@@ -202,8 +206,13 @@ describe("/health command", () => {
       const outputs: string[] = [];
 
       const mockExecSync = ((command: string, _options?: ExecSyncOptions) => {
-        if (command === "rg --version") {
-          throw new Error("rg not found");
+        if (
+          command === "fd --version" ||
+          command === "ast-grep --version" ||
+          command === "jq --version" ||
+          command === "yq --version"
+        ) {
+          throw new Error("Tool not found");
         }
         return Buffer.from("");
       }) as typeof execSync;
@@ -230,7 +239,7 @@ describe("/health command", () => {
       assert(outputs.some((o) => o.includes("Bash Tools Status")));
 
       // Should display tool summary with some missing
-      assert(outputs.some((o) => o.includes("2/3 tools are installed")));
+      assert(outputs.some((o) => o.includes("3/7 tools are installed")));
 
       // Should show warning
       assert(
