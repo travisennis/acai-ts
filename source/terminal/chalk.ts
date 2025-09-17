@@ -1,9 +1,8 @@
-// Converted from chalk/source/index.js to modern TypeScript
-// Original source: chalk-main/source/index.js + index.d.ts + utilities.js
+// Converted from https://raw.githubusercontent.com/chalk/chalk/refs/heads/main/source/vendor/supports-color/index.js to modern TypeScript
 
 import type { Style } from "./ansi-styles.ts";
 import { ansiStyles } from "./ansi-styles.ts";
-import { supportsColor } from "./supports-color.ts"; // Your local supports-color.ts
+import { supportsColor } from "./supports-color.ts";
 
 const { stdout: stdoutColor, stderr: stderrColor } = supportsColor;
 
@@ -570,4 +569,5 @@ export const chalkStderr = createChalk({
   level: stderrColor ? stderrColor.level : 0,
 });
 
+export { createChalk };
 export default chalk;

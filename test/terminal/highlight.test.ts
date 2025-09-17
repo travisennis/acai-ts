@@ -1,5 +1,6 @@
 import { strictEqual } from "node:assert";
 import { describe, it } from "node:test";
+import { createChalk } from "../../source/terminal/chalk.ts";
 import { DEFAULT_THEME } from "../../source/terminal/default-theme.ts";
 import {
   highlight,
@@ -9,12 +10,26 @@ import {
 
 describe("highlight functionality", () => {
   it("should highlight JavaScript code", () => {
+    // Create a custom theme with forced color support
+    const forcedChalk = createChalk({ level: 1 });
+    const forcedTheme = {
+      ...DEFAULT_THEME,
+      keyword: forcedChalk.blue,
+      // biome-ignore lint/style/useNamingConvention: API name from highlight.js
+      built_in: forcedChalk.cyan,
+      type: forcedChalk.cyan.dim,
+      literal: forcedChalk.blue,
+      number: forcedChalk.green,
+      regexp: forcedChalk.red,
+      string: forcedChalk.red,
+    };
+
     const code = `function hello() {
     console.log("Hello, world!");
 }`;
     const result = highlight(code, {
       language: "javascript",
-      theme: DEFAULT_THEME,
+      theme: forcedTheme,
     });
 
     // Result should contain ANSI escape codes for highlighting

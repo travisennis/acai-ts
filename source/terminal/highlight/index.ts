@@ -4,6 +4,11 @@ import * as parse5 from "parse5";
 import { adapter as htmlparser2Adapter } from "parse5-htmlparser2-tree-adapter";
 import type { Theme } from "./theme.ts";
 
+/**
+ * Identity function for tokens that should not be styled (returns the input string as-is).
+ */
+const plain = (codePart: string): string => codePart;
+
 function colorizeNode(node: AnyNode, theme: Theme, context?: string): string {
   switch (node.type) {
     case "text": {
@@ -125,10 +130,5 @@ export function listLanguages(): string[] {
 export function supportsLanguage(name: string): boolean {
   return !!hljs.getLanguage(name);
 }
-
-/**
- * Identity function for tokens that should not be styled (returns the input string as-is).
- */
-export const plain = (codePart: string): string => codePart;
 
 export default highlight;
