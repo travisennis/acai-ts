@@ -21,6 +21,7 @@
     "checkJs": true,
     "skipLibCheck": true,
     "rewriteRelativeImportExtensions": true,
+    "erasableSyntaxOnly": true,
     "types": [
       "node"
     ],
