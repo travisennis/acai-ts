@@ -9,3 +9,4 @@
 - Always use `git checkout -b <branch-name>` with a branch name that accurately reflects the *type* of changes being made.
 - Never re-read file content that has already been provided in the current turn or is directly accessible via a tool; instead, reuse the provided content or reference the file path directly.
 - Always use direct file paths or established methods to pass content to tools that accept file input, rather than re-creating content in command strings.
+- Never stage changes for files that are specified in `.gitignore`.
