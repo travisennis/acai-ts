@@ -9,7 +9,7 @@ const HeadersImpl = globalThis.Headers;
 /**
  * HTTP status codes
  */
-export const HttpStatusCode = {
+const HttpStatusCode = {
   badRequest: 400,
   notFound: 404,
   unauthorized: 401,
@@ -23,7 +23,7 @@ export const HttpStatusCode = {
 /**
  * Base error class for all Exa API errors
  */
-export class ExaError extends Error {
+class ExaError extends Error {
   statusCode: number;
   timestamp?: string;
   path?: string;
@@ -42,7 +42,7 @@ export class ExaError extends Error {
   }
 }
 
-export type BaseSearchOptions = {
+type BaseSearchOptions = {
   numResults?: number;
   includeDomains?: string[];
   excludeDomains?: string[];
@@ -66,19 +66,19 @@ export type BaseSearchOptions = {
   userLocation?: string;
 };
 
-export type RegularSearchOptions = BaseSearchOptions & {
+type RegularSearchOptions = BaseSearchOptions & {
   moderation?: boolean;
   useAutoprompt?: boolean;
   type?: "keyword" | "neural" | "auto" | "hybrid" | "fast";
 };
 
-export type FindSimilarOptions = BaseSearchOptions & {
+type FindSimilarOptions = BaseSearchOptions & {
   excludeSourceDomain?: boolean;
 };
 
-export type ExtrasOptions = { links?: number; imageLinks?: number };
+type ExtrasOptions = { links?: number; imageLinks?: number };
 
-export type ContentsOptions = {
+type ContentsOptions = {
   text?: TextContentsOptions | true;
   highlights?: HighlightsContentsOptions | true;
   summary?: SummaryContentsOptions | true;
@@ -91,55 +91,48 @@ export type ContentsOptions = {
   extras?: ExtrasOptions;
 };
 
-export type LivecrawlOptions =
-  | "never"
-  | "fallback"
-  | "always"
-  | "auto"
-  | "preferred";
+type LivecrawlOptions = "never" | "fallback" | "always" | "auto" | "preferred";
 
-export type TextContentsOptions = {
+type TextContentsOptions = {
   maxCharacters?: number;
   includeHtmlTags?: boolean;
 };
 
-export type HighlightsContentsOptions = {
+type HighlightsContentsOptions = {
   query?: string;
   numSentences?: number;
   highlightsPerUrl?: number;
 };
 
-export type SummaryContentsOptions = {
+type SummaryContentsOptions = {
   query?: string;
   schema?: Record<string, unknown> | ZodType;
 };
 
-export type JsonSchema = Record<string, unknown>;
-
-export type ContextOptions = {
+type ContextOptions = {
   maxCharacters?: number;
 };
 
-export type TextResponse = { text: string };
+type TextResponse = { text: string };
 
-export type HighlightsResponse = {
+type HighlightsResponse = {
   highlights: string[];
   highlightScores: number[];
 };
 
-export type SummaryResponse = { summary: string };
+type SummaryResponse = { summary: string };
 
-export type ExtrasResponse = {
+type ExtrasResponse = {
   extras: { links?: string[]; imageLinks?: string[] };
 };
 
-export type SubpagesResponse = {
+type SubpagesResponse = {
   subpages: Array<Record<string, never>>;
 };
 
-export type Default<T extends object, U> = [keyof T] extends [never] ? U : T;
+type Default<T extends object, U> = [keyof T] extends [never] ? U : T;
 
-export type ContentsResultComponent<T extends ContentsOptions> = Default<
+type ContentsResultComponent<T extends ContentsOptions> = Default<
   (T["text"] extends object | true ? TextResponse : Record<string, never>) &
     (T["highlights"] extends object | true
       ? HighlightsResponse
@@ -152,24 +145,24 @@ export type ContentsResultComponent<T extends ContentsOptions> = Default<
   TextResponse
 >;
 
-export type CostDollarsContents = {
+type CostDollarsContents = {
   text?: number;
   highlights?: number;
   summary?: number;
 };
 
-export type CostDollarsSeearch = {
+type CostDollarsSeearch = {
   neural?: number;
   keyword?: number;
 };
 
-export type CostDollars = {
+type CostDollars = {
   total: number;
   search?: CostDollarsSeearch;
   contents?: CostDollarsContents;
 };
 
-export type SearchResult<T extends ContentsOptions> = {
+type SearchResult<T extends ContentsOptions> = {
   title: string | null;
   url: string;
   publishedDate?: string;
@@ -180,7 +173,7 @@ export type SearchResult<T extends ContentsOptions> = {
   favicon?: string;
 } & ContentsResultComponent<T>;
 
-export type SearchResponse<T extends ContentsOptions> = {
+type SearchResponse<T extends ContentsOptions> = {
   results: SearchResult<T>[];
   context?: string;
   autopromptString?: string;
@@ -190,13 +183,13 @@ export type SearchResponse<T extends ContentsOptions> = {
   costDollars?: CostDollars;
 };
 
-export type Status = {
+type Status = {
   id: string;
   status: string;
   source: string;
 };
 
-export type AnswerOptions = {
+type AnswerOptions = {
   stream?: boolean;
   text?: boolean;
   model?: "exa";
@@ -205,14 +198,14 @@ export type AnswerOptions = {
   userLocation?: string;
 };
 
-export type AnswerResponse = {
+type AnswerResponse = {
   answer: string | Record<string, unknown>;
   citations: SearchResult<Record<string, never>>[];
   requestId?: string;
   costDollars?: CostDollars;
 };
 
-export type AnswerStreamChunk = {
+type AnswerStreamChunk = {
   content?: string;
   citations?: Array<{
     id: string;
@@ -224,24 +217,12 @@ export type AnswerStreamChunk = {
   }>;
 };
 
-export type AnswerStreamResponse = {
-  answer?: string;
-  citations?: SearchResult<Record<string, never>>[];
-};
-
-export type AnswerOptionsTyped<T> = Omit<AnswerOptions, "outputSchema"> & {
+type AnswerOptionsTyped<T> = Omit<AnswerOptions, "outputSchema"> & {
   outputSchema: T;
 };
 
-export type AnswerResponseTyped<T> = Omit<AnswerResponse, "answer"> & {
+type AnswerResponseTyped<T> = Omit<AnswerResponse, "answer"> & {
   answer: T;
-};
-
-export type SummaryContentsOptionsTyped<T> = Omit<
-  SummaryContentsOptions,
-  "schema"
-> & {
-  schema: T;
 };
 
 export default class Exa {
