@@ -96,7 +96,7 @@ function getShell() {
   return process.env["ZSH_VERSION"] ? "zsh" : process.env["SHELL"] || "bash";
 }
 
-class ExecutionEnvironment {
+export class ExecutionEnvironment {
   private config: ExecutionConfig;
   private backgroundProcesses: Map<number, BackgroundProcess> = new Map();
   private executionCount = 0;
@@ -555,11 +555,3 @@ export function setupProcessCleanup(executionEnv: ExecutionEnvironment): void {
     process.exit(0);
   });
 }
-
-export type {
-  ExecutionResult,
-  ExecutionOptions,
-  BackgroundProcess,
-  BackgroundProcessOptions,
-};
-export default ExecutionEnvironment;

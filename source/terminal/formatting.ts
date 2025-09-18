@@ -109,10 +109,10 @@ function wrapLine(line: string, width: number): string {
   return wrappedLines.join("\n");
 }
 
-export const ESC = "\u001B[";
-export const OSC = "\u001B]";
-export const BEL = "\u0007";
-export const SEP = ";";
+// const ESC = "\u001B[";
+const OSC = "\u001B]";
+const BEL = "\u0007";
+const SEP = ";";
 
 export const link = (text: string, url: string) => {
   if (supportsHyperlinks.stdout) {

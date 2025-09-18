@@ -62,7 +62,7 @@ function colorize(code: string, theme: Theme): string {
 /**
  * Options passed to [[highlight]]
  */
-export interface HighlightOptions {
+interface HighlightOptions {
   /**
    * Can be a name, file extension, alias etc. If omitted, tries to auto-detect language.
    */
@@ -130,5 +130,3 @@ export function listLanguages(): string[] {
 export function supportsLanguage(name: string): boolean {
   return !!hljs.getLanguage(name);
 }
-
-export default highlight;

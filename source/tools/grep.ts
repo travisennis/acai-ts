@@ -290,7 +290,7 @@ export function buildGrepCommand(
   return command;
 }
 
-export function grepFiles(
+function grepFiles(
   pattern: string,
   path: string,
   options: GrepOptions = {},

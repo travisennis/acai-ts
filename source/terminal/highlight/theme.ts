@@ -3,7 +3,7 @@ import chalk from "../chalk.ts";
 /**
  * A generic interface that holds all available language tokens.
  */
-export interface Tokens<T> {
+interface Tokens<T> {
   /**
    * keyword in a regular Algol-style language
    */
@@ -216,7 +216,7 @@ export interface Tokens<T> {
  * See the [chalk](https://github.com/chalk/chalk) module for more information.
  * `plain` means no styling.
  */
-export type Style =
+type Style =
   | "reset"
   | "bold"
   | "dim"
@@ -257,7 +257,7 @@ export type Style =
  * }
  * ```
  */
-export interface JsonTheme extends Tokens<Style | Style[]> {}
+interface JsonTheme extends Tokens<Style | Style[]> {}
 
 /**
  * Passed to [[highlight]] as the `theme` option. A theme is a map of language tokens to a function
@@ -289,12 +289,12 @@ export interface Theme extends Tokens<(codePart: string) => string> {
  * Identity function for tokens that should not be styled (returns the input string as-is).
  * See [[Theme]] for an example.
  */
-export const plain = (codePart: string): string => codePart;
+const plain = (codePart: string): string => codePart;
 
 /**
  * Converts a [[JsonTheme]] with string values to a [[Theme]] with formatter functions. Used by [[parse]].
  */
-export function fromJson(json: JsonTheme): Theme {
+function fromJson(json: JsonTheme): Theme {
   const theme: Theme = {};
   for (const key of Object.keys(json)) {
     // biome-ignore lint/suspicious/noExplicitAny: Dynamic theme access needed for highlight compatibility
@@ -318,7 +318,7 @@ export function fromJson(json: JsonTheme): Theme {
 /**
  * Converts a [[Theme]] with formatter functions to a [[JsonTheme]] with string values. Used by [[stringify]].
  */
-export function toJson(theme: Theme): JsonTheme {
+function toJson(theme: Theme): JsonTheme {
   // biome-ignore lint/suspicious/noExplicitAny: Dynamic theme access needed for highlight compatibility
   const jsonTheme: any = {};
   for (const key of Object.keys(theme)) {

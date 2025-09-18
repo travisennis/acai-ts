@@ -29,7 +29,7 @@ function parseVersion(versionString = ""): Version {
   };
 }
 
-export function createSupportsHyperlinks(stream: { isTty?: boolean }): boolean {
+function createSupportsHyperlinks(stream: { isTty?: boolean }): boolean {
   const {
     CI,
     CURSOR_TRACE_ID,

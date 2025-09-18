@@ -4,7 +4,7 @@ import type { Style } from "./ansi-styles.ts";
 import { ansiStyles } from "./ansi-styles.ts";
 import { supportsColor } from "./supports-color.ts";
 
-const { stdout: stdoutColor, stderr: stderrColor } = supportsColor;
+const { stdout: stdoutColor } = supportsColor;
 
 const GENERATOR = Symbol("GENERATOR");
 const STYLER = Symbol("STYLER");
@@ -33,7 +33,7 @@ const applyOptions = (object: any, options: Options = {}): void => {
   object.level = options.level === undefined ? colorLevel : options.level;
 };
 
-export interface Options {
+interface Options {
   /**
    * Specify the color support for Chalk.
    *
@@ -253,13 +253,6 @@ export interface ChalkInstance {
   readonly bgMagentaBright: ChalkInstance;
   readonly bgCyanBright: ChalkInstance;
   readonly bgWhiteBright: ChalkInstance;
-}
-
-export class Chalk {
-  constructor(options?: Options) {
-    // biome-ignore lint/correctness/noConstructorReturn: This constructor returns a ChalkInstance to match the original chalk API
-    return chalkFactory(options);
-  }
 }
 
 /**
@@ -565,9 +558,6 @@ function stringEncaseCrlfWithFirstIndex(
 Object.defineProperties(createChalk.prototype, styles);
 
 const chalk = createChalk();
-export const chalkStderr = createChalk({
-  level: stderrColor ? stderrColor.level : 0,
-});
 
 export { createChalk };
 export default chalk;

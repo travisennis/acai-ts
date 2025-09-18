@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import ExecutionEnvironment from "../source/execution/index.ts";
+import { ExecutionEnvironment } from "../source/execution/index.ts";
 
 describe("test executeCommand", () => {
   test("executeCommand returns stdout and exitCode 0 for echo", async () => {

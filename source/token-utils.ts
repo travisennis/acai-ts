@@ -19,7 +19,7 @@ export class TokenCounter {
 /**
  * Interface for options when managing output
  */
-export interface ManageOutputOptions {
+interface ManageOutputOptions {
   tokenCounter: TokenCounter;
   threshold?: number; // Default 8000 tokens
   truncate?: boolean; // Whether to truncate if exceeded (default: true)
@@ -28,13 +28,14 @@ export interface ManageOutputOptions {
 /**
  * Interface for the result of managing output
  */
-export interface TruncatedOutput {
+interface TruncatedOutput {
   content: string;
   tokenCount: number;
   truncated: true;
   warning: string;
 }
-export interface Output {
+
+interface Output {
   content: string;
   tokenCount: number;
   truncated: false;

@@ -22,7 +22,7 @@ interface ExecuteOptions {
   maxBuffer?: number;
 }
 
-export interface ExecuteResult {
+interface ExecuteResult {
   /** Standard output from the command */
   stdout: string;
   /** Standard error from the command */
@@ -33,7 +33,7 @@ export interface ExecuteResult {
   signal?: NodeJS.Signals;
 }
 
-export type ParseResult =
+type ParseResult =
   | { ok: true; argv: [string, ...string[]] }
   | { ok: false; error: string };
 

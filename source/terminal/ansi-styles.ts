@@ -1,7 +1,7 @@
 // Converted from ansi-styles/index.js to modern TypeScript
 // Original source: chalk-main/source/vendor/ansi-styles/index.js
 
-import { objectEntries, objectKeys } from "@travisennis/stdlib/object";
+import { objectEntries } from "@travisennis/stdlib/object";
 
 const ANSI_BACKGROUND_OFFSET = 10;
 
@@ -106,25 +106,6 @@ const styles = {
     bgWhiteBright: [107, 49],
   } as const,
 } as const;
-
-export type ModifierName = keyof typeof styles.modifier;
-export type ForegroundColorName = keyof typeof styles.color;
-export type BackgroundColorName = keyof typeof styles.bgColor;
-export type ColorName = ForegroundColorName | BackgroundColorName;
-
-export const modifierNames: readonly ModifierName[] = objectKeys(
-  styles.modifier,
-);
-export const foregroundColorNames: readonly ForegroundColorName[] = objectKeys(
-  styles.color,
-);
-export const backgroundColorNames: readonly BackgroundColorName[] = objectKeys(
-  styles.bgColor,
-);
-export const colorNames: readonly ColorName[] = [
-  ...foregroundColorNames,
-  ...backgroundColorNames,
-];
 
 /**
  * Assembles the styles object with open/close ANSI sequences.

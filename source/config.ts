@@ -5,6 +5,63 @@ import path from "node:path";
 import { z } from "zod";
 import { jsonParser } from "./parsing.ts";
 
+// Type definitions
+const ProjectConfigSchema = z.object({
+  logs: z
+    .object({
+      path: z.string(),
+    })
+    .optional(),
+  tools: z
+    .object({
+      maxTokens: z.number().default(30000),
+      bash: z
+        .object({
+          allowPipes: z.boolean().default(true),
+          allowChaining: z.boolean().default(true),
+          allowRedirection: z.boolean().default(true),
+          maxSegments: z.number().default(6),
+          maxOutputBytes: z.number().default(2_000_000),
+        })
+        .optional()
+        .default({
+          allowPipes: true,
+          allowChaining: true,
+          allowRedirection: true,
+          maxSegments: 6,
+          maxOutputBytes: 2_000_000,
+        }),
+      dynamicTools: z
+        .object({
+          enabled: z.boolean().default(true),
+          maxTools: z.number().default(10),
+        })
+        .optional()
+        .default({
+          enabled: true,
+          maxTools: 10,
+        }),
+    })
+    .optional()
+    .default({
+      maxTokens: 30000,
+      bash: {
+        allowPipes: true,
+        allowChaining: true,
+        allowRedirection: true,
+        maxSegments: 6,
+        maxOutputBytes: 2_000_000,
+      },
+      dynamicTools: {
+        enabled: true,
+        maxTools: 10,
+      },
+    }),
+  notify: z.boolean().optional().default(true),
+});
+
+type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
+
 export class DirectoryProvider {
   private baseDir: string;
 
@@ -207,63 +264,6 @@ export class ConfigManager {
     await fs.writeFile(configPath, JSON.stringify(data, null, 2));
   }
 }
-
-// Type definitions
-const ProjectConfigSchema = z.object({
-  logs: z
-    .object({
-      path: z.string(),
-    })
-    .optional(),
-  tools: z
-    .object({
-      maxTokens: z.number().default(30000),
-      bash: z
-        .object({
-          allowPipes: z.boolean().default(true),
-          allowChaining: z.boolean().default(true),
-          allowRedirection: z.boolean().default(true),
-          maxSegments: z.number().default(6),
-          maxOutputBytes: z.number().default(2_000_000),
-        })
-        .optional()
-        .default({
-          allowPipes: true,
-          allowChaining: true,
-          allowRedirection: true,
-          maxSegments: 6,
-          maxOutputBytes: 2_000_000,
-        }),
-      dynamicTools: z
-        .object({
-          enabled: z.boolean().default(true),
-          maxTools: z.number().default(10),
-        })
-        .optional()
-        .default({
-          enabled: true,
-          maxTools: 10,
-        }),
-    })
-    .optional()
-    .default({
-      maxTokens: 30000,
-      bash: {
-        allowPipes: true,
-        allowChaining: true,
-        allowRedirection: true,
-        maxSegments: 6,
-        maxOutputBytes: 2_000_000,
-      },
-      dynamicTools: {
-        enabled: true,
-        maxTools: 10,
-      },
-    }),
-  notify: z.boolean().optional().default(true),
-});
-
-export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
 
 // Create a singleton instance
 export const config = new ConfigManager();

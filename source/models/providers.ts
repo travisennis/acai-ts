@@ -1,6 +1,5 @@
 import { isString } from "@travisennis/stdlib/typeguards";
 import { createProviderRegistry } from "ai";
-import { z } from "zod";
 import {
   anthropicModelNames,
   anthropicModelRegistry,
@@ -123,11 +122,6 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   ...openrouterModelRegistry,
   ...xaiModelRegistry,
 };
-
-// Schema for validating model selection
-export const ModelSelectionSchema = z.enum(
-  Object.keys(modelRegistry) as [string, ...string[]],
-);
 
 // Get available models grouped by provider
 export function getModelsByProvider(): Record<ModelProvider, ModelMetadata[]> {

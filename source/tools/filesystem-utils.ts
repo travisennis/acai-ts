@@ -7,7 +7,7 @@ import ignore, { type Ignore } from "ignore";
 import type { TokenCounter } from "../token-utils.ts";
 
 // Normalize all paths consistently
-export function normalizePath(p: string): string {
+function normalizePath(p: string): string {
   return path.normalize(p);
 }
 
@@ -19,7 +19,7 @@ export function joinWorkingDir(userPath: string, workingDir: string): string {
   return path.normalize(path.join(workingDir, userPath));
 }
 
-export function expandHome(filepath: string): string {
+function expandHome(filepath: string): string {
   if (filepath.startsWith("~/") || filepath === "~") {
     return path.join(os.homedir(), filepath.slice(1));
   }
@@ -102,7 +102,7 @@ function createUnifiedDiff(
   );
 }
 
-export interface FileEdit {
+interface FileEdit {
   oldText: string;
   newText: string;
 }

@@ -56,7 +56,7 @@ export const createWebFetchTool = (options: {
   };
 };
 
-export type ContentType =
+type ContentType =
   | "text/plain"
   | "text/html"
   | "text/markdown"

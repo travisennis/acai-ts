@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const toolMetadataSchema = z.object({
+const toolMetadataSchema = z.object({
   name: z.string().regex(/^[a-zA-Z_][a-zA-Z0-9_-]*$/),
   description: z.string().min(1),
   parameters: z.array(

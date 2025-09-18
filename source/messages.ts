@@ -45,7 +45,7 @@ export function createUserMessage(
   };
 }
 
-export function createAssistantMessage(content: string): AssistantModelMessage {
+function createAssistantMessage(content: string): AssistantModelMessage {
   return {
     role: "assistant",
     content: [
@@ -63,7 +63,7 @@ It can be either an assistant message or a tool message.
  */
 type ResponseMessage = AssistantModelMessage | ToolModelMessage;
 
-export type SavedMessageHistory = {
+type SavedMessageHistory = {
   title: string;
   createdAt: Date;
   updatedAt: Date;
@@ -346,62 +346,4 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
         : savedHistory.updatedAt;
     this.history = [...savedHistory.messages]; // Use the correct internal property name and create a copy
   }
-}
-
-/**
- * Normalizes an array of messages for API consumption by:
- * 1. Filtering out progress-type messages
- * 2. Processing user and assistant messages
- * 3. Handling tool results by either:
- *    - Adding them as new messages if they're the first tool result
- *    - Adding them as new messages if the previous message wasn't a tool result
- *    - Merging them with the previous message if it was also a tool result
- *
- * This consolidation of sequential tool results into a single message
- * ensures proper formatting for API consumption while maintaining the
- * logical flow of the conversation.
- *
- * @param messages - Array of messages to normalize
- * @returns Normalized array of user and assistant messages ready for API
- */
-export function normalizeMessagesForApi(
-  messages: ModelMessage[],
-): ModelMessage[] {
-  const result: ModelMessage[] = [];
-  for (const message of messages) {
-    switch (message.role) {
-      case "user": {
-        result.push(message);
-        continue;
-      }
-      case "tool": {
-        // If the last message is not a tool result, add it to the result
-        const lastMessage = result.at(-1);
-        if (
-          !lastMessage ||
-          lastMessage.role === "assistant" ||
-          !Array.isArray(lastMessage.content) ||
-          lastMessage.content[0]?.type !== "tool-result"
-        ) {
-          result.push(message);
-          continue;
-        }
-
-        // Otherwise, merge the current message with the last message
-        result[result.indexOf(lastMessage)] = {
-          ...lastMessage,
-          // biome-ignore lint/suspicious/noExplicitAny: can't figure out type
-          content: [...lastMessage.content, ...message.content] as any, // #FIXME figure out what type this should be
-        };
-        continue;
-      }
-      case "assistant": {
-        result.push(message);
-        continue;
-      }
-      default:
-        continue;
-    }
-  }
-  return result;
 }
