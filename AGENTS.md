@@ -24,3 +24,24 @@
 - **Commit Message Length:** Keep commit message lines (header, body, and footer) under 100 characters.
 - **Comments** Never add comments to the code explaining the edit you are making. Comments that help explain how code works are acceptable.
 - **Testing** Use `node:test` and `node:assert/strict` to write unit tests in the `./test` directory. Test directory should follow the same folder structure as source.
+
+### Terminal Usage
+When you need to call tools from the shell, use this rubric:
+
+- Find files by file name: `fd`
+- Find files with path name: `fd -p <file-path>`
+- List files in a directory: `fd . <directory>`
+- Find files with extension and pattern: `fd -e <extension> <pattern>`
+- Find Text: `rg` (ripgrep)
+- Find Code Structure: `ast-grep`
+  - Default to TypeScript when in TS/TSX repos:
+    - `.ts` → `ast-grep --lang ts -p '<pattern>'`
+    - `.tsx` (React) → `ast-grep --lang tsx -p '<pattern>'`
+  - Other common languages:
+    - Python → `ast-grep --lang python -p '<pattern>'`
+    - Bash → `ast-grep --lang bash -p '<pattern>'`
+    - JavaScript → `ast-grep --lang js -p '<pattern>'`
+    - Rust → `ast-grep --lang rust -p '<pattern>'`
+    - JSON → `ast-grep --lang json -p '<pattern>'`
+- JSON: `jq`
+- YAML/XML: `yq`
