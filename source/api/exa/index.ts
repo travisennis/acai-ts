@@ -1,3 +1,4 @@
+// see https://raw.githubusercontent.com/exa-labs/exa-js/refs/heads/master/src/index.ts
 import type { ZodType } from "zod";
 import { isZodSchema, zodToJsonSchema } from "../../utils/zod-utils.ts";
 
@@ -8,16 +9,16 @@ const HeadersImpl = globalThis.Headers;
 /**
  * HTTP status codes
  */
-export enum HttpStatusCode {
-  BadRequest = 400,
-  NotFound = 404,
-  Unauthorized = 401,
-  Forbidden = 403,
-  TooManyRequests = 429,
-  RequestTimeout = 408,
-  InternalServerError = 500,
-  ServiceUnavailable = 503,
-}
+export const HttpStatusCode = {
+  badRequest: 400,
+  notFound: 404,
+  unauthorized: 401,
+  forbidden: 403,
+  tooManyRequests: 429,
+  requestTimeout: 408,
+  internalServerError: 500,
+  serviceUnavailable: 503,
+};
 
 /**
  * Base error class for all Exa API errors
@@ -257,7 +258,7 @@ export default class Exa {
       if (!resolvedKey) {
         throw new ExaError(
           "API key must be provided as an argument or as an environment variable (EXASEARCH_API_KEY or EXA_API_KEY)",
-          HttpStatusCode.Unauthorized,
+          HttpStatusCode.unauthorized,
         );
       }
     }
@@ -353,7 +354,7 @@ export default class Exa {
     if (!fetchImpl) {
       throw new ExaError(
         "Global fetch is not available in this environment.",
-        HttpStatusCode.InternalServerError,
+        HttpStatusCode.internalServerError,
       );
     }
 
@@ -430,7 +431,7 @@ export default class Exa {
     if (!fetchImpl) {
       throw new ExaError(
         "Global fetch is not available in this environment.",
-        HttpStatusCode.InternalServerError,
+        HttpStatusCode.internalServerError,
       );
     }
 
@@ -518,7 +519,7 @@ export default class Exa {
     if (!urls || (Array.isArray(urls) && urls.length === 0)) {
       throw new ExaError(
         "Must provide at least one URL",
-        HttpStatusCode.BadRequest,
+        HttpStatusCode.badRequest,
       );
     }
 
@@ -557,7 +558,7 @@ export default class Exa {
           "for await (const chunk of exa.streamAnswer(query)) {\n" +
           "  // Handle chunks\n" +
           "}",
-        HttpStatusCode.BadRequest,
+        HttpStatusCode.badRequest,
       );
     }
 
@@ -613,7 +614,7 @@ export default class Exa {
     if (!fetchImpl) {
       throw new ExaError(
         "Global fetch is not available in this environment.",
-        HttpStatusCode.InternalServerError,
+        HttpStatusCode.internalServerError,
       );
     }
 
@@ -818,7 +819,7 @@ export default class Exa {
                   reject(
                     new ExaError(
                       message,
-                      HttpStatusCode.InternalServerError,
+                      HttpStatusCode.internalServerError,
                       new Date().toISOString(),
                     ),
                   );
@@ -833,7 +834,7 @@ export default class Exa {
           reject(
             new ExaError(
               "Stream ended without a completion event.",
-              HttpStatusCode.InternalServerError,
+              HttpStatusCode.internalServerError,
               new Date().toISOString(),
             ),
           );
