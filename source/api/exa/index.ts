@@ -233,12 +233,10 @@ export default class Exa {
     this.baseUrl = baseUrl;
     let resolvedKey = apiKey;
     if (!resolvedKey) {
-      // Support both official and common env var names
-      resolvedKey =
-        process.env["EXASEARCH_API_KEY"] ?? process.env["EXA_API_KEY"];
+      resolvedKey = process.env["EXA_API_KEY"];
       if (!resolvedKey) {
         throw new ExaError(
-          "API key must be provided as an argument or as an environment variable (EXASEARCH_API_KEY or EXA_API_KEY)",
+          "API key must be provided as an argument or as an environment variable (EXA_API_KEY)",
           HttpStatusCode.unauthorized,
         );
       }
