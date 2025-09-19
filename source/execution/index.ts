@@ -96,6 +96,24 @@ function getShell() {
   return process.env["ZSH_VERSION"] ? "zsh" : process.env["SHELL"] || "bash";
 }
 
+function ttySizeEnv(): Record<string, string> {
+  const env: Record<string, string> = {};
+  if (
+    process.stdout.isTTY &&
+    typeof process.stdout.columns === "number" &&
+    typeof process.stdout.rows === "number"
+  ) {
+    env["COLUMNS"] = String(process.stdout.columns);
+    env["LINES"] = String(process.stdout.rows);
+  } else {
+    if (typeof process.env["COLUMNS"] === "string")
+      env["COLUMNS"] = process.env["COLUMNS"] as string;
+    if (typeof process.env["LINES"] === "string")
+      env["LINES"] = process.env["LINES"] as string;
+  }
+  return env;
+}
+
 export class ExecutionEnvironment {
   private config: ExecutionConfig;
   private backgroundProcesses: Map<number, BackgroundProcess> = new Map();
@@ -163,7 +181,11 @@ export class ExecutionEnvironment {
     this.validateCommand(command);
 
     const cwd = options.cwd || this.workingDirectory;
-    const env = { ...this.environmentVariables, ...(options.env || {}) };
+    const env = {
+      ...this.environmentVariables,
+      ...ttySizeEnv(),
+      ...(options.env || {}),
+    };
     const timeout = options.timeout || DEFAULT_TIMEOUT;
     const maxBuffer = options.maxBuffer || DEFAULT_MAX_BUFFER;
     const shell = options.shell || this.config.execution?.shell || getShell();
@@ -308,7 +330,11 @@ export class ExecutionEnvironment {
     this.validateCommand(command);
 
     const cwd = options.cwd || this.workingDirectory;
-    const env = { ...this.environmentVariables, ...(options.env || {}) };
+    const env = {
+      ...this.environmentVariables,
+      ...ttySizeEnv(),
+      ...(options.env || {}),
+    };
     const shell =
       options.shell ||
       this.config.execution?.shell ||
