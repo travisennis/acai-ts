@@ -103,7 +103,7 @@ function ttySizeEnv(): Record<string, string> {
     typeof process.stdout.columns === "number" &&
     typeof process.stdout.rows === "number"
   ) {
-    env["COLUMNS"] = String(process.stdout.columns);
+    env["COLUMNS"] = String(process.stdout.columns - 2);
     env["LINES"] = String(process.stdout.rows);
   } else {
     if (typeof process.env["COLUMNS"] === "string")
