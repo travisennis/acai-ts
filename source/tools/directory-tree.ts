@@ -75,10 +75,15 @@ export const createDirectoryTreeTool = async ({
           sendData?.({
             id: toolCallId,
             event: "tool-completion",
-            data: "Done",
+            data: `Done (${managed.tokenCount} tokens)`,
           });
           return managed.content;
         } catch (error) {
+          sendData?.({
+            id: toolCallId,
+            event: "tool-error",
+            data: "Failed to show directory tree.",
+          });
           return `Failed to show directory tree: ${(error as Error).message}`;
         }
       },
