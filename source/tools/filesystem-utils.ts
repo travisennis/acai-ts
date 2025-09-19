@@ -41,40 +41,59 @@ export async function validatePath(
     : path.resolve(process.cwd(), expandedPath);
   const normalizedRequested = normalizePath(absolute);
 
-  // Check if path is within allowed directories
-  const isAllowed = normalizedRequested.startsWith(allowedDirectory);
-  if (!isAllowed) {
+  // Helper to check if a path is within the allowed directory using path.relative
+  const isWithinAllowed = (targetPath: string): boolean => {
+    const rel = path.relative(allowedDirectory, targetPath);
+    return rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
+  };
+
+  // Check intended path is within allowed directory
+  if (!isWithinAllowed(normalizedRequested)) {
     throw new Error(
       `Access denied - path outside allowed directories: ${absolute} not in ${allowedDirectory}`,
     );
   }
 
-  // Handle symlinks by checking their real path
+  // Try to resolve real path for existing targets to handle symlinks safely
   try {
     const realPath = await fs.realpath(absolute);
     const normalizedReal = normalizePath(realPath);
-    const isRealPathAllowed = normalizedReal.startsWith(allowedDirectory);
-    if (!isRealPathAllowed) {
+    if (!isWithinAllowed(normalizedReal)) {
       throw new Error(
         "Access denied - symlink target outside allowed directories",
       );
     }
     return realPath;
   } catch (_error) {
-    // For new files that don't exist yet, verify parent directory
-    const parentDir = path.dirname(absolute);
-    try {
-      const realParentPath = await fs.realpath(parentDir);
-      const normalizedParent = normalizePath(realParentPath);
-      const isParentAllowed = normalizedParent.startsWith(allowedDirectory);
-      if (!isParentAllowed) {
-        throw new Error(
-          "Access denied - parent directory outside allowed directories",
-        );
+    // For new files or paths where some directories don't exist yet:
+    // Walk up to the nearest existing ancestor directory and validate it.
+    let current = path.dirname(absolute);
+    while (true) {
+      try {
+        const stat = await fs.stat(current);
+        if (!stat.isDirectory()) {
+          throw new Error(
+            `Nearest existing ancestor is not a directory: ${current}`,
+          );
+        }
+        const realAncestor = await fs.realpath(current);
+        const normalizedAncestor = normalizePath(realAncestor);
+        if (!isWithinAllowed(normalizedAncestor)) {
+          throw new Error(
+            "Access denied - ancestor directory resolves outside allowed directories",
+          );
+        }
+        // Ancestor is within allowed; allow creation below it.
+        return absolute;
+      } catch (_err) {
+        // If we reached the filesystem root, break to fallback check
+        const parent = path.dirname(current);
+        if (parent === current) {
+          // As a final check, rely on intended path check which we already did
+          return absolute;
+        }
+        current = parent;
       }
-      return absolute;
-    } catch {
-      throw new Error(`Parent directory does not exist: ${parentDir}`);
     }
   }
 }

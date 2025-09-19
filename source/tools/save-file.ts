@@ -30,6 +30,7 @@ export const createSaveFileTool = async ({
     [SaveFileTool.name]: tool({
       description:
         "Create a new file or completely overwrite an existing file with new content. " +
+        "Automatically creates all missing parent directories. " +
         "Use with caution as it will overwrite existing files without warning. " +
         "Handles text content with proper encoding. Only works within allowed directories.",
       inputSchema: z.object({
@@ -79,6 +80,19 @@ export const createSaveFileTool = async ({
             terminal.lineBreak();
 
             let userChoice: string;
+            // Determine overwrite status for display
+            let overwriteMessage = "";
+            try {
+              const stat = await fs.stat(filePath);
+              if (stat.isFile()) {
+                overwriteMessage = chalk.yellow(
+                  "(Will overwrite existing file)",
+                );
+              }
+            } catch {
+              overwriteMessage = chalk.green("(Will create new file)");
+            }
+
             if (autoAcceptSaves) {
               terminal.writeln(
                 chalk.green(
@@ -90,7 +104,7 @@ export const createSaveFileTool = async ({
               try {
                 userChoice = await select(
                   {
-                    message: "What would you like to do with this file?",
+                    message: `What would you like to do with this file? ${overwriteMessage}`,
                     choices: [
                       { name: "Accept and save this file", value: "accept" },
                       {
@@ -153,8 +167,9 @@ export const createSaveFileTool = async ({
           if (abortSignal?.aborted) {
             throw new Error("File saving aborted before writing");
           }
-          // Ensure parent directory exists
-          await fs.mkdir(path.dirname(filePath), { recursive: true });
+          // Ensure parent directory exists (create missing parents)
+          const parentDir = path.dirname(filePath);
+          await fs.mkdir(parentDir, { recursive: true });
           await fs.writeFile(filePath, content, {
             encoding,
             signal: abortSignal,
