@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { SafeSearchType, type SearchResult, search } from "duck-duck-scrape";
-import Exa from "exa-js";
 import { z } from "zod";
+import Exa from "../api/exa/index.ts";
 import chalk from "../terminal/chalk.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
