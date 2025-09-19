@@ -40,7 +40,17 @@ export async function validatePath(
     ? path.resolve(expandedPath)
     : path.resolve(process.cwd(), expandedPath);
   const normalizedRequested = normalizePath(absolute);
-  const normalizedAllowed = normalizePath(path.resolve(allowedDirectory));
+  let normalizedAllowed = normalizePath(path.resolve(allowedDirectory));
+  // Try to resolve real path for allowedDirectory when it exists to handle symlinked roots
+  try {
+    const stats = await fs.stat(normalizedAllowed);
+    if (stats.isDirectory()) {
+      const allowedReal = await fs.realpath(normalizedAllowed);
+      normalizedAllowed = normalizePath(allowedReal);
+    }
+  } catch (_err) {
+    // If allowedDirectory doesn't exist, keep normalizedAllowed as-is
+  }
 
   // Helper to check if a path is within the allowed directory using path.relative
   const isWithinAllowed = (targetPath: string): boolean => {
@@ -224,7 +234,7 @@ async function generateDirectoryTree(
   for (let i = 0; i < filteredItems.length; i++) {
     const item = filteredItems[i] ?? "";
     const itemPath = path.join(dirPath, item);
-    const isLast = i === items.length - 1;
+    const isLast = i === filteredItems.length - 1;
     const stats = await fs.stat(itemPath);
 
     if (stats.isDirectory()) {
