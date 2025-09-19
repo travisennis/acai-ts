@@ -40,11 +40,13 @@ export async function validatePath(
     ? path.resolve(expandedPath)
     : path.resolve(process.cwd(), expandedPath);
   const normalizedRequested = normalizePath(absolute);
+  const normalizedAllowed = normalizePath(path.resolve(allowedDirectory));
 
   // Helper to check if a path is within the allowed directory using path.relative
   const isWithinAllowed = (targetPath: string): boolean => {
-    const rel = path.relative(allowedDirectory, targetPath);
-    return rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
+    const rel = path.relative(normalizedAllowed, targetPath);
+    // Allow the allowed directory itself (rel === "") and any descendant paths
+    return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
   };
 
   // Check intended path is within allowed directory
