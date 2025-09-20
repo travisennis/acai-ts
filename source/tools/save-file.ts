@@ -3,6 +3,7 @@ import path from "node:path";
 import { input, select } from "@inquirer/prompts";
 import { tool } from "ai";
 import { z } from "zod";
+import { formatCodeBlock } from "../formatting.ts";
 import chalk from "../terminal/chalk.ts";
 import type { Terminal } from "../terminal/index.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
@@ -76,7 +77,7 @@ export const createSaveFileTool = async ({
             terminal.lineBreak();
             terminal.writeln("Proposed file content:");
             terminal.lineBreak();
-            terminal.display(content);
+            terminal.display(formatCodeBlock(filePath, content));
             terminal.lineBreak();
 
             let userChoice: string;
