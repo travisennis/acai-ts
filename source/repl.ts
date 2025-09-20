@@ -98,9 +98,8 @@ export class Repl {
 
     let currentAbortController: AbortController | null = null;
 
-    // Handle Ctrl+C (SIGINT)
+    // Handle Ctrl+C (SIGINT) as a fallback when not in raw mode
     process.on("SIGINT", () => {
-      console.log("CTRL-C Pressed");
       currentAbortController?.abort();
     });
 
@@ -231,6 +230,34 @@ export class Repl {
             })),
           }
         : undefined;
+
+      // Enable raw-mode key capture to suppress ^C echo while streaming
+      const cleanupKeyCapture = (() => {
+        if (!process.stdin.isTTY) return () => {};
+        const stdin = process.stdin;
+        // biome-ignore lint/suspicious/noExplicitAny: Node's isRaw is not in types
+        const wasRaw = (stdin as any).isRaw === true;
+        if (!wasRaw) {
+          stdin.setRawMode(true);
+        }
+        const onData = (data: Buffer) => {
+          // Ctrl+C
+          if (data.length === 1 && data[0] === 0x03) {
+            currentAbortController?.abort();
+          }
+        };
+        stdin.on("data", onData);
+        return () => {
+          stdin.off("data", onData);
+          if (!wasRaw) {
+            try {
+              stdin.setRawMode(false);
+            } catch {
+              // ignore
+            }
+          }
+        };
+      })();
 
       try {
         const result = streamText({
@@ -413,6 +440,9 @@ export class Repl {
         } else {
           logger.error(JSON.stringify(e, null, 2));
         }
+      } finally {
+        // Restore terminal mode and listeners
+        cleanupKeyCapture();
       }
     }
   }
