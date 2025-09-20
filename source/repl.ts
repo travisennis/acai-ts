@@ -1,15 +1,5 @@
 import { isNumber, isRecord } from "@travisennis/stdlib/typeguards";
-import type { AsyncReturnType } from "@travisennis/stdlib/types";
-import {
-  generateObject,
-  NoSuchToolError,
-  type StepResult,
-  stepCountIs,
-  streamText,
-  type ToolCallRepairFunction,
-  type ToolSet,
-} from "ai";
-import type z from "zod";
+import { stepCountIs, streamText } from "ai";
 import type { CommandManager } from "./commands/manager.ts";
 import { config as configManager } from "./config.ts";
 import { logger } from "./logger.ts";
@@ -19,19 +9,15 @@ import { AiConfig } from "./models/ai-config.ts";
 import type { ModelManager } from "./models/manager.js";
 import type { PromptManager } from "./prompts/manager.ts";
 import { systemPrompt } from "./prompts.ts";
+import { displayToolMessages } from "./repl/display-tool-messages.ts";
+import { displayToolUse } from "./repl/display-tool-use.ts";
+import { getPromptHeader } from "./repl/get-prompt-header.ts";
+import { toolCallRepair } from "./repl/tool-call-repair.ts";
 import { ReplPrompt } from "./repl-prompt.ts";
-import chalk, { type ChalkInstance } from "./terminal/chalk.ts";
+import chalk from "./terminal/chalk.ts";
 import type { Terminal } from "./terminal/index.ts";
-import { isMarkdown } from "./terminal/markdown-utils.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import type { TokenCounter } from "./token-utils.ts";
-import {
-  getCurrentBranch,
-  getDiffStat,
-  getGitStatus,
-  hasUncommittedChanges,
-  inGitDirectory,
-} from "./tools/git-utils.ts"; // Modified import
 import { initAgents, initTools } from "./tools/index.ts";
 import type { Message } from "./tools/types.ts";
 
@@ -48,19 +34,6 @@ interface ReplOptions {
   autoAcceptAll: boolean;
   showLastMessage: boolean; // For displaying last message when continuing/resuming
 }
-
-type CompleteToolSet = AsyncReturnType<typeof initTools> &
-  AsyncReturnType<typeof initAgents>;
-
-type OnFinishResult<Tools extends ToolSet = CompleteToolSet> = Omit<
-  StepResult<Tools>,
-  "stepType" | "isContinued"
-> & {
-  /**
-Details for all steps.
-   */
-  readonly steps: StepResult<Tools>[];
-};
 
 export class Repl {
   private options: ReplOptions;
@@ -300,7 +273,7 @@ export class Repl {
             }
 
             // Create a more visual representation of steps/tool usage
-            this.displayToolUse(result, terminal);
+            displayToolUse(result, terminal);
 
             const total =
               (result as { totalUsage?: typeof result.usage }).totalUsage ??
@@ -445,229 +418,4 @@ export class Repl {
       }
     }
   }
-
-  private displayToolUse(result: OnFinishResult, terminal: Terminal) {
-    const toolsCalled: string[] = [];
-    const toolColors = new Map<string, ChalkInstance>();
-
-    const chalkColors = [
-      "red",
-      "green",
-      "yellow",
-      "blue",
-      "magenta",
-      "cyan",
-      "white",
-      "gray",
-      "redBright",
-      "greenBright",
-      "yellowBright",
-      "blueBright",
-      "magentaBright",
-      "cyanBright",
-      "whiteBright",
-      "blackBright",
-    ] as const;
-
-    terminal.writeln(chalk.dim(`Steps: ${result.steps.length}`));
-
-    for (const step of result.steps) {
-      let currentToolCalls: Array<{ toolName: string }> = [];
-
-      if (step.toolResults.length > 0) {
-        currentToolCalls = step.toolResults;
-      } else if (step.toolCalls.length > 0) {
-        currentToolCalls = step.toolCalls;
-      }
-
-      for (const toolCallOrResult of currentToolCalls) {
-        const toolName = toolCallOrResult.toolName;
-        if (!toolColors.has(toolName)) {
-          const availableColors = chalkColors.filter(
-            (color) =>
-              !Array.from(toolColors.values()).some((c) => c === chalk[color]),
-          );
-          const color =
-            availableColors.length > 0
-              ? (availableColors[
-                  Math.floor(Math.random() * availableColors.length)
-                ] ?? "white")
-              : "white";
-          toolColors.set(toolName, chalk[color]);
-        }
-        toolsCalled.push(toolName);
-      }
-    }
-
-    if (toolsCalled.length > 0) {
-      terminal.lineBreak();
-      terminal.writeln(chalk.dim("Tools:"));
-      for (const toolCalled of toolsCalled) {
-        const colorFn = toolColors.get(toolCalled) ?? chalk.white;
-        terminal.write(`${colorFn("██")} `);
-      }
-      terminal.lineBreak();
-
-      const uniqueTools = new Set(toolsCalled);
-      for (const [index, toolCalled] of Array.from(uniqueTools).entries()) {
-        const colorFn = toolColors.get(toolCalled) ?? chalk.white;
-        terminal.write(colorFn(toolCalled));
-        if (index < new Set(toolsCalled).size - 1) {
-          terminal.write(" - ");
-        }
-      }
-      terminal.lineBreak();
-      terminal.lineBreak();
-    }
-  }
-}
-
-function displayToolMessages(messages: Message[], terminal: Terminal) {
-  const isError = messages[messages.length - 1]?.event === "tool-error";
-  const indicator = isError ? chalk.red.bold("●") : chalk.blue.bold("●");
-  const initMessage =
-    messages.find((m) => m.event === "tool-init")?.data ?? "Tool Execution";
-
-  terminal.write(`${indicator} `); // Write indicator without newline (sync)
-  terminal.display(initMessage); // Display initial message (async)
-
-  for (const msg of messages) {
-    switch (msg.event) {
-      case "tool-update":
-        _handleToolUpdateMessage(msg.data, terminal);
-        break;
-      case "tool-completion":
-        _handleToolCompletionMessage(msg.data, terminal);
-        break;
-      case "tool-error":
-        _handleToolErrorMessage(msg.data, terminal);
-        break;
-      case "tool-init":
-        // 'tool-init' is handled before the loop, so nothing to do here.
-        break;
-      default:
-        // Optional: Log an unexpected event type for debugging, or do nothing.
-        logger.debug(
-          `Unhandled tool message event: ${(msg as { event: string }).event}`,
-        );
-        break;
-    }
-  }
-  terminal.lineBreak();
-}
-
-// Helper function to handle tool update messages
-function _handleToolUpdateMessage(
-  data: { primary: string; secondary?: string[] },
-  terminal: Terminal,
-) {
-  if (data.secondary && data.secondary.length > 0) {
-    const content = data.secondary.join("\n");
-    if (content.trim().length !== 0) {
-      terminal.display(`└── ${data.primary}`);
-      terminal.hr();
-      if (isMarkdown(content)) {
-        terminal.display(content, true);
-      } else {
-        terminal.write(chalk.green(content));
-        terminal.lineBreak();
-      }
-      terminal.hr();
-    }
-  } else {
-    terminal.display(`└── ${data.primary}`);
-  }
-}
-
-// Helper function to handle tool completion messages
-function _handleToolCompletionMessage(data: string, terminal: Terminal) {
-  terminal.display(`└── ${data}`);
-}
-
-// Helper function to handle tool error messages
-function _handleToolErrorMessage(data: string, terminal: Terminal) {
-  terminal.write("└── ");
-  terminal.error(data);
-}
-
-const toolCallRepair = (modelManager: ModelManager, terminal: Terminal) => {
-  const fn: ToolCallRepairFunction<CompleteToolSet> = async ({
-    toolCall,
-    tools,
-    inputSchema,
-    error,
-  }) => {
-    if (NoSuchToolError.isInstance(error)) {
-      return null; // do not attempt to fix invalid tool names
-    }
-
-    terminal.warn(`Attempting to repair tool call: ${toolCall.toolName}.`);
-    terminal.lineBreak();
-
-    const tool = tools[toolCall.toolName as keyof typeof tools];
-
-    try {
-      const { object: repairedArgs } = await generateObject({
-        model: modelManager.getModel("tool-repair"),
-        schema: tool.inputSchema as z.ZodSchema<unknown>,
-        prompt: [
-          `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
-          JSON.stringify(toolCall.input),
-          "The tool accepts the following schema:",
-          JSON.stringify(inputSchema(toolCall)),
-          "Please fix the arguments.",
-        ].join("\n"),
-      });
-
-      return { ...toolCall, args: JSON.stringify(repairedArgs) };
-    } catch (err) {
-      logger.error(err, `Failed to repair tool call: ${toolCall.toolName}.`);
-      return null;
-    }
-  };
-  return fn;
-};
-
-async function getProjectStatusLine() {
-  //
-  const currentDir = process.cwd().split("/").pop() || process.cwd();
-  const branch = await getCurrentBranch();
-
-  let gitStatus = "";
-  if (branch) {
-    const hasChanges = await hasUncommittedChanges();
-    const asterisk = hasChanges ? "*" : "";
-    gitStatus = ` ${chalk.gray(branch + asterisk)}`;
-  }
-
-  if (await inGitDirectory()) {
-    // Added check
-    const stats = await getDiffStat();
-    const fileChanges = await getGitStatus();
-    let fileStatus = "";
-    if (fileChanges.added) fileStatus += ` +${fileChanges.added}`;
-    if (fileChanges.modified) fileStatus += ` ~${fileChanges.modified}`;
-    if (fileChanges.deleted) fileStatus += ` -${fileChanges.deleted}`;
-    if (fileChanges.untracked) fileStatus += ` ?${fileChanges.untracked}`;
-    gitStatus +=
-      " " +
-      `${chalk.dim("[")}${chalk.yellow(fileStatus.trim())} ` +
-      `${chalk.green(`+${stats.insertions}`)} ` + // Insertions first (green)
-      `${chalk.red(`-${stats.deletions}`)}${chalk.dim("]")}`; // Deletions last (red)
-  }
-
-  return `${chalk.blue(currentDir)}${gitStatus}`;
-}
-
-async function getPromptHeader(args: {
-  terminal: Terminal;
-  modelId: string;
-  contextWindow: number;
-  currentContextWindow: number;
-}) {
-  const { terminal, modelId, contextWindow, currentContextWindow } = args;
-  terminal.hr();
-  terminal.writeln(await getProjectStatusLine());
-  terminal.writeln(chalk.dim(modelId));
-  terminal.displayProgressBar(currentContextWindow, contextWindow);
 }
