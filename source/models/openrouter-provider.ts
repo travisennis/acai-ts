@@ -38,6 +38,7 @@ const openrouterModels = {
   "gpt-5-mini": openRouterClient("openai/gpt-5-mini"),
   "gpt-oss-120b": openRouterClient("openai/gpt-oss-120b"),
   "grok-code-fast-1": openRouterClient("x-ai/grok-code-fast-1"),
+  "grok-4-fast-free": openRouterClient("x-ai/grok-4-fast:free"),
   "sonoma-sky-alpha": openRouterClient("openrouter/sonoma-sky-alpha"),
   "sonoma-dusk-alpha": openRouterClient("openrouter/sonoma-dusk-alpha"),
 } as const;
@@ -355,6 +356,19 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000007256312,
     costPerOutputToken: 0.0000002903936,
+    category: "fast",
+  },
+  "openrouter:grok-4-fast-free": {
+    id: "openrouter:grok-4-fast-free",
+    provider: "openrouter",
+    contextWindow: 2000000,
+    maxOutputTokens: 64000,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0,
+    costPerOutputToken: 0,
     category: "fast",
   },
   "openrouter:sonoma-sky-alpha": {
