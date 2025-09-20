@@ -111,13 +111,12 @@ export class Repl {
       const modelConfig = modelManager.getModelMetadata("repl");
 
       // agent header/status line
-      terminal.hr();
-      terminal.writeln(await getProjectStatusLine());
-      terminal.writeln(chalk.dim(langModel.modelId));
-      terminal.displayProgressBar(
+      await getPromptHeader({
+        terminal,
+        modelId: langModel.modelId,
+        contextWindow: modelConfig.contextWindow,
         currentContextWindow,
-        modelConfig.contextWindow,
-      );
+      });
 
       // Display last message when continuing/resuming a conversation
       if (this.showLastMessage) {
@@ -658,4 +657,17 @@ async function getProjectStatusLine() {
   }
 
   return `${chalk.blue(currentDir)}${gitStatus}`;
+}
+
+async function getPromptHeader(args: {
+  terminal: Terminal;
+  modelId: string;
+  contextWindow: number;
+  currentContextWindow: number;
+}) {
+  const { terminal, modelId, contextWindow, currentContextWindow } = args;
+  terminal.hr();
+  terminal.writeln(await getProjectStatusLine());
+  terminal.writeln(chalk.dim(modelId));
+  terminal.displayProgressBar(currentContextWindow, contextWindow);
 }
