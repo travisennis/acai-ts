@@ -38,8 +38,7 @@ const openrouterModels = {
   "gpt-5-mini": openRouterClient("openai/gpt-5-mini"),
   "gpt-oss-120b": openRouterClient("openai/gpt-oss-120b"),
   "grok-code-fast-1": openRouterClient("x-ai/grok-code-fast-1"),
-  "sonoma-sky-alpha": openRouterClient("openrouter/sonoma-sky-alpha"),
-  "sonoma-dusk-alpha": openRouterClient("openrouter/sonoma-dusk-alpha"),
+  "grok-4-fast-free": openRouterClient("x-ai/grok-4-fast:free"),
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -357,30 +356,17 @@ export const openrouterModelRegistry: {
     costPerOutputToken: 0.0000002903936,
     category: "fast",
   },
-  "openrouter:sonoma-sky-alpha": {
-    id: "openrouter:sonoma-sky-alpha",
+  "openrouter:grok-4-fast-free": {
+    id: "openrouter:grok-4-fast-free",
     provider: "openrouter",
     contextWindow: 2000000,
-    maxOutputTokens: 64000, // Default value as max_completion_tokens was null
-    defaultTemperature: 0.5, // Using standard default
-    promptFormat: "markdown", // Assuming markdown format
-    supportsReasoning: true, // Based on "include_reasoning" in supported_parameters
-    supportsToolCalling: true, // Based on "tool_choice" and "tools" in supported_parameters
-    costPerInputToken: 0, // Free during testing period
-    costPerOutputToken: 0, // Free during testing period
-    category: "powerful", // Given the description as "maximally intelligent"
-  },
-  "openrouter:sonoma-dusk-alpha": {
-    id: "openrouter:sonoma-dusk-alpha",
-    provider: "openrouter",
-    contextWindow: 2000000,
-    maxOutputTokens: 64000, // Default value as max_completion_tokens was null
-    defaultTemperature: 0.5, // Using standard default
-    promptFormat: "markdown", // Assuming markdown format
-    supportsReasoning: false, // Not explicitly mentioned in supported_parameters
-    supportsToolCalling: true, // Based on "tool_choice" and "tools" in supported_parameters
-    costPerInputToken: 0, // Free during testing period
-    costPerOutputToken: 0, // Free during testing period
-    category: "powerful", // Given the description as "fast and intelligent general-purpose frontier model"
+    maxOutputTokens: 64000,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0,
+    costPerOutputToken: 0,
+    category: "fast",
   },
 };
