@@ -187,7 +187,7 @@ export const createBashTool = async ({
           }
 
           const execEnv = await initExecutionEnvironment();
-          const { output } = await execEnv.executeCommand(command, {
+          const { output, exitCode } = await execEnv.executeCommand(command, {
             cwd: safeCwd,
             timeout: safeTimeout,
             abortSignal,
@@ -222,7 +222,7 @@ export const createBashTool = async ({
             id: toolCallId,
             data:
               tokenCount <= maxTokens
-                ? `Command executed successfully. (${tokenCount} tokens)`
+                ? `Command executed successfully: ${exitCode} (${tokenCount} tokens)`
                 : `Output of command (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}).`,
           });
           return finalResult;
