@@ -63,6 +63,12 @@ export function formatUrl(
   }
 }
 
+export function formatCodeBlock(file: string, content: string): string {
+  const fileExtension = path.extname(file).slice(1);
+  const codeBlockName = codeBlockExtensions[fileExtension] || fileExtension;
+  return `${MD_TRIPLE_QUOTE} ${codeBlockName}\n${content}\n${MD_TRIPLE_QUOTE}`;
+}
+
 export function formatBlock(
   content: string,
   blockName: string,
