@@ -1,11 +1,5 @@
 import path from "node:path";
-
-// Ensure path is within base directory
-function isPathWithinBaseDir(requestedPath: string, baseDir: string): boolean {
-  const normalizedRequestedPath = path.normalize(requestedPath);
-  const normalizedBaseDir = path.normalize(baseDir);
-  return normalizedRequestedPath.startsWith(normalizedBaseDir);
-}
+import { isPathWithinBaseDir } from "./filesystem-utils.ts";
 
 // Validate path arguments to ensure they're within the project
 export function validatePaths(
@@ -20,7 +14,7 @@ export function validatePaths(
   let quoteChar = "";
 
   for (let i = 0; i < command.length; i++) {
-    const char = command[i];
+    const char = command[i] ?? "";
 
     if ((char === '"' || char === "'") && !inQuotes) {
       inQuotes = true;

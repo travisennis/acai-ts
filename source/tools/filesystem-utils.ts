@@ -1,7 +1,7 @@
+import { realpathSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-
 import { createTwoFilesPatch } from "diff";
 import ignore, { type Ignore } from "ignore";
 import type { TokenCounter } from "../token-utils.ts";
@@ -24,6 +24,34 @@ function expandHome(filepath: string): string {
     return path.join(os.homedir(), filepath.slice(1));
   }
   return filepath;
+}
+
+// Ensure path is within base directory (handles '.', relative paths, and symlinks)
+export function isPathWithinBaseDir(
+  requestedPath: string,
+  baseDir: string,
+): boolean {
+  const baseAbs = path.resolve(baseDir);
+  let baseReal = baseAbs;
+  try {
+    baseReal = realpathSync(baseAbs);
+  } catch {
+    // If baseDir doesn't exist, fall back to resolved path
+  }
+
+  const abs = path.isAbsolute(requestedPath)
+    ? path.resolve(requestedPath)
+    : path.resolve(baseReal, requestedPath);
+
+  let target = abs;
+  try {
+    target = realpathSync(abs);
+  } catch {
+    // If target doesn't fully exist, validate against intended path
+  }
+
+  const rel = path.relative(baseReal, target);
+  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
 }
 
 // Security utilities

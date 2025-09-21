@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { input, select } from "@inquirer/prompts";
 import { tool } from "ai";
@@ -8,6 +9,7 @@ import chalk from "../terminal/chalk.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import { validatePaths } from "./bash-utils.ts";
+import { isPathWithinBaseDir } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
 
 export const BashTool = {
@@ -16,13 +18,6 @@ export const BashTool = {
 
 // Command execution timeout in milliseconds
 const DEFAULT_TIMEOUT = 1.5 * 60 * 1000; // 1.5 minutes
-
-// Ensure path is within base directory
-function isPathWithinBaseDir(requestedPath: string, baseDir: string): boolean {
-  const normalizedRequestedPath = path.normalize(requestedPath);
-  const normalizedBaseDir = path.normalize(baseDir);
-  return normalizedRequestedPath.startsWith(normalizedBaseDir);
-}
 
 export const createBashTool = async ({
   baseDir,
@@ -39,6 +34,43 @@ export const createBashTool = async ({
 }) => {
   let autoAcceptCommands = autoAcceptAll;
 
+  const resolveCwd = (
+    cwdInput: string | null | undefined,
+    projectRootInput: string,
+  ): string => {
+    const projectRootAbs = path.resolve(projectRootInput);
+    let projectRoot = projectRootAbs;
+    try {
+      projectRoot = fs.realpathSync(projectRootAbs);
+    } catch {
+      // Fallback to resolved path
+    }
+
+    const raw =
+      typeof cwdInput === "string" && cwdInput.trim() !== ""
+        ? cwdInput.trim()
+        : projectRoot;
+
+    const abs = path.isAbsolute(raw) ? raw : path.resolve(projectRoot, raw);
+
+    let target = abs;
+    try {
+      target = fs.realpathSync(abs);
+    } catch {
+      // If the path doesn't exist entirely, validate intended path
+    }
+
+    const rel = path.relative(projectRoot, target);
+    const inside =
+      rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+    if (!inside) {
+      throw new Error(
+        `Working directory must be within the project directory: ${projectRoot}. Received: ${cwdInput ?? "<default>"} -> ${target}`,
+      );
+    }
+    return target;
+  };
+
   return {
     [BashTool.name]: tool({
       description:
@@ -49,7 +81,7 @@ export const createBashTool = async ({
           .string()
           .nullable()
           .describe(
-            "Working directory (default: project root). Must be within the project directory.",
+            "Working directory file path (default: project root). Must be within the project directory.",
           ),
         timeout: z
           .number()
@@ -66,22 +98,22 @@ export const createBashTool = async ({
           if (abortSignal?.aborted) {
             throw new Error("Command execution aborted");
           }
-          const safeCwd = cwd == null ? baseDir : cwd;
+          const resolvedCwd = resolveCwd(cwd, baseDir);
           const safeTimeout = timeout == null ? DEFAULT_TIMEOUT : timeout;
 
           sendData?.({
             event: "tool-init",
             id: toolCallId,
-            data: `Executing: ${chalk.cyan(command)} in ${chalk.cyan(safeCwd)}`,
+            data: `Executing: ${chalk.cyan(command)} in ${chalk.cyan(resolvedCwd)}`,
           });
 
-          if (!isPathWithinBaseDir(safeCwd, baseDir)) {
+          if (!isPathWithinBaseDir(resolvedCwd, baseDir)) {
             const errorMsg = `Working directory must be within the project directory: ${baseDir}`;
             sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
             return errorMsg;
           }
 
-          const pathValidation = validatePaths(command, baseDir, safeCwd);
+          const pathValidation = validatePaths(command, baseDir, resolvedCwd);
           if (!pathValidation.isValid) {
             sendData?.({
               event: "tool-error",
@@ -106,7 +138,7 @@ export const createBashTool = async ({
                 `${chalk.blue.bold("●")} About to execute command: ${chalk.cyan(command)}`,
               );
               terminal.writeln(
-                `${chalk.gray("Working directory:")} ${safeCwd}`,
+                `${chalk.gray("Working directory:")} ${resolvedCwd}`,
               );
               terminal.lineBreak();
             }
@@ -188,7 +220,7 @@ export const createBashTool = async ({
 
           const execEnv = await initExecutionEnvironment();
           const { output, exitCode } = await execEnv.executeCommand(command, {
-            cwd: safeCwd,
+            cwd: resolvedCwd,
             timeout: safeTimeout,
             abortSignal,
             preserveOutputOnError: true,
