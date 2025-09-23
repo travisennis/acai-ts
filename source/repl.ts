@@ -18,6 +18,7 @@ import chalk from "./terminal/chalk.ts";
 import type { Terminal } from "./terminal/index.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import type { TokenCounter } from "./token-utils.ts";
+import type { ToolExecutor } from "./tool-executor.ts";
 import { initAgents, initTools } from "./tools/index.ts";
 import type { Message } from "./tools/types.ts";
 
@@ -31,8 +32,8 @@ interface ReplOptions {
   config: Record<PropertyKey, unknown>;
   tokenCounter: TokenCounter;
   toolEvents: Map<string, Message[]>;
-  autoAcceptAll: boolean;
   showLastMessage: boolean; // For displaying last message when continuing/resuming
+  toolExecutor?: ToolExecutor;
 }
 
 export class Repl {
@@ -55,7 +56,7 @@ export class Repl {
       commands,
       tokenCounter,
       toolEvents,
-      autoAcceptAll,
+      toolExecutor,
     } = this.options;
 
     logger.info(config, "Config:");
@@ -190,8 +191,8 @@ export class Repl {
             ...(await initTools({
               terminal,
               tokenCounter,
-              autoAcceptAll,
               events: toolEvents,
+              toolExecutor,
             })),
             ...(await initAgents({
               terminal,
@@ -256,6 +257,7 @@ export class Repl {
             : undefined,
           abortSignal: signal,
           onAbort(_event) {
+            logger.warn("The agent loop was aborted by the user.");
             terminal.warn("Operation aborted by user.");
           },
           onFinish: async (result) => {

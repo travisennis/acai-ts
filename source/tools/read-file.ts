@@ -75,7 +75,7 @@ export const createReadFileTool = async ({
           const filePath = await validatePath(
             joinWorkingDir(providedPath, workingDir),
             allowedDirectory,
-            abortSignal,
+            { abortSignal },
           );
 
           if (abortSignal?.aborted) {

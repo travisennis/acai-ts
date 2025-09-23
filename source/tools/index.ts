@@ -2,6 +2,7 @@ import type { ModelManager } from "../models/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../token-tracker.ts";
 import type { TokenCounter } from "../token-utils.ts";
+import type { ToolExecutor } from "../tool-executor.ts";
 import { createAgentTools } from "./agent.ts";
 import { createBashTool } from "./bash.ts";
 import { createCodeInterpreterTool } from "./code-interpreter.ts";
@@ -34,12 +35,12 @@ export async function initTools({
   terminal,
   tokenCounter,
   events,
-  autoAcceptAll,
+  toolExecutor,
 }: {
   terminal: Terminal;
   tokenCounter: TokenCounter;
   events: Map<string, Message[]>;
-  autoAcceptAll: boolean;
+  toolExecutor?: ToolExecutor;
 }) {
   const sendDataFn = sendDataHandler(events);
 
@@ -59,14 +60,14 @@ export async function initTools({
     workingDir: process.cwd(),
     terminal,
     sendData: sendDataFn,
-    autoAcceptAll,
+    toolExecutor,
   });
 
   const saveFileTool = await createSaveFileTool({
     workingDir: process.cwd(),
     sendData: sendDataFn,
     terminal,
-    autoAcceptAll,
+    toolExecutor,
   });
 
   const moveFileTool = await createMoveFileTool({
@@ -84,7 +85,7 @@ export async function initTools({
     workingDir: process.cwd(),
     sendData: sendDataFn,
     terminal,
-    autoAcceptAll,
+    toolExecutor,
   });
 
   const codeInterpreterTool = createCodeInterpreterTool({
@@ -115,7 +116,7 @@ export async function initTools({
     sendData: sendDataFn,
     tokenCounter,
     terminal,
-    autoAcceptAll,
+    toolExecutor,
   });
 
   const dynamicTools = await loadDynamicTools({
@@ -164,14 +165,12 @@ export async function initCliTools({
     workingDir: process.cwd(),
     terminal: undefined,
     sendData: undefined,
-    autoAcceptAll: true,
   });
 
   const saveFileTool = await createSaveFileTool({
     workingDir: process.cwd(),
     sendData: undefined,
     terminal: undefined,
-    autoAcceptAll: true,
   });
 
   const moveFileTool = await createMoveFileTool({
@@ -189,7 +188,6 @@ export async function initCliTools({
     workingDir: process.cwd(),
     sendData: undefined,
     terminal: undefined,
-    autoAcceptAll: true,
   });
 
   const codeInterpreterTool = createCodeInterpreterTool({
@@ -220,7 +218,6 @@ export async function initCliTools({
     sendData: undefined,
     tokenCounter,
     terminal: undefined,
-    autoAcceptAll: true,
   });
 
   const dynamicTools = await loadDynamicTools({

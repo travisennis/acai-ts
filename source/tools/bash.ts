@@ -5,6 +5,7 @@ import { initExecutionEnvironment } from "../execution/index.ts";
 import chalk from "../terminal/chalk.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../token-utils.ts";
+import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { isMutatingCommand, resolveCwd, validatePaths } from "./bash-utils.ts";
 import { isPathWithinBaseDir } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
@@ -21,16 +22,14 @@ export const createBashTool = async ({
   sendData,
   tokenCounter,
   terminal,
-  autoAcceptAll,
+  toolExecutor,
 }: {
   baseDir: string;
-  sendData?: SendData | undefined;
+  sendData?: SendData;
   tokenCounter: TokenCounter;
   terminal?: Terminal;
-  autoAcceptAll: boolean;
+  toolExecutor?: ToolExecutor;
 }) => {
-  let autoAcceptCommands = autoAcceptAll;
-
   return {
     [BashTool.name]: tool({
       description:
@@ -59,8 +58,8 @@ export const createBashTool = async ({
             throw new Error("Command execution aborted");
           }
           const resolvedCwd = resolveCwd(cwd, baseDir);
-          const safeTimeout = timeout == null ? DEFAULT_TIMEOUT : timeout;
-
+          const safeTimeout = timeout ?? DEFAULT_TIMEOUT;
+          console.info(command);
           sendData?.({
             event: "tool-init",
             id: toolCallId,
@@ -83,53 +82,29 @@ export const createBashTool = async ({
             return pathValidation.error ?? "Unknown error.";
           }
 
-          // Prompt user for command execution approval (only in interactive mode)
           if (terminal) {
-            if (!autoAcceptCommands) {
-              await new Promise((resolve, reject) => {
-                const timeoutId = setTimeout(resolve, 1000);
-                abortSignal?.addEventListener("abort", () => {
-                  clearTimeout(timeoutId);
-                  reject(new Error("Delay aborted"));
-                });
-              });
-              terminal.lineBreak();
-              terminal.writeln(
-                `${chalk.blue.bold("●")} About to execute command: ${chalk.cyan(command)}`,
-              );
-              terminal.writeln(
-                `${chalk.gray("Working directory:")} ${resolvedCwd}`,
-              );
-              terminal.lineBreak();
-            }
+            terminal.writeln(
+              `\n${chalk.blue.bold("●")} Proposing to execute command: ${chalk.cyan(command)} in ${chalk.cyan(resolvedCwd)}`,
+            );
+            terminal.lineBreak();
 
-            let userChoice: string;
-            if (autoAcceptCommands) {
-              terminal.writeln(
-                chalk.green(
-                  "✓ Auto-accepting command (all future commands will be accepted)",
-                ),
-              );
-              userChoice = "accept";
-            } else {
+            let userResponse: AskResponse | undefined;
+            // Prompt only for potentially mutating commands when a toolExecutor is present
+            if (toolExecutor && isMutatingCommand(command)) {
+              const ctx = {
+                toolName: BashTool.name,
+                toolCallId,
+                message:
+                  "What would you like to do with this command execution?",
+                choices: {
+                  accept: "Execute this command",
+                  acceptAll:
+                    "Accept all future command executions (including this)",
+                  reject: "Reject this command execution",
+                },
+              };
               try {
-                userChoice = await select(
-                  {
-                    message: "What would you like to do with this command?",
-                    choices: [
-                      { name: "Execute this command", value: "accept" },
-                      {
-                        name: "Execute all future commands (including this)",
-                        value: "accept-all",
-                      },
-                      { name: "Reject this command", value: "reject" },
-                    ],
-                    default: "accept",
-                  },
-                  {
-                    signal: abortSignal,
-                  },
-                );
+                userResponse = await toolExecutor.ask(ctx, { abortSignal });
               } catch (e) {
                 if ((e as Error).name === "AbortError") {
                   throw new Error(
@@ -140,42 +115,38 @@ export const createBashTool = async ({
               }
             }
 
+            const { result: userChoice, reason } = userResponse ?? {
+              result: "accept",
+            };
+
             terminal.lineBreak();
 
             if (userChoice === "accept-all") {
-              autoAcceptCommands = true;
               terminal.writeln(
                 chalk.yellow(
-                  "✓ Auto-accept mode enabled for all future commands",
+                  "✓ Auto-accept mode enabled for all command executions",
                 ),
               );
               terminal.lineBreak();
             }
 
             if (userChoice === "reject") {
-              let reason: string;
-              try {
-                reason = await input(
-                  { message: "Feedback: " },
-                  { signal: abortSignal },
-                );
-              } catch (e) {
-                if ((e as Error).name === "AbortError") {
-                  throw new Error(
-                    "Command execution aborted during user input",
-                  );
-                }
-                throw e;
-              }
               terminal.lineBreak();
-              const rejectionMsg = `Command rejected by user. Reason: ${reason}`;
+
+              const rejectionReason = reason || "No reason provided";
               sendData?.({
                 event: "tool-completion",
                 id: toolCallId,
-                data: rejectionMsg,
+                data: `Command execution rejected by user. Reason: ${rejectionReason}`,
               });
-              return rejectionMsg;
+              return `The user rejected this command execution. Reason: ${rejectionReason}`;
             }
+          }
+
+          if (abortSignal?.aborted) {
+            throw new Error(
+              "Command execution aborted before running the command",
+            );
           }
 
           const execEnv = await initExecutionEnvironment();

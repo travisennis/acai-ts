@@ -24,7 +24,6 @@ describe("bash tool path validation for git message flags", async () => {
   const { bash } = await createBashTool({
     baseDir,
     tokenCounter,
-    autoAcceptAll: true,
   });
 
   async function run(command: string) {
@@ -76,7 +75,6 @@ describe("bash tool abort signal handling", async () => {
       baseDir,
       sendData: mockSendData,
       tokenCounter,
-      autoAcceptAll: true,
     });
     ac.abort();
     const { bash } = tool;

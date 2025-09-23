@@ -1,11 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { input, select } from "@inquirer/prompts";
 import { tool } from "ai";
 import { z } from "zod";
 import { formatCodeBlock } from "../formatting.ts";
 import chalk from "../terminal/chalk.ts";
 import type { Terminal } from "../terminal/index.ts";
+import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import { fileEncodingSchema, type SendData } from "./types.ts";
 
@@ -15,17 +15,16 @@ export const SaveFileTool = {
 
 export const createSaveFileTool = async ({
   workingDir,
-  sendData,
   terminal,
-  autoAcceptAll,
+  sendData,
+  toolExecutor,
 }: {
   workingDir: string;
-  sendData?: SendData;
   terminal?: Terminal;
-  autoAcceptAll?: boolean;
+  sendData?: SendData;
+  toolExecutor?: ToolExecutor;
 }) => {
   const allowedDirectory = workingDir;
-  let autoAcceptSaves = autoAcceptAll ?? false;
 
   return {
     [SaveFileTool.name]: tool({
@@ -66,7 +65,7 @@ export const createSaveFileTool = async ({
           const filePath = await validatePath(
             joinWorkingDir(userPath, workingDir),
             allowedDirectory,
-            abortSignal,
+            { requireExistence: false, abortSignal },
           );
 
           if (terminal) {
@@ -77,10 +76,9 @@ export const createSaveFileTool = async ({
             terminal.lineBreak();
             terminal.writeln("Proposed file content:");
             terminal.lineBreak();
-            terminal.display(formatCodeBlock(filePath, content));
+            terminal.display(formatCodeBlock(userPath, content));
             terminal.lineBreak();
 
-            let userChoice: string;
             // Determine overwrite status for display
             let overwriteMessage = "";
             try {
@@ -94,30 +92,20 @@ export const createSaveFileTool = async ({
               overwriteMessage = chalk.green("(Will create new file)");
             }
 
-            if (autoAcceptSaves) {
-              terminal.writeln(
-                chalk.green(
-                  "✓ Auto-accepting saves (all future saves will be accepted)",
-                ),
-              );
-              userChoice = "accept";
-            } else {
+            let userResponse: AskResponse | undefined;
+            if (toolExecutor) {
+              const ctx = {
+                toolName: SaveFileTool.name,
+                toolCallId,
+                message: `What would you like to do with this save? ${overwriteMessage}`,
+                choices: {
+                  accept: "Accept this save",
+                  acceptAll: "Accept all future saves (including this)",
+                  reject: "Reject this save",
+                },
+              };
               try {
-                userChoice = await select(
-                  {
-                    message: `What would you like to do with this file? ${overwriteMessage}`,
-                    choices: [
-                      { name: "Accept and save this file", value: "accept" },
-                      {
-                        name: "Accept all future saves (including this)",
-                        value: "accept-all",
-                      },
-                      { name: "Reject this save", value: "reject" },
-                    ],
-                    default: "accept",
-                  },
-                  { signal: abortSignal },
-                );
+                userResponse = await toolExecutor.ask(ctx, { abortSignal });
               } catch (e) {
                 if ((e as Error).name === "AbortError") {
                   throw new Error("File saving aborted during user input");
@@ -126,39 +114,29 @@ export const createSaveFileTool = async ({
               }
             }
 
+            const { result: userChoice, reason } = userResponse ?? {
+              result: "accept",
+            };
+
             terminal.lineBreak();
 
             if (userChoice === "accept-all") {
-              autoAcceptSaves = true;
               terminal.writeln(
-                chalk.yellow("✓ Auto-accept mode enabled for all future saves"),
+                chalk.yellow("✓ Auto-accept mode enabled for all saves"),
               );
               terminal.lineBreak();
             }
 
             if (userChoice === "reject") {
-              let reason: string;
-              try {
-                reason = await input(
-                  { message: "Feedback: " },
-                  { signal: abortSignal },
-                );
-              } catch (e) {
-                if ((e as Error).name === "AbortError") {
-                  throw new Error("File saving aborted during user input");
-                }
-                throw e;
-              }
-
               terminal.lineBreak();
 
+              const rejectionReason = reason || "No reason provided";
               sendData?.({
                 id: toolCallId,
                 event: "tool-completion",
-                data: `Save rejected by user. Reason: ${reason}`,
+                data: `Save rejected by user. Reason: ${rejectionReason}`,
               });
-
-              return `The user rejected this save. Reason: ${reason}`;
+              return `The user rejected this save. Reason: ${rejectionReason}`;
             }
 
             // If accepted, proceed to write file

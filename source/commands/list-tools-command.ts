@@ -16,7 +16,6 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
           terminal: options.terminal,
           tokenCounter: options.tokenCounter,
           events: new Map(),
-          autoAcceptAll: false,
         });
         const agentTools = await initAgents({
           terminal: options.terminal,

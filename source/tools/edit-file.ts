@@ -1,8 +1,8 @@
-import { input, select } from "@inquirer/prompts";
 import { tool } from "ai";
 import { z } from "zod";
 import chalk from "../terminal/chalk.ts";
 import type { Terminal } from "../terminal/index.ts";
+import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import {
   applyFileEdits,
   joinWorkingDir,
@@ -18,15 +18,14 @@ export const createEditFileTool = async ({
   workingDir,
   terminal,
   sendData,
-  autoAcceptAll,
+  toolExecutor,
 }: {
   workingDir: string;
   terminal?: Terminal;
   sendData?: SendData;
-  autoAcceptAll: boolean;
+  toolExecutor?: ToolExecutor;
 }) => {
   const allowedDirectory = workingDir;
-  let autoAcceptEdits = autoAcceptAll;
   return {
     [EditFileTool.name]: tool({
       description:
@@ -64,7 +63,7 @@ export const createEditFileTool = async ({
           const validPath = await validatePath(
             joinWorkingDir(path, workingDir),
             allowedDirectory,
-            abortSignal,
+            { abortSignal },
           );
 
           if (terminal) {
@@ -91,31 +90,20 @@ export const createEditFileTool = async ({
 
             terminal.lineBreak();
 
-            let userChoice: string;
-            if (autoAcceptEdits) {
-              terminal.writeln(
-                chalk.green(
-                  "✓ Auto-accepting edits (all future edits will be accepted)",
-                ),
-              );
-              userChoice = "accept";
-            } else {
+            let userResponse: AskResponse | undefined;
+            if (toolExecutor) {
+              const ctx = {
+                toolName: EditFileTool.name,
+                toolCallId,
+                message: "What would you like to do with these changes?",
+                choices: {
+                  accept: "Accept these changes",
+                  acceptAll: "Accept all future edits (including these)",
+                  reject: "Reject these changes",
+                },
+              };
               try {
-                userChoice = await select(
-                  {
-                    message: "What would you like to do with these changes?",
-                    choices: [
-                      { name: "Accept these changes", value: "accept" },
-                      {
-                        name: "Accept all future edits (including these)",
-                        value: "accept-all",
-                      },
-                      { name: "Reject these changes", value: "reject" },
-                    ],
-                    default: "accept",
-                  },
-                  { signal: abortSignal },
-                );
+                userResponse = await toolExecutor.ask(ctx, { abortSignal });
               } catch (e) {
                 if ((e as Error).name === "AbortError") {
                   throw new Error("File editing aborted during user input");
@@ -124,12 +112,15 @@ export const createEditFileTool = async ({
               }
             }
 
+            const { result: userChoice, reason } = userResponse ?? {
+              result: "accept",
+            };
+
             terminal.lineBreak();
 
             if (userChoice === "accept-all") {
-              autoAcceptEdits = true;
               terminal.writeln(
-                chalk.yellow("✓ Auto-accept mode enabled for all future edits"),
+                chalk.yellow("✓ Auto-accept mode enabled for all edits"),
               );
               terminal.lineBreak();
             }
@@ -150,29 +141,18 @@ export const createEditFileTool = async ({
               return finalEdits;
             }
 
-            let reason: string;
-            try {
-              reason = await input(
-                { message: "Feedback: " },
-                { signal: abortSignal },
-              );
-            } catch (e) {
-              if ((e as Error).name === "AbortError") {
-                throw new Error("File editing aborted during user input");
-              }
-              throw e;
-            }
-
             terminal.lineBreak();
 
             // Send completion message indicating rejection
+            const rejectionReason = reason || "No reason provided";
             sendData?.({
               id: toolCallId,
               event: "tool-completion",
-              data: `Edits rejected by user. Reason: ${reason}`,
+              data: `Edits rejected by user. Reason: ${rejectionReason}`,
             });
-            return `The user rejected these changes. Reason: ${reason}`;
+            return `The user rejected these changes. Reason: ${rejectionReason}`;
           }
+
           const finalEdits = await applyFileEdits(
             validPath,
             edits,

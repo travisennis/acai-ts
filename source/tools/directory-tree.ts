@@ -53,7 +53,7 @@ export const createDirectoryTreeTool = async ({
           validPath = await validatePath(
             joinWorkingDir(path, workingDir),
             allowedDirectory,
-            abortSignal,
+            { abortSignal },
           );
 
           const maxTokens = (await config.readProjectConfig()).tools.maxTokens;

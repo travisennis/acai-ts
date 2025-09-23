@@ -58,8 +58,10 @@ export function isPathWithinBaseDir(
 export async function validatePath(
   requestedPath: string,
   allowedDirectory: string,
-  abortSignal?: AbortSignal,
+  options: { requireExistence?: boolean; abortSignal?: AbortSignal } = {},
 ): Promise<string> {
+  const { requireExistence = true, abortSignal } = options;
+
   if (abortSignal?.aborted) {
     throw new Error("Path validation aborted");
   }
@@ -94,6 +96,8 @@ export async function validatePath(
     );
   }
 
+  let validatedPath: string;
+
   // Try to resolve real path for existing targets to handle symlinks safely
   try {
     const realPath = await fs.realpath(absolute);
@@ -103,11 +107,12 @@ export async function validatePath(
         "Access denied - symlink target outside allowed directories",
       );
     }
-    return realPath;
+    validatedPath = realPath;
   } catch (_error) {
     // For new files or paths where some directories don't exist yet:
     // Walk up to the nearest existing ancestor directory and validate it.
     let current = path.dirname(absolute);
+    let foundValidAncestor = false;
     while (true) {
       try {
         const stat = await fs.stat(current);
@@ -124,18 +129,42 @@ export async function validatePath(
           );
         }
         // Ancestor is within allowed; allow creation below it.
-        return absolute;
+        foundValidAncestor = true;
+        break;
       } catch (_err) {
         // If we reached the filesystem root, break to fallback check
         const parent = path.dirname(current);
         if (parent === current) {
-          // As a final check, rely on intended path check which we already did
-          return absolute;
+          break;
         }
         current = parent;
       }
     }
+    if (!foundValidAncestor) {
+      // Rely on intended path check
+    }
+    validatedPath = absolute;
   }
+
+  // Now, if requireExistence, check if the path exists
+  if (requireExistence) {
+    if (abortSignal?.aborted) {
+      throw new Error("Path validation aborted during existence check");
+    }
+    try {
+      await fs.stat(validatedPath);
+    } catch (err) {
+      const error = err as NodeJS.ErrnoException;
+      if (error.code === "ENOENT") {
+        throw new Error(
+          `The specified path does not exist: ${requestedPath} (${validatedPath})`,
+        );
+      }
+      throw error;
+    }
+  }
+
+  return validatedPath;
 }
 
 // file editing and diffing utilities

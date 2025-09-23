@@ -43,13 +43,13 @@ export const createMoveFileTool = async ({
           const validSourcePath = await validatePath(
             joinWorkingDir(source, workingDir),
             allowedDirectory,
-            abortSignal,
+            { abortSignal },
           );
 
           const validDestPath = await validatePath(
             joinWorkingDir(destination, workingDir),
             allowedDirectory,
-            abortSignal,
+            { requireExistence: false, abortSignal },
           );
 
           if (abortSignal?.aborted) {

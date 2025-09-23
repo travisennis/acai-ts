@@ -36,7 +36,6 @@ Platform: ${platform()}`,
           terminal,
           tokenCounter,
           events: toolEvents,
-          autoAcceptAll: true,
         }),
       });
 

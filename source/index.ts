@@ -16,6 +16,7 @@ import { Repl } from "./repl.ts";
 import { initTerminal } from "./terminal/index.ts";
 import { TokenTracker } from "./token-tracker.ts";
 import { TokenCounter } from "./token-utils.ts";
+import { ToolExecutor } from "./tool-executor.ts";
 import type { Message } from "./tools/types.ts";
 import { getPackageVersion } from "./version.ts";
 
@@ -187,6 +188,8 @@ async function main() {
     }
   }
 
+  const toolExecutor = new ToolExecutor(flags.autoAcceptAll === true);
+
   // --- Setup Prompt Manager (only if not continuing/resuming) ---
   const promptManager = new PromptManager(tokenCounter);
   if (!hasContinueOrResume && isDefined(initialPromptInput)) {
@@ -207,6 +210,7 @@ async function main() {
     tokenTracker,
     config,
     tokenCounter,
+    toolExecutor,
     toolEvents,
   });
 
@@ -232,7 +236,7 @@ async function main() {
     commands,
     tokenCounter,
     toolEvents,
-    autoAcceptAll: flags.autoAcceptAll === true,
+    toolExecutor,
     showLastMessage: hasContinueOrResume
       ? !!(messageHistory.get() && messageHistory.get().length > 0)
       : false,
