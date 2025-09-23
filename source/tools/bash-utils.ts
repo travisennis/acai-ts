@@ -1,3 +1,4 @@
+import fs, { type Stats } from "node:fs";
 import path from "node:path";
 import { isPathWithinBaseDir } from "./filesystem-utils.ts";
 
@@ -72,3 +73,163 @@ export function validatePaths(
 
   return { isValid: true };
 }
+
+export const resolveCwd = (
+  cwdInput: string | null | undefined,
+  workingDir: string,
+): string => {
+  const projectRootAbs = path.resolve(workingDir);
+  let projectRoot = projectRootAbs;
+  try {
+    projectRoot = fs.realpathSync(projectRootAbs);
+  } catch {
+    // Fallback to resolved path
+  }
+
+  const raw =
+    typeof cwdInput === "string" && cwdInput.trim() !== ""
+      ? cwdInput.trim()
+      : projectRoot;
+
+  const abs = path.isAbsolute(raw) ? raw : path.resolve(projectRoot, raw);
+
+  let target = abs;
+  try {
+    target = fs.realpathSync(abs);
+  } catch {
+    // If the path doesn't exist entirely, validate intended path
+  }
+
+  const rel = path.relative(projectRoot, target);
+  const inside = rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+  if (!inside) {
+    throw new Error(
+      `Working directory must be within the project directory: ${projectRoot}. Received: ${cwdInput ?? "<default>"} -> ${target}`,
+    );
+  }
+
+  // Check existence and that it's a directory
+  let stats: Stats;
+  try {
+    stats = fs.statSync(target);
+  } catch (err) {
+    const error = err as NodeJS.ErrnoException;
+    if (error.code === "ENOENT") {
+      throw new Error(
+        `Working directory does not exist: ${target} (from ${cwdInput ?? "<default>"})`,
+      );
+    }
+    throw error;
+  }
+  if (!stats.isDirectory()) {
+    throw new Error(`Working directory is not a directory: ${target}`);
+  }
+
+  return target;
+};
+
+export const isMutatingCommand = (rawCommand: string): boolean => {
+  const command = rawCommand.trim();
+
+  // Redirections that write to disk
+  if (/>|>>/.test(command)) {
+    return true;
+  }
+
+  // Normalize whitespace and split into simple segments (does not fully parse shell)
+  const segments = command
+    .split(/\s*(?:&&|\|\||;|\|)\s*/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+
+  const mutatingBinaries = new Set([
+    "rm",
+    "mv",
+    "cp",
+    "mkdir",
+    "rmdir",
+    "touch",
+    "chmod",
+    "chown",
+    "ln",
+    "truncate",
+    "dd",
+    "tee",
+    "sed",
+  ]);
+
+  const npmMutating = new Set([
+    "install",
+    "uninstall",
+    "update",
+    "ci",
+    "publish",
+    "link",
+    "dedupe",
+    "prune",
+    "rebuild",
+  ]);
+
+  const gitMutating = new Set([
+    "add",
+    "am",
+    "apply",
+    "branch",
+    "checkout",
+    "switch",
+    "cherry-pick",
+    "clean",
+    "commit",
+    "merge",
+    "mv",
+    "pull",
+    "push",
+    "rebase",
+    "reset",
+    "revert",
+    "stash",
+    "tag",
+    "worktree",
+    "submodule",
+    "config",
+  ]);
+
+  for (const seg of segments) {
+    const tokens = seg.split(/\s+/);
+    if (tokens.length === 0) continue;
+    const bin = tokens[0];
+    if (!bin) continue;
+
+    // sed -i is mutating
+    if (bin === "sed" && tokens.some((t) => /^-i/.test(t))) {
+      return true;
+    }
+
+    if (mutatingBinaries.has(bin)) {
+      return true;
+    }
+
+    if (bin === "git" && tokens.length > 1) {
+      const sub = tokens[1];
+      if (typeof sub === "string" && gitMutating.has(sub)) {
+        return true;
+      }
+    }
+
+    if (bin === "npm" && tokens.length > 1) {
+      const sub = tokens[1];
+      if (typeof sub === "string" && npmMutating.has(sub)) {
+        return true;
+      }
+    }
+
+    if ((bin === "pnpm" || bin === "yarn") && tokens.length > 1) {
+      const sub = tokens[1];
+      if (typeof sub === "string" && npmMutating.has(sub)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};

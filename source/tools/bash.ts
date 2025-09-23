@@ -1,6 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
-import { input, select } from "@inquirer/prompts";
 import { tool } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
@@ -8,7 +5,7 @@ import { initExecutionEnvironment } from "../execution/index.ts";
 import chalk from "../terminal/chalk.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../token-utils.ts";
-import { validatePaths } from "./bash-utils.ts";
+import { isMutatingCommand, resolveCwd, validatePaths } from "./bash-utils.ts";
 import { isPathWithinBaseDir } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
 
@@ -33,43 +30,6 @@ export const createBashTool = async ({
   autoAcceptAll: boolean;
 }) => {
   let autoAcceptCommands = autoAcceptAll;
-
-  const resolveCwd = (
-    cwdInput: string | null | undefined,
-    projectRootInput: string,
-  ): string => {
-    const projectRootAbs = path.resolve(projectRootInput);
-    let projectRoot = projectRootAbs;
-    try {
-      projectRoot = fs.realpathSync(projectRootAbs);
-    } catch {
-      // Fallback to resolved path
-    }
-
-    const raw =
-      typeof cwdInput === "string" && cwdInput.trim() !== ""
-        ? cwdInput.trim()
-        : projectRoot;
-
-    const abs = path.isAbsolute(raw) ? raw : path.resolve(projectRoot, raw);
-
-    let target = abs;
-    try {
-      target = fs.realpathSync(abs);
-    } catch {
-      // If the path doesn't exist entirely, validate intended path
-    }
-
-    const rel = path.relative(projectRoot, target);
-    const inside =
-      rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
-    if (!inside) {
-      throw new Error(
-        `Working directory must be within the project directory: ${projectRoot}. Received: ${cwdInput ?? "<default>"} -> ${target}`,
-      );
-    }
-    return target;
-  };
 
   return {
     [BashTool.name]: tool({
