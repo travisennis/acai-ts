@@ -29,34 +29,32 @@ export const createGrepTool = (options: {
         recursive: z
           .boolean()
           .nullable()
-          .describe("Pass null to use the default (true, search recursively)."),
+          .describe("Search recursively. (default: true))"),
         ignoreCase: z
           .boolean()
           .nullable()
-          .describe(
-            "Pass null to use the default (false, case-sensitive search).",
-          ),
+          .describe("Use case-sensitive search. (default: false)"),
         filePattern: z
           .string()
           .nullable()
           .describe(
-            "Glob pattern to filter files (e.g., '*.ts', '**/*.test.js'). Pass null for no filtering.",
+            "Glob pattern to filter files (e.g., '*.ts', '**/*.test.js'). (Default: no filtering)",
           ),
         contextLines: z
           .number()
           .nullable()
-          .describe("Pass null if no context lines are needed."),
+          .describe(
+            "The number of context lines needed in search results. (Default: 0)",
+          ),
         searchIgnored: z
           .boolean()
           .nullable()
-          .describe(
-            "Pass null to use the default (false, don't search ignored files).",
-          ),
+          .describe("Search ignored files. (Default: false)"),
         literal: z
           .boolean()
           .nullable()
           .describe(
-            "Pass true for fixed-string search (-F), false for regex, null to auto-detect unbalanced patterns like mismatched parentheses/brackets.",
+            "Pass true for fixed-string search (-F), false for regex, (Default: auto-detects unbalanced patterns like mismatched parentheses/brackets.)",
           ),
       }),
       execute: async (
@@ -77,10 +75,12 @@ export const createGrepTool = (options: {
           throw new Error("Grep search aborted");
         }
         try {
+          // grok doesn't follow my instructions
+          const safeFilePattern = filePattern === "null" ? null : filePattern;
           sendData?.({
             event: "tool-init",
             id: toolCallId,
-            data: `Searching codebase for ${chalk.cyan(inspect(pattern))}${filePattern ? ` with file pattern ${chalk.cyan(filePattern)}` : ""} in ${chalk.cyan(path)}`,
+            data: `Searching codebase for ${chalk.cyan(inspect(pattern))}${safeFilePattern ? ` with file pattern ${chalk.cyan(safeFilePattern)}` : ""} in ${chalk.cyan(path)}`,
           });
 
           // Normalize literal option: if null => auto-detect using heuristic
@@ -113,7 +113,7 @@ export const createGrepTool = (options: {
           const rawResult = grepFiles(pattern, path, {
             recursive,
             ignoreCase,
-            filePattern,
+            filePattern: safeFilePattern,
             contextLines,
             searchIgnored,
             literal: effectiveLiteral,
