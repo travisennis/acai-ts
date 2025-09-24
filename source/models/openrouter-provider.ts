@@ -1,3 +1,4 @@
+import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { objectKeys } from "@travisennis/stdlib/object";
 import { customProvider } from "ai";
@@ -8,6 +9,17 @@ const openRouterClient = createOpenAICompatible({
   apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
   // biome-ignore lint/style/useNamingConvention: third-party controlled
   baseURL: "https://openrouter.ai/api/v1",
+  headers: {
+    "HTTP-Referer": "https://github.com/travisennis/acai-ts",
+    "X-Title": "acai",
+  },
+});
+
+const openRouterResponseClient = createOpenAI({
+  // biome-ignore lint/style/useNamingConvention: third-party controlled
+  baseURL: "https://openrouter.ai/api/alpha",
+  name: "openrouter",
+  apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
   headers: {
     "HTTP-Referer": "https://github.com/travisennis/acai-ts",
     "X-Title": "acai",
@@ -39,6 +51,7 @@ const openrouterModels = {
   "gpt-oss-120b": openRouterClient("openai/gpt-oss-120b"),
   "grok-code-fast-1": openRouterClient("x-ai/grok-code-fast-1"),
   "grok-4-fast-free": openRouterClient("x-ai/grok-4-fast:free"),
+  "gpt-5-codex": openRouterResponseClient.responses("openai/gpt-5-codex"),
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -310,6 +323,19 @@ export const openrouterModelRegistry: {
     contextWindow: 400000,
     maxOutputTokens: 128000,
     defaultTemperature: 1.0,
+    promptFormat: "xml",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000125,
+    costPerOutputToken: 0.00001,
+    category: "powerful",
+  },
+  "openrouter:gpt-5-codex": {
+    id: "openrouter:gpt-5-codex",
+    provider: "openrouter",
+    contextWindow: 400000,
+    maxOutputTokens: 128000,
+    defaultTemperature: -1,
     promptFormat: "xml",
     supportsReasoning: true,
     supportsToolCalling: true,

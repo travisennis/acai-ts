@@ -246,7 +246,10 @@ export class Repl {
             },
             ...messageHistory.get(),
           ],
-          temperature: modelConfig.defaultTemperature,
+          temperature:
+            modelConfig.defaultTemperature > -1
+              ? modelConfig.defaultTemperature
+              : undefined,
           stopWhen: stepCountIs(60),
           maxRetries: 2,
           providerOptions: aiConfig.getProviderOptions(),
