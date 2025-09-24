@@ -2,7 +2,6 @@ import { realpathSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createTwoFilesPatch } from "diff";
 import ignore, { type Ignore } from "ignore";
 import type { TokenCounter } from "../token-utils.ts";
 
@@ -165,98 +164,6 @@ export async function validatePath(
   }
 
   return validatedPath;
-}
-
-// file editing and diffing utilities
-function normalizeLineEndings(text: string): string {
-  return text.replace(/\r\n/g, "\n");
-}
-
-function createUnifiedDiff(
-  originalContent: string,
-  newContent: string,
-  filepath = "file",
-): string {
-  // Ensure consistent line endings for diff
-  const normalizedOriginal = normalizeLineEndings(originalContent);
-  const normalizedNew = normalizeLineEndings(newContent);
-  return createTwoFilesPatch(
-    filepath,
-    filepath,
-    normalizedOriginal,
-    normalizedNew,
-    "original",
-    "modified",
-  );
-}
-
-interface FileEdit {
-  oldText: string;
-  newText: string;
-}
-
-export async function applyFileEdits(
-  filePath: string,
-  edits: FileEdit[],
-  dryRun = false,
-  abortSignal?: AbortSignal,
-): Promise<string> {
-  if (abortSignal?.aborted) {
-    throw new Error("File edit operation aborted");
-  }
-  // Read file content literally with signal
-  const originalContent = await fs.readFile(filePath, {
-    encoding: "utf-8",
-    signal: abortSignal,
-  });
-
-  if (edits.find((edit) => edit.oldText.length === 0)) {
-    throw new Error(
-      "Invalid oldText in edit. The value of oldText must be at least one character",
-    );
-  }
-
-  // Apply edits sequentially
-  let modifiedContent = originalContent;
-  for (const edit of edits) {
-    if (abortSignal?.aborted) {
-      throw new Error("File edit operation aborted during processing");
-    }
-    const { oldText, newText } = edit; // Use literal oldText and newText
-
-    const normalizedContent = normalizeLineEndings(modifiedContent);
-    const normalizedOldText = normalizeLineEndings(oldText);
-    if (normalizedContent.includes(normalizedOldText)) {
-      modifiedContent = normalizedContent.replace(normalizedOldText, newText);
-    } else {
-      // If literal match is not found, throw an error.
-      // The previous complex fallback logic is removed to ensure literal matching.
-      throw new Error("Could not find literal match for old text.");
-    }
-  }
-
-  // Create unified diff (createUnifiedDiff normalizes line endings internally for diffing)
-  const diff = createUnifiedDiff(originalContent, modifiedContent, filePath);
-
-  // Format diff with appropriate number of backticks
-  let numBackticks = 3;
-  while (diff.includes("`".repeat(numBackticks))) {
-    numBackticks++;
-  }
-  const formattedDiff = `${"`".repeat(numBackticks)}diff\n${diff}${"`".repeat(numBackticks)}\n\n`;
-
-  if (!dryRun) {
-    if (abortSignal?.aborted) {
-      throw new Error("File edit operation aborted before writing");
-    }
-    // Write the modified content with signal
-    await fs.writeFile(filePath, modifiedContent, {
-      encoding: "utf-8",
-      signal: abortSignal,
-    });
-  }
-
-  return formattedDiff;
 }
 
 /**

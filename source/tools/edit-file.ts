@@ -3,11 +3,8 @@ import { z } from "zod";
 import chalk from "../terminal/chalk.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
-import {
-  applyFileEdits,
-  joinWorkingDir,
-  validatePath,
-} from "./filesystem-utils.ts";
+import { applyFileEdits } from "./file-editing-utils.ts";
+import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
 
 export const EditFileTool = {
