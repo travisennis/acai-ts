@@ -2,6 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
 import { initExecutionEnvironment } from "../execution/index.ts";
+import { logger } from "../logger.ts";
 import chalk from "../terminal/chalk.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../token-utils.ts";
@@ -190,6 +191,7 @@ export const createBashTool = async ({
           });
           return finalResult;
         } catch (error) {
+          logger.error(error, "Bash Tool Error:");
           const errorMsg = `Command failed: ${(error as Error).message}`;
           sendData?.({ event: "tool-error", id: toolCallId, data: errorMsg });
           return errorMsg;
