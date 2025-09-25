@@ -565,6 +565,146 @@ export async function initExecutionEnvironment(
   }
 }
 
+export interface ShellStreamResult {
+  fullStdout: string;
+  fullStderr: string;
+  code: number;
+  signal?: NodeJS.Signals | null;
+  duration: number;
+}
+
+export interface StreamShellOptions {
+  cwd?: string;
+  timeout?: number;
+  onStdout?: (chunk: string) => void;
+  onStderr?: (chunk: string) => void;
+  abortSignal?: AbortSignal;
+}
+
+/**
+ * Streams a shell command with buffering for full output.
+ * Handles platform-specific shell invocation.
+ * Throws on dangerous commands (prompt handled externally).
+ */
+export async function streamShellCommand(
+  command: string,
+  options: StreamShellOptions = {},
+): Promise<ShellStreamResult> {
+  if (!command.trim()) {
+    throw new Error("Empty command provided");
+  }
+
+  // Block dangerous commands here; prompt in caller
+  for (const pattern of DANGEROUS_COMMANDS) {
+    if (pattern.test(command)) {
+      throw new Error(
+        `Dangerous command detected: ${command}. Confirm before running.`,
+      );
+    }
+  }
+
+  const {
+    cwd = process.cwd(),
+    timeout = 300000,
+    onStdout,
+    onStderr,
+    abortSignal,
+  } = options;
+
+  const platformName = process.platform;
+  let cmd: string;
+  let args: string[] = [];
+  const useShellOption = false;
+
+  if (platformName === "win32") {
+    const { execSync } = await import("node:child_process");
+    try {
+      execSync("where wsl", { stdio: "ignore" });
+      cmd = "wsl.exe";
+      args = ["--", command];
+    } catch {
+      cmd = "powershell.exe";
+      args = ["-NoProfile", "-NonInteractive", "-Command", command];
+    }
+  } else {
+    const shell = process.env["SHELL"] || "/bin/bash";
+    cmd = shell;
+    args = ["-c", command];
+  }
+
+  const child = spawn(cmd, args, {
+    cwd,
+    stdio: ["ignore", "pipe", "pipe"],
+    shell: useShellOption,
+    env: {
+      ...process.env,
+      ...ttySizeEnv(),
+    },
+  });
+
+  let fullStdout = "";
+  let fullStderr = "";
+  const startTime = Date.now();
+  const timeoutId = setTimeout(() => {
+    child.kill("SIGTERM");
+  }, timeout);
+
+  if (child.stdout) {
+    child.stdout.on("data", (chunk: Buffer) => {
+      const data = chunk.toString("utf8");
+      fullStdout += data;
+      onStdout?.(data);
+    });
+  }
+
+  if (child.stderr) {
+    child.stderr.on("data", (chunk: Buffer) => {
+      const data = chunk.toString("utf8");
+      fullStderr += data;
+      onStderr?.(data);
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    if (abortSignal?.aborted) {
+      child.kill();
+      clearTimeout(timeoutId);
+      resolve({
+        fullStdout: "",
+        fullStderr: "Aborted",
+        code: 130,
+        duration: 0,
+      });
+      return;
+    }
+
+    const abortHandler = () => {
+      child.kill("SIGINT");
+      clearTimeout(timeoutId);
+    };
+    abortSignal?.addEventListener("abort", abortHandler, { once: true });
+
+    child.on("close", (code, signal) => {
+      clearTimeout(timeoutId);
+      abortSignal?.removeEventListener("abort", abortHandler);
+      const duration = Date.now() - startTime;
+      resolve({
+        fullStdout,
+        fullStderr,
+        code: code ?? 1,
+        signal,
+        duration,
+      });
+    });
+
+    child.on("error", (err) => {
+      clearTimeout(timeoutId);
+      abortSignal?.removeEventListener("abort", abortHandler);
+      reject(err);
+    });
+  });
+}
+
 // Set up cleanup on process exit
 export function setupProcessCleanup(executionEnv: ExecutionEnvironment): void {
   process.on("exit", () => {
