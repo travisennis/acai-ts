@@ -40,8 +40,6 @@ export class ToolExecutor {
       }
     }
 
-    process.stdout.write(`${ctx.toolName}: ${ctx.toolCallId}\n`);
-
     let userChoice: "accept" | "accept-all" | "reject";
     try {
       userChoice = await select(
