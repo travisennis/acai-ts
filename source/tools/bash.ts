@@ -58,7 +58,9 @@ export const createBashTool = async ({
           if (abortSignal?.aborted) {
             throw new Error("Command execution aborted");
           }
-          const resolvedCwd = resolveCwd(cwd, baseDir);
+          // grok doesn't follow my instructions
+          const safeCwd = cwd === "null" ? null : cwd;
+          const resolvedCwd = resolveCwd(safeCwd, baseDir);
           const safeTimeout = timeout ?? DEFAULT_TIMEOUT;
           console.info(command);
           sendData?.({
@@ -84,14 +86,17 @@ export const createBashTool = async ({
           }
 
           if (terminal) {
-            terminal.writeln(
-              `\n${chalk.blue.bold("●")} Proposing to execute command: ${chalk.cyan(command)} in ${chalk.cyan(resolvedCwd)}`,
-            );
-            terminal.lineBreak();
-
             let userResponse: AskResponse | undefined;
             // Prompt only for potentially mutating commands when a toolExecutor is present
             if (toolExecutor && isMutatingCommand(command)) {
+              // Display if autoAccept is false
+              if (!toolExecutor.autoAccept(BashTool.name)) {
+                terminal.writeln(
+                  `\n${chalk.blue.bold("●")} Proposing to execute command: ${chalk.cyan(command)} in ${chalk.cyan(resolvedCwd)}`,
+                );
+                terminal.lineBreak();
+              }
+
               const ctx = {
                 toolName: BashTool.name,
                 toolCallId,
