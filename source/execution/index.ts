@@ -565,6 +565,27 @@ export async function initExecutionEnvironment(
   }
 }
 
+// const platformName = process.platform;
+// let cmd: string;
+// let args: string[] = [];
+// const useShellOption = false;
+
+// if (platformName === "win32") {
+//   const { execSync } = await import("node:child_process");
+//   try {
+//     execSync("where wsl", { stdio: "ignore" });
+//     cmd = "wsl.exe";
+//     args = ["--", command];
+//   } catch {
+//     cmd = "powershell.exe";
+//     args = ["-NoProfile", "-NonInteractive", "-Command", command];
+//   }
+// } else {
+//   const shell = process.env["SHELL"] || "/bin/bash";
+//   cmd = shell;
+//   args = ["-c", command];
+// }
+
 // Set up cleanup on process exit
 export function setupProcessCleanup(executionEnv: ExecutionEnvironment): void {
   process.on("exit", () => {

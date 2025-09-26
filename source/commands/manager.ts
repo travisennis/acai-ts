@@ -1,7 +1,7 @@
 import type { ConfigManager } from "../config.ts";
 import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
-import type { PromptManager } from "../prompts/manager.ts";
+import type { PromptManagerApi } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../token-tracker.ts";
 import type { TokenCounter } from "../token-utils.ts";
@@ -27,12 +27,13 @@ import { promptCommand } from "./prompt-command.ts";
 import { resetCommand } from "./reset-command.ts";
 import { rulesCommand } from "./rules-command.ts";
 import { saveCommand } from "./save-command.ts";
+import { shellCommand } from "./shell-command.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 import { usageCommand } from "./usage-command.ts";
 
 export class CommandManager {
   private commands: Map<string, ReplCommand>;
-  private promptManager: PromptManager;
+  private promptManager: PromptManagerApi;
   private modelManager: ModelManager;
   private messageHistory: MessageHistory;
   private tokenTracker: TokenTracker;
@@ -102,6 +103,7 @@ export class CommandManager {
       applicationLogCommand(options),
       copyCommand(options),
       listToolsCommand(options),
+      shellCommand(options),
     ];
 
     // Add help command with access to all commands

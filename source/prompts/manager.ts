@@ -5,7 +5,19 @@ import type { TokenCounter } from "../token-utils.ts";
 
 export type ContextItem = UserMessageContentItem;
 
-export class PromptManager {
+export interface PromptManagerApi {
+  set(prompt: string): void;
+  get(): string;
+  getUserMessage(): UserModelMessage;
+  isPending(): boolean;
+  addContext(item: ContextItem): void;
+  hasContext(): boolean;
+  clearContext(): void;
+  clearAll(): void;
+  getContextTokenCount(): number;
+}
+
+export class PromptManager implements PromptManagerApi {
   private prompt: string | undefined;
   private context: ContextItem[];
   private tokenCounter: TokenCounter;

@@ -62,7 +62,6 @@ export const createBashTool = async ({
           const safeCwd = cwd === "null" ? null : cwd;
           const resolvedCwd = resolveCwd(safeCwd, baseDir);
           const safeTimeout = timeout ?? DEFAULT_TIMEOUT;
-          console.info(command);
           sendData?.({
             event: "tool-init",
             id: toolCallId,

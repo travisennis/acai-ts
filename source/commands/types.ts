@@ -1,7 +1,7 @@
 import type { ConfigManager } from "../config.ts";
 import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
-import type { PromptManager } from "../prompts/manager.ts";
+import type { PromptManagerApi } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenTracker } from "../token-tracker.ts";
 import type { TokenCounter } from "../token-utils.ts";
@@ -18,7 +18,7 @@ export interface ReplCommand {
 }
 
 export interface CommandOptions {
-  promptManager: PromptManager;
+  promptManager: PromptManagerApi;
   modelManager: ModelManager;
   terminal: Terminal;
   messageHistory: MessageHistory;
