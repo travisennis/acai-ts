@@ -23,6 +23,10 @@ export class ToolExecutor {
     this.autoAcceptAll = autoAcceptAll;
   }
 
+  autoAccept(toolName: string) {
+    return !!this.autoAcceptMap.get(toolName);
+  }
+
   async ask(
     ctx: AskContext,
     { abortSignal }: { abortSignal?: AbortSignal },
