@@ -40,14 +40,21 @@ export const promptCommand = ({
 
       // Combine and deduplicate, with project prompts taking precedence
       const allPrompts = new Set([...userPrompts, ...projectPrompts]);
-      return Array.from(allPrompts).sort();
+      const promptList = Array.from(allPrompts).sort();
+
+      // Add 'list' as a special subcommand for listing all prompts
+      return ["list", ...promptList];
     },
     execute: async (args: string[]) => {
       const promptName = args?.[0];
       if (!promptName) {
-        terminal.warn(
-          "Please provide a prompt name. Usage: /prompt <prompt-name> [input...]",
-        );
+        await listAllPrompts(terminal, config);
+        return;
+      }
+
+      // Handle 'list' subcommand
+      if (promptName === "list") {
+        await listAllPrompts(terminal, config);
         return;
       }
 
@@ -147,4 +154,56 @@ async function findPrompt(
   }
 
   return null; // Prompt not found in either location
+}
+
+async function listAllPrompts(
+  terminal: CommandOptions["terminal"],
+  config: CommandOptions["config"],
+): Promise<void> {
+  const getPromptNamesFromDir = async (dirPath: string): Promise<string[]> => {
+    try {
+      const dirents = await readdir(dirPath, { withFileTypes: true });
+      return dirents
+        .filter((dirent) => dirent.isFile() && dirent.name.endsWith(".md"))
+        .map((dirent) => basename(dirent.name, ".md"));
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return []; // Directory doesn't exist, return empty array
+      }
+      terminal.error(`Error reading prompts from ${dirPath}: ${error}`);
+      return []; // Return empty on other errors too, but log them
+    }
+  };
+
+  const userPromptDir = config.app.ensurePathSync("prompts");
+  const projectPromptDir = config.project.ensurePathSync("prompts");
+
+  const userPrompts = await getPromptNamesFromDir(userPromptDir);
+  const projectPrompts = await getPromptNamesFromDir(projectPromptDir);
+
+  if (userPrompts.length === 0 && projectPrompts.length === 0) {
+    terminal.warn(
+      "No prompts found. Create prompts in ~/.acai/prompts/ or ./.acai/prompts/",
+    );
+    return;
+  }
+
+  terminal.info("Available prompts:");
+
+  if (projectPrompts.length > 0) {
+    terminal.info("  Project prompts (./.acai/prompts/):");
+    projectPrompts.sort().forEach((prompt) => {
+      terminal.info(`    • ${prompt}`);
+    });
+  }
+
+  if (userPrompts.length > 0) {
+    terminal.info("  User prompts (~/.acai/prompts/):");
+    userPrompts.sort().forEach((prompt) => {
+      terminal.info(`    • ${prompt}`);
+    });
+  }
+
+  terminal.info("\nUsage: /prompt <prompt-name> [input...]");
+  terminal.info("Example: /prompt project-status");
 }
