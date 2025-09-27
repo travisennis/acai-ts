@@ -1,5 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import type { LanguageModelV2 } from "@ai-sdk/provider";
+import { openrouter } from "@openrouter/ai-sdk-provider";
 import { objectKeys } from "@travisennis/stdlib/object";
 import { customProvider } from "ai";
 import type { ModelMetadata } from "./providers.ts";
@@ -50,8 +52,12 @@ const openrouterModels = {
   "gpt-5": openRouterClient("openai/gpt-5"),
   "gpt-5-mini": openRouterClient("openai/gpt-5-mini"),
   "gpt-oss-120b": openRouterClient("openai/gpt-oss-120b"),
-  "grok-code-fast-1": openRouterClient("x-ai/grok-code-fast-1"),
-  "grok-4-fast-free": openRouterClient("x-ai/grok-4-fast:free"),
+  "grok-code-fast-1": openrouter("x-ai/grok-code-fast-1", {
+    parallelToolCalls: false,
+  }) as LanguageModelV2,
+  "grok-4-fast-free": openrouter("x-ai/grok-4-fast:free", {
+    parallelToolCalls: false,
+  }) as LanguageModelV2,
   "gpt-5-codex": openRouterResponseClient.responses("openai/gpt-5-codex"),
 } as const;
 
