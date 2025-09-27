@@ -1,5 +1,5 @@
-import chalk from "./chalk.ts";
 import type { Theme } from "./highlight/theme.ts";
+import style from "./style.ts";
 
 /**
  * Identity function for tokens that should not be styled (returns the input string as-is).
@@ -14,39 +14,39 @@ export const DEFAULT_THEME: Theme = {
   /**
    * keyword in a regular Algol-style language
    */
-  keyword: chalk.blue,
+  keyword: style.blue,
 
   /**
    * built-in or library object (constant, class, function)
    */
   // biome-ignore lint/style/useNamingConvention: API name from highlight.js
-  built_in: chalk.cyan,
+  built_in: style.cyan,
 
   /**
    * user-defined type in a language with first-class syntactically significant types, like
    * Haskell
    */
-  type: chalk.cyan.dim,
+  type: style.cyan.dim,
 
   /**
    * special identifier for a built-in value ("true", "false", "null")
    */
-  literal: chalk.blue,
+  literal: style.blue,
 
   /**
    * number, including units and modifiers, if any.
    */
-  number: chalk.green,
+  number: style.green,
 
   /**
    * literal regular expression
    */
-  regexp: chalk.red,
+  regexp: style.red,
 
   /**
    * literal string, character
    */
-  string: chalk.red,
+  string: style.red,
 
   /**
    * parsed section inside a literal string
@@ -61,12 +61,12 @@ export const DEFAULT_THEME: Theme = {
   /**
    * class or class-level declaration (interfaces, traits, modules, etc)
    */
-  class: chalk.blue,
+  class: style.blue,
 
   /**
    * function or method declaration
    */
-  function: chalk.yellow,
+  function: style.yellow,
 
   /**
    * name of a class or a function at the place of declaration
@@ -81,17 +81,17 @@ export const DEFAULT_THEME: Theme = {
   /**
    * comment
    */
-  comment: chalk.green,
+  comment: style.green,
 
   /**
    * documentation markup within comments
    */
-  doctag: chalk.green,
+  doctag: style.green,
 
   /**
    * flags, modifiers, annotations, processing instructions, preprocessor directive, etc
    */
-  meta: chalk.gray,
+  meta: style.gray,
 
   /**
    * keyword or built-in within meta construct
@@ -111,12 +111,12 @@ export const DEFAULT_THEME: Theme = {
   /**
    * XML/HTML tag
    */
-  tag: chalk.gray,
+  tag: style.gray,
 
   /**
    * name of an XML tag, the first word in an s-expression
    */
-  name: chalk.blue,
+  name: style.blue,
 
   /**
    * s-expression name from the language standard library
@@ -127,7 +127,7 @@ export const DEFAULT_THEME: Theme = {
    * name of an attribute with no language defined semantics (keys in JSON, setting names in
    * .ini), also sub-attribute within another highlighted object, like XML tag
    */
-  attr: chalk.cyan,
+  attr: style.cyan,
 
   /**
    * name of an attribute followed by a structured value part, like CSS properties
@@ -152,12 +152,12 @@ export const DEFAULT_THEME: Theme = {
   /**
    * emphasis in text markup
    */
-  emphasis: chalk.italic,
+  emphasis: style.italic,
 
   /**
    * strong emphasis in text markup
    */
-  strong: chalk.bold,
+  strong: style.bold,
 
   /**
    * mathematical formula in text markup
@@ -167,7 +167,7 @@ export const DEFAULT_THEME: Theme = {
   /**
    * hyperlink in text markup
    */
-  link: chalk.underline,
+  link: style.underline,
 
   /**
    * quotation in text markup
@@ -212,12 +212,12 @@ export const DEFAULT_THEME: Theme = {
   /**
    * added or changed line in a diff
    */
-  addition: chalk.green,
+  addition: style.green,
 
   /**
    * deleted line in a diff
    */
-  deletion: chalk.red,
+  deletion: style.red,
 
   /**
    * things not matched by any token

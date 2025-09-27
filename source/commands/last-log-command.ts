@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { editor } from "@inquirer/prompts";
 import { globby } from "globby";
 import { config } from "../config.ts";
-import chalk from "../terminal/chalk.ts";
+import style from "../terminal/style.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 const isoDateRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/;
@@ -71,7 +71,7 @@ export const lastLogCommand = ({ terminal }: CommandOptions): ReplCommand => {
 
         // Use the editor prompt to display the content (read-only)
         await editor({
-          message: `Viewing ${chalk.green(mostRecentLog)}`,
+          message: `Viewing ${style.green(mostRecentLog)}`,
           postfix: ".json", // Set postfix for syntax highlighting if editor supports it
           default: content,
           // By not providing an onSubmit or similar handler to write the file,

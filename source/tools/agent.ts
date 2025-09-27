@@ -2,7 +2,7 @@ import { generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
-import chalk from "../terminal/chalk.ts";
+import style from "../terminal/style.ts";
 import type { TokenTracker } from "../token-tracker.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import { BashTool } from "./bash.ts";
@@ -65,7 +65,7 @@ export const createAgentTools = (options: {
         sendData?.({
           event: "tool-init",
           id: toolCallId,
-          data: `Initializing agent with prompt: ${chalk.cyan(prompt)}`,
+          data: `Initializing agent with prompt: ${style.cyan(prompt)}`,
         });
         try {
           const modelConfig = modelManager.getModelMetadata("task-agent");

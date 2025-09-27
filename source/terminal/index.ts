@@ -9,7 +9,6 @@ import Table from "cli-table3";
 import wrapAnsi from "wrap-ansi";
 import { logger } from "../logger.ts";
 import { getPackageVersion } from "../version.ts";
-import chalk, { type ChalkInstance } from "./chalk.ts";
 import {
   clearTerminal,
   getTerminalSize,
@@ -18,6 +17,7 @@ import {
   link as terminalLink,
 } from "./formatting.ts";
 import { applyMarkdown } from "./markdown.ts";
+import style, { type StyleInstance } from "./style.ts";
 import type { TerminalConfig } from "./types.ts";
 
 export function getShell() {
@@ -123,31 +123,31 @@ export class Terminal {
 
     const version = getPackageVersion();
 
-    this.writeln(chalk.magenta(this.getLogo()));
+    this.writeln(style.magenta(this.getLogo()));
     this.lineBreak();
-    this.writeln(chalk.magenta("Greetings! I am acai."));
-    this.writeln(chalk.gray(`  Version ${version}`));
+    this.writeln(style.magenta("Greetings! I am acai."));
+    this.writeln(style.gray(`  Version ${version}`));
     this.lineBreak();
 
     this.writeln(
-      chalk.white(`  Type ${chalk.cyan("/help")} to see available commands.`),
+      style.white(`  Type ${style.cyan("/help")} to see available commands.`),
     );
     this.writeln(
-      chalk.white(
+      style.white(
         "  You can ask acai to explain code, fix issues, or perform tasks.",
       ),
     );
     this.writeln(
-      chalk.white(
-        `  Example: "${chalk.italic("Please analyze this codebase and explain its structure.")}"`,
+      style.white(
+        `  Example: "${style.italic("Please analyze this codebase and explain its structure.")}"`,
       ),
     );
-    this.writeln(chalk.dim("  Use Ctrl+C to interrupt acai and exit."));
+    this.writeln(style.dim("  Use Ctrl+C to interrupt acai and exit."));
 
     this.lineBreak();
 
     this.writeln(
-      chalk.yellow(`The current working directory is ${process.cwd()}`),
+      style.yellow(`The current working directory is ${process.cwd()}`),
     );
 
     this.lineBreak();
@@ -174,7 +174,7 @@ export class Terminal {
    */
   emphasize(message: string): void {
     if (this.config.useColors) {
-      this.writeln(chalk.cyan.bold(message));
+      this.writeln(style.cyan.bold(message));
     } else {
       this.writeln(message.toUpperCase());
     }
@@ -185,7 +185,7 @@ export class Terminal {
    */
   info(message: string): void {
     if (this.config.useColors) {
-      this.writeln(chalk.blue(`ℹ ${message}`));
+      this.writeln(style.blue(`ℹ ${message}`));
     } else {
       this.writeln(`INFO: ${message}`);
     }
@@ -196,7 +196,7 @@ export class Terminal {
    */
   success(message: string): void {
     if (this.config.useColors) {
-      this.writeln(chalk.green(`✓ ${message}`));
+      this.writeln(style.green(`✓ ${message}`));
     } else {
       this.writeln(`SUCCESS: ${message}`);
     }
@@ -207,7 +207,7 @@ export class Terminal {
    */
   warn(message: string): void {
     if (this.config.useColors) {
-      this.writeln(chalk.yellow(`⚠ ${message}`));
+      this.writeln(style.yellow(`⚠ ${message}`));
     } else {
       this.writeln(`WARNING: ${message}`);
     }
@@ -218,7 +218,7 @@ export class Terminal {
    */
   error(message: string): void {
     if (this.config.useColors) {
-      this.writeln(chalk.red(`✗ ${message}`));
+      this.writeln(style.red(`✗ ${message}`));
     } else {
       this.writeln(`ERROR: ${message}`);
     }
@@ -259,10 +259,10 @@ export class Terminal {
     this.writeln("");
   }
 
-  header(header: string, chalkFn: ChalkInstance = chalk.green): void {
+  header(header: string, styleFn: StyleInstance = style.green): void {
     const cols = this.terminalWidth > 0 ? this.terminalWidth : 80;
     const width = Math.max(0, cols - header.length - 4);
-    this.writeln(chalkFn(`\n── ${header} ${"─".repeat(width)}  `));
+    this.writeln(styleFn(`\n── ${header} ${"─".repeat(width)}  `));
   }
 
   async box(header: string, content: string): Promise<void> {
@@ -301,16 +301,16 @@ export class Terminal {
     this.writeln(`${topBorder}\n${contentLines}\n${bottomBorder}`);
   }
 
-  hr(chalkFn: ChalkInstance = chalk.gray): void {
+  hr(styleFn: StyleInstance = style.gray): void {
     const cols = this.terminalWidth > 0 ? this.terminalWidth : 80;
-    this.writeln(chalkFn(`${"─".repeat(Math.max(1, cols - 1))} `));
+    this.writeln(styleFn(`${"─".repeat(Math.max(1, cols - 1))} `));
   }
 
   /**
    * Create a clickable link in the terminal if supported
    */
   link(text: string, url: string): string {
-    return chalk.underline.blue(terminalLink(text, url));
+    return style.underline.blue(terminalLink(text, url));
   }
 
   /**
@@ -434,9 +434,9 @@ export class Terminal {
 
     const a =
       filledWidth / progressBarMaxWidth > 0.5
-        ? chalk.red("─")
-        : chalk.yellow("─"); //"█"
-    const b = chalk.gray("─"); // "░"
+        ? style.red("─")
+        : style.yellow("─"); //"█"
+    const b = style.gray("─"); // "░"
     const filledBar = a.repeat(filledWidth);
     const emptyBar = b.repeat(emptyWidth);
 

@@ -2,8 +2,8 @@ import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import { tool } from "ai";
 import { z } from "zod";
-import chalk from "../terminal/chalk.ts";
 import type { Terminal } from "../terminal/index.ts";
+import style from "../terminal/style.ts";
 import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
@@ -39,7 +39,7 @@ export const createDeleteFileTool = async ({
         sendData?.({
           id: toolCallId,
           event: "tool-init",
-          data: `Deleting file: ${chalk.cyan(userPath)}`,
+          data: `Deleting file: ${style.cyan(userPath)}`,
         });
         try {
           const filePath = await validatePath(
@@ -65,7 +65,7 @@ export const createDeleteFileTool = async ({
 
           if (terminal) {
             terminal.writeln(
-              `\n${chalk.red.bold("●")} Proposing file deletion: ${chalk.cyan(userPath)}`,
+              `\n${style.red.bold("●")} Proposing file deletion: ${style.cyan(userPath)}`,
             );
 
             terminal.lineBreak();
@@ -102,7 +102,7 @@ export const createDeleteFileTool = async ({
 
             if (userChoice === "accept-all") {
               terminal.writeln(
-                chalk.yellow("✓ Auto-accept mode enabled for all deletions"),
+                style.yellow("✓ Auto-accept mode enabled for all deletions"),
               );
               terminal.lineBreak();
             }

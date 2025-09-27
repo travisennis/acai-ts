@@ -3,8 +3,8 @@ import path from "node:path";
 import { tool } from "ai";
 import { z } from "zod";
 import { formatCodeBlock } from "../formatting.ts";
-import chalk from "../terminal/chalk.ts";
 import type { Terminal } from "../terminal/index.ts";
+import style from "../terminal/style.ts";
 import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import { fileEncodingSchema, type SendData } from "./types.ts";
@@ -59,7 +59,7 @@ export const createSaveFileTool = async ({
         sendData?.({
           id: toolCallId,
           event: "tool-init",
-          data: `Saving file: ${chalk.cyan(userPath)}`,
+          data: `Saving file: ${style.cyan(userPath)}`,
         });
         try {
           const filePath = await validatePath(
@@ -70,7 +70,7 @@ export const createSaveFileTool = async ({
 
           if (terminal) {
             terminal.writeln(
-              `\n${chalk.blue.bold("●")} Proposing file save: ${chalk.cyan(userPath)}`,
+              `\n${style.blue.bold("●")} Proposing file save: ${style.cyan(userPath)}`,
             );
 
             terminal.lineBreak();
@@ -84,12 +84,12 @@ export const createSaveFileTool = async ({
             try {
               const stat = await fs.stat(filePath);
               if (stat.isFile()) {
-                overwriteMessage = chalk.yellow(
+                overwriteMessage = style.yellow(
                   "(Will overwrite existing file)",
                 );
               }
             } catch {
-              overwriteMessage = chalk.green("(Will create new file)");
+              overwriteMessage = style.green("(Will create new file)");
             }
 
             let userResponse: AskResponse | undefined;
@@ -122,7 +122,7 @@ export const createSaveFileTool = async ({
 
             if (userChoice === "accept-all") {
               terminal.writeln(
-                chalk.yellow("✓ Auto-accept mode enabled for all saves"),
+                style.yellow("✓ Auto-accept mode enabled for all saves"),
               );
               terminal.lineBreak();
             }

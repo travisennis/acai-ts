@@ -3,8 +3,8 @@ import { z } from "zod";
 import { config } from "../config.ts";
 import { initExecutionEnvironment } from "../execution/index.ts";
 import { logger } from "../logger.ts";
-import chalk from "../terminal/chalk.ts";
 import type { Terminal } from "../terminal/index.ts";
+import style from "../terminal/style.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { isMutatingCommand, resolveCwd, validatePaths } from "./bash-utils.ts";
@@ -65,7 +65,7 @@ export const createBashTool = async ({
           sendData?.({
             event: "tool-init",
             id: toolCallId,
-            data: `Executing: ${chalk.cyan(command)} in ${chalk.cyan(resolvedCwd)}`,
+            data: `Executing: ${style.cyan(command)} in ${style.cyan(resolvedCwd)}`,
           });
 
           if (!isPathWithinBaseDir(resolvedCwd, baseDir)) {
@@ -91,7 +91,7 @@ export const createBashTool = async ({
               // Display if autoAccept is false
               if (!toolExecutor.autoAccept(BashTool.name)) {
                 terminal.writeln(
-                  `\n${chalk.blue.bold("●")} Proposing to execute command: ${chalk.cyan(command)} in ${chalk.cyan(resolvedCwd)}`,
+                  `\n${style.blue.bold("●")} Proposing to execute command: ${style.cyan(command)} in ${style.cyan(resolvedCwd)}`,
                 );
                 terminal.lineBreak();
               }
@@ -128,7 +128,7 @@ export const createBashTool = async ({
 
             if (userChoice === "accept-all") {
               terminal.writeln(
-                chalk.yellow(
+                style.yellow(
                   "✓ Auto-accept mode enabled for all command executions",
                 ),
               );

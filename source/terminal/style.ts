@@ -1,6 +1,7 @@
 // Converted from https://raw.githubusercontent.com/chalk/chalk/refs/heads/main/source/vendor/supports-color/index.js to modern TypeScript
+// Renamed from chalk to style for internal use
 
-import type { Style } from "./ansi-styles.ts";
+import type { AnsiStyle } from "./ansi-styles.ts";
 import { ansiStyles } from "./ansi-styles.ts";
 import { supportsColor } from "./supports-color.ts";
 
@@ -15,7 +16,7 @@ const levelMapping = ["ansi", "ansi", "ansi256", "ansi16m"] as const;
 
 const styles = Object.create(null) as Record<string, PropertyDescriptor>;
 
-// biome-ignore lint/suspicious/noExplicitAny: Dynamic object assignment needed for chalk compatibility
+// biome-ignore lint/suspicious/noExplicitAny: Dynamic object assignment needed for style compatibility
 const applyOptions = (object: any, options: Options = {}): void => {
   if (
     options.level !== undefined &&
@@ -35,7 +36,7 @@ const applyOptions = (object: any, options: Options = {}): void => {
 
 interface Options {
   /**
-   * Specify the color support for Chalk.
+   * Specify the color support for Style.
    *
    * By default, color support is automatically detected based on the environment.
    *
@@ -48,11 +49,11 @@ interface Options {
   readonly level?: number; // 0 | 1 | 2 | 3 (ColorSupportLevel)
 }
 
-export interface ChalkInstance {
+export interface StyleInstance {
   (...text: unknown[]): string;
 
   /**
-   * The color support for Chalk.
+   * The color support for Style.
    *
    * By default, color support is automatically detected based on the environment.
    *
@@ -69,13 +70,13 @@ export interface ChalkInstance {
    *
    * @example
    * ```
-   * import { chalk } from './terminal/chalk';
+   * import { style } from './terminal/style';
    *
-   * chalk.rgb(222, 173, 237)('Hello');
+   * style.rgb(222, 173, 237)('Hello');
    * //=> '\u001B[38;2;222;173;237mHello\u001B[39m'
    * ```
    */
-  rgb: (red: number, green: number, blue: number) => ChalkInstance;
+  rgb: (red: number, green: number, blue: number) => StyleInstance;
 
   /**
    * Use HEX value to set text color.
@@ -84,39 +85,39 @@ export interface ChalkInstance {
    *
    * @example
    * ```
-   * import { chalk } from './terminal/chalk';
+   * import { style } from './terminal/style';
    *
-   * chalk.hex('#DEADED')('Hello');
+   * style.hex('#DEADED')('Hello');
    * //=> '\u001B[38;2;222;173;237mHello\u001B[39m'
    * ```
    */
-  hex: (color: string) => ChalkInstance;
+  hex: (color: string) => StyleInstance;
 
   /**
    * Use an [8-bit unsigned number](https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit) to set text color.
    *
    * @example
    * ```
-   * import { chalk } from './terminal/chalk';
+   * import { style } from './terminal/style';
    *
-   * chalk.ansi256(201)('Hello');
+   * style.ansi256(201)('Hello');
    * //=> '\u001B[38;5;201mHello\u001B[39m'
    * ```
    */
-  ansi256: (index: number) => ChalkInstance;
+  ansi256: (index: number) => StyleInstance;
 
   /**
    * Use RGB values to set background color.
    *
    * @example
    * ```
-   * import { chalk } from './terminal/chalk';
+   * import { style } from './terminal/style';
    *
-   * chalk.bgRgb(222, 173, 237)('Hello');
+   * style.bgRgb(222, 173, 237)('Hello');
    * //=> '\u001B[48;2;222;173;237mHello\u001B[49m'
    * ```
    */
-  bgRgb: (red: number, green: number, blue: number) => ChalkInstance;
+  bgRgb: (red: number, green: number, blue: number) => StyleInstance;
 
   /**
    * Use HEX value to set background color.
@@ -125,157 +126,157 @@ export interface ChalkInstance {
    *
    * @example
    * ```
-   * import { chalk } from './terminal/chalk';
+   * import { style } from './terminal/style';
    *
-   * chalk.bgHex('#DEADED')('Hello');
+   * style.bgHex('#DEADED')('Hello');
    * //=> '\u001B[48;2;222;173;237mHello\u001B[49m'
    * ```
    */
-  bgHex: (color: string) => ChalkInstance;
+  bgHex: (color: string) => StyleInstance;
 
   /**
    * Use a [8-bit unsigned number](https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit) to set background color.
    *
    * @example
    * ```
-   * import { chalk } from './terminal/chalk';
+   * import { style } from './terminal/style';
    *
-   * chalk.bgAnsi256(201)('Hello');
+   * style.bgAnsi256(201)('Hello');
    * //=> '\u001B[48;5;201mHello\u001B[49m'
    * ```
    */
-  bgAnsi256: (index: number) => ChalkInstance;
+  bgAnsi256: (index: number) => StyleInstance;
 
   /**
    * Modifier: Reset the current style.
    */
-  readonly reset: ChalkInstance;
+  readonly reset: StyleInstance;
 
   /**
    * Modifier: Make the text bold.
    */
-  readonly bold: ChalkInstance;
+  readonly bold: StyleInstance;
 
   /**
    * Modifier: Make the text have lower opacity.
    */
-  readonly dim: ChalkInstance;
+  readonly dim: StyleInstance;
 
   /**
    * Modifier: Make the text italic. *(Not widely supported)*
    */
-  readonly italic: ChalkInstance;
+  readonly italic: StyleInstance;
 
   /**
    * Modifier: Put a horizontal line below the text. *(Not widely supported)*
    */
-  readonly underline: ChalkInstance;
+  readonly underline: StyleInstance;
 
   /**
    * Modifier: Put a horizontal line above the text. *(Not widely supported)*
    */
-  readonly overline: ChalkInstance;
+  readonly overline: StyleInstance;
 
   /**
    * Modifier: Invert background and foreground colors.
    */
-  readonly inverse: ChalkInstance;
+  readonly inverse: StyleInstance;
 
   /**
    * Modifier: Print the text but make it invisible.
    */
-  readonly hidden: ChalkInstance;
+  readonly hidden: StyleInstance;
 
   /**
    * Modifier: Puts a horizontal line through the center of the text. *(Not widely supported)*
    */
-  readonly strikethrough: ChalkInstance;
+  readonly strikethrough: StyleInstance;
 
   /**
-   * Modifier: Print the text only when Chalk has a color level above zero.
+   * Modifier: Print the text only when Style has a color level above zero.
    *
    * Can be useful for things that are purely cosmetic.
    */
-  readonly visible: ChalkInstance;
+  readonly visible: StyleInstance;
 
-  readonly black: ChalkInstance;
-  readonly red: ChalkInstance;
-  readonly green: ChalkInstance;
-  readonly yellow: ChalkInstance;
-  readonly blue: ChalkInstance;
-  readonly magenta: ChalkInstance;
-  readonly cyan: ChalkInstance;
-  readonly white: ChalkInstance;
-
-  /*
-   * Alias for `blackBright`.
-   */
-  readonly gray: ChalkInstance;
+  readonly black: StyleInstance;
+  readonly red: StyleInstance;
+  readonly green: StyleInstance;
+  readonly yellow: StyleInstance;
+  readonly blue: StyleInstance;
+  readonly magenta: StyleInstance;
+  readonly cyan: StyleInstance;
+  readonly white: StyleInstance;
 
   /*
    * Alias for `blackBright`.
    */
-  readonly grey: ChalkInstance;
+  readonly gray: StyleInstance;
 
-  readonly blackBright: ChalkInstance;
-  readonly redBright: ChalkInstance;
-  readonly greenBright: ChalkInstance;
-  readonly yellowBright: ChalkInstance;
-  readonly blueBright: ChalkInstance;
-  readonly magentaBright: ChalkInstance;
-  readonly cyanBright: ChalkInstance;
-  readonly whiteBright: ChalkInstance;
+  /*
+   * Alias for `blackBright`.
+   */
+  readonly grey: StyleInstance;
 
-  readonly bgBlack: ChalkInstance;
-  readonly bgRed: ChalkInstance;
-  readonly bgGreen: ChalkInstance;
-  readonly bgYellow: ChalkInstance;
-  readonly bgBlue: ChalkInstance;
-  readonly bgMagenta: ChalkInstance;
-  readonly bgCyan: ChalkInstance;
-  readonly bgWhite: ChalkInstance;
+  readonly blackBright: StyleInstance;
+  readonly redBright: StyleInstance;
+  readonly greenBright: StyleInstance;
+  readonly yellowBright: StyleInstance;
+  readonly blueBright: StyleInstance;
+  readonly magentaBright: StyleInstance;
+  readonly cyanBright: StyleInstance;
+  readonly whiteBright: StyleInstance;
+
+  readonly bgBlack: StyleInstance;
+  readonly bgRed: StyleInstance;
+  readonly bgGreen: StyleInstance;
+  readonly bgYellow: StyleInstance;
+  readonly bgBlue: StyleInstance;
+  readonly bgMagenta: StyleInstance;
+  readonly bgCyan: StyleInstance;
+  readonly bgWhite: StyleInstance;
 
   /*
    * Alias for `bgBlackBright`.
    */
-  readonly bgGray: ChalkInstance;
+  readonly bgGray: StyleInstance;
 
   /*
    * Alias for `bgBlackBright`.
    */
-  readonly bgGrey: ChalkInstance;
+  readonly bgGrey: StyleInstance;
 
-  readonly bgBlackBright: ChalkInstance;
-  readonly bgRedBright: ChalkInstance;
-  readonly bgGreenBright: ChalkInstance;
-  readonly bgYellowBright: ChalkInstance;
-  readonly bgBlueBright: ChalkInstance;
-  readonly bgMagentaBright: ChalkInstance;
-  readonly bgCyanBright: ChalkInstance;
-  readonly bgWhiteBright: ChalkInstance;
+  readonly bgBlackBright: StyleInstance;
+  readonly bgRedBright: StyleInstance;
+  readonly bgGreenBright: StyleInstance;
+  readonly bgYellowBright: StyleInstance;
+  readonly bgBlueBright: StyleInstance;
+  readonly bgMagentaBright: StyleInstance;
+  readonly bgCyanBright: StyleInstance;
+  readonly bgWhiteBright: StyleInstance;
 }
 
 /**
- * Factory function to create a new Chalk instance.
+ * Factory function to create a new Style instance.
  */
-const chalkFactory = (options?: Options): ChalkInstance => {
-  const chalk = ((...strings: unknown[]): string =>
-    strings.join(" ")) as ChalkInstance;
-  applyOptions(chalk, options);
+const styleFactory = (options?: Options): StyleInstance => {
+  const style = ((...strings: unknown[]): string =>
+    strings.join(" ")) as StyleInstance;
+  applyOptions(style, options);
 
-  Object.setPrototypeOf(chalk, createChalk.prototype);
+  Object.setPrototypeOf(style, createStyle.prototype);
 
-  return chalk;
+  return style;
 };
 
 /**
- * Create a Chalk prototype with the given options.
+ * Create a Style prototype with the given options.
  */
-function createChalk(options?: Options): ChalkInstance {
-  return chalkFactory(options);
+function createStyle(options?: Options): StyleInstance {
+  return styleFactory(options);
 }
 
-Object.setPrototypeOf(createChalk.prototype, Function.prototype);
+Object.setPrototypeOf(createStyle.prototype, Function.prototype);
 
 // Define styles as getters on the prototype
 for (const [styleName, style] of Object.entries(ansiStyles)) {
@@ -287,14 +288,14 @@ for (const [styleName, style] of Object.entries(ansiStyles)) {
     continue;
   }
 
-  const styleObj = style as Style;
+  const styleObj = style as AnsiStyle;
   styles[styleName] = {
-    get(this: ChalkInstance): ChalkInstance {
+    get(this: StyleInstance): StyleInstance {
       const builder = createBuilder(
         this,
-        // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for chalk compatibility
+        // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for style compatibility
         createStyler(styleObj.open, styleObj.close, (this as any)[STYLER]),
-        // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for chalk compatibility
+        // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for style compatibility
         (this as any)[IS_EMPTY],
       );
       Object.defineProperty(this, styleName, { value: builder });
@@ -303,10 +304,10 @@ for (const [styleName, style] of Object.entries(ansiStyles)) {
   };
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: Dynamic property assignment needed for chalk compatibility
+// biome-ignore lint/suspicious/noExplicitAny: Dynamic property assignment needed for style compatibility
 (styles as any)["visible"] = {
-  get(this: ChalkInstance): ChalkInstance {
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for chalk compatibility
+  get(this: StyleInstance): StyleInstance {
+    // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for style compatibility
     const builder = createBuilder(this, (this as any)[STYLER], true);
     Object.defineProperty(this, "visible", { value: builder });
     return builder;
@@ -321,21 +322,21 @@ const getModelAnsi = (
 ): string => {
   if (model === "rgb") {
     if (level === "ansi16m") {
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic method access needed for chalk compatibility
+      // biome-ignore lint/suspicious/noExplicitAny: Dynamic method access needed for style compatibility
       return (ansiStyles[type] as any).ansi16m(...args);
     }
 
     if (level === "ansi256") {
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic method access needed for chalk compatibility
+      // biome-ignore lint/suspicious/noExplicitAny: Dynamic method access needed for style compatibility
       return (ansiStyles[type] as any).ansi256(
-        // biome-ignore lint/suspicious/noExplicitAny: Dynamic method access needed for chalk compatibility
+        // biome-ignore lint/suspicious/noExplicitAny: Dynamic method access needed for style compatibility
         (ansiStyles as any).rgbToAnsi256(...args),
       );
     }
 
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic method access needed for chalk compatibility
+    // biome-ignore lint/suspicious/noExplicitAny: Dynamic method access needed for style compatibility
     return (ansiStyles[type] as any).ansi(
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic method access needed for chalk compatibility
+      // biome-ignore lint/suspicious/noExplicitAny: Dynamic method access needed for style compatibility
       (ansiStyles as any).rgbToAnsi(...args),
     );
   }
@@ -345,12 +346,12 @@ const getModelAnsi = (
       "rgb",
       level,
       type,
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic method access needed for chalk compatibility
+      // biome-ignore lint/suspicious/noExplicitAny: Dynamic method access needed for style compatibility
       ...(ansiStyles as any).hexToRgb(...args),
     );
   }
 
-  // biome-ignore lint/suspicious/noExplicitAny: Dynamic method access needed for chalk compatibility
+  // biome-ignore lint/suspicious/noExplicitAny: Dynamic method access needed for style compatibility
   return (ansiStyles[type] as any)[model](...args);
 };
 
@@ -358,38 +359,38 @@ const usedModels = ["rgb", "hex", "ansi256"] as const;
 
 for (const model of usedModels) {
   styles[model] = {
-    get(this: ChalkInstance): (...args: number[]) => ChalkInstance {
+    get(this: StyleInstance): (...args: number[]) => StyleInstance {
       const { level } = this;
-      return function (this: ChalkInstance, ...args: number[]): ChalkInstance {
+      return function (this: StyleInstance, ...args: number[]): StyleInstance {
         const styler = createStyler(
-          // biome-ignore lint/style/noNonNullAssertion: Level is guaranteed to be valid for chalk compatibility
+          // biome-ignore lint/style/noNonNullAssertion: Level is guaranteed to be valid for style compatibility
           getModelAnsi(model, levelMapping[level]!, "color", ...args),
-          // biome-ignore lint/suspicious/noExplicitAny: Dynamic property access needed for chalk compatibility
+          // biome-ignore lint/suspicious/noExplicitAny: Dynamic property access needed for style compatibility
           (ansiStyles.color as any).close,
-          // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for chalk compatibility
+          // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for style compatibility
           (this as any)[STYLER],
         );
-        // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for chalk compatibility
+        // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for style compatibility
         return createBuilder(this, styler, (this as any)[IS_EMPTY]);
       };
     },
   };
 
-  // biome-ignore lint/style/noNonNullAssertion: Model string is guaranteed to be valid for chalk compatibility
+  // biome-ignore lint/style/noNonNullAssertion: Model string is guaranteed to be valid for style compatibility
   const bgModel = `bg${model[0]!.toUpperCase()}${model.slice(1)}` as const;
   styles[bgModel] = {
-    get(this: ChalkInstance): (...args: number[]) => ChalkInstance {
+    get(this: StyleInstance): (...args: number[]) => StyleInstance {
       const { level } = this;
-      return function (this: ChalkInstance, ...args: number[]): ChalkInstance {
+      return function (this: StyleInstance, ...args: number[]): StyleInstance {
         const styler = createStyler(
-          // biome-ignore lint/style/noNonNullAssertion: Level is guaranteed to be valid for chalk compatibility
+          // biome-ignore lint/style/noNonNullAssertion: Level is guaranteed to be valid for style compatibility
           getModelAnsi(model, levelMapping[level]!, "bgColor", ...args),
-          // biome-ignore lint/suspicious/noExplicitAny: Dynamic property access needed for chalk compatibility
+          // biome-ignore lint/suspicious/noExplicitAny: Dynamic property access needed for style compatibility
           (ansiStyles.bgColor as any).close,
-          // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for chalk compatibility
+          // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for style compatibility
           (this as any)[STYLER],
         );
-        // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for chalk compatibility
+        // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for style compatibility
         return createBuilder(this, styler, (this as any)[IS_EMPTY]);
       };
     },
@@ -400,12 +401,12 @@ const proto = Object.defineProperties(() => {}, {
   ...styles,
   level: {
     enumerable: true,
-    get(this: ChalkInstance): number {
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for chalk compatibility
+    get(this: StyleInstance): number {
+      // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for style compatibility
       return (this as any)[GENERATOR].level;
     },
-    set(this: ChalkInstance, level: number): void {
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for chalk compatibility
+    set(this: StyleInstance, level: number): void {
+      // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for style compatibility
       (this as any)[GENERATOR].level = level;
     },
   },
@@ -414,7 +415,7 @@ const proto = Object.defineProperties(() => {}, {
 /**
  * Create a styler object for chaining styles.
  */
-// biome-ignore lint/suspicious/noExplicitAny: Dynamic parent type needed for chalk compatibility
+// biome-ignore lint/suspicious/noExplicitAny: Dynamic parent type needed for style compatibility
 const createStyler = (open: string, close: string, parent?: any): any => {
   let openAll: string;
   let closeAll: string;
@@ -439,16 +440,16 @@ const createStyler = (open: string, close: string, parent?: any): any => {
  * Create a builder function for applying styles.
  */
 const createBuilder = (
-  self: ChalkInstance,
-  // biome-ignore lint/suspicious/noExplicitAny: Dynamic styler type needed for chalk compatibility
+  self: StyleInstance,
+  // biome-ignore lint/suspicious/noExplicitAny: Dynamic styler type needed for style compatibility
   _styler: any,
   _isEmpty: boolean,
-): ChalkInstance => {
+): StyleInstance => {
   // Single argument is hot path, implicit coercion is faster than anything
   // eslint-disable-next-line no-implicit-coercion
   const builder = (...args: unknown[]): string =>
     applyStyle(
-      builder as ChalkInstance,
+      builder as StyleInstance,
       args.length === 1 ? `${args[0]}` : args.join(" "),
     );
 
@@ -456,28 +457,28 @@ const createBuilder = (
   // no way to create a function with a different prototype
   Object.setPrototypeOf(builder, proto);
 
-  // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol assignment needed for chalk compatibility
+  // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol assignment needed for style compatibility
   (builder as any)[GENERATOR] = self;
-  // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol assignment needed for chalk compatibility
+  // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol assignment needed for style compatibility
   (builder as any)[STYLER] = _styler;
-  // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol assignment needed for chalk compatibility
+  // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol assignment needed for style compatibility
   (builder as any)[IS_EMPTY] = _isEmpty;
 
-  return builder as ChalkInstance;
+  return builder as StyleInstance;
 };
 
 /**
  * Apply the style to the string.
  */
-const applyStyle = (self: ChalkInstance, stringParam: string): string => {
+const applyStyle = (self: StyleInstance, stringParam: string): string => {
   let string = stringParam;
-  // biome-ignore lint/suspicious/noExplicitAny: Dynamic property access needed for chalk compatibility
+  // biome-ignore lint/suspicious/noExplicitAny: Dynamic property access needed for style compatibility
   if ((self as any).level <= 0 || !string) {
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for chalk compatibility
+    // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for style compatibility
     return (self as any)[IS_EMPTY] ? "" : string;
   }
 
-  // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for chalk compatibility
+  // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for style compatibility
   let styler = (self as any)[STYLER];
 
   if (styler === undefined) {
@@ -555,9 +556,9 @@ function stringEncaseCrlfWithFirstIndex(
   return returnValue;
 }
 
-Object.defineProperties(createChalk.prototype, styles);
+Object.defineProperties(createStyle.prototype, styles);
 
-const chalk = createChalk();
+const style = createStyle();
 
-export { createChalk };
-export default chalk;
+export { createStyle };
+export default style;

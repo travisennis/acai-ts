@@ -1,4 +1,4 @@
-import chalk from "../chalk.ts";
+import style from "../style.ts";
 
 /**
  * A generic interface that holds all available language tokens.
@@ -213,7 +213,7 @@ interface Tokens<T> {
 
 /**
  * Possible styles that can be used on a token in a JSON theme.
- * See the [chalk](https://github.com/chalk/chalk) module for more information.
+ * See the [style](https://github.com/chalk/chalk) module for more information.
  * `plain` means no styling.
  */
 type Style =
@@ -245,7 +245,7 @@ type Style =
 
 /**
  * The schema of a JSON file defining a custom scheme. The key is a language token, while the value
- * is a [chalk](https://github.com/chalk/chalk#styles) style.
+ * is a [style](https://github.com/chalk/chalk#styles) style.
  *
  * Example:
  * ```json
@@ -262,18 +262,18 @@ interface JsonTheme extends Tokens<Style | Style[]> {}
 /**
  * Passed to [[highlight]] as the `theme` option. A theme is a map of language tokens to a function
  * that takes in string value of the token and returns a new string with colorization applied
- * (typically a [chalk](https://github.com/chalk/chalk) style), but you can also provide your own
+ * (typically a [style](https://github.com/chalk/chalk) style), but you can also provide your own
  * formatting functions.
  *
  * Example:
  * ```ts
  * import {Theme, plain} from './highlight/theme.ts';
- * import chalk from '../terminal/chalk.ts';
+ * import style from '../terminal/style.ts';
  *
  * const myTheme: Theme = {
- *     keyword: chalk.red.bold,
- *     addition: chalk.green,
- *     deletion: chalk.red.strikethrough,
+ *     keyword: style.red.bold,
+ *     addition: style.green,
+ *     deletion: style.red.strikethrough,
  *     number: plain
  * };
  * ```
@@ -298,18 +298,18 @@ function fromJson(json: JsonTheme): Theme {
   const theme: Theme = {};
   for (const key of Object.keys(json)) {
     // biome-ignore lint/suspicious/noExplicitAny: Dynamic theme access needed for highlight compatibility
-    const style: string | string[] = (json as any)[key];
-    if (Array.isArray(style)) {
+    const styleValue: string | string[] = (json as any)[key];
+    if (Array.isArray(styleValue)) {
       // biome-ignore lint/suspicious/noExplicitAny: Dynamic theme access needed for highlight compatibility
-      (theme as any)[key] = style.reduce(
-        (previous: typeof chalk, current: string) =>
+      (theme as any)[key] = styleValue.reduce(
+        (previous: typeof style, current: string) =>
           // biome-ignore lint/suspicious/noExplicitAny: Dynamic theme access needed for highlight compatibility
           current === "plain" ? plain : (previous as any)[current],
-        chalk,
+        style,
       );
     } else {
       // biome-ignore lint/suspicious/noExplicitAny: Dynamic theme access needed for highlight compatibility
-      (theme as any)[key] = (chalk as any)[style];
+      (theme as any)[key] = (style as any)[styleValue];
     }
   }
   return theme;
@@ -335,14 +335,14 @@ function toJson(theme: Theme): JsonTheme {
  * Stringifies a [[Theme]] with formatter functions to a JSON string.
  *
  * ```ts
- * import chalk from '../terminal/chalk.ts';
+ * import style from '../terminal/style.ts';
  * import {stringify} from './highlight/theme.ts';
  * import * as fs from 'node:fs';
  *
  * const myTheme: Theme = {
- *     keyword: chalk.red.bold,
- *     addition: chalk.green,
- *     deletion: chalk.red.strikethrough,
+ *     keyword: style.red.bold,
+ *     addition: style.green,
+ *     deletion: style.red.strikethrough,
  *     number: plain
  * }
  * const json = stringify(myTheme);

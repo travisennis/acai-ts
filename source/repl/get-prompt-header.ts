@@ -1,5 +1,5 @@
-import chalk from "../terminal/chalk.ts";
 import type { Terminal } from "../terminal/index.ts";
+import style from "../terminal/style.ts";
 import {
   getCurrentBranch,
   getDiffStat,
@@ -16,7 +16,7 @@ async function getProjectStatusLine(): Promise<string> {
   if (branch) {
     const hasChanges = await hasUncommittedChanges();
     const asterisk = hasChanges ? "*" : "";
-    gitStatus = ` ${chalk.gray(branch + asterisk)}`;
+    gitStatus = ` ${style.gray(branch + asterisk)}`;
   }
 
   if (await inGitDirectory()) {
@@ -29,12 +29,12 @@ async function getProjectStatusLine(): Promise<string> {
     if (fileChanges.untracked) fileStatus += ` ?${fileChanges.untracked}`;
     gitStatus +=
       " " +
-      `${chalk.dim("[")}${chalk.yellow(fileStatus.trim())} ` +
-      `${chalk.green(`+${stats.insertions}`)} ` +
-      `${chalk.red(`-${stats.deletions}`)}${chalk.dim("]")}`;
+      `${style.dim("[")}${style.yellow(fileStatus.trim())} ` +
+      `${style.green(`+${stats.insertions}`)} ` +
+      `${style.red(`-${stats.deletions}`)}${style.dim("]")}`;
   }
 
-  return `${chalk.blue(currentDir)}${gitStatus}`;
+  return `${style.blue(currentDir)}${gitStatus}`;
 }
 
 export async function getPromptHeader(args: {
@@ -46,6 +46,6 @@ export async function getPromptHeader(args: {
   const { terminal, modelId, contextWindow, currentContextWindow } = args;
   terminal.hr();
   terminal.writeln(await getProjectStatusLine());
-  terminal.writeln(chalk.dim(modelId));
+  terminal.writeln(style.dim(modelId));
   terminal.displayProgressBar(currentContextWindow, contextWindow);
 }

@@ -1,5 +1,5 @@
-import chalk, { type ChalkInstance } from "../terminal/chalk.ts";
 import type { Terminal } from "../terminal/index.ts";
+import style, { type StyleInstance } from "../terminal/style.ts";
 
 // Minimal shape needed from the onFinish result to render tool usage
 interface MinimalStep {
@@ -12,9 +12,9 @@ export function displayToolUse(
   terminal: Terminal,
 ) {
   const toolsCalled: string[] = [];
-  const toolColors = new Map<string, ChalkInstance>();
+  const toolColors = new Map<string, StyleInstance>();
 
-  const chalkColors = [
+  const styleColors = [
     "red",
     "green",
     "yellow",
@@ -33,7 +33,7 @@ export function displayToolUse(
     "blackBright",
   ] as const;
 
-  terminal.writeln(chalk.dim(`Steps: ${result.steps.length}`));
+  terminal.writeln(style.dim(`Steps: ${result.steps.length}`));
 
   for (const step of result.steps) {
     let currentToolCalls: Array<{ toolName: string }> = [];
@@ -47,9 +47,9 @@ export function displayToolUse(
     for (const toolCallOrResult of currentToolCalls) {
       const toolName = toolCallOrResult.toolName;
       if (!toolColors.has(toolName)) {
-        const availableColors = chalkColors.filter(
+        const availableColors = styleColors.filter(
           (color) =>
-            !Array.from(toolColors.values()).some((c) => c === chalk[color]),
+            !Array.from(toolColors.values()).some((c) => c === style[color]),
         );
         const color =
           availableColors.length > 0
@@ -57,7 +57,7 @@ export function displayToolUse(
                 Math.floor(Math.random() * availableColors.length)
               ] ?? "white")
             : "white";
-        toolColors.set(toolName, chalk[color]);
+        toolColors.set(toolName, style[color]);
       }
       toolsCalled.push(toolName);
     }
@@ -65,16 +65,16 @@ export function displayToolUse(
 
   if (toolsCalled.length > 0) {
     terminal.lineBreak();
-    terminal.writeln(chalk.dim("Tools:"));
+    terminal.writeln(style.dim("Tools:"));
     for (const toolCalled of toolsCalled) {
-      const colorFn = toolColors.get(toolCalled) ?? chalk.white;
+      const colorFn = toolColors.get(toolCalled) ?? style.white;
       terminal.write(`${colorFn("██")} `);
     }
     terminal.lineBreak();
 
     const uniqueTools = new Set(toolsCalled);
     for (const [index, toolCalled] of Array.from(uniqueTools).entries()) {
-      const colorFn = toolColors.get(toolCalled) ?? chalk.white;
+      const colorFn = toolColors.get(toolCalled) ?? style.white;
       terminal.write(colorFn(toolCalled));
       if (index < new Set(toolsCalled).size - 1) {
         terminal.write(" - ");

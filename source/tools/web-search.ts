@@ -2,7 +2,7 @@ import { tool } from "ai";
 import { SafeSearchType, type SearchResult, search } from "duck-duck-scrape";
 import { z } from "zod";
 import Exa from "../api/exa/index.ts";
-import chalk from "../terminal/chalk.ts";
+import style from "../terminal/style.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
 
@@ -32,7 +32,7 @@ export const createWebSearchTool = ({
         sendData?.({
           id: toolCallId,
           event: "tool-init",
-          data: `Web search: ${chalk.cyan(query)}`,
+          data: `Web search: ${style.cyan(query)}`,
         });
 
         if (abortSignal?.aborted) {

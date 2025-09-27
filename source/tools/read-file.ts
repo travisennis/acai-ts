@@ -3,7 +3,7 @@ import { isNumber } from "@travisennis/stdlib/typeguards";
 import { tool } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
-import chalk from "../terminal/chalk.ts";
+import style from "../terminal/style.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
@@ -69,7 +69,7 @@ export const createReadFileTool = async ({
         sendData?.({
           id: toolCallId,
           event: "tool-init",
-          data: `Reading file: ${chalk.cyan(providedPath)}${startLine ? chalk.cyan(`:${startLine}`) : ""}${lineCount ? chalk.cyan(`:${lineCount}`) : ""}`,
+          data: `Reading file: ${style.cyan(providedPath)}${startLine ? style.cyan(`:${startLine}`) : ""}${lineCount ? style.cyan(`:${lineCount}`) : ""}`,
         });
         try {
           const filePath = await validatePath(
