@@ -150,7 +150,7 @@ export const createGrepTool = (options: {
           sendData?.({
             event: "tool-completion",
             id: toolCallId,
-            data: `Found ${style.cyan(matchCount)} matches.`,
+            data: `Found ${style.cyan(matchCount)} matches. (${managed.tokenCount} tokens)`,
           });
           return Promise.resolve(managed.content);
         } catch (error) {
