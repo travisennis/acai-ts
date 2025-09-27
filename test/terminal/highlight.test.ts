@@ -1,27 +1,27 @@
 import { strictEqual } from "node:assert";
 import { describe, it } from "node:test";
-import { createChalk } from "../../source/terminal/chalk.ts";
 import { DEFAULT_THEME } from "../../source/terminal/default-theme.ts";
 import {
   highlight,
   listLanguages,
   supportsLanguage,
 } from "../../source/terminal/highlight/index.ts";
+import { createStyle } from "../../source/terminal/style.ts";
 
 describe("highlight functionality", () => {
   it("should highlight JavaScript code", () => {
     // Create a custom theme with forced color support
-    const forcedChalk = createChalk({ level: 1 });
+    const forcedStyle = createStyle({ level: 1 });
     const forcedTheme = {
       ...DEFAULT_THEME,
-      keyword: forcedChalk.blue,
+      keyword: forcedStyle.blue,
       // biome-ignore lint/style/useNamingConvention: API name from highlight.js
-      built_in: forcedChalk.cyan,
-      type: forcedChalk.cyan.dim,
-      literal: forcedChalk.blue,
-      number: forcedChalk.green,
-      regexp: forcedChalk.red,
-      string: forcedChalk.red,
+      built_in: forcedStyle.cyan,
+      type: forcedStyle.cyan.dim,
+      literal: forcedStyle.blue,
+      number: forcedStyle.green,
+      regexp: forcedStyle.red,
+      string: forcedStyle.red,
     };
 
     const code = `function hello() {

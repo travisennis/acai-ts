@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
-import chalk from "../terminal/chalk.ts";
 import type { Terminal } from "../terminal/index.ts";
+import style from "../terminal/style.ts";
 import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { applyFileEdits } from "./file-editing-utils.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
@@ -54,7 +54,7 @@ export const createEditFileTool = async ({
         sendData?.({
           id: toolCallId,
           event: "tool-init",
-          data: `Editing file: ${chalk.cyan(path)}`,
+          data: `Editing file: ${style.cyan(path)}`,
         });
         try {
           const validPath = await validatePath(
@@ -65,7 +65,7 @@ export const createEditFileTool = async ({
 
           if (terminal) {
             terminal.writeln(
-              `\n${chalk.blue.bold("●")} Proposing file changes: ${chalk.cyan(path)}`,
+              `\n${style.blue.bold("●")} Proposing file changes: ${style.cyan(path)}`,
             );
 
             terminal.lineBreak();
@@ -78,7 +78,7 @@ export const createEditFileTool = async ({
             );
 
             terminal.writeln(
-              `The agent is proposing the following ${chalk.cyan(edits.length)} edits:`,
+              `The agent is proposing the following ${style.cyan(edits.length)} edits:`,
             );
 
             terminal.lineBreak();
@@ -117,7 +117,7 @@ export const createEditFileTool = async ({
 
             if (userChoice === "accept-all") {
               terminal.writeln(
-                chalk.yellow("✓ Auto-accept mode enabled for all edits"),
+                style.yellow("✓ Auto-accept mode enabled for all edits"),
               );
               terminal.lineBreak();
             }

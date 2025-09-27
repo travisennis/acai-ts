@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
-import chalk from "../terminal/chalk.ts";
+import style from "../terminal/style.ts";
 import { manageOutput, type TokenCounter } from "../token-utils.ts";
 import {
   directoryTree,
@@ -47,7 +47,7 @@ export const createDirectoryTreeTool = async ({
           sendData?.({
             id: toolCallId,
             event: "tool-init",
-            data: `Listing directory tree: ${chalk.cyan(path)}`,
+            data: `Listing directory tree: ${style.cyan(path)}`,
           });
 
           validPath = await validatePath(

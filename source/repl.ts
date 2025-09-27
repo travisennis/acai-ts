@@ -14,8 +14,8 @@ import { displayToolUse } from "./repl/display-tool-use.ts";
 import { getPromptHeader } from "./repl/get-prompt-header.ts";
 import { toolCallRepair } from "./repl/tool-call-repair.ts";
 import { ReplPrompt } from "./repl-prompt.ts";
-import chalk from "./terminal/chalk.ts";
 import type { Terminal } from "./terminal/index.ts";
+import style from "./terminal/style.ts";
 import type { TokenTracker } from "./token-tracker.ts";
 import type { TokenCounter } from "./token-utils.ts";
 import type { ToolExecutor } from "./tool-executor.ts";
@@ -97,7 +97,7 @@ export class Repl {
         const lastMessage = messageHistory.getLastMessage();
         if (lastMessage) {
           terminal.lineBreak();
-          terminal.writeln(chalk.dim("Continuing conversation:"));
+          terminal.writeln(style.dim("Continuing conversation:"));
           terminal.display(lastMessage);
           terminal.lineBreak();
           terminal.hr();
@@ -290,12 +290,12 @@ export class Repl {
               ? total.outputTokens
               : 0;
             const tokenSummary = `Tokens: ↑ ${inputTokens} ↓ ${outputTokens}`;
-            terminal.writeln(chalk.dim(tokenSummary));
+            terminal.writeln(style.dim(tokenSummary));
 
             const inputCost = modelConfig.costPerInputToken * inputTokens;
             const outputCost = modelConfig.costPerOutputToken * outputTokens;
             terminal.writeln(
-              chalk.dim(`Cost: $${(inputCost + outputCost).toFixed(2)}`),
+              style.dim(`Cost: $${(inputCost + outputCost).toFixed(2)}`),
             );
 
             // Track aggregate usage across all steps when available
@@ -348,14 +348,14 @@ export class Repl {
           if (chunk.type === "reasoning-delta" || chunk.type === "text-delta") {
             if (chunk.type === "reasoning-delta") {
               if (lastType !== "reasoning") {
-                terminal.writeln(chalk.dim("<think>"));
+                terminal.writeln(style.dim("<think>"));
               }
-              terminal.write(chalk.dim(chunk.text)); // Stream reasoning directly
+              terminal.write(style.dim(chunk.text)); // Stream reasoning directly
               lastType = "reasoning";
             } else if (chunk.type === "text-delta") {
               if (lastType === "reasoning") {
                 // Finishing reasoning: Print </think>
-                terminal.writeln(chalk.dim("\n</think>\n"));
+                terminal.writeln(style.dim("\n</think>\n"));
               }
               accumulatedText += chunk.text;
               lastType = "text";
@@ -371,11 +371,11 @@ export class Repl {
           } else {
             // Close thinking tags when moving from reasoning to any other chunk type
             if (lastType === "reasoning") {
-              terminal.write(chalk.dim("\n</think>\n\n"));
+              terminal.write(style.dim("\n</think>\n\n"));
             }
             // if there is accumulatedText, display it
             if (accumulatedText.trim()) {
-              terminal.writeln(`${chalk.blue.bold("● Response:")}`);
+              terminal.writeln(`${style.blue.bold("● Response:")}`);
               terminal.display(accumulatedText, true);
               terminal.lineBreak();
             }
@@ -386,12 +386,12 @@ export class Repl {
 
         // Ensure the final closing tag for reasoning is written if it was the last type
         if (lastType === "reasoning") {
-          terminal.write(chalk.gray("\n</think>\n\n"));
+          terminal.write(style.gray("\n</think>\n\n"));
         }
 
         // if there is accumulatedText, display it
         if (accumulatedText.trim()) {
-          terminal.writeln(`${chalk.green.bold("● Response:")}`);
+          terminal.writeln(`${style.green.bold("● Response:")}`);
           terminal.display(accumulatedText, true);
           terminal.lineBreak();
         }

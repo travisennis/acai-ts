@@ -25,12 +25,12 @@ interface StyleCodes {
   [1]: number; // close
 }
 
-export interface Style {
+export interface AnsiStyle {
   open: string;
   close: string;
 }
 
-interface ColorStyle extends Style {
+interface ColorStyle extends AnsiStyle {
   ansi: (code: number) => string;
   ansi256: (code: number) => string;
   ansi16m: (red: number, green: number, blue: number) => string;
@@ -116,7 +116,7 @@ function assembleStyles(): Styles {
 
   for (const [groupName, group] of objectEntries(styles)) {
     for (const [styleName, styleCodes] of objectEntries(group)) {
-      const style: Style = {
+      const style: AnsiStyle = {
         open: `\u001B[${(styleCodes as StyleCodes)[0]}m`,
         close: `\u001B[${(styleCodes as StyleCodes)[1]}m`,
       };

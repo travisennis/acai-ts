@@ -1,12 +1,12 @@
 import { logger } from "../logger.ts";
-import chalk from "../terminal/chalk.ts";
 import type { Terminal } from "../terminal/index.ts";
 import { isMarkdown } from "../terminal/markdown-utils.ts";
+import style from "../terminal/style.ts";
 import type { Message } from "../tools/types.ts";
 
 export function displayToolMessages(messages: Message[], terminal: Terminal) {
   const isError = messages[messages.length - 1]?.event === "tool-error";
-  const indicator = isError ? chalk.red.bold("●") : chalk.blue.bold("●");
+  const indicator = isError ? style.red.bold("●") : style.blue.bold("●");
   const initMessage =
     messages.find((m) => m.event === "tool-init")?.data ?? "Tool Execution";
 
@@ -51,7 +51,7 @@ function handleToolUpdateMessage(
       if (isMarkdown(content)) {
         terminal.display(content, true);
       } else {
-        terminal.write(chalk.green(content));
+        terminal.write(style.green(content));
         terminal.lineBreak();
       }
       terminal.hr();

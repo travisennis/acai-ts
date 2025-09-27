@@ -1,7 +1,7 @@
 import type { Interface as ReadlineInterface } from "node:readline";
 import { createInterface } from "node:readline";
 import { initExecutionEnvironment } from "../execution/index.ts";
-import chalk from "../terminal/chalk.ts";
+import style from "../terminal/style.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 // Command execution timeout in milliseconds
@@ -47,7 +47,7 @@ export const shellCommand = (options: CommandOptions): ReplCommand => {
 
       terminal.lineBreak();
       terminal.writeln(
-        chalk.gray(`Exit code: ${exitCode}, Duration: ${duration}ms`),
+        style.gray(`Exit code: ${exitCode}, Duration: ${duration}ms`),
       );
 
       terminal.write(output);

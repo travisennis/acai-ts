@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import { tool } from "ai";
 import { z } from "zod";
-import chalk from "../terminal/chalk.ts";
+import style from "../terminal/style.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
 
@@ -37,7 +37,7 @@ export const createMoveFileTool = async ({
           sendData?.({
             id: toolCallId,
             event: "tool-init",
-            data: `Moving file from ${chalk.cyan(source)} to ${chalk.cyan(destination)}`,
+            data: `Moving file from ${style.cyan(source)} to ${style.cyan(destination)}`,
           });
 
           const validSourcePath = await validatePath(

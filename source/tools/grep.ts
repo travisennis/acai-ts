@@ -3,7 +3,7 @@ import { inspect } from "node:util";
 import { tool } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
-import chalk from "../terminal/chalk.ts";
+import style from "../terminal/style.ts";
 import { manageOutput, type TokenCounter } from "../token-utils.ts";
 import type { SendData } from "./types.ts";
 
@@ -80,7 +80,7 @@ export const createGrepTool = (options: {
           sendData?.({
             event: "tool-init",
             id: toolCallId,
-            data: `Searching codebase for ${chalk.cyan(inspect(pattern))}${safeFilePattern ? ` with file pattern ${chalk.cyan(safeFilePattern)}` : ""} in ${chalk.cyan(path)}`,
+            data: `Searching codebase for ${style.cyan(inspect(pattern))}${safeFilePattern ? ` with file pattern ${style.cyan(safeFilePattern)}` : ""} in ${style.cyan(path)}`,
           });
 
           // Normalize literal option: if null => auto-detect using heuristic
@@ -150,7 +150,7 @@ export const createGrepTool = (options: {
           sendData?.({
             event: "tool-completion",
             id: toolCallId,
-            data: `Found ${chalk.cyan(matchCount)} matches.`,
+            data: `Found ${style.cyan(matchCount)} matches.`,
           });
           return Promise.resolve(managed.content);
         } catch (error) {

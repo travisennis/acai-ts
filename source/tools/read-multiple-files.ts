@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
-import chalk from "../terminal/chalk.ts";
+import style from "../terminal/style.ts";
 import type { TokenCounter } from "../token-utils.ts";
 import { readFileAndCountTokens } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
@@ -39,7 +39,7 @@ export const createReadMultipleFilesTool = async ({
         sendData?.({
           id: toolCallId,
           event: "tool-init",
-          data: `Reading files: ${paths.map((p) => chalk.cyan(p)).join(", ")}`,
+          data: `Reading files: ${paths.map((p) => style.cyan(p)).join(", ")}`,
         });
         if (abortSignal?.aborted) {
           throw new Error("Multiple file reading aborted before reading files");

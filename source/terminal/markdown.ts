@@ -2,11 +2,11 @@ import { EOL } from "node:os";
 import Table from "cli-table3";
 import { marked, type Token } from "marked";
 import { logger } from "../logger.ts";
-import chalk from "./chalk.ts";
 import { DEFAULT_THEME } from "./default-theme.ts";
 import { link as terminalLink } from "./formatting.ts";
 import { highlight, supportsLanguage } from "./highlight/index.ts";
 import { getListNumber } from "./markdown-utils.ts";
+import style from "./style.ts";
 
 function logError(msg: string) {
   logger.error(msg);
@@ -28,7 +28,7 @@ function format(
 ): string {
   switch (token.type) {
     case "blockquote":
-      return chalk.dim.italic(
+      return style.dim.italic(
         (token.tokens ?? [])
           .map((_) => format(_))
           .map((l) => `  ${l}`)
@@ -53,16 +53,16 @@ function format(
     }
     case "codespan":
       // inline code
-      return chalk.blue(token.text);
+      return style.blue(token.text);
     case "em":
-      return chalk.italic((token.tokens ?? []).map((_) => format(_)).join(""));
+      return style.italic((token.tokens ?? []).map((_) => format(_)).join(""));
     case "strong":
-      return chalk.bold((token.tokens ?? []).map((_) => format(_)).join(""));
+      return style.bold((token.tokens ?? []).map((_) => format(_)).join(""));
     case "heading":
       switch (token.depth) {
         case 1: // h1
           return (
-            chalk.bold.italic.underline(
+            style.bold.italic.underline(
               (token.tokens ?? []).map((_) => format(_)).join(""),
             ) +
             EOL +
@@ -70,13 +70,13 @@ function format(
           );
         case 2: // h2
           return (
-            chalk.bold((token.tokens ?? []).map((_) => format(_)).join("")) +
+            style.bold((token.tokens ?? []).map((_) => format(_)).join("")) +
             EOL +
             EOL
           );
         default: // h3+
           return (
-            chalk.bold.dim(
+            style.bold.dim(
               (token.tokens ?? []).map((_) => format(_)).join(""),
             ) +
             EOL +
@@ -155,7 +155,7 @@ function format(
       return `${table.toString()}\n`;
     }
     case "del": {
-      return chalk.strikethrough(token.text);
+      return style.strikethrough(token.text);
     }
     default:
       return "";
