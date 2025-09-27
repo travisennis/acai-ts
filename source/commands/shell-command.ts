@@ -73,7 +73,7 @@ export const shellCommand = (options: CommandOptions): ReplCommand => {
           const tokenCount = tokenCounter.count(output);
           promptManager.addContext(output);
           terminal.success(
-            `Output added to prompt context. ${tokenCount} tokens)`,
+            `Output added to prompt context. (${tokenCount} tokens)`,
           );
         }
       } catch (_e) {
