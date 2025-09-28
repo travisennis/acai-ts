@@ -79,8 +79,12 @@ const wrapWord = (rows: string[], word: string, columns: number): void => {
 
   // It's possible that the last row we copy over is only
   // ansi escape characters, handle this edge-case
-  if (!visible && rows.at(-1)?.length > 0 && rows.length > 1) {
-    rows[rows.length - 2] += rows.pop()!;
+  const lastRow = rows.at(-1);
+  if (!visible && lastRow && lastRow.length > 0 && rows.length > 1) {
+    const poppedRow = rows.pop();
+    if (poppedRow) {
+      rows[rows.length - 1] += poppedRow;
+    }
   }
 };
 
@@ -197,18 +201,22 @@ const exec = (
     returnValue += character;
 
     if (ESCAPES.has(character)) {
-      const { groups } = new RegExp(
-        `(?:\\\\${ANSI_CSI}(?<code>\\\\d+)m|\\\\${ANSI_ESCAPE_LINK}(?<uri>.*)${ANSI_ESCAPE_BELL})`,
-      ).exec(preString.slice(preStringIndex)) || { groups: {} };
-      if (groups.code !== undefined) {
-        const code = Number.parseFloat(groups.code);
-        escapeCode = code === END_CODE ? undefined : code;
-      } else if (groups.uri !== undefined) {
-        escapeUrl = groups.uri.length === 0 ? undefined : groups.uri;
+      const match = new RegExp(
+        `(?:\\\\${ANSI_CSI}(?<code>\\d+)m|\\\\${ANSI_ESCAPE_LINK}(?<uri>.*)${ANSI_ESCAPE_BELL})`,
+      ).exec(preString.slice(preStringIndex));
+
+      if (match?.groups) {
+        const { groups } = match;
+        if (groups["code"] !== undefined) {
+          const code = Number.parseFloat(groups["code"]);
+          escapeCode = code === END_CODE ? undefined : code;
+        } else if (groups["uri"] !== undefined) {
+          escapeUrl = groups["uri"].length === 0 ? undefined : groups["uri"];
+        }
       }
     }
 
-    const code = ansiStyles.codes.get(Number(escapeCode));
+    const code = ansiStyles["codes"].get(Number(escapeCode));
 
     if (pre[index + 1] === "\\n") {
       if (escapeUrl) {

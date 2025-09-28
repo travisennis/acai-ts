@@ -10,14 +10,14 @@ const segmenter = new Intl.Segmenter();
 
 // Whole-cluster zero-width
 const zeroWidthClusterRegex =
-  /^(?:\\p{Default_Ignorable_Code_Point}|\\p{Control}|\\p{Mark}|\\p{Surrogate})+$/v;
+  /^(?:\p{Default_Ignorable_Code_Point}|\p{Control}|\p{Mark}|\p{Surrogate})+$/v;
 
 // Pick the base scalar if the cluster starts with Prepend/Format/Marks
 const leadingNonPrintingRegex =
-  /^[\\p{Default_Ignorable_Code_Point}\\p{Control}\\p{Format}\\p{Mark}\\p{Surrogate}]+/v;
+  /^[\p{Default_Ignorable_Code_Point}\p{Control}\p{Format}\p{Mark}\p{Surrogate}]+/v;
 
 // RGI emoji sequences
-const rgiEmojiRegex = /^\\p{RGI_Emoji}$/v;
+const rgiEmojiRegex = /^\p{RGI_Emoji}$/v;
 
 function baseVisible(segment: string): string {
   return segment.replace(leadingNonPrintingRegex, "");
