@@ -34,6 +34,7 @@
     "prepack": "npm run clean && npm run build",
     "prepare": "husky",
     "test": "node --no-warnings --test test/**/*.test.ts",
+    "test:minimal": "node --no-warnings --test --test-reporter=dot test/**/*.test.ts",
     "test:coverage": "c8 node --no-warnings --test test/**/*.test.ts",
     "test:full-coverage": "c8 --all node --no-warnings --test test/**/*.test.ts",
     "pretest": "npm run typecheck",
