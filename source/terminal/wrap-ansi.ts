@@ -191,7 +191,7 @@ const exec = (
     rows = rows.map((row) => stringVisibleTrimSpacesRight(row));
   }
 
-  const preString = rows.join("\\n");
+  const preString = rows.join("\n");
   const pre = [...preString];
 
   // We need to keep a separate index as `String#slice()` works on Unicode code units, while `pre` is an array of codepoints.
@@ -218,7 +218,7 @@ const exec = (
 
     const code = ansiStyles["codes"].get(Number(escapeCode));
 
-    if (pre[index + 1] === "\\n") {
+    if (pre[index + 1] === "\n") {
       if (escapeUrl) {
         returnValue += wrapAnsiHyperlink("");
       }
@@ -226,7 +226,7 @@ const exec = (
       if (escapeCode && code) {
         returnValue += wrapAnsiCode(code);
       }
-    } else if (character === "\\n") {
+    } else if (character === "\n") {
       if (escapeCode && code) {
         returnValue += wrapAnsiCode(escapeCode);
       }
@@ -250,8 +250,8 @@ export default function wrapAnsi(
 ): string {
   return String(string)
     .normalize()
-    .replaceAll("\\r\\n", "\\n")
-    .split("\\n")
+    .replaceAll("\r\n", "\n")
+    .split("\n")
     .map((line) => exec(line, columns, options))
-    .join("\\n");
+    .join("\n");
 }
