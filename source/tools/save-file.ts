@@ -75,9 +75,9 @@ export const createSaveFileTool = async ({
 
             terminal.lineBreak();
             terminal.writeln("Proposed file content:");
-            terminal.lineBreak();
+            terminal.hr();
             terminal.display(formatCodeBlock(userPath, content));
-            terminal.lineBreak();
+            terminal.hr();
 
             // Determine overwrite status for display
             let overwriteMessage = "";
