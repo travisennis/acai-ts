@@ -6,19 +6,19 @@
  */
 
 import Table from "cli-table3";
-import wrapAnsi from "wrap-ansi";
 import { logger } from "../logger.ts";
 import { getPackageVersion } from "../version.ts";
 import {
   clearTerminal,
   getTerminalSize,
   setTerminalTitle,
-  stripAnsi,
   link as terminalLink,
 } from "./formatting.ts";
 import { applyMarkdown } from "./markdown.ts";
+import stripAnsi from "./strip-ansi.ts";
 import style, { type StyleInstance } from "./style.ts";
 import type { TerminalConfig } from "./types.ts";
+import wrapAnsi from "./wrap-ansi.ts";
 
 export function getShell() {
   return process.env["ZSH_VERSION"] ? "zsh" : process.env["SHELL"] || "bash";
