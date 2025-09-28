@@ -9,7 +9,6 @@ export const editPromptCommand = ({
   return {
     command: "/edit-prompt",
     description: "Edit the prompt.",
-    result: "use" as const,
     getSubCommands: () => Promise.resolve([]),
     execute: async () => {
       try {
@@ -25,7 +24,9 @@ export const editPromptCommand = ({
         promptManager.set(updatedPrompt);
       } catch (error) {
         terminal.error(`Error updating prompt: ${(error as Error).message}`);
+        return "continue";
       }
+      return "use";
     },
   };
 };

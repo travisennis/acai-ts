@@ -13,7 +13,6 @@ export const promptCommand = ({
     command: "/prompt",
     description:
       "Loads and executes prompts. Project prompts override user prompts with the same name.",
-    result: "use" as const,
     getSubCommands: async (): Promise<string[]> => {
       const getPromptNamesFromDir = async (
         dirPath: string,
@@ -49,13 +48,13 @@ export const promptCommand = ({
       const promptName = args?.[0];
       if (!promptName) {
         await listAllPrompts(terminal, config);
-        return;
+        return "continue";
       }
 
       // Handle 'list' subcommand
       if (promptName === "list") {
         await listAllPrompts(terminal, config);
-        return;
+        return "continue";
       }
 
       // Check for old format and provide helpful error
@@ -63,7 +62,7 @@ export const promptCommand = ({
         terminal.warn(
           "The old format (user:name or project:name) is no longer supported. Use: /prompt <prompt-name> [input...]",
         );
-        return;
+        return "continue";
       }
 
       try {
@@ -73,7 +72,7 @@ export const promptCommand = ({
           terminal.error(
             `Prompt not found: ${promptName}. Available prompts can be seen with tab completion.`,
           );
-          return;
+          return "continue";
         }
 
         let promptContent: string;
@@ -84,7 +83,7 @@ export const promptCommand = ({
             terminal.error(
               `Prompt file not found: ${promptName} at ${promptResult.path}`,
             );
-            return;
+            return "continue";
           }
           throw error;
         }
@@ -112,8 +111,10 @@ export const promptCommand = ({
           promptManager.addContext(context);
         }
         promptManager.set(processedPrompt.message);
+        return "use";
       } catch (error) {
         terminal.error(`Error loading prompt: ${(error as Error).message}`);
+        return "continue";
       }
     },
   };

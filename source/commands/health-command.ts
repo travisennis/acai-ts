@@ -8,9 +8,9 @@ export function healthCommand(
   return {
     command: "/health",
     description: "Show application health status and environment variables",
-    result: "continue" as const,
+
     getSubCommands: () => Promise.resolve([]),
-    execute() {
+    async execute(): Promise<"break" | "continue" | "use"> {
       // Define the environment variables we care about
       const envVars = [
         // AI Provider API Keys
@@ -117,7 +117,7 @@ export function healthCommand(
         terminal.info("✓ All required tools are installed.");
       }
 
-      return Promise.resolve();
+      return "continue";
     },
   };
 }

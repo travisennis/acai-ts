@@ -12,9 +12,8 @@ export interface ReplCommand {
   command: string;
   aliases?: string[];
   description: string;
-  result: "break" | "continue" | "use";
   getSubCommands: () => Promise<string[]>;
-  execute: (args: string[]) => Promise<void>;
+  execute: (args: string[]) => Promise<"break" | "continue" | "use">;
 }
 
 export interface CommandOptions {

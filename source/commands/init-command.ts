@@ -13,9 +13,9 @@ export const initCommand = ({
   return {
     command: "/init",
     description: "Creates the AGENTS.md file.",
-    result: "continue" as const,
+
     getSubCommands: () => Promise.resolve([]),
-    execute: async () => {
+    execute: async (): Promise<"break" | "continue" | "use"> => {
       const result = streamText({
         model: modelManager.getModel("init-project"),
         temperature: 0.5,
@@ -42,6 +42,7 @@ Platform: ${platform()}`,
       for await (const text of result.textStream) {
         terminal.write(text);
       }
+      return "continue";
     },
   };
 };

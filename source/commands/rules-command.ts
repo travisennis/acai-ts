@@ -7,9 +7,9 @@ export const rulesCommand = ({ terminal }: CommandOptions): ReplCommand => {
     command: "/rules",
     description:
       "View, add, or edit rules. Usage: /rules [view|add <text>|edit]",
-    result: "continue" as const,
+
     getSubCommands: () => Promise.resolve(["view", "add", "edit"]),
-    execute: async (args: string[]) => {
+    execute: async (args: string[]): Promise<"break" | "continue" | "use"> => {
       const subCommand = args[0] ?? "view"; // Default to 'view'
       const commandArgs = args.slice(1).join(" ");
 
@@ -34,7 +34,7 @@ export const rulesCommand = ({ terminal }: CommandOptions): ReplCommand => {
             if (!newMemory) {
               terminal.error("Error: Memory text cannot be empty for 'add'.");
               terminal.writeln("Usage: /memory add <new memory text>");
-              return;
+              return "continue";
             }
             const currentContent = await config.readAgentsFile();
             const updatedContent = currentContent
@@ -67,9 +67,11 @@ export const rulesCommand = ({ terminal }: CommandOptions): ReplCommand => {
             );
             break;
         }
+        return "continue";
       } catch (_error) {
         // Errors from read/write helpers are already logged
         terminal.error("Failed to execute memory command.");
+        return "continue";
       }
     },
   };

@@ -51,12 +51,12 @@ export const generateRulesCommand = ({
     command: "/generate-rules",
     description:
       "Analyzes the current conversation to generate and save new interaction rules, then displays them.",
-    result: "continue" as const,
+
     getSubCommands: () => Promise.resolve([]),
-    execute: async () => {
+    execute: async (): Promise<"break" | "continue" | "use"> => {
       if (messageHistory.isEmpty()) {
         terminal.writeln("Cannot generate rules from an empty conversation.");
-        return;
+        return "continue";
       }
 
       terminal.lineBreak();
@@ -76,7 +76,9 @@ export const generateRulesCommand = ({
           error instanceof Error ? error.message : String(error);
         terminal.error(`Error generating rules: ${errorMessage}`);
         logger.error(error, "Error during rule generation:");
+        return "continue";
       }
+      return "continue";
     },
   };
 };

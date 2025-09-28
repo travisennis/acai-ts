@@ -14,7 +14,6 @@ export const filesCommand = ({
     command: "/files",
     description:
       "Finds files matching the given patterns and adds their content to the next prompt. Usage: /files or /files src/**/*.ts",
-    result: "continue" as const,
     getSubCommands: () => Promise.resolve([]),
     execute: async (args: string[]) => {
       try {
@@ -31,7 +30,7 @@ export const filesCommand = ({
 
           if (selectedFiles.length === 0) {
             terminal.warn("No files selected.");
-            return;
+            return "continue";
           }
 
           // Process the selected files
@@ -42,7 +41,7 @@ export const filesCommand = ({
 
           if (foundFiles.length === 0) {
             terminal.warn("No files found matching the pattern(s)");
-            return;
+            return "continue";
           }
 
           // Process the selected files
@@ -75,10 +74,12 @@ export const filesCommand = ({
         terminal.success(
           `File contents will be added to your next prompt (${workingFiles.length} files, ${tokenCount} tokens)`,
         );
+        return "continue";
       } catch (error) {
         terminal.error(
           `Error processing file patterns: ${(error as Error).message}`,
         );
+        return "continue";
       }
     },
   };

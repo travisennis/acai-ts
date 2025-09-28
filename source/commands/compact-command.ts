@@ -7,15 +7,16 @@ export const compactCommand = (options: CommandOptions): ReplCommand => {
     command: "/compact",
     description:
       "Saves, summarizes, and resets the chat history. Optional instructions can be provided for the summary.",
-    result: "continue" as const,
+
     getSubCommands: () => Promise.resolve([]),
-    execute: async (args: string[]) => {
+    execute: async (args: string[]): Promise<"break" | "continue" | "use"> => {
       const { messageHistory, terminal } = options;
       if (!messageHistory.isEmpty()) {
         const additionalInstructions = args.join(" ");
         await summarizeAndReset(options, additionalInstructions);
       }
       terminal.info("Message history summarized and reset.");
+      return "continue";
     },
   };
 };

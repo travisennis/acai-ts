@@ -8,13 +8,13 @@ export const exitCommand = ({
     command: "/exit",
     aliases: ["/bye", "/quit"],
     description: "Exits and saves the chat history.",
-    result: "break" as const,
     getSubCommands: () => Promise.resolve([]),
     execute: async () => {
       terminal.clear();
       if (!messageHistory.isEmpty()) {
         await messageHistory.save();
       }
+      return "break";
     },
   };
 };

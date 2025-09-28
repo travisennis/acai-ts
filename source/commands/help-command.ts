@@ -7,9 +7,8 @@ export const helpCommand = (
   return {
     command: "/help",
     description: "Shows available commands.",
-    result: "continue" as const,
     getSubCommands: () => Promise.resolve([]),
-    execute: () => {
+    execute: async () => {
       const commands = cmds;
 
       const entries: [string, string][] = Array.from(commands.entries())
@@ -21,7 +20,7 @@ export const helpCommand = (
         colWidths: [30, 70],
       });
 
-      return Promise.resolve();
+      return "continue";
     },
   };
 };

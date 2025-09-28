@@ -7,7 +7,6 @@ export const saveCommand = ({
   return {
     command: "/save",
     description: "Saves the chat history.",
-    result: "continue" as const,
     getSubCommands: () => Promise.resolve([]),
     execute: async () => {
       if (!messageHistory.isEmpty()) {
@@ -15,6 +14,7 @@ export const saveCommand = ({
       }
 
       terminal.info("Message history saved.");
+      return "continue";
     },
   };
 };

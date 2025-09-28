@@ -56,9 +56,9 @@ export function modelCommand(options: CommandOptions): ReplCommand {
     command: "/model",
     description:
       "List available models or switch to a different model. Usage: /model [provider:model-name|category|provider]",
-    result: "continue",
+
     getSubCommands: () => Promise.resolve(models as unknown as string[]),
-    async execute(args: string[]): Promise<void> {
+    async execute(args: string[]): Promise<"break" | "continue" | "use"> {
       const arg = args.join(" ").trim();
       const modelConfig = modelManager.getModelMetadata("repl");
 
@@ -78,14 +78,14 @@ export function modelCommand(options: CommandOptions): ReplCommand {
             terminal.writeln(formatModelInfo(model));
           }
         }
-        return;
+        return "continue";
       }
 
       // Switch to a specific model
       if (isValidModel(arg)) {
         // Call the standalone switchModel function
         switchModel(arg as ModelName);
-        return;
+        return "continue";
       }
 
       // Display models by category
@@ -100,7 +100,7 @@ export function modelCommand(options: CommandOptions): ReplCommand {
         )) {
           terminal.writeln(formatModelInfo(model));
         }
-        return;
+        return "continue";
       }
 
       // Display models by provider
@@ -112,12 +112,13 @@ export function modelCommand(options: CommandOptions): ReplCommand {
         )) {
           terminal.writeln(formatModelInfo(model));
         }
-        return;
+        return "continue";
       }
 
       // Invalid model name
       terminal.error(`Invalid model name or category: ${arg}`);
       terminal.info("Usage: /model [provider:model-name|category|provider]");
+      return "continue";
     },
   };
 }

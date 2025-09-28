@@ -139,14 +139,14 @@ export class CommandManager {
     if (command) {
       const replCommand = this.commands.get(command);
       if (replCommand) {
-        await replCommand.execute(args);
-        if (replCommand.result === "continue") {
+        const result = await replCommand.execute(args);
+        if (result === "continue") {
           return {
             continue: true,
             break: false,
           };
         }
-        if (replCommand.result === "break") {
+        if (result === "break") {
           return {
             continue: false,
             break: true,

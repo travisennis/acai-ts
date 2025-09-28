@@ -55,15 +55,15 @@ export const lastLogCommand = ({ terminal }: CommandOptions): ReplCommand => {
   return {
     command: "/last-log",
     description: "Opens the most recent REPL audit log in the editor.",
-    result: "continue" as const,
+
     getSubCommands: () => Promise.resolve([]),
-    execute: async () => {
+    execute: async (): Promise<"break" | "continue" | "use"> => {
       const logDir = config.app.ensurePathSync("audit");
       const mostRecentLog = await findMostRecentLog(logDir);
 
       if (!mostRecentLog) {
         terminal.error(`No REPL audit logs found in '${logDir}'.`);
-        return;
+        return "continue";
       }
 
       try {
@@ -78,10 +78,12 @@ export const lastLogCommand = ({ terminal }: CommandOptions): ReplCommand => {
           // and not calling writeFileSync after, this effectively becomes read-only.
         });
         terminal.info("Closed log view");
+        return "continue";
       } catch (error) {
         terminal.error(
           `Error reading or displaying log file ${mostRecentLog}: ${error}`,
         );
+        return "continue";
       }
     },
   };

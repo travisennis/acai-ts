@@ -7,9 +7,9 @@ export function usageCommand({
   return {
     command: "/usage",
     description: "Show token usage breakdown",
-    result: "continue",
+
     getSubCommands: () => Promise.resolve([]),
-    execute() {
+    async execute(): Promise<"break" | "continue" | "use"> {
       const entries = Object.entries(tokenTracker.getUsageBreakdown());
       if (entries.length === 0) {
         terminal.info("No usage yet.");
@@ -20,7 +20,7 @@ export function usageCommand({
         });
       }
 
-      return Promise.resolve();
+      return "continue";
     },
   };
 }

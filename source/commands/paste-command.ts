@@ -129,9 +129,9 @@ export const pasteCommand = ({
     command: "/paste",
     description:
       "Pastes image or text content from the clipboard into the next prompt.",
-    result: "continue" as const,
+
     getSubCommands: () => Promise.resolve([]),
-    execute: async () => {
+    execute: async (): Promise<"break" | "continue" | "use"> => {
       try {
         if (Clipboard.hasImage()) {
           const base64DataUrl = await Clipboard.getImageBase64();
@@ -141,7 +141,7 @@ export const pasteCommand = ({
             terminal.error(
               "Invalid base64 data in clipboard. The image data may be corrupted.",
             );
-            return;
+            return "continue";
           }
 
           // Extract MIME type with better error handling and actual image format detection
@@ -191,7 +191,7 @@ export const pasteCommand = ({
               terminal.error(
                 "Failed to correct base64 data format. The image data may be corrupted.",
               );
-              return;
+              return "continue";
             }
 
             promptManager.addContext({
@@ -210,13 +210,13 @@ export const pasteCommand = ({
           terminal.success(
             "Image from clipboard will be added to your next prompt.",
           );
-          return;
+          return "continue";
         }
 
         const clipboardContent = await Clipboard.getText();
         if (!clipboardContent || clipboardContent.trim() === "") {
           terminal.warn("Clipboard is empty.");
-          return;
+          return "continue";
         }
 
         const content = formatBlock(
@@ -236,7 +236,9 @@ export const pasteCommand = ({
         const message = error instanceof Error ? error.message : String(error);
         terminal.error(`Error processing clipboard content: ${message}`);
         logger.error(error, "Paste command error:");
+        return "continue";
       }
+      return "continue";
     },
   };
 };

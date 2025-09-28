@@ -50,7 +50,6 @@ test("shell command registration", () => {
   const cmd = shellCommand(mockOptions);
   assert.strictEqual(cmd.command, "/shell");
   assert.deepStrictEqual(cmd.aliases, ["/sh"]);
-  assert.strictEqual(cmd.result, "continue");
 });
 
 test("shell command - empty input", async () => {

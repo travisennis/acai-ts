@@ -10,9 +10,9 @@ export const applicationLogCommand = ({
     command: "/application-logs",
     description:
       "Opens the application log file defined in acai.json in the editor.",
-    result: "continue" as const,
+
     getSubCommands: () => Promise.resolve([]),
-    execute: async () => {
+    execute: async (): Promise<"break" | "continue" | "use"> => {
       let logFilePath: string | undefined;
       try {
         const projectConfig = await config.readProjectConfig();
@@ -22,7 +22,7 @@ export const applicationLogCommand = ({
           terminal.error(
             "Application log path is not defined in .acai/acai.json under the 'logs.path' key.",
           );
-          return;
+          return "continue";
         }
 
         const content = await readFile(logFilePath, { encoding: "utf8" });
@@ -39,6 +39,7 @@ export const applicationLogCommand = ({
           // and not calling writeFileSync after, this effectively becomes read-only.
         });
         terminal.info(`Closed log view for: ${logFilePath}`);
+        return "continue";
       } catch (error) {
         if (logFilePath && (error as NodeJS.ErrnoException).code === "ENOENT") {
           terminal.error(`Application log file not found at: ${logFilePath}`);
@@ -47,6 +48,7 @@ export const applicationLogCommand = ({
             `Error reading or displaying log file ${logFilePath ?? "specified in config"}: ${error}`,
           );
         }
+        return "continue";
       }
     },
   };

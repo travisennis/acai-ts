@@ -8,7 +8,6 @@ export const resetCommand = ({
     command: "/reset",
     aliases: ["/new"],
     description: "Saves the chat history and then resets it.",
-    result: "continue" as const,
     getSubCommands: () => Promise.resolve([]),
     execute: async () => {
       if (!messageHistory.isEmpty()) {
@@ -18,6 +17,7 @@ export const resetCommand = ({
       terminal.setTitle(`acai: ${process.cwd()}`);
 
       terminal.clear();
+      return "continue";
     },
   };
 };

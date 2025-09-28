@@ -24,13 +24,13 @@ export const shellCommand = (options: CommandOptions): ReplCommand => {
     command: "/shell",
     aliases: ["/sh"],
     description: "Run a non-interactive shell command on the local machine.",
-    result: "continue" as const,
+
     getSubCommands: () => Promise.resolve([]),
-    execute: async (args: string[]) => {
+    execute: async (args: string[]): Promise<"break" | "continue" | "use"> => {
       const commandStr = args.join(" ");
       if (!commandStr.trim()) {
         terminal.error("Provide a non-empty command.");
-        return;
+        return "continue";
       }
 
       const execEnv = await initExecutionEnvironment();
@@ -55,7 +55,7 @@ export const shellCommand = (options: CommandOptions): ReplCommand => {
       // Check for interactive
       if (exitCode !== 0 && INTERACTIVE_REGEX.test(output)) {
         terminal.error("Interactive commands are not supported.");
-        return;
+        return "continue";
       }
 
       // Prompt for context addition
@@ -80,6 +80,7 @@ export const shellCommand = (options: CommandOptions): ReplCommand => {
         rl.close();
         // Ignore, optional
       }
+      return "continue";
     },
   };
 };

@@ -8,9 +8,9 @@ export const editCommand = ({ terminal }: CommandOptions): ReplCommand => {
   return {
     command: "/edit",
     description: "Opens file in $EDITOR for editing. Usage: /edit [file-path]",
-    result: "continue" as const,
+
     getSubCommands: () => Promise.resolve([]),
-    execute: async (args: string[]) => {
+    execute: async (args: string[]): Promise<"break" | "continue" | "use"> => {
       let fileToEdit: string;
 
       if (args.length > 0) {
@@ -20,7 +20,7 @@ export const editCommand = ({ terminal }: CommandOptions): ReplCommand => {
 
         if (!existsSync(resolvedPath)) {
           terminal.error(`File not found: ${filePath}`);
-          return;
+          return "continue";
         }
 
         fileToEdit = filePath;
@@ -58,6 +58,7 @@ export const editCommand = ({ terminal }: CommandOptions): ReplCommand => {
       if (content !== edit) {
         terminal.info(`File updated: ${fileToEdit}`);
       }
+      return "continue";
     },
   };
 };

@@ -6,9 +6,9 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
     command: "/list-tools",
     description: "List all available static and dynamic tools.",
     aliases: ["/lt"],
-    result: "continue",
+
     getSubCommands: async () => [],
-    async execute(_args: string[]) {
+    async execute(_args: string[]): Promise<"break" | "continue" | "use"> {
       const { terminal } = options;
 
       try {
@@ -61,8 +61,10 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
         terminal.writeln(
           `\n  Total: ${staticTools.length} static, ${dynamicTools.length} dynamic`,
         );
+        return "continue";
       } catch (error) {
         terminal.error(`Error listing tools: ${(error as Error).message}`);
+        return "continue";
       }
     },
   };
