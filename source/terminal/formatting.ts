@@ -147,22 +147,3 @@ export const image = (
 
   return `${returnValue}:${Buffer.from(data).toString("base64")}${BEL}`;
 };
-
-export function ansiRegex({ onlyFirst = false } = {}) {
-  // Valid string terminator sequences are BEL, ESC\, and 0x9c
-  const st = "(?:\\u0007|\\u001B\\u005C|\\u009C)";
-  const pattern = [
-    `[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?${st})`,
-    "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-nq-uy=><~]))",
-  ].join("|");
-
-  return new RegExp(pattern, onlyFirst ? undefined : "g");
-}
-
-/**
- * Strip ANSI escape sequences from a string
- */
-export function stripAnsi(s: string): string {
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: need to detect ansi control characters
-  return s.replace(/\x1B\[[0-?]*[ -/]*[@-~]/g, "");
-}
