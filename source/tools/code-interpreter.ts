@@ -270,7 +270,7 @@ export const createCodeInterpreterTool = ({
           }
 
           if (completed.code !== 0) {
-            const message = `Process exited with code ${completed.code}. Stderr: ${stderr.trim()}`;
+            const message = `Process exited with code ${completed.code}. Stderr:\n${stderr.trim()}`;
             throw new Error(message);
           }
 
@@ -292,7 +292,7 @@ export const createCodeInterpreterTool = ({
             (err as Error).name === "ETIMEDOUT" ||
             (err as Error).message.includes("timed out")
               ? "Script timed out"
-              : `Error: ${(err as Error).message}`;
+              : `Error:\n${(err as Error).message}`;
 
           sendData?.({
             event: "tool-error",
