@@ -1,5 +1,5 @@
-import { editor } from "@inquirer/prompts";
 import { config } from "../config.ts";
+import { editor } from "../terminal/editor-prompt.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const rulesCommand = ({ terminal }: CommandOptions): ReplCommand => {
@@ -50,6 +50,7 @@ export const rulesCommand = ({ terminal }: CommandOptions): ReplCommand => {
               message: "Edit rules:",
               postfix: "md",
               default: currentContent,
+              skipPrompt: true,
             });
             // Check if the user cancelled the edit (editor returns the original content)
             // Or if the content is actually different

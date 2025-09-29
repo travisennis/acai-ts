@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
-import { checkbox } from "@inquirer/prompts";
 import { globby } from "globby";
 import { formatFile } from "../formatting.ts";
+import { checkbox } from "../terminal/checkbox-prompt.ts";
 import { TokenCounter } from "../token-utils.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 

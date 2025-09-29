@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { text } from "node:stream/consumers";
 import { parseArgs } from "node:util";
-import { select } from "@inquirer/prompts";
 import { asyncTry } from "@travisennis/stdlib/try";
 import { isDefined } from "@travisennis/stdlib/typeguards";
 import { Cli } from "./cli.ts";
@@ -14,6 +13,7 @@ import { isSupportedModel, type ModelName } from "./models/providers.ts";
 import { PromptManager } from "./prompts/manager.ts";
 import { Repl } from "./repl.ts";
 import { initTerminal } from "./terminal/index.ts";
+import { select } from "./terminal/select-prompt.ts";
 import { TokenTracker } from "./token-tracker.ts";
 import { TokenCounter } from "./token-utils.ts";
 import { ToolExecutor } from "./tool-executor.ts";

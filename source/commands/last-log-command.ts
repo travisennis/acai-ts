@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { editor } from "@inquirer/prompts";
 import { globby } from "globby";
 import { config } from "../config.ts";
+import { editor } from "../terminal/editor-prompt.ts";
 import style from "../terminal/style.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
@@ -76,6 +76,7 @@ export const lastLogCommand = ({ terminal }: CommandOptions): ReplCommand => {
           default: content,
           // By not providing an onSubmit or similar handler to write the file,
           // and not calling writeFileSync after, this effectively becomes read-only.
+          skipPrompt: true,
         });
         terminal.info("Closed log view");
         return "continue";

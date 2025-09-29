@@ -1,6 +1,6 @@
-import { checkbox } from "@inquirer/prompts";
 import { analyzeConversation } from "../conversation-analyzer.ts";
 import { logger } from "../logger.ts"; // Import logger
+import { checkbox } from "../terminal/checkbox-prompt.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 async function _processAndSaveRules(

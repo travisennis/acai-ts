@@ -1,5 +1,5 @@
-import { editor } from "@inquirer/prompts";
 import { syncTry } from "@travisennis/stdlib/try";
+import { editor } from "../terminal/editor-prompt.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const editPromptCommand = ({
@@ -17,6 +17,7 @@ export const editPromptCommand = ({
           message: " Edit prompt?",
           postfix: "md",
           default: prompt.unwrapOr(""),
+          skipPrompt: true,
         });
 
         terminal.writeln(`> ${updatedPrompt}`);

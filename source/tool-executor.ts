@@ -1,4 +1,5 @@
-import { input, select } from "@inquirer/prompts";
+import { input } from "./terminal/input-prompt.ts";
+import { select } from "./terminal/select-prompt.ts";
 
 interface AskContext {
   toolName: string;
@@ -46,21 +47,19 @@ export class ToolExecutor {
 
     let userChoice: "accept" | "accept-all" | "reject";
     try {
-      userChoice = await select(
-        {
-          message: ctx.message,
-          choices: [
-            { name: ctx.choices.accept, value: "accept" },
-            {
-              name: ctx.choices.acceptAll,
-              value: "accept-all",
-            },
-            { name: ctx.choices.reject, value: "reject" },
-          ],
-          default: "accept",
-        },
-        { signal: abortSignal },
-      );
+      userChoice = await select({
+        message: ctx.message,
+        choices: [
+          { name: ctx.choices.accept, value: "accept" },
+          {
+            name: ctx.choices.acceptAll,
+            value: "accept-all",
+          },
+          { name: ctx.choices.reject, value: "reject" },
+        ],
+        initial: 0,
+        signal: abortSignal,
+      });
     } catch (e) {
       if ((e as Error).name === "AbortError") {
         throw new Error("Operation aborted during user input");
@@ -73,10 +72,10 @@ export class ToolExecutor {
     if (userChoice === "reject") {
       let reason: string;
       try {
-        reason = await input(
-          { message: "Feedback: " },
-          { signal: abortSignal },
-        );
+        reason = await input({
+          message: "Feedback: ",
+          signal: abortSignal,
+        });
       } catch (e) {
         if ((e as Error).name === "AbortError") {
           throw new Error("Operation aborted during user input");

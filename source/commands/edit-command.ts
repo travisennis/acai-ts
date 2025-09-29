@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
-import { editor, search } from "@inquirer/prompts";
 import { globby } from "globby";
+import { editor } from "../terminal/editor-prompt.ts";
+import { search } from "../terminal/search-prompt.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const editCommand = ({ terminal }: CommandOptions): ReplCommand => {
@@ -28,7 +29,7 @@ export const editCommand = ({ terminal }: CommandOptions): ReplCommand => {
         // No file path provided, use search prompt
         fileToEdit = await search({
           message: "Search for file:",
-          source: async (input) => {
+          source: async (input: string) => {
             if (!input) {
               return [];
             }
@@ -51,6 +52,7 @@ export const editCommand = ({ terminal }: CommandOptions): ReplCommand => {
         message: `Edit ${fileToEdit}?`,
         postfix: extname(fileToEdit),
         default: content,
+        skipPrompt: true,
       });
 
       writeFileSync(fileToEdit, edit);
