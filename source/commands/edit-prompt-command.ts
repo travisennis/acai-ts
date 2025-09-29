@@ -20,11 +20,15 @@ export const editPromptCommand = ({
           skipPrompt: true,
         });
 
+        if (updatedPrompt.trim().length === 0) {
+          throw new Error("Prompt was empty.");
+        }
+
         terminal.writeln(`> ${updatedPrompt}`);
 
         promptManager.set(updatedPrompt);
       } catch (error) {
-        terminal.error(`Error updating prompt: ${(error as Error).message}`);
+        terminal.error(`Error editing prompt: ${(error as Error).message}`);
         return "continue";
       }
       return "use";
