@@ -10,6 +10,4 @@ This script should do the following:
 
 Take that model information and use it to add a new model to openrouter-provider.ts. Follow the pattern that exists to add a new model. If any information is missing ask the user to provide guidance.
 
-Make sure to work in a feature branch before making any edits.
-Use this template as the branch name: `feature/add-{{INPUT}}-model`
-Create the branch if it doesn't exist or use the existing branch if it does.
+Make sure to create a feature branch before making any edits.
