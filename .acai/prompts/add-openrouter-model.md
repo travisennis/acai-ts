@@ -1,4 +1,4 @@
-Your task it to add a new model to the ./source/models/openrouter-provider.ts.
+Your task is to add a new model to the ./source/models/openrouter-provider.ts.
 
 I want you to accomplish this by writing a javascript script and executing it with the code-interpreter tool.
 
@@ -10,4 +10,6 @@ This script should do the following:
 
 Take that model information and use it to add a new model to openrouter-provider.ts. Follow the pattern that exists to add a new model. If any information is missing ask the user to provide guidance.
 
-Create a new git branch before making any edits.
+Make sure to work in a feature branch before making any edits.
+Use this template as the branch name: `feature/add-{{INPUT}}-model`
+Create the branch if it doesn't exist or use the existing branch if it does.
