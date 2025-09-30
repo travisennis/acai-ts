@@ -4,11 +4,32 @@
  * - TypeScript version
  */
 
-// ANSI helpers
-const ESC = "\x1b[";
-const hideCursor = () => process.stdout.write(`${ESC}?25l`);
-const showCursor = () => process.stdout.write(`${ESC}?25h`);
-const clearLine = () => process.stdout.write("\x1b[2K\r");
+const Keys = {
+  up: "\x1b[A",
+  down: "\x1b[B",
+  home: "\x1b[H",
+  homeAlt: "\x1b[1~",
+  end: "\x1b[F",
+  endAlt: "\x1b[4~",
+  ctrlC: "\u0003",
+  enter: "\r",
+  newline: "\n",
+  backspace: "\x7f",
+  backspaceAlt: "\b",
+} as const;
+
+const ANSI = {
+  hideCursor: "\x1b[?25l",
+  showCursor: "\x1b[?25h",
+  clearLine: "\x1b[2K",
+  carriageReturn: "\r",
+  moveToStart: "\x1b[0G",
+  clearFromCursor: "\x1b[0J",
+  moveUp: "\x1b[1A",
+  cyan: "\x1b[36m",
+  dim: "\x1b[2m",
+  reset: "\x1b[0m",
+} as const;
 
 interface ChoiceObject<T = unknown> {
   name: string;
@@ -23,12 +44,18 @@ interface NormalizedChoice<T = unknown> {
   disabled: boolean;
 }
 
+interface TerminalIo {
+  stdin: NodeJS.ReadStream;
+  stdout: NodeJS.WriteStream;
+}
+
 export interface SelectOptions<T = unknown> {
   message?: string;
   choices: Choice<T>[];
   initial?: number;
   pageSize?: number;
   signal?: AbortSignal;
+  terminal?: TerminalIo;
 }
 
 function normalizeChoice<T>(choice: Choice<T>): NormalizedChoice<T> {
@@ -37,6 +64,51 @@ function normalizeChoice<T>(choice: Choice<T>): NormalizedChoice<T> {
   }
   const { name, value, disabled = false } = choice;
   return { name, value, disabled };
+}
+
+function updatePageStart(
+  pointerIndex: number,
+  pageSize: number,
+  totalItems: number,
+): number {
+  const currentPage = Math.floor(pointerIndex / pageSize);
+  const pageStart = currentPage * pageSize;
+  return Math.max(0, Math.min(pageStart, Math.max(0, totalItems - pageSize)));
+}
+
+function findNextEnabledIndex(
+  choices: NormalizedChoice[],
+  startIndex: number,
+  direction: 1 | -1,
+): number {
+  const len = choices.length;
+  let index = startIndex;
+
+  for (let i = 0; i < len; i++) {
+    index = (index + direction + len) % len;
+    if (!choices[index].disabled) {
+      return index;
+    }
+  }
+  return startIndex;
+}
+
+function findFirstEnabledIndex(choices: NormalizedChoice[]): number {
+  for (let i = 0; i < choices.length; i++) {
+    if (!choices[i].disabled) {
+      return i;
+    }
+  }
+  return 0;
+}
+
+function findLastEnabledIndex(choices: NormalizedChoice[]): number {
+  for (let i = choices.length - 1; i >= 0; i--) {
+    if (!choices[i].disabled) {
+      return i;
+    }
+  }
+  return choices.length - 1;
 }
 
 function render<T>(
@@ -59,7 +131,7 @@ function render<T>(
     if (ch.disabled) {
       lines.push(` ${prefix} ${ch.name} (disabled)`);
     } else if (actualIndex === pointerIndex) {
-      lines.push(`\x1b[36m ${prefix} ${ch.name}\x1b[0m`);
+      lines.push(`${ANSI.cyan} ${prefix} ${ch.name}${ANSI.reset}`);
     } else {
       lines.push(` ${prefix} ${ch.name}`);
     }
@@ -68,7 +140,7 @@ function render<T>(
   if (choices.length > pageSize) {
     const pageCount = Math.ceil(choices.length / pageSize);
     const currentPage = Math.ceil(pageStart / pageSize) + 1;
-    lines.push(`\x1b[2mPage ${currentPage}/${pageCount}\x1b[0m`);
+    lines.push(`${ANSI.dim}Page ${currentPage}/${pageCount}${ANSI.reset}`);
   }
 
   return lines.join("\n");
@@ -80,72 +152,57 @@ export async function select<T = unknown>({
   initial = 0,
   pageSize = 7,
   signal,
+  terminal = { stdin: process.stdin, stdout: process.stdout },
 }: SelectOptions<T>): Promise<T> {
   if (!Array.isArray(choices) || choices.length === 0) {
     throw new Error("choices must be a non-empty array");
   }
 
   const normalized = choices.map(normalizeChoice);
-  let pointer = Math.max(0, Math.min(initial | 0, normalized.length - 1));
 
-  if (normalized[pointer].disabled) {
-    let found = false;
-    for (let i = pointer + 1; i < normalized.length; i++) {
-      if (!normalized[i].disabled) {
-        pointer = i;
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
-      for (let i = pointer - 1; i >= 0; i--) {
-        if (!normalized[i].disabled) {
-          pointer = i;
-          break;
-        }
-      }
-    }
+  const hasEnabledChoice = normalized.some((ch) => !ch.disabled);
+  if (!hasEnabledChoice) {
+    throw new Error("At least one choice must be enabled");
   }
 
-  // Calculate initial pageStart based on page boundaries
-  const initialPage = Math.floor(pointer / pageSize);
-  let pageStart = initialPage * pageSize;
+  let pointer = Math.max(
+    0,
+    Math.min(Math.floor(initial ?? 0), normalized.length - 1),
+  );
 
-  // Ensure pageStart is within bounds
-  pageStart = Math.max(0, Math.min(pageStart, normalized.length - pageSize));
+  if (normalized[pointer].disabled) {
+    pointer = findNextEnabledIndex(normalized, pointer, 1);
+  }
 
-  const stdin = process.stdin;
-  const stdout = process.stdout;
+  let pageStart = updatePageStart(pointer, pageSize, normalized.length);
+
+  const { stdin, stdout } = terminal;
   if (!stdin.isTTY) throw new Error("TTY required");
 
-  stdin.setRawMode(true);
-  stdin.resume();
-  stdin.setEncoding("utf8");
+  let searchBuffer = "";
+  let searchTimer: NodeJS.Timeout | null = null;
 
-  let typedBuffer = "";
-  let typedTimeout: NodeJS.Timeout | undefined;
-
-  const clearTypedBufferSoon = () => {
-    if (typedTimeout) clearTimeout(typedTimeout);
-    typedTimeout = setTimeout(() => {
-      typedBuffer = "";
-      return typedBuffer;
+  const resetSearchBuffer = () => {
+    if (searchTimer) clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      searchBuffer = "";
     }, 800);
   };
 
   let previousOutputLines = 0;
 
-  function renderToScreen() {
-    clearLine();
-    // Move cursor to beginning of line
-    stdout.write("\x1b[0G");
-    stdout.write("\x1b[0J"); // clear from cursor to end of screen
-
-    // Clear previous output by moving up and clearing lines
-    for (let i = 0; i < previousOutputLines; i++) {
-      stdout.write("\x1b[1A"); // Move up one line
-      stdout.write("\x1b[2K"); // Clear the entire line
+  function clearPreviousOutput(lineCount: number) {
+    for (let i = 0; i < lineCount; i++) {
+      stdout.write(`${ANSI.moveUp}${ANSI.clearLine}`);
     }
+  }
+
+  function renderToScreen() {
+    stdout.write(ANSI.clearLine);
+    stdout.write(ANSI.moveToStart);
+    stdout.write(ANSI.clearFromCursor);
+
+    clearPreviousOutput(previousOutputLines);
 
     const out = render(
       normalized,
@@ -153,34 +210,21 @@ export async function select<T = unknown>({
       pageStart,
       pageSize,
       message,
-      typedBuffer,
+      searchBuffer,
     );
 
-    // Count lines in current output
     previousOutputLines = out.split("\n").length;
 
     stdout.write(`${out}\n`);
   }
 
-  function move(delta: number) {
-    const len = normalized.length;
-    let newIndex = pointer;
-    do {
-      newIndex = (newIndex + delta + len) % len;
-    } while (normalized[newIndex].disabled && newIndex !== pointer);
-    pointer = newIndex;
-
-    // Update pageStart to snap to page boundaries
-    const currentPage = Math.floor(pointer / pageSize);
-    pageStart = currentPage * pageSize;
-
-    // Ensure pageStart is within bounds
-    pageStart = Math.max(0, Math.min(pageStart, normalized.length - pageSize));
-
+  function move(delta: 1 | -1) {
+    pointer = findNextEnabledIndex(normalized, pointer, delta);
+    pageStart = updatePageStart(pointer, pageSize, normalized.length);
     renderToScreen();
   }
 
-  function jumpToIndexStartingWith(prefix: string) {
+  function jumpToIndexStartingWith(prefix: string): boolean {
     const start = (pointer + 1) % normalized.length;
     const lowerPref = prefix.toLowerCase();
     for (let i = 0; i < normalized.length; i++) {
@@ -188,17 +232,7 @@ export async function select<T = unknown>({
       if (normalized[idx].disabled) continue;
       if (normalized[idx].name.toLowerCase().startsWith(lowerPref)) {
         pointer = idx;
-
-        // Update pageStart to snap to page boundaries
-        const currentPage = Math.floor(pointer / pageSize);
-        pageStart = currentPage * pageSize;
-
-        // Ensure pageStart is within bounds
-        pageStart = Math.max(
-          0,
-          Math.min(pageStart, normalized.length - pageSize),
-        );
-
+        pageStart = updatePageStart(pointer, pageSize, normalized.length);
         renderToScreen();
         return true;
       }
@@ -215,22 +249,28 @@ export async function select<T = unknown>({
       stdin.setRawMode(false);
       stdin.pause();
       stdin.removeListener("data", onData);
-      if (typedTimeout) clearTimeout(typedTimeout);
-      showCursor();
+      if (searchTimer) clearTimeout(searchTimer);
+      if (signal && abortHandler) {
+        signal.removeEventListener("abort", abortHandler);
+      }
+      stdout.write(ANSI.showCursor);
     }
 
-    // Handle abort signal
-    if (signal) {
-      signal.addEventListener("abort", () => {
-        cleanup();
-        const err = new Error("AbortError") as Error & { name?: string };
-        err.name = "AbortError";
-        reject(err);
-      });
+    const abortHandler = signal
+      ? () => {
+          cleanup();
+          const err = new Error("AbortError") as Error & { name?: string };
+          err.name = "AbortError";
+          reject(err);
+        }
+      : null;
+
+    if (signal && abortHandler) {
+      signal.addEventListener("abort", abortHandler);
     }
 
     function onData(key: string) {
-      if (key === "\u0003") {
+      if (key === Keys.ctrlC) {
         cleanup();
         stdout.write("\n");
         const err = new Error("Cancelled") as Error & { isCanceled?: boolean };
@@ -239,7 +279,7 @@ export async function select<T = unknown>({
         return;
       }
 
-      if (key === "\r" || key === "\n") {
+      if (key === Keys.enter || key === Keys.newline) {
         cleanup();
         const chosen = normalized[pointer];
         stdout.write("\n");
@@ -247,87 +287,73 @@ export async function select<T = unknown>({
         return;
       }
 
-      if (key === "\x1b[A") {
+      if (key === Keys.up) {
         move(-1);
         return;
       }
-      if (key === "\x1b[B") {
+      if (key === Keys.down) {
         move(1);
         return;
       }
 
-      if (key === "\x1b[H" || key === "\x1b[1~") {
-        for (let i = 0; i < normalized.length; i++) {
-          if (!normalized[i].disabled) {
-            pointer = i;
-            break;
-          }
-        }
-        // Update pageStart to snap to page boundaries
-        const currentPage = Math.floor(pointer / pageSize);
-        pageStart = currentPage * pageSize;
-        pageStart = Math.max(
-          0,
-          Math.min(pageStart, normalized.length - pageSize),
-        );
+      if (key === Keys.home || key === Keys.homeAlt) {
+        pointer = findFirstEnabledIndex(normalized);
+        pageStart = updatePageStart(pointer, pageSize, normalized.length);
         renderToScreen();
         return;
       }
-      if (key === "\x1b[F" || key === "\x1b[4~") {
-        for (let i = normalized.length - 1; i >= 0; i--) {
-          if (!normalized[i].disabled) {
-            pointer = i;
-            break;
-          }
-        }
-        // Update pageStart to snap to page boundaries
-        const currentPage = Math.floor(pointer / pageSize);
-        pageStart = currentPage * pageSize;
-        pageStart = Math.max(
-          0,
-          Math.min(pageStart, normalized.length - pageSize),
-        );
+      if (key === Keys.end || key === Keys.endAlt) {
+        pointer = findLastEnabledIndex(normalized);
+        pageStart = updatePageStart(pointer, pageSize, normalized.length);
         renderToScreen();
         return;
       }
 
-      if (key === "\x7f" || key === "\b") {
-        if (typedBuffer.length > 0) {
-          typedBuffer = typedBuffer.slice(0, -1);
-          if (typedBuffer.length === 0) clearTypedBufferSoon();
+      if (key === Keys.backspace || key === Keys.backspaceAlt) {
+        if (searchBuffer.length > 0) {
+          searchBuffer = searchBuffer.slice(0, -1);
+          if (searchBuffer.length === 0) resetSearchBuffer();
           renderToScreen();
         }
         return;
       }
 
       if (key && key >= " " && key <= "~") {
-        typedBuffer += key;
-        clearTypedBufferSoon();
-        const found = jumpToIndexStartingWith(typedBuffer);
+        searchBuffer += key;
+        resetSearchBuffer();
+        const found = jumpToIndexStartingWith(searchBuffer);
         if (!found) {
-          typedBuffer = key;
-          clearTypedBufferSoon();
-          jumpToIndexStartingWith(typedBuffer);
+          searchBuffer = key;
+          resetSearchBuffer();
+          jumpToIndexStartingWith(searchBuffer);
         }
         renderToScreen();
         return;
       }
     }
 
-    hideCursor();
-    renderToScreen();
-    stdin.on("data", onData);
+    try {
+      stdin.setRawMode(true);
+      stdin.resume();
+      stdin.setEncoding("utf8");
+      stdout.write(ANSI.hideCursor);
+      renderToScreen();
+      stdin.on("data", onData);
 
-    process.on("exit", () => {
-      if (!resolved) {
-        cleanup();
-        stdout.write("\n");
-      }
-    });
+      const exitHandler = () => {
+        if (!resolved) {
+          cleanup();
+          stdout.write("\n");
+        }
+      };
+      process.on("exit", exitHandler);
+    } catch (error) {
+      cleanup();
+      throw error;
+    }
   });
 }
 
-// Quick test when run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   (async () => {
     try {
@@ -346,7 +372,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         pageSize: 3,
         initial: 0,
       });
-      console.log("You picked:", res);
+      console.info("You picked:", res);
       process.exit(0);
     } catch (err) {
       if (
