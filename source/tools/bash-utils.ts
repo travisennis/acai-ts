@@ -155,7 +155,6 @@ export const isMutatingCommand = (rawCommand: string): boolean => {
     "truncate",
     "dd",
     "tee",
-    "sed",
   ]);
 
   const npmMutating = new Set([
@@ -168,6 +167,7 @@ export const isMutatingCommand = (rawCommand: string): boolean => {
     "dedupe",
     "prune",
     "rebuild",
+    "add",
   ]);
 
   const gitMutating = new Set([
@@ -194,15 +194,26 @@ export const isMutatingCommand = (rawCommand: string): boolean => {
     "config",
   ]);
 
+  // Generic action words that should be considered mutating when present in the command
+  const actionMutating = new Set(["create", "update", "upgrade", "install"]);
+
   for (const seg of segments) {
     const tokens = seg.split(/\s+/);
     if (tokens.length === 0) continue;
     const bin = tokens[0];
     if (!bin) continue;
 
-    // sed -i is mutating
-    if (bin === "sed" && tokens.some((t) => /^-i/.test(t))) {
+    // If any token is an action-like mutating word, consider mutating
+    if (tokens.some((t) => actionMutating.has(t))) {
       return true;
+    }
+
+    // sed -i is mutating
+    if (bin === "sed") {
+      if (tokens.some((t) => /^-i/.test(t))) {
+        return true;
+      }
+      // sed without -i is not mutating
     }
 
     if (mutatingBinaries.has(bin)) {

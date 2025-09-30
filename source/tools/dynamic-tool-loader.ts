@@ -194,6 +194,18 @@ export function createDynamicTool(
               if (output.length > maxOutputBytes) {
                 output = `${output.substring(0, maxOutputBytes)}\n[Output truncated]`;
               }
+
+              // If no stdout, prefer stderr so callers get useful info
+              const errText = stderr.trim();
+              if (!output && errText) {
+                output = errText;
+              }
+
+              // Fallback to a non-empty placeholder to satisfy callers
+              if (!output) {
+                output = `[No output from dynamic tool ${metadata.name}]`;
+              }
+
               // Attempt to parse as JSON if structured
               if (
                 output &&
@@ -207,6 +219,7 @@ export function createDynamicTool(
               } else {
                 resolve(output);
               }
+
               sendData?.({
                 id: toolCallId,
                 event: "tool-completion",

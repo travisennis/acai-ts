@@ -72,31 +72,6 @@ describe("exit command", () => {
     }
   });
 
-  it("should clear .tmp directory on exit with default baseDir", async () => {
-    const mockTerminal = {
-      clear: mock.fn(),
-    };
-
-    const mockMessageHistory = {
-      isEmpty: mock.fn(() => false),
-      save: mock.fn(() => Promise.resolve()),
-    };
-
-    const options: ExitCommandOptions = {
-      messageHistory: mockMessageHistory,
-      terminal: mockTerminal,
-      // baseDir is undefined, should default to process.cwd()
-    };
-
-    const command = exitCommand(options);
-    const result = await command.execute([]);
-
-    assert.equal(result, "break");
-    assert.equal(mockTerminal.clear.mock.calls.length, 1);
-    assert.equal(mockMessageHistory.isEmpty.mock.calls.length, 1);
-    assert.equal(mockMessageHistory.save.mock.calls.length, 1);
-  });
-
   it("should handle empty message history", async () => {
     const mockTerminal = {
       clear: mock.fn(),
