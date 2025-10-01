@@ -32,7 +32,7 @@ When you need to call tools from the shell, use this rubric:
 - Find files with path name: `fd -p <file-path>`
 - List files in a directory: `fd . <directory>`
 - Find files with extension and pattern: `fd -e <extension> <pattern>`
-- Find Text: `rg` (ripgrep)
+- Find Text: `rg <pattern> .` (ripgrep)
 - Find Code Structure: `ast-grep`
   - Default to TypeScript when in TS/TSX repos:
     - `.ts` → `ast-grep --lang ts -p '<pattern>'`
