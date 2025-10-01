@@ -131,17 +131,22 @@ export class Repl {
         const userInput = await prompt.input();
         prompt.close();
 
+        terminal.startProgress();
+
         // see if the userInput contains a command
         const commandResult = await commands.handle({ userInput });
         if (commandResult.break) {
+          terminal.startProgress();
           break;
         }
         if (commandResult.continue) {
+          terminal.stopProgress();
           terminal.lineBreak();
           continue;
         }
 
         if (!userInput.trim()) {
+          terminal.stopProgress();
           continue;
         }
 
@@ -168,6 +173,7 @@ export class Repl {
                 terminal.error(`Command: ${error.cause.command}`);
               }
               terminal.lineBreak();
+              terminal.stopProgress();
               continue; // Continue the REPL loop
             }
             throw error; // Re-throw other errors
@@ -175,6 +181,8 @@ export class Repl {
         }
 
         terminal.lineBreak();
+      } else {
+        terminal.startProgress();
       }
 
       // flag to see if the user prompt has added context
@@ -321,6 +329,8 @@ export class Repl {
               accumulatedText += chunk.text;
               lastType = "text";
             }
+          } else if (chunk.type === "tool-call") {
+            terminal.stopProgress();
           } else if (chunk.type === "tool-result") {
             const messages = toolEvents.get(chunk.toolCallId);
             if (messages) {
@@ -334,6 +344,7 @@ export class Repl {
             if (lastType === "reasoning") {
               terminal.write(style.dim("\n</think>\n\n"));
             }
+            terminal.stopProgress();
             // if there is accumulatedText, display it
             if (accumulatedText.trim()) {
               terminal.writeln(`${style.blue.bold("● Response:")}`);
