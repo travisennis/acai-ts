@@ -181,7 +181,7 @@ export const createBashTool = async ({
           }
 
           const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
-          const maxTokenMessage = `Output of command (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Please adjust how you call the command to get back more specific results`;
+          const maxTokenMessage = `Output of command (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Please adjust how you call the command to get back more specific results.`;
           const finalResult =
             tokenCount <= maxTokens ? output : maxTokenMessage;
 
