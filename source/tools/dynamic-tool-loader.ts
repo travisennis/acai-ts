@@ -206,6 +206,18 @@ export function createDynamicTool(
                 output = `[No output from dynamic tool ${metadata.name}]`;
               }
 
+              // Send tool-update event with last 20 lines of output
+              const outputLines = output.split("\n");
+              const lastLines = outputLines.slice(-20).join("\n");
+              sendData?.({
+                id: toolCallId,
+                event: "tool-update",
+                data: {
+                  primary: `Last 20 lines of output from ${metadata.name}:`,
+                  secondary: lastLines.split("\n"),
+                },
+              });
+
               // Attempt to parse as JSON if structured
               if (
                 output &&
