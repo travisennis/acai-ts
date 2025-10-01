@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { globby } from "globby";
 import { formatFile } from "../formatting.ts";
 import { checkbox } from "../terminal/checkbox-prompt.ts";
-import { TokenCounter } from "../token-utils.ts";
+import { TokenCounter } from "../tokens/counter.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const filesCommand = ({

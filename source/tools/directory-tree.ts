@@ -5,7 +5,8 @@ import ignore, { type Ignore } from "ignore";
 import { z } from "zod";
 import { config } from "../config.ts";
 import style from "../terminal/style.ts";
-import { manageOutput, type TokenCounter } from "../token-utils.ts";
+import type { TokenCounter } from "../tokens/counter.ts";
+import { manageOutput } from "../tokens/manage-output.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
 

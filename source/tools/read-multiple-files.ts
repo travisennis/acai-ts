@@ -2,7 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
 import style from "../terminal/style.ts";
-import type { TokenCounter } from "../token-utils.ts";
+import type { TokenCounter } from "../tokens/counter.ts";
 import { readFileAndCountTokens } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
 

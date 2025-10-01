@@ -1,7 +1,7 @@
 import { isString } from "@travisennis/stdlib/typeguards";
 import type { TextPart, UserModelMessage } from "ai"; // Corrected import
 import { createUserMessage, type UserMessageContentItem } from "../messages.ts";
-import type { TokenCounter } from "../token-utils.ts";
+import type { TokenCounter } from "../tokens/counter.ts";
 
 export type ContextItem = UserMessageContentItem;
 

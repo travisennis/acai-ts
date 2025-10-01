@@ -3,7 +3,7 @@ import { type CheerioAPI, load } from "cheerio";
 import { z } from "zod";
 import { logger } from "../logger.ts";
 import style from "../terminal/style.ts";
-import type { TokenCounter } from "../token-utils.ts";
+import type { TokenCounter } from "../tokens/counter.ts";
 import type { SendData } from "./types.ts";
 
 export const WebFetchTool = {

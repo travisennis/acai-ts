@@ -4,7 +4,8 @@ import { tool } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
 import style from "../terminal/style.ts";
-import { manageOutput, type TokenCounter } from "../token-utils.ts";
+import type { TokenCounter } from "../tokens/counter.ts";
+import { manageOutput } from "../tokens/manage-output.ts";
 import type { SendData } from "./types.ts";
 
 export const GrepTool = {

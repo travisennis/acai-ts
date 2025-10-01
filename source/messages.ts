@@ -12,7 +12,7 @@ import {
   type UserModelMessage,
 } from "ai";
 import type { ModelManager } from "./models/manager.ts";
-import type { TokenTracker } from "./token-tracker.ts";
+import type { TokenTracker } from "./tokens/tracker.ts";
 
 // Define a type for the items that can be passed in the first argument
 export type UserMessageContentItem = string | ImagePart;

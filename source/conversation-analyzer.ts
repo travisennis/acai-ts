@@ -4,7 +4,7 @@ import { createUserMessage } from "./messages.ts";
 import type { ModelManager } from "./models/manager.ts";
 import { systemPrompt } from "./prompts.ts";
 import type { Terminal } from "./terminal/index.ts";
-import type { TokenTracker } from "./token-tracker.ts";
+import type { TokenTracker } from "./tokens/tracker.ts";
 
 // Modified System Prompt
 const system =

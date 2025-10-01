@@ -3,8 +3,8 @@ import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManagerApi } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
-import type { TokenTracker } from "../token-tracker.ts";
-import type { TokenCounter } from "../token-utils.ts";
+import type { TokenCounter } from "../tokens/counter.ts";
+import type { TokenTracker } from "../tokens/tracker.ts";
 import type { ToolExecutor } from "../tool-executor.ts";
 import type { Message } from "../tools/types.ts";
 

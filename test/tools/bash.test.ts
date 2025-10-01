@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { config } from "../../source/config.ts";
-import { TokenCounter } from "../../source/token-utils.ts";
+import { TokenCounter } from "../../source/tokens/counter.ts";
 import { createBashTool } from "../../source/tools/bash.ts";
 
 // Minimal token counter mock
 class MockTokenCounter extends TokenCounter {
+  constructor() {
+    super("gpt-4");
+  }
+
   override count(s: string) {
     return s.length;
   }

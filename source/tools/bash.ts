@@ -5,7 +5,7 @@ import { initExecutionEnvironment } from "../execution/index.ts";
 import { logger } from "../logger.ts";
 import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
-import type { TokenCounter } from "../token-utils.ts";
+import type { TokenCounter } from "../tokens/counter.ts";
 import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { isMutatingCommand, resolveCwd, validatePaths } from "./bash-utils.ts";
 import { isPathWithinBaseDir } from "./filesystem-utils.ts";
