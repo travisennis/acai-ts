@@ -163,6 +163,22 @@ export class Terminal {
   }
 
   /**
+   * Start progress indicator in terminal
+   * Sends terminal escape sequence to show progress animation
+   */
+  startProgress(): void {
+    process.stdout.write("\u001b]9;4;3;0\u0007");
+  }
+
+  /**
+   * Stop progress indicator in terminal
+   * Sends terminal escape sequence to hide progress animation
+   */
+  stopProgress(): void {
+    process.stdout.write("\u001b]9;4;0;0\u0007");
+  }
+
+  /**
    * Display formatted content
    */
   display(content: string, wrap = false): void {
