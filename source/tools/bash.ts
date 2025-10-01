@@ -44,7 +44,7 @@ export const createBashTool = async ({
           .describe(
             "Working directory file path (default: project root). Must be within the project directory.",
           ),
-        timeout: z
+        timeout: z.coerce
           .number()
           .nullable()
           .describe(

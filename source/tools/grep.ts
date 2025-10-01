@@ -26,11 +26,11 @@ export const createGrepTool = (options: {
             "The search pattern (regex by default, or fixed-string if literal=true or auto-detected as unbalanced)",
           ),
         path: z.string().describe("The path to search in"),
-        recursive: z
+        recursive: z.coerce
           .boolean()
           .nullable()
           .describe("Search recursively. (default: true))"),
-        ignoreCase: z
+        ignoreCase: z.coerce
           .boolean()
           .nullable()
           .describe("Use case-sensitive search. (default: false)"),
@@ -40,17 +40,17 @@ export const createGrepTool = (options: {
           .describe(
             "Glob pattern to filter files (e.g., '*.ts', '**/*.test.js'). (Default: no filtering)",
           ),
-        contextLines: z
+        contextLines: z.coerce
           .number()
           .nullable()
           .describe(
             "The number of context lines needed in search results. (Default: 0)",
           ),
-        searchIgnored: z
+        searchIgnored: z.coerce
           .boolean()
           .nullable()
           .describe("Search ignored files. (Default: false)"),
-        literal: z
+        literal: z.coerce
           .boolean()
           .nullable()
           .describe(

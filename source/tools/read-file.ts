@@ -35,13 +35,13 @@ export const createReadFileTool = async ({
         encoding: fileEncodingSchema.describe(
           'Encoding format for reading the file. Use "utf-8" as default for text files',
         ),
-        startLine: z
+        startLine: z.coerce
           .number()
           .nullable()
           .describe(
             "1-based line number to start reading from. Pass null to start at beginning of file",
           ),
-        lineCount: z
+        lineCount: z.coerce
           .number()
           .nullable()
           .describe(

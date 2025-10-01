@@ -18,10 +18,10 @@ function generateZodSchema(parameters: ToolMetadata["parameters"]) {
         schema = z.string();
         break;
       case "number":
-        schema = z.number();
+        schema = z.coerce.number();
         break;
       case "boolean":
-        schema = z.boolean();
+        schema = z.coerce.boolean();
         break;
       default:
         continue;
