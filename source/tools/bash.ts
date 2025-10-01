@@ -31,6 +31,7 @@ export const createBashTool = async ({
   terminal?: Terminal;
   toolExecutor?: ToolExecutor;
 }) => {
+  const execEnv = await initExecutionEnvironment();
   return {
     [BashTool.name]: tool({
       description:
@@ -154,7 +155,8 @@ export const createBashTool = async ({
             );
           }
 
-          const execEnv = await initExecutionEnvironment();
+          terminal?.startProgress();
+
           const { output, exitCode } = await execEnv.executeCommand(command, {
             cwd: resolvedCwd,
             timeout: safeTimeout,
@@ -193,6 +195,9 @@ export const createBashTool = async ({
                 ? `Command executed successfully: ${exitCode} (${tokenCount} tokens)`
                 : `Output of command (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}).`,
           });
+
+          terminal?.stopProgress();
+
           return finalResult;
         } catch (error) {
           logger.error(error, "Bash Tool Error:");
