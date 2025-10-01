@@ -70,6 +70,25 @@ export class Repl {
       currentContextWindow = 0;
     });
 
+    const finalSystemPrompt = await systemPrompt();
+
+    // Initialize tools once outside the loop - all models support tool calling
+    const tools = {
+      ...(await initTools({
+        terminal,
+        tokenCounter,
+        events: toolEvents,
+        toolExecutor,
+      })),
+      ...(await initAgents({
+        terminal,
+        modelManager,
+        tokenTracker,
+        tokenCounter,
+        events: toolEvents,
+      })),
+    };
+
     let currentAbortController: AbortController | null = null;
 
     // Handle Ctrl+C (SIGINT) as a fallback when not in raw mode
@@ -175,62 +194,12 @@ export class Repl {
 
       messageHistory.appendUserMessage(userMsg);
 
-      const finalSystemPrompt = await systemPrompt({
-        supportsToolCalling: modelConfig.supportsToolCalling,
-      });
-
       const aiConfig = new AiConfig({
         modelMetadata: modelConfig,
         prompt: userPrompt,
       });
 
       const maxTokens = aiConfig.getMaxTokens();
-
-      const tools = modelConfig.supportsToolCalling
-        ? {
-            ...(await initTools({
-              terminal,
-              tokenCounter,
-              events: toolEvents,
-              toolExecutor,
-            })),
-            ...(await initAgents({
-              terminal,
-              modelManager,
-              tokenTracker,
-              tokenCounter,
-              events: toolEvents,
-            })),
-          }
-        : undefined;
-
-      // Enable raw-mode key capture to suppress ^C echo while streaming
-      const cleanupKeyCapture = (() => {
-        if (!process.stdin.isTTY) return () => {};
-        const stdin = process.stdin;
-        // biome-ignore lint/suspicious/noExplicitAny: Node's isRaw is not in types
-        const wasRaw = (stdin as any).isRaw === true;
-        if (!wasRaw) {
-          stdin.setRawMode(true);
-        }
-        const onData = (data: Buffer) => {
-          // Ctrl+C
-          if (data.length === 1 && data[0] === 0x03) {
-            currentAbortController?.abort();
-          }
-        };
-        stdin.on("data", onData);
-        return () => {
-          stdin.off("data", onData);
-          if (!wasRaw) {
-            try {
-              stdin.setRawMode(false);
-            } catch {
-              // ignore
-            }
-          }
-        };
-      })();
 
       try {
         const result = streamText({
@@ -250,7 +219,7 @@ export class Repl {
             modelConfig.defaultTemperature > -1
               ? modelConfig.defaultTemperature
               : undefined,
-          stopWhen: stepCountIs(60),
+          stopWhen: stepCountIs(90),
           maxRetries: 2,
           providerOptions: aiConfig.getProviderOptions(),
           tools,
@@ -316,14 +285,6 @@ export class Repl {
                 }
               }
             }
-
-            // comment out auto-summarization for now. it's been causing issues.
-            // if (currentContextWindow > 70000) {
-            //   logger.info(
-            //     `Condensing history from ${currentContextWindow} to 0`,
-            //   );
-            //   await messageHistory.summarizeAndReset();
-            // }
 
             terminal.hr();
           },
@@ -417,9 +378,6 @@ export class Repl {
         } else {
           logger.error(JSON.stringify(e, null, 2));
         }
-      } finally {
-        // Restore terminal mode and listeners
-        cleanupKeyCapture();
       }
     }
   }
