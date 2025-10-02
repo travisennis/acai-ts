@@ -81,11 +81,11 @@ export const createEditFileTool = async ({
               `The agent is proposing the following ${style.cyan(edits.length)} edits:`,
             );
 
-            terminal.lineBreak();
+            terminal.hr();
 
             terminal.display(result);
 
-            terminal.lineBreak();
+            terminal.hr();
 
             let userResponse: AskResponse | undefined;
             if (toolExecutor) {
@@ -129,12 +129,14 @@ export const createEditFileTool = async ({
                 false,
                 abortSignal,
               );
+
               // Send completion message indicating success
               sendData?.({
                 id: toolCallId,
                 event: "tool-completion",
                 data: "Edits accepted and applied successfully.",
               });
+
               return finalEdits;
             }
 
@@ -147,6 +149,7 @@ export const createEditFileTool = async ({
               event: "tool-completion",
               data: `Edits rejected by user. Reason: ${rejectionReason}`,
             });
+
             return `The user rejected these changes. Reason: ${rejectionReason}`;
           }
 
@@ -156,12 +159,14 @@ export const createEditFileTool = async ({
             false,
             abortSignal,
           );
+
           // Send completion message indicating success
           sendData?.({
             id: toolCallId,
             event: "tool-completion",
             data: "Edits accepted and applied successfully.",
           });
+
           return finalEdits;
         } catch (error) {
           sendData?.({

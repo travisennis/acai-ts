@@ -1,5 +1,6 @@
 import { input } from "./terminal/input-prompt.ts";
 import { select } from "./terminal/select-prompt.ts";
+import style from "./terminal/style.ts";
 
 interface AskContext {
   toolName: string;
@@ -48,7 +49,7 @@ export class ToolExecutor {
     let userChoice: "accept" | "accept-all" | "reject";
     try {
       userChoice = await select({
-        message: ctx.message,
+        message: `${style.blue.bold("●")} ${ctx.message}`,
         choices: [
           { name: ctx.choices.accept, value: "accept" },
           {
@@ -67,13 +68,11 @@ export class ToolExecutor {
       throw e;
     }
 
-    process.stdout.write("\n");
-
     if (userChoice === "reject") {
       let reason: string;
       try {
         reason = await input({
-          message: "Feedback: ",
+          message: `${style.yellowBright.bold("●")} Feedback`,
           signal: abortSignal,
         });
       } catch (e) {
@@ -82,8 +81,6 @@ export class ToolExecutor {
         }
         throw e;
       }
-
-      process.stdout.write("\n");
 
       return {
         result: userChoice,
