@@ -275,10 +275,12 @@ export class Terminal {
     this.writeln("");
   }
 
-  header(header: string, styleFn: StyleInstance = style.green): void {
+  header(header: string, styleFn: StyleInstance = style.cyan): void {
     const cols = this.terminalWidth > 0 ? this.terminalWidth : 80;
     const width = Math.max(0, cols - header.length - 4);
-    this.writeln(styleFn(`\n── ${header} ${"─".repeat(width)}  `));
+    this.writeln(
+      `${style.gray("\n── ")}${styleFn(header)} ${style.gray("─".repeat(width))}  `,
+    );
   }
 
   async box(header: string, content: string): Promise<void> {
