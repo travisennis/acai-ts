@@ -11,7 +11,7 @@ export function displayToolMessages(messages: Message[], terminal: Terminal) {
     messages.find((m) => m.event === "tool-init")?.data ?? "Tool Execution";
 
   terminal.write(`${indicator} `);
-  terminal.display(initMessage);
+  terminal.writeln(initMessage);
 
   for (const msg of messages) {
     switch (msg.event) {
@@ -46,8 +46,7 @@ function handleToolUpdateMessage(
   if (data.secondary && data.secondary.length > 0) {
     const content = data.secondary.join("\n");
     if (content.trim().length !== 0) {
-      terminal.display(`└── ${data.primary}`);
-      terminal.hr();
+      terminal.header(`${data.primary}`);
       if (isMarkdown(content)) {
         terminal.display(content, true);
       } else {
@@ -57,12 +56,12 @@ function handleToolUpdateMessage(
       terminal.hr();
     }
   } else {
-    terminal.display(`└── ${data.primary}`);
+    terminal.header(`${data.primary}`);
   }
 }
 
 function handleToolCompletionMessage(data: string, terminal: Terminal) {
-  terminal.display(`└── ${data}`);
+  terminal.display(`└── ${style.bold(data)}`);
 }
 
 function handleToolErrorMessage(data: string, terminal: Terminal) {
