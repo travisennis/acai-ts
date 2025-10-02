@@ -136,7 +136,7 @@ export class Repl {
         // see if the userInput contains a command
         const commandResult = await commands.handle({ userInput });
         if (commandResult.break) {
-          terminal.startProgress();
+          terminal.stopProgress();
           break;
         }
         if (commandResult.continue) {
