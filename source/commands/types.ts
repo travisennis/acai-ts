@@ -26,4 +26,5 @@ export interface CommandOptions {
   tokenCounter: TokenCounter;
   toolEvents: Map<string, Message[]>;
   toolExecutor?: ToolExecutor;
+  promptHistory: string[];
 }

@@ -201,6 +201,7 @@ async function main() {
   }
 
   const toolEvents: Map<string, Message[]> = new Map();
+  const promptHistory: string[] = [];
 
   const commands = new CommandManager({
     promptManager,
@@ -212,6 +213,7 @@ async function main() {
     tokenCounter,
     toolExecutor,
     toolEvents,
+    promptHistory,
   });
 
   if (flags.oneshot === true) {
@@ -237,6 +239,7 @@ async function main() {
     tokenCounter,
     toolEvents,
     toolExecutor,
+    promptHistory,
     showLastMessage: hasContinueOrResume
       ? !!(messageHistory.get() && messageHistory.get().length > 0)
       : false,

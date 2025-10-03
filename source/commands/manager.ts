@@ -42,6 +42,7 @@ export class CommandManager {
   private tokenCounter: TokenCounter;
   private toolEvents: Map<string, Message[]>;
   private toolExecutor?: ToolExecutor;
+  private promptHistory: string[];
 
   constructor({
     promptManager,
@@ -53,6 +54,7 @@ export class CommandManager {
     tokenCounter,
     toolEvents,
     toolExecutor,
+    promptHistory,
   }: CommandOptions) {
     this.commands = new Map();
     this.promptManager = promptManager;
@@ -64,6 +66,7 @@ export class CommandManager {
     this.tokenCounter = tokenCounter;
     this.toolEvents = toolEvents;
     this.toolExecutor = toolExecutor;
+    this.promptHistory = promptHistory;
     this.initializeCommmands();
   }
 
@@ -79,6 +82,7 @@ export class CommandManager {
       tokenCounter: this.tokenCounter,
       toolEvents: this.toolEvents,
       toolExecutor: this.toolExecutor,
+      promptHistory: this.promptHistory,
     };
 
     // Register all commands

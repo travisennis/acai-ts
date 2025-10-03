@@ -5,6 +5,7 @@ import type { CommandOptions, ReplCommand } from "./types.ts";
 export const editPromptCommand = ({
   terminal,
   promptManager,
+  promptHistory,
 }: CommandOptions): ReplCommand => {
   return {
     command: "/edit-prompt",
@@ -27,6 +28,9 @@ export const editPromptCommand = ({
         terminal.writeln(`> ${updatedPrompt}`);
 
         promptManager.set(updatedPrompt);
+
+        // Add the edited prompt to history
+        promptHistory.push(updatedPrompt);
       } catch (error) {
         terminal.error(`Error editing prompt: ${(error as Error).message}`);
         return "continue";

@@ -34,6 +34,7 @@ interface ReplOptions {
   toolEvents: Map<string, Message[]>;
   showLastMessage: boolean; // For displaying last message when continuing/resuming
   toolExecutor?: ToolExecutor;
+  promptHistory: string[];
 }
 
 export class Repl {
@@ -57,13 +58,12 @@ export class Repl {
       tokenCounter,
       toolEvents,
       toolExecutor,
+      promptHistory,
     } = this.options;
 
     logger.info(config, "Config:");
 
     terminal.displayWelcome();
-
-    const promptHistory: string[] = [];
 
     let currentContextWindow = 0;
     messageHistory.on("clear-history", () => {
