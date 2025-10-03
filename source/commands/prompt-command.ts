@@ -8,6 +8,7 @@ export const promptCommand = ({
   modelManager,
   promptManager,
   config,
+  promptHistory,
 }: CommandOptions): ReplCommand => {
   return {
     command: "/prompt",
@@ -111,6 +112,15 @@ export const promptCommand = ({
           promptManager.addContext(context);
         }
         promptManager.set(processedPrompt.message);
+
+        // Add the loaded prompt to history
+        promptHistory.push(processedPrompt.message);
+
+        terminal.lineBreak();
+        terminal.display(processedPrompt.message);
+        terminal.lineBreak();
+        terminal.hr();
+
         return "use";
       } catch (error) {
         terminal.error(`Error loading prompt: ${(error as Error).message}`);
