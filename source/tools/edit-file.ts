@@ -27,7 +27,8 @@ export const createEditFileTool = async ({
     [EditFileTool.name]: tool({
       description:
         "Make line-based edits to a text file. Each edit replaces exact line sequences " +
-        "with new content. Returns a git-style diff showing the changes made. " +
+        "with new content. Exact literal matching is used: no whitespace, indentation, escape, or newline normalization is applied when locating matches. " +
+        "Provide enough context so the match is unique; otherwise the operation errors. Returns a git-style diff showing the changes made. " +
         "Only works within allowed directories. " +
         "Note: Special characters in oldText must be properly escaped for JSON (e.g., backticks as \\`...\\`). " +
         "Multi-line strings require exact character-by-character matching including whitespace.",

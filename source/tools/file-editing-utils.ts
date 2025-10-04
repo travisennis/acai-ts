@@ -50,7 +50,7 @@ export async function applyFileEdits(
     );
   }
 
-  // Apply edits sequentially
+  // Apply edits sequentially using strict literal, unique matches
   let modifiedContent = originalContent;
   for (const edit of edits) {
     if (abortSignal?.aborted) {
@@ -58,21 +58,25 @@ export async function applyFileEdits(
     }
     const { oldText, newText } = edit; // Use literal oldText and newText
 
-    const normalizedContent = normalizeLineEndings(modifiedContent);
-    const normalizedOldText = normalizeLineEndings(oldText);
-    modifiedContent = replace(
-      normalizedContent,
-      normalizedOldText,
-      newText,
-      true,
+    // Strict literal match: find exactly one occurrence without any normalization
+    const firstIndex = modifiedContent.indexOf(oldText);
+    if (firstIndex === -1) {
+      throw new Error("oldText not found in content");
+    }
+    const secondIndex = modifiedContent.indexOf(
+      oldText,
+      firstIndex + oldText.length,
     );
-    // if (normalizedContent.includes(normalizedOldText)) {
-    //   modifiedContent = normalizedContent.replace(normalizedOldText, newText);
-    // } else {
-    //   // If literal match is not found, throw an error.
-    //   // The previous complex fallback logic is removed to ensure literal matching.
-    //   throw new Error("Could not find literal match for old text.");
-    // }
+    if (secondIndex !== -1) {
+      throw new Error(
+        "oldString found multiple times and requires more code context to uniquely identify the intended match",
+      );
+    }
+
+    modifiedContent =
+      modifiedContent.slice(0, firstIndex) +
+      newText +
+      modifiedContent.slice(firstIndex + oldText.length);
   }
 
   // Create unified diff (createUnifiedDiff normalizes line endings internally for diffing)
