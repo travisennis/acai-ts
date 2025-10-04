@@ -74,7 +74,7 @@ function toolUsage() {
 - Use \`${GrepTool.name}\` for code pattern searches
 - Use \`${WebFetchTool.name}\` for text-based URLs provided in the prompt
 - Use \`${WebSearchTool.name}\` for external research (e.g., libraries, errors)
-- Use \`${AgentTool.name}\` for iterative keyword/file searches. Use this if you need to explore the project fo find what you are looking for.
+- Use \`${AgentTool.name}\` for iterative keyword/file searches. Use this if you need to explore the project to find what you are looking for.
 - If file contents or URLs are provided in the prompt, use them directly without re-fetching
 - Always verify file contents before suggesting changes unless provided in the prompt
 
@@ -93,7 +93,7 @@ function toolUsage() {
 - For large gh/git messages with newlines:
   1. Create temp file with ${SaveFileTool.name} in the project's .tmp directory
   2. Use git commit --file path/to/temp/file or gh pr create --title "Title of PR" --body-file path/to/temp/file
-  3. Clean up with ${DeleteFileTool.name}
+- Note: The .tmp directory in the current working directory is deleted each time the agent shuts down.
 - Commands execute only within the project directory; always use absolute paths.
 - Avoid interactive commands; prefer non-interactive flags (e.g., npm init -y).
 
@@ -101,7 +101,7 @@ function toolUsage() {
 - Executes JavaScript code in a separate Node.js process using Node's Permission Model
 - By default, the child process has no permissions except read/write within the current working directory
 - Returns stdout, stderr, and exitCode
-- Use console.log/console.error to produce outpu`;
+- Use console.log/console.error to produce output`;
 }
 
 function escalationProcedures() {
@@ -130,7 +130,7 @@ async function environmentInfo() {
   const gitDirectory = await inGitDirectory();
   let gitSection = `- **Is directory a git repo**: ${gitDirectory ? "Yes" : "No"}`;
   if (gitDirectory) {
-    gitSection += `\n- ** Current git branch**: ${await getCurrentBranch()}`;
+    gitSection += `\n- **Current git branch**: ${await getCurrentBranch()}`;
   }
 
   return `## Environment
@@ -139,7 +139,8 @@ async function environmentInfo() {
 ${gitSection}
 - **Platform**: ${platform()}
 - **Shell**: ${getShell()}
-- **Today's date**: ${(new Date()).toISOString()}`;
+- **Today's date**: ${(new Date()).toISOString()}
+- Note: The .tmp directory in the current working directory is deleted each time the agent shuts down.`;
 }
 
 export async function systemPrompt(options?: {
