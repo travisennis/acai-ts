@@ -8,14 +8,12 @@ function makeArray<T>(subject: T | T[]): T[] {
   return Array.isArray(subject) ? subject : [subject];
 }
 
-const UNDEFINED = undefined;
-const EMPTY = "";
 const SPACE = " ";
 const ESCAPE = "\\";
 const REGEX_TEST_BLANK_LINE = /^\s+$/;
 const REGEX_INVALID_TRAILING_BACKSLASH = /(?:[^\\]|^)\\$/;
-const REGEX_REPLACE_LEADING_EXCAPED_EXCLAMATION = /^\\!/;
-const REGEX_REPLACE_LEADING_EXCAPED_HASH = /^\\#/;
+const REGEX_REPLACE_LEADING_ESCAPED_EXCLAMATION = /^\\!/;
+const REGEX_REPLACE_LEADING_ESCAPED_HASH = /^\\#/;
 const REGEX_SPLITALL_CRLF = /\r?\n/g;
 
 // Invalid:
@@ -26,7 +24,7 @@ const REGEX_SPLITALL_CRLF = /\r?\n/g;
 // - ..
 // Valid:
 // - .foo
-const REGEX_TEST_INVALID_PATH = /^\.{0,2}\//;
+const REGEX_TEST_INVALID_PATH = /^(?:\/|\.{1,2}(?:\/|$))/;
 
 const REGEX_TEST_TRAILING_SLASH = /\/$/;
 
@@ -39,7 +37,7 @@ if (typeof Symbol !== "undefined") {
 }
 const KEY_IGNORE = TmpKeyIgnore;
 
-const REGEX_REGEXP_RANGE = /([0-z])-([0-z])/g;
+const REGEX_REGEXP_RANGE = /([A-Za-z0-9])-([A-Za-z0-9])/g;
 
 const RETURN_FALSE = (): false => false;
 
@@ -51,7 +49,7 @@ const sanitizeRange = (range: string): string =>
       ? match
       : // Invalid range (out of order) which is ok for gitignore rules but
         //   fatal for JavaScript regular expression, so eliminate it.
-        EMPTY,
+        "",
   );
 
 // See fixtures #59
@@ -78,7 +76,7 @@ const REPLACERS: Array<[RegExp, (match: string, ...args: string[]) => string]> =
       // TODO:
       // Other similar zero-width characters?
       /^\uFEFF/,
-      () => EMPTY,
+      () => "",
     ],
 
     // > Trailing spaces are ignored unless they are quoted with backslash ("\\")
@@ -88,8 +86,7 @@ const REPLACERS: Array<[RegExp, (match: string, ...args: string[]) => string]> =
       // (a ) -> (a)
       // (a \ ) -> (a  )
       /((?:\\\\)*?)(\\?\s+)$/,
-      (_, m1: string, m2: string) =>
-        m1 + (m2.indexOf("\\") === 0 ? SPACE : EMPTY),
+      (_, m1: string, m2: string) => m1 + (m2.indexOf("\\") === 0 ? SPACE : ""),
     ],
 
     // Replace (\ ) with ' '
@@ -160,9 +157,9 @@ const REPLACERS: Array<[RegExp, (match: string, ...args: string[]) => string]> =
       //   (which has been replaced by section "leading slash")
       // If starts with '**', adding a '^' to the regular expression also works
       /^(?=[^^])/,
-      function startingReplacer(this: string): string {
+      (pattern: string): string => {
         // If has a slash `/` at the beginning or middle
-        return !/\/(?!$)/.test(this)
+        return !/\/(?!$)/.test(pattern)
           ? // > Prior to 2.22.1
             // > If the pattern does not contain a slash /,
             // >   Git treats it as a shell glob pattern
@@ -175,7 +172,7 @@ const REPLACERS: Array<[RegExp, (match: string, ...args: string[]) => string]> =
             // > level of the particular .gitignore file itself.
             // > Otherwise the pattern may also match at any level below
             // > the .gitignore level.
-            "(?:^|\\/)"
+            "(?:^|/)"
           : // > Otherwise, Git treats the pattern as a shell glob suitable for
             // >   consumption by fnmatch(3)
             "^";
@@ -296,7 +293,10 @@ const REPLACERS: Array<[RegExp, (match: string, ...args: string[]) => string]> =
           : // foo matches 'foo' and 'foo/'
             `${match}(?=$|\\/$)`,
     ],
-  ];
+  ] as const;
+
+// Freeze REPLACERS to prevent accidental mutation and help VMs optimize constants
+Object.freeze(REPLACERS);
 
 const REGEX_REPLACE_TRAILING_WILDCARD = /(^|\\\/)?\\\*$/;
 const MODE_IGNORE = "regex";
@@ -337,7 +337,9 @@ const TRAILING_WILD_CARD_REPLACERS = {
 const makeRegexPrefix = (pattern: string): string =>
   REPLACERS.reduce(
     (prev: string, [matcher, replacer]) =>
-      prev.replace(matcher, replacer.bind(pattern)),
+      prev.replace(matcher, (match: string, ...args: string[]) =>
+        replacer(match, ...args, pattern),
+      ),
     pattern,
   );
 
@@ -408,7 +410,7 @@ class IgnoreRule {
     return this._checkRegex;
   }
 
-  private compileRegex(mode: string): RegExp {
+  private compileRegex(mode: "regex" | "checkRegex"): RegExp {
     const str = this.regexPrefix.replace(
       REGEX_REPLACE_TRAILING_WILDCARD,
       // It does not need to bind pattern
@@ -437,10 +439,10 @@ const createRule = (
   body = body
     // > Put a backslash ("\\") in front of the first "!" for patterns that
     // >   begin with a literal "!", for example, `"\\!important!.txt"`.
-    .replace(REGEX_REPLACE_LEADING_EXCAPED_EXCLAMATION, "!")
+    .replace(REGEX_REPLACE_LEADING_ESCAPED_EXCLAMATION, "!")
     // > Put a backslash ("\\") in front of the first hash for patterns that
     // >   begin with a hash.
-    .replace(REGEX_REPLACE_LEADING_EXCAPED_HASH, "#");
+    .replace(REGEX_REPLACE_LEADING_ESCAPED_HASH, "#");
 
   const regexPrefix = makeRegexPrefix(body);
 
@@ -456,16 +458,20 @@ class RuleManager {
     this._ignoreCase = ignoreCase;
   }
 
+  get ignoreCase(): boolean {
+    return this._ignoreCase;
+  }
+
   private _add(pattern: string | PatternObject | Ignore): void {
     // #32
     if (
       pattern &&
       (pattern as unknown as Record<string, unknown>)[KEY_IGNORE as string]
     ) {
-      this._rules = this._rules.concat(
-        (pattern as unknown as { _rules: { _rules: IgnoreRule[] } })._rules
-          ._rules,
-      );
+      const otherRules = (
+        pattern as unknown as { _rules: { _rules: IgnoreRule[] } }
+      )._rules._rules;
+      this._rules.push(...otherRules);
       this._added = true;
       return;
     }
@@ -519,7 +525,7 @@ class RuleManager {
     let unignored = false;
     let matchedRule: IgnoreRule | undefined;
 
-    this._rules.forEach((rule) => {
+    for (const rule of this._rules) {
       const { negative } = rule;
 
       //          |           ignored : unignored
@@ -537,23 +543,21 @@ class RuleManager {
         (unignored === negative && ignored !== unignored) ||
         (negative && !ignored && !unignored && !checkUnignored)
       ) {
-        return;
+        continue;
       }
 
-      const matched =
-        rule[mode as keyof IgnoreRule] instanceof RegExp
-          ? (rule[mode as keyof IgnoreRule] as RegExp).test(path)
-          : false;
+      const regex = mode === "regex" ? rule.regex : rule.checkRegex;
+      const matched = regex.test(path);
 
       if (!matched) {
-        return;
+        continue;
       }
 
       ignored = !negative;
       unignored = negative;
 
-      matchedRule = negative ? UNDEFINED : rule;
-    });
+      matchedRule = negative ? undefined : rule;
+    }
 
     const ret: TestResult = {
       ignored,
@@ -603,7 +607,7 @@ const checkPath: CheckPathFunction = (
   if (checkPath.isNotRelative?.(path)) {
     const r = "`path.relative()`d";
     return doThrow(
-      `path should be a ${r} string, but got "${originalPath}"`,
+      `path should be a ${r} string, but got "${originalPath}". Use allowRelativePaths: true to permit absolute paths or './', '../'`,
       RangeError,
     );
   }
@@ -631,6 +635,13 @@ export class Ignore {
   private _ignoreCache: Record<string, TestResult> = {};
   private _testCache: Record<string, TestResult> = {};
 
+  /**
+   * Create a new Ignore instance
+   * @param options - Configuration options
+   * @param options.ignorecase - Whether to use case-insensitive matching (default: true)
+   * @param options.ignoreCase - Alias for ignorecase
+   * @param options.allowRelativePaths - Allow relative paths like './' and '../' (default: false)
+   */
   constructor({
     ignorecase = true,
     ignoreCase = ignorecase,
@@ -652,6 +663,19 @@ export class Ignore {
     this._testCache = Object.create(null);
   }
 
+  /**
+   * Clear all internal caches
+   */
+  clearCache(): this {
+    this._initCache();
+    return this;
+  }
+
+  /**
+   * Add ignore patterns
+   * @param pattern - Pattern(s) to add
+   * @returns This instance for chaining
+   */
   add(pattern: string | string[] | Ignore | PatternObject): this {
     if (this._rules.add(pattern)) {
       // Some rules have just added to the ignore,
@@ -663,7 +687,10 @@ export class Ignore {
     return this;
   }
 
-  // legacy
+  /**
+   * Legacy alias for add()
+   * @deprecated Use add() instead
+   */
   addPattern(pattern: string | string[] | Ignore | PatternObject): this {
     return this.add(pattern);
   }
@@ -692,6 +719,11 @@ export class Ignore {
     return this._t(path, cache, checkUnignored, slices);
   }
 
+  /**
+   * Check if a path is ignored (Git check-ignore compatible)
+   * @param path - The path to check
+   * @returns TestResult with ignored status and matched rule
+   */
   checkIgnore(path: string): TestResult {
     // If the path doest not end with a slash, `.ignores()` is much equivalent
     //   to `git check-ignore`
@@ -766,21 +798,50 @@ export class Ignore {
     return cache[path];
   }
 
+  /**
+   * Check if a path is ignored
+   * @param path - The path to check
+   * @returns True if the path is ignored
+   */
   ignores(path: string): boolean {
     return this._test(path, this._ignoreCache, false).ignored;
   }
 
+  /**
+   * Create a filter function that returns true for non-ignored paths
+   * @returns Filter function
+   */
   createFilter(): (path: string) => boolean {
     return (path: string) => !this.ignores(path);
   }
 
+  /**
+   * Filter an array of paths, returning only non-ignored paths
+   * @param paths - Paths to filter
+   * @returns Array of non-ignored paths
+   */
   filter(paths: string | string[]): string[] {
     return makeArray(paths).filter(this.createFilter());
   }
 
-  // @returns {TestResult}
+  /**
+   * Test if a path is ignored
+   * @param path - The path to test
+   * @returns TestResult with ignored status and matched rule
+   */
   test(path: string): TestResult {
     return this._test(path, this._testCache, true);
+  }
+
+  /**
+   * Compile a pattern to a regular expression
+   * @param pattern - The pattern to compile
+   * @returns Compiled regular expression
+   */
+  compile(pattern: string): RegExp {
+    // Create a temporary rule to get the compiled regex
+    const tempRule = createRule({ pattern }, this._rules.ignoreCase);
+    return tempRule.regex;
   }
 }
 
@@ -796,9 +857,9 @@ const isPathValid = (path: unknown): boolean =>
 const setupWindows = (): void => {
   /* eslint no-control-regex: "off" */
   const makePosix = (str: string): string =>
-    /^\\\\\?\\/.test(str) || /["<>|]+/u.test(str)
+    /^\\\?\\/.test(str) || /["<>|]+/u.test(str)
       ? str
-      : str.replace(/\\/g, "/");
+      : str.replace(/\\+/g, "/"); // Collapse multiple backslashes
 
   checkPath.convert = makePosix;
 
