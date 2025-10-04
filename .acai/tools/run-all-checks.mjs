@@ -31,7 +31,7 @@ if (process.env.TOOL_ACTION === 'execute') {
 
   process.stdin.on('end', () => {
     const dir = params.find(p => p.name === 'dir')?.value || '.';
-    const child = spawn('npm', ['run', 'typecheck', '&&', 'npm', 'run', 'lint:fix', '&&', 'npm', 'run', 'format'], { 
+    const child = spawn('npm run typecheck && npm run lint:fix && npm run format', [], {
       cwd: dir, 
       stdio: 'pipe',
       shell: true
