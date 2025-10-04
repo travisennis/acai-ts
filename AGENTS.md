@@ -10,6 +10,10 @@
 - **Run Single Test File:** `node --no-warnings --test test/path/to/your.test.ts`
 - **Find Unused Code/Deps:** `npm run knip`
 
+### Custom Tools
+
+- **run-all-checks** use this tool when you want to typecheck, lint, and format the code you have just written
+
 ### Code Style & Guidelines
 
 - **Code Organization:** All source code for this project is stored in `./source`.
@@ -26,6 +30,7 @@
 - **Testing** Use `node:test` and `node:assert/strict` to write unit tests in the `./test` directory. Test directory should follow the same folder structure as source.
 
 ### Terminal Usage
+
 When you need to call tools from the shell, use this rubric:
 
 - Find files by file name: `fd`
