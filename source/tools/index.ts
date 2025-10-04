@@ -7,7 +7,7 @@ import { createAgentTools } from "./agent.ts";
 import { createBashTool } from "./bash.ts";
 import { createCodeInterpreterTool } from "./code-interpreter.ts";
 import { createDeleteFileTool } from "./delete-file.ts";
-import { createDirectoryTreeTool } from "./directory-tree.ts";
+// import { createDirectoryTreeTool } from "./directory-tree.ts";
 import { loadDynamicTools } from "./dynamic-tool-loader.ts";
 import { createEditFileTool } from "./edit-file.ts";
 import { createGrepTool } from "./grep.ts";
@@ -75,11 +75,11 @@ export async function initTools({
     sendData: sendDataFn,
   });
 
-  const directoryTreeTool = await createDirectoryTreeTool({
-    workingDir: process.cwd(),
-    sendData: sendDataFn,
-    tokenCounter,
-  });
+  // const directoryTreeTool = await createDirectoryTreeTool({
+  //   workingDir: process.cwd(),
+  //   sendData: sendDataFn,
+  //   tokenCounter,
+  // });
 
   const deleteFileTool = await createDeleteFileTool({
     workingDir: process.cwd(),
@@ -130,7 +130,7 @@ export async function initTools({
     ...editFileTool,
     ...saveFileTool,
     ...moveFileTool,
-    ...directoryTreeTool,
+    // ...directoryTreeTool,
     ...deleteFileTool,
     ...codeInterpreterTool,
     ...grepTool,
@@ -178,11 +178,11 @@ export async function initCliTools({
     sendData: undefined,
   });
 
-  const directoryTreeTool = await createDirectoryTreeTool({
-    workingDir: process.cwd(),
-    sendData: undefined,
-    tokenCounter,
-  });
+  // const directoryTreeTool = await createDirectoryTreeTool({
+  //   workingDir: process.cwd(),
+  //   sendData: undefined,
+  //   tokenCounter,
+  // });
 
   const deleteFileTool = await createDeleteFileTool({
     workingDir: process.cwd(),
@@ -231,7 +231,7 @@ export async function initCliTools({
     ...editFileTool,
     ...saveFileTool,
     ...moveFileTool,
-    ...directoryTreeTool,
+    // ...directoryTreeTool,
     ...deleteFileTool,
     ...codeInterpreterTool,
     ...grepTool,

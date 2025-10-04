@@ -8,7 +8,6 @@ import { AgentTool } from "./tools/agent.ts";
 import { BashTool } from "./tools/bash.ts";
 import { CodeInterpreterTool } from "./tools/code-interpreter.ts";
 import { DeleteFileTool } from "./tools/delete-file.ts";
-import { DirectoryTreeTool } from "./tools/directory-tree.ts";
 import { EditFileTool } from "./tools/edit-file.ts";
 import { getCurrentBranch, inGitDirectory } from "./tools/git-utils.ts";
 import { GrepTool } from "./tools/grep.ts";
@@ -70,7 +69,7 @@ function toolUsage() {
   return `## Tool Usage Guidelines
 
 ### Information Gathering
-- Use \`${DirectoryTreeTool.name}\` for project structure
+- Prefer targeted queries: use \`${GrepTool.name}\` for code pattern searches and \`${ReadMultipleFilesTool.name}\` to fetch files. Avoid full directory dumps for large repositories.
 - Use \`${ReadFileTool.name}\` or \`${ReadMultipleFilesTool.name}\` for file contents if filenames are provided in the prompt
 - Use \`${GrepTool.name}\` for code pattern searches
 - Use \`${WebFetchTool.name}\` for text-based URLs provided in the prompt

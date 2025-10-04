@@ -6,7 +6,7 @@ import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import { BashTool } from "./bash.ts";
-import { DirectoryTreeTool } from "./directory-tree.ts";
+// import { DirectoryTreeTool } from "./directory-tree.ts";
 import { GrepTool } from "./grep.ts";
 import { initCliTools } from "./index.ts";
 import { ReadFileTool } from "./read-file.ts";
@@ -22,7 +22,7 @@ const TOOLS = [
   BashTool.name,
   ReadFileTool.name,
   ReadMultipleFilesTool.name,
-  DirectoryTreeTool.name,
+  // DirectoryTreeTool.name,
 ] as const;
 
 type ToolName = (typeof TOOLS)[number];
