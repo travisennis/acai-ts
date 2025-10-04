@@ -60,7 +60,12 @@ export async function applyFileEdits(
 
     const normalizedContent = normalizeLineEndings(modifiedContent);
     const normalizedOldText = normalizeLineEndings(oldText);
-    modifiedContent = replace(normalizedContent, normalizedOldText, newText);
+    modifiedContent = replace(
+      normalizedContent,
+      normalizedOldText,
+      newText,
+      true,
+    );
     // if (normalizedContent.includes(normalizedOldText)) {
     //   modifiedContent = normalizedContent.replace(normalizedOldText, newText);
     // } else {
