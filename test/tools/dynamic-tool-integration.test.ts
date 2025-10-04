@@ -124,17 +124,20 @@ if (process.env.TOOL_ACTION === 'execute') {
   }
 });
 
-test("Dynamic tool integration - run-tests tool", async () => {
-  // Test that the existing run-tests tool can be loaded and executed
+test("Dynamic tool integration - run-all-checks tool", async () => {
+  // Test that the existing run-all-checks tool can be loaded and executed
   const tools = await loadDynamicTools({
     baseDir: process.cwd(),
   });
 
-  // Verify run-tests tool was loaded
-  assert.ok(tools["dynamic-run-tests"], "Run-tests tool should be loaded");
+  // Verify run-all-checks tool was loaded
+  assert.ok(
+    tools["dynamic-run-all-checks"],
+    "Run-all-checks tool should be loaded",
+  );
 
   // Test tool execution with default parameters
-  const tool = tools["dynamic-run-tests"];
+  const tool = tools["dynamic-run-all-checks"];
   const toolImpl = tool as unknown as {
     execute: (
       args: { dir?: string },
