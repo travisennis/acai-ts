@@ -1,12 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { tool } from "ai";
-import ignore, { type Ignore } from "ignore";
 import { z } from "zod";
 import { config } from "../config.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import { manageOutput } from "../tokens/manage-output.ts";
+import ignore, { type Ignore } from "../utils/ignore.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
 
