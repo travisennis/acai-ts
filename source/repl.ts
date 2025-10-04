@@ -232,9 +232,7 @@ export class Repl {
           providerOptions: aiConfig.getProviderOptions(),
           tools,
           // biome-ignore lint/style/useNamingConvention: third-party controlled
-          experimental_repairToolCall: modelConfig.supportsToolCalling
-            ? toolCallRepair(modelManager, terminal)
-            : undefined,
+          experimental_repairToolCall: toolCallRepair(modelManager),
           abortSignal: signal,
           onAbort(_event) {
             logger.warn("The agent loop was aborted by the user.");
