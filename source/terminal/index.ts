@@ -277,7 +277,7 @@ export class Terminal {
 
   header(header: string, styleFn: StyleInstance = style.cyan): void {
     const cols = this.terminalWidth > 0 ? this.terminalWidth : 80;
-    const width = Math.max(0, cols - header.length - 4);
+    const width = Math.max(0, cols - header.length - 6);
     this.writeln(
       `${style.gray("\n── ")}${styleFn(header)} ${style.gray("─".repeat(width))}  `,
     );
