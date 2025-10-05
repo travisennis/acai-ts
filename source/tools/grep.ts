@@ -135,18 +135,38 @@ export const createGrepTool = (options: {
             });
           }
 
-          const matchCount =
-            managed.content === "No matches found."
-              ? 0
-              : managed.content
-                  .trim()
-                  .split("\n")
-                  .filter((line: string) => {
-                    if (line === "--") {
-                      return false;
-                    }
-                    return /^(.+?):(\d+):(.*)$/.test(line);
-                  }).length;
+          // Extract and filter matches from the content
+          const extractMatches = (content: string): string[] => {
+            if (content === "No matches found.") {
+              return [];
+            }
+            return content
+              .trim()
+              .split("\n")
+              .filter((line: string) => {
+                if (line === "--") {
+                  return false;
+                }
+                return /^(.+?):(\d+):(.*)$/.test(line);
+              });
+          };
+
+          const matches = extractMatches(managed.content);
+          const matchCount = matches.length;
+
+          // Show the last 10 matches as a preview
+          if (matchCount > 0) {
+            const previewMatches = matches.slice(-10); // Get last 10 matches
+
+            sendData?.({
+              event: "tool-update",
+              id: toolCallId,
+              data: {
+                primary: `Last ${previewMatches.length} matches:`,
+                secondary: previewMatches,
+              },
+            });
+          }
 
           sendData?.({
             event: "tool-completion",
