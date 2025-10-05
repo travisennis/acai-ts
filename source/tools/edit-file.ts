@@ -1,9 +1,10 @@
+import { readFile, writeFile } from "node:fs/promises";
 import { tool } from "ai";
+import { createTwoFilesPatch } from "diff";
 import { z } from "zod";
 import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
 import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
-import { applyFileEdits } from "./file-editing-utils.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { SendData } from "./types.ts";
 
@@ -27,7 +28,8 @@ export const createEditFileTool = async ({
     [EditFileTool.name]: tool({
       description:
         "Make line-based edits to a text file. Each edit replaces exact line sequences " +
-        "with new content. Returns a git-style diff showing the changes made. " +
+        "with new content. Exact literal matching is used: no whitespace, indentation, escape, or newline normalization is applied when locating matches. " +
+        "Provide enough context so the match is unique; otherwise the operation errors. Returns a git-style diff showing the changes made. " +
         "Only works within allowed directories. " +
         "Note: Special characters in oldText must be properly escaped for JSON (e.g., backticks as \\`...\\`). " +
         "Multi-line strings require exact character-by-character matching including whitespace.",
@@ -180,3 +182,105 @@ export const createEditFileTool = async ({
     }),
   };
 };
+
+// file editing and diffing utilities
+function normalizeLineEndings(text: string): string {
+  return text.replace(/\r\n/g, "\n");
+}
+
+function createUnifiedDiff(
+  originalContent: string,
+  newContent: string,
+  filepath = "file",
+): string {
+  // Ensure consistent line endings for diff
+  const normalizedOriginal = normalizeLineEndings(originalContent);
+  const normalizedNew = normalizeLineEndings(newContent);
+  return createTwoFilesPatch(
+    filepath,
+    filepath,
+    normalizedOriginal,
+    normalizedNew,
+    "original",
+    "modified",
+  );
+}
+
+interface FileEdit {
+  oldText: string;
+  newText: string;
+}
+
+export async function applyFileEdits(
+  filePath: string,
+  edits: FileEdit[],
+  dryRun = false,
+  abortSignal?: AbortSignal,
+): Promise<string> {
+  if (abortSignal?.aborted) {
+    throw new Error("File edit operation aborted");
+  }
+  // Read file content literally with signal
+  const originalContent = await readFile(filePath, {
+    encoding: "utf-8",
+    signal: abortSignal,
+  });
+
+  if (edits.find((edit) => edit.oldText.length === 0)) {
+    throw new Error(
+      "Invalid oldText in edit. The value of oldText must be at least one character",
+    );
+  }
+
+  // Apply edits sequentially using strict literal, unique matches
+  let modifiedContent = originalContent;
+  for (const edit of edits) {
+    if (abortSignal?.aborted) {
+      throw new Error("File edit operation aborted during processing");
+    }
+    const { oldText, newText } = edit; // Use literal oldText and newText
+
+    // Strict literal match: find exactly one occurrence without any normalization
+    const firstIndex = modifiedContent.indexOf(oldText);
+    if (firstIndex === -1) {
+      throw new Error("oldText not found in content");
+    }
+    const secondIndex = modifiedContent.indexOf(
+      oldText,
+      firstIndex + oldText.length,
+    );
+    if (secondIndex !== -1) {
+      throw new Error(
+        "oldText found multiple times and requires more code context to uniquely identify the intended match",
+      );
+    }
+
+    modifiedContent =
+      modifiedContent.slice(0, firstIndex) +
+      newText +
+      modifiedContent.slice(firstIndex + oldText.length);
+  }
+
+  // Create unified diff (createUnifiedDiff normalizes line endings internally for diffing)
+  const diff = createUnifiedDiff(originalContent, modifiedContent, filePath);
+
+  // Format diff with appropriate number of backticks
+  let numBackticks = 3;
+  while (diff.includes("`".repeat(numBackticks))) {
+    numBackticks++;
+  }
+  const formattedDiff = `${"`".repeat(numBackticks)}diff\n${diff}${"`".repeat(numBackticks)}\n\n`;
+
+  if (!dryRun) {
+    if (abortSignal?.aborted) {
+      throw new Error("File edit operation aborted before writing");
+    }
+    // Write the modified content with signal
+    await writeFile(filePath, modifiedContent, {
+      encoding: "utf-8",
+      signal: abortSignal,
+    });
+  }
+
+  return formattedDiff;
+}
