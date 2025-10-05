@@ -166,6 +166,12 @@ function render<T>(
     lines.push(`${ANSI.dim}Page ${currentPage}/${pageCount}${ANSI.reset}`);
   }
 
+  // Add keyboard shortcuts help
+  lines.push("");
+  lines.push(
+    `${ANSI.dim}Controls: ↑↓ move, space toggle, a select all, i invert, enter confirm, ctrl+c cancel${ANSI.reset}`,
+  );
+
   return lines.join("\n");
 }
 
