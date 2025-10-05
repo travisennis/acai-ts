@@ -1,21 +1,10 @@
-import type { Interface as ReadlineInterface } from "node:readline";
-import { createInterface } from "node:readline";
 import { initExecutionEnvironment } from "../execution/index.ts";
+import { input } from "../terminal/input-prompt.ts";
 import style from "../terminal/style.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 // Command execution timeout in milliseconds
 const DEFAULT_TIMEOUT = 1.5 * 60 * 1000; // 1.5 minutes
-const INTERACTIVE_REGEX = /tty|terminal|interactive|no input/i;
-
-// Helper to promisify rl.question
-function questionAsync(rl: ReadlineInterface, query: string): Promise<string> {
-  return new Promise((resolve) => {
-    rl.question(query, (answer: string) => {
-      resolve(answer);
-    });
-  });
-}
 
 export const shellCommand = (options: CommandOptions): ReplCommand => {
   const { terminal, promptManager, tokenCounter } = options;
@@ -34,6 +23,16 @@ export const shellCommand = (options: CommandOptions): ReplCommand => {
       }
 
       const execEnv = await initExecutionEnvironment();
+
+      const colorEnv: Record<string, string> = {
+        ["FORCE_COLOR"]: "1",
+        ["CLICOLOR"]: "1",
+        ["CLICOLOR_FORCE"]: "1",
+        ["TERM"]: process.env["TERM"] ?? "xterm-256color",
+        ["COLORTERM"]: process.env["COLORTERM"] ?? "truecolor",
+        ["npm_config_color"]: "true",
+      };
+
       const { output, exitCode, duration } = await execEnv.executeCommand(
         commandStr,
         {
@@ -42,6 +41,7 @@ export const shellCommand = (options: CommandOptions): ReplCommand => {
           preserveOutputOnError: true,
           captureStderr: true,
           throwOnError: false,
+          env: colorEnv,
         },
       );
 
@@ -50,35 +50,28 @@ export const shellCommand = (options: CommandOptions): ReplCommand => {
         style.gray(`Exit code: ${exitCode}, Duration: ${duration}ms`),
       );
 
-      terminal.write(output);
-
-      // Check for interactive
-      if (exitCode !== 0 && INTERACTIVE_REGEX.test(output)) {
-        terminal.error("Interactive commands are not supported.");
-        return "continue";
-      }
+      terminal.writeln(output);
 
       // Prompt for context addition
-      const rl = createInterface({
-        input: process.stdin,
-        output: process.stdout,
+      const message =
+        "Would you like to add this output to the prompt context for AI reference? [y/N]";
+      const userChoice = await input({
+        message,
+        validate: (input: string) => {
+          const normalized = input.toLowerCase().trim();
+          if (normalized === "y" || normalized === "n" || normalized === "") {
+            return true;
+          }
+          return "Please enter 'y' for yes or 'n' for no";
+        },
+        default: "N",
       });
-      try {
-        const answer = await questionAsync(
-          rl,
-          "\nWould you like to add this output to the prompt context for AI reference? [y/N]: ",
+      if (userChoice.toLowerCase() === "y") {
+        const tokenCount = tokenCounter.count(output);
+        promptManager.addContext(output);
+        terminal.success(
+          `Output added to prompt context. (${tokenCount} tokens)`,
         );
-        rl.close();
-        if (answer.toLowerCase() === "y") {
-          const tokenCount = tokenCounter.count(output);
-          promptManager.addContext(output);
-          terminal.success(
-            `Output added to prompt context. (${tokenCount} tokens)`,
-          );
-        }
-      } catch (_e) {
-        rl.close();
-        // Ignore, optional
       }
       return "continue";
     },
