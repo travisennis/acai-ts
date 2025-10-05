@@ -69,7 +69,7 @@ export async function applyFileEdits(
     );
     if (secondIndex !== -1) {
       throw new Error(
-        "oldString found multiple times and requires more code context to uniquely identify the intended match",
+        "oldText found multiple times and requires more code context to uniquely identify the intended match",
       );
     }
 
