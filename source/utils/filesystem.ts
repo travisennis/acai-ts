@@ -80,8 +80,11 @@ export async function clearDirectory(
   try {
     // Check if directory exists and is accessible
     try {
-      const stats = await fsPromises.stat(resolvedPath);
-      if (!stats.isDirectory()) {
+      const lst = await fsPromises.lstat(resolvedPath);
+      if (lst.isSymbolicLink()) {
+        throw new Error(`Refusing to clear symlink directory: ${resolvedPath}`);
+      }
+      if (!lst.isDirectory()) {
         throw new Error(`Path is not a directory: ${resolvedPath}`);
       }
     } catch (error) {
