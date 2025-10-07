@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { globby } from "globby";
 import { config } from "../config.ts";
 import { editor } from "../terminal/editor-prompt.ts";
 import style from "../terminal/style.ts";
+import { glob } from "../utils/glob.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 const isoDateRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/;
@@ -11,7 +11,7 @@ const isoDateRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/;
 // Function to find the most recent log file
 async function findMostRecentLog(logDir: string): Promise<string | null> {
   const logPattern = join(logDir, "*-repl-message.json");
-  const files = await globby(logPattern);
+  const files = await glob(logPattern);
 
   if (files.length === 0) {
     return null;
@@ -26,15 +26,9 @@ async function findMostRecentLog(logDir: string): Promise<string | null> {
       // Match the ISO date string at the beginning of the filename
       const match = filename.match(isoDateRegex);
       if (match?.[1]) {
-        try {
-          const date = new Date(match[1]);
-          // Check if the date is valid
-          if (!Number.isNaN(date.getTime())) {
-            return { file, date };
-          }
-        } catch (e) {
-          // Ignore files with invalid date strings
-          console.warn(`Could not parse date from filename: ${filename}`, e);
+        const date = new Date(match[1]);
+        if (!Number.isNaN(date.getTime())) {
+          return { file, date };
         }
       }
       return null; // Exclude files that don't match the pattern or have invalid dates

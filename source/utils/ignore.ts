@@ -623,7 +623,7 @@ checkPath.isNotRelative = isNotRelative;
 // On windows, the following function will be replaced
 checkPath.convert = (p: string): string => p;
 
-export interface IgnoreOptions {
+interface IgnoreOptions {
   ignorecase?: boolean;
   ignoreCase?: boolean;
   allowRelativePaths?: boolean;
@@ -847,13 +847,6 @@ export class Ignore {
 
 const factory = (options?: IgnoreOptions): Ignore => new Ignore(options);
 
-const isPathValid = (path: unknown): boolean =>
-  checkPath(
-    (path && checkPath.convert?.(path as string)) as string | null | undefined,
-    path,
-    RETURN_FALSE,
-  );
-
 const setupWindows = (): void => {
   /* eslint no-control-regex: "off" */
   const makePosix = (str: string): string =>
@@ -887,8 +880,6 @@ export default factory;
 //   it is still widely misused by a lot of libraries in github
 // Ref: https://github.com/search?q=ignore.default%28%29&type=code
 factory.default = factory;
-
-export { isPathValid };
 
 // For testing purposes
 (factory as unknown as Record<string | symbol, unknown>)[

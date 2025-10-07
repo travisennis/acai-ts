@@ -62,7 +62,7 @@
     "cli-table3": "^0.6.5",
     "diff": "^8.0.2",
     "duck-duck-scrape": "^2.2.7",
-    "globby": "^15.0.0",
+    "fast-glob": "^3.3.3",
     "highlight.js": "^11.11.1",
     "jsonrepair": "^3.13.1",
     "marked": "16.3.0",
