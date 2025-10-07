@@ -18,7 +18,13 @@ const toolDescription = `Executes Typescript code in a separate Node.js process 
 - Examples: \`import fs from 'node:fs'\` NOT \`const fs = require('fs')\`
 - Add file extensions for relative imports: \`import { utils } from './utils.js'\`
 
-These scripts are run in the \`${process.cwd}/.acai-ci-tmp\`. Keep this in mind if you intend to import or reference files from this project in your script.
+These scripts are run in the \`${process.cwd()}/.acai-ci-tmp\`. You can import project source files using relative paths from the project root with .ts extensions:
+
+\`\`\` typescript
+import { functionName } from '../source/path/to/module.ts';
+\`\`\`
+
+The interpreter supports ES Modules with TypeScript files directly.
 
 Timeout defaults to 5 seconds and can be extended up to 60 seconds.`;
 
