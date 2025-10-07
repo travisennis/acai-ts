@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
-import { globby } from "globby";
 import { formatFile } from "../formatting.ts";
 import { checkbox } from "../terminal/checkbox-prompt.ts";
 import { TokenCounter } from "../tokens/counter.ts";
+import { glob } from "../utils/glob.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const filesCommand = ({
@@ -20,7 +20,7 @@ export const filesCommand = ({
         let workingFiles: string[] = [];
         if (!args || args.length === 0) {
           // Get all files in the current directory
-          const foundFiles = await globby("**/*", { gitignore: true });
+          const foundFiles = await glob("**/*", { gitignore: true });
 
           const selectedFiles = await checkbox<string>({
             message: "Select files to include:",
@@ -37,7 +37,7 @@ export const filesCommand = ({
           workingFiles = selectedFiles;
         } else {
           const patternList = args.filter(Boolean);
-          const foundFiles = await globby(patternList, { gitignore: true });
+          const foundFiles = await glob(patternList, { gitignore: true });
 
           if (foundFiles.length === 0) {
             terminal.warn("No files found matching the pattern(s)");

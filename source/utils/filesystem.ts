@@ -1,5 +1,38 @@
-import fs from "node:fs/promises";
-import path from "node:path";
+import * as fsPromises from "node:fs/promises";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+
+export function toPath(urlOrPath: URL | string): string {
+  return urlOrPath instanceof URL ? fileURLToPath(urlOrPath) : urlOrPath;
+}
+
+export function slash(path: string): string {
+  const isExtendedLengthPath = path.startsWith("\\\\?\\");
+
+  if (isExtendedLengthPath) {
+    return path;
+  }
+
+  return path.replace(/\\/g, "/");
+}
+
+export async function isDirectory(filePath: string): Promise<boolean> {
+  if (typeof filePath !== "string") {
+    throw new TypeError(`Expected a string, got ${typeof filePath}`);
+  }
+
+  try {
+    const stats = await fsPromises.stat(filePath);
+    return stats.isDirectory();
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err.code === "ENOENT") {
+      return false;
+    }
+
+    throw error;
+  }
+}
 
 /**
  * Safely clears all contents of a directory
@@ -11,7 +44,7 @@ export async function clearDirectory(directoryPath: string): Promise<void> {
   try {
     // Check if directory exists
     try {
-      const stats = await fs.stat(directoryPath);
+      const stats = await fsPromises.stat(directoryPath);
       if (!stats.isDirectory()) {
         throw new Error(`Path is not a directory: ${directoryPath}`);
       }
@@ -25,7 +58,9 @@ export async function clearDirectory(directoryPath: string): Promise<void> {
     }
 
     // Read directory contents
-    const entries = await fs.readdir(directoryPath, { withFileTypes: true });
+    const entries = await fsPromises.readdir(directoryPath, {
+      withFileTypes: true,
+    });
 
     // Delete all entries
     const deletionPromises = entries.map(async (entry) => {
@@ -34,10 +69,10 @@ export async function clearDirectory(directoryPath: string): Promise<void> {
       if (entry.isDirectory()) {
         // Recursively delete subdirectories
         await clearDirectory(entryPath);
-        await fs.rmdir(entryPath);
+        await fsPromises.rmdir(entryPath);
       } else {
         // Delete files
-        await fs.unlink(entryPath);
+        await fsPromises.unlink(entryPath);
       }
     });
 
@@ -45,7 +80,7 @@ export async function clearDirectory(directoryPath: string): Promise<void> {
     await Promise.allSettled(deletionPromises);
 
     // Verify directory is empty
-    const remainingEntries = await fs.readdir(directoryPath);
+    const remainingEntries = await fsPromises.readdir(directoryPath);
     if (remainingEntries.length > 0) {
       throw new Error(
         `Failed to clear directory completely. Remaining entries: ${remainingEntries.join(", ")}`,

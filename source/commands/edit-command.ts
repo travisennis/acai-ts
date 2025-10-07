@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
-import { globby } from "globby";
 import { editor } from "../terminal/editor-prompt.ts";
 import { search } from "../terminal/search-prompt.ts";
+import { glob } from "../utils/glob.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const editCommand = ({ terminal }: CommandOptions): ReplCommand => {
@@ -34,7 +34,7 @@ export const editCommand = ({ terminal }: CommandOptions): ReplCommand => {
               return [];
             }
 
-            const foundFiles = await globby(`**/*${input}*`, {
+            const foundFiles = await glob(`**/*${input}*`, {
               gitignore: true,
             });
 
