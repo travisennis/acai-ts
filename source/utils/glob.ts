@@ -7,6 +7,13 @@ import * as fastGlob from "fast-glob";
 import { isDirectory, slash, toPath } from "./filesystem.ts";
 import { Ignore } from "./ignore.ts";
 
+// Cache for ignore patterns to avoid repeated IO
+const ignoreCache = new Map<
+  string,
+  { patterns: string[]; timestamp: number }
+>();
+const CACHE_TTL = 60000; // 1 minute TTL
+
 type GlobTask = {
   readonly patterns: string[];
   readonly options: Options;
@@ -65,6 +72,11 @@ const assertPatternsInput = (patterns: unknown[]): void => {
   }
 };
 
+// Pre-compiled regexes for performance
+const GLOBSTAR_DIRECTORY_REGEX = /\*\*\/([^/]+)$/;
+const WILDCARD_CHARS_REGEX = /[*?[\]{}]/;
+const EXTENSION_PATTERN_REGEX = /\.[a-zA-Z0-9]{1,5}$/;
+
 const normalizePathForDirectoryGlob = (
   filePath: string,
   cwd: string,
@@ -74,14 +86,18 @@ const normalizePathForDirectoryGlob = (
 };
 
 const shouldExpandGlobstarDirectory = (pattern: string): boolean => {
-  const match = pattern?.match(/\*\*\/([^/]+)$/);
+  const match = pattern?.match(GLOBSTAR_DIRECTORY_REGEX);
   if (!match) {
     return false;
   }
 
   const dirname = match[1];
-  const hasWildcards = /[*?[\]{}]/.test(dirname);
-  const hasExtension = nodePath.extname(dirname) && !dirname.startsWith(".");
+  const hasWildcards = WILDCARD_CHARS_REGEX.test(dirname);
+
+  // Only consider it an extension if it looks like a file extension pattern
+  // (e.g., contains common extension chars and doesn't look like a directory name)
+  const hasExtension =
+    EXTENSION_PATTERN_REGEX.test(dirname) && !dirname.startsWith(".");
 
   return !hasWildcards && !hasExtension;
 };
@@ -100,12 +116,18 @@ const getDirectoryGlob = ({
       ? `.${extensions.length > 1 ? `{${extensions.join(",")}}` : extensions[0]}`
       : "";
   return files
-    ? files.map((file) =>
-        nodePath.posix.join(
+    ? files.map((file) => {
+        // Don't append extension glob if file already has wildcards, extension, or looks like a pattern
+        const hasGlobChars = /[*?[\]{}]/.test(file);
+        const hasExtension = nodePath.extname(file);
+        const shouldAppendExtension =
+          extensionGlob && !hasGlobChars && !hasExtension;
+
+        return nodePath.posix.join(
           directoryPath,
-          `**/${nodePath.extname(file) ? file : `${file}${extensionGlob}`}`,
-        ),
-      )
+          `**/${shouldAppendExtension ? `${file}${extensionGlob}` : file}`,
+        );
+      })
     : [
         nodePath.posix.join(
           directoryPath,
@@ -165,8 +187,10 @@ const checkCwdOption = (cwd: string | undefined): void => {
   let stat: fs.Stats;
   try {
     stat = fs.statSync(cwd);
-  } catch {
-    return;
+  } catch (_error) {
+    throw new Error(
+      `The \`cwd\` option must point to an existing directory: ${cwd}`,
+    );
   }
 
   if (!stat.isDirectory()) {
@@ -175,15 +199,16 @@ const checkCwdOption = (cwd: string | undefined): void => {
 };
 
 const normalizeOptions = (options: Options = {}): Options => {
+  const resolvedCwd = options.cwd ? toPath(options.cwd) : undefined;
   const normalizedOptions: Options = {
     ...options,
     ignore: options.ignore ?? [],
     expandDirectories: options.expandDirectories ?? true,
-    cwd: options.cwd ? toPath(options.cwd) : undefined,
+    cwd: resolvedCwd,
   };
 
-  if (normalizedOptions.cwd) {
-    checkCwdOption(toPath(normalizedOptions.cwd));
+  if (resolvedCwd) {
+    checkCwdOption(resolvedCwd);
   }
 
   return normalizedOptions;
@@ -218,22 +243,31 @@ const getFilter = async (
   return createFilterFunction(isIgnoredFn);
 };
 
+// No-op predicate for when no ignore filtering is needed
+const noOpPredicate = (): boolean => false;
+
 const createFilterFunction = (
   isIgnored: ((path: string) => boolean) | false,
 ): ((fastGlobResult: string | Entry) => boolean) => {
   const seen = new Set<string>();
+  const ignorePredicate = isIgnored === false ? noOpPredicate : isIgnored;
 
   return (fastGlobResult) => {
-    const pathKey = nodePath.normalize(
-      typeof fastGlobResult === "string"
-        ? fastGlobResult
-        : ((fastGlobResult as Entry).path ?? String(fastGlobResult)),
-    );
+    let pathKey: string;
+    if (typeof fastGlobResult === "string") {
+      pathKey = fastGlobResult;
+    } else {
+      const entry = fastGlobResult as Entry;
+      if (!entry.path) {
+        // Entry without path is invalid - skip it
+        return false;
+      }
+      pathKey = entry.path;
+    }
+    // Normalize to POSIX for consistent cross-platform behavior
+    pathKey = slash(nodePath.normalize(pathKey));
 
-    if (
-      seen.has(pathKey) ||
-      (typeof isIgnored === "boolean" ? isIgnored : isIgnored(pathKey))
-    ) {
+    if (seen.has(pathKey) || ignorePredicate(pathKey)) {
       return false;
     }
 
@@ -262,14 +296,21 @@ const convertNegativePatterns = (
     );
 
     if (index === -1) {
-      tasks.push({ patterns, options });
+      tasks.push({ patterns: localPatterns, options });
       break;
     }
 
     const ignorePattern = localPatterns[index].slice(1);
 
-    for (const task of tasks) {
-      task.options.ignore?.push(ignorePattern);
+    // Create immutable copies for all existing tasks
+    for (let i = 0; i < tasks.length; i++) {
+      tasks[i] = {
+        ...tasks[i],
+        options: {
+          ...tasks[i].options,
+          ignore: [...(tasks[i].options.ignore ?? []), ignorePattern],
+        },
+      };
     }
 
     if (index !== 0) {
@@ -387,12 +428,12 @@ const defaultIgnoredDirectories = [
   "**/flow-typed",
   "**/coverage",
   "**/.git",
-];
+] as const;
 
 const ignoreFilesGlobOptions = {
   absolute: true,
   dot: true,
-};
+} as const;
 
 const GITIGNORE_FILES_PATTERN = "**/.gitignore";
 
@@ -441,7 +482,22 @@ const parseIgnoreFile = (
 
   return file.content
     .split(/\r?\n/)
-    .filter((line) => line && !line.startsWith("#"))
+    .map((line) => line.trim()) // Trim whitespace
+    .filter((line) => {
+      // Skip empty lines and whole-line comments (not inline comments)
+      if (!line || line.startsWith("#")) {
+        return false;
+      }
+      // Handle escaped comments: lines starting with \# are not comments
+      if (line.startsWith("\\#")) {
+        return line.slice(1); // Remove the escape
+      }
+      return true;
+    })
+    .map((pattern) => {
+      // Handle escaped spaces: replace \\  with space
+      return pattern.replace(/\\\\ /g, " ");
+    })
     .map((pattern) => applyBaseToPattern(pattern, base));
 };
 
@@ -455,7 +511,7 @@ const toRelativePath = (
       return path.relative(normalizedCwd, fileOrDirectory);
     }
 
-    throw new Error(`Path ${fileOrDirectory} is not in cwd ${cwd}`);
+    return undefined;
   }
 
   // Normalize relative paths:
@@ -479,12 +535,33 @@ const getIsIgnoredPredicate = (
   files: Array<{ filePath: string; content: string }>,
   cwd: string,
 ): GlobFilterFunction => {
-  const patterns = files.flatMap((file) => parseIgnoreFile(file, cwd));
+  // Sort files by path depth (ascending) so deeper .gitignore files override shallower ones
+  const sortedFiles = [...files].sort((a, b) => {
+    const depthA = a.filePath.split(nodePath.sep).length;
+    const depthB = b.filePath.split(nodePath.sep).length;
+    return depthA - depthB;
+  });
+
+  // Generate cache key and check cache
+  const cacheKey = sortedFiles
+    .map((f) => `${f.filePath}:${f.content.length}`)
+    .join("|");
+  const now = Date.now();
+  const cached = ignoreCache.get(cacheKey);
+
+  let patterns: string[];
+  if (cached && now - cached.timestamp < CACHE_TTL) {
+    patterns = cached.patterns;
+  } else {
+    patterns = sortedFiles.flatMap((file) => parseIgnoreFile(file, cwd));
+    ignoreCache.set(cacheKey, { patterns, timestamp: now });
+  }
+
   const ignoreInstance = new Ignore().add(patterns);
 
   return (fileOrDirectory: URL | string) => {
-    let fileOrDirectoryAsPath = toPath(fileOrDirectory);
-    fileOrDirectoryAsPath = toRelativePath(fileOrDirectoryAsPath, cwd) ?? "";
+    let fileOrDirectoryAsPath: string | undefined = toPath(fileOrDirectory);
+    fileOrDirectoryAsPath = toRelativePath(fileOrDirectoryAsPath, cwd);
     // If path is outside cwd (undefined), it can't be ignored by patterns in cwd
     if (fileOrDirectoryAsPath === undefined) {
       return false;
