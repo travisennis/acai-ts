@@ -118,7 +118,7 @@ export async function clearDirectory(
             // Recursively delete subdirectories
             await clearDirectory(entryPath);
             // Use rm instead of deprecated rmdir
-            await fsPromises.rm(entryPath, { recursive: false });
+            await fsPromises.rm(entryPath, { recursive: true });
           } else {
             // Delete files using rm for consistency
             await fsPromises.rm(entryPath, { force: false });
