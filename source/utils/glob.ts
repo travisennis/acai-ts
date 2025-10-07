@@ -2,8 +2,7 @@ import * as fs from "node:fs";
 import { readFile } from "node:fs/promises";
 import path, * as nodePath from "node:path";
 import * as process from "node:process";
-import type { Entry, Options as FastGlobOptions } from "fast-glob";
-import * as fastGlob from "fast-glob";
+import fg, { type Entry, type Options as FastGlobOptions } from "fast-glob";
 import { isDirectory, slash, toPath } from "./filesystem.ts";
 import { Ignore } from "./ignore.ts";
 
@@ -158,6 +157,11 @@ const directoryToGlob = async (
       // Expand globstar directory patterns like **/dirname to **/dirname/**
       if (shouldExpandGlobstarDirectory(checkPattern)) {
         return getDirectoryGlob({ directoryPath, files, extensions });
+      }
+
+      // If pattern contains any glob wildcard, do not stat; leave as-is
+      if (/[*?[\]{}]/.test(checkPattern)) {
+        return directoryPath;
       }
 
       // Original logic for checking actual directories
@@ -408,7 +412,7 @@ export const glob = normalizeArguments(
 
     const results = await Promise.all(
       tasks.map((task) =>
-        fastGlob(task.patterns, convertOptionsForFastGlob(task.options)),
+        fg(task.patterns, convertOptionsForFastGlob(task.options)),
       ),
     );
     return unionFastGlobResults(results, filter) as string[];
@@ -416,7 +420,7 @@ export const glob = normalizeArguments(
 );
 
 // Helper function to convert our Options to fast-glob compatible options
-const convertOptionsForFastGlob = (options: Options): fastGlob.Options => {
+const convertOptionsForFastGlob = (options: Options): FastGlobOptions => {
   const { cwd, ...rest } = options;
   return {
     ...rest,
@@ -479,56 +483,26 @@ const parseIgnoreFile = (
   cwd: string,
 ): string[] => {
   const base = slash(path.relative(cwd, path.dirname(file.filePath)));
-
-  return file.content
-    .split(/\r?\n/)
-    .map((line) => line.trim()) // Trim whitespace
-    .filter((line) => {
-      // Skip empty lines and whole-line comments (not inline comments)
-      if (!line || line.startsWith("#")) {
-        return false;
-      }
-      // Handle escaped comments: lines starting with \# are not comments
-      if (line.startsWith("\\#")) {
-        return line.slice(1); // Remove the escape
-      }
-      return true;
-    })
-    .map((pattern) => {
-      // Handle escaped spaces: replace \\  with space
-      return pattern.replace(/\\\\ /g, " ");
-    })
-    .map((pattern) => applyBaseToPattern(pattern, base));
+  const patterns: string[] = [];
+  for (const raw of file.content.split(/\r?\n/)) {
+    if (raw === "") continue; // blank line
+    if (raw.startsWith("#")) continue; // comment line (only when not escaped)
+    const line = raw; // preserve escapes like \# and \  for Ignore engine
+    patterns.push(applyBaseToPattern(line, base));
+  }
+  return patterns;
 };
 
 const toRelativePath = (
   fileOrDirectory: string,
   cwd: string,
 ): string | undefined => {
-  const normalizedCwd = slash(cwd);
-  if (path.isAbsolute(fileOrDirectory)) {
-    if (slash(fileOrDirectory).startsWith(normalizedCwd)) {
-      return path.relative(normalizedCwd, fileOrDirectory);
-    }
-
-    return undefined;
-  }
-
-  // Normalize relative paths:
-  // - Git treats './foo' as 'foo' when checking against patterns
-  // - Patterns starting with './' in .gitignore are invalid and don't match anything
-  // - The ignore library expects normalized paths without './' prefix
-  if (fileOrDirectory.startsWith("./")) {
-    return fileOrDirectory.slice(2);
-  }
-
-  // Paths with ../ point outside cwd and cannot match patterns from this directory
-  // Return undefined to indicate this path is outside scope
-  if (fileOrDirectory.startsWith("../")) {
-    return undefined;
-  }
-
-  return fileOrDirectory;
+  const abs = path.isAbsolute(fileOrDirectory)
+    ? fileOrDirectory
+    : path.resolve(cwd, fileOrDirectory);
+  const rel = path.relative(cwd, abs);
+  if (rel.startsWith("..") || path.isAbsolute(rel)) return undefined;
+  return rel.startsWith("./") ? rel.slice(2) : rel;
 };
 
 const getIsIgnoredPredicate = (
@@ -542,10 +516,20 @@ const getIsIgnoredPredicate = (
     return depthA - depthB;
   });
 
-  // Generate cache key and check cache
-  const cacheKey = sortedFiles
-    .map((f) => `${f.filePath}:${f.content.length}`)
-    .join("|");
+  // Generate cache key using file paths + content hash
+  const hashString = (s: string): string => {
+    // FNV-1a 32-bit
+    let h = 0x811c9dc5;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
+    }
+    // force to uint32 and hex
+    return (h >>> 0).toString(16);
+  };
+  const cacheKey =
+    `${cwd}|` +
+    sortedFiles.map((f) => `${f.filePath}:${hashString(f.content)}`).join("|");
   const now = Date.now();
   const cached = ignoreCache.get(cacheKey);
 
@@ -587,7 +571,7 @@ const isIgnoredByIgnoreFiles = async (
 ): Promise<GlobFilterFunction> => {
   const { cwd, suppressErrors, deep, ignore } = normalizeIgnoreOptions(options);
 
-  const paths = await fastGlob(patterns as string | string[], {
+  const paths = await fg(patterns as string | string[], {
     cwd,
     suppressErrors,
     deep,
