@@ -328,6 +328,9 @@ export class Repl {
               lastType = "text";
             }
           } else if (chunk.type === "tool-call") {
+            terminal.writeln(
+              `${style.blue.bold("● Tool Call:")} ${chunk.toolName}`,
+            );
             terminal.stopProgress();
           } else if (chunk.type === "tool-result") {
             const messages = toolEvents.get(chunk.toolCallId);
