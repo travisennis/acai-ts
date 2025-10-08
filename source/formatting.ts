@@ -1,39 +1,17 @@
 import path from "node:path";
+import { getCodeblockFromFilePath } from "./utils/filetype-detection.ts";
 
 const MD_TRIPLE_QUOTE = "```";
 
 export type FormatType = "xml" | "markdown" | "bracket";
-
-const codeBlockExtensions: Record<string, string> = {
-  js: "javascript",
-  ts: "typescript",
-  py: "python",
-  rb: "ruby",
-  java: "java",
-  cpp: "cpp",
-  cs: "csharp",
-  go: "go",
-  rs: "rust",
-  php: "php",
-  html: "html",
-  css: "css",
-  json: "json",
-  yml: "yaml",
-  yaml: "yaml",
-  md: "markdown",
-  sql: "sql",
-  sh: "bash",
-  bash: "bash",
-  txt: "text",
-};
 
 export function formatFile(
   file: string,
   content: string,
   format: FormatType,
 ): string {
-  const fileExtension = path.extname(file).slice(1);
-  const codeBlockName = codeBlockExtensions[fileExtension] || fileExtension;
+  const codeBlockName =
+    getCodeblockFromFilePath(file) || path.extname(file).slice(1);
   switch (format) {
     case "xml":
       return `<file>\n<name>${file}</name>\n<content>\n${content}\n</content>\n</file>`;
@@ -64,8 +42,8 @@ export function formatUrl(
 }
 
 export function formatCodeBlock(file: string, content: string): string {
-  const fileExtension = path.extname(file).slice(1);
-  const codeBlockName = codeBlockExtensions[fileExtension] || fileExtension;
+  const codeBlockName =
+    getCodeblockFromFilePath(file) || path.extname(file).slice(1);
   return `${MD_TRIPLE_QUOTE} ${codeBlockName}\n${content}\n${MD_TRIPLE_QUOTE}`;
 }
 
