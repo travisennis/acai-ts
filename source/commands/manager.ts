@@ -43,6 +43,7 @@ export class CommandManager {
   private toolEvents: Map<string, Message[]>;
   private toolExecutor?: ToolExecutor;
   private promptHistory: string[];
+  private initialized: boolean;
 
   constructor({
     promptManager,
@@ -67,10 +68,13 @@ export class CommandManager {
     this.toolEvents = toolEvents;
     this.toolExecutor = toolExecutor;
     this.promptHistory = promptHistory;
-    this.initializeCommmands();
+    this.initialized = false;
   }
 
-  initializeCommmands() {
+  async initializeCommmands() {
+    if (this.initialized) {
+      return;
+    }
     // Import and register each command
     const options: CommandOptions = {
       promptManager: this.promptManager,
@@ -125,17 +129,46 @@ export class CommandManager {
         this.commands.set(alias, cmd);
       }
     }
+
+    const promptCmd = this.commands.get("/prompt");
+    if (promptCmd) {
+      const promptSubmCommands = await promptCmd.getSubCommands();
+
+      for (const cmd of promptSubmCommands) {
+        this.commands.set(`/${cmd}`, {
+          command: `/${cmd}`,
+          description: "",
+          execute: (): Promise<"break" | "continue" | "use"> => {
+            return promptCmd.execute([cmd]);
+          },
+          getSubCommands: (): Promise<string[]> => Promise.resolve([]),
+        });
+      }
+    }
+
+    this.initialized = true;
+  }
+
+  private ensureInitialized(): void {
+    if (!this.initialized) {
+      throw new Error(
+        "Commands have not been initialized. Call initializeCommmands() first.",
+      );
+    }
   }
 
   getCommands() {
+    this.ensureInitialized();
     return Array.from(this.commands.keys()).sort();
   }
 
   async getSubCommands(command: string): Promise<string[]> {
+    this.ensureInitialized();
     return (await this.commands.get(command)?.getSubCommands()) ?? [];
   }
 
   async handle({ userInput }: { userInput: string }) {
+    this.ensureInitialized();
     const commandArgs = userInput.split(" ");
     const command = commandArgs.at(0);
     const args = commandArgs.slice(1);

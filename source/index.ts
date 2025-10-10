@@ -216,6 +216,8 @@ async function main() {
     promptHistory,
   });
 
+  await commands.initializeCommmands();
+
   if (flags.oneshot === true) {
     const cliProcess = new Cli({
       promptManager,
