@@ -1,4 +1,4 @@
-import { createOpenAI } from "@ai-sdk/openai";
+// import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { LanguageModelV2 } from "@ai-sdk/provider";
 import { openrouter } from "@openrouter/ai-sdk-provider";
@@ -17,16 +17,16 @@ const openRouterClient = createOpenAICompatible({
   },
 });
 
-const openRouterResponseClient = createOpenAI({
-  // biome-ignore lint/style/useNamingConvention: third-party controlled
-  baseURL: "https://openrouter.ai/api/alpha",
-  name: "openrouter",
-  apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
-  headers: {
-    "HTTP-Referer": "https://github.com/travisennis/acai-ts",
-    "X-Title": "acai",
-  },
-});
+// const openRouterResponseClient = createOpenAI({
+//   // biome-ignore lint/style/useNamingConvention: third-party controlled
+//   baseURL: "https://openrouter.ai/api/alpha",
+//   name: "openrouter",
+//   apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
+//   headers: {
+//     "HTTP-Referer": "https://github.com/travisennis/acai-ts",
+//     "X-Title": "acai",
+//   },
+// });
 
 const openrouterModels = {
   "deepseek-v3": openRouterClient("deepseek/deepseek-chat-v3-0324"),
@@ -60,7 +60,7 @@ const openrouterModels = {
   "grok-4-fast-free": openrouter("x-ai/grok-4-fast:free", {
     parallelToolCalls: false,
   }) as LanguageModelV2,
-  "gpt-5-codex": openRouterResponseClient.responses("openai/gpt-5-codex"),
+  "gpt-5-codex": openRouterClient("openai/gpt-5-codex"),
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
