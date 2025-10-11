@@ -138,8 +138,8 @@ export class CommandManager {
         this.commands.set(`/${cmd}`, {
           command: `/${cmd}`,
           description: "",
-          execute: (): Promise<"break" | "continue" | "use"> => {
-            return promptCmd.execute([cmd]);
+          execute: (args: string[]): Promise<"break" | "continue" | "use"> => {
+            return promptCmd.execute([cmd, ...args]);
           },
           getSubCommands: (): Promise<string[]> => Promise.resolve([]),
         });
