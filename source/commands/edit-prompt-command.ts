@@ -9,15 +9,18 @@ export const editPromptCommand = ({
 }: CommandOptions): ReplCommand => {
   return {
     command: "/edit-prompt",
-    description: "Edit the prompt.",
+    description:
+      "Edit the prompt. Accepts optional arguments as initial content.",
     getSubCommands: () => Promise.resolve([]),
-    execute: async () => {
+    execute: async (args: string[] = []) => {
       try {
         const prompt = syncTry(() => promptManager.get());
+        const initialContent =
+          args.length > 0 ? args.join(" ") : prompt.unwrapOr("");
         const updatedPrompt = await editor({
           message: " Edit prompt?",
           postfix: "md",
-          default: prompt.unwrapOr(""),
+          default: initialContent,
           skipPrompt: true,
         });
 

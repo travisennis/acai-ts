@@ -15,7 +15,10 @@ describe("prompt history integration", () => {
     } as CommandOptions);
 
     assert.strictEqual(command.command, "/edit-prompt");
-    assert.strictEqual(command.description, "Edit the prompt.");
+    assert.strictEqual(
+      command.description,
+      "Edit the prompt. Accepts optional arguments as initial content.",
+    );
   });
 
   it("prompt command should accept promptHistory parameter", () => {
