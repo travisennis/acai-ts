@@ -2,7 +2,6 @@ import { realpathSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { TokenCounter } from "../tokens/counter.ts";
 
 // Normalize all paths consistently
 function normalizePath(p: string): string {
@@ -163,52 +162,4 @@ export async function validatePath(
   }
 
   return validatedPath;
-}
-
-export async function readFileAndCountTokens(
-  filePath: string,
-  workingDir: string,
-  allowedDirectory: string,
-  tokenCounter: TokenCounter,
-  maxTokens: number,
-): Promise<{
-  path: string;
-  content: string | null;
-  tokenCount: number;
-  error: string | null;
-}> {
-  try {
-    const validPath = await validatePath(
-      joinWorkingDir(filePath, workingDir),
-      allowedDirectory,
-    );
-    const content = await fs.readFile(validPath, "utf-8");
-    let tokenCount = 0;
-    try {
-      tokenCount = tokenCounter.count(content);
-    } catch (tokenError) {
-      console.error("Error calculating token count:", tokenError);
-      // Handle token calculation error if needed
-    }
-
-    const maxTokenMessage = `File content (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Use readFile with startLine/lineCount or grepFiles for targeted access.`;
-
-    const finalContent = tokenCount > maxTokens ? maxTokenMessage : content;
-    const actualTokenCount = tokenCount > maxTokens ? 0 : tokenCount; // Don't count tokens for skipped files
-
-    return {
-      path: filePath,
-      content: finalContent,
-      tokenCount: actualTokenCount,
-      error: null,
-    };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return {
-      path: filePath,
-      content: null,
-      tokenCount: 0,
-      error: errorMessage,
-    };
-  }
 }
