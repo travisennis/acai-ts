@@ -21,7 +21,7 @@ export function healthCommand(
           description: "Google (Gemini models)",
         },
         { name: "DEEPSEEK_API_KEY", description: "DeepSeek" },
-        { name: "GROQ_API_KEY", description: "Groq (Kimi models)" },
+        { name: "GROQ_API_KEY", description: "Groq (multiple models)" },
         { name: "X_AI_API_KEY", description: "X.AI (Grok models)" },
         { name: "XAI_API_KEY", description: "X.AI (Grok models - alt)" },
         {
@@ -95,7 +95,8 @@ export function healthCommand(
         return [tool.name, status];
       });
 
-      terminal.info("\nBash Tools Status:");
+      terminal.lineBreak();
+      terminal.info("Bash Tools Status:");
       terminal.table(toolStatus, {
         header: ["Tool", "Status"],
         colWidths: [15, 20],

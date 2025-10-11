@@ -15,6 +15,7 @@ describe("/health command", () => {
         success: (_msg: string) => outputs.push("success"),
         error: (_msg: string) => outputs.push("error"),
         warn: (_msg: string) => outputs.push("warn"),
+        lineBreak: () => outputs.push("lineBreak"),
         table: (
           data: (string | number)[][],
           options?: { header?: string[]; colWidths?: number[] },
@@ -82,6 +83,7 @@ describe("/health command", () => {
           success: (_msg: string) => outputs.push("success"),
           error: (_msg: string) => outputs.push("error"),
           warn: (msg: string) => outputs.push(msg),
+          lineBreak: () => outputs.push("lineBreak"),
           table: (
             _data: (string | number)[][],
             _options?: { header?: string[]; colWidths?: number[] },
@@ -117,6 +119,7 @@ describe("/health command", () => {
         success: (_msg: string) => outputs.push("success"),
         error: (_msg: string) => outputs.push("error"),
         warn: (_msg: string) => outputs.push("warn"),
+        lineBreak: () => outputs.push("lineBreak"),
         table: (
           _data: (string | number)[][],
           _options?: { header?: string[]; colWidths?: number[] },
@@ -167,6 +170,7 @@ describe("/health command", () => {
           success: (_msg: string) => outputs.push("success"),
           error: (_msg: string) => outputs.push("error"),
           warn: (_msg: string) => outputs.push("warn"),
+          lineBreak: () => outputs.push("lineBreak"),
           table: (
             data: string[][],
             options?: { header?: string[]; colWidths?: number[] },
@@ -223,6 +227,7 @@ describe("/health command", () => {
           success: (_msg: string) => outputs.push("success"),
           error: (_msg: string) => outputs.push("error"),
           warn: (msg: string) => outputs.push(msg),
+          lineBreak: () => outputs.push("lineBreak"),
           table: (
             _data: string[][],
             _options?: { header?: string[]; colWidths?: number[] },
