@@ -1,27 +1,23 @@
 import { isNumber } from "@travisennis/stdlib/typeguards";
-import type { ToolModelMessage } from "ai";
+import type { ToolExecuteFunction, ToolModelMessage } from "ai";
 import { streamText, type Tool, type ToolCallRepairFunction } from "ai";
 import type { MessageHistory } from "../messages.ts";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
+import type { PromptManager } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 
 export type ManualLoopOptions = {
   modelManager: ModelManager;
+  promptManager: PromptManager;
   tokenTracker: TokenTracker;
   terminal?: Terminal;
   messageHistory: MessageHistory;
   systemPrompt: string;
   toolDefs: Record<string, Tool>;
-  executors: Map<
-    string,
-    (
-      input: unknown,
-      ctx: { toolCallId: string; abortSignal?: AbortSignal },
-    ) => Promise<string> | string
-  >;
+  executors: Map<string, ToolExecuteFunction<unknown, string>>;
   maxIterations?: number;
   abortSignal?: AbortSignal;
   temperature?: number | undefined;
@@ -31,6 +27,7 @@ export type ManualLoopOptions = {
 export async function runManualLoop(opts: ManualLoopOptions) {
   const {
     modelManager,
+    promptManager,
     tokenTracker,
     messageHistory,
     systemPrompt,
@@ -51,7 +48,10 @@ export async function runManualLoop(opts: ManualLoopOptions) {
     const langModel = modelManager.getModel("repl");
     const modelConfig = modelManager.getModelMetadata("repl");
 
-    const aiConfig = new AiConfig({ modelMetadata: modelConfig, prompt: "" });
+    const aiConfig = new AiConfig({
+      modelMetadata: modelConfig,
+      prompt: promptManager.get(),
+    });
     const maxTokens = aiConfig.getMaxTokens();
 
     const result = streamText<Record<string, Tool>>({
@@ -163,8 +163,9 @@ export async function runManualLoop(opts: ManualLoopOptions) {
           resultOutput = `No executor for tool ${call.toolName}`;
         } else {
           try {
-            const output = await exec(call.input as unknown, {
+            const output = await exec(call.input, {
               toolCallId: call.toolCallId,
+              messages: [], // TODO: is this right?
               abortSignal,
             });
             resultOutput =

@@ -1,4 +1,4 @@
-import type { Tool } from "ai";
+import type { Tool, ToolExecuteFunction } from "ai";
 
 // Generic type for an initialized tool from initTools/initCliTools
 // Each tool entry is shaped like { myTool: tool({ description, inputSchema, execute }) }
@@ -20,10 +20,7 @@ export function buildManualToolset<Ttools extends Record<string, Tool>>(
   const toolDefs = {} as { [K in keyof Ttools]: Tool };
   const executors = new Map<
     keyof Ttools,
-    (
-      input: unknown,
-      ctx: { toolCallId: string; abortSignal?: AbortSignal | undefined },
-    ) => Promise<string> | string
+    ToolExecuteFunction<unknown, string>
   >();
 
   for (const [name, def] of Object.entries(tools) as [keyof Ttools, Tool][]) {
@@ -35,10 +32,7 @@ export function buildManualToolset<Ttools extends Record<string, Tool>>(
     // Capture the original execute
     const exec = (
       def as {
-        execute?: (
-          input: unknown,
-          ctx: { toolCallId: string; abortSignal?: AbortSignal },
-        ) => Promise<unknown> | unknown;
+        execute?: ToolExecuteFunction<unknown, string>;
       }
     ).execute;
 
