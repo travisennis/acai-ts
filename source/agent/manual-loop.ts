@@ -1,24 +1,16 @@
 import { isNumber } from "@travisennis/stdlib/typeguards";
-import type { AssistantModelMessage, ToolModelMessage } from "ai";
-import {
-  type StepResult,
-  streamText,
-  type Tool,
-  type ToolCallRepairFunction,
-  type ToolResultPart,
-} from "ai";
+import type { ToolModelMessage } from "ai";
+import { streamText, type Tool, type ToolCallRepairFunction } from "ai";
 import type { MessageHistory } from "../messages.ts";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
-import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 
 export type ManualLoopOptions = {
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
-  tokenCounter: TokenCounter;
   terminal?: Terminal;
   messageHistory: MessageHistory;
   systemPrompt: string;
@@ -81,7 +73,6 @@ export async function runManualLoop(opts: ManualLoopOptions) {
           : modelConfig.defaultTemperature > -1
             ? modelConfig.defaultTemperature
             : undefined,
-      stopWhen: () => iter >= maxIterations,
       maxRetries: 2,
       providerOptions: aiConfig.getProviderOptions(),
       tools: toolDefs,
@@ -110,15 +101,12 @@ export async function runManualLoop(opts: ManualLoopOptions) {
         }
       } else if (chunk.type === "tool-call") {
         // We will handle after stream completes
-        if (terminal) terminal.stopProgress?.();
-      } else if (chunk.type === "tool-result") {
-        // Ignored here; we will add our own results
+        if (terminal) terminal.stopProgress();
       } else {
         // finish of this step
         if (lastType === "reasoning" && terminal)
           terminal.write(style.dim("\n</think>\n\n"));
         if (accumulatedText.trim()) {
-          messageHistory.appendAssistantMessage(accumulatedText);
           if (terminal) {
             terminal.writeln(`${style.blue.bold("● Response:")}`);
             terminal.display(accumulatedText, true);
@@ -136,85 +124,75 @@ export async function runManualLoop(opts: ManualLoopOptions) {
     const response = await result.response;
     const responseMessages = response.messages;
     if (responseMessages.length > 0) {
-      // responseMessages are Assistant/Tool messages already typed for appendResponseMessages
-      messageHistory.appendResponseMessages(
-        responseMessages as unknown as (
-          | AssistantModelMessage
-          | ToolModelMessage
-        )[],
-      );
+      messageHistory.appendResponseMessages(responseMessages);
     }
 
     // If finishReason is not tool-calls, break
-    const steps: StepResult<Record<string, Tool>>[] = await result.steps;
-    const lastStep = steps.at(-1);
-    if (!lastStep || lastStep.finishReason !== "tool-calls") {
+    const finishReason = await result.finishReason;
+    if (finishReason !== "tool-calls") {
       // usage/cost
       const total = await result.totalUsage;
       const inputTokens = isNumber(total.inputTokens) ? total.inputTokens : 0;
       const outputTokens = isNumber(total.outputTokens)
         ? total.outputTokens
         : 0;
-      tokenTracker.trackUsage("repl", total);
+
       if (terminal) {
         terminal.writeln(
           style.dim(`Tokens: ↑ ${inputTokens} ↓ ${outputTokens}`),
         );
+        const inputCost = modelConfig.costPerInputToken * inputTokens;
+        const outputCost = modelConfig.costPerOutputToken * outputTokens;
+        terminal.writeln(
+          style.dim(`Cost: $${(inputCost + outputCost).toFixed(2)}`),
+        );
       }
+
+      tokenTracker.trackUsage("repl", total);
       break;
     }
 
-    // Execute tools serially for T0 (scheduler comes later)
-    const toolCalls = lastStep.toolCalls;
+    // Execute tools in parallel (order not guaranteed)
+    const toolCalls = await result.toolCalls;
 
-    const toolResults: ToolResultPart[] = [];
-    for (const call of toolCalls) {
-      const exec = executors.get(call.toolName);
-      if (!exec) {
-        toolResults.push({
-          type: "tool-result",
-          toolName: call.toolName,
-          toolCallId: call.toolCallId,
-          output: {
-            type: "text",
-            value: `No executor for tool ${call.toolName}`,
-          } as never,
-        });
-        continue;
-      }
-      try {
-        const output = await exec(call.input as unknown, {
-          toolCallId: call.toolCallId,
-          abortSignal,
-        });
-        toolResults.push({
-          type: "tool-result",
-          toolName: call.toolName,
-          toolCallId: call.toolCallId,
-          output: {
-            type: "text",
-            value: typeof output === "string" ? output : JSON.stringify(output),
-          } as never,
-        });
-      } catch (err) {
-        toolResults.push({
-          type: "tool-result",
-          toolName: call.toolName,
-          toolCallId: call.toolCallId,
-          output: {
-            type: "text",
-            value: `Tool error: ${err instanceof Error ? err.message : String(err)}`,
-          } as never,
-        });
-      }
-    }
+    const toolMessages: ToolModelMessage[] = await Promise.all(
+      toolCalls.map(async (call) => {
+        const exec = executors.get(call.toolName);
+        let resultOutput: string;
+        if (!exec) {
+          resultOutput = `No executor for tool ${call.toolName}`;
+        } else {
+          try {
+            const output = await exec(call.input as unknown, {
+              toolCallId: call.toolCallId,
+              abortSignal,
+            });
+            resultOutput =
+              typeof output === "string" ? output : JSON.stringify(output);
+          } catch (err) {
+            resultOutput = `Tool error: ${
+              err instanceof Error ? err.message : String(err)
+            }`;
+          }
+        }
+        return {
+          role: "tool",
+          content: [
+            {
+              type: "tool-result",
+              toolName: call.toolName,
+              toolCallId: call.toolCallId,
+              output: {
+                type: "text",
+                value: resultOutput,
+              } as never,
+            },
+          ],
+        } as unknown as ToolModelMessage;
+      }),
+    );
 
-    // Append single tool message to history
-    const toolMessage = {
-      role: "tool",
-      content: toolResults,
-    } as unknown as ToolModelMessage;
-    messageHistory.appendResponseMessages([toolMessage]);
+    messageHistory.appendResponseMessages(toolMessages);
 
     // continue iterations
     iter += 1;
