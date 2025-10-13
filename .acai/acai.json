@@ -2,6 +2,7 @@
   "logs": {
     "path": "/Users/travisennis/.acai/logs/current.log"
   },
+  "agentLoop": "manual",
   "tools": {
     "maxTokens": 30000
   },

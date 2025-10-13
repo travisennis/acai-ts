@@ -1,5 +1,5 @@
 import { isNumber, isRecord } from "@travisennis/stdlib/typeguards";
-import { stepCountIs, streamText } from "ai";
+import { stepCountIs, streamText, type ToolExecuteFunction } from "ai";
 import { runManualLoop } from "./agent/manual-loop.ts";
 import type { CommandManager } from "./commands/manager.ts";
 import { config as configManager } from "./config.ts";
@@ -20,7 +20,7 @@ import style from "./terminal/style.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
 import type { ToolExecutor } from "./tool-executor.ts";
-import { initAgents, initTools } from "./tools/index.ts";
+import { type CompleteToolSet, initAgents, initTools } from "./tools/index.ts";
 import { buildManualToolset } from "./tools/manual-tools-adapter.ts";
 import type { Message } from "./tools/types.ts";
 
@@ -75,21 +75,47 @@ export class Repl {
     const finalSystemPrompt = await systemPrompt();
 
     // Initialize tools once outside the loop - all models support tool calling
-    const tools = {
-      ...(await initTools({
-        terminal,
-        tokenCounter,
-        events: toolEvents,
-        toolExecutor,
-      })),
-      ...(await initAgents({
-        terminal,
-        modelManager,
-        tokenTracker,
-        tokenCounter,
-        events: toolEvents,
-      })),
+    const coreTools = await initTools({
+      terminal,
+      tokenCounter,
+      events: toolEvents,
+      toolExecutor,
+    });
+
+    const agentTools = await initAgents({
+      terminal,
+      modelManager,
+      tokenTracker,
+      tokenCounter,
+      events: toolEvents,
+    });
+
+    const completeToolDefs = {
+      ...coreTools.toolDefs,
+      ...agentTools.toolDefs,
     };
+
+    const recordToolMessage = (toolCallId: string, message: Message) => {
+      const existing = toolEvents.get(toolCallId);
+      if (existing) {
+        existing.push(message);
+      } else {
+        toolEvents.set(toolCallId, [message]);
+      }
+    };
+
+    const manualToolset = buildManualToolset(completeToolDefs, {
+      fallbackExecutors: coreTools.executors as Partial<
+        Record<keyof CompleteToolSet, ToolExecuteFunction<unknown, string>>
+      >,
+      onMessage: recordToolMessage,
+    });
+
+    const tools = {
+      toolDefs: completeToolDefs,
+      executors: manualToolset.executors,
+      permissions: coreTools.permissions,
+    } as const;
 
     let currentAbortController: AbortController | null = null;
 
@@ -200,22 +226,24 @@ export class Repl {
         terminal.lineBreak();
       }
 
+      const userPrompt = promptManager.get();
       const userMsg = promptManager.getUserMessage();
 
       messageHistory.appendUserMessage(userMsg);
 
       try {
         if (projectConfig.agentLoop === "manual") {
-          const { toolDefs, executors } = buildManualToolset(tools);
-          await runManualLoop({
+          const { toolDefs, executors, permissions } = tools;
+          const result = await runManualLoop({
             modelManager,
-            promptManager,
-            tokenTracker,
             terminal,
             messageHistory,
             systemPrompt: finalSystemPrompt,
+            input: userPrompt,
             toolDefs,
             executors: executors,
+            // biome-ignore lint/suspicious/noExplicitAny: temporary
+            permissions: permissions as any, // FIXME: fix these types later
             maxIterations: projectConfig.loop.maxIterations,
             abortSignal: signal,
             temperature:
@@ -227,12 +255,34 @@ export class Repl {
 
           terminal.hr();
 
+          // Notify if configured in project config (acai.json)
           if (projectConfig.notify) {
             terminal.alert();
           }
-        } else {
-          const userPrompt = promptManager.get();
 
+          // Create a more visual representation of steps/tool usage
+          displayToolUse(result, terminal);
+
+          const total = result.totalUsage;
+          const inputTokens = total.inputTokens;
+          const outputTokens = total.outputTokens;
+          const tokenSummary = `Tokens: ↑ ${inputTokens} ↓ ${outputTokens}`;
+          terminal.writeln(style.dim(tokenSummary));
+
+          const inputCost = modelConfig.costPerInputToken * inputTokens;
+          const outputCost = modelConfig.costPerOutputToken * outputTokens;
+          terminal.writeln(
+            style.dim(`Cost: $${(inputCost + outputCost).toFixed(2)}`),
+          );
+
+          // Track aggregate usage across all steps when available
+          tokenTracker.trackUsage("repl", total);
+
+          // Derive current context window from final step usage
+          currentContextWindow = result.usage.totalTokens;
+
+          terminal.hr();
+        } else {
           const aiConfig = new AiConfig({
             modelMetadata: modelConfig,
             prompt: userPrompt,
@@ -260,7 +310,7 @@ export class Repl {
             stopWhen: stepCountIs(90),
             maxRetries: 2,
             providerOptions: aiConfig.getProviderOptions(),
-            tools,
+            tools: tools.toolDefs,
             // biome-ignore lint/style/useNamingConvention: third-party controlled
             experimental_repairToolCall: toolCallRepair(modelManager),
             abortSignal: signal,

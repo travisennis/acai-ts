@@ -1,10 +1,10 @@
-import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import {
   generateObject,
   generateText,
   NoSuchToolError,
   stepCountIs,
   type ToolCallRepairFunction,
+  type ToolSet,
 } from "ai";
 import type z from "zod";
 import { logger } from "./logger.ts";
@@ -17,7 +17,7 @@ import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
 import { DeleteFileTool } from "./tools/delete-file.ts";
 import { EditFileTool } from "./tools/edit-file.ts";
-import { initCliTools } from "./tools/index.ts";
+import { type CompleteCliToolSet, initCliTools } from "./tools/index.ts";
 import { MoveFileTool } from "./tools/move-file.ts";
 import { SaveFileTool } from "./tools/save-file.ts";
 import { ThinkTool } from "./tools/think.ts";
@@ -30,8 +30,6 @@ interface CliOptions {
   config: Record<PropertyKey, unknown>;
   tokenCounter: TokenCounter;
 }
-
-type CompleteToolSet = AsyncReturnType<typeof initCliTools>;
 
 export class Cli {
   private options: CliOptions;
@@ -79,9 +77,7 @@ export class Cli {
 
     const maxTokens = aiConfig.getMaxTokens();
 
-    const tools = modelConfig.supportsToolCalling
-      ? await initCliTools({ tokenCounter })
-      : undefined;
+    const tools = await initCliTools({ tokenCounter });
 
     try {
       const result = await generateText({
@@ -101,7 +97,7 @@ export class Cli {
         stopWhen: stepCountIs(60),
         maxRetries: 2,
         providerOptions: aiConfig.getProviderOptions(),
-        tools,
+        tools: tools.toolDefs,
         // biome-ignore lint/style/useNamingConvention: third-party controlled
         experimental_activeTools: [
           EditFileTool.name,
@@ -111,9 +107,8 @@ export class Cli {
           ThinkTool.name,
         ],
         // biome-ignore lint/style/useNamingConvention: third-party controlled
-        experimental_repairToolCall: modelConfig.supportsToolCalling
-          ? toolCallRepair(modelManager)
-          : undefined,
+        experimental_repairToolCall:
+          toolCallRepair<CompleteCliToolSet>(modelManager),
         abortSignal: signal,
       });
 
@@ -137,8 +132,8 @@ export class Cli {
   }
 }
 
-const toolCallRepair = (modelManager: ModelManager) => {
-  const fn: ToolCallRepairFunction<CompleteToolSet> = async ({
+const toolCallRepair = <T extends ToolSet>(modelManager: ModelManager) => {
+  const fn: ToolCallRepairFunction<T> = async ({
     toolCall,
     tools,
     inputSchema,

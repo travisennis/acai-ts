@@ -1,10 +1,12 @@
+import type { AsyncReturnType } from "@travisennis/stdlib/types";
+import { type TypedToolCall, type TypedToolResult, tool } from "ai";
 import type { ModelManager } from "../models/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import type { ToolExecutor } from "../tool-executor.ts";
 import { createAgentTools } from "./agent.ts";
-import { createBashTool } from "./bash.ts";
+import { BashTool, createBashTool } from "./bash.ts";
 import { createCodeInterpreterTool } from "./code-interpreter.ts";
 import { createDeleteFileTool } from "./delete-file.ts";
 // import { createDirectoryTreeTool } from "./directory-tree.ts";
@@ -19,6 +21,16 @@ import { createThinkTool } from "./think.ts";
 import type { Message } from "./types.ts";
 import { createWebFetchTool } from "./web-fetch.ts";
 import { createWebSearchTool } from "./web-search.ts";
+
+export type CompleteToolSet = AsyncReturnType<typeof initTools>["toolDefs"] &
+  AsyncReturnType<typeof initAgents>["toolDefs"];
+
+export type CompleteToolCall = TypedToolCall<CompleteToolSet>;
+export type CompleteToolResult = TypedToolResult<CompleteToolSet>;
+
+export type CompleteCliToolSet = AsyncReturnType<
+  typeof initCliTools
+>["toolDefs"];
 
 const sendDataHandler = (events: Map<string, Message[]>) => {
   const msgStore: Map<string, Message[]> = events;
@@ -136,12 +148,26 @@ export async function initTools({
     ...grepTool,
     ...thinkTool,
     ...webFetchTool,
-    ...bashTool,
+    [BashTool.name]: tool({
+      ...bashTool.toolDef,
+    }),
     ...webSearchTool,
     ...dynamicTools,
   } as const;
 
-  return tools;
+  const executors = {
+    [BashTool.name]: bashTool.execute,
+  } as const;
+
+  const permissions = {
+    [BashTool.name]: bashTool.ask,
+  } as const;
+
+  return {
+    toolDefs: tools,
+    executors,
+    permissions,
+  };
 }
 
 export async function initCliTools({
@@ -237,12 +263,17 @@ export async function initCliTools({
     ...grepTool,
     ...thinkTool,
     ...webFetchTool,
-    ...bashTool,
+    [BashTool.name]: tool({
+      ...bashTool.toolDef,
+      execute: bashTool.execute,
+    }),
     ...webSearchTool,
     ...dynamicTools,
   } as const;
 
-  return tools;
+  return {
+    toolDefs: tools,
+  };
 }
 
 export async function initAgents({
@@ -268,7 +299,9 @@ export async function initAgents({
 
   const tools = {
     ...agentTools,
-  };
+  } as const;
 
-  return tools;
+  return {
+    toolDefs: tools,
+  };
 }

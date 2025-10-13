@@ -224,10 +224,13 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
   }
 
   getFirstUserMessage(): UserModelMessage | undefined {
-    const firstUser = this.get().find(
-      (msg): msg is UserModelMessage => msg.role === "user",
-    );
+    const firstUser = this.get().find((msg) => msg.role === "user");
     return firstUser;
+  }
+
+  getLastUserMessage(): UserModelMessage | undefined {
+    const userMsg = this.history.findLast((value) => value.role === "user");
+    return userMsg;
   }
 
   /**
