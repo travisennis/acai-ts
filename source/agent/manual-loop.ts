@@ -205,8 +205,92 @@ export async function runManualLoop(
 
       const toolEventMessages = new Map<string, Message[]>();
 
-      const toolMessages: ToolModelMessage[] = await Promise.all(
-        toolCalls.map(async (call) => {
+      // Split toolCalls into two groups: those with permission functions and those without
+      const toolsWithPermission: typeof toolCalls = [];
+      const toolsWithoutPermission: typeof toolCalls = [];
+
+      for (const call of toolCalls) {
+        const toolName = call.toolName as keyof CompleteToolSet;
+        const permFunc = permissions[toolName];
+        if (permFunc) {
+          toolsWithPermission.push(call);
+        } else {
+          toolsWithoutPermission.push(call);
+        }
+      }
+
+      // Process tools with permission sequentially
+      const sequentialToolMessages: ToolModelMessage[] = [];
+      for (const call of toolsWithPermission) {
+        const toolName = call.toolName as keyof CompleteToolSet;
+        const exec = executors.get(toolName);
+        let resultOutput = "Unknown result.";
+
+        if (!exec) {
+          resultOutput = `No executor for tool ${toolName}`;
+        } else {
+          thisStepToolCalls.push({ toolName });
+          thisStepToolResults.push({ toolName });
+
+          let approved = true;
+          const permFunc = permissions[toolName];
+          if (permFunc) {
+            const permResult = await permFunc(call.input, {
+              toolCallId: call.toolCallId,
+              messages: [], // TODO: is this right?
+              abortSignal,
+            });
+
+            if (!permResult.approve) {
+              approved = false;
+              resultOutput = permResult.reason;
+            }
+          }
+
+          if (approved) {
+            try {
+              const output = await exec(call.input, {
+                toolCallId: call.toolCallId,
+                messages: [], // TODO: is this right?
+                abortSignal,
+              });
+              if (isAsyncIterable(output)) {
+                const { finalValue, messages } =
+                  await consumeToolAsyncIterable(output);
+                resultOutput = formatToolResult(finalValue);
+                if (messages.length > 0) {
+                  toolEventMessages.set(call.toolCallId, messages);
+                }
+              } else {
+                resultOutput = formatToolResult(output);
+              }
+            } catch (err) {
+              resultOutput = `Tool error: ${
+                err instanceof Error ? err.message : String(err)
+              }`;
+            }
+          }
+        }
+
+        sequentialToolMessages.push({
+          role: "tool",
+          content: [
+            {
+              type: "tool-result",
+              toolName,
+              toolCallId: call.toolCallId,
+              output: {
+                type: "text",
+                value: resultOutput,
+              },
+            },
+          ],
+        });
+      }
+
+      // Process tools without permission concurrently
+      const concurrentToolMessages: ToolModelMessage[] = await Promise.all(
+        toolsWithoutPermission.map(async (call) => {
           const toolName = call.toolName as keyof CompleteToolSet;
           const exec = executors.get(toolName);
           let resultOutput = "Unknown result.";
@@ -216,43 +300,26 @@ export async function runManualLoop(
             thisStepToolCalls.push({ toolName });
             thisStepToolResults.push({ toolName });
 
-            let approved = true;
-            const permFunc = permissions[toolName];
-            if (permFunc) {
-              const permResult = await permFunc(call.input, {
+            try {
+              const output = await exec(call.input, {
                 toolCallId: call.toolCallId,
                 messages: [], // TODO: is this right?
                 abortSignal,
               });
-
-              if (!permResult.approve) {
-                approved = false;
-                resultOutput = permResult.reason;
-              }
-            }
-
-            if (approved) {
-              try {
-                const output = await exec(call.input, {
-                  toolCallId: call.toolCallId,
-                  messages: [], // TODO: is this right?
-                  abortSignal,
-                });
-                if (isAsyncIterable(output)) {
-                  const { finalValue, messages } =
-                    await consumeToolAsyncIterable(output);
-                  resultOutput = formatToolResult(finalValue);
-                  if (messages.length > 0) {
-                    toolEventMessages.set(call.toolCallId, messages);
-                  }
-                } else {
-                  resultOutput = formatToolResult(output);
+              if (isAsyncIterable(output)) {
+                const { finalValue, messages } =
+                  await consumeToolAsyncIterable(output);
+                resultOutput = formatToolResult(finalValue);
+                if (messages.length > 0) {
+                  toolEventMessages.set(call.toolCallId, messages);
                 }
-              } catch (err) {
-                resultOutput = `Tool error: ${
-                  err instanceof Error ? err.message : String(err)
-                }`;
+              } else {
+                resultOutput = formatToolResult(output);
               }
+            } catch (err) {
+              resultOutput = `Tool error: ${
+                err instanceof Error ? err.message : String(err)
+              }`;
             }
           }
           return {
@@ -271,6 +338,12 @@ export async function runManualLoop(
           };
         }),
       );
+
+      // Combine all tool messages
+      const toolMessages: ToolModelMessage[] = [
+        ...sequentialToolMessages,
+        ...concurrentToolMessages,
+      ];
 
       for (const call of toolCalls) {
         const messages = toolEventMessages.get(call.toolCallId);
