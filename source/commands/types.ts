@@ -6,7 +6,6 @@ import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import type { ToolExecutor } from "../tool-executor.ts";
-import type { Message } from "../tools/types.ts";
 
 export interface ReplCommand {
   command: string;
@@ -24,7 +23,6 @@ export interface CommandOptions {
   tokenTracker: TokenTracker;
   config: ConfigManager;
   tokenCounter: TokenCounter;
-  toolEvents: Map<string, Message[]>;
   toolExecutor?: ToolExecutor;
   promptHistory: string[];
 }

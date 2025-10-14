@@ -10,7 +10,6 @@ import { AiConfig } from "./models/ai-config.ts";
 import type { ModelManager } from "./models/manager.js";
 import type { PromptManager } from "./prompts/manager.ts";
 import { systemPrompt } from "./prompts.ts";
-import { displayToolMessages } from "./repl/display-tool-messages.ts";
 import { displayToolUse } from "./repl/display-tool-use.ts";
 import { getPromptHeader } from "./repl/get-prompt-header.ts";
 import { toolCallRepair } from "./repl/tool-call-repair.ts";
@@ -22,8 +21,6 @@ import type { TokenTracker } from "./tokens/tracker.ts";
 import type { ToolExecutor } from "./tool-executor.ts";
 import { initAgents, initCliTools, initTools } from "./tools/index.ts";
 
-import type { Message } from "./tools/types.ts";
-
 interface ReplOptions {
   messageHistory: MessageHistory;
   promptManager: PromptManager;
@@ -33,7 +30,6 @@ interface ReplOptions {
   commands: CommandManager;
   config: Record<PropertyKey, unknown>;
   tokenCounter: TokenCounter;
-  toolEvents: Map<string, Message[]>;
   showLastMessage: boolean; // For displaying last message when continuing/resuming
   toolExecutor?: ToolExecutor;
   promptHistory: string[];
@@ -58,7 +54,6 @@ export class Repl {
       messageHistory,
       commands,
       tokenCounter,
-      toolEvents,
       toolExecutor,
       promptHistory,
     } = this.options;
@@ -394,14 +389,6 @@ export class Repl {
               }
             } else if (chunk.type === "tool-call") {
               terminal.stopProgress();
-            } else if (chunk.type === "tool-result") {
-              const messages = toolEvents.get(chunk.toolCallId);
-              if (messages) {
-                displayToolMessages(messages, terminal);
-                toolEvents.delete(chunk.toolCallId);
-              } else {
-                logger.warn(`No tool events found for ${chunk.toolCallId}`);
-              }
             } else {
               // Close thinking tags when moving from reasoning to any other chunk type
               if (lastType === "reasoning") {

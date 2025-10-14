@@ -17,7 +17,6 @@ import { select } from "./terminal/select-prompt.ts";
 import { TokenCounter } from "./tokens/counter.ts";
 import { TokenTracker } from "./tokens/tracker.ts";
 import { ToolExecutor } from "./tool-executor.ts";
-import type { Message } from "./tools/types.ts";
 import { getPackageVersion } from "./version.ts";
 
 const helpText = `
@@ -200,7 +199,6 @@ async function main() {
     promptManager.addContext(stdInPrompt);
   }
 
-  const toolEvents: Map<string, Message[]> = new Map();
   const promptHistory: string[] = [];
 
   const commands = new CommandManager({
@@ -212,7 +210,6 @@ async function main() {
     config,
     tokenCounter,
     toolExecutor,
-    toolEvents,
     promptHistory,
   });
 
@@ -239,7 +236,6 @@ async function main() {
     tokenTracker,
     commands,
     tokenCounter,
-    toolEvents,
     toolExecutor,
     promptHistory,
     showLastMessage: hasContinueOrResume
