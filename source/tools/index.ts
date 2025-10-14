@@ -8,7 +8,7 @@ import type { ToolExecutor } from "../tool-executor.ts";
 import { createAgentTools } from "./agent.ts";
 import { BashTool, createBashTool } from "./bash.ts";
 import { createCodeInterpreterTool } from "./code-interpreter.ts";
-import { createDeleteFileTool } from "./delete-file.ts";
+import { createDeleteFileTool, DeleteFileTool } from "./delete-file.ts";
 // import { createDirectoryTreeTool } from "./directory-tree.ts";
 import { loadDynamicTools } from "./dynamic-tool-loader.ts";
 import { createEditFileTool, EditFileTool } from "./edit-file.ts";
@@ -121,12 +121,12 @@ export async function initTools({
     [EditFileTool.name]: tool(editFileTool.toolDef),
     [BashTool.name]: tool(bashTool.toolDef),
     [SaveFileTool.name]: tool(saveFileTool.toolDef),
+    [DeleteFileTool.name]: tool(deleteFileTool.toolDef),
     // TODO: Update other tools to new format as they are migrated
     ...readFileTool,
     ...readMultipleFilesTool,
     ...moveFileTool,
     // ...directoryTreeTool,
-    ...deleteFileTool,
     ...codeInterpreterTool,
     ...grepTool,
     ...thinkTool,
@@ -155,6 +155,12 @@ export async function initTools({
   executors.set(SaveFileTool.name, saveFileTool.execute);
   if (saveFileTool.ask) {
     permissions.set(SaveFileTool.name, saveFileTool.ask);
+  }
+
+  // Add deleteFile tool
+  executors.set(DeleteFileTool.name, deleteFileTool.execute);
+  if (deleteFileTool.ask) {
+    permissions.set(DeleteFileTool.name, deleteFileTool.ask);
   }
 
   return {
@@ -242,12 +248,15 @@ export async function initCliTools({
       ...saveFileTool.toolDef,
       execute: saveFileTool.execute,
     }),
+    [DeleteFileTool.name]: tool({
+      ...deleteFileTool.toolDef,
+      execute: deleteFileTool.execute,
+    }),
     // TODO: Update other tools to new format as they are migrated
     ...readFileTool,
     ...readMultipleFilesTool,
     ...moveFileTool,
     // ...directoryTreeTool,
-    ...deleteFileTool,
     ...codeInterpreterTool,
     ...grepTool,
     ...thinkTool,
