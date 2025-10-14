@@ -1,31 +1,47 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { tool } from "ai";
+import type { ToolCallOptions } from "ai";
 import { createTwoFilesPatch } from "diff";
 import { z } from "zod";
 import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
 import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
-import type { SendData } from "./types.ts";
+import type { Message } from "./types.ts";
 
 export const EditFileTool = {
   name: "editFile" as const,
 };
 
+const inputSchema = z.object({
+  path: z.string().describe("The path of the file to edit."),
+  edits: z.array(
+    z.object({
+      oldText: z
+        .string()
+        .describe(
+          "Text to search for - must match exactly and enough context must be provided to uniquely match the target text. " +
+            "Special characters require JSON escaping: backticks (\\`...\\`), quotes, backslashes. " +
+            "For multi-line content, include exact newlines and indentation.",
+        ),
+      newText: z.string().describe("Text to replace with"),
+    }),
+  ),
+});
+
+type EditFileInputSchema = z.infer<typeof inputSchema>;
+
 export const createEditFileTool = async ({
   workingDir,
   terminal,
-  sendData,
   toolExecutor,
 }: {
   workingDir: string;
   terminal?: Terminal;
-  sendData?: SendData;
   toolExecutor?: ToolExecutor;
 }) => {
   const allowedDirectory = workingDir;
   return {
-    [EditFileTool.name]: tool({
+    toolDef: {
       description:
         "Make line-based edits to a text file. Each edit replaces exact line sequences " +
         "with new content. Exact literal matching is used: no whitespace, indentation, escape, or newline normalization is applied when locating matches. " +
@@ -33,153 +49,140 @@ export const createEditFileTool = async ({
         "Only works within allowed directories. " +
         "Note: Special characters in oldText must be properly escaped for JSON (e.g., backticks as \\`...\\`). " +
         "Multi-line strings require exact character-by-character matching including whitespace.",
-      inputSchema: z.object({
-        path: z.string().describe("The path of the file to edit."),
-        edits: z.array(
-          z.object({
-            oldText: z
-              .string()
-              .describe(
-                "Text to search for - must match exactly and enough context must be provided to uniquely match the target text. " +
-                  "Special characters require JSON escaping: backticks (\\`...\\`), quotes, backslashes. " +
-                  "For multi-line content, include exact newlines and indentation.",
-              ),
-            newText: z.string().describe("Text to replace with"),
-          }),
-        ),
-      }),
-      execute: async ({ path, edits }, { toolCallId, abortSignal }) => {
-        // Check if execution has been aborted
+      inputSchema,
+    },
+    async *execute(
+      { path, edits }: EditFileInputSchema,
+      { toolCallId, abortSignal }: ToolCallOptions,
+    ): AsyncGenerator<Message, string> {
+      try {
         if (abortSignal?.aborted) {
           throw new Error("File editing aborted");
         }
-        sendData?.({
+
+        yield {
           id: toolCallId,
           event: "tool-init",
           data: `Editing file: ${style.cyan(path)}`,
-        });
-        try {
-          const validPath = await validatePath(
-            joinWorkingDir(path, workingDir),
-            allowedDirectory,
-            { abortSignal },
-          );
+        };
 
-          if (terminal) {
-            terminal.writeln(
-              `\n${style.blue.bold("●")} Proposing file changes: ${style.cyan(path)}`,
-            );
+        const validPath = await validatePath(
+          joinWorkingDir(path, workingDir),
+          allowedDirectory,
+          { abortSignal },
+        );
 
-            terminal.lineBreak();
+        const result = await applyFileEdits(
+          validPath,
+          edits,
+          false,
+          abortSignal,
+        );
 
-            const result = await applyFileEdits(
-              validPath,
-              edits,
-              true,
-              abortSignal,
-            );
+        yield {
+          id: toolCallId,
+          event: "tool-completion",
+          data: "Edits applied successfully.",
+        };
 
-            terminal.writeln(
-              `The agent is proposing the following ${style.cyan(edits.length)} edits:`,
-            );
+        return result;
+      } catch (error) {
+        yield {
+          event: "tool-error",
+          id: toolCallId,
+          data: `Failed to edit file: ${(error as Error).message}`,
+        };
+        return `Failed to edit file: ${(error as Error).message}`;
+      }
+    },
+    ask: async (
+      { path, edits }: EditFileInputSchema,
+      {
+        toolCallId,
+        abortSignal,
+      }: { toolCallId: string; abortSignal?: AbortSignal },
+    ): Promise<{ approve: true } | { approve: false; reason: string }> => {
+      if (terminal) {
+        const validPath = await validatePath(
+          joinWorkingDir(path, workingDir),
+          allowedDirectory,
+          { abortSignal },
+        );
 
-            terminal.hr();
+        // Show diff preview
+        terminal.writeln(
+          `\n${style.blue.bold("●")} Proposing file changes: ${style.cyan(path)}`,
+        );
 
-            terminal.display(result);
+        terminal.lineBreak();
 
-            terminal.hr();
+        const diffPreview = await applyFileEdits(
+          validPath,
+          edits,
+          true,
+          abortSignal,
+        );
 
-            let userResponse: AskResponse | undefined;
-            if (toolExecutor) {
-              const ctx = {
-                toolName: EditFileTool.name,
-                toolCallId,
-                message: "What would you like to do with these changes?",
-                choices: {
-                  accept: "Accept these changes",
-                  acceptAll: "Accept all future edits (including these)",
-                  reject: "Reject these changes",
-                },
-              };
-              try {
-                userResponse = await toolExecutor.ask(ctx, { abortSignal });
-              } catch (e) {
-                if ((e as Error).name === "AbortError") {
-                  throw new Error("File editing aborted during user input");
-                }
-                throw e;
-              }
+        terminal.writeln(
+          `The agent is proposing the following ${style.cyan(edits.length)} edits:`,
+        );
+
+        terminal.hr();
+
+        terminal.display(diffPreview);
+
+        terminal.hr();
+
+        let userResponse: AskResponse | undefined;
+        // Prompt only when a toolExecutor is present
+        if (toolExecutor) {
+          const ctx = {
+            toolName: EditFileTool.name,
+            toolCallId,
+            message: "What would you like to do with these changes?",
+            choices: {
+              accept: "Accept these changes",
+              acceptAll: "Accept all future edits (including these)",
+              reject: "Reject these changes",
+            },
+          };
+          try {
+            userResponse = await toolExecutor.ask(ctx, { abortSignal });
+          } catch (e) {
+            if ((e as Error).name === "AbortError") {
+              throw new Error("File editing aborted during user input");
             }
-
-            const { result: userChoice, reason } = userResponse ?? {
-              result: "accept",
-            };
-
-            terminal.lineBreak();
-
-            if (userChoice === "accept-all") {
-              terminal.writeln(
-                style.yellow("✓ Auto-accept mode enabled for all edits"),
-              );
-              terminal.lineBreak();
-            }
-
-            if (userChoice === "accept" || userChoice === "accept-all") {
-              const finalEdits = await applyFileEdits(
-                validPath,
-                edits,
-                false,
-                abortSignal,
-              );
-
-              // Send completion message indicating success
-              sendData?.({
-                id: toolCallId,
-                event: "tool-completion",
-                data: "Edits accepted and applied successfully.",
-              });
-
-              return finalEdits;
-            }
-
-            terminal.lineBreak();
-
-            // Send completion message indicating rejection
-            const rejectionReason = reason || "No reason provided";
-            sendData?.({
-              id: toolCallId,
-              event: "tool-completion",
-              data: `Edits rejected by user. Reason: ${rejectionReason}`,
-            });
-
-            return `The user rejected these changes. Reason: ${rejectionReason}`;
+            throw e;
           }
-
-          const finalEdits = await applyFileEdits(
-            validPath,
-            edits,
-            false,
-            abortSignal,
-          );
-
-          // Send completion message indicating success
-          sendData?.({
-            id: toolCallId,
-            event: "tool-completion",
-            data: "Edits accepted and applied successfully.",
-          });
-
-          return finalEdits;
-        } catch (error) {
-          sendData?.({
-            event: "tool-error",
-            id: toolCallId,
-            data: `Failed to edit file: ${(error as Error).message}`,
-          });
-          return `Failed to edit file: ${(error as Error).message}`;
         }
-      },
-    }),
+
+        const { result: userChoice, reason } = userResponse ?? {
+          result: "accept",
+        };
+
+        terminal.lineBreak();
+
+        if (userChoice === "accept-all") {
+          terminal.writeln(
+            style.yellow("✓ Auto-accept mode enabled for all edits"),
+          );
+          terminal.lineBreak();
+        }
+
+        if (userChoice === "reject") {
+          terminal.lineBreak();
+
+          const rejectionReason = reason || "No reason provided";
+          return {
+            approve: false,
+            reason: `The user rejected these changes. Reason: ${rejectionReason}`,
+          };
+        }
+      }
+      return {
+        approve: true,
+      };
+    },
   };
 };
 

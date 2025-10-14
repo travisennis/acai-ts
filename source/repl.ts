@@ -78,7 +78,6 @@ export class Repl {
     const coreTools = await initTools({
       terminal,
       tokenCounter,
-      events: toolEvents,
       toolExecutor,
     });
 

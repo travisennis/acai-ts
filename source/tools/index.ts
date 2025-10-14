@@ -11,7 +11,7 @@ import { createCodeInterpreterTool } from "./code-interpreter.ts";
 import { createDeleteFileTool } from "./delete-file.ts";
 // import { createDirectoryTreeTool } from "./directory-tree.ts";
 import { loadDynamicTools } from "./dynamic-tool-loader.ts";
-import { createEditFileTool } from "./edit-file.ts";
+import { createEditFileTool, EditFileTool } from "./edit-file.ts";
 import { createGrepTool } from "./grep.ts";
 import { createMoveFileTool } from "./move-file.ts";
 import { createReadFileTool } from "./read-file.ts";
@@ -46,86 +46,67 @@ const sendDataHandler = (events: Map<string, Message[]>) => {
 export async function initTools({
   terminal,
   tokenCounter,
-  events,
   toolExecutor,
 }: {
   terminal: Terminal;
   tokenCounter: TokenCounter;
-  events: Map<string, Message[]>;
   toolExecutor?: ToolExecutor;
 }) {
-  const sendDataFn = sendDataHandler(events);
-
   const readFileTool = await createReadFileTool({
     workingDir: process.cwd(),
-    sendData: sendDataFn,
     tokenCounter,
   });
 
   const readMultipleFilesTool = await createReadMultipleFilesTool({
     workingDir: process.cwd(),
-    sendData: sendDataFn,
     tokenCounter,
   });
 
   const editFileTool = await createEditFileTool({
     workingDir: process.cwd(),
     terminal,
-    sendData: sendDataFn,
     toolExecutor,
   });
 
   const saveFileTool = await createSaveFileTool({
     workingDir: process.cwd(),
-    sendData: sendDataFn,
     terminal,
     toolExecutor,
   });
 
   const moveFileTool = await createMoveFileTool({
     workingDir: process.cwd(),
-    sendData: sendDataFn,
   });
 
   // const directoryTreeTool = await createDirectoryTreeTool({
   //   workingDir: process.cwd(),
-  //   sendData: sendDataFn,
   //   tokenCounter,
   // });
 
   const deleteFileTool = await createDeleteFileTool({
     workingDir: process.cwd(),
-    sendData: sendDataFn,
     terminal,
     toolExecutor,
   });
 
-  const codeInterpreterTool = createCodeInterpreterTool({
-    sendData: sendDataFn,
-  });
+  const codeInterpreterTool = createCodeInterpreterTool({});
 
   const grepTool = createGrepTool({
-    sendData: sendDataFn,
     tokenCounter,
   });
 
-  const thinkTool = createThinkTool({
-    sendData: sendDataFn,
-  });
+  const thinkTool = createThinkTool();
 
   const webFetchTool = createWebFetchTool({
-    sendData: sendDataFn,
     tokenCounter,
   });
 
   const webSearchTool = createWebSearchTool({
-    sendData: sendDataFn,
     tokenCounter,
   });
 
   const bashTool = await createBashTool({
     baseDir: process.cwd(),
-    sendData: sendDataFn,
     tokenCounter,
     terminal,
     toolExecutor,
@@ -133,13 +114,15 @@ export async function initTools({
 
   const dynamicTools = await loadDynamicTools({
     baseDir: process.cwd(),
-    sendData: sendDataFn,
   });
 
+  // Build tools object for AI SDK
   const tools = {
+    [EditFileTool.name]: tool(editFileTool.toolDef),
+    [BashTool.name]: tool(bashTool.toolDef),
+    // TODO: Update other tools to new format as they are migrated
     ...readFileTool,
     ...readMultipleFilesTool,
-    ...editFileTool,
     ...saveFileTool,
     ...moveFileTool,
     // ...directoryTreeTool,
@@ -148,20 +131,25 @@ export async function initTools({
     ...grepTool,
     ...thinkTool,
     ...webFetchTool,
-    [BashTool.name]: tool({
-      ...bashTool.toolDef,
-    }),
     ...webSearchTool,
     ...dynamicTools,
   } as const;
 
-  const executors = {
-    [BashTool.name]: bashTool.execute,
-  } as const;
+  // Build executors and permissions maps for manual loop
+  const executors = new Map();
+  const permissions = new Map();
 
-  const permissions = {
-    [BashTool.name]: bashTool.ask,
-  } as const;
+  // Add bash tool
+  executors.set(BashTool.name, bashTool.execute);
+  if (bashTool.ask) {
+    permissions.set(BashTool.name, bashTool.ask);
+  }
+
+  // Add editFile tool
+  executors.set(EditFileTool.name, editFileTool.execute);
+  if (editFileTool.ask) {
+    permissions.set(EditFileTool.name, editFileTool.ask);
+  }
 
   return {
     toolDefs: tools,
@@ -177,84 +165,76 @@ export async function initCliTools({
 }) {
   const readFileTool = await createReadFileTool({
     workingDir: process.cwd(),
-    sendData: undefined,
     tokenCounter,
   });
 
   const readMultipleFilesTool = await createReadMultipleFilesTool({
     workingDir: process.cwd(),
-    sendData: undefined,
     tokenCounter,
   });
 
   const editFileTool = await createEditFileTool({
     workingDir: process.cwd(),
     terminal: undefined,
-    sendData: undefined,
   });
 
   const saveFileTool = await createSaveFileTool({
     workingDir: process.cwd(),
-    sendData: undefined,
     terminal: undefined,
   });
 
   const moveFileTool = await createMoveFileTool({
     workingDir: process.cwd(),
-    sendData: undefined,
   });
 
   // const directoryTreeTool = await createDirectoryTreeTool({
   //   workingDir: process.cwd(),
-  //   sendData: undefined,
   //   tokenCounter,
   // });
 
   const deleteFileTool = await createDeleteFileTool({
     workingDir: process.cwd(),
-    sendData: undefined,
     terminal: undefined,
   });
 
-  const codeInterpreterTool = createCodeInterpreterTool({
-    sendData: undefined,
-  });
+  const codeInterpreterTool = createCodeInterpreterTool({});
 
   const grepTool = createGrepTool({
-    sendData: undefined,
     tokenCounter,
   });
 
-  const thinkTool = createThinkTool({
-    sendData: undefined,
-  });
+  const thinkTool = createThinkTool();
 
   const webFetchTool = createWebFetchTool({
-    sendData: undefined,
     tokenCounter,
   });
 
   const webSearchTool = createWebSearchTool({
-    sendData: undefined,
     tokenCounter,
   });
 
   const bashTool = await createBashTool({
     baseDir: process.cwd(),
-    sendData: undefined,
     tokenCounter,
     terminal: undefined,
   });
 
   const dynamicTools = await loadDynamicTools({
     baseDir: process.cwd(),
-    sendData: undefined,
   });
 
   const tools = {
+    [EditFileTool.name]: tool({
+      ...editFileTool.toolDef,
+      execute: editFileTool.execute,
+    }),
+    [BashTool.name]: tool({
+      ...bashTool.toolDef,
+      execute: bashTool.execute,
+    }),
+    // TODO: Update other tools to new format as they are migrated
     ...readFileTool,
     ...readMultipleFilesTool,
-    ...editFileTool,
     ...saveFileTool,
     ...moveFileTool,
     // ...directoryTreeTool,
@@ -263,10 +243,6 @@ export async function initCliTools({
     ...grepTool,
     ...thinkTool,
     ...webFetchTool,
-    [BashTool.name]: tool({
-      ...bashTool.toolDef,
-      execute: bashTool.execute,
-    }),
     ...webSearchTool,
     ...dynamicTools,
   } as const;
