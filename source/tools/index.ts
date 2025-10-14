@@ -124,7 +124,7 @@ export async function initTools({
     [ReadMultipleFilesTool.name]: tool(readMultipleFilesTool.toolDef),
     [GrepTool.name]: tool(grepTool.toolDef),
     // TODO: Update other tools to new format as they are migrated
-    // ...directoryTreeTool,
+    // [DirectoryTreeTool.name]: tool(directoryTreeTool.toolDef),
     [CodeInterpreterTool.name]: tool(codeInterpreterTool.toolDef),
     [ThinkTool.name]: tool(thinkTool.toolDef),
     [WebFetchTool.name]: tool(webFetchTool.toolDef),
@@ -174,6 +174,9 @@ export async function initTools({
 
   // Add grep tool
   executors.set(GrepTool.name, grepTool.execute);
+
+  // Add directoryTree tool (commented out - not currently used)
+  // executors.set(DirectoryTreeTool.name, directoryTreeTool.execute);
 
   // Add webFetch tool
   executors.set(WebFetchTool.name, webFetchTool.execute);
@@ -294,7 +297,10 @@ export async function initCliTools({
       execute: grepTool.execute,
     }),
     // TODO: Update other tools to new format as they are migrated
-    // ...directoryTreeTool,
+    // [DirectoryTreeTool.name]: tool({
+    //   ...directoryTreeTool.toolDef,
+    //   execute: directoryTreeTool.execute,
+    // }),
     [CodeInterpreterTool.name]: tool({
       ...codeInterpreterTool.toolDef,
       execute: codeInterpreterTool.execute,
