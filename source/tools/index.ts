@@ -20,7 +20,7 @@ import {
   ReadMultipleFilesTool,
 } from "./read-multiple-files.ts";
 import { createSaveFileTool, SaveFileTool } from "./save-file.ts";
-import { createThinkTool } from "./think.ts";
+import { createThinkTool, ThinkTool } from "./think.ts";
 import type { Message } from "./types.ts";
 import { createWebFetchTool, WebFetchTool } from "./web-fetch.ts";
 import { createWebSearchTool, WebSearchTool } from "./web-search.ts";
@@ -134,7 +134,7 @@ export async function initTools({
     // TODO: Update other tools to new format as they are migrated
     // ...directoryTreeTool,
     ...codeInterpreterTool,
-    ...thinkTool,
+    [ThinkTool.name]: tool(thinkTool.toolDef),
     [WebFetchTool.name]: tool(webFetchTool.toolDef),
     [WebSearchTool.name]: tool(webSearchTool.toolDef),
     ...dynamicTools,
@@ -188,6 +188,9 @@ export async function initTools({
 
   // Add webSearch tool
   executors.set(WebSearchTool.name, webSearchTool.execute);
+
+  // Add think tool
+  executors.set(ThinkTool.name, thinkTool.execute);
 
   return {
     toolDefs: tools,
@@ -298,7 +301,10 @@ export async function initCliTools({
     // TODO: Update other tools to new format as they are migrated
     // ...directoryTreeTool,
     ...codeInterpreterTool,
-    ...thinkTool,
+    [ThinkTool.name]: tool({
+      ...thinkTool.toolDef,
+      execute: thinkTool.execute,
+    }),
     [WebFetchTool.name]: tool({
       ...webFetchTool.toolDef,
       execute: webFetchTool.execute,
