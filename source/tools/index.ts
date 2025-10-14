@@ -13,7 +13,7 @@ import { createDeleteFileTool, DeleteFileTool } from "./delete-file.ts";
 import { loadDynamicTools } from "./dynamic-tool-loader.ts";
 import { createEditFileTool, EditFileTool } from "./edit-file.ts";
 import { createGrepTool } from "./grep.ts";
-import { createMoveFileTool } from "./move-file.ts";
+import { createMoveFileTool, MoveFileTool } from "./move-file.ts";
 import { createReadFileTool } from "./read-file.ts";
 import { createReadMultipleFilesTool } from "./read-multiple-files.ts";
 import { createSaveFileTool, SaveFileTool } from "./save-file.ts";
@@ -76,6 +76,8 @@ export async function initTools({
 
   const moveFileTool = await createMoveFileTool({
     workingDir: process.cwd(),
+    terminal,
+    toolExecutor,
   });
 
   // const directoryTreeTool = await createDirectoryTreeTool({
@@ -122,10 +124,10 @@ export async function initTools({
     [BashTool.name]: tool(bashTool.toolDef),
     [SaveFileTool.name]: tool(saveFileTool.toolDef),
     [DeleteFileTool.name]: tool(deleteFileTool.toolDef),
+    [MoveFileTool.name]: tool(moveFileTool.toolDef),
     // TODO: Update other tools to new format as they are migrated
     ...readFileTool,
     ...readMultipleFilesTool,
-    ...moveFileTool,
     // ...directoryTreeTool,
     ...codeInterpreterTool,
     ...grepTool,
@@ -163,6 +165,12 @@ export async function initTools({
     permissions.set(DeleteFileTool.name, deleteFileTool.ask);
   }
 
+  // Add moveFile tool
+  executors.set(MoveFileTool.name, moveFileTool.execute);
+  if (moveFileTool.ask) {
+    permissions.set(MoveFileTool.name, moveFileTool.ask);
+  }
+
   return {
     toolDefs: tools,
     executors,
@@ -197,6 +205,7 @@ export async function initCliTools({
 
   const moveFileTool = await createMoveFileTool({
     workingDir: process.cwd(),
+    terminal: undefined,
   });
 
   // const directoryTreeTool = await createDirectoryTreeTool({
@@ -252,10 +261,13 @@ export async function initCliTools({
       ...deleteFileTool.toolDef,
       execute: deleteFileTool.execute,
     }),
+    [MoveFileTool.name]: tool({
+      ...moveFileTool.toolDef,
+      execute: moveFileTool.execute,
+    }),
     // TODO: Update other tools to new format as they are migrated
     ...readFileTool,
     ...readMultipleFilesTool,
-    ...moveFileTool,
     // ...directoryTreeTool,
     ...codeInterpreterTool,
     ...grepTool,
