@@ -21,7 +21,6 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
           modelManager: options.modelManager,
           tokenTracker: options.tokenTracker,
           tokenCounter: options.tokenCounter,
-          events: new Map(),
         });
         const toolNames = Object.keys({ ...tools, ...agentTools }).sort();
 

@@ -86,7 +86,6 @@ export class Repl {
       modelManager,
       tokenTracker,
       tokenCounter,
-      events: toolEvents,
     });
 
     const completeToolDefs = {

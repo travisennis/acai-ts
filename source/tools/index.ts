@@ -5,7 +5,7 @@ import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import type { ToolExecutor } from "../tool-executor.ts";
-import { createAgentTools } from "./agent.ts";
+import { AgentTool, createAgentTools } from "./agent.ts";
 import { BashTool, createBashTool } from "./bash.ts";
 import {
   CodeInterpreterTool,
@@ -24,7 +24,7 @@ import {
 } from "./read-multiple-files.ts";
 import { createSaveFileTool, SaveFileTool } from "./save-file.ts";
 import { createThinkTool, ThinkTool } from "./think.ts";
-import type { Message } from "./types.ts";
+
 import { createWebFetchTool, WebFetchTool } from "./web-fetch.ts";
 import { createWebSearchTool, WebSearchTool } from "./web-search.ts";
 
@@ -37,17 +37,6 @@ export type CompleteToolResult = TypedToolResult<CompleteToolSet>;
 export type CompleteCliToolSet = AsyncReturnType<
   typeof initCliTools
 >["toolDefs"];
-
-const sendDataHandler = (events: Map<string, Message[]>) => {
-  const msgStore: Map<string, Message[]> = events;
-  return (msg: Message) => {
-    if (msgStore.has(msg.id)) {
-      msgStore.get(msg.id)?.push(msg);
-    } else {
-      msgStore.set(msg.id, [msg]);
-    }
-  };
-};
 
 export async function initTools({
   terminal,
@@ -334,25 +323,20 @@ export async function initAgents({
   modelManager,
   tokenTracker,
   tokenCounter,
-  events,
 }: {
   terminal: Terminal;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
   tokenCounter: TokenCounter;
-  events: Map<string, Message[]>;
 }) {
-  const sendDataFn = sendDataHandler(events);
-
   const agentTools = createAgentTools({
     modelManager,
     tokenTracker,
     tokenCounter,
-    sendData: sendDataFn,
   });
 
   const tools = {
-    ...agentTools,
+    [AgentTool.name]: tool(agentTools.toolDef),
   } as const;
 
   return {

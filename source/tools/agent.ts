@@ -1,4 +1,4 @@
-import { generateText, stepCountIs, tool } from "ai";
+import { generateText, stepCountIs, type ToolCallOptions } from "ai";
 import { z } from "zod";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
@@ -11,7 +11,7 @@ import { GrepTool } from "./grep.ts";
 import { initCliTools } from "./index.ts";
 import { ReadFileTool } from "./read-file.ts";
 import { ReadMultipleFilesTool } from "./read-multiple-files.ts";
-import type { SendData } from "./types.ts";
+import type { Message } from "./types.ts";
 
 export const AgentTool = {
   name: "agent" as const,
@@ -50,62 +50,70 @@ export const createAgentTools = (options: {
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
   tokenCounter: TokenCounter;
-  sendData?: SendData | undefined;
 }) => {
-  const { modelManager, tokenTracker, tokenCounter, sendData } = options;
+  const { modelManager, tokenTracker, tokenCounter } = options;
+
+  const toolDef = {
+    description: getToolDescription(),
+    inputSchema,
+  };
+
+  async function* execute(
+    { prompt }: z.infer<typeof inputSchema>,
+    { toolCallId, abortSignal }: ToolCallOptions,
+  ): AsyncGenerator<Message, string> {
+    if (abortSignal?.aborted) {
+      throw new Error("Agent execution aborted");
+    }
+
+    yield {
+      event: "tool-init",
+      id: toolCallId,
+      data: `Initializing agent with prompt: ${style.cyan(prompt)}`,
+    };
+
+    try {
+      const modelConfig = modelManager.getModelMetadata("task-agent");
+      const aiConfig = new AiConfig({
+        modelMetadata: modelConfig,
+        prompt: prompt,
+      });
+
+      const { text, usage } = await generateText({
+        model: modelManager.getModel("task-agent"),
+        maxOutputTokens: aiConfig.getMaxTokens(),
+        system:
+          "You are a code search assistant that will be given a task that will require you to search a code base to find relevant code and files.",
+        prompt: prompt,
+        stopWhen: stepCountIs(30),
+        providerOptions: aiConfig.getProviderOptions(),
+        tools: (await initCliTools({ tokenCounter })).toolDefs,
+        abortSignal: abortSignal,
+        // biome-ignore lint/style/useNamingConvention: third-party code
+        experimental_activeTools: [...TOOLS] as ToolName[],
+      });
+
+      tokenTracker.trackUsage("task-agent", usage);
+
+      yield {
+        event: "tool-completion",
+        id: toolCallId,
+        data: "Finished running the agent tool.",
+      };
+
+      return text;
+    } catch (error) {
+      yield {
+        event: "tool-error",
+        id: toolCallId,
+        data: "Error running agent tool.",
+      };
+      return (error as Error).message;
+    }
+  }
+
   return {
-    [AgentTool.name]: tool({
-      description: getToolDescription(),
-      inputSchema: inputSchema,
-      execute: async ({ prompt }, { abortSignal, toolCallId }) => {
-        if (abortSignal?.aborted) {
-          throw new Error("Agent execution aborted");
-        }
-
-        sendData?.({
-          event: "tool-init",
-          id: toolCallId,
-          data: `Initializing agent with prompt: ${style.cyan(prompt)}`,
-        });
-        try {
-          const modelConfig = modelManager.getModelMetadata("task-agent");
-          const aiConfig = new AiConfig({
-            modelMetadata: modelConfig,
-            prompt: prompt,
-          });
-
-          const { text, usage } = await generateText({
-            model: modelManager.getModel("task-agent"),
-            maxOutputTokens: aiConfig.getMaxTokens(),
-            system:
-              "You are a code search assistant that will be given a task that will require you to search a code base to find relevant code and files.",
-            prompt: prompt,
-            stopWhen: stepCountIs(30),
-            providerOptions: aiConfig.getProviderOptions(),
-            tools: (await initCliTools({ tokenCounter })).toolDefs,
-            abortSignal: abortSignal,
-            // biome-ignore lint/style/useNamingConvention: third-party code
-            experimental_activeTools: [...TOOLS] as ToolName[],
-          });
-
-          tokenTracker.trackUsage("task-agent", usage);
-
-          sendData?.({
-            event: "tool-completion",
-            id: toolCallId,
-            data: "Finished running the agent tool.",
-          });
-
-          return text;
-        } catch (error) {
-          sendData?.({
-            event: "tool-error",
-            id: toolCallId,
-            data: "Error running agent tool.",
-          });
-          return Promise.resolve((error as Error).message);
-        }
-      },
-    }),
+    toolDef,
+    execute,
   };
 };
