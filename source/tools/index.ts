@@ -15,7 +15,10 @@ import { createEditFileTool, EditFileTool } from "./edit-file.ts";
 import { createGrepTool } from "./grep.ts";
 import { createMoveFileTool, MoveFileTool } from "./move-file.ts";
 import { createReadFileTool, ReadFileTool } from "./read-file.ts";
-import { createReadMultipleFilesTool } from "./read-multiple-files.ts";
+import {
+  createReadMultipleFilesTool,
+  ReadMultipleFilesTool,
+} from "./read-multiple-files.ts";
 import { createSaveFileTool, SaveFileTool } from "./save-file.ts";
 import { createThinkTool } from "./think.ts";
 import type { Message } from "./types.ts";
@@ -126,8 +129,8 @@ export async function initTools({
     [DeleteFileTool.name]: tool(deleteFileTool.toolDef),
     [MoveFileTool.name]: tool(moveFileTool.toolDef),
     [ReadFileTool.name]: tool(readFileTool.toolDef),
+    [ReadMultipleFilesTool.name]: tool(readMultipleFilesTool.toolDef),
     // TODO: Update other tools to new format as they are migrated
-    ...readMultipleFilesTool,
     // ...directoryTreeTool,
     ...codeInterpreterTool,
     ...grepTool,
@@ -173,6 +176,9 @@ export async function initTools({
 
   // Add readFile tool
   executors.set(ReadFileTool.name, readFileTool.execute);
+
+  // Add readMultipleFiles tool
+  executors.set(ReadMultipleFilesTool.name, readMultipleFilesTool.execute);
 
   return {
     toolDefs: tools,
@@ -272,8 +278,11 @@ export async function initCliTools({
       ...readFileTool.toolDef,
       execute: readFileTool.execute,
     }),
+    [ReadMultipleFilesTool.name]: tool({
+      ...readMultipleFilesTool.toolDef,
+      execute: readMultipleFilesTool.execute,
+    }),
     // TODO: Update other tools to new format as they are migrated
-    ...readMultipleFilesTool,
     // ...directoryTreeTool,
     ...codeInterpreterTool,
     ...grepTool,
