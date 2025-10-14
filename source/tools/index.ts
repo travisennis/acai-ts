@@ -345,7 +345,12 @@ export async function initAgents({
     [AgentTool.name]: tool(agentTools.toolDef),
   } as const;
 
+  // Build executors map for manual loop
+  const executors = new Map();
+  executors.set(AgentTool.name, agentTools.execute);
+
   return {
     toolDefs: tools,
+    executors,
   };
 }

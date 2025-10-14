@@ -95,7 +95,7 @@ export class Repl {
 
     const tools = {
       toolDefs: completeToolDefs,
-      executors: coreTools.executors,
+      executors: new Map([...coreTools.executors, ...agentTools.executors]),
       permissions: coreTools.permissions,
     } as const;
 
