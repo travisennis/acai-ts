@@ -224,8 +224,7 @@ export class Repl {
             input: userPrompt,
             toolDefs,
             executors: executors,
-            // biome-ignore lint/suspicious/noExplicitAny: temporary
-            permissions: permissions as any, // FIXME: fix these types later
+            permissions: permissions,
             maxIterations: projectConfig.loop.maxIterations,
             abortSignal: signal,
             temperature:

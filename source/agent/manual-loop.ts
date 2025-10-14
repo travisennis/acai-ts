@@ -27,13 +27,12 @@ export type ManualLoopOptions = {
   input: string;
   toolDefs: CompleteToolSet;
   executors: Map<keyof CompleteToolSet, ToolExecuteFunction<unknown, string>>;
-  permissions: Record<
+  permissions: Map<
     keyof CompleteToolSet,
-    | ((
-        input: unknown,
-        options: ToolCallOptions,
-      ) => Promise<{ approve: true } | { approve: false; reason: string }>)
-    | undefined
+    (
+      input: unknown,
+      options: ToolCallOptions,
+    ) => Promise<{ approve: true } | { approve: false; reason: string }>
   >;
   maxIterations?: number;
   maxRetries?: number;
@@ -212,7 +211,7 @@ export async function runManualLoop(
 
       for (const call of toolCalls) {
         const toolName = call.toolName as keyof CompleteToolSet;
-        const permFunc = permissions[toolName];
+        const permFunc = permissions.get(toolName);
         if (permFunc) {
           toolsWithPermission.push(call);
         } else {
@@ -234,7 +233,7 @@ export async function runManualLoop(
           thisStepToolResults.push({ toolName });
 
           let approved = true;
-          const permFunc = permissions[toolName];
+          const permFunc = permissions.get(toolName);
           if (permFunc) {
             const permResult = await permFunc(call.input, {
               toolCallId: call.toolCallId,
