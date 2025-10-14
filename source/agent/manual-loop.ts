@@ -36,6 +36,7 @@ export type ManualLoopOptions = {
     | undefined
   >;
   maxIterations?: number;
+  maxRetries?: number;
   abortSignal?: AbortSignal;
   temperature?: number | undefined;
   toolCallRepair?: ToolCallRepairFunction<Record<string, Tool>>;
@@ -62,6 +63,7 @@ export async function runManualLoop(
     executors,
     permissions,
     maxIterations = 90,
+    maxRetries = 2,
     abortSignal,
     temperature,
     toolCallRepair,
@@ -97,6 +99,7 @@ export async function runManualLoop(
   };
 
   let iter = 0;
+  let consecutiveErrors = 0;
   while (iter < maxIterations) {
     if (abortSignal?.aborted) {
       logger.warn("The agent loop was aborted by the user.");
@@ -160,8 +163,6 @@ export async function runManualLoop(
           lastType = null;
         }
       }
-
-      await result.consumeStream();
 
       // Append streamed assistant/tool messages from model
       const response = await result.response;
@@ -365,18 +366,30 @@ export async function runManualLoop(
 
       messageHistory.appendResponseMessages(toolMessages);
 
+      await result.consumeStream();
+
       // continue iterations
       iter += 1;
     } catch (error) {
+      consecutiveErrors += 1;
+
       logger.error(
         error, // Log the full error object
-        "Error on REPL streamText",
+        `Error on REPL streamText (attempt ${consecutiveErrors}/${maxRetries + 1})`,
       );
       terminal.error(
         (error as Error).message.length > 100
           ? `${(error as Error).message.slice(0, 100)}...`
           : (error as Error).message,
       );
+
+      // Break loop if we exceed max retries
+      if (consecutiveErrors > maxRetries) {
+        terminal.error(
+          `Exceeded maximum retry attempts (${maxRetries}). Stopping manual loop.`,
+        );
+        break;
+      }
     }
   }
 
