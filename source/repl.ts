@@ -1,5 +1,5 @@
 import { isNumber, isRecord } from "@travisennis/stdlib/typeguards";
-import { stepCountIs, streamText, type ToolExecuteFunction } from "ai";
+import { stepCountIs, streamText } from "ai";
 import { runManualLoop } from "./agent/manual-loop.ts";
 import type { CommandManager } from "./commands/manager.ts";
 import { config as configManager } from "./config.ts";
@@ -20,13 +20,8 @@ import style from "./terminal/style.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
 import type { ToolExecutor } from "./tool-executor.ts";
-import {
-  type CompleteToolSet,
-  initAgents,
-  initCliTools,
-  initTools,
-} from "./tools/index.ts";
-import { buildManualToolset } from "./tools/manual-tools-adapter.ts";
+import { initAgents, initCliTools, initTools } from "./tools/index.ts";
+
 import type { Message } from "./tools/types.ts";
 
 interface ReplOptions {
@@ -98,25 +93,9 @@ export class Repl {
       ...agentTools.toolDefs,
     };
 
-    const recordToolMessage = (toolCallId: string, message: Message) => {
-      const existing = toolEvents.get(toolCallId);
-      if (existing) {
-        existing.push(message);
-      } else {
-        toolEvents.set(toolCallId, [message]);
-      }
-    };
-
-    const manualToolset = buildManualToolset(completeToolDefs, {
-      fallbackExecutors: coreTools.executors as Partial<
-        Record<keyof CompleteToolSet, ToolExecuteFunction<unknown, string>>
-      >,
-      onMessage: recordToolMessage,
-    });
-
     const tools = {
       toolDefs: completeToolDefs,
-      executors: manualToolset.executors,
+      executors: coreTools.executors,
       permissions: coreTools.permissions,
     } as const;
 
