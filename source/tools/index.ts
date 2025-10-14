@@ -12,7 +12,7 @@ import { createDeleteFileTool, DeleteFileTool } from "./delete-file.ts";
 // import { createDirectoryTreeTool } from "./directory-tree.ts";
 import { loadDynamicTools } from "./dynamic-tool-loader.ts";
 import { createEditFileTool, EditFileTool } from "./edit-file.ts";
-import { createGrepTool } from "./grep.ts";
+import { createGrepTool, GrepTool } from "./grep.ts";
 import { createMoveFileTool, MoveFileTool } from "./move-file.ts";
 import { createReadFileTool, ReadFileTool } from "./read-file.ts";
 import {
@@ -130,10 +130,10 @@ export async function initTools({
     [MoveFileTool.name]: tool(moveFileTool.toolDef),
     [ReadFileTool.name]: tool(readFileTool.toolDef),
     [ReadMultipleFilesTool.name]: tool(readMultipleFilesTool.toolDef),
+    [GrepTool.name]: tool(grepTool.toolDef),
     // TODO: Update other tools to new format as they are migrated
     // ...directoryTreeTool,
     ...codeInterpreterTool,
-    ...grepTool,
     ...thinkTool,
     ...webFetchTool,
     ...webSearchTool,
@@ -179,6 +179,9 @@ export async function initTools({
 
   // Add readMultipleFiles tool
   executors.set(ReadMultipleFilesTool.name, readMultipleFilesTool.execute);
+
+  // Add grep tool
+  executors.set(GrepTool.name, grepTool.execute);
 
   return {
     toolDefs: tools,
@@ -282,10 +285,13 @@ export async function initCliTools({
       ...readMultipleFilesTool.toolDef,
       execute: readMultipleFilesTool.execute,
     }),
+    [GrepTool.name]: tool({
+      ...grepTool.toolDef,
+      execute: grepTool.execute,
+    }),
     // TODO: Update other tools to new format as they are migrated
     // ...directoryTreeTool,
     ...codeInterpreterTool,
-    ...grepTool,
     ...thinkTool,
     ...webFetchTool,
     ...webSearchTool,

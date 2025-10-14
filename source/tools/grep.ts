@@ -1,189 +1,192 @@
 import { execSync } from "node:child_process";
 import { inspect } from "node:util";
-import { tool } from "ai";
+import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import { manageOutput } from "../tokens/manage-output.ts";
-import type { SendData } from "./types.ts";
+import type { Message } from "./types.ts";
 
 export const GrepTool = {
   name: "grepFiles" as const,
 };
 
-export const createGrepTool = (options: {
-  sendData?: SendData | undefined;
-  tokenCounter: TokenCounter;
-}) => {
-  const { sendData, tokenCounter } = options;
-  return {
-    [GrepTool.name]: tool({
-      description: `Search files for patterns using ripgrep (rg). Uses glob patterns for file filtering (e.g., "*.ts", "**/*.test.ts"). Auto-detects unbalanced regex patterns and falls back to fixed-string search for safety.`,
-      inputSchema: z.object({
-        pattern: z
-          .string()
-          .describe(
-            "The search pattern (regex by default, or fixed-string if literal=true or auto-detected as unbalanced)",
-          ),
-        path: z.string().describe("The path to search in"),
-        recursive: z.coerce
-          .boolean()
-          .nullable()
-          .describe("Search recursively. (default: true))"),
-        ignoreCase: z.coerce
-          .boolean()
-          .nullable()
-          .describe("Use case-sensitive search. (default: false)"),
-        filePattern: z
-          .string()
-          .nullable()
-          .describe(
-            "Glob pattern to filter files (e.g., '*.ts', '**/*.test.js'). (Default: no filtering)",
-          ),
-        contextLines: z.coerce
-          .number()
-          .nullable()
-          .describe(
-            "The number of context lines needed in search results. (Default: 0)",
-          ),
-        searchIgnored: z.coerce
-          .boolean()
-          .nullable()
-          .describe("Search ignored files. (Default: false)"),
-        literal: z.coerce
-          .boolean()
-          .nullable()
-          .describe(
-            "Pass true for fixed-string search (-F), false for regex, (Default: auto-detects unbalanced patterns like mismatched parentheses/brackets.)",
-          ),
-      }),
-      execute: async (
-        {
-          pattern,
-          path,
-          recursive,
-          ignoreCase,
-          filePattern,
-          contextLines,
-          searchIgnored,
-          literal,
-        },
-        { toolCallId, abortSignal },
-      ) => {
-        // Check if execution has been aborted
-        if (abortSignal?.aborted) {
-          throw new Error("Grep search aborted");
-        }
-        try {
-          // grok doesn't follow my instructions
-          const safeFilePattern = filePattern === "null" ? null : filePattern;
-          sendData?.({
-            event: "tool-init",
-            id: toolCallId,
-            data: `Searching codebase for ${style.cyan(inspect(pattern))}${safeFilePattern ? ` with file pattern ${style.cyan(safeFilePattern)}` : ""} in ${style.cyan(path)}`,
-          });
+const inputSchema = z.object({
+  pattern: z
+    .string()
+    .describe(
+      "The search pattern (regex by default, or fixed-string if literal=true or auto-detected as unbalanced)",
+    ),
+  path: z.string().describe("The path to search in"),
+  recursive: z.coerce
+    .boolean()
+    .nullable()
+    .describe("Search recursively. (default: true))"),
+  ignoreCase: z.coerce
+    .boolean()
+    .nullable()
+    .describe("Use case-sensitive search. (default: false)"),
+  filePattern: z
+    .string()
+    .nullable()
+    .describe(
+      "Glob pattern to filter files (e.g., '*.ts', '**/*.test.js'). (Default: no filtering)",
+    ),
+  contextLines: z.coerce
+    .number()
+    .nullable()
+    .describe(
+      "The number of context lines needed in search results. (Default: 0)",
+    ),
+  searchIgnored: z.coerce
+    .boolean()
+    .nullable()
+    .describe("Search ignored files. (Default: false)"),
+  literal: z.coerce
+    .boolean()
+    .nullable()
+    .describe(
+      "Pass true for fixed-string search (-F), false for regex, (Default: auto-detects unbalanced patterns like mismatched parentheses/brackets.)",
+    ),
+});
 
-          // Normalize literal option: if null => auto-detect using heuristic
-          let effectiveLiteral: boolean | null = null;
-          if (literal === true) {
-            effectiveLiteral = true;
-          } else if (literal === false) {
-            effectiveLiteral = false;
-          } else {
-            // auto-detect
-            try {
-              if (likelyUnbalancedRegex(pattern)) {
-                effectiveLiteral = true;
-                sendData?.({
-                  event: "tool-update",
-                  id: toolCallId,
-                  data: {
-                    primary:
-                      "Pattern appears to contain unbalanced regex metacharacters; using fixed-string mode (-F).",
-                  },
-                });
-              } else {
-                effectiveLiteral = false;
-              }
-            } catch (_err) {
+export type GrepInputSchema = z.infer<typeof inputSchema>;
+
+export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
+  const { tokenCounter } = options;
+
+  return {
+    toolDef: {
+      description: `Search files for patterns using ripgrep (rg). Uses glob patterns for file filtering (e.g., "*.ts", "**/*.test.ts"). Auto-detects unbalanced regex patterns and falls back to fixed-string search for safety.`,
+      inputSchema,
+    },
+    async *execute(
+      {
+        pattern,
+        path,
+        recursive,
+        ignoreCase,
+        filePattern,
+        contextLines,
+        searchIgnored,
+        literal,
+      }: GrepInputSchema,
+      { toolCallId, abortSignal }: ToolCallOptions,
+    ): AsyncGenerator<Message, string> {
+      // Check if execution has been aborted
+      if (abortSignal?.aborted) {
+        throw new Error("Grep search aborted");
+      }
+
+      try {
+        // grok doesn't follow my instructions
+        const safeFilePattern = filePattern === "null" ? null : filePattern;
+        yield {
+          event: "tool-init",
+          id: toolCallId,
+          data: `Searching codebase for ${style.cyan(inspect(pattern))}${safeFilePattern ? ` with file pattern ${style.cyan(safeFilePattern)}` : ""} in ${style.cyan(path)}`,
+        };
+
+        // Normalize literal option: if null => auto-detect using heuristic
+        let effectiveLiteral: boolean | null = null;
+        if (literal === true) {
+          effectiveLiteral = true;
+        } else if (literal === false) {
+          effectiveLiteral = false;
+        } else {
+          // auto-detect
+          try {
+            if (likelyUnbalancedRegex(pattern)) {
+              effectiveLiteral = true;
+              yield {
+                event: "tool-update",
+                id: toolCallId,
+                data: {
+                  primary:
+                    "Pattern appears to contain unbalanced regex metacharacters; using fixed-string mode (-F).",
+                },
+              };
+            } else {
               effectiveLiteral = false;
             }
+          } catch (_err) {
+            effectiveLiteral = false;
           }
-
-          const rawResult = grepFiles(pattern, path, {
-            recursive,
-            ignoreCase,
-            filePattern: safeFilePattern,
-            contextLines,
-            searchIgnored,
-            literal: effectiveLiteral,
-          });
-
-          const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
-
-          const managed = manageOutput(rawResult, {
-            tokenCounter,
-            threshold: maxTokens,
-          });
-
-          if (managed.truncated) {
-            sendData?.({
-              event: "tool-update",
-              id: toolCallId,
-              data: { primary: managed.warning },
-            });
-          }
-
-          // Extract and filter matches from the content
-          const extractMatches = (content: string): string[] => {
-            if (content === "No matches found.") {
-              return [];
-            }
-            return content
-              .trim()
-              .split("\n")
-              .filter((line: string) => {
-                if (line === "--") {
-                  return false;
-                }
-                return /^(.+?):(\d+):(.*)$/.test(line);
-              });
-          };
-
-          const matches = extractMatches(managed.content);
-          const matchCount = matches.length;
-
-          // Show the last 10 matches as a preview
-          if (matchCount > 0) {
-            const previewMatches = matches.slice(-10); // Get last 10 matches
-
-            sendData?.({
-              event: "tool-update",
-              id: toolCallId,
-              data: {
-                primary: `Last ${previewMatches.length} matches:`,
-                secondary: previewMatches,
-              },
-            });
-          }
-
-          sendData?.({
-            event: "tool-completion",
-            id: toolCallId,
-            data: `Found ${style.cyan(matchCount)} matches. (${managed.tokenCount} tokens)`,
-          });
-          return Promise.resolve(managed.content);
-        } catch (error) {
-          sendData?.({
-            event: "tool-error",
-            id: toolCallId,
-            data: `Error searching for "${pattern}" in ${path}`,
-          });
-          return Promise.resolve((error as Error).message);
         }
-      },
-    }),
+
+        const rawResult = grepFiles(pattern, path, {
+          recursive,
+          ignoreCase,
+          filePattern: safeFilePattern,
+          contextLines,
+          searchIgnored,
+          literal: effectiveLiteral,
+        });
+
+        const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
+
+        const managed = manageOutput(rawResult, {
+          tokenCounter,
+          threshold: maxTokens,
+        });
+
+        if (managed.truncated) {
+          yield {
+            event: "tool-update",
+            id: toolCallId,
+            data: { primary: managed.warning },
+          };
+        }
+
+        // Extract and filter matches from the content
+        const extractMatches = (content: string): string[] => {
+          if (content === "No matches found.") {
+            return [];
+          }
+          return content
+            .trim()
+            .split("\n")
+            .filter((line: string) => {
+              if (line === "--") {
+                return false;
+              }
+              return /^(.+?):(\d+):(.*)$/.test(line);
+            });
+        };
+
+        const matches = extractMatches(managed.content);
+        const matchCount = matches.length;
+
+        // Show the last 10 matches as a preview
+        if (matchCount > 0) {
+          const previewMatches = matches.slice(-10); // Get last 10 matches
+
+          yield {
+            event: "tool-update",
+            id: toolCallId,
+            data: {
+              primary: `Last ${previewMatches.length} matches:`,
+              secondary: previewMatches,
+            },
+          };
+        }
+
+        yield {
+          event: "tool-completion",
+          id: toolCallId,
+          data: `Found ${style.cyan(matchCount)} matches. (${managed.tokenCount} tokens)`,
+        };
+        return managed.content;
+      } catch (error) {
+        yield {
+          event: "tool-error",
+          id: toolCallId,
+          data: `Error searching for "${pattern}" in ${path}`,
+        };
+        return (error as Error).message;
+      }
+    },
   };
 };
 
