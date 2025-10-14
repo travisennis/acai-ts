@@ -1,31 +1,35 @@
 import assert from "node:assert/strict";
 import { existsSync, rmSync } from "node:fs";
 import { after, describe, it } from "node:test";
-import {
-  CodeInterpreterTool,
-  createCodeInterpreterTool,
-} from "../../source/tools/code-interpreter.ts";
+import { createCodeInterpreterTool } from "../../source/tools/code-interpreter.ts";
 
 // Helper to run the tool easily
 async function runTool(input: {
   code: string;
-  timeoutSeconds?: number;
+  timeoutSeconds?: number | null;
 }): Promise<{ ok: boolean; value: unknown }> {
   const events: Array<{ event: string; data: unknown }> = [];
-  const { [CodeInterpreterTool.name]: tool } = createCodeInterpreterTool({
-    sendData: async (msg) => {
-      events.push({ event: msg.event, data: msg.data });
-    },
-  });
+  const { execute } = createCodeInterpreterTool();
 
-  if (!tool.execute) {
-    throw new Error("Tool has no execute function.");
+  const generator = execute(
+    { ...input, timeoutSeconds: input.timeoutSeconds ?? null },
+    { toolCallId: "t1", abortSignal: undefined, messages: [] },
+  );
+
+  let output = "";
+
+  // Iterate through the generator and capture the final return value
+  while (true) {
+    const result = await generator.next();
+    if (result.done) {
+      // This is the final return value
+      output = result.value;
+      break;
+    }
+    // This is a yielded message
+    events.push({ event: result.value.event, data: result.value.data });
   }
 
-  const output = await tool.execute(
-    input as never,
-    { toolCallId: "t1" } as never,
-  );
   if (typeof output === "string" && output.startsWith("{")) {
     return { ok: true, value: JSON.parse(output) };
   }

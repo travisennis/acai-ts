@@ -7,7 +7,10 @@ import type { TokenTracker } from "../tokens/tracker.ts";
 import type { ToolExecutor } from "../tool-executor.ts";
 import { createAgentTools } from "./agent.ts";
 import { BashTool, createBashTool } from "./bash.ts";
-import { createCodeInterpreterTool } from "./code-interpreter.ts";
+import {
+  CodeInterpreterTool,
+  createCodeInterpreterTool,
+} from "./code-interpreter.ts";
 import { createDeleteFileTool, DeleteFileTool } from "./delete-file.ts";
 // import { createDirectoryTreeTool } from "./directory-tree.ts";
 import { loadDynamicTools } from "./dynamic-tool-loader.ts";
@@ -94,7 +97,7 @@ export async function initTools({
     toolExecutor,
   });
 
-  const codeInterpreterTool = createCodeInterpreterTool({});
+  const codeInterpreterTool = createCodeInterpreterTool();
 
   const grepTool = createGrepTool({
     tokenCounter,
@@ -133,7 +136,7 @@ export async function initTools({
     [GrepTool.name]: tool(grepTool.toolDef),
     // TODO: Update other tools to new format as they are migrated
     // ...directoryTreeTool,
-    ...codeInterpreterTool,
+    [CodeInterpreterTool.name]: tool(codeInterpreterTool.toolDef),
     [ThinkTool.name]: tool(thinkTool.toolDef),
     [WebFetchTool.name]: tool(webFetchTool.toolDef),
     [WebSearchTool.name]: tool(webSearchTool.toolDef),
@@ -192,6 +195,9 @@ export async function initTools({
   // Add think tool
   executors.set(ThinkTool.name, thinkTool.execute);
 
+  // Add codeInterpreter tool
+  executors.set(CodeInterpreterTool.name, codeInterpreterTool.execute);
+
   return {
     toolDefs: tools,
     executors,
@@ -239,7 +245,7 @@ export async function initCliTools({
     terminal: undefined,
   });
 
-  const codeInterpreterTool = createCodeInterpreterTool({});
+  const codeInterpreterTool = createCodeInterpreterTool();
 
   const grepTool = createGrepTool({
     tokenCounter,
@@ -300,7 +306,10 @@ export async function initCliTools({
     }),
     // TODO: Update other tools to new format as they are migrated
     // ...directoryTreeTool,
-    ...codeInterpreterTool,
+    [CodeInterpreterTool.name]: tool({
+      ...codeInterpreterTool.toolDef,
+      execute: codeInterpreterTool.execute,
+    }),
     [ThinkTool.name]: tool({
       ...thinkTool.toolDef,
       execute: thinkTool.execute,
