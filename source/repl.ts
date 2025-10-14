@@ -264,6 +264,8 @@ export class Repl {
           currentContextWindow = result.usage.totalTokens;
 
           terminal.hr();
+
+          terminal.lineBreak();
         } else {
           const aiConfig = new AiConfig({
             modelMetadata: modelConfig,
