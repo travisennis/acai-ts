@@ -67,13 +67,10 @@ describe("bash tool path validation for git message flags", async () => {
 });
 
 describe("bash tool abort signal handling", async () => {
-  const mockSendData = () => {};
-
   it("aborts execution on signal", async () => {
     const ac = new AbortController();
     const tool = await createBashTool({
       baseDir,
-      sendData: mockSendData,
       tokenCounter,
     });
     ac.abort();

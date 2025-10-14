@@ -9,7 +9,7 @@ import type { TokenCounter } from "../tokens/counter.ts";
 import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { isMutatingCommand, resolveCwd, validatePaths } from "./bash-utils.ts";
 import { isPathWithinBaseDir } from "./filesystem-utils.ts";
-import type { Message, SendData } from "./types.ts";
+import type { Message } from "./types.ts";
 
 export const BashTool = {
   name: "bash" as const,
@@ -43,7 +43,6 @@ export const createBashTool = async ({
   toolExecutor,
 }: {
   baseDir: string;
-  sendData?: SendData;
   tokenCounter: TokenCounter;
   terminal?: Terminal;
   toolExecutor?: ToolExecutor;
