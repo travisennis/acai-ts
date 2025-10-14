@@ -22,7 +22,7 @@ import {
 import { createSaveFileTool, SaveFileTool } from "./save-file.ts";
 import { createThinkTool } from "./think.ts";
 import type { Message } from "./types.ts";
-import { createWebFetchTool } from "./web-fetch.ts";
+import { createWebFetchTool, WebFetchTool } from "./web-fetch.ts";
 import { createWebSearchTool } from "./web-search.ts";
 
 export type CompleteToolSet = AsyncReturnType<typeof initTools>["toolDefs"] &
@@ -135,7 +135,7 @@ export async function initTools({
     // ...directoryTreeTool,
     ...codeInterpreterTool,
     ...thinkTool,
-    ...webFetchTool,
+    [WebFetchTool.name]: tool(webFetchTool.toolDef),
     ...webSearchTool,
     ...dynamicTools,
   } as const;
@@ -182,6 +182,9 @@ export async function initTools({
 
   // Add grep tool
   executors.set(GrepTool.name, grepTool.execute);
+
+  // Add webFetch tool
+  executors.set(WebFetchTool.name, webFetchTool.execute);
 
   return {
     toolDefs: tools,
@@ -293,7 +296,10 @@ export async function initCliTools({
     // ...directoryTreeTool,
     ...codeInterpreterTool,
     ...thinkTool,
-    ...webFetchTool,
+    [WebFetchTool.name]: tool({
+      ...webFetchTool.toolDef,
+      execute: webFetchTool.execute,
+    }),
     ...webSearchTool,
     ...dynamicTools,
   } as const;
