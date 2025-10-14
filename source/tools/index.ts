@@ -24,7 +24,6 @@ import {
 } from "./read-multiple-files.ts";
 import { createSaveFileTool, SaveFileTool } from "./save-file.ts";
 import { createThinkTool, ThinkTool } from "./think.ts";
-
 import { createWebFetchTool, WebFetchTool } from "./web-fetch.ts";
 import { createWebSearchTool, WebSearchTool } from "./web-search.ts";
 
@@ -129,7 +128,13 @@ export async function initTools({
     [ThinkTool.name]: tool(thinkTool.toolDef),
     [WebFetchTool.name]: tool(webFetchTool.toolDef),
     [WebSearchTool.name]: tool(webSearchTool.toolDef),
-    ...dynamicTools,
+    // Add dynamic tools - they already have toolDef structure
+    ...Object.fromEntries(
+      Object.entries(dynamicTools).map(([name, toolObj]) => [
+        name,
+        tool(toolObj.toolDef),
+      ]),
+    ),
   } as const;
 
   // Build executors and permissions maps for manual loop
@@ -189,6 +194,14 @@ export async function initTools({
 
   // Add codeInterpreter tool
   executors.set(CodeInterpreterTool.name, codeInterpreterTool.execute);
+
+  // Add dynamic tools to executors and permissions
+  for (const [name, toolObj] of Object.entries(dynamicTools)) {
+    executors.set(name, toolObj.execute);
+    if (toolObj.ask) {
+      permissions.set(name, toolObj.ask);
+    }
+  }
 
   return {
     toolDefs: tools,
@@ -317,7 +330,16 @@ export async function initCliTools({
       ...webSearchTool.toolDef,
       execute: webSearchTool.execute,
     }),
-    ...dynamicTools,
+    // Add dynamic tools with execute functions
+    ...Object.fromEntries(
+      Object.entries(dynamicTools).map(([name, toolObj]) => [
+        name,
+        tool({
+          ...toolObj.toolDef,
+          execute: toolObj.execute,
+        }),
+      ]),
+    ),
   } as const;
 
   return {

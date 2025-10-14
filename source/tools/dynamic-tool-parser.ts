@@ -12,6 +12,7 @@ const toolMetadataSchema = z.object({
       default: z.union([z.string(), z.number(), z.boolean()]).optional(),
     }),
   ),
+  needsApproval: z.boolean().default(true),
 });
 
 export type ToolMetadata = z.infer<typeof toolMetadataSchema>;

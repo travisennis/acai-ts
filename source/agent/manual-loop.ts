@@ -310,7 +310,7 @@ export async function runManualLoop(
   return loopResult;
 }
 
-async function consumeToolAsyncIterable(
+export async function consumeToolAsyncIterable(
   iterable: AsyncIterable<unknown>,
 ): Promise<{ finalValue: unknown; messages: Message[] }> {
   const iterator = iterable[Symbol.asyncIterator]();

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { consumeToolAsyncIterable } from "../../source/agent/manual-loop.ts";
 import { loadDynamicTools } from "../../source/tools/dynamic-tool-loader.ts";
 
 test("Dynamic tool integration - end-to-end functionality", async () => {
@@ -82,40 +83,144 @@ if (process.env.TOOL_ACTION === 'execute') {
     const toolImpl = tool as unknown as {
       execute: (
         args: { message: string; count?: number },
-        meta: { toolCallId: string },
-      ) => Promise<string>;
+        meta: { toolCallId: string; abortSignal?: AbortSignal },
+      ) => AsyncGenerator<unknown, string>;
     };
 
     // Test with required parameters
-    const result1 = await toolImpl.execute(
-      { message: "Hello World" },
-      { toolCallId: "test-1" },
-    );
-    assert.equal(result1, "Hello World", "Should return the message");
-
-    // Test with optional parameters
-    const result2 = await toolImpl.execute(
-      { message: "Repeat", count: 3 },
-      { toolCallId: "test-2" },
+    const result1 = await consumeToolAsyncIterable(
+      toolImpl.execute({ message: "Hello World" }, { toolCallId: "test-1" }),
     );
     assert.equal(
-      result2,
+      result1.finalValue,
+      "Hello World",
+      "Should return the message",
+    );
+
+    // Test with optional parameters
+    const result2 = await consumeToolAsyncIterable(
+      toolImpl.execute(
+        { message: "Repeat", count: 3 },
+        { toolCallId: "test-2" },
+      ),
+    );
+    assert.equal(
+      result2.finalValue,
       "Repeat\nRepeat\nRepeat",
       "Should repeat message 3 times",
     );
 
     // Test error handling - missing required parameter
-    try {
-      await toolImpl.execute({} as { message: string; count?: number }, {
+    const errorResult = await consumeToolAsyncIterable(
+      toolImpl.execute({} as { message: string; count?: number }, {
         toolCallId: "test-3",
-      });
-      assert.fail("Should have thrown error for missing required parameter");
-    } catch (error) {
-      assert.ok(
-        error instanceof Error && error.message.includes("Invalid parameters"),
-        "Should throw validation error",
-      );
+      }),
+    );
+    assert.ok(
+      typeof errorResult.finalValue === "string" &&
+        errorResult.finalValue.includes("Invalid parameters"),
+      "Should return validation error message",
+    );
+  } finally {
+    // Clean up
+    if (fs.existsSync(testToolPath)) {
+      fs.unlinkSync(testToolPath);
     }
+  }
+});
+
+test("Dynamic tool integration - needsApproval functionality", async () => {
+  // Create a temporary test tool that doesn't need approval
+  const testToolContent = `#!/usr/bin/env node
+
+import { spawn } from 'node:child_process';
+
+if (process.env.TOOL_ACTION === 'describe') {
+  console.log(JSON.stringify({
+    name: 'test-no-approval',
+    description: 'Test tool that does not need approval',
+    parameters: [
+      {
+        name: 'message',
+        type: 'string',
+        description: 'Message to echo back',
+        required: true
+      }
+    ],
+    needsApproval: false
+  }, null, 2));
+  process.exit(0);
+}
+
+if (process.env.TOOL_ACTION === 'execute') {
+  let params = [];
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('readable', () => {
+    let chunk;
+    while (null !== (chunk = process.stdin.read())) {
+      params = JSON.parse(chunk);
+    }
+  });
+
+  process.stdin.on('end', () => {
+    const message = params.find(p => p.name === 'message')?.value || 'default';
+    console.log(message);
+    process.exit(0);
+  });
+}
+`;
+
+  // Create temporary tools directory
+  const tempToolsDir = path.join(process.cwd(), ".acai", "tools");
+  if (!fs.existsSync(tempToolsDir)) {
+    fs.mkdirSync(tempToolsDir, { recursive: true });
+  }
+
+  const testToolPath = path.join(tempToolsDir, "test-no-approval.js");
+  fs.writeFileSync(testToolPath, testToolContent);
+  fs.chmodSync(testToolPath, "755");
+
+  try {
+    // Test dynamic tool loading
+    const tools = await loadDynamicTools({
+      baseDir: process.cwd(),
+    });
+
+    // Verify tool was loaded
+    assert.ok(tools["dynamic-test-no-approval"], "Test tool should be loaded");
+
+    // Test tool execution
+    const tool = tools["dynamic-test-no-approval"];
+    const toolImpl = tool as unknown as {
+      execute: (
+        args: { message: string },
+        meta: { toolCallId: string; abortSignal?: AbortSignal },
+      ) => AsyncGenerator<unknown, string>;
+      ask: (
+        args: { message: string },
+        meta: { toolCallId: string; abortSignal?: AbortSignal },
+      ) => Promise<{ approve: boolean; reason?: string }>;
+    };
+
+    // Test that ask returns true when needsApproval is false
+    const approvalResult = await toolImpl.ask(
+      { message: "Test" },
+      { toolCallId: "test-approval" },
+    );
+    assert.equal(
+      approvalResult.approve,
+      true,
+      "Should auto-approve when needsApproval is false",
+    );
+
+    // Test tool execution still works
+    const result = await consumeToolAsyncIterable(
+      toolImpl.execute(
+        { message: "Auto-approved" },
+        { toolCallId: "test-execution" },
+      ),
+    );
+    assert.equal(result.finalValue, "Auto-approved", "Should execute normally");
   } finally {
     // Clean up
     if (fs.existsSync(testToolPath)) {
@@ -141,19 +246,18 @@ test("Dynamic tool integration - run-all-checks tool", async () => {
   const toolImpl = tool as unknown as {
     execute: (
       args: { dir?: string },
-      meta: { toolCallId: string },
-    ) => Promise<string>;
+      meta: { toolCallId: string; abortSignal?: AbortSignal },
+    ) => AsyncGenerator<unknown, string>;
   };
 
   // This will run npm test in the current directory
-  const result = await toolImpl.execute(
-    { dir: "." },
-    { toolCallId: "test-run-tests" },
+  const result = await consumeToolAsyncIterable(
+    toolImpl.execute({ dir: "." }, { toolCallId: "test-run-tests" }),
   );
 
   // The result should contain test output (we don't care about the exact content)
   assert.ok(
-    typeof result === "string" && result.length > 0,
+    typeof result.finalValue === "string" && result.finalValue.length > 0,
     "Should return test output",
   );
 });
