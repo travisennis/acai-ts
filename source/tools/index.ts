@@ -16,7 +16,7 @@ import { createGrepTool } from "./grep.ts";
 import { createMoveFileTool } from "./move-file.ts";
 import { createReadFileTool } from "./read-file.ts";
 import { createReadMultipleFilesTool } from "./read-multiple-files.ts";
-import { createSaveFileTool } from "./save-file.ts";
+import { createSaveFileTool, SaveFileTool } from "./save-file.ts";
 import { createThinkTool } from "./think.ts";
 import type { Message } from "./types.ts";
 import { createWebFetchTool } from "./web-fetch.ts";
@@ -120,10 +120,10 @@ export async function initTools({
   const tools = {
     [EditFileTool.name]: tool(editFileTool.toolDef),
     [BashTool.name]: tool(bashTool.toolDef),
+    [SaveFileTool.name]: tool(saveFileTool.toolDef),
     // TODO: Update other tools to new format as they are migrated
     ...readFileTool,
     ...readMultipleFilesTool,
-    ...saveFileTool,
     ...moveFileTool,
     // ...directoryTreeTool,
     ...deleteFileTool,
@@ -149,6 +149,12 @@ export async function initTools({
   executors.set(EditFileTool.name, editFileTool.execute);
   if (editFileTool.ask) {
     permissions.set(EditFileTool.name, editFileTool.ask);
+  }
+
+  // Add saveFile tool
+  executors.set(SaveFileTool.name, saveFileTool.execute);
+  if (saveFileTool.ask) {
+    permissions.set(SaveFileTool.name, saveFileTool.ask);
   }
 
   return {
@@ -232,10 +238,13 @@ export async function initCliTools({
       ...bashTool.toolDef,
       execute: bashTool.execute,
     }),
+    [SaveFileTool.name]: tool({
+      ...saveFileTool.toolDef,
+      execute: saveFileTool.execute,
+    }),
     // TODO: Update other tools to new format as they are migrated
     ...readFileTool,
     ...readMultipleFilesTool,
-    ...saveFileTool,
     ...moveFileTool,
     // ...directoryTreeTool,
     ...deleteFileTool,
