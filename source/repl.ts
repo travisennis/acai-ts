@@ -20,7 +20,12 @@ import style from "./terminal/style.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
 import type { ToolExecutor } from "./tool-executor.ts";
-import { type CompleteToolSet, initAgents, initTools } from "./tools/index.ts";
+import {
+  type CompleteToolSet,
+  initAgents,
+  initCliTools,
+  initTools,
+} from "./tools/index.ts";
 import { buildManualToolset } from "./tools/manual-tools-adapter.ts";
 import type { Message } from "./tools/types.ts";
 
@@ -308,7 +313,7 @@ export class Repl {
             stopWhen: stepCountIs(90),
             maxRetries: 2,
             providerOptions: aiConfig.getProviderOptions(),
-            tools: tools.toolDefs,
+            tools: (await initCliTools({ tokenCounter })).toolDefs,
             // biome-ignore lint/style/useNamingConvention: third-party controlled
             experimental_repairToolCall: toolCallRepair(modelManager),
             abortSignal: signal,
