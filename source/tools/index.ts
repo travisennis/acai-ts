@@ -110,6 +110,8 @@ export async function initTools({
 
   const dynamicTools = await loadDynamicTools({
     baseDir: process.cwd(),
+    toolExecutor,
+    terminal,
   });
 
   // Build tools object for AI SDK
@@ -274,6 +276,8 @@ export async function initCliTools({
 
   const dynamicTools = await loadDynamicTools({
     baseDir: process.cwd(),
+    toolExecutor: undefined,
+    terminal: undefined,
   });
 
   const tools = {
