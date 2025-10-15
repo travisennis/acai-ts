@@ -376,3 +376,29 @@ export async function initAgents({
     executors,
   };
 }
+
+export async function initCliAgents({
+  modelManager,
+  tokenTracker,
+  tokenCounter,
+}: {
+  terminal: Terminal;
+  modelManager: ModelManager;
+  tokenTracker: TokenTracker;
+  tokenCounter: TokenCounter;
+}) {
+  const agentTools = createAgentTools({
+    modelManager,
+    tokenTracker,
+    tokenCounter,
+  });
+
+  const tools = {
+    [AgentTool.name]: tool({
+      ...agentTools.toolDef,
+      execute: agentTools.execute,
+    }),
+  } as const;
+
+  return { toolDefs: tools };
+}

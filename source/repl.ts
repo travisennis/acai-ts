@@ -19,7 +19,12 @@ import style from "./terminal/style.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
 import type { ToolExecutor } from "./tool-executor.ts";
-import { initAgents, initCliTools, initTools } from "./tools/index.ts";
+import {
+  initAgents,
+  initCliAgents,
+  initCliTools,
+  initTools,
+} from "./tools/index.ts";
 
 interface ReplOptions {
   messageHistory: MessageHistory;
@@ -92,6 +97,19 @@ export class Repl {
       toolDefs: completeToolDefs,
       executors: new Map([...coreTools.executors, ...agentTools.executors]),
       permissions: coreTools.permissions,
+    } as const;
+
+    // Build auto-mode tools (with execute) once
+    const cliTools = await initCliTools({ tokenCounter });
+    const cliAgents = await initCliAgents({
+      terminal,
+      modelManager,
+      tokenTracker,
+      tokenCounter,
+    });
+    const autoToolDefs = {
+      ...cliTools.toolDefs,
+      ...cliAgents.toolDefs,
     } as const;
 
     let currentAbortController: AbortController | null = null;
@@ -288,7 +306,7 @@ export class Repl {
             stopWhen: stepCountIs(90),
             maxRetries: 2,
             providerOptions: aiConfig.getProviderOptions(),
-            tools: (await initCliTools({ tokenCounter })).toolDefs,
+            tools: autoToolDefs,
             // biome-ignore lint/style/useNamingConvention: third-party controlled
             experimental_repairToolCall: toolCallRepair(modelManager),
             abortSignal: signal,
