@@ -7,7 +7,7 @@ import { logger } from "./logger.ts";
 import { PromptError, processPrompt } from "./mentions.ts";
 import type { MessageHistory } from "./messages.ts";
 import { AiConfig } from "./models/ai-config.ts";
-import type { ModelManager } from "./models/manager.js";
+import type { ModelManager } from "./models/manager.ts";
 import type { PromptManager } from "./prompts/manager.ts";
 import { systemPrompt } from "./prompts.ts";
 import { displayToolUse } from "./repl/display-tool-use.ts";
