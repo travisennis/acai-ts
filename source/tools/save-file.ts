@@ -212,9 +212,11 @@ export const createSaveFileTool = async ({
         return {
           approve: true,
         };
-      } catch (_error) {
+      } catch (error) {
+        const errMsg = (error as Error).message ?? "Unknown error";
         return {
-          approve: true,
+          approve: false,
+          reason: `Approval failed during pre-checks: ${errMsg}. Ensure the path is valid, not a directory, and within the allowed project directory, then try again.`,
         };
       }
     },
