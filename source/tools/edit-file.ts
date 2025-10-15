@@ -102,86 +102,92 @@ export const createEditFileTool = async ({
         abortSignal,
       }: { toolCallId: string; abortSignal?: AbortSignal },
     ): Promise<{ approve: true } | { approve: false; reason: string }> => {
-      if (terminal) {
-        const validPath = await validatePath(
-          joinWorkingDir(path, workingDir),
-          allowedDirectory,
-          { abortSignal },
-        );
+      try {
+        if (terminal) {
+          const validPath = await validatePath(
+            joinWorkingDir(path, workingDir),
+            allowedDirectory,
+            { abortSignal },
+          );
 
-        // Show diff preview
-        terminal.writeln(
-          `\n${style.blue.bold("●")} Proposing file changes: ${style.cyan(path)}`,
-        );
+          // Show diff preview
+          terminal.writeln(
+            `\n${style.blue.bold("●")} Proposing file changes: ${style.cyan(path)}`,
+          );
 
-        terminal.lineBreak();
+          terminal.lineBreak();
 
-        const diffPreview = await applyFileEdits(
-          validPath,
-          edits,
-          true,
-          abortSignal,
-        );
+          const diffPreview = await applyFileEdits(
+            validPath,
+            edits,
+            true,
+            abortSignal,
+          );
 
-        terminal.writeln(
-          `The agent is proposing the following ${style.cyan(edits.length)} edits:`,
-        );
+          terminal.writeln(
+            `The agent is proposing the following ${style.cyan(edits.length)} edits:`,
+          );
 
-        terminal.hr();
+          terminal.hr();
 
-        terminal.display(diffPreview);
+          terminal.display(diffPreview);
 
-        terminal.hr();
+          terminal.hr();
 
-        let userResponse: AskResponse | undefined;
-        // Prompt only when a toolExecutor is present
-        if (toolExecutor) {
-          const ctx = {
-            toolName: EditFileTool.name,
-            toolCallId,
-            message: "What would you like to do with these changes?",
-            choices: {
-              accept: "Accept these changes",
-              acceptAll: "Accept all future edits (including these)",
-              reject: "Reject these changes",
-            },
-          };
-          try {
-            userResponse = await toolExecutor.ask(ctx, { abortSignal });
-          } catch (e) {
-            if ((e as Error).name === "AbortError") {
-              throw new Error("File editing aborted during user input");
+          let userResponse: AskResponse | undefined;
+          // Prompt only when a toolExecutor is present
+          if (toolExecutor) {
+            const ctx = {
+              toolName: EditFileTool.name,
+              toolCallId,
+              message: "What would you like to do with these changes?",
+              choices: {
+                accept: "Accept these changes",
+                acceptAll: "Accept all future edits (including these)",
+                reject: "Reject these changes",
+              },
+            };
+            try {
+              userResponse = await toolExecutor.ask(ctx, { abortSignal });
+            } catch (e) {
+              if ((e as Error).name === "AbortError") {
+                throw new Error("File editing aborted during user input");
+              }
+              throw e;
             }
-            throw e;
+          }
+
+          const { result: userChoice, reason } = userResponse ?? {
+            result: "accept",
+          };
+
+          terminal.lineBreak();
+
+          if (userChoice === "accept-all") {
+            terminal.writeln(
+              style.yellow("✓ Auto-accept mode enabled for all edits"),
+            );
+            terminal.lineBreak();
+          }
+
+          if (userChoice === "reject") {
+            terminal.lineBreak();
+
+            const rejectionReason = reason || "No reason provided";
+            return {
+              approve: false,
+              reason: `The user rejected these changes. Reason: ${rejectionReason}`,
+            };
           }
         }
-
-        const { result: userChoice, reason } = userResponse ?? {
-          result: "accept",
+        return {
+          approve: true,
         };
-
-        terminal.lineBreak();
-
-        if (userChoice === "accept-all") {
-          terminal.writeln(
-            style.yellow("✓ Auto-accept mode enabled for all edits"),
-          );
-          terminal.lineBreak();
-        }
-
-        if (userChoice === "reject") {
-          terminal.lineBreak();
-
-          const rejectionReason = reason || "No reason provided";
-          return {
-            approve: false,
-            reason: `The user rejected these changes. Reason: ${rejectionReason}`,
-          };
-        }
+      } catch (_error) {
+        return {
+          approve: true,
+        };
       }
-      return {
-        approve: true,
-      };
     },
   };
 };
