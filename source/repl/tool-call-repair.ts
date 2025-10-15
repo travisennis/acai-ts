@@ -41,8 +41,8 @@ const localToolCallRepair = async (
 ) => {
   const schema = tool.inputSchema as z.ZodSchema<unknown>;
   const repairedArgs = jsonrepair(toolCall.input);
-  schema.parse(repairedArgs);
-  return { ...toolCall, input: JSON.stringify(repairedArgs) };
+  const validatedArgs = schema.parse(JSON.parse(repairedArgs));
+  return { ...toolCall, input: JSON.stringify(validatedArgs) };
 };
 
 export const toolCallRepair = (modelManager: ModelManager) => {
@@ -69,14 +69,23 @@ export const toolCallRepair = (modelManager: ModelManager) => {
     }
 
     try {
-      return localToolCallRepair(toolCall, tool);
+      const repaired = await localToolCallRepair(toolCall, tool);
+      logger.debug(`Tool call repaired with jsonrepair ${repaired.input}`);
+      return repaired;
     } catch (err) {
       logger.error(
         err,
         `Failed to repair tool call locally: ${toolCall.toolName}.`,
       );
       try {
-        return remoteToolCallRepair(modelManager, toolCall, tool, inputSchema);
+        const repaired = await remoteToolCallRepair(
+          modelManager,
+          toolCall,
+          tool,
+          inputSchema,
+        );
+        logger.debug(`Tool call repaired with remote repair ${repaired.input}`);
+        return repaired;
       } catch (err2) {
         logger.error(
           err2,
