@@ -147,6 +147,22 @@ export async function runManualLoop(
         } else if (chunk.type === "tool-call") {
           // We will handle after stream completes
           terminal.stopProgress();
+        } else if (chunk.type === "error") {
+          const error = chunk.error;
+          terminal.error("Stream error:");
+          terminal.error(String(error));
+          // handle error
+          break;
+        } else if (chunk.type === "abort") {
+          terminal.error("Stream abort:");
+          // handle stream abort
+          break;
+        } else if (chunk.type === "tool-error") {
+          const error = chunk.error;
+          terminal.error("Stream tool-error:");
+          terminal.error(String(error));
+          // handle error
+          break;
         } else {
           // finish off this step
           if (lastType === "reasoning") {
@@ -166,12 +182,14 @@ export async function runManualLoop(
       // Append streamed assistant/tool messages from model
       const response = await result.response;
       const responseMessages = response.messages;
+
       if (responseMessages.length > 0) {
         messageHistory.appendResponseMessages(responseMessages);
       }
 
       // If finishReason is not tool-calls, break
       const finishReason = await result.finishReason;
+
       if (finishReason !== "tool-calls") {
         const lastStepUsage = await result.usage;
 
@@ -345,6 +363,9 @@ export async function runManualLoop(
         ...concurrentToolMessages,
       ];
 
+      messageHistory.appendResponseMessages(toolMessages);
+
+      // Display tools calls
       for (const call of toolCalls) {
         const messages = toolEventMessages.get(call.toolCallId);
         if (messages) {
@@ -354,6 +375,7 @@ export async function runManualLoop(
         }
       }
 
+      // Calculate usage for the current step/iteration
       const stepUsage = await result.usage;
 
       loopResult.totalUsage.inputTokens += stepUsage.inputTokens ?? 0;
@@ -363,8 +385,7 @@ export async function runManualLoop(
         stepUsage.cachedInputTokens ?? 0;
       loopResult.totalUsage.reasoningTokens += stepUsage.reasoningTokens ?? 0;
 
-      messageHistory.appendResponseMessages(toolMessages);
-
+      // Consume the rest of the team if necessary
       await result.consumeStream();
 
       // continue iterations
@@ -374,8 +395,9 @@ export async function runManualLoop(
 
       logger.error(
         error, // Log the full error object
-        `Error on REPL streamText (attempt ${consecutiveErrors}/${maxRetries + 1})`,
+        `Error on manual agent loop streamText (attempt ${consecutiveErrors}/${maxRetries + 1})`,
       );
+
       terminal.error(
         (error as Error).message.length > 100
           ? `${(error as Error).message.slice(0, 100)}...`
