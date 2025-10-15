@@ -64,6 +64,24 @@ export const createSaveFileTool = async ({
           { requireExistence: false, abortSignal },
         );
 
+        // Check if path exists and is a directory
+        try {
+          const stat = await fs.stat(filePath);
+          if (stat.isDirectory()) {
+            throw new Error(
+              `Cannot save file - path is a directory: ${filePath}`,
+            );
+          }
+        } catch (error) {
+          // Only re-throw if it's our directory error, otherwise continue (file doesn't exist)
+          if (
+            error instanceof Error &&
+            error.message.includes("is a directory")
+          ) {
+            throw error;
+          }
+        }
+
         // Pre-side-effect check
         if (abortSignal?.aborted) {
           throw new Error("File saving aborted before writing");
@@ -99,82 +117,106 @@ export const createSaveFileTool = async ({
         abortSignal,
       }: { toolCallId: string; abortSignal?: AbortSignal },
     ): Promise<{ approve: true } | { approve: false; reason: string }> => {
-      if (terminal) {
-        const filePath = await validatePath(
-          joinWorkingDir(userPath, workingDir),
-          allowedDirectory,
-          { requireExistence: false, abortSignal },
-        );
-
-        terminal.writeln(
-          `\n${style.blue.bold("●")} Proposing file save: ${style.cyan(userPath)}`,
-        );
-
-        terminal.lineBreak();
-        terminal.writeln("Proposed file content:");
-        terminal.hr();
-        terminal.display(formatCodeBlock(userPath, content));
-        terminal.hr();
-
-        // Determine overwrite status for display
-        let overwriteMessage = "";
-        try {
-          const stat = await fs.stat(filePath);
-          if (stat.isFile()) {
-            overwriteMessage = style.yellow("(Will overwrite existing file)");
-          }
-        } catch {
-          overwriteMessage = style.green("(Will create new file)");
-        }
-
-        let userResponse: AskResponse | undefined;
-        if (toolExecutor) {
-          const ctx = {
-            toolName: SaveFileTool.name,
-            toolCallId,
-            message: `What would you like to do with this save? ${overwriteMessage}`,
-            choices: {
-              accept: "Accept this save",
-              acceptAll: "Accept all future saves (including this)",
-              reject: "Reject this save",
-            },
-          };
-          try {
-            userResponse = await toolExecutor.ask(ctx, { abortSignal });
-          } catch (e) {
-            if ((e as Error).name === "AbortError") {
-              throw new Error("File saving aborted during user input");
-            }
-            throw e;
-          }
-        }
-
-        const { result: userChoice, reason } = userResponse ?? {
-          result: "accept",
-        };
-
-        terminal.lineBreak();
-
-        if (userChoice === "accept-all") {
-          terminal.writeln(
-            style.yellow("✓ Auto-accept mode enabled for all saves"),
+      try {
+        if (terminal) {
+          const filePath = await validatePath(
+            joinWorkingDir(userPath, workingDir),
+            allowedDirectory,
+            { requireExistence: false, abortSignal },
           );
-          terminal.lineBreak();
-        }
 
-        if (userChoice === "reject") {
-          terminal.lineBreak();
+          // Check if path exists and is a directory
+          try {
+            const stat = await fs.stat(filePath);
+            if (stat.isDirectory()) {
+              throw new Error(
+                `Cannot save file - path is a directory: ${filePath}`,
+              );
+            }
+          } catch (error) {
+            // Only re-throw if it's our directory error, otherwise continue (file doesn't exist)
+            if (
+              error instanceof Error &&
+              error.message.includes("is a directory")
+            ) {
+              throw error;
+            }
+          }
 
-          const rejectionReason = reason || "No reason provided";
-          return {
-            approve: false,
-            reason: `The user rejected this save. Reason: ${rejectionReason}`,
+          terminal.writeln(
+            `\n${style.blue.bold("●")} Proposing file save: ${style.cyan(userPath)}`,
+          );
+
+          terminal.lineBreak();
+          terminal.writeln("Proposed file content:");
+          terminal.hr();
+          terminal.display(formatCodeBlock(userPath, content));
+          terminal.hr();
+
+          // Determine overwrite status for display
+          let overwriteMessage = "";
+          try {
+            const stat = await fs.stat(filePath);
+            if (stat.isFile()) {
+              overwriteMessage = style.yellow("(Will overwrite existing file)");
+            }
+          } catch {
+            overwriteMessage = style.green("(Will create new file)");
+          }
+
+          let userResponse: AskResponse | undefined;
+          if (toolExecutor) {
+            const ctx = {
+              toolName: SaveFileTool.name,
+              toolCallId,
+              message: `What would you like to do with this save? ${overwriteMessage}`,
+              choices: {
+                accept: "Accept this save",
+                acceptAll: "Accept all future saves (including this)",
+                reject: "Reject this save",
+              },
+            };
+            try {
+              userResponse = await toolExecutor.ask(ctx, { abortSignal });
+            } catch (e) {
+              if ((e as Error).name === "AbortError") {
+                throw new Error("File saving aborted during user input");
+              }
+              throw e;
+            }
+          }
+
+          const { result: userChoice, reason } = userResponse ?? {
+            result: "accept",
           };
+
+          terminal.lineBreak();
+
+          if (userChoice === "accept-all") {
+            terminal.writeln(
+              style.yellow("✓ Auto-accept mode enabled for all saves"),
+            );
+            terminal.lineBreak();
+          }
+
+          if (userChoice === "reject") {
+            terminal.lineBreak();
+
+            const rejectionReason = reason || "No reason provided";
+            return {
+              approve: false,
+              reason: `The user rejected this save. Reason: ${rejectionReason}`,
+            };
+          }
         }
+        return {
+          approve: true,
+        };
+      } catch (_error) {
+        return {
+          approve: true,
+        };
       }
-      return {
-        approve: true,
-      };
     },
   };
 };
