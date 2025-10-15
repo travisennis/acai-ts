@@ -255,7 +255,7 @@ export async function runManualLoop(
           if (permFunc) {
             const permResult = await permFunc(call.input, {
               toolCallId: call.toolCallId,
-              messages: [], // TODO: is this right?
+              messages: messageHistory.get(),
               abortSignal,
             });
 
@@ -269,7 +269,7 @@ export async function runManualLoop(
             try {
               const output = await exec(call.input, {
                 toolCallId: call.toolCallId,
-                messages: [], // TODO: is this right?
+                messages: messageHistory.get(),
                 abortSignal,
               });
               if (isAsyncIterable(output)) {
@@ -321,7 +321,7 @@ export async function runManualLoop(
             try {
               const output = await exec(call.input, {
                 toolCallId: call.toolCallId,
-                messages: [], // TODO: is this right?
+                messages: messageHistory.get(),
                 abortSignal,
               });
               if (isAsyncIterable(output)) {
@@ -353,7 +353,7 @@ export async function runManualLoop(
                 },
               },
             ],
-          };
+          } as const;
         }),
       );
 
