@@ -188,6 +188,10 @@ console.log(fibonacci(10)); // 55
 This paragraph contains **bold text**, *italic text*, \`inline code\`, 
 ~~strikethrough text~~, [a link](https://example.com), and ![an image](image.jpg).
 
+<test>
+This is test content inside of xml tags.
+</test>
+
 The end of this complex example.
   `;
 
