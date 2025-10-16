@@ -5,8 +5,8 @@ import type { ModelManager } from "../models/manager.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
-import { BashTool } from "./bash.ts";
 // import { DirectoryTreeTool } from "./directory-tree.ts";
+import { GlobTool } from "./glob.ts";
 import { GrepTool } from "./grep.ts";
 import { initCliTools } from "./index.ts";
 import { ReadFileTool } from "./read-file.ts";
@@ -19,7 +19,7 @@ export const AgentTool = {
 
 const TOOLS = [
   GrepTool.name,
-  BashTool.name,
+  GlobTool.name,
   ReadFileTool.name,
   ReadMultipleFilesTool.name,
   // DirectoryTreeTool.name,
@@ -29,11 +29,17 @@ type ToolName = (typeof TOOLS)[number];
 
 function getToolDescription(): string {
   const toolNames = TOOLS.join(", ");
-  return `Launch a new agent that has access to the following tools: ${toolNames}. When you are searching for a keyword or file and are not confident that you will find the right match on the first try, use the ${AgentTool.name} tool to perform the search for you. For example:
+  return `Launch a new agent that has access to the following tools: ${toolNames}. This agent is specifically designed for file discovery and code search tasks. Use the ${AgentTool.name} tool when you need to search for files or code patterns across the codebase.
 
-- If you are searching for a keyword like "config" or "logger", the ${AgentTool.name} tool is appropriate
-- If you want to read a specific file path, use the ${ReadFileTool.name} or appropriate command via the ${BashTool.name} tool instead of this tool, to find the match more quickly
-- If you are searching for a specific class definition like "class Foo", use the ${GrepTool.name} tool instead, to find the match more quickly
+Use cases:
+- Search for files matching specific patterns (e.g., "*.ts", "**/*.test.ts") using ${GlobTool.name}
+- Find code patterns or text within files using ${GrepTool.name}
+- Read specific files or multiple files using ${ReadFileTool.name} and ${ReadMultipleFilesTool.name}
+
+Important limitations:
+- This agent cannot execute shell commands or run external tools
+- It is focused purely on file discovery and content reading
+- For complex operations or command execution, use the main assistant directly
 
 Usage notes:
 1. Launch multiple agents concurrently whenever possible, to maximize performance; to do that, use a single message with multiple tool uses
