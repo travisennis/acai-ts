@@ -241,7 +241,7 @@ export async function applyFileEdits(
     );
   }
 
-  // Apply edits sequentially using strict literal, unique matches
+  // Apply edits sequentially using literal matches (allow multiple matches)
   let modifiedContent = originalContent;
   for (const edit of edits) {
     if (abortSignal?.aborted) {
@@ -249,25 +249,31 @@ export async function applyFileEdits(
     }
     const { oldText, newText } = edit; // Use literal oldText and newText
 
-    // Strict literal match: find exactly one occurrence without any normalization
-    const firstIndex = modifiedContent.indexOf(oldText);
-    if (firstIndex === -1) {
-      throw new Error("oldText not found in content");
-    }
-    const secondIndex = modifiedContent.indexOf(
-      oldText,
-      firstIndex + oldText.length,
-    );
-    if (secondIndex !== -1) {
-      throw new Error(
-        "oldText found multiple times and requires more code context to uniquely identify the intended match",
-      );
+    // Find all occurrences of oldText
+    let currentIndex = 0;
+    let matchCount = 0;
+
+    while (currentIndex < modifiedContent.length) {
+      const matchIndex = modifiedContent.indexOf(oldText, currentIndex);
+      if (matchIndex === -1) {
+        break;
+      }
+
+      matchCount++;
+
+      // Apply the replacement
+      modifiedContent =
+        modifiedContent.slice(0, matchIndex) +
+        newText +
+        modifiedContent.slice(matchIndex + oldText.length);
+
+      // Move current index past the replacement
+      currentIndex = matchIndex + newText.length;
     }
 
-    modifiedContent =
-      modifiedContent.slice(0, firstIndex) +
-      newText +
-      modifiedContent.slice(firstIndex + oldText.length);
+    if (matchCount === 0) {
+      throw new Error("oldText not found in content");
+    }
   }
 
   // Create unified diff (createUnifiedDiff normalizes line endings internally for diffing)
