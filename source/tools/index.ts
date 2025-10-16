@@ -15,6 +15,7 @@ import { createDeleteFileTool, DeleteFileTool } from "./delete-file.ts";
 // import { createDirectoryTreeTool } from "./directory-tree.ts";
 import { loadDynamicTools } from "./dynamic-tool-loader.ts";
 import { createEditFileTool, EditFileTool } from "./edit-file.ts";
+import { createGlobTool, GlobTool } from "./glob.ts";
 import { createGrepTool, GrepTool } from "./grep.ts";
 import { createMoveFileTool, MoveFileTool } from "./move-file.ts";
 import { createReadFileTool, ReadFileTool } from "./read-file.ts";
@@ -87,6 +88,10 @@ export async function initTools({
 
   const codeInterpreterTool = createCodeInterpreterTool();
 
+  const globTool = createGlobTool({
+    tokenCounter,
+  });
+
   const grepTool = createGrepTool({
     tokenCounter,
   });
@@ -123,6 +128,7 @@ export async function initTools({
     [MoveFileTool.name]: tool(moveFileTool.toolDef),
     [ReadFileTool.name]: tool(readFileTool.toolDef),
     [ReadMultipleFilesTool.name]: tool(readMultipleFilesTool.toolDef),
+    [GlobTool.name]: tool(globTool.toolDef),
     [GrepTool.name]: tool(grepTool.toolDef),
     // [DirectoryTreeTool.name]: tool(directoryTreeTool.toolDef),
     [CodeInterpreterTool.name]: tool(codeInterpreterTool.toolDef),
@@ -177,6 +183,9 @@ export async function initTools({
 
   // Add readMultipleFiles tool
   executors.set(ReadMultipleFilesTool.name, readMultipleFilesTool.execute);
+
+  // Add glob tool
+  executors.set(GlobTool.name, globTool.execute);
 
   // Add grep tool
   executors.set(GrepTool.name, grepTool.execute);
@@ -253,6 +262,10 @@ export async function initCliTools({
 
   const codeInterpreterTool = createCodeInterpreterTool();
 
+  const globTool = createGlobTool({
+    tokenCounter,
+  });
+
   const grepTool = createGrepTool({
     tokenCounter,
   });
@@ -307,6 +320,10 @@ export async function initCliTools({
     [ReadMultipleFilesTool.name]: tool({
       ...readMultipleFilesTool.toolDef,
       execute: readMultipleFilesTool.execute,
+    }),
+    [GlobTool.name]: tool({
+      ...globTool.toolDef,
+      execute: globTool.execute,
     }),
     [GrepTool.name]: tool({
       ...grepTool.toolDef,
