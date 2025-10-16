@@ -1,48 +1,58 @@
 import { readFile } from "node:fs/promises";
-import { tool } from "ai";
+import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
 import { formatFile } from "../formatting.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
-import type { SendData } from "./types.ts";
+import type { Message } from "./types.ts";
 
 export const ReadMultipleFilesTool = {
   name: "readMultipleFiles" as const,
 };
 
+const inputSchema = z.object({
+  paths: z.array(z.string()),
+});
+
+type ReadMultipleFilesInputSchema = z.infer<typeof inputSchema>;
+
 export const createReadMultipleFilesTool = async ({
   workingDir,
-  sendData,
   tokenCounter,
 }: {
   workingDir: string;
-  sendData?: SendData;
   tokenCounter: TokenCounter;
 }) => {
   const allowedDirectory = workingDir;
+
   return {
-    [ReadMultipleFilesTool.name]: tool({
+    toolDef: {
       description:
         "Read the contents of multiple files simultaneously. This is more " +
         "efficient than reading files one by one when you need to analyze " +
         "or compare multiple files. Each file's content is returned with its " +
         "path as a reference. Failed reads for individual files won't stop " +
         "the entire operation. Only works within allowed directories.",
-      inputSchema: z.object({
-        paths: z.array(z.string()),
-      }),
-      execute: async ({ paths }, { toolCallId, abortSignal }) => {
+      inputSchema,
+    },
+    async *execute(
+      { paths }: ReadMultipleFilesInputSchema,
+      { toolCallId, abortSignal }: ToolCallOptions,
+    ): AsyncGenerator<Message, string> {
+      try {
         // Check if execution has been aborted
         if (abortSignal?.aborted) {
           throw new Error("Multiple file reading aborted");
         }
-        sendData?.({
+
+        yield {
           id: toolCallId,
           event: "tool-init",
           data: `Reading files: ${paths.map((p) => style.cyan(p)).join(", ")}`,
-        });
+        };
+
         if (abortSignal?.aborted) {
           throw new Error("Multiple file reading aborted before reading files");
         }
@@ -67,6 +77,7 @@ export const createReadMultipleFilesTool = async ({
             );
           }),
         );
+
         let totalTokens = 0;
         let filesReadCount = 0;
         let filesExceededLimitCount = 0;
@@ -110,14 +121,23 @@ export const createReadMultipleFilesTool = async ({
           completionMessage = `${parts.join(", ")}.`;
         }
 
-        sendData?.({
+        yield {
           id: toolCallId,
           event: "tool-completion",
           data: completionMessage,
-        });
+        };
+
         return formattedResults.join("\n---\n");
-      },
-    }),
+      } catch (error) {
+        const errorMsg = `Multiple file reading failed: ${(error as Error).message}`;
+        yield {
+          id: toolCallId,
+          event: "tool-error",
+          data: errorMsg,
+        };
+        return errorMsg;
+      }
+    },
   };
 };
 

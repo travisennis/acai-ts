@@ -12,6 +12,19 @@ const ProjectConfigSchema = z.object({
       path: z.string(),
     })
     .optional(),
+  agentLoop: z.enum(["auto", "manual"]).optional().default("auto"),
+  loop: z
+    .object({
+      maxIterations: z.number().default(90),
+      parallelTools: z.boolean().default(true),
+      maxDurationMs: z.number().default(0),
+    })
+    .optional()
+    .default({
+      maxIterations: 90,
+      parallelTools: true,
+      maxDurationMs: 0,
+    }),
   tools: z
     .object({
       maxTokens: z.number().default(30000),
@@ -237,6 +250,12 @@ export class ConfigManager {
         logs: {
           path: path.join(this.app.getPath(), "logs", "current.log"),
         },
+        agentLoop: "auto" as const,
+        loop: {
+          maxIterations: 90,
+          parallelTools: true,
+          maxDurationMs: 0,
+        },
         tools: {
           maxTokens: 30000,
           bash: {
@@ -246,9 +265,13 @@ export class ConfigManager {
             maxSegments: 6,
             maxOutputBytes: 2_000_000,
           },
+          dynamicTools: {
+            enabled: true,
+            maxTools: 10,
+          },
         },
         notify: true,
-      };
+      } as const;
 
       await fs.writeFile(configPath, JSON.stringify(defaultConfig, null, 2));
       return defaultConfig;

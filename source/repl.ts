@@ -1,15 +1,15 @@
 import { isNumber, isRecord } from "@travisennis/stdlib/typeguards";
 import { stepCountIs, streamText } from "ai";
+import { runManualLoop } from "./agent/manual-loop.ts";
 import type { CommandManager } from "./commands/manager.ts";
 import { config as configManager } from "./config.ts";
 import { logger } from "./logger.ts";
 import { PromptError, processPrompt } from "./mentions.ts";
 import type { MessageHistory } from "./messages.ts";
 import { AiConfig } from "./models/ai-config.ts";
-import type { ModelManager } from "./models/manager.js";
+import type { ModelManager } from "./models/manager.ts";
 import type { PromptManager } from "./prompts/manager.ts";
 import { systemPrompt } from "./prompts.ts";
-import { displayToolMessages } from "./repl/display-tool-messages.ts";
 import { displayToolUse } from "./repl/display-tool-use.ts";
 import { getPromptHeader } from "./repl/get-prompt-header.ts";
 import { toolCallRepair } from "./repl/tool-call-repair.ts";
@@ -19,8 +19,12 @@ import style from "./terminal/style.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
 import type { ToolExecutor } from "./tool-executor.ts";
-import { initAgents, initTools } from "./tools/index.ts";
-import type { Message } from "./tools/types.ts";
+import {
+  initAgents,
+  initCliAgents,
+  initCliTools,
+  initTools,
+} from "./tools/index.ts";
 
 interface ReplOptions {
   messageHistory: MessageHistory;
@@ -31,7 +35,6 @@ interface ReplOptions {
   commands: CommandManager;
   config: Record<PropertyKey, unknown>;
   tokenCounter: TokenCounter;
-  toolEvents: Map<string, Message[]>;
   showLastMessage: boolean; // For displaying last message when continuing/resuming
   toolExecutor?: ToolExecutor;
   promptHistory: string[];
@@ -56,7 +59,6 @@ export class Repl {
       messageHistory,
       commands,
       tokenCounter,
-      toolEvents,
       toolExecutor,
       promptHistory,
     } = this.options;
@@ -73,21 +75,42 @@ export class Repl {
     const finalSystemPrompt = await systemPrompt();
 
     // Initialize tools once outside the loop - all models support tool calling
-    const tools = {
-      ...(await initTools({
-        terminal,
-        tokenCounter,
-        events: toolEvents,
-        toolExecutor,
-      })),
-      ...(await initAgents({
-        terminal,
-        modelManager,
-        tokenTracker,
-        tokenCounter,
-        events: toolEvents,
-      })),
+    const coreTools = await initTools({
+      terminal,
+      tokenCounter,
+      toolExecutor,
+    });
+
+    const agentTools = await initAgents({
+      terminal,
+      modelManager,
+      tokenTracker,
+      tokenCounter,
+    });
+
+    const completeToolDefs = {
+      ...coreTools.toolDefs,
+      ...agentTools.toolDefs,
     };
+
+    const tools = {
+      toolDefs: completeToolDefs,
+      executors: new Map([...coreTools.executors, ...agentTools.executors]),
+      permissions: coreTools.permissions,
+    } as const;
+
+    // Build auto-mode tools (with execute) once
+    const cliTools = await initCliTools({ tokenCounter });
+    const cliAgents = await initCliAgents({
+      terminal,
+      modelManager,
+      tokenTracker,
+      tokenCounter,
+    });
+    const autoToolDefs = {
+      ...cliTools.toolDefs,
+      ...cliAgents.toolDefs,
+    } as const;
 
     let currentAbortController: AbortController | null = null;
 
@@ -110,6 +133,8 @@ export class Repl {
         contextWindow: modelConfig.contextWindow,
         currentContextWindow,
       });
+
+      const projectConfig = await configManager.readProjectConfig();
 
       // Display last message when continuing/resuming a conversation
       if (this.showLastMessage) {
@@ -197,178 +222,224 @@ export class Repl {
       }
 
       const userPrompt = promptManager.get();
-
       const userMsg = promptManager.getUserMessage();
 
       messageHistory.appendUserMessage(userMsg);
 
-      const aiConfig = new AiConfig({
-        modelMetadata: modelConfig,
-        prompt: userPrompt,
-      });
-
-      const maxTokens = aiConfig.getMaxTokens();
-
       try {
-        const result = streamText({
-          model: langModel,
-          maxOutputTokens: maxTokens,
-          messages: [
-            {
-              role: "system",
-              content: finalSystemPrompt,
-              providerOptions: {
-                anthropic: { cacheControl: { type: "ephemeral" } },
+        if (projectConfig.agentLoop === "manual") {
+          const { toolDefs, executors, permissions } = tools;
+          const result = await runManualLoop({
+            modelManager,
+            terminal,
+            messageHistory,
+            systemPrompt: finalSystemPrompt,
+            input: userPrompt,
+            toolDefs,
+            executors: executors,
+            permissions: permissions,
+            maxIterations: projectConfig.loop.maxIterations,
+            abortSignal: signal,
+            temperature:
+              modelConfig.defaultTemperature > -1
+                ? modelConfig.defaultTemperature
+                : undefined,
+            toolCallRepair: toolCallRepair(modelManager),
+          });
+
+          terminal.hr();
+
+          // Notify if configured in project config (acai.json)
+          if (projectConfig.notify) {
+            terminal.alert();
+          }
+
+          // Create a more visual representation of steps/tool usage
+          displayToolUse(result, terminal);
+
+          const total = result.totalUsage;
+          const inputTokens = total.inputTokens;
+          const outputTokens = total.outputTokens;
+          const tokenSummary = `Tokens: ↑ ${inputTokens} ↓ ${outputTokens}`;
+          terminal.writeln(style.dim(tokenSummary));
+
+          const inputCost = modelConfig.costPerInputToken * inputTokens;
+          const outputCost = modelConfig.costPerOutputToken * outputTokens;
+          terminal.writeln(
+            style.dim(`Cost: $${(inputCost + outputCost).toFixed(2)}`),
+          );
+
+          // Track aggregate usage across all steps when available
+          tokenTracker.trackUsage("repl", total);
+
+          // Derive current context window from final step usage
+          currentContextWindow = result.usage.totalTokens;
+
+          terminal.hr();
+
+          terminal.lineBreak();
+        } else {
+          const aiConfig = new AiConfig({
+            modelMetadata: modelConfig,
+            prompt: userPrompt,
+          });
+
+          const maxTokens = aiConfig.getMaxTokens();
+
+          const result = streamText({
+            model: langModel,
+            maxOutputTokens: maxTokens,
+            messages: [
+              {
+                role: "system",
+                content: finalSystemPrompt,
+                providerOptions: {
+                  anthropic: { cacheControl: { type: "ephemeral" } },
+                },
               },
+              ...messageHistory.get(),
+            ],
+            temperature:
+              modelConfig.defaultTemperature > -1
+                ? modelConfig.defaultTemperature
+                : undefined,
+            stopWhen: stepCountIs(90),
+            maxRetries: 2,
+            providerOptions: aiConfig.getProviderOptions(),
+            tools: autoToolDefs,
+            // biome-ignore lint/style/useNamingConvention: third-party controlled
+            experimental_repairToolCall: toolCallRepair(modelManager),
+            abortSignal: signal,
+            onAbort(_event) {
+              logger.warn("The agent loop was aborted by the user.");
+              terminal.warn("Operation aborted by user.");
             },
-            ...messageHistory.get(),
-          ],
-          temperature:
-            modelConfig.defaultTemperature > -1
-              ? modelConfig.defaultTemperature
-              : undefined,
-          stopWhen: stepCountIs(90),
-          maxRetries: 2,
-          providerOptions: aiConfig.getProviderOptions(),
-          tools,
-          // biome-ignore lint/style/useNamingConvention: third-party controlled
-          experimental_repairToolCall: toolCallRepair(modelManager),
-          abortSignal: signal,
-          onAbort(_event) {
-            logger.warn("The agent loop was aborted by the user.");
-            terminal.warn("Operation aborted by user.");
-          },
-          onFinish: async (result) => {
-            logger.debug("onFinish called");
-            if (result.response.messages.length > 0) {
-              messageHistory.appendResponseMessages(result.response.messages);
-            }
+            onFinish: async (result) => {
+              logger.debug("onFinish called");
+              if (result.response.messages.length > 0) {
+                messageHistory.appendResponseMessages(result.response.messages);
+              }
 
-            terminal.hr();
+              terminal.hr();
 
-            // Notify if configured in project config (acai.json)
-            const projectConfig = await configManager.readProjectConfig();
-            if (projectConfig.notify) {
-              terminal.alert();
-            }
+              // Notify if configured in project config (acai.json)
+              if (projectConfig.notify) {
+                terminal.alert();
+              }
 
-            // Create a more visual representation of steps/tool usage
-            displayToolUse(result, terminal);
+              // Create a more visual representation of steps/tool usage
+              displayToolUse(result, terminal);
 
-            const total =
-              (result as { totalUsage?: typeof result.usage }).totalUsage ??
-              result.usage;
-            const inputTokens = isNumber(total.inputTokens)
-              ? total.inputTokens
-              : 0;
-            const outputTokens = isNumber(total.outputTokens)
-              ? total.outputTokens
-              : 0;
-            const tokenSummary = `Tokens: ↑ ${inputTokens} ↓ ${outputTokens}`;
-            terminal.writeln(style.dim(tokenSummary));
+              const total =
+                (result as { totalUsage?: typeof result.usage }).totalUsage ??
+                result.usage;
+              const inputTokens = isNumber(total.inputTokens)
+                ? total.inputTokens
+                : 0;
+              const outputTokens = isNumber(total.outputTokens)
+                ? total.outputTokens
+                : 0;
+              const tokenSummary = `Tokens: ↑ ${inputTokens} ↓ ${outputTokens}`;
+              terminal.writeln(style.dim(tokenSummary));
 
-            const inputCost = modelConfig.costPerInputToken * inputTokens;
-            const outputCost = modelConfig.costPerOutputToken * outputTokens;
-            terminal.writeln(
-              style.dim(`Cost: $${(inputCost + outputCost).toFixed(2)}`),
-            );
+              const inputCost = modelConfig.costPerInputToken * inputTokens;
+              const outputCost = modelConfig.costPerOutputToken * outputTokens;
+              terminal.writeln(
+                style.dim(`Cost: $${(inputCost + outputCost).toFixed(2)}`),
+              );
 
-            // Track aggregate usage across all steps when available
-            tokenTracker.trackUsage("repl", total);
+              // Track aggregate usage across all steps when available
+              tokenTracker.trackUsage("repl", total);
 
-            // Derive current context window from final step usage
-            const finalTotalTokens = result.usage.totalTokens;
-            if (isNumber(finalTotalTokens)) {
-              currentContextWindow = finalTotalTokens ?? 0;
-            } else {
-              // Fallback: find the stopped step
-              for (const step of result.steps) {
-                if (step.finishReason === "stop") {
-                  const usage = step.usage;
-                  currentContextWindow = Number.isNaN(usage.totalTokens)
-                    ? 0
-                    : (usage.totalTokens ?? 0);
+              // Derive current context window from final step usage
+              const finalTotalTokens = result.usage.totalTokens;
+              if (isNumber(finalTotalTokens)) {
+                currentContextWindow = finalTotalTokens ?? 0;
+              } else {
+                // Fallback: find the stopped step
+                for (const step of result.steps) {
+                  if (step.finishReason === "stop") {
+                    const usage = step.usage;
+                    currentContextWindow = Number.isNaN(usage.totalTokens)
+                      ? 0
+                      : (usage.totalTokens ?? 0);
+                  }
                 }
               }
-            }
 
-            terminal.hr();
-          },
-          onError: ({ error }) => {
-            logger.error(
-              error, // Log the full error object
-              "Error on REPL streamText",
-            );
-            terminal.error(
-              (error as Error).message.length > 100
-                ? `${(error as Error).message.slice(0, 100)}...`
-                : (error as Error).message,
-            );
-          },
-        });
+              terminal.hr();
+            },
+            onError: ({ error }) => {
+              logger.error(
+                error, // Log the full error object
+                "Error on REPL streamText",
+              );
+              terminal.error(
+                (error as Error).message.length > 100
+                  ? `${(error as Error).message.slice(0, 100)}...`
+                  : (error as Error).message,
+              );
+            },
+          });
 
-        let accumulatedText = "";
-        let lastType: "reasoning" | "text" | null = null;
+          let accumulatedText = "";
+          let lastType: "reasoning" | "text" | null = null;
 
-        for await (const chunk of result.fullStream) {
-          // Handle text-related chunks (reasoning or text-delta)
-          if (chunk.type === "reasoning-delta" || chunk.type === "text-delta") {
-            if (chunk.type === "reasoning-delta") {
-              if (lastType !== "reasoning") {
-                terminal.writeln(style.dim("<think>"));
+          for await (const chunk of result.fullStream) {
+            // Handle text-related chunks (reasoning or text-delta)
+            if (
+              chunk.type === "reasoning-delta" ||
+              chunk.type === "text-delta"
+            ) {
+              if (chunk.type === "reasoning-delta") {
+                if (lastType !== "reasoning") {
+                  terminal.writeln(style.dim("<think>"));
+                }
+                terminal.write(style.dim(chunk.text)); // Stream reasoning directly
+                lastType = "reasoning";
+              } else if (chunk.type === "text-delta") {
+                if (lastType === "reasoning") {
+                  // Finishing reasoning: Print </think>
+                  terminal.writeln(style.dim("\n</think>\n"));
+                }
+                accumulatedText += chunk.text;
+                lastType = "text";
               }
-              terminal.write(style.dim(chunk.text)); // Stream reasoning directly
-              lastType = "reasoning";
-            } else if (chunk.type === "text-delta") {
-              if (lastType === "reasoning") {
-                // Finishing reasoning: Print </think>
-                terminal.writeln(style.dim("\n</think>\n"));
-              }
-              accumulatedText += chunk.text;
-              lastType = "text";
-            }
-          } else if (chunk.type === "tool-call") {
-            terminal.stopProgress();
-          } else if (chunk.type === "tool-result") {
-            const messages = toolEvents.get(chunk.toolCallId);
-            if (messages) {
-              displayToolMessages(messages, terminal);
-              toolEvents.delete(chunk.toolCallId);
+            } else if (chunk.type === "tool-call") {
+              terminal.stopProgress();
             } else {
-              logger.warn(`No tool events found for ${chunk.toolCallId}`);
+              // Close thinking tags when moving from reasoning to any other chunk type
+              if (lastType === "reasoning") {
+                terminal.write(style.dim("\n</think>\n\n"));
+              }
+              terminal.stopProgress();
+              // if there is accumulatedText, display it
+              if (accumulatedText.trim()) {
+                terminal.writeln(`${style.blue.bold("● Response:")}`);
+                terminal.display(accumulatedText, true);
+                terminal.lineBreak();
+              }
+              accumulatedText = "";
+              lastType = null;
             }
-          } else {
-            // Close thinking tags when moving from reasoning to any other chunk type
-            if (lastType === "reasoning") {
-              terminal.write(style.dim("\n</think>\n\n"));
-            }
-            terminal.stopProgress();
-            // if there is accumulatedText, display it
-            if (accumulatedText.trim()) {
-              terminal.writeln(`${style.blue.bold("● Response:")}`);
-              terminal.display(accumulatedText, true);
-              terminal.lineBreak();
-            }
-            accumulatedText = "";
-            lastType = null;
           }
+
+          // Ensure the final closing tag for reasoning is written if it was the last type
+          if (lastType === "reasoning") {
+            terminal.write(style.gray("\n</think>\n\n"));
+          }
+
+          // if there is accumulatedText, display it
+          if (accumulatedText.trim()) {
+            terminal.writeln(`${style.green.bold("● Response:")}`);
+            terminal.display(accumulatedText, true);
+            terminal.lineBreak();
+          }
+
+          terminal.lineBreak(); // Add a final newline for clarity
+
+          await result.consumeStream();
         }
-
-        // Ensure the final closing tag for reasoning is written if it was the last type
-        if (lastType === "reasoning") {
-          terminal.write(style.gray("\n</think>\n\n"));
-        }
-
-        // if there is accumulatedText, display it
-        if (accumulatedText.trim()) {
-          terminal.writeln(`${style.green.bold("● Response:")}`);
-          terminal.display(accumulatedText, true);
-          terminal.lineBreak();
-        }
-
-        terminal.lineBreak(); // Add a final newline for clarity
-
-        await result.consumeStream();
       } catch (e) {
         if (isRecord(e) && isRecord(e["data"]) && "error" in e["data"]) {
           terminal.error(

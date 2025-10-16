@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { tool } from "ai";
+import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
 import style from "../terminal/style.ts";
@@ -8,86 +8,92 @@ import type { TokenCounter } from "../tokens/counter.ts";
 import { manageOutput } from "../tokens/manage-output.ts";
 import ignore, { type Ignore } from "../utils/ignore.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
-import type { SendData } from "./types.ts";
+import type { Message } from "./types.ts";
 
 export const DirectoryTreeTool = {
   name: "directoryTree" as const,
 };
 
+const inputSchema = z.object({
+  path: z.string().describe("The path."),
+});
+
+type DirectoryTreeInputSchema = z.infer<typeof inputSchema>;
+
 export const createDirectoryTreeTool = async ({
   workingDir,
-  sendData,
   tokenCounter,
 }: {
   workingDir: string;
-  sendData?: SendData;
   tokenCounter: TokenCounter;
 }) => {
   const allowedDirectory = workingDir;
   return {
-    [DirectoryTreeTool.name]: tool({
+    toolDef: {
       description:
         "Get a directory tree structure for a given path. This tool will ignore any directories or files listed in a .gitignore file. Use this tool when you need to see a complete directory tree for a project. This can be used to get an understanding of how a project is organized and what files are available before using other file system tools.",
-      inputSchema: z.object({
-        path: z.string().describe("The path."),
-      }),
-      execute: async ({ path }, { toolCallId, abortSignal }) => {
+      inputSchema,
+    },
+    async *execute(
+      { path }: DirectoryTreeInputSchema,
+      { toolCallId, abortSignal }: ToolCallOptions,
+    ): AsyncGenerator<Message, string> {
+      try {
         // Check if execution has been aborted
         if (abortSignal?.aborted) {
           throw new Error("Directory tree listing aborted");
         }
-        let validPath: string;
-        try {
-          if (abortSignal?.aborted) {
-            throw new Error(
-              "Directory tree listing aborted before path validation",
-            );
-          }
 
-          sendData?.({
-            id: toolCallId,
-            event: "tool-init",
-            data: `Listing directory tree: ${style.cyan(path)}`,
-          });
+        yield {
+          id: toolCallId,
+          event: "tool-init",
+          data: `Listing directory tree: ${style.cyan(path)}`,
+        };
 
-          validPath = await validatePath(
-            joinWorkingDir(path, workingDir),
-            allowedDirectory,
-            { abortSignal },
+        const validPath = await validatePath(
+          joinWorkingDir(path, workingDir),
+          allowedDirectory,
+          { abortSignal },
+        );
+
+        if (abortSignal?.aborted) {
+          throw new Error(
+            "Directory tree listing aborted before tree generation",
           );
-
-          const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
-
-          const rawTree = await directoryTree(validPath);
-          const managed = manageOutput(rawTree, {
-            tokenCounter,
-            threshold: maxTokens,
-          });
-
-          if (managed.truncated) {
-            sendData?.({
-              id: toolCallId,
-              event: "tool-update",
-              data: { primary: managed.warning },
-            });
-          }
-
-          sendData?.({
-            id: toolCallId,
-            event: "tool-completion",
-            data: `Done (${managed.tokenCount} tokens)`,
-          });
-          return managed.content;
-        } catch (error) {
-          sendData?.({
-            id: toolCallId,
-            event: "tool-error",
-            data: "Failed to show directory tree.",
-          });
-          return `Failed to show directory tree: ${(error as Error).message}`;
         }
-      },
-    }),
+
+        const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
+
+        const rawTree = await directoryTree(validPath);
+        const managed = manageOutput(rawTree, {
+          tokenCounter,
+          threshold: maxTokens,
+        });
+
+        if (managed.truncated) {
+          yield {
+            id: toolCallId,
+            event: "tool-update",
+            data: { primary: managed.warning },
+          };
+        }
+
+        yield {
+          id: toolCallId,
+          event: "tool-completion",
+          data: `Done (${managed.tokenCount} tokens)`,
+        };
+        return managed.content;
+      } catch (error) {
+        const errorMsg = `Failed to show directory tree: ${(error as Error).message}`;
+        yield {
+          id: toolCallId,
+          event: "tool-error",
+          data: errorMsg,
+        };
+        return errorMsg;
+      }
+    },
   };
 };
 

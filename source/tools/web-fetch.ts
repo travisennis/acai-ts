@@ -1,58 +1,60 @@
-import { tool } from "ai";
+import type { ToolCallOptions } from "ai";
 import { type CheerioAPI, load } from "cheerio";
 import { z } from "zod";
 import { logger } from "../logger.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
-import type { SendData } from "./types.ts";
+import type { Message } from "./types.ts";
 
 export const WebFetchTool = {
   name: "webFetch" as const,
 };
 
-export const createWebFetchTool = (options: {
-  sendData?: SendData | undefined;
-  tokenCounter: TokenCounter;
-}) => {
-  const { sendData } = options;
+const inputSchema = z.object({
+  url: z.string().describe("The URL to fetch content from."),
+});
+
+export const createWebFetchTool = (options: { tokenCounter: TokenCounter }) => {
   return {
-    [WebFetchTool.name]: tool({
+    toolDef: {
       description:
         "Fetches the content of a given URL. It intelligently handles HTML content by attempting to use a specialized service for cleaner extraction, falling back to local cleaning if needed. For non-HTML content (like plain text or markdown), it fetches the raw content directly. IMPORTANT: Does not retrieve binary files.",
-      inputSchema: z.object({
-        url: z.string().describe("The URL to fetch content from."),
-      }),
-      execute: async ({ url }, { toolCallId, abortSignal }) => {
-        try {
-          sendData?.({
-            event: "tool-init",
-            id: toolCallId,
-            data: `Reading URL: ${style.cyan(url)}`,
-          });
-          logger.info(`Initiating fetch for URL: ${url}`);
-          const result = await readUrl(url, abortSignal);
-          const urlContent = result.data;
-          const tokenCount = options.tokenCounter.count(urlContent);
-          sendData?.({
-            event: "tool-completion",
-            id: toolCallId,
-            data: `Read URL successfully (${tokenCount} tokens)`,
-          });
-          logger.info(`Successfully read URL: ${url} (${tokenCount} tokens)`);
-          return urlContent;
-        } catch (error) {
-          const errorMessage = (error as Error).message;
-          sendData?.({
-            event: "tool-error",
-            id: toolCallId,
-            data: `Error reading URL ${url}: ${errorMessage}`,
-          });
-          logger.error(`Error reading URL ${url}: ${errorMessage}`);
-          // Return the error message so the LLM knows the tool failed.
-          return `Failed to read URL: ${errorMessage}`;
-        }
-      },
-    }),
+      inputSchema,
+    },
+    async *execute(
+      { url }: { url: string },
+      { toolCallId, abortSignal }: ToolCallOptions,
+    ): AsyncGenerator<Message, string> {
+      try {
+        yield {
+          event: "tool-init",
+          id: toolCallId,
+          data: `Reading URL: ${style.cyan(url)}`,
+        };
+        logger.info(`Initiating fetch for URL: ${url}`);
+
+        const result = await readUrl(url, abortSignal);
+        const urlContent = result.data;
+        const tokenCount = options.tokenCounter.count(urlContent);
+
+        yield {
+          event: "tool-completion",
+          id: toolCallId,
+          data: `Read URL successfully (${tokenCount} tokens)`,
+        };
+        logger.info(`Successfully read URL: ${url} (${tokenCount} tokens)`);
+        return urlContent;
+      } catch (error) {
+        const errorMessage = (error as Error).message;
+        yield {
+          event: "tool-error",
+          id: toolCallId,
+          data: `Error reading URL ${url}: ${errorMessage}`,
+        };
+        logger.error(`Error reading URL ${url}: ${errorMessage}`);
+        return `Failed to read URL: ${errorMessage}`;
+      }
+    },
   };
 };
 

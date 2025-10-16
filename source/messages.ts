@@ -230,6 +230,13 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     return firstUser;
   }
 
+  getLastUserMessage(): UserModelMessage | undefined {
+    const userMsg = this.history.findLast(
+      (value): value is UserModelMessage => value.role === "user",
+    );
+    return userMsg;
+  }
+
   /**
    * Extracts the last message from the conversation history for display purposes.
    * Prioritizes assistant messages, falls back to user messages if no assistant messages exist.

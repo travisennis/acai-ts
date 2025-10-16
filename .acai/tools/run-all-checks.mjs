@@ -14,7 +14,8 @@ if (process.env.TOOL_ACTION === 'describe') {
         required: false,
         default: '.'
       }
-    ]
+    ],
+    needsApproval: false,
   }, null, 2));
   process.exit(0);
 }

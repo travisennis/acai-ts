@@ -1,14 +1,13 @@
 import { platform } from "node:os";
 import { stepCountIs, streamText } from "ai";
 import { inGitDirectory } from "../tools/git-utils.ts";
-import { initTools } from "../tools/index.ts";
+import { initCliTools } from "../tools/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const initCommand = ({
   terminal,
   modelManager,
   tokenCounter,
-  toolEvents,
 }: CommandOptions): ReplCommand => {
   return {
     command: "/init",
@@ -32,11 +31,11 @@ Your current working directory is ${process.cwd()}
 Is directory a git repo: ${(await inGitDirectory()) ? "Yes" : "No"}
 Platform: ${platform()}`,
         stopWhen: stepCountIs(40),
-        tools: await initTools({
-          terminal,
-          tokenCounter,
-          events: toolEvents,
-        }),
+        tools: (
+          await initCliTools({
+            tokenCounter,
+          })
+        ).toolDefs,
       });
 
       for await (const text of result.textStream) {

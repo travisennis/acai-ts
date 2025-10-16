@@ -1,6 +1,6 @@
-import { tool } from "ai";
+import type { ToolCallOptions } from "ai";
 import { z } from "zod";
-import type { SendData } from "./types.ts";
+import type { Message } from "./types.ts";
 
 export const ThinkTool = {
   name: "think" as const,
@@ -15,41 +15,46 @@ Common use cases:
 5. When debugging a complex issue, use this tool to organize your thoughts and hypotheses
 The tool simply logs your thought process for better transparency and does not execute any code or make changes.`;
 
+const inputSchema = z.object({
+  thought: z.string().describe("Your thought"),
+});
+
 // This is a no-op tool that logs a thought. It is inspired by the tau-bench think tool.
-export const createThinkTool = (
-  options: { sendData?: SendData | undefined } = {},
-) => {
-  const { sendData } = options;
+export const createThinkTool = () => {
   return {
-    [ThinkTool.name]: tool({
+    toolDef: {
       description: toolDescription,
-      inputSchema: z.object({
-        thought: z.string().describe("Your thought"),
-      }),
-      execute: ({ thought }, { toolCallId, abortSignal }) => {
+      inputSchema,
+    },
+    async *execute(
+      { thought }: z.infer<typeof inputSchema>,
+      { toolCallId, abortSignal }: ToolCallOptions,
+    ): AsyncGenerator<Message, string> {
+      try {
         // Check if execution has been aborted
         if (abortSignal?.aborted) {
           throw new Error("Thinking process aborted");
         }
+
+        yield { event: "tool-init", id: toolCallId, data: "Logging Thought" };
+
         // Replace literal '\\n' with actual newline characters
         const formattedThought = thought.replace(/\\n/g, "\n");
-        sendData?.({
-          event: "tool-init",
-          id: toolCallId,
-          data: "Logging Thought",
-        });
-        sendData?.({
+
+        yield {
           event: "tool-update",
           id: toolCallId,
           data: { primary: "Thought:", secondary: [formattedThought] },
-        });
-        sendData?.({
-          event: "tool-completion",
-          id: toolCallId,
-          data: "Done",
-        });
-        return Promise.resolve("Your thought has been logged.");
-      },
-    }),
+        };
+
+        yield { event: "tool-completion", id: toolCallId, data: "Done" };
+        return "Your thought has been logged.";
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        yield { event: "tool-error", id: toolCallId, data: errorMessage };
+        return errorMessage;
+      }
+    },
   };
 };

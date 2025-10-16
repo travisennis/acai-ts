@@ -6,7 +6,6 @@ import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import type { ToolExecutor } from "../tool-executor.ts";
-import type { Message } from "../tools/types.ts";
 import { applicationLogCommand } from "./application-log-command.ts";
 import { clearCommand } from "./clear-command.ts";
 import { compactCommand } from "./compact-command.ts";
@@ -40,7 +39,6 @@ export class CommandManager {
   private terminal: Terminal;
   private config: ConfigManager;
   private tokenCounter: TokenCounter;
-  private toolEvents: Map<string, Message[]>;
   private toolExecutor?: ToolExecutor;
   private promptHistory: string[];
   private initialized: boolean;
@@ -53,7 +51,6 @@ export class CommandManager {
     tokenTracker,
     config,
     tokenCounter,
-    toolEvents,
     toolExecutor,
     promptHistory,
   }: CommandOptions) {
@@ -65,7 +62,6 @@ export class CommandManager {
     this.tokenTracker = tokenTracker;
     this.config = config;
     this.tokenCounter = tokenCounter;
-    this.toolEvents = toolEvents;
     this.toolExecutor = toolExecutor;
     this.promptHistory = promptHistory;
     this.initialized = false;
@@ -84,7 +80,6 @@ export class CommandManager {
       tokenTracker: this.tokenTracker,
       config: this.config,
       tokenCounter: this.tokenCounter,
-      toolEvents: this.toolEvents,
       toolExecutor: this.toolExecutor,
       promptHistory: this.promptHistory,
     };

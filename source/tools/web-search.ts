@@ -1,62 +1,77 @@
-import { tool } from "ai";
+import type { ToolCallOptions } from "ai";
 import { SafeSearchType, type SearchResult, search } from "duck-duck-scrape";
 import { z } from "zod";
 import Exa from "../api/exa/index.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
-import type { SendData } from "./types.ts";
+import type { Message } from "./types.ts";
 
 export const WebSearchTool = {
   name: "webSearch" as const,
 };
 
+const inputSchema = z.object({
+  query: z.string().describe("The search query."),
+});
+
 export const createWebSearchTool = ({
-  sendData,
   tokenCounter,
 }: {
-  sendData?: SendData;
   tokenCounter: TokenCounter;
 }) => {
+  const toolDef = {
+    description:
+      "Searches the web and returns match documents with their title, url, and text content. The query should be formulated as a natural language question.",
+    inputSchema,
+  };
+
+  const execute = async function* (
+    { query }: z.infer<typeof inputSchema>,
+    { toolCallId, abortSignal }: ToolCallOptions,
+  ): AsyncGenerator<Message, string> {
+    try {
+      // Check if execution has been aborted
+      if (abortSignal?.aborted) {
+        throw new Error("Web search aborted");
+      }
+
+      yield {
+        event: "tool-init",
+        id: toolCallId,
+        data: `Web search: ${style.cyan(query)}`,
+      };
+
+      if (abortSignal?.aborted) {
+        throw new Error("Web search aborted before search execution");
+      }
+
+      const result = await performSearch(query, abortSignal);
+
+      const sources = result.results.map(
+        (source) => `## ${source.title}\nURL: ${source.url}\n\n${source.text}`,
+      );
+      const resultText = `# Search Results:\n\n${sources.join("\n\n")}`;
+      const tokenCount = tokenCounter.count(resultText);
+
+      yield {
+        event: "tool-completion",
+        id: toolCallId,
+        data: `Found ${result.results.length} results. (${tokenCount} tokens)`,
+      };
+
+      return resultText;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      yield { event: "tool-error", id: toolCallId, data: errorMessage };
+      return errorMessage;
+    }
+  };
+
   return {
-    [WebSearchTool.name]: tool({
-      description:
-        "Searches the web and returns match documents with their title, url, and text content. The query should be formulated as a natural language question.",
-      inputSchema: z.object({
-        query: z.string().describe("The search query."),
-      }),
-      execute: async ({ query }, { toolCallId, abortSignal }) => {
-        // Check if execution has been aborted
-        if (abortSignal?.aborted) {
-          throw new Error("Web search aborted");
-        }
-        sendData?.({
-          id: toolCallId,
-          event: "tool-init",
-          data: `Web search: ${style.cyan(query)}`,
-        });
-
-        if (abortSignal?.aborted) {
-          throw new Error("Web search aborted before search execution");
-        }
-
-        const result = await performSearch(query, abortSignal);
-
-        const sources = result.results.map(
-          (source) =>
-            `## ${source.title}\nURL: ${source.url}\n\n${source.text}`,
-        );
-        const resultText = `# Search Results:\n\n${sources.join("\n\n")}`;
-        const tokenCount = tokenCounter.count(resultText);
-
-        sendData?.({
-          id: toolCallId,
-          event: "tool-completion",
-          data: `Found ${result.results.length} results. (${tokenCount} tokens)`,
-        });
-
-        return resultText;
-      },
-    }),
+    toolDef,
+    execute,
+    // No ask method needed for read-only tool
   };
 };
 

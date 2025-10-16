@@ -2,12 +2,15 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { tool } from "ai";
+import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
 import { logger } from "../logger.ts";
+import type { Terminal } from "../terminal/index.ts";
+import style from "../terminal/style.ts";
+import type { ToolExecutor } from "../tool-executor.ts";
 import { parseToolMetadata, type ToolMetadata } from "./dynamic-tool-parser.ts";
-import type { SendData } from "./types.ts";
+import type { Message } from "./types.ts";
 
 function generateZodSchema(parameters: ToolMetadata["parameters"]) {
   const fields: Record<string, z.ZodTypeAny> = {};
@@ -95,168 +98,280 @@ async function getMetadata(scriptPath: string): Promise<ToolMetadata | null> {
   });
 }
 
+async function spawnChildProcess(
+  scriptPath: string,
+  params: Record<string, unknown>,
+  abortSignal?: AbortSignal,
+): Promise<string> {
+  const paramsArray = Object.entries(params).map(([name, value]) => ({
+    name,
+    value,
+  }));
+  const paramsJson = JSON.stringify(paramsArray);
+
+  return new Promise<string>((resolve, reject) => {
+    const child = spawn(process.execPath, [scriptPath], {
+      cwd: path.dirname(scriptPath),
+      env: {
+        ...process.env,
+        // biome-ignore lint/style/useNamingConvention: Environment variables are conventionally uppercase
+        TOOL_ACTION: "execute",
+        // biome-ignore lint/style/useNamingConvention: Environment variables are conventionally uppercase
+        NODE_ENV: "production",
+      },
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    let stdout = "";
+    let stderr = "";
+    let hasTimedOut = false;
+
+    const timer = setTimeout(() => {
+      hasTimedOut = true;
+      child.kill();
+      reject(new Error("Execution timed out after 30 seconds"));
+    }, 30000);
+
+    child.stdin.write(`${paramsJson}\n`);
+    child.stdin.end();
+
+    child.stdout.on("data", (data) => {
+      stdout += data.toString();
+    });
+
+    child.stderr.on("data", (data) => {
+      stderr += data.toString();
+    });
+
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      if (hasTimedOut) return;
+
+      if (code !== 0) {
+        reject(
+          new Error(
+            `Dynamic tool failed: ${stderr || `Exited with code ${code}`}`,
+          ),
+        );
+      } else {
+        let output = stdout.trim();
+        const maxOutputBytes = 2000000;
+        if (output.length > maxOutputBytes) {
+          output = `${output.substring(0, maxOutputBytes)}\n[Output truncated]`;
+        }
+
+        // If no stdout, prefer stderr so callers get useful info
+        const errText = stderr.trim();
+        if (!output && errText) {
+          output = errText;
+        }
+
+        // Fallback to a non-empty placeholder to satisfy callers
+        if (!output) {
+          output = "[No output from dynamic tool]";
+        }
+
+        // Attempt to parse as JSON if structured
+        if (output && (output.startsWith("{") || output.startsWith("["))) {
+          try {
+            resolve(JSON.stringify(JSON.parse(output)));
+          } catch {
+            resolve(output);
+          }
+        } else {
+          resolve(output);
+        }
+      }
+    });
+
+    if (abortSignal) {
+      abortSignal.addEventListener("abort", () => {
+        child.kill();
+      });
+    }
+  });
+}
+
+// Type for individual dynamic tool objects
+export interface DynamicToolObject {
+  toolDef: {
+    description: string;
+    // biome-ignore lint/suspicious/noExplicitAny: makes it easier to handle dynamic input schemas
+    inputSchema: any;
+  };
+  execute: (
+    input: Record<string, unknown>,
+    options: ToolCallOptions,
+  ) => AsyncGenerator<unknown, string>;
+  ask?: (
+    input: Record<string, unknown>,
+    options: ToolCallOptions,
+  ) => Promise<{ approve: boolean; reason?: string }>;
+}
+
 export function createDynamicTool(
   scriptPath: string,
   metadata: ToolMetadata,
-  sendData?: SendData,
-) {
+  toolExecutor?: ToolExecutor,
+  terminal?: Terminal,
+): { [x: string]: DynamicToolObject } {
   const inputSchema = generateZodSchema(metadata.parameters);
   const toolName = `dynamic-${metadata.name}`;
 
   return {
-    [toolName]: tool({
-      description: metadata.description,
-      inputSchema,
-      execute: async (params, { toolCallId, abortSignal }) => {
-        if (abortSignal?.aborted) {
-          throw new Error("Execution aborted");
-        }
-
-        sendData?.({
-          id: toolCallId,
-          event: "tool-init",
-          data: `Executing dynamic tool: ${metadata.name}`,
-        });
-
-        // Validate params again for safety
-        try {
-          inputSchema.parse(params);
-        } catch (e) {
-          const errMsg = `Invalid parameters for tool ${metadata.name}: ${(e as Error).message}`;
-          sendData?.({
-            id: toolCallId,
-            event: "tool-error",
-            data: errMsg,
-          });
-          throw new Error(errMsg);
-        }
-
-        const paramsArray = Object.entries(params).map(([name, value]) => ({
-          name,
-          value,
-        }));
-        const paramsJson = JSON.stringify(paramsArray);
-
-        return new Promise<unknown>((resolve) => {
-          const child = spawn(process.execPath, [scriptPath], {
-            cwd: path.dirname(scriptPath),
-            env: {
-              ...process.env,
-              // biome-ignore lint/style/useNamingConvention: Environment variables are conventionally uppercase
-              TOOL_ACTION: "execute",
-              // biome-ignore lint/style/useNamingConvention: Environment variables are conventionally uppercase
-              NODE_ENV: "production",
-            },
-            stdio: ["pipe", "pipe", "pipe"],
-          });
-
-          let stdout = "";
-          let stderr = "";
-          let hasTimedOut = false;
-
-          const timer = setTimeout(() => {
-            hasTimedOut = true;
-            child.kill();
-            sendData?.({
-              id: toolCallId,
-              event: "tool-update",
-              data: { primary: "Execution timed out after 30 seconds" },
-            });
-            resolve("Execution timed out after 30 seconds");
-          }, 30000);
-
-          child.stdin.write(`${paramsJson}\n`);
-          child.stdin.end();
-
-          child.stdout.on("data", (data) => {
-            stdout += data.toString();
-          });
-
-          child.stderr.on("data", (data) => {
-            stderr += data.toString();
-          });
-
-          child.on("close", (code) => {
-            clearTimeout(timer);
-            if (hasTimedOut) return;
-
-            if (code !== 0) {
-              const errorMsg = `Dynamic tool ${metadata.name} failed: ${stderr || `Exited with code ${code}`}`;
-              sendData?.({
-                id: toolCallId,
-                event: "tool-error",
-                data: errorMsg,
-              });
-              resolve(errorMsg);
-            } else {
-              let output = stdout.trim();
-              const maxOutputBytes = 2000000;
-              if (output.length > maxOutputBytes) {
-                output = `${output.substring(0, maxOutputBytes)}\n[Output truncated]`;
-              }
-
-              // If no stdout, prefer stderr so callers get useful info
-              const errText = stderr.trim();
-              if (!output && errText) {
-                output = errText;
-              }
-
-              // Fallback to a non-empty placeholder to satisfy callers
-              if (!output) {
-                output = `[No output from dynamic tool ${metadata.name}]`;
-              }
-
-              // Send tool-update event with last 20 lines of output
-              const outputLines = output.split("\n");
-              const lastLines = outputLines.slice(-20).join("\n");
-              sendData?.({
-                id: toolCallId,
-                event: "tool-update",
-                data: {
-                  primary: `Last 20 lines of output from ${metadata.name}:`,
-                  secondary: lastLines.split("\n"),
-                },
-              });
-
-              // Attempt to parse as JSON if structured
-              if (
-                output &&
-                (output.startsWith("{") || output.startsWith("["))
-              ) {
-                try {
-                  resolve(JSON.parse(output));
-                } catch {
-                  resolve(output);
-                }
-              } else {
-                resolve(output);
-              }
-
-              sendData?.({
-                id: toolCallId,
-                event: "tool-completion",
-                data: `Dynamic tool ${metadata.name} completed`,
-              });
-            }
-          });
-
-          if (abortSignal) {
-            abortSignal.addEventListener("abort", () => {
-              child.kill();
-            });
-          }
-        });
+    [toolName]: {
+      toolDef: {
+        description: metadata.description,
+        inputSchema,
       },
-    }),
+      async *execute(
+        input: Record<string, unknown>,
+        { toolCallId, abortSignal }: ToolCallOptions,
+      ): AsyncGenerator<Message, string> {
+        try {
+          if (abortSignal?.aborted) {
+            throw new Error("Execution aborted");
+          }
+
+          yield {
+            event: "tool-init",
+            id: toolCallId,
+            data: `Executing dynamic tool: ${metadata.name}`,
+          };
+
+          // Validate params again for safety
+          try {
+            inputSchema.parse(input);
+          } catch (e) {
+            const errMsg = `Invalid parameters for tool ${metadata.name}: ${(e as Error).message}`;
+            yield { event: "tool-error", id: toolCallId, data: errMsg };
+            return errMsg;
+          }
+
+          const result = await spawnChildProcess(
+            scriptPath,
+            input,
+            abortSignal,
+          );
+
+          // Send tool-update event with last 20 lines of output
+          const outputLines = result.split("\n");
+          const lastLines = outputLines.slice(-20).join("\n");
+          yield {
+            event: "tool-update",
+            id: toolCallId,
+            data: {
+              primary: `Last 20 lines of output from ${metadata.name}:`,
+              secondary: lastLines.split("\n"),
+            },
+          };
+
+          yield {
+            event: "tool-completion",
+            id: toolCallId,
+            data: `Dynamic tool ${metadata.name} completed`,
+          };
+          return result;
+        } catch (error) {
+          yield {
+            event: "tool-error",
+            id: toolCallId,
+            data: (error as Error).message,
+          };
+          return (error as Error).message;
+        }
+      },
+      ask: async (
+        input: Record<string, unknown>,
+        { toolCallId, abortSignal }: ToolCallOptions,
+      ) => {
+        if (abortSignal?.aborted) {
+          return { approve: false, reason: "Execution aborted" };
+        }
+
+        if (metadata.needsApproval === false) {
+          return { approve: true };
+        }
+
+        if (toolExecutor) {
+          if (terminal) {
+            terminal.writeln(
+              `\n${style.blue.bold("●")} Proposing to run dynamic tool: ${style.cyan(metadata.name)}`,
+            );
+            terminal.lineBreak();
+            terminal.writeln(metadata.description);
+            terminal.lineBreak();
+            const previewArgs = Object.entries(input)
+              .slice(0, 10)
+              .map(([k, v]) => `${k}: ${JSON.stringify(v)}`);
+            if (previewArgs.length > 0) {
+              terminal.writeln("Arguments (preview):");
+              for (const line of previewArgs) terminal.writeln(`  - ${line}`);
+              terminal.lineBreak();
+            }
+          }
+          try {
+            const ctx = {
+              toolName: `dynamic-${metadata.name}`,
+              toolCallId,
+              message:
+                "What would you like to do with this dynamic tool execution?",
+              choices: {
+                accept: "Execute this dynamic tool",
+                acceptAll:
+                  "Accept all future executions for this tool (including this)",
+                reject: "Reject this execution",
+              },
+            } as const;
+            const resp = await toolExecutor.ask(ctx, { abortSignal });
+            const { result: userChoice, reason } = resp;
+            terminal?.lineBreak();
+            if (userChoice === "accept-all") {
+              terminal?.writeln(
+                style.yellow(
+                  "✓ Auto-accept mode enabled for this dynamic tool",
+                ),
+              );
+              terminal?.lineBreak();
+            }
+            if (userChoice === "reject") {
+              return {
+                approve: false,
+                reason: `The user rejected this execution. Reason: ${
+                  reason || "No reason provided"
+                }`,
+              };
+            }
+            return { approve: true };
+          } catch (e) {
+            if ((e as Error).name === "AbortError") {
+              return { approve: false, reason: "Execution aborted" };
+            }
+            return {
+              approve: false,
+              reason: (e as Error).message ?? "Unknown error during approval",
+            };
+          }
+        }
+
+        return {
+          approve: false,
+          reason:
+            "Dynamic tools require explicit user approval due to security considerations",
+        };
+      },
+    } as DynamicToolObject,
   };
 }
 
 export async function loadDynamicTools({
   baseDir,
-  sendData,
+  toolExecutor,
+  terminal,
 }: {
   baseDir: string;
-  sendData?: SendData;
+  toolExecutor?: ToolExecutor;
+  terminal?: Terminal;
 }) {
   const projectConfig = await config.readProjectConfig();
   const dynamicConfig = projectConfig.tools.dynamicTools;
@@ -315,9 +430,12 @@ export async function loadDynamicTools({
     }
   }
 
-  const tools: Record<string, ReturnType<typeof createDynamicTool>> = {};
+  const tools: Record<string, DynamicToolObject> = {};
   for (const [_, { path, metadata }] of toolMap) {
-    Object.assign(tools, createDynamicTool(path, metadata, sendData));
+    Object.assign(
+      tools,
+      createDynamicTool(path, metadata, toolExecutor, terminal),
+    );
   }
 
   return tools;

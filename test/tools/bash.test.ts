@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { config } from "../../source/config.ts";
 import { TokenCounter } from "../../source/tokens/counter.ts";
 import { createBashTool } from "../../source/tools/bash.ts";
+import { exhaustGenerator } from "../../source/utils/generators.ts";
 
 // Minimal token counter mock
 class MockTokenCounter extends TokenCounter {
@@ -25,22 +26,17 @@ await config.readProjectConfig();
 const baseDir = process.cwd();
 
 describe("bash tool path validation for git message flags", async () => {
-  const { bash } = await createBashTool({
+  const tool = await createBashTool({
     baseDir,
     tokenCounter,
   });
 
   async function run(command: string) {
-    const toolImpl = bash as unknown as {
-      execute: (
-        args: { command: string; cwd: string; timeout: number },
-        meta: { toolCallId: string },
-      ) => Promise<string>;
-    };
-    const result = await toolImpl.execute(
+    const generator = tool.execute(
       { command, cwd: baseDir, timeout: 1000 },
-      { toolCallId: "t1" },
+      { toolCallId: "t1", messages: [] },
     );
+    const result = await exhaustGenerator(generator);
     return String(result);
   }
 
@@ -71,27 +67,19 @@ describe("bash tool path validation for git message flags", async () => {
 });
 
 describe("bash tool abort signal handling", async () => {
-  const mockSendData = () => {};
-
   it("aborts execution on signal", async () => {
     const ac = new AbortController();
     const tool = await createBashTool({
       baseDir,
-      sendData: mockSendData,
       tokenCounter,
     });
     ac.abort();
-    const { bash } = tool;
-    const toolImpl = bash as unknown as {
-      execute: (
-        args: { command: string; cwd: string | null; timeout: number | null },
-        meta: { toolCallId: string; abortSignal?: AbortSignal },
-      ) => Promise<string>;
-    };
-    const result = await toolImpl.execute(
+    const { execute } = tool;
+    const generator = execute(
       { command: "sleep 10", cwd: null, timeout: null },
-      { toolCallId: "t1", abortSignal: ac.signal },
+      { toolCallId: "t1", abortSignal: ac.signal, messages: [] },
     );
+    const result = await exhaustGenerator(generator);
     assert.match(result, /aborted/);
   });
 });
