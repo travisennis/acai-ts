@@ -157,6 +157,9 @@ function format(
     case "del": {
       return style.strikethrough(token.text);
     }
+    case "html":
+      // Render HTML tags with dim styling and content as normal text
+      return style.dim(token.text);
     default:
       return "";
   }
