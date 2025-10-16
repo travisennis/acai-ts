@@ -124,7 +124,6 @@ export async function initTools({
     [ReadFileTool.name]: tool(readFileTool.toolDef),
     [ReadMultipleFilesTool.name]: tool(readMultipleFilesTool.toolDef),
     [GrepTool.name]: tool(grepTool.toolDef),
-    // TODO: Update other tools to new format as they are migrated
     // [DirectoryTreeTool.name]: tool(directoryTreeTool.toolDef),
     [CodeInterpreterTool.name]: tool(codeInterpreterTool.toolDef),
     [ThinkTool.name]: tool(thinkTool.toolDef),
@@ -313,7 +312,6 @@ export async function initCliTools({
       ...grepTool.toolDef,
       execute: grepTool.execute,
     }),
-    // TODO: Update other tools to new format as they are migrated
     // [DirectoryTreeTool.name]: tool({
     //   ...directoryTreeTool.toolDef,
     //   execute: directoryTreeTool.execute,
