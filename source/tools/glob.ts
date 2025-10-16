@@ -1,3 +1,5 @@
+import * as fs from "node:fs";
+import * as nodePath from "node:path";
 import { inspect } from "node:util";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
@@ -105,12 +107,52 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
           cwd: path,
         });
 
+        // Get file stats and sort by recency then alphabetically
+        const filesWithStats = await Promise.all(
+          matchingFiles.map(async (filePath) => {
+            const fullPath = nodePath.join(path, filePath);
+            try {
+              const stats = await fs.promises.stat(fullPath);
+              return {
+                path: filePath,
+                mtime: stats.mtime,
+                isRecent:
+                  Date.now() - stats.mtime.getTime() < 7 * 24 * 60 * 60 * 1000, // 7 days
+              };
+            } catch {
+              // If stat fails, treat as old file
+              return {
+                path: filePath,
+                mtime: new Date(0),
+                isRecent: false,
+              };
+            }
+          }),
+        );
+
+        // Sort files: recent files first (newest to oldest), then older files alphabetically
+        const sortedFiles = filesWithStats
+          .sort((a, b) => {
+            // Recent files come first
+            if (a.isRecent && !b.isRecent) return -1;
+            if (!a.isRecent && b.isRecent) return 1;
+
+            // Both recent: sort by modification time (newest first)
+            if (a.isRecent && b.isRecent) {
+              return b.mtime.getTime() - a.mtime.getTime();
+            }
+
+            // Both old: sort alphabetically by path
+            return a.path.localeCompare(b.path);
+          })
+          .map((file) => file.path);
+
         const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
 
         // Format results
         const resultContent =
-          matchingFiles.length > 0
-            ? matchingFiles.join("\n")
+          sortedFiles.length > 0
+            ? sortedFiles.join("\n")
             : "No files found matching the specified patterns.";
 
         const managed = manageOutput(resultContent, {
@@ -127,14 +169,14 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
         }
 
         // Show file count and sample files
-        if (matchingFiles.length > 0) {
-          const sampleFiles = matchingFiles.slice(0, 10);
+        if (sortedFiles.length > 0) {
+          const sampleFiles = sortedFiles.slice(0, 10);
 
           yield {
             event: "tool-update",
             id: toolCallId,
             data: {
-              primary: `Found ${style.cyan(matchingFiles.length)} files. First ${sampleFiles.length} files:`,
+              primary: `Found ${style.cyan(sortedFiles.length)} files. First ${sampleFiles.length} files:`,
               secondary: sampleFiles,
             },
           };
@@ -143,7 +185,7 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
         yield {
           event: "tool-completion",
           id: toolCallId,
-          data: `Glob search completed. Found ${style.cyan(matchingFiles.length)} files. (${managed.tokenCount} tokens)`,
+          data: `Glob search completed. Found ${style.cyan(sortedFiles.length)} files. (${managed.tokenCount} tokens)`,
         };
 
         return managed.content;
