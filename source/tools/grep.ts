@@ -182,7 +182,7 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
         yield {
           event: "tool-error",
           id: toolCallId,
-          data: `Error searching for "${pattern}" in ${path}`,
+          data: `Error searching for "${pattern}" in ${path}: ${(error as Error).message}`,
         };
         return (error as Error).message;
       }
@@ -199,7 +199,12 @@ interface GrepOptions {
   literal?: boolean | null;
 }
 
-function likelyUnbalancedRegex(pattern: string): boolean {
+interface ExecSyncError extends Error {
+  status?: number;
+  stderr?: string;
+}
+
+export function likelyUnbalancedRegex(pattern: string): boolean {
   const counts = {
     openParen: 0,
     closeParen: 0,
@@ -209,43 +214,113 @@ function likelyUnbalancedRegex(pattern: string): boolean {
     closeBrace: 0,
   };
   let escaped = false;
+  let inCharacterClass = false;
+
   for (let i = 0; i < pattern.length; i++) {
     const ch = pattern[i];
+
     if (escaped) {
       escaped = false;
       continue;
     }
+
     if (ch === "\\") {
       escaped = true;
       continue;
     }
-    switch (ch) {
-      case "(":
-        counts.openParen++;
-        break;
-      case ")":
-        counts.closeParen++;
-        break;
-      case "[":
-        counts.openBracket++;
-        break;
-      case "]":
-        counts.closeBracket++;
-        break;
-      case "{":
-        counts.openBrace++;
-        break;
-      case "}":
-        counts.closeBrace++;
-        break;
-      default:
-        break;
+
+    // Track character class boundaries
+    if (ch === "[" && !inCharacterClass) {
+      inCharacterClass = true;
+      counts.openBracket++;
+      continue;
+    }
+
+    if (ch === "]" && inCharacterClass) {
+      inCharacterClass = false;
+      counts.closeBracket++;
+      continue;
+    }
+
+    // Only count brackets/parens/braces outside of character classes
+    if (!inCharacterClass) {
+      switch (ch) {
+        case "(":
+          counts.openParen++;
+          break;
+        case ")":
+          counts.closeParen++;
+          break;
+        case "{":
+          counts.openBrace++;
+          break;
+        case "}":
+          counts.closeBrace++;
+          break;
+        default:
+          break;
+      }
     }
   }
+
+  // Check for unbalanced brackets, parentheses, and braces
+  const hasUnbalancedBrackets = counts.openBracket !== counts.closeBracket;
+  const hasUnbalancedParens = counts.openParen !== counts.closeParen;
+  const hasUnbalancedBraces = counts.openBrace !== counts.closeBrace;
+
+  // Also check for invalid repetition operators (e.g., { without proper format)
+  // But only check if we're not in a character class context
+  let hasInvalidRepetition = false;
+  if (!inCharacterClass) {
+    // Check for invalid repetition operators, but ignore escaped braces
+    let tempEscaped = false;
+    for (let i = 0; i < pattern.length; i++) {
+      const ch = pattern[i];
+      if (tempEscaped) {
+        tempEscaped = false;
+        continue;
+      }
+      if (ch === "\\") {
+        tempEscaped = true;
+        continue;
+      }
+      if (ch === "{" && !tempEscaped) {
+        // Check if this is a valid repetition operator
+        let j = i + 1;
+        let hasComma = false;
+        let isValid = false;
+
+        while (j < pattern.length) {
+          const nextCh = pattern[j];
+          if (nextCh === "}") {
+            // {} is valid (0 repetitions), {n} is valid, {n,} is valid, {n,m} is valid
+            isValid = true;
+            break;
+          }
+          if (nextCh >= "0" && nextCh <= "9") {
+            // Valid digit
+          } else if (nextCh === "," && !hasComma) {
+            hasComma = true;
+          } else {
+            // Invalid character in repetition
+            break;
+          }
+          j++;
+        }
+
+        if (!isValid) {
+          hasInvalidRepetition = true;
+          break;
+        }
+      }
+    }
+  }
+
   return (
-    counts.openParen !== counts.closeParen ||
-    counts.openBracket !== counts.closeBracket ||
-    counts.openBrace !== counts.closeBrace
+    hasUnbalancedBrackets ||
+    hasUnbalancedParens ||
+    hasUnbalancedBraces ||
+    hasInvalidRepetition
   );
 }
 
@@ -314,24 +389,31 @@ export function buildGrepCommand(
   return command;
 }
 
-function grepFiles(
+export function grepFiles(
   pattern: string,
   path: string,
   options: GrepOptions = {},
 ): string {
   try {
     const command = buildGrepCommand(pattern, path, options);
-    const result = execSync(command, { encoding: "utf-8" });
+    const result = execSync(command, {
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
+    });
     return result;
   } catch (error) {
-    if (
-      error instanceof Error &&
-      "status" in error &&
-      (error as unknown as { status?: number }).status === 1
-    ) {
+    const execError = error as ExecSyncError;
+    const exitCode = execError?.status;
+
+    if (exitCode === 1) {
       return "No matches found.";
     }
 
-    throw new Error(`Error executing ripgrep: ${(error as Error).message}`);
+    if (exitCode === 2) {
+      const stderr = execError?.stderr || execError.message;
+      throw new Error(`Regex parse error in pattern "${pattern}": ${stderr}`);
+    }
+
+    throw new Error(`Error executing ripgrep: ${execError.message}`);
   }
 }
