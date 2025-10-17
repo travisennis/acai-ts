@@ -32,8 +32,6 @@ const openrouterModels = {
   "deepseek-v3": openRouterClient("deepseek/deepseek-chat-v3-0324"),
   "deepseek-v3-1": openRouterClient("deepseek/deepseek-chat-v3.1"),
   "deepseek-r1": openRouterClient("deepseek/deepseek-r1-0528"),
-  "deepseek-v3-free": openRouterClient("deepseek/deepseek-chat-v3-0324:free"),
-  "deepseek-r1-free": openRouterClient("deepseek/deepseek-r1-0528:free"),
   "gemini-flash25": openRouterClient("google/gemini-2.5-flash"),
   "gemini-pro25": openRouterClient("google/gemini-2.5-pro"),
   sonnet4: openRouterClient("anthropic/claude-sonnet-4"),
@@ -42,11 +40,9 @@ const openrouterModels = {
   "opus-4.1": openRouterClient("anthropic/claude-opus-4.1"),
   "gpt-4.1": openRouterClient("openai/gpt-4.1"),
   "kimi-k2": openRouterClient("moonshotai/kimi-k2:nitro"),
-  "kimi-k2-free": openRouterClient("moonshotai/kimi-k2:free"),
   "kimi-k2-0905": openRouterClient("moonshotai/kimi-k2-0905"),
   "devstral-medium": openRouterClient("mistralai/devstral-medium"),
   "qwen3-coder": openRouterClient("qwen/qwen3-coder"),
-  "qwen3-coder-free": openRouterClient("qwen/qwen3-coder:free"),
   "qwen3-coder-plus": openRouterClient("qwen/qwen3-coder-plus"),
   "qwen3-max": openRouterClient("qwen/qwen3-max"),
   "glm-4.6": openRouterClient("z-ai/glm-4.6"),
@@ -55,7 +51,6 @@ const openrouterModels = {
   "gpt-5-mini": openRouterClient("openai/gpt-5-mini"),
   "gpt-oss-120b": openRouterClient("openai/gpt-oss-120b"),
   "grok-code-fast-1": openrouter("x-ai/grok-code-fast-1") as LanguageModelV2,
-  "grok-4-fast-free": openrouter("x-ai/grok-4-fast:free") as LanguageModelV2,
   "gpt-5-codex": openRouterClient("openai/gpt-5-codex"),
 } as const;
 
@@ -101,19 +96,6 @@ export const openrouterModelRegistry: {
     costPerOutputToken: 0, // Assuming free tier or unknown cost
     category: "balanced",
   },
-  "openrouter:deepseek-v3-free": {
-    id: "openrouter:deepseek-v3-free",
-    provider: "openrouter",
-    contextWindow: 128000,
-    maxOutputTokens: 8000,
-    defaultTemperature: 0.3,
-    promptFormat: "bracket",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0, // Assuming free tier or unknown cost
-    costPerOutputToken: 0, // Assuming free tier or unknown cost
-    category: "balanced",
-  },
   "openrouter:deepseek-v3-1": {
     id: "openrouter:deepseek-v3-1",
     provider: "openrouter",
@@ -125,19 +107,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000002,
     costPerOutputToken: 0.0000008,
-    category: "balanced",
-  },
-  "openrouter:deepseek-r1-free": {
-    id: "openrouter:deepseek-r1-free",
-    provider: "openrouter",
-    contextWindow: 128000,
-    maxOutputTokens: 32768,
-    defaultTemperature: 0.6,
-    promptFormat: "bracket",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0, // Assuming free tier or unknown cost
-    costPerOutputToken: 0, // Assuming free tier or unknown cost
     category: "balanced",
   },
   "openrouter:gemini-flash25": {
@@ -244,19 +213,6 @@ export const openrouterModelRegistry: {
     costPerOutputToken: 0.0000023,
     category: "balanced",
   },
-  "openrouter:kimi-k2-free": {
-    id: "openrouter:kimi-k2-free",
-    provider: "openrouter",
-    contextWindow: 65536,
-    maxOutputTokens: 8192,
-    defaultTemperature: 0.6,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "balanced",
-  },
   "openrouter:kimi-k2-0905": {
     id: "openrouter:kimi-k2-0905",
     provider: "openrouter",
@@ -285,19 +241,6 @@ export const openrouterModelRegistry: {
   },
   "openrouter:qwen3-coder": {
     id: "openrouter:qwen3-coder",
-    provider: "openrouter",
-    contextWindow: 262000,
-    maxOutputTokens: 66000,
-    defaultTemperature: 0.7,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000004,
-    costPerOutputToken: 0.000002,
-    category: "balanced",
-  },
-  "openrouter:qwen3-coder-free": {
-    id: "openrouter:qwen3-coder-free",
     provider: "openrouter",
     contextWindow: 262000,
     maxOutputTokens: 66000,
@@ -424,19 +367,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000007256312,
     costPerOutputToken: 0.0000002903936,
-    category: "fast",
-  },
-  "openrouter:grok-4-fast-free": {
-    id: "openrouter:grok-4-fast-free",
-    provider: "openrouter",
-    contextWindow: 2000000,
-    maxOutputTokens: 64000,
-    defaultTemperature: 0.5,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
     category: "fast",
   },
 };
