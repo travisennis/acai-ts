@@ -83,16 +83,8 @@ export class Cli {
       const result = await generateText({
         model: langModel,
         maxOutputTokens: maxTokens,
-        messages: [
-          {
-            role: "system",
-            content: finalSystemPrompt,
-            providerOptions: {
-              anthropic: { cacheControl: { type: "ephemeral" } },
-            },
-          },
-          ...messageHistory.get(),
-        ],
+        system: finalSystemPrompt,
+        messages: messageHistory.get(),
         temperature: modelConfig.defaultTemperature,
         stopWhen: stepCountIs(60),
         maxRetries: 2,

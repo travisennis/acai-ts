@@ -2,6 +2,7 @@ import type { LanguageModelV2 } from "@ai-sdk/provider";
 import { wrapLanguageModel } from "ai";
 import {
   auditMessage,
+  cacheMiddleware,
   createRateLimitMiddleware,
 } from "../middleware/index.ts";
 import {
@@ -23,6 +24,7 @@ function getLanguageModel({
   const langModel = wrapLanguageModel({
     model: languageModel(model),
     middleware: [
+      cacheMiddleware,
       createRateLimitMiddleware({ requestsPerMinute: 30 }),
       auditMessage({ filePath: stateDir, app }),
     ],

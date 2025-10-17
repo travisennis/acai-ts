@@ -289,16 +289,8 @@ export class Repl {
           const result = streamText({
             model: langModel,
             maxOutputTokens: maxTokens,
-            messages: [
-              {
-                role: "system",
-                content: finalSystemPrompt,
-                providerOptions: {
-                  anthropic: { cacheControl: { type: "ephemeral" } },
-                },
-              },
-              ...messageHistory.get(),
-            ],
+            system: finalSystemPrompt,
+            messages: messageHistory.get(),
             temperature:
               modelConfig.defaultTemperature > -1
                 ? modelConfig.defaultTemperature

@@ -3,61 +3,17 @@ import {
   anthropic as originalAnthropic,
 } from "@ai-sdk/anthropic";
 import { objectKeys } from "@travisennis/stdlib/object";
-import { isRecord } from "@travisennis/stdlib/typeguards";
 import { customProvider } from "ai";
 import type { ModelMetadata } from "./providers.ts";
 
-// Helper function copied from original providers.ts
-function addCacheControlToTools(body: string) {
-  const parsedBody = JSON.parse(body);
-  if (isRecord(parsedBody)) {
-    const tools = parsedBody["tools"];
-    if (Array.isArray(tools)) {
-      tools.at(-1).cache_control = { type: "ephemeral" };
-    }
-  }
-  return JSON.stringify(parsedBody);
-}
-
 const anthropicModels = {
-  opus: createAnthropic({
-    fetch(input, init) {
-      const body = init?.body;
-      if (body && typeof body === "string") {
-        init.body = addCacheControlToTools(body);
-      }
-      return fetch(input, init);
-    },
-  })("claude-4-opus-20250514"),
-  sonnet: createAnthropic({
-    fetch(input, init) {
-      const body = init?.body;
-      if (body && typeof body === "string") {
-        init.body = addCacheControlToTools(body);
-      }
-      return fetch(input, init);
-    },
-  })("claude-4-sonnet-20250514"),
-  sonnet37: createAnthropic({
-    fetch(input, init) {
-      const body = init?.body;
-      if (body && typeof body === "string") {
-        init.body = addCacheControlToTools(body);
-      }
-      return fetch(input, init);
-    },
-  })("claude-3-7-sonnet-20250219"),
+  opus: createAnthropic()("claude-4-opus-20250514"),
+  sonnet: createAnthropic()("claude-4-sonnet-20250514"),
+  sonnet37: createAnthropic()("claude-3-7-sonnet-20250219"),
   "sonnet37-token-efficient-tools": createAnthropic({
     headers: {
       "anthropic-version": "2023-06-01",
       "anthropic-beta": "token-efficient-tools-2025-02-19",
-    },
-    fetch(input, init) {
-      const body = init?.body;
-      if (body && typeof body === "string") {
-        init.body = addCacheControlToTools(body);
-      }
-      return fetch(input, init);
     },
   })("claude-3-7-sonnet-20250219"),
   "sonnet37-128k": createAnthropic({
@@ -65,25 +21,11 @@ const anthropicModels = {
       "anthropic-version": "2023-06-01",
       "anthropic-beta": "output-128k-2025-02-19",
     },
-    fetch(input, init) {
-      const body = init?.body;
-      if (body && typeof body === "string") {
-        init.body = addCacheControlToTools(body);
-      }
-      return fetch(input, init);
-    },
   })("claude-3-7-sonnet-20250219"),
   sonnet35: createAnthropic({
     headers: {
       "anthropic-version": "2023-06-01",
       "anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15",
-    },
-    fetch(input, init) {
-      const body = init?.body;
-      if (body && typeof body === "string") {
-        init.body = addCacheControlToTools(body);
-      }
-      return fetch(input, init);
     },
   })("claude-3-5-sonnet-20241022"),
   haiku: originalAnthropic("claude-3-5-haiku-20241022"),
