@@ -29,16 +29,12 @@ const openRouterClient = createOpenAICompatible({
 // });
 
 const openrouterModels = {
-  "deepseek-v3": openRouterClient("deepseek/deepseek-chat-v3-0324"),
   "deepseek-v3-1": openRouterClient("deepseek/deepseek-chat-v3.1"),
   "deepseek-r1": openRouterClient("deepseek/deepseek-r1-0528"),
   "gemini-flash25": openRouterClient("google/gemini-2.5-flash"),
   "gemini-pro25": openRouterClient("google/gemini-2.5-pro"),
-  sonnet4: openRouterClient("anthropic/claude-sonnet-4"),
   "sonnet-4.5": openRouterClient("anthropic/claude-sonnet-4.5"),
-  opus4: openRouterClient("anthropic/claude-opus-4"),
   "opus-4.1": openRouterClient("anthropic/claude-opus-4.1"),
-  "gpt-4.1": openRouterClient("openai/gpt-4.1"),
   "kimi-k2": openRouterClient("moonshotai/kimi-k2:nitro"),
   "kimi-k2-0905": openRouterClient("moonshotai/kimi-k2-0905"),
   "devstral-medium": openRouterClient("mistralai/devstral-medium"),
@@ -70,19 +66,6 @@ export const openrouterProvider = {
 export const openrouterModelRegistry: {
   [K in ModelName]: ModelMetadata<ModelName>;
 } = {
-  "openrouter:deepseek-v3": {
-    id: "openrouter:deepseek-v3",
-    provider: "openrouter",
-    contextWindow: 128000,
-    maxOutputTokens: 8000,
-    defaultTemperature: 0.3,
-    promptFormat: "bracket",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0, // Assuming free tier or unknown cost
-    costPerOutputToken: 0, // Assuming free tier or unknown cost
-    category: "balanced",
-  },
   "openrouter:deepseek-r1": {
     id: "openrouter:deepseek-r1",
     provider: "openrouter",
@@ -135,19 +118,7 @@ export const openrouterModelRegistry: {
     costPerOutputToken: 0,
     category: "powerful",
   },
-  "openrouter:opus4": {
-    id: "openrouter:opus4",
-    provider: "openrouter",
-    contextWindow: 200000,
-    maxOutputTokens: 64000,
-    defaultTemperature: 0.5,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "powerful",
-  },
+
   "openrouter:opus-4.1": {
     id: "openrouter:opus-4.1",
     provider: "openrouter",
@@ -161,19 +132,7 @@ export const openrouterModelRegistry: {
     costPerOutputToken: 0.000075,
     category: "powerful",
   },
-  "openrouter:sonnet4": {
-    id: "openrouter:sonnet4",
-    provider: "openrouter",
-    contextWindow: 200000,
-    maxOutputTokens: 64000,
-    defaultTemperature: 0.5,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "balanced",
-  },
+
   "openrouter:sonnet-4.5": {
     id: "openrouter:sonnet-4.5",
     provider: "openrouter",
@@ -187,19 +146,7 @@ export const openrouterModelRegistry: {
     costPerOutputToken: 0.000015,
     category: "powerful",
   },
-  "openrouter:gpt-4.1": {
-    id: "openrouter:gpt-4.1",
-    provider: "openrouter",
-    contextWindow: 1000000,
-    maxOutputTokens: 32768,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.000002,
-    costPerOutputToken: 0.000008,
-    category: "balanced",
-  },
+
   "openrouter:kimi-k2": {
     id: "openrouter:kimi-k2",
     provider: "openrouter",
