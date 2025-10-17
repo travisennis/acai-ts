@@ -6,7 +6,7 @@ import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
 import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
-import type { Message } from "./types.ts";
+import type { ToolResult } from "./types.ts";
 
 export const EditFileTool = {
   name: "editFile" as const,
@@ -54,7 +54,7 @@ export const createEditFileTool = async ({
     async *execute(
       { path, edits }: EditFileInputSchema,
       { toolCallId, abortSignal }: ToolCallOptions,
-    ): AsyncGenerator<Message, string> {
+    ): AsyncGenerator<ToolResult> {
       try {
         if (abortSignal?.aborted) {
           throw new Error("File editing aborted");
@@ -85,14 +85,14 @@ export const createEditFileTool = async ({
           data: "Edits applied successfully.",
         };
 
-        return result;
+        yield result;
       } catch (error) {
         yield {
           event: "tool-error",
           id: toolCallId,
           data: `Failed to edit file: ${(error as Error).message}`,
         };
-        return `Failed to edit file: ${(error as Error).message}`;
+        yield `Failed to edit file: ${(error as Error).message}`;
       }
     },
     ask: async (

@@ -50,9 +50,4 @@ export type Message =
   | ToolCompletionMessage
   | ToolUpdateMessage;
 
-export type SendData = ({
-  data,
-  event,
-  id,
-  retry,
-}: Message) => void | Promise<void>;
+export type ToolResult = Message | string;

@@ -8,7 +8,7 @@ import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import { manageOutput } from "../tokens/manage-output.ts";
 import { glob } from "../utils/glob.ts";
-import type { Message } from "./types.ts";
+import type { ToolResult } from "./types.ts";
 
 export const GlobTool = {
   name: "globFiles" as const,
@@ -37,7 +37,7 @@ export const inputSchema = z.object({
     .union([z.string(), z.array(z.string())])
     .nullable()
     .describe("Glob patterns to look for ignore files. (default: undefined)"),
-  cwd: z
+  cwd: z.coerce
     .string()
     .nullable()
     .describe("Current working directory override. (default: process.cwd())"),
@@ -65,7 +65,7 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
         cwd,
       }: GlobInputSchema,
       { toolCallId, abortSignal }: ToolCallOptions,
-    ): AsyncGenerator<Message, string> {
+    ): AsyncGenerator<ToolResult> {
       // Check if execution has been aborted
       if (abortSignal?.aborted) {
         throw new Error("Glob search aborted");
@@ -188,14 +188,14 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
           data: `Glob search completed. Found ${style.cyan(sortedFiles.length)} files. (${managed.tokenCount} tokens)`,
         };
 
-        return managed.content;
+        yield managed.content;
       } catch (error) {
         yield {
           event: "tool-error",
           id: toolCallId,
           data: `Error searching for files with patterns "${patterns}" in ${path}`,
         };
-        return (error as Error).message;
+        yield (error as Error).message;
       }
     },
   };

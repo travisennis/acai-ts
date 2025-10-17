@@ -4,7 +4,7 @@ import { z } from "zod";
 import Exa from "../api/exa/index.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
-import type { Message } from "./types.ts";
+import type { ToolResult } from "./types.ts";
 
 export const WebSearchTool = {
   name: "webSearch" as const,
@@ -28,7 +28,7 @@ export const createWebSearchTool = ({
   const execute = async function* (
     { query }: z.infer<typeof inputSchema>,
     { toolCallId, abortSignal }: ToolCallOptions,
-  ): AsyncGenerator<Message, string> {
+  ): AsyncGenerator<ToolResult> {
     try {
       // Check if execution has been aborted
       if (abortSignal?.aborted) {
@@ -59,12 +59,12 @@ export const createWebSearchTool = ({
         data: `Found ${result.results.length} results. (${tokenCount} tokens)`,
       };
 
-      return resultText;
+      yield resultText;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       yield { event: "tool-error", id: toolCallId, data: errorMessage };
-      return errorMessage;
+      yield errorMessage;
     }
   };
 

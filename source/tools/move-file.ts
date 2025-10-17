@@ -5,7 +5,7 @@ import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
 import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
-import type { Message } from "./types.ts";
+import type { ToolResult } from "./types.ts";
 
 export const MoveFileTool = {
   name: "moveFile" as const,
@@ -40,7 +40,7 @@ export const createMoveFileTool = async ({
     async *execute(
       { source, destination }: MoveFileInputSchema,
       { toolCallId, abortSignal }: ToolCallOptions,
-    ): AsyncGenerator<Message, string> {
+    ): AsyncGenerator<ToolResult> {
       try {
         if (abortSignal?.aborted) {
           throw new Error("File move aborted");
@@ -76,14 +76,14 @@ export const createMoveFileTool = async ({
           data: "File moved successfully",
         };
 
-        return `Successfully moved ${source} to ${destination}`;
+        yield `Successfully moved ${source} to ${destination}`;
       } catch (error) {
         yield {
           event: "tool-error",
           id: toolCallId,
           data: `Failed to move file: ${(error as Error).message}`,
         };
-        return `Failed to move file: ${(error as Error).message}`;
+        yield `Failed to move file: ${(error as Error).message}`;
       }
     },
     ask: async (

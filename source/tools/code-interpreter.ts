@@ -5,7 +5,7 @@ import { join } from "node:path";
 import process from "node:process";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
-import type { Message } from "./types.ts";
+import type { ToolResult } from "./types.ts";
 
 export const CodeInterpreterTool = {
   name: "codeInterpreter" as const,
@@ -48,7 +48,7 @@ export const createCodeInterpreterTool = () => {
   async function* execute(
     { code, timeoutSeconds }: z.infer<typeof inputSchema>,
     { toolCallId, abortSignal }: ToolCallOptions,
-  ): AsyncGenerator<Message, string> {
+  ): AsyncGenerator<ToolResult> {
     // Check if execution has been aborted
     if (abortSignal?.aborted) {
       throw new Error("Code interpretation aborted");
@@ -190,7 +190,7 @@ export const createCodeInterpreterTool = () => {
         data: "Code execution completed successfully",
       };
 
-      return JSON.stringify(result, null, 2);
+      yield JSON.stringify(result, null, 2);
     } catch (err) {
       const errorMessage =
         (err as Error).name === "ETIMEDOUT" ||
@@ -204,7 +204,7 @@ export const createCodeInterpreterTool = () => {
         data: errorMessage,
       };
 
-      return errorMessage;
+      yield errorMessage;
     }
   }
 

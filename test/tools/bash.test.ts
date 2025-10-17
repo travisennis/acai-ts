@@ -3,7 +3,6 @@ import { describe, it } from "node:test";
 import { config } from "../../source/config.ts";
 import { TokenCounter } from "../../source/tokens/counter.ts";
 import { createBashTool } from "../../source/tools/bash.ts";
-import { exhaustGenerator } from "../../source/utils/generators.ts";
 
 // Minimal token counter mock
 class MockTokenCounter extends TokenCounter {
@@ -36,8 +35,14 @@ describe("bash tool path validation for git message flags", async () => {
       { command, cwd: baseDir, timeout: 1000 },
       { toolCallId: "t1", messages: [] },
     );
-    const result = await exhaustGenerator(generator);
-    return String(result);
+
+    let finalResult = "";
+    for await (const value of generator) {
+      if (typeof value === "string") {
+        finalResult = value;
+      }
+    }
+    return finalResult;
   }
 
   it("allows commit messages with /copy", async () => {
@@ -79,7 +84,13 @@ describe("bash tool abort signal handling", async () => {
       { command: "sleep 10", cwd: null, timeout: null },
       { toolCallId: "t1", abortSignal: ac.signal, messages: [] },
     );
-    const result = await exhaustGenerator(generator);
-    assert.match(result, /aborted/);
+
+    let finalResult = "";
+    for await (const value of generator) {
+      if (typeof value === "string") {
+        finalResult = value;
+      }
+    }
+    assert.match(finalResult, /aborted/);
   });
 });

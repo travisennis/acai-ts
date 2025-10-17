@@ -9,7 +9,7 @@ import type { TokenCounter } from "../tokens/counter.ts";
 import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { isMutatingCommand, resolveCwd, validatePaths } from "./bash-utils.ts";
 import { isPathWithinBaseDir } from "./filesystem-utils.ts";
-import type { Message } from "./types.ts";
+import type { ToolResult } from "./types.ts";
 
 export const BashTool = {
   name: "bash" as const,
@@ -57,7 +57,7 @@ export const createBashTool = async ({
     async *execute(
       { command, cwd, timeout }: BashInputSchema,
       { toolCallId, abortSignal }: ToolCallOptions,
-    ): AsyncGenerator<Message, string> {
+    ): AsyncGenerator<ToolResult> {
       try {
         if (abortSignal?.aborted) {
           throw new Error("Command execution aborted");
@@ -75,7 +75,8 @@ export const createBashTool = async ({
         if (!isPathWithinBaseDir(resolvedCwd, baseDir)) {
           const errorMsg = `Working directory must be within the project directory: ${baseDir}`;
           yield { event: "tool-error", id: toolCallId, data: errorMsg };
-          return errorMsg;
+          yield errorMsg;
+          return;
         }
 
         const pathValidation = validatePaths(command, baseDir, resolvedCwd);
@@ -85,7 +86,8 @@ export const createBashTool = async ({
             id: toolCallId,
             data: pathValidation.error ?? "Unknown error.",
           };
-          return pathValidation.error ?? "Unknown error.";
+          yield pathValidation.error ?? "Unknown error.";
+          return;
         }
 
         if (abortSignal?.aborted) {
@@ -132,12 +134,12 @@ export const createBashTool = async ({
               : `Output of command (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}).`,
         };
 
-        return finalResult;
+        yield finalResult;
       } catch (error) {
         logger.error(error, "Bash Tool Error:");
         const errorMsg = `Command failed: ${(error as Error).message}`;
         yield { event: "tool-error", id: toolCallId, data: errorMsg };
-        return errorMsg;
+        yield errorMsg;
       }
     },
     ask: async (

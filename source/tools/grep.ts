@@ -6,7 +6,7 @@ import { config } from "../config.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import { manageOutput } from "../tokens/manage-output.ts";
-import type { Message } from "./types.ts";
+import type { ToolResult } from "./types.ts";
 
 export const GrepTool = {
   name: "grepFiles" as const,
@@ -27,7 +27,7 @@ const inputSchema = z.object({
     .boolean()
     .nullable()
     .describe("Use case-sensitive search. (default: false)"),
-  filePattern: z
+  filePattern: z.coerce
     .string()
     .nullable()
     .describe(
@@ -73,7 +73,7 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
         literal,
       }: GrepInputSchema,
       { toolCallId, abortSignal }: ToolCallOptions,
-    ): AsyncGenerator<Message, string> {
+    ): AsyncGenerator<ToolResult> {
       // Check if execution has been aborted
       if (abortSignal?.aborted) {
         throw new Error("Grep search aborted");
@@ -177,14 +177,14 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
           id: toolCallId,
           data: `Found ${style.cyan(matchCount)} matches. (${managed.tokenCount} tokens)`,
         };
-        return managed.content;
+        yield managed.content;
       } catch (error) {
         yield {
           event: "tool-error",
           id: toolCallId,
           data: `Error searching for "${pattern}" in ${path}: ${(error as Error).message}`,
         };
-        return (error as Error).message;
+        yield (error as Error).message;
       }
     },
   };

@@ -6,7 +6,7 @@ import { formatFile } from "../formatting.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
-import type { Message } from "./types.ts";
+import type { ToolResult } from "./types.ts";
 
 export const ReadMultipleFilesTool = {
   name: "readMultipleFiles" as const,
@@ -40,7 +40,7 @@ export const createReadMultipleFilesTool = async ({
     async *execute(
       { paths }: ReadMultipleFilesInputSchema,
       { toolCallId, abortSignal }: ToolCallOptions,
-    ): AsyncGenerator<Message, string> {
+    ): AsyncGenerator<ToolResult> {
       try {
         // Check if execution has been aborted
         if (abortSignal?.aborted) {
@@ -127,7 +127,7 @@ export const createReadMultipleFilesTool = async ({
           data: completionMessage,
         };
 
-        return formattedResults.join("\n---\n");
+        yield formattedResults.join("\n---\n");
       } catch (error) {
         const errorMsg = `Multiple file reading failed: ${(error as Error).message}`;
         yield {
@@ -135,7 +135,7 @@ export const createReadMultipleFilesTool = async ({
           event: "tool-error",
           data: errorMsg,
         };
-        return errorMsg;
+        yield errorMsg;
       }
     },
   };

@@ -10,7 +10,7 @@ import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
 import type { ToolExecutor } from "../tool-executor.ts";
 import { parseToolMetadata, type ToolMetadata } from "./dynamic-tool-parser.ts";
-import type { Message } from "./types.ts";
+import type { ToolResult } from "./types.ts";
 
 function generateZodSchema(parameters: ToolMetadata["parameters"]) {
   const fields: Record<string, z.ZodTypeAny> = {};
@@ -202,7 +202,7 @@ export interface DynamicToolObject {
   execute: (
     input: Record<string, unknown>,
     options: ToolCallOptions,
-  ) => AsyncGenerator<unknown, string>;
+  ) => AsyncGenerator<ToolResult>;
   ask?: (
     input: Record<string, unknown>,
     options: ToolCallOptions,
@@ -227,7 +227,7 @@ export function createDynamicTool(
       async *execute(
         input: Record<string, unknown>,
         { toolCallId, abortSignal }: ToolCallOptions,
-      ): AsyncGenerator<Message, string> {
+      ): AsyncGenerator<ToolResult> {
         try {
           if (abortSignal?.aborted) {
             throw new Error("Execution aborted");
@@ -245,7 +245,8 @@ export function createDynamicTool(
           } catch (e) {
             const errMsg = `Invalid parameters for tool ${metadata.name}: ${(e as Error).message}`;
             yield { event: "tool-error", id: toolCallId, data: errMsg };
-            return errMsg;
+            yield errMsg;
+            return;
           }
 
           const result = await spawnChildProcess(
@@ -271,14 +272,15 @@ export function createDynamicTool(
             id: toolCallId,
             data: `Dynamic tool ${metadata.name} completed`,
           };
-          return result;
+
+          yield result;
         } catch (error) {
           yield {
             event: "tool-error",
             id: toolCallId,
             data: (error as Error).message,
           };
-          return (error as Error).message;
+          yield (error as Error).message;
         }
       },
       ask: async (

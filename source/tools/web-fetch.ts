@@ -4,7 +4,7 @@ import { z } from "zod";
 import { logger } from "../logger.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
-import type { Message } from "./types.ts";
+import type { ToolResult } from "./types.ts";
 
 export const WebFetchTool = {
   name: "webFetch" as const,
@@ -24,7 +24,7 @@ export const createWebFetchTool = (options: { tokenCounter: TokenCounter }) => {
     async *execute(
       { url }: { url: string },
       { toolCallId, abortSignal }: ToolCallOptions,
-    ): AsyncGenerator<Message, string> {
+    ): AsyncGenerator<ToolResult> {
       try {
         yield {
           event: "tool-init",
@@ -43,7 +43,7 @@ export const createWebFetchTool = (options: { tokenCounter: TokenCounter }) => {
           data: `Read URL successfully (${tokenCount} tokens)`,
         };
         logger.info(`Successfully read URL: ${url} (${tokenCount} tokens)`);
-        return urlContent;
+        yield urlContent;
       } catch (error) {
         const errorMessage = (error as Error).message;
         yield {
@@ -52,7 +52,7 @@ export const createWebFetchTool = (options: { tokenCounter: TokenCounter }) => {
           data: `Error reading URL ${url}: ${errorMessage}`,
         };
         logger.error(`Error reading URL ${url}: ${errorMessage}`);
-        return `Failed to read URL: ${errorMessage}`;
+        yield `Failed to read URL: ${errorMessage}`;
       }
     },
   };

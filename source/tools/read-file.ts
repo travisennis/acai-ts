@@ -6,7 +6,7 @@ import { config } from "../config.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
-import type { Message } from "./types.ts";
+import type { ToolResult } from "./types.ts";
 import { fileEncodingSchema } from "./types.ts";
 
 export const ReadFileTool = {
@@ -57,7 +57,7 @@ export const createReadFileTool = async ({
         lineCount,
       }: ReadFileInputSchema,
       { toolCallId, abortSignal }: ToolCallOptions,
-    ): AsyncGenerator<Message, string> {
+    ): AsyncGenerator<ToolResult> {
       try {
         // Check if execution has been aborted
         if (abortSignal?.aborted) {
@@ -92,7 +92,8 @@ export const createReadFileTool = async ({
           if (startIndex < 0 || startIndex >= totalLines) {
             const errorMsg = `startLine ${startLine} is out of bounds for file with ${totalLines} lines.`;
             yield { event: "tool-error", id: toolCallId, data: errorMsg };
-            return errorMsg;
+            yield errorMsg;
+            return;
           }
 
           const endIndex = Math.min(startIndex + count, totalLines);
@@ -128,11 +129,11 @@ export const createReadFileTool = async ({
               ? `File read successfully ${tokenCount > 0 ? ` (${tokenCount} tokens)` : ""}`
               : result,
         };
-        return result;
+        yield result;
       } catch (error) {
         const errorMsg = `Failed to read file: ${(error as Error).message}`;
         yield { event: "tool-error", id: toolCallId, data: errorMsg };
-        return errorMsg;
+        yield errorMsg;
       }
     },
   };

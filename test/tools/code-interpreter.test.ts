@@ -18,16 +18,23 @@ async function runTool(input: {
 
   let output = "";
 
-  // Iterate through the generator and capture the final return value
+  // Iterate through the generator and capture all values
   while (true) {
     const result = await generator.next();
     if (result.done) {
-      // This is the final return value
-      output = result.value;
       break;
     }
-    // This is a yielded message
-    events.push({ event: result.value.event, data: result.value.data });
+    // This is a yielded message or result
+    if (typeof result.value === "string") {
+      // This is the final result (yielded instead of returned)
+      output = result.value;
+    } else if (
+      typeof result.value === "object" &&
+      "event" in result.value &&
+      "data" in result.value
+    ) {
+      events.push({ event: result.value.event, data: result.value.data });
+    }
   }
 
   if (typeof output === "string" && output.startsWith("{")) {

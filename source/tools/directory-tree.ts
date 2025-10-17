@@ -8,7 +8,7 @@ import type { TokenCounter } from "../tokens/counter.ts";
 import { manageOutput } from "../tokens/manage-output.ts";
 import ignore, { type Ignore } from "../utils/ignore.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
-import type { Message } from "./types.ts";
+import type { ToolResult } from "./types.ts";
 
 export const DirectoryTreeTool = {
   name: "directoryTree" as const,
@@ -37,7 +37,7 @@ export const createDirectoryTreeTool = async ({
     async *execute(
       { path }: DirectoryTreeInputSchema,
       { toolCallId, abortSignal }: ToolCallOptions,
-    ): AsyncGenerator<Message, string> {
+    ): AsyncGenerator<ToolResult> {
       try {
         // Check if execution has been aborted
         if (abortSignal?.aborted) {
@@ -83,7 +83,8 @@ export const createDirectoryTreeTool = async ({
           event: "tool-completion",
           data: `Done (${managed.tokenCount} tokens)`,
         };
-        return managed.content;
+
+        yield managed.content;
       } catch (error) {
         const errorMsg = `Failed to show directory tree: ${(error as Error).message}`;
         yield {
@@ -91,7 +92,8 @@ export const createDirectoryTreeTool = async ({
           event: "tool-error",
           data: errorMsg,
         };
-        return errorMsg;
+
+        yield errorMsg;
       }
     },
   };

@@ -1,6 +1,6 @@
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
-import type { Message } from "./types.ts";
+import type { ToolResult } from "./types.ts";
 
 export const ThinkTool = {
   name: "think" as const,
@@ -29,7 +29,7 @@ export const createThinkTool = () => {
     async *execute(
       { thought }: z.infer<typeof inputSchema>,
       { toolCallId, abortSignal }: ToolCallOptions,
-    ): AsyncGenerator<Message, string> {
+    ): AsyncGenerator<ToolResult> {
       try {
         // Check if execution has been aborted
         if (abortSignal?.aborted) {
@@ -48,12 +48,12 @@ export const createThinkTool = () => {
         };
 
         yield { event: "tool-completion", id: toolCallId, data: "Done" };
-        return "Your thought has been logged.";
+        yield "Your thought has been logged.";
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         yield { event: "tool-error", id: toolCallId, data: errorMessage };
-        return errorMessage;
+        yield errorMessage;
       }
     },
   };

@@ -398,6 +398,7 @@ export async function runManualLoop(
         `Error on manual agent loop streamText (attempt ${consecutiveErrors}/${maxRetries + 1})`,
       );
 
+      terminal.error("Error in manual agent loop.");
       terminal.error(
         (error as Error).message.length > 100
           ? `${(error as Error).message.slice(0, 100)}...`
@@ -422,7 +423,7 @@ export async function consumeToolAsyncIterable(
 ): Promise<{ finalValue: unknown; messages: Message[] }> {
   const iterator = iterable[Symbol.asyncIterator]();
   const messages: Message[] = [];
-  const nonMessageValues: unknown[] = [];
+  const toolResultValues: unknown[] = [];
 
   let next = await iterator.next();
 
@@ -431,16 +432,14 @@ export async function consumeToolAsyncIterable(
     if (isToolMessage(value)) {
       messages.push(value);
     } else {
-      nonMessageValues.push(value);
+      toolResultValues.push(value);
     }
     next = await iterator.next();
   }
 
   const finalValue =
     next.value ??
-    (nonMessageValues.length > 0
-      ? nonMessageValues[nonMessageValues.length - 1]
-      : undefined);
+    (toolResultValues.length > 0 ? toolResultValues.at(-1) : undefined);
 
   return { finalValue, messages };
 }

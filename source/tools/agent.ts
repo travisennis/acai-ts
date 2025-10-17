@@ -11,7 +11,7 @@ import { GrepTool } from "./grep.ts";
 import { initCliTools } from "./index.ts";
 import { ReadFileTool } from "./read-file.ts";
 import { ReadMultipleFilesTool } from "./read-multiple-files.ts";
-import type { Message } from "./types.ts";
+import type { ToolResult } from "./types.ts";
 
 export const AgentTool = {
   name: "agent" as const,
@@ -67,7 +67,7 @@ export const createAgentTools = (options: {
   async function* execute(
     { prompt }: z.infer<typeof inputSchema>,
     { toolCallId, abortSignal }: ToolCallOptions,
-  ): AsyncGenerator<Message, string> {
+  ): AsyncGenerator<ToolResult> {
     if (abortSignal?.aborted) {
       throw new Error("Agent execution aborted");
     }
@@ -107,14 +107,14 @@ export const createAgentTools = (options: {
         data: "Finished running the agent tool.",
       };
 
-      return text;
+      yield text;
     } catch (error) {
       yield {
         event: "tool-error",
         id: toolCallId,
         data: "Error running agent tool.",
       };
-      return (error as Error).message;
+      yield (error as Error).message;
     }
   }
 

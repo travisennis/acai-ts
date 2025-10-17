@@ -7,7 +7,7 @@ import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
 import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
-import { fileEncodingSchema, type Message } from "./types.ts";
+import { fileEncodingSchema, type ToolResult } from "./types.ts";
 
 export const SaveFileTool = {
   name: "saveFile" as const,
@@ -46,7 +46,7 @@ export const createSaveFileTool = async ({
     async *execute(
       { path: userPath, content, encoding }: SaveFileInputSchema,
       { toolCallId, abortSignal }: ToolCallOptions,
-    ): AsyncGenerator<Message, string> {
+    ): AsyncGenerator<ToolResult> {
       try {
         if (abortSignal?.aborted) {
           throw new Error("File saving aborted");
@@ -100,14 +100,14 @@ export const createSaveFileTool = async ({
           id: toolCallId,
           data: `File saved successfully: ${userPath}`,
         };
-        return `File saved successfully: ${filePath}`;
+        yield `File saved successfully: ${filePath}`;
       } catch (error) {
         yield {
           event: "tool-error",
           id: toolCallId,
           data: `Failed to save file: ${(error as Error).message}`,
         };
-        return `Failed to save file: ${(error as Error).message}`;
+        yield `Failed to save file: ${(error as Error).message}`;
       }
     },
     ask: async (

@@ -6,7 +6,7 @@ import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
 import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
-import type { Message } from "./types.ts";
+import type { ToolResult } from "./types.ts";
 
 export const DeleteFileTool = {
   name: "deleteFile" as const,
@@ -37,7 +37,7 @@ export const createDeleteFileTool = async ({
     async *execute(
       { path: userPath }: DeleteFileInputSchema,
       { toolCallId, abortSignal }: ToolCallOptions,
-    ): AsyncGenerator<Message, string> {
+    ): AsyncGenerator<ToolResult> {
       try {
         if (abortSignal?.aborted) {
           throw new Error("File deletion aborted");
@@ -81,7 +81,7 @@ export const createDeleteFileTool = async ({
           event: "tool-completion",
           data: "File deleted successfully",
         };
-        return `Successfully deleted ${filePath}`;
+        yield `Successfully deleted ${filePath}`;
       } catch (error) {
         const errorMessage = `Failed to delete file: ${(error as Error).message}`;
         yield {
@@ -89,7 +89,7 @@ export const createDeleteFileTool = async ({
           event: "tool-error",
           data: errorMessage,
         };
-        return errorMessage;
+        yield errorMessage;
       }
     },
     ask: async (
