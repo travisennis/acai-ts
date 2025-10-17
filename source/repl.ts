@@ -72,8 +72,6 @@ export class Repl {
       currentContextWindow = 0;
     });
 
-    const finalSystemPrompt = await systemPrompt();
-
     // Initialize tools once outside the loop - all models support tool calling
     const coreTools = await initTools({
       terminal,
@@ -225,6 +223,8 @@ export class Repl {
       const userMsg = promptManager.getUserMessage();
 
       messageHistory.appendUserMessage(userMsg);
+
+      const finalSystemPrompt = await systemPrompt();
 
       try {
         if (projectConfig.agentLoop === "manual") {
