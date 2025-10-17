@@ -201,7 +201,8 @@ interface GrepOptions {
 
 interface ExecSyncError extends Error {
   status?: number;
-  stderr?: string;
+  stdout?: string | Buffer;
+  stderr?: string | Buffer;
 }
 
 export function likelyUnbalancedRegex(pattern: string): boolean {
@@ -268,49 +269,60 @@ export function likelyUnbalancedRegex(pattern: string): boolean {
   const hasUnbalancedParens = counts.openParen !== counts.closeParen;
   const hasUnbalancedBraces = counts.openBrace !== counts.closeBrace;
 
-  // Also check for invalid repetition operators (e.g., { without proper format)
-  // But only check if we're not in a character class context
+  // Also check for invalid repetition operators (e.g., {n}, {n,}, {n,m}) outside of character classes
   let hasInvalidRepetition = false;
-  if (!inCharacterClass) {
-    // Check for invalid repetition operators, but ignore escaped braces
-    let tempEscaped = false;
+  {
+    let escaped2 = false;
+    let inClass2 = false;
     for (let i = 0; i < pattern.length; i++) {
       const ch = pattern[i];
-      if (tempEscaped) {
-        tempEscaped = false;
+      if (escaped2) {
+        escaped2 = false;
         continue;
       }
       if (ch === "\\") {
-        tempEscaped = true;
+        escaped2 = true;
         continue;
       }
-      if (ch === "{" && !tempEscaped) {
-        // Check if this is a valid repetition operator
+      if (ch === "[" && !inClass2) {
+        inClass2 = true;
+        continue;
+      }
+      if (ch === "]" && inClass2) {
+        inClass2 = false;
+        continue;
+      }
+      if (inClass2) {
+        continue;
+      }
+      if (ch === "{") {
         let j = i + 1;
+        let hasDigits = false;
         let hasComma = false;
-        let isValid = false;
-
-        while (j < pattern.length) {
-          const nextCh = pattern[j];
-          if (nextCh === "}") {
-            // {} is valid (0 repetitions), {n} is valid, {n,} is valid, {n,m} is valid
-            isValid = true;
-            break;
-          }
-          if (nextCh >= "0" && nextCh <= "9") {
-            // Valid digit
-          } else if (nextCh === "," && !hasComma) {
+        while (j < pattern.length && pattern[j] !== "}") {
+          const c = pattern[j];
+          if (c >= "0" && c <= "9") {
+            hasDigits = true;
+          } else if (c === "," && !hasComma) {
             hasComma = true;
           } else {
-            // Invalid character in repetition
             break;
           }
           j++;
         }
-
-        if (!isValid) {
+        if (j >= pattern.length || pattern[j] !== "}") {
           hasInvalidRepetition = true;
           break;
+        }
+        // At this point we have a closing brace at j
+        if (!hasDigits) {
+          // Heuristic: treat empty {} as non-quantifier when it doesn't follow a likely atom
+          const prev = i > 0 ? pattern[i - 1] : undefined;
+          if (prev !== undefined && /\S/.test(prev)) {
+            hasInvalidRepetition = true;
+            break;
+          }
+          // else ignore as literal braces
         }
       }
     }
@@ -384,7 +396,7 @@ export function buildGrepCommand(
   }
 
   command += ` ${JSON.stringify(pattern)}`;
-  command += ` ${path}`;
+  command += ` ${JSON.stringify(path)}`;
 
   return command;
 }
@@ -410,8 +422,13 @@ export function grepFiles(
     }
 
     if (exitCode === 2) {
-      const stderr = execError?.stderr || execError.message;
-      throw new Error(`Regex parse error in pattern "${pattern}": ${stderr}`);
+      const stderrStr =
+        typeof execError.stderr === "string"
+          ? execError.stderr
+          : (execError.stderr?.toString("utf-8") ?? execError.message);
+      throw new Error(
+        `Regex parse error in pattern "${pattern}": ${stderrStr}`,
+      );
     }
 
     throw new Error(`Error executing ripgrep: ${execError.message}`);

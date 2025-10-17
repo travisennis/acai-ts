@@ -42,8 +42,14 @@ test("likelyUnbalancedRegex detects invalid repetition operators", () => {
   assert.ok(likelyUnbalancedRegex("a{"));
   assert.ok(likelyUnbalancedRegex("a{1"));
   assert.ok(likelyUnbalancedRegex("a{1,"));
+  assert.ok(likelyUnbalancedRegex("a{}"));
   assert.ok(!likelyUnbalancedRegex("a{1}"));
   assert.ok(!likelyUnbalancedRegex("a{1,5}"));
+});
+
+test("likelyUnbalancedRegex does not treat { inside character classes as repetition", () => {
+  assert.ok(!likelyUnbalancedRegex("[a{]"));
+  assert.ok(!likelyUnbalancedRegex("[\\}]"));
 });
 
 test("likelyUnbalancedRegex handles character classes correctly", () => {

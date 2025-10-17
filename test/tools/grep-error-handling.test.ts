@@ -47,3 +47,8 @@ test("buildGrepCommand handles non-recursive search", () => {
   const cmd = buildGrepCommand("test", ".", { recursive: false });
   assert.ok(cmd.includes("--max-depth=0"));
 });
+
+test("buildGrepCommand quotes path with spaces", () => {
+  const cmd = buildGrepCommand("test", "./dir with spaces", { literal: true });
+  assert.ok(cmd.includes('"./dir with spaces"'));
+});
