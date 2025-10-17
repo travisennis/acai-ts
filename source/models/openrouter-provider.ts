@@ -54,12 +54,8 @@ const openrouterModels = {
   "gpt-5": openRouterClient("openai/gpt-5"),
   "gpt-5-mini": openRouterClient("openai/gpt-5-mini"),
   "gpt-oss-120b": openRouterClient("openai/gpt-oss-120b"),
-  "grok-code-fast-1": openrouter("x-ai/grok-code-fast-1", {
-    parallelToolCalls: false,
-  }) as LanguageModelV2,
-  "grok-4-fast-free": openrouter("x-ai/grok-4-fast:free", {
-    parallelToolCalls: false,
-  }) as LanguageModelV2,
+  "grok-code-fast-1": openrouter("x-ai/grok-code-fast-1") as LanguageModelV2,
+  "grok-4-fast-free": openrouter("x-ai/grok-4-fast:free") as LanguageModelV2,
   "gpt-5-codex": openRouterClient("openai/gpt-5-codex"),
 } as const;
 
