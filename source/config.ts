@@ -12,7 +12,7 @@ const ProjectConfigSchema = z.object({
       path: z.string(),
     })
     .optional(),
-  agentLoop: z.enum(["auto", "manual"]).optional().default("auto"),
+  agentLoop: z.enum(["auto", "manual"]).optional().default("manual"),
   loop: z
     .object({
       maxIterations: z.number().default(90),
