@@ -1,7 +1,7 @@
 // import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { LanguageModelV2 } from "@ai-sdk/provider";
-import { openrouter } from "@openrouter/ai-sdk-provider";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { objectKeys } from "@travisennis/stdlib/object";
 import { customProvider } from "ai";
 import type { ModelMetadata } from "./providers.ts";
@@ -11,6 +11,13 @@ const openRouterClient = createOpenAICompatible({
   apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
   // biome-ignore lint/style/useNamingConvention: third-party controlled
   baseURL: "https://openrouter.ai/api/v1",
+  headers: {
+    "HTTP-Referer": "https://github.com/travisennis/acai-ts",
+    "X-Title": "acai",
+  },
+});
+
+const openRouterClient2 = createOpenRouter({
   headers: {
     "HTTP-Referer": "https://github.com/travisennis/acai-ts",
     "X-Title": "acai",
@@ -47,7 +54,9 @@ const openrouterModels = {
   "gpt-5": openRouterClient("openai/gpt-5"),
   "gpt-5-mini": openRouterClient("openai/gpt-5-mini"),
   "gpt-oss-120b": openRouterClient("openai/gpt-oss-120b"),
-  "grok-code-fast-1": openrouter("x-ai/grok-code-fast-1") as LanguageModelV2,
+  "grok-code-fast-1": openRouterClient2(
+    "x-ai/grok-code-fast-1",
+  ) as LanguageModelV2,
   "grok-4-fast": openRouterClient("x-ai/grok-4-fast"),
   "gpt-5-codex": openRouterClient("openai/gpt-5-codex"),
 } as const;
