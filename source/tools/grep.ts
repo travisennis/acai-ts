@@ -82,10 +82,26 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
       try {
         // grok doesn't follow my instructions
         const safeFilePattern = filePattern === "null" ? null : filePattern;
+
+        // Enhanced tool-init with detailed search parameters
+        let initMessage = `Searching for ${style.cyan(inspect(pattern))} in ${style.cyan(path)}`;
+        if (safeFilePattern) {
+          initMessage += ` ${style.dim(`(filter: ${safeFilePattern})`)}`;
+        }
+        if (recursive === false) {
+          initMessage += ` ${style.dim("(non-recursive)")}`;
+        }
+        if (ignoreCase) {
+          initMessage += ` ${style.dim("(case-insensitive)")}`;
+        }
+        if (contextLines && contextLines > 0) {
+          initMessage += ` ${style.dim(`(with ${contextLines} context line${contextLines === 1 ? "" : "s"})`)}`;
+        }
+
         yield {
           event: "tool-init",
           id: toolCallId,
-          data: `Searching codebase for ${style.cyan(inspect(pattern))}${safeFilePattern ? ` with file pattern ${style.cyan(safeFilePattern)}` : ""} in ${style.cyan(path)}`,
+          data: initMessage,
         };
 
         // Normalize literal option: if null => auto-detect using heuristic
@@ -115,7 +131,7 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
           }
         }
 
-        const rawResult = grepFiles(pattern, path, {
+        const grepResult = grepFilesStructured(pattern, path, {
           recursive,
           ignoreCase,
           filePattern: safeFilePattern,
@@ -126,7 +142,7 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
 
         const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
 
-        const managed = manageOutput(rawResult, {
+        const managed = manageOutput(grepResult.rawOutput, {
           tokenCounter,
           threshold: maxTokens,
         });
@@ -139,52 +155,91 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
           };
         }
 
-        // Extract and filter matches from the content
-        const extractMatches = (content: string): string[] => {
-          if (content === "No matches found.") {
-            return [];
-          }
-          return content
-            .trim()
-            .split("\n")
-            .filter((line: string) => {
-              if (line === "--") {
-                return false;
-              }
-              return /^(.+?):(\d+):(.*)$/.test(line);
-            });
-        };
+        // Get actual matches (excluding context lines)
+        const actualMatches = grepResult.parsedMatches.filter(
+          (match) => match.isMatch && !match.isContext,
+        );
+        const matchCount = grepResult.matchCount;
 
-        const matches = extractMatches(managed.content);
-        const matchCount = matches.length;
-
-        // Show the last 10 matches as a preview
+        // Show first matches as a preview (more useful than last matches)
         if (matchCount > 0) {
-          const previewMatches = matches.slice(-10); // Get last 10 matches
+          const previewCount = Math.min(8, matchCount);
+          const previewMatches = actualMatches.slice(0, previewCount);
+          const previewStrings = previewMatches.map((match) => {
+            if (match.file) {
+              return `${match.file}:${match.line}:${match.content}`;
+            }
+            return `${match.line}:${match.content}`;
+          });
 
           yield {
             event: "tool-update",
             id: toolCallId,
             data: {
-              primary: `Last ${previewMatches.length} matches:`,
-              secondary: previewMatches,
+              primary: `Found ${matchCount} match${matchCount === 1 ? "" : "es"}${matchCount > previewCount ? ` (showing first ${previewCount})` : ""}`,
+              secondary: previewStrings,
+            },
+          };
+        } else {
+          // Show search completed message even for no matches
+          yield {
+            event: "tool-update",
+            id: toolCallId,
+            data: {
+              primary: "Search completed - no matches found",
             },
           };
         }
 
+        // Enhanced completion message with detailed statistics
+        let completionMessage = `Found ${style.cyan(matchCount)} match${matchCount === 1 ? "" : "es"}`;
+
+        // Calculate unique files with matches
+        const filesWithMatches = new Set(
+          grepResult.parsedMatches
+            .filter((match) => match.isMatch && !match.isContext && match.file)
+            .map((match) => match.file),
+        ).size;
+
+        if (filesWithMatches > 0) {
+          completionMessage += ` across ${style.cyan(filesWithMatches)} file${filesWithMatches === 1 ? "" : "s"}`;
+        }
+
+        if (grepResult.contextCount > 0) {
+          completionMessage += ` with ${style.cyan(grepResult.contextCount)} context line${grepResult.contextCount === 1 ? "" : "s"}`;
+        }
+
+        completionMessage += ` (${managed.tokenCount} tokens)`;
+
         yield {
           event: "tool-completion",
           id: toolCallId,
-          data: `Found ${style.cyan(matchCount)} matches. (${managed.tokenCount} tokens)`,
+          data: completionMessage,
         };
         yield managed.content;
       } catch (error) {
+        const errorMessage = (error as Error).message;
+        let userFriendlyError = `Error searching for "${pattern}" in ${path}: ${errorMessage}`;
+
+        // Provide more helpful error messages for common cases
+        if (errorMessage.includes("No such file or directory")) {
+          userFriendlyError = `Path not found: "${path}"`;
+          if (filePattern) {
+            userFriendlyError += ` with file pattern "${filePattern}"`;
+          }
+          userFriendlyError += " - check if the path exists and is accessible";
+        } else if (errorMessage.includes("permission denied")) {
+          userFriendlyError = `Permission denied accessing "${path}"`;
+        } else if (errorMessage.includes("Regex parse error")) {
+          userFriendlyError = `Invalid search pattern "${pattern}" - try using literal=true for fixed-string search`;
+        }
+
         yield {
           event: "tool-error",
           id: toolCallId,
-          data: `Error searching for "${pattern}" in ${path}: ${(error as Error).message}`,
+          data: userFriendlyError,
         };
-        yield (error as Error).message;
+        yield errorMessage;
       }
     },
   };
@@ -401,24 +456,177 @@ export function buildGrepCommand(
   return command;
 }
 
+export interface ParsedMatch {
+  file?: string;
+  line: number;
+  content: string;
+  isMatch: boolean;
+  isContext?: boolean;
+}
+
+export interface GrepResult {
+  rawOutput: string;
+  parsedMatches: ParsedMatch[];
+  matchCount: number;
+  contextCount: number;
+  hasMatches: boolean;
+}
+
+/**
+ * Parse ripgrep output and extract structured match information
+ */
+export function parseRipgrepOutput(content: string): ParsedMatch[] {
+  if (content === "No matches found.") {
+    return [];
+  }
+
+  const lines = content.trim().split("\n");
+  const parsed: ParsedMatch[] = [];
+
+  for (const line of lines) {
+    if (line === "--") {
+      // Separator between file groups - skip
+      continue;
+    }
+
+    if (line.trim() === "") {
+      // Empty line - skip
+      continue;
+    }
+
+    // Try multi-file format: file:line:content
+    const multiFileMatch = line.match(/^([^:]+):(\d+):(.+)$/);
+    if (multiFileMatch) {
+      parsed.push({
+        file: multiFileMatch[1],
+        line: Number.parseInt(multiFileMatch[2], 10),
+        content: multiFileMatch[3],
+        isMatch: true,
+      });
+      continue;
+    }
+
+    // Try single-file format: line:content
+    const singleFileMatch = line.match(/^(\d+):(.+)$/);
+    if (singleFileMatch) {
+      parsed.push({
+        line: Number.parseInt(singleFileMatch[1], 10),
+        content: singleFileMatch[2],
+        isMatch: true,
+      });
+      continue;
+    }
+
+    // Try context line format: file-line-context
+    const contextMatch = line.match(/^([^:]+)-(\d+)-(.+)$/);
+    if (contextMatch) {
+      parsed.push({
+        file: contextMatch[1],
+        line: Number.parseInt(contextMatch[2], 10),
+        content: contextMatch[3],
+        isMatch: false,
+        isContext: true,
+      });
+      continue;
+    }
+
+    // Try context line format without file: line-context
+    const contextNoFileMatch = line.match(/^(\d+)-(.+)$/);
+    if (contextNoFileMatch) {
+      parsed.push({
+        line: Number.parseInt(contextNoFileMatch[1], 10),
+        content: contextNoFileMatch[2],
+        isMatch: false,
+        isContext: true,
+      });
+      continue;
+    }
+
+    // If we get here, it's an unrecognized format - treat as match for backwards compatibility
+    parsed.push({
+      content: line,
+      line: 0,
+      isMatch: true,
+    });
+  }
+
+  return parsed;
+}
+
+/**
+ * Count actual matches (excluding context lines)
+ */
+export function countActualMatches(parsed: ParsedMatch[]): number {
+  return parsed.filter((match) => match.isMatch && !match.isContext).length;
+}
+
+/**
+ * Count context lines
+ */
+export function countContextLines(parsed: ParsedMatch[]): number {
+  return parsed.filter((match) => match.isContext).length;
+}
+
+/**
+ * Extract matches from content (backwards compatibility wrapper)
+ */
+export function extractMatches(content: string): string[] {
+  const parsed = parseRipgrepOutput(content);
+  const matches = parsed.filter((match) => match.isMatch && !match.isContext);
+
+  // Convert back to original string format for backwards compatibility
+  return matches.map((match) => {
+    if (match.file) {
+      return `${match.file}:${match.line}:${match.content}`;
+    }
+    return `${match.line}:${match.content}`;
+  });
+}
+
 export function grepFiles(
   pattern: string,
   path: string,
   options: GrepOptions = {},
 ): string {
+  const result = grepFilesStructured(pattern, path, options);
+  return result.rawOutput;
+}
+
+export function grepFilesStructured(
+  pattern: string,
+  path: string,
+  options: GrepOptions = {},
+): GrepResult {
   try {
     const command = buildGrepCommand(pattern, path, options);
-    const result = execSync(command, {
+    const rawOutput = execSync(command, {
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "pipe"],
     });
-    return result;
+
+    const parsedMatches = parseRipgrepOutput(rawOutput);
+    const matchCount = countActualMatches(parsedMatches);
+    const contextCount = countContextLines(parsedMatches);
+
+    return {
+      rawOutput,
+      parsedMatches,
+      matchCount,
+      contextCount,
+      hasMatches: matchCount > 0,
+    };
   } catch (error) {
     const execError = error as ExecSyncError;
     const exitCode = execError?.status;
 
     if (exitCode === 1) {
-      return "No matches found.";
+      return {
+        rawOutput: "No matches found.",
+        parsedMatches: [],
+        matchCount: 0,
+        contextCount: 0,
+        hasMatches: false,
+      };
     }
 
     if (exitCode === 2) {
