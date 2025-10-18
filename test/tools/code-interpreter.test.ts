@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, rmSync } from "node:fs";
 import { after, describe, it } from "node:test";
+import { TokenCounter } from "../../source/tokens/counter.ts";
 import { createCodeInterpreterTool } from "../../source/tools/code-interpreter.ts";
 
 // Helper to run the tool easily
@@ -9,7 +10,8 @@ async function runTool(input: {
   timeoutSeconds?: number | null;
 }): Promise<{ ok: boolean; value: unknown }> {
   const events: Array<{ event: string; data: unknown }> = [];
-  const { execute } = createCodeInterpreterTool();
+  const tokenCounter = new TokenCounter();
+  const { execute } = await createCodeInterpreterTool({ tokenCounter });
 
   const generator = execute(
     { ...input, timeoutSeconds: input.timeoutSeconds ?? null },

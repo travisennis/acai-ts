@@ -89,7 +89,9 @@ export async function initTools({
     toolExecutor,
   });
 
-  const codeInterpreterTool = createCodeInterpreterTool();
+  const codeInterpreterTool = await createCodeInterpreterTool({
+    tokenCounter,
+  });
 
   const globTool = createGlobTool({
     tokenCounter,
@@ -263,7 +265,9 @@ export async function initCliTools({
     terminal: undefined,
   });
 
-  const codeInterpreterTool = createCodeInterpreterTool();
+  const codeInterpreterTool = await createCodeInterpreterTool({
+    tokenCounter,
+  });
 
   const globTool = createGlobTool({
     tokenCounter,

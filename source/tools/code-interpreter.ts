@@ -5,6 +5,8 @@ import { join } from "node:path";
 import process from "node:process";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
+import { config } from "../config.ts";
+import type { TokenCounter } from "../tokens/counter.ts";
 import type { ToolResult } from "./types.ts";
 
 export const CodeInterpreterTool = {
@@ -39,7 +41,11 @@ const inputSchema = z.object({
     .describe("Execution timeout in seconds (1-60). Default 5."),
 });
 
-export const createCodeInterpreterTool = () => {
+export const createCodeInterpreterTool = async ({
+  tokenCounter,
+}: {
+  tokenCounter: TokenCounter;
+}) => {
   const toolDef = {
     description: toolDescription,
     inputSchema,
@@ -184,13 +190,28 @@ export const createCodeInterpreterTool = () => {
         exitCode: completed.code ?? -1,
       };
 
+      let tokenCount = 0;
+      try {
+        tokenCount = tokenCounter.count(JSON.stringify(result));
+      } catch (tokenError) {
+        console.info("Error calculating token count:", tokenError);
+      }
+
+      const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
+
+      const resultJson = JSON.stringify(result, null, 2);
+      const truncatedResult =
+        tokenCount <= maxTokens
+          ? resultJson
+          : `Script output exceeded maximum allowed tokens (${tokenCount} tokens). Max: ${maxTokens} tokens. Output was truncated.\n\nStdout preview (first 500 chars):\n${result.stdout.slice(0, 500)}${result.stdout.length > 500 ? "\n..." : ""}\n\nStderr preview (first 500 chars):\n${result.stderr.slice(0, 500)}${result.stderr.length > 500 ? "\n..." : ""}`;
+
       yield {
         event: "tool-completion",
         id: toolCallId,
-        data: "Code execution completed successfully",
+        data: `Code execution completed successfully${tokenCount > 0 ? ` (${tokenCount} tokens)` : ""}`,
       };
 
-      yield JSON.stringify(result, null, 2);
+      yield truncatedResult;
     } catch (err) {
       const errorMessage =
         (err as Error).name === "ETIMEDOUT" ||
