@@ -24,7 +24,7 @@ export const inputSchema = z.object({
   gitignore: z.coerce
     .boolean()
     .nullable()
-    .describe("Respect ignore patterns in .gitignore files. (default: false)"),
+    .describe("Respect ignore patterns in .gitignore files. (default: true)"),
   recursive: z.coerce
     .boolean()
     .nullable()
