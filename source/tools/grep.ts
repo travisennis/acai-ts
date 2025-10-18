@@ -49,6 +49,12 @@ const inputSchema = z.object({
     .describe(
       "Pass true for fixed-string search (-F), false for regex, (Default: auto-detects unbalanced patterns like mismatched parentheses/brackets.)",
     ),
+  maxResults: z.coerce
+    .number()
+    .nullable()
+    .describe(
+      "Maximum number of matches to return. Set to 0 for no limit. (Default: configured value)",
+    ),
 });
 
 export type GrepInputSchema = z.infer<typeof inputSchema>;
@@ -58,7 +64,7 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
 
   return {
     toolDef: {
-      description: `Search files for patterns using ripgrep (rg). Uses glob patterns for file filtering (e.g., "*.ts", "**/*.test.ts"). Auto-detects unbalanced regex patterns and falls back to fixed-string search for safety.`,
+      description: `Search files for patterns using ripgrep (rg). Uses glob patterns for file filtering (e.g., "*.ts", "**/*.test.ts"). Auto-detects unbalanced regex patterns and falls back to fixed-string search for safety. Results are limited to prevent overwhelming output; configure via maxResults parameter or project configuration.`,
       inputSchema,
     },
     async *execute(
@@ -71,6 +77,7 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
         contextLines,
         searchIgnored,
         literal,
+        maxResults,
       }: GrepInputSchema,
       { toolCallId, abortSignal }: ToolCallOptions,
     ): AsyncGenerator<ToolResult> {
@@ -131,6 +138,10 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
           }
         }
 
+        const projectConfig = await config.readProjectConfig();
+        const configMaxResults = projectConfig.tools.maxResults;
+        const effectiveMaxResults = maxResults ?? configMaxResults;
+
         const grepResult = grepFilesStructured(pattern, path, {
           recursive,
           ignoreCase,
@@ -138,9 +149,10 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
           contextLines,
           searchIgnored,
           literal: effectiveLiteral,
+          maxResults: effectiveMaxResults,
         });
 
-        const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
+        const maxTokens = projectConfig.tools.maxTokens;
 
         const managed = manageOutput(grepResult.rawOutput, {
           tokenCounter,
@@ -193,6 +205,10 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
 
         // Enhanced completion message with detailed statistics
         let completionMessage = `Found ${style.cyan(matchCount)} match${matchCount === 1 ? "" : "es"}`;
+
+        if (grepResult.isTruncated) {
+          completionMessage += ` (showing first ${style.cyan(grepResult.displayedCount)})`;
+        }
 
         // Calculate unique files with matches
         const filesWithMatches = new Set(
@@ -252,6 +268,7 @@ interface GrepOptions {
   contextLines?: number | null;
   searchIgnored?: boolean | null;
   literal?: boolean | null;
+  maxResults?: number | null;
 }
 
 interface ExecSyncError extends Error {
@@ -468,8 +485,10 @@ export interface GrepResult {
   rawOutput: string;
   parsedMatches: ParsedMatch[];
   matchCount: number;
+  displayedCount?: number;
   contextCount: number;
   hasMatches: boolean;
+  isTruncated?: boolean;
 }
 
 /**
@@ -568,6 +587,43 @@ export function countContextLines(parsed: ParsedMatch[]): number {
 }
 
 /**
+ * Truncate matches to a maximum number of results
+ */
+export function truncateMatches(
+  matches: ParsedMatch[],
+  maxResults: number | null | undefined,
+): { truncated: ParsedMatch[]; isTruncated: boolean } {
+  if (!maxResults || maxResults <= 0) {
+    return { truncated: matches, isTruncated: false };
+  }
+
+  const actualMatches = matches.filter((m) => m.isMatch && !m.isContext);
+
+  if (actualMatches.length <= maxResults) {
+    return { truncated: matches, isTruncated: false };
+  }
+
+  const truncated: ParsedMatch[] = [];
+  let matchesKept = 0;
+
+  for (const match of matches) {
+    if (match.isMatch && !match.isContext) {
+      if (matchesKept < maxResults) {
+        truncated.push(match);
+        matchesKept++;
+      } else {
+        break;
+      }
+    }
+  }
+
+  return {
+    truncated,
+    isTruncated: true,
+  };
+}
+
+/**
  * Extract matches from content (backwards compatibility wrapper)
  */
 export function extractMatches(content: string): string[] {
@@ -606,14 +662,22 @@ export function grepFilesStructured(
 
     const parsedMatches = parseRipgrepOutput(rawOutput);
     const matchCount = countActualMatches(parsedMatches);
-    const contextCount = countContextLines(parsedMatches);
+
+    const { truncated, isTruncated } = truncateMatches(
+      parsedMatches,
+      options.maxResults,
+    );
+    const displayedCount = countActualMatches(truncated);
+    const displayedContextCount = countContextLines(truncated);
 
     return {
       rawOutput,
-      parsedMatches,
+      parsedMatches: truncated,
       matchCount,
-      contextCount,
+      displayedCount,
+      contextCount: displayedContextCount,
       hasMatches: matchCount > 0,
+      isTruncated,
     };
   } catch (error) {
     const execError = error as ExecSyncError;

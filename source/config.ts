@@ -28,6 +28,7 @@ const ProjectConfigSchema = z.object({
   tools: z
     .object({
       maxTokens: z.number().default(30000),
+      maxResults: z.number().default(30),
       bash: z
         .object({
           allowPipes: z.boolean().default(true),
@@ -58,6 +59,7 @@ const ProjectConfigSchema = z.object({
     .optional()
     .default({
       maxTokens: 30000,
+      maxResults: 30,
       bash: {
         allowPipes: true,
         allowChaining: true,
@@ -258,6 +260,7 @@ export class ConfigManager {
         },
         tools: {
           maxTokens: 30000,
+          maxResults: 30,
           bash: {
             allowPipes: true,
             allowChaining: true,
