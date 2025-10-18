@@ -5,7 +5,7 @@ import type { ModelManager } from "../models/manager.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
-// import { DirectoryTreeTool } from "./directory-tree.ts";
+import { DirectoryTreeTool } from "./directory-tree.ts";
 import { GlobTool } from "./glob.ts";
 import { GrepTool } from "./grep.ts";
 import { initCliTools } from "./index.ts";
@@ -22,7 +22,7 @@ const TOOLS = [
   GlobTool.name,
   ReadFileTool.name,
   ReadMultipleFilesTool.name,
-  // DirectoryTreeTool.name,
+  DirectoryTreeTool.name,
 ] as const;
 
 type ToolName = (typeof TOOLS)[number];

@@ -8,6 +8,7 @@ import { AgentTool } from "./tools/agent.ts";
 import { BashTool } from "./tools/bash.ts";
 import { CodeInterpreterTool } from "./tools/code-interpreter.ts";
 import { DeleteFileTool } from "./tools/delete-file.ts";
+import { DirectoryTreeTool } from "./tools/directory-tree.ts";
 import { EditFileTool } from "./tools/edit-file.ts";
 import { getCurrentBranch, inGitDirectory } from "./tools/git-utils.ts";
 import { GrepTool } from "./tools/grep.ts";
@@ -75,6 +76,7 @@ function toolUsage() {
 - Use \`${WebFetchTool.name}\` for text-based URLs provided in the prompt
 - Use \`${WebSearchTool.name}\` for external research (e.g., libraries, errors)
 - Use \`${AgentTool.name}\` for iterative keyword/file searches. Use this if you need to explore the project to find what you are looking for.
+- Use \`${DirectoryTreeTool.name}\` if you need a high-level overview of the project. 
 - If file contents or URLs are provided in the prompt, use them directly without re-fetching
 - Always verify file contents before suggesting changes unless provided in the prompt
 

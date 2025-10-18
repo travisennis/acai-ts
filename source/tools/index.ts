@@ -12,7 +12,10 @@ import {
   createCodeInterpreterTool,
 } from "./code-interpreter.ts";
 import { createDeleteFileTool, DeleteFileTool } from "./delete-file.ts";
-// import { createDirectoryTreeTool } from "./directory-tree.ts";
+import {
+  createDirectoryTreeTool,
+  DirectoryTreeTool,
+} from "./directory-tree.ts";
 import { loadDynamicTools } from "./dynamic-tool-loader.ts";
 import { createEditFileTool, EditFileTool } from "./edit-file.ts";
 import { createGlobTool, GlobTool } from "./glob.ts";
@@ -75,10 +78,10 @@ export async function initTools({
     toolExecutor,
   });
 
-  // const directoryTreeTool = await createDirectoryTreeTool({
-  //   workingDir: process.cwd(),
-  //   tokenCounter,
-  // });
+  const directoryTreeTool = await createDirectoryTreeTool({
+    workingDir: process.cwd(),
+    tokenCounter,
+  });
 
   const deleteFileTool = await createDeleteFileTool({
     workingDir: process.cwd(),
@@ -130,7 +133,7 @@ export async function initTools({
     [ReadMultipleFilesTool.name]: tool(readMultipleFilesTool.toolDef),
     [GlobTool.name]: tool(globTool.toolDef),
     [GrepTool.name]: tool(grepTool.toolDef),
-    // [DirectoryTreeTool.name]: tool(directoryTreeTool.toolDef),
+    [DirectoryTreeTool.name]: tool(directoryTreeTool.toolDef),
     [CodeInterpreterTool.name]: tool(codeInterpreterTool.toolDef),
     [ThinkTool.name]: tool(thinkTool.toolDef),
     [WebFetchTool.name]: tool(webFetchTool.toolDef),
@@ -250,10 +253,10 @@ export async function initCliTools({
     terminal: undefined,
   });
 
-  // const directoryTreeTool = await createDirectoryTreeTool({
-  //   workingDir: process.cwd(),
-  //   tokenCounter,
-  // });
+  const directoryTreeTool = await createDirectoryTreeTool({
+    workingDir: process.cwd(),
+    tokenCounter,
+  });
 
   const deleteFileTool = await createDeleteFileTool({
     workingDir: process.cwd(),
@@ -329,10 +332,10 @@ export async function initCliTools({
       ...grepTool.toolDef,
       execute: grepTool.execute,
     }),
-    // [DirectoryTreeTool.name]: tool({
-    //   ...directoryTreeTool.toolDef,
-    //   execute: directoryTreeTool.execute,
-    // }),
+    [DirectoryTreeTool.name]: tool({
+      ...directoryTreeTool.toolDef,
+      execute: directoryTreeTool.execute,
+    }),
     [CodeInterpreterTool.name]: tool({
       ...codeInterpreterTool.toolDef,
       execute: codeInterpreterTool.execute,
