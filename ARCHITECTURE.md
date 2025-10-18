@@ -4,16 +4,13 @@ This document outlines the architecture of the Acai CLI tool, an AI-powered comm
 
 ## Project Structure
 
-\`\`\`
+```
 acai-ts
 ├── AGENTS.md
 ├── ARCHITECTURE.md
 ├── LICENSE
 ├── README.md
 ├── TODO.md
-├── .gitignore
-├── .ignore
-├── .npmignore
 ├── biome.json
 ├── commitlint.config.js
 ├── knip.json
@@ -22,6 +19,8 @@ acai-ts
 ├── tsconfig.build.json
 ├── tsconfig.json
 ├── source
+│   ├── agent
+│   │   └── manual-loop.ts
 │   ├── api
 │   │   └── exa
 │   │       └── index.ts
@@ -48,6 +47,7 @@ acai-ts
 │   │   ├── reset-command.ts
 │   │   ├── rules-command.ts
 │   │   ├── save-command.ts
+│   │   ├── shell-command.ts
 │   │   ├── types.ts
 │   │   └── usage-command.ts
 │   ├── config.ts
@@ -62,6 +62,7 @@ acai-ts
 │   ├── messages.ts
 │   ├── middleware
 │   │   ├── audit-message.ts
+│   │   ├── cache.ts
 │   │   ├── index.ts
 │   │   └── rate-limit.ts
 │   ├── models
@@ -89,21 +90,33 @@ acai-ts
 │   ├── saved-selections
 │   ├── terminal
 │   │   ├── ansi-styles.ts
-│   │   ├── chalk.ts
+│   │   ├── checkbox-prompt.ts
 │   │   ├── default-theme.ts
+│   │   ├── east-asian-width.ts
+│   │   ├── editor-prompt.ts
+│   │   ├── errors.ts
 │   │   ├── formatting.ts
 │   │   ├── highlight
 │   │   │   ├── index.ts
 │   │   │   └── theme.ts
 │   │   ├── index.ts
+│   │   ├── input-prompt.ts
 │   │   ├── markdown-utils.ts
 │   │   ├── markdown.ts
+│   │   ├── search-prompt.ts
+│   │   ├── select-prompt.ts
+│   │   ├── string-width.ts
+│   │   ├── strip-ansi.ts
+│   │   ├── style.ts
 │   │   ├── supports-color.ts
 │   │   ├── supports-hyperlinks.ts
-│   │   └── types.ts
+│   │   ├── types.ts
+│   │   └── wrap-ansi.ts
 │   ├── terminal-output.test.ts
-│   ├── token-tracker.ts
-│   ├── token-utils.ts
+│   ├── tokens
+│   │   ├── counter.ts
+│   │   ├── manage-output.ts
+│   │   └── tracker.ts
 │   ├── tool-executor.ts
 │   ├── tools
 │   │   ├── agent.ts
@@ -115,8 +128,10 @@ acai-ts
 │   │   ├── dynamic-tool-loader.ts
 │   │   ├── dynamic-tool-parser.ts
 │   │   ├── edit-file.ts
+│   │   ├── file-editing-utils.ts
 │   │   ├── filesystem-utils.ts
 │   │   ├── git-utils.ts
+│   │   ├── glob.ts
 │   │   ├── grep.ts
 │   │   ├── index.ts
 │   │   ├── move-file.ts
@@ -128,30 +143,53 @@ acai-ts
 │   │   ├── web-fetch.ts
 │   │   └── web-search.ts
 │   ├── utils
+│   │   ├── filesystem.ts
+│   │   ├── filetype-detection.ts
+│   │   ├── generators.ts
+│   │   ├── glob.ts
+│   │   ├── ignore.ts
+│   │   ├── iterables.ts
 │   │   ├── process.ts
 │   │   └── zod-utils.ts
 │   └── version.ts
 ├── test
+│   ├── agent
 │   ├── commands
 │   │   ├── copy-command.test.ts
-│   │   └── health-command.test.ts
+│   │   ├── exit-command.test.ts
+│   │   ├── health-command.test.ts
+│   │   ├── prompt-history.test.ts
+│   │   ├── shell-command.test.ts
 │   ├── config.test.ts
 │   ├── execution.test.ts
 │   ├── mentions.test.ts
 │   ├── terminal
+│   │   ├── checkbox-prompt.test.ts
+│   │   ├── editor-prompt.test.ts
 │   │   ├── highlight.test.ts
-│   │   └── markdown-utils.test.ts
+│   │   ├── markdown-utils.test.ts
+│   │   ├── markdown.test.ts
+│   │   ├── search-prompt.test.ts
 │   ├── tools
 │   │   ├── bash-utils.test.ts
 │   │   ├── bash.test.ts
 │   │   ├── code-interpreter.test.ts
 │   │   ├── dynamic-tool-integration.test.ts
 │   │   ├── dynamic-tool-parser.test.ts
+│   │   ├── edit-file.test.ts
 │   │   ├── filesystem-utils.test.ts
-│   │   └── grep.test.ts
-│   └── utils
+│   │   ├── glob.test.ts
+│   │   ├── grep-error-handling.test.ts
+│   │   ├── grep-issue-96.test.ts
+│   │   ├── grep.test.ts
+│   │   └── is-mutating-command.test.ts
+│   ├── utils
+│       ├── filesystem.test.ts
+│       ├── generators.test.ts
+│       ├── glob.test.ts
+│       ├── ignore.test.ts
 │       └── process.test.ts
-\`\`\`
+```
 
 Notes:
 - Dot directories (e.g., .acai, .github, .husky) are omitted.
@@ -167,9 +205,6 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **LICENSE**: MIT license for the project.
 - **README.md**: Introduction, installation, and usage instructions.
 - **TODO.md**: List of planned features and tasks.
-- **.gitignore**: Patterns for files to ignore in Git.
-- **.ignore**: Additional ignore patterns, possibly for linting or tools.
-- **.npmignore**: Files excluded from the NPM package.
 - **biome.json**: Configuration for Biome (linting and formatting tool).
 - **commitlint.config.js**: Configuration for commit message validation.
 - **knip.json**: Configuration for Knip (unused code detector).
@@ -179,6 +214,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **tsconfig.json**: TypeScript configuration for development and type-checking.
 
 ### source/ Directory
+- **agent/manual-loop.ts**: Manual loop implementation for agent operations.
 - **api/exa/index.ts**: Integration for Exa API, likely for advanced search or data retrieval tools.
 - **cli.ts**: Parses command-line arguments and flags for the application.
 - **commands/application-log-command.ts**: Command to view or manage application logs.
@@ -202,6 +238,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **commands/reset-command.ts**: Command to reset conversation or state.
 - **commands/rules-command.ts**: Command to view or edit rules.
 - **commands/save-command.ts**: Command to save conversation or outputs.
+- **commands/shell-command.ts**: Command to execute shell commands interactively.
 - **commands/types.ts**: Type definitions for commands.
 - **commands/usage-command.ts**: Command to show usage statistics or token usage.
 - **config.ts**: Loads and validates configuration from env, files, and defaults.
@@ -214,6 +251,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **mentions.ts**: Detects and handles @mentions in prompts or messages.
 - **messages.ts**: Manages message history, persistence, and serialization.
 - **middleware/audit-message.ts**: Middleware to audit and log messages for compliance.
+- **middleware/cache.ts**: Middleware to cache responses for performance.
 - **middleware/index.ts**: Exports middleware chain for request/response processing.
 - **middleware/rate-limit.ts**: Middleware to enforce rate limiting on API calls.
 - **models/ai-config.ts**: Configuration and capability detection for AI models.
@@ -237,20 +275,31 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **repl.ts**: Implements the Read-Eval-Print Loop for interactive sessions.
 - **saved-selections/**: Directory for storing user-saved file selections (empty currently).
 - **terminal/ansi-styles.ts**: ANSI color and style utilities for terminal output.
-- **terminal/chalk.ts**: Color logging utility for terminal.
+- **terminal/checkbox-prompt.ts**: Interactive prompt for checkbox selections.
 - **terminal/default-theme.ts**: Default color theme for terminal output.
+- **terminal/east-asian-width.ts**: Utilities for handling East Asian character widths.
+- **terminal/editor-prompt.ts**: Prompt for editing text in terminal.
+- **terminal/errors.ts**: Error handling for terminal operations.
 - **terminal/formatting.ts**: Formatting functions for terminal display.
 - **terminal/highlight/index.ts**: Syntax highlighting implementation.
 - **terminal/highlight/theme.ts**: Themes for syntax highlighting.
 - **terminal/index.ts**: Main terminal utilities module.
+- **terminal/input-prompt.ts**: Generic input prompt for terminal.
 - **terminal/markdown-utils.ts**: Utilities for rendering Markdown in terminal.
 - **terminal/markdown.ts**: Markdown parser and renderer for terminal.
+- **terminal/search-prompt.ts**: Prompt for searching within terminal.
+- **terminal/select-prompt.ts**: Prompt for single selections.
+- **terminal/string-width.ts**: Calculates display width of strings.
+- **terminal/strip-ansi.ts**: Strips ANSI escape codes from strings.
+- **terminal/style.ts**: Styling utilities for terminal text.
 - **terminal/supports-color.ts**: Detects terminal color support.
 - **terminal/supports-hyperlinks.ts**: Detects hyperlink support in terminal.
 - **terminal/types.ts**: Type definitions for terminal components.
+- **terminal/wrap-ansi.ts**: Wraps text with ANSI escape codes.
 - **terminal-output.test.ts**: Unit tests for terminal output rendering.
-- **token-tracker.ts**: Tracks and manages token usage for prompts and responses.
-- **token-utils.ts**: Utilities for token counting using tiktoken.
+- **tokens/counter.ts**: Utilities for counting tokens in text.
+- **tokens/manage-output.ts**: Manages token usage in outputs.
+- **tokens/tracker.ts**: Tracks token usage across sessions.
 - **tool-executor.ts**: Executes AI tools based on model requests.
 - **tools/agent.ts**: AI agent logic for coordinating tool usage.
 - **tools/bash-utils.ts**: Utilities for bash command execution.
@@ -261,8 +310,10 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **tools/dynamic-tool-loader.ts**: Dynamically loads tool definitions.
 - **tools/dynamic-tool-parser.ts**: Parses dynamic tool specifications.
 - **tools/edit-file.ts**: Tool to edit files with diff support.
+- **tools/file-editing-utils.ts**: Utilities for file editing operations.
 - **tools/filesystem-utils.ts**: General filesystem utilities for tools.
 - **tools/git-utils.ts**: Utilities for Git operations.
+- **tools/glob.ts**: Tool for glob-based file searching.
 - **tools/grep.ts**: Tool for searching files using ripgrep.
 - **tools/index.ts**: Registry and exports for all tools.
 - **tools/move-file.ts**: Tool to move or rename files.
@@ -273,36 +324,59 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **tools/types.ts**: Type definitions for tools.
 - **tools/web-fetch.ts**: Tool to fetch web content.
 - **tools/web-search.ts**: Tool for web searching.
+- **utils/filesystem.ts**: Filesystem-related utilities.
+- **utils/filetype-detection.ts**: Detects file types based on content or extension.
+- **utils/generators.ts**: Utilities for generating unique IDs or names.
+- **utils/glob.ts**: Glob pattern matching utilities.
+- **utils/ignore.ts**: Handles ignore patterns for files.
+- **utils/iterables.ts**: Utilities for working with iterables.
 - **utils/process.ts**: Utilities for spawning and managing processes.
 - **utils/zod-utils.ts**: Zod schema utilities for validation.
 - **version.ts**: Manages and exposes application version.
 
 ### test/ Directory
+- **agent/**: Directory for agent-related tests (empty currently).
 - **commands/copy-command.test.ts**: Unit tests for copy command.
+- **commands/exit-command.test.ts**: Unit tests for exit command.
 - **commands/health-command.test.ts**: Unit tests for health command.
+- **commands/prompt-history.test.ts**: Unit tests for prompt history.
+- **commands/shell-command.test.ts**: Unit tests for shell command.
 - **config.test.ts**: Unit tests for configuration loading.
 - **execution.test.ts**: Unit tests for execution module.
 - **mentions.test.ts**: Unit tests for mention detection.
+- **terminal/checkbox-prompt.test.ts**: Unit tests for checkbox prompt.
+- **terminal/editor-prompt.test.ts**: Unit tests for editor prompt.
 - **terminal/highlight.test.ts**: Unit tests for syntax highlighting.
 - **terminal/markdown-utils.test.ts**: Unit tests for Markdown utilities.
+- **terminal/markdown.test.ts**: Unit tests for Markdown rendering.
+- **terminal/search-prompt.test.ts**: Unit tests for search prompt.
 - **tools/bash-utils.test.ts**: Unit tests for bash utilities.
 - **tools/bash.test.ts**: Unit tests for bash tool.
 - **tools/code-interpreter.test.ts**: Unit tests for code interpreter tool.
 - **tools/dynamic-tool-integration.test.ts**: Integration tests for dynamic tools.
 - **tools/dynamic-tool-parser.test.ts**: Unit tests for dynamic tool parser.
+- **tools/edit-file.test.ts**: Unit tests for edit file tool.
 - **tools/filesystem-utils.test.ts**: Unit tests for filesystem utilities.
+- **tools/glob.test.ts**: Unit tests for glob tool.
+- **tools/grep-error-handling.test.ts**: Unit tests for grep error handling.
+- **tools/grep-issue-96.test.ts**: Unit tests for specific grep issue.
 - **tools/grep.test.ts**: Unit tests for grep tool.
+- **tools/is-mutating-command.test.ts**: Unit tests for mutating command detection.
+- **utils/filesystem.test.ts**: Unit tests for filesystem utilities.
+- **utils/generators.test.ts**: Unit tests for generators.
+- **utils/glob.test.ts**: Unit tests for glob utilities.
+- **utils/ignore.test.ts**: Unit tests for ignore utilities.
 - **utils/process.test.ts**: Unit tests for process utilities.
 
 ## Flow Diagram
 
 Entry points from package.json:
-- Binary: \`acai\` -> \`dist/index.js\` (built from source/index.ts)
-- Development: \`npm run dev\` -> \`node ./source/index.ts\`
+- Binary: `acai` -> `dist/index.js` (built from source/index.ts)
+- Development: `npm run dev` -> `node ./source/index.ts`
 
 ### Application Startup and REPL
 
-\`\`\`mermaid
+```mermaid
 graph TD
   A[User runs acai binary or dev script] --> B[Execute source/index.ts]
   B --> C[Load configuration source/config.ts]
@@ -312,11 +386,11 @@ graph TD
   F --> G[Setup commands source/commands/manager.ts]
   G --> H[Start REPL source/repl.ts]
   H --> I[Interactive loop: input -> process -> output]
-\`\`\`
+```
 
 ### User Input Handling (Command vs AI Prompt)
 
-\`\`\`mermaid
+```mermaid
 graph TD
   A[User input in REPL] --> B{Starts with / ?}
   B -->|Yes| C[Execute command via manager]
@@ -332,11 +406,11 @@ graph TD
   I -->|No| L
   L --> M[Display in terminal]
   M --> N[Update history source/messages.ts]
-\`\`\`
+```
 
 ### Tool Execution Flow
 
-\`\`\`mermaid
+```mermaid
 sequenceDiagram
   participant U as User
   participant R as REPL
@@ -363,11 +437,11 @@ sequenceDiagram
   AI-->>P: Final response
   P-->>M: Deliver
   M-->>R: Display to user
-\`\`\`
+```
 
 ### Dynamic Tool Loading (New)
 
-\`\`\`mermaid
+```mermaid
 graph TD
   A[Model requests unknown tool] --> B[Agent checks registry source/tools/index.ts]
   B --> C{Dynamic?}
@@ -376,6 +450,6 @@ graph TD
   E --> F[Register temp tool]
   F --> G[Execute as normal]
   C -->|No| H[Error: Unknown tool]
-\`\`\`
+```
 
 These diagrams cover the primary flows: startup, input processing, tool invocation, and dynamic tool support.
