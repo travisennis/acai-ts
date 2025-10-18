@@ -126,7 +126,7 @@ async function main() {
 
   const chosenModel: ModelName = isSupportedModel(flags.model)
     ? (flags.model as ModelName)
-    : "openrouter:glm-4.5";
+    : "openrouter:glm-4.6";
 
   const modelManager = new ModelManager({
     stateDir: await appDir.ensurePath("audit"),
@@ -138,7 +138,7 @@ async function main() {
   modelManager.setModel("tool-repair", "openai:gpt-4.1");
   modelManager.setModel("conversation-analyzer", "openrouter:gemini-flash25");
   modelManager.setModel("init-project", chosenModel);
-  modelManager.setModel("task-agent", "openrouter:gemini-flash25");
+  modelManager.setModel("task-agent", "openrouter:gpt-5-mini");
 
   const tokenTracker = new TokenTracker();
   const tokenCounter = new TokenCounter();
