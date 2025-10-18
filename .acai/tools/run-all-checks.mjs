@@ -37,10 +37,13 @@ if (process.env.TOOL_ACTION === 'execute') {
       stdio: 'pipe',
       shell: true
     });
-    let output = '';
-    child.stdout.on('data', (data) => output += data);
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (data) => stdout += data);
+    child.stderr.on('data', (data) => stderr += data);
     child.on('close', (code) => {
-      console.log(output);
+      if (stdout) console.log(stdout);
+      if (stderr) console.error(stderr);
       process.exit(code);
     });
   });
