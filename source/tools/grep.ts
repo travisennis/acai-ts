@@ -64,7 +64,7 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
 
   return {
     toolDef: {
-      description: `Search files for patterns using ripgrep (rg). Uses glob patterns for file filtering (e.g., "*.ts", "**/*.test.ts"). Auto-detects unbalanced regex patterns and falls back to fixed-string search for safety. Results are limited to prevent overwhelming output; configure via maxResults parameter or project configuration.`,
+      description: `Search files for patterns using ripgrep (rg). Uses glob patterns for file filtering (e.g., "*.ts", "**/*.test.ts"). Auto-detects unbalanced regex patterns and falls back to fixed-string search for safety. Results are limited to prevent overwhelming output; configure via maxResults parameter.`,
       inputSchema,
     },
     async *execute(
