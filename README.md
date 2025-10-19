@@ -182,8 +182,8 @@ acai
 # Specify a model
 acai --model anthropic:sonnet
 
-# One-shot mode
-acai -p "What files contain the term 'toolCallRepair'?" -o
+# CLI mode (one-shot execution)
+acai -p "What files contain the term 'toolCallRepair'?"
 
 # Pipe input
 echo "How many TypeScript files are in this project?" | acai
@@ -215,6 +215,8 @@ You can reference files and directories directly in your prompts:
 - `@dirname` - Recursively include all files in a directory
 - `@http://example.com` - Fetch and include web content
 - ``!`command` `` - Execute shell command and include output
+
+**Note:** Using `-p/--prompt` runs in CLI mode (one-shot execution), while running without a prompt starts interactive REPL mode.
 
 For a list of available commands, type `/help` within the REPL.
 

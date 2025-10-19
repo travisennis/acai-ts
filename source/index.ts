@@ -25,8 +25,7 @@ Usage
 
 Options
   --model, -m        Sets the model to use
-  --prompt, -p       Sets the prompt
-  --oneshot, -o      Run once and exit
+  --prompt, -p       Sets the prompt (runs in CLI mode)
   --continue         Load the most recent conversation
   --resume           Select a recent conversation to resume
   --autoAcceptAll    Accept all commands and edits without prompting
@@ -36,14 +35,12 @@ Options
 Examples
   $ acai --model anthopric:sonnet
   $ acai -p "initial prompt"
-  $ acai -p "one-shot prompt" -o
 `;
 
 const parsed = parseArgs({
   options: {
     model: { type: "string", short: "m" },
     prompt: { type: "string", short: "p" },
-    oneshot: { type: "boolean", short: "o", default: false },
     continue: { type: "boolean", default: false },
     resume: { type: "boolean", default: false },
     autoAcceptAll: { type: "boolean", default: false },
@@ -90,11 +87,6 @@ async function main() {
   }
 
   const hasContinueOrResume = flags.continue === true || flags.resume === true;
-
-  if (hasContinueOrResume && flags.oneshot === true) {
-    console.error("Cannot use --continue or --resume with --oneshot.");
-    process.exit(1);
-  }
 
   // --- Determine Initial Prompt (potential conflict) ---
   const positionalPrompt = input.at(0);
@@ -215,7 +207,7 @@ async function main() {
 
   await commands.initializeCommmands();
 
-  if (flags.oneshot === true) {
+  if (isDefined(initialPromptInput)) {
     const cliProcess = new Cli({
       promptManager,
       config: appConfig,
