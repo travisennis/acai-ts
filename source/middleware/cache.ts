@@ -39,9 +39,13 @@ export const cacheMiddleware: LanguageModelV2Middleware = {
         applyCaching(system);
       }
 
-      const final = msgs.filter((msg) => msg.role === "user").at(-1);
-      if (final) {
-        const content = final.content;
+      // Get the last two user messages for caching
+      const userMessages = msgs.filter((msg) => msg.role === "user");
+      const lastTwoUserMessages = userMessages.slice(-2);
+
+      // Mark both the latest and second-to-last user messages as ephemeral
+      for (const userMessage of lastTwoUserMessages) {
+        const content = userMessage.content;
         if (Array.isArray(content)) {
           const finalContent = content.at(-1);
           if (finalContent) {
