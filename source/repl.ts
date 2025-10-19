@@ -3,6 +3,7 @@ import { stepCountIs, streamText } from "ai";
 import { runManualLoop } from "./agent/manual-loop.ts";
 import type { CommandManager } from "./commands/manager.ts";
 import { config as configManager } from "./config.ts";
+import { formatDuration } from "./formatting.ts";
 import { logger } from "./logger.ts";
 import { PromptError, processPrompt } from "./mentions.ts";
 import type { MessageHistory } from "./messages.ts";
@@ -261,16 +262,8 @@ export class Repl {
           // Create a more visual representation of steps/tool usage
           displayToolUse(result, terminal);
 
-          const elapsedSeconds = (stop - start) / 1000;
-          let formattedTime: string;
-          if (elapsedSeconds >= 60) {
-            const minutes = Math.floor(elapsedSeconds / 60);
-            const seconds = Math.floor(elapsedSeconds % 60);
-            formattedTime = `${minutes}m ${seconds}s`;
-          } else {
-            formattedTime = `${elapsedSeconds.toFixed(2)}s`;
-          }
-          terminal.writeln(style.dim(`Time: ${formattedTime}`));
+          // Show time spend on this prompt
+          terminal.writeln(style.dim(`Time: ${formatDuration(stop - start)}`));
 
           const total = result.totalUsage;
           const inputTokens = total.inputTokens;
