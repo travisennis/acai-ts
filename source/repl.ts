@@ -118,6 +118,8 @@ export class Repl {
     });
 
     while (true) {
+      const start = performance.now();
+
       currentAbortController = new AbortController();
       const { signal } = currentAbortController;
 
@@ -247,6 +249,8 @@ export class Repl {
             toolCallRepair: toolCallRepair(modelManager),
           });
 
+          const stop = performance.now();
+
           terminal.hr();
 
           // Notify if configured in project config (acai.json)
@@ -256,6 +260,17 @@ export class Repl {
 
           // Create a more visual representation of steps/tool usage
           displayToolUse(result, terminal);
+
+          const elapsedSeconds = (stop - start) / 1000;
+          let formattedTime: string;
+          if (elapsedSeconds >= 60) {
+            const minutes = Math.floor(elapsedSeconds / 60);
+            const seconds = Math.floor(elapsedSeconds % 60);
+            formattedTime = `${minutes}m ${seconds}s`;
+          } else {
+            formattedTime = `${elapsedSeconds.toFixed(2)}s`;
+          }
+          terminal.writeln(style.dim(`Time: ${formattedTime}`));
 
           const total = result.totalUsage;
           const inputTokens = total.inputTokens;
