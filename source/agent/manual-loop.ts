@@ -13,7 +13,7 @@ import { displayToolMessages } from "../repl/display-tool-messages.ts";
 import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
 import type { CompleteToolSet } from "../tools/index.ts";
-import type { Message } from "../tools/types.ts";
+import { isToolMessage, type Message } from "../tools/types.ts";
 import { isAsyncIterable } from "../utils/iterables.ts";
 
 // - readOnly=true (parallel): readFile, readMultipleFiles, grep, webFetch, webSearch, think
@@ -471,20 +471,4 @@ function formatToolResult(value: unknown): string {
   }
 
   return String(value);
-}
-
-function isToolMessage(value: unknown): value is Message {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const candidate = value as Partial<Message> & {
-    event?: unknown;
-    id?: unknown;
-  };
-  return (
-    typeof candidate.event === "string" &&
-    typeof candidate.id === "string" &&
-    ("data" in candidate || "retry" in candidate)
-  );
 }

@@ -51,3 +51,19 @@ export type Message =
   | ToolUpdateMessage;
 
 export type ToolResult = Message | string;
+
+export function isToolMessage(value: unknown): value is Message {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<Message> & {
+    event?: unknown;
+    id?: unknown;
+  };
+  return (
+    typeof candidate.event === "string" &&
+    typeof candidate.id === "string" &&
+    ("data" in candidate || "retry" in candidate)
+  );
+}
