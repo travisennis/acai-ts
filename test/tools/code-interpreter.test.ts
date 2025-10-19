@@ -42,7 +42,13 @@ async function runTool(input: {
   if (typeof output === "string" && output.startsWith("{")) {
     return { ok: true, value: JSON.parse(output) };
   }
-  return { ok: false, value: output };
+  // Handle case where output contains JSON but also other content
+  try {
+    const parsed = JSON.parse(output);
+    return { ok: true, value: parsed };
+  } catch {
+    return { ok: false, value: output };
+  }
 }
 
 describe("code-interpreter tool", () => {
@@ -125,6 +131,27 @@ describe("code-interpreter tool", () => {
       };
       assert.equal(v.exitCode, 0);
       assert.equal(v.stdout.trim(), "TypeScript executed with .ts extension");
+    });
+
+    it("can import code that uses logger without permission errors", async () => {
+      const res = await runTool({
+        code: `
+          import { logger } from '../source/logger.ts';
+          logger.info('Test log message from code interpreter');
+          console.log('Logger imported successfully');
+        `,
+      });
+      assert.equal(res.ok, true);
+      const v = res.value as {
+        stdout: string;
+        stderr: string;
+        exitCode: number;
+      };
+      assert.equal(v.exitCode, 0);
+      // The stdout should contain both the logger output and our success message
+      assert.match(v.stdout, /Logger imported successfully/);
+      // Should not contain permission errors
+      assert.doesNotMatch(v.stderr, /permission|ERR_ACCESS_DENIED/i);
     });
 
     it("supports TypeScript interfaces and types", async () => {
