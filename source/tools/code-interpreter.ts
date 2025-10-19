@@ -120,6 +120,8 @@ export const createCodeInterpreterTool = async ({
           NO_COLOR: "true",
           // biome-ignore lint/style/useNamingConvention: Environment variable keys are uppercase by convention
           NODE_OPTIONS: "",
+          // biome-ignore lint/style/useNamingConvention: Environment variable keys are uppercase by convention
+          ACAI_CODE_INTERPRETER: "true",
         } as Record<string, string>),
       });
 
