@@ -63,6 +63,17 @@ export function formatBlock(
       throw new Error(`Unsupported format: ${format}`);
   }
 }
+export const formatMemoryUsage = (bytes: number): string => {
+  const gb = bytes / (1024 * 1024 * 1024);
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+  if (bytes < 1024 * 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+  return `${gb.toFixed(2)} GB`;
+};
+
 /**
  * Formats a duration in milliseconds into a concise, human-readable string (e.g., "1h 5s").
  * It omits any time units that are zero.

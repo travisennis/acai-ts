@@ -1,4 +1,5 @@
 import { execSync } from "node:child_process";
+import { formatMemoryUsage } from "../formatting.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export function healthCommand(
@@ -51,7 +52,7 @@ export function healthCommand(
       });
 
       // Display the table
-      terminal.info("Environment Variables Status:");
+      terminal.writeln("Environment Variables Status:");
       terminal.table(envStatus, {
         header: ["Variable", "Status", "Description"],
         colWidths: [30, 15, 55],
@@ -96,7 +97,7 @@ export function healthCommand(
       });
 
       terminal.lineBreak();
-      terminal.info("Bash Tools Status:");
+      terminal.writeln("Bash Tools Status:");
       terminal.table(toolStatus, {
         header: ["Tool", "Status"],
         colWidths: [15, 20],
@@ -116,6 +117,18 @@ export function healthCommand(
         );
       } else {
         terminal.info("✓ All required tools are installed.");
+      }
+
+      terminal.lineBreak();
+      terminal.writeln("Current Process:");
+      // Display memory usage
+      const usage = process.memoryUsage().rss;
+      const formattedUsage = formatMemoryUsage(usage);
+
+      if (usage >= 2 * 1024 * 1024 * 1024) {
+        terminal.error(`Memory Usage: ${formattedUsage}`);
+      } else {
+        terminal.info(`Memory Usage: ${formattedUsage}`);
       }
 
       return "continue";

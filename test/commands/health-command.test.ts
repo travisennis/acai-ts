@@ -23,6 +23,7 @@ describe("/health command", () => {
           tables.push(data);
           outputs.push(`table:${options?.header?.join(",")}`);
         },
+        writeln: (msg: string) => outputs.push(`${msg}\n`),
       },
     } as unknown as CommandOptions;
 
@@ -90,6 +91,7 @@ describe("/health command", () => {
           ) => {
             outputs.push("table");
           },
+          writeln: (msg: string) => outputs.push(`${msg}\n`),
         },
       } as unknown as CommandOptions;
 
@@ -126,6 +128,7 @@ describe("/health command", () => {
         ) => {
           outputs.push("table");
         },
+        writeln: (msg: string) => outputs.push(`${msg}\n`),
       },
     } as unknown as CommandOptions;
 
@@ -178,6 +181,7 @@ describe("/health command", () => {
             tables.push(data);
             outputs.push(`tool_table:${options?.header?.join(",")}`);
           },
+          writeln: (msg: string) => outputs.push(`${msg}\n`),
         },
       } as unknown as CommandOptions;
 
@@ -234,6 +238,7 @@ describe("/health command", () => {
           ) => {
             outputs.push("tool_table");
           },
+          writeln: (msg: string) => outputs.push(`${msg}\n`),
         },
       } as unknown as CommandOptions;
 
