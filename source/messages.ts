@@ -168,6 +168,11 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     this.history.push(msgObj);
   }
 
+  appendToolMessages(toolResultMessages: ToolModelMessage[]) {
+    this.updatedAt = new Date();
+    this.history.push(...toolResultMessages);
+  }
+
   appendResponseMessages(responseMessages: ResponseMessage[]) {
     this.updatedAt = new Date();
     // Filter out messages with empty content arrays

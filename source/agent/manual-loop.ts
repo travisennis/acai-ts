@@ -4,7 +4,11 @@ import type {
   ToolExecuteFunction,
   ToolModelMessage,
 } from "ai";
-import { streamText, type Tool, type ToolCallRepairFunction } from "ai";
+import {
+  NoOutputGeneratedError,
+  streamText,
+  type ToolCallRepairFunction,
+} from "ai";
 import { logger } from "../logger.ts";
 import type { MessageHistory } from "../messages.ts";
 import { AiConfig } from "../models/ai-config.ts";
@@ -37,7 +41,7 @@ export type ManualLoopOptions = {
   maxIterations?: number;
   maxRetries?: number;
   abortSignal?: AbortSignal;
-  toolCallRepair?: ToolCallRepairFunction<Record<string, Tool>>;
+  toolCallRepair?: ToolCallRepairFunction<CompleteToolSet>;
 };
 
 export type ManualLoopResult = {
@@ -114,7 +118,7 @@ export async function runManualLoop(
         maxRetries: 2,
         providerOptions: aiConfig.providerOptions(),
         tools: toolDefs,
-        // biome-ignore lint/style/useNamingConvention: third-party controlled
+        // biome-ignore lint/style/useNamingConvention: third-party code
         experimental_repairToolCall: toolCallRepair,
         abortSignal,
       });
@@ -138,24 +142,7 @@ export async function runManualLoop(
             lastType = "text";
           }
         } else if (chunk.type === "tool-call") {
-          // We will handle after stream completes
           terminal.stopProgress();
-        } else if (chunk.type === "error") {
-          const error = chunk.error;
-          terminal.error("Stream error:");
-          terminal.error(String(error));
-          // handle error
-          break;
-        } else if (chunk.type === "abort") {
-          terminal.error("Stream abort:");
-          // handle stream abort
-          break;
-        } else if (chunk.type === "tool-error") {
-          const error = chunk.error;
-          terminal.error("Stream tool-error:");
-          terminal.error(String(error));
-          // handle error
-          break;
         } else {
           // finish off this step
           if (lastType === "reasoning") {
@@ -172,13 +159,13 @@ export async function runManualLoop(
         }
       }
 
-      // Append streamed assistant/tool messages from model
+      // Get response and tool calls
       const response = await result.response;
       const responseMessages = response.messages;
 
-      if (responseMessages.length > 0) {
-        messageHistory.appendResponseMessages(responseMessages);
-      }
+      messageHistory.appendResponseMessages(responseMessages);
+
+      const toolCalls = await result.toolCalls;
 
       const thisStepToolCalls: { toolName: string }[] = [];
       const thisStepToolResults: { toolName: string }[] = [];
@@ -212,15 +199,54 @@ export async function runManualLoop(
       }
 
       // Execute tools in parallel (order not guaranteed)
-      const toolCalls = await result.toolCalls;
 
       const toolEventMessages = new Map<string, Message[]>();
 
-      // Split toolCalls into two groups: those with permission functions and those without
-      const toolsWithPermission: typeof toolCalls = [];
-      const toolsWithoutPermission: typeof toolCalls = [];
+      // Check response.messages for already-processed tool results
+      const alreadyProcessedToolCallIds = new Set<string>();
 
-      for (const call of toolCalls) {
+      // Look for tool results and tool errors in the response messages
+      for (const message of responseMessages) {
+        if (message.role === "tool" && Array.isArray(message.content)) {
+          for (const content of message.content) {
+            if (
+              (content.type === "tool-result" ||
+                content.type === "tool-error") &&
+              content.toolCallId
+            ) {
+              alreadyProcessedToolCallIds.add(content.toolCallId);
+            }
+          }
+        }
+      }
+
+      // Filter out tool calls that have already been processed or are invalid
+      const validToolCalls = toolCalls.filter(
+        (call) =>
+          !alreadyProcessedToolCallIds.has(call.toolCallId) &&
+          // Also check if the tool call is marked as invalid by the AI SDK
+          !(call as { invalid?: boolean }).invalid,
+      );
+
+      if (validToolCalls.length === 0) {
+        // All tool calls were already processed by the AI SDK
+        logger.debug(
+          `All ${toolCalls.length} tool calls were already processed by AI SDK, skipping manual execution`,
+        );
+        continue;
+      }
+
+      if (validToolCalls.length < toolCalls.length) {
+        logger.debug(
+          `Filtered out ${toolCalls.length - validToolCalls.length} already-processed tool calls, executing ${validToolCalls.length} remaining`,
+        );
+      }
+
+      // Split validToolCalls into two groups: those with permission functions and those without
+      const toolsWithPermission: typeof validToolCalls = [];
+      const toolsWithoutPermission: typeof validToolCalls = [];
+
+      for (const call of validToolCalls) {
         const toolName = call.toolName as keyof CompleteToolSet;
         const permFunc = permissions.get(toolName);
         if (permFunc) {
@@ -230,108 +256,47 @@ export async function runManualLoop(
         }
       }
 
-      // Process tools with permission sequentially
-      const sequentialToolMessages: ToolModelMessage[] = [];
-      for (const call of toolsWithPermission) {
-        const toolName = call.toolName as keyof CompleteToolSet;
-        const exec = executors.get(toolName);
-        let resultOutput = "Unknown result.";
-
-        if (!exec) {
-          resultOutput = `No executor for tool ${toolName}`;
-        } else {
-          thisStepToolCalls.push({ toolName });
-          thisStepToolResults.push({ toolName });
-
-          let approved = true;
-          const permFunc = permissions.get(toolName);
-          if (permFunc) {
-            const permResult = await permFunc(call.input, {
-              toolCallId: call.toolCallId,
-              messages: messageHistory.get(),
-              abortSignal,
-            });
-
-            if (!permResult.approve) {
-              approved = false;
-              resultOutput = permResult.reason;
-            }
-          }
-
-          if (approved) {
-            try {
-              const output = await exec(call.input, {
-                toolCallId: call.toolCallId,
-                messages: messageHistory.get(),
-                abortSignal,
-              });
-              if (isAsyncIterable(output)) {
-                const { finalValue, messages } =
-                  await consumeToolAsyncIterable(output);
-                resultOutput = formatToolResult(finalValue);
-                if (messages.length > 0) {
-                  toolEventMessages.set(call.toolCallId, messages);
-                }
-              } else {
-                resultOutput = formatToolResult(output);
-              }
-            } catch (err) {
-              resultOutput = `Tool error: ${
-                err instanceof Error ? err.message : String(err)
-              }`;
-            }
-          }
-        }
-
-        sequentialToolMessages.push({
-          role: "tool",
-          content: [
-            {
-              type: "tool-result",
-              toolName,
-              toolCallId: call.toolCallId,
-              output: {
-                type: "text",
-                value: resultOutput,
-              },
-            },
-          ],
-        });
-      }
-
       // Process tools without permission concurrently
-      const concurrentToolMessages: ToolModelMessage[] = await Promise.all(
+      const concurrentToolMessages: Promise<
+        PromiseSettledResult<ToolModelMessage>[]
+      > = Promise.allSettled(
         toolsWithoutPermission.map(async (call) => {
           const toolName = call.toolName as keyof CompleteToolSet;
-          const exec = executors.get(toolName);
           let resultOutput = "Unknown result.";
-          if (!exec) {
-            resultOutput = `No executor for tool ${toolName}`;
-          } else {
+          try {
             thisStepToolCalls.push({ toolName });
             thisStepToolResults.push({ toolName });
 
-            try {
-              const output = await exec(call.input, {
-                toolCallId: call.toolCallId,
-                messages: messageHistory.get(),
-                abortSignal,
-              });
-              if (isAsyncIterable(output)) {
-                const { finalValue, messages } =
-                  await consumeToolAsyncIterable(output);
-                resultOutput = formatToolResult(finalValue);
-                if (messages.length > 0) {
-                  toolEventMessages.set(call.toolCallId, messages);
+            const exec = executors.get(toolName);
+            if (!exec) {
+              resultOutput = `No executor for tool ${toolName}`;
+            } else {
+              try {
+                const output = await exec(call.input, {
+                  toolCallId: call.toolCallId,
+                  messages: messageHistory.get(),
+                  abortSignal,
+                });
+                if (isAsyncIterable(output)) {
+                  const { finalValue, messages } =
+                    await consumeToolAsyncIterable(output);
+                  resultOutput = formatToolResult(finalValue);
+                  if (messages.length > 0) {
+                    toolEventMessages.set(call.toolCallId, messages);
+                  }
+                } else {
+                  resultOutput = formatToolResult(output);
                 }
-              } else {
-                resultOutput = formatToolResult(output);
+              } catch (err) {
+                resultOutput = `Tool error: ${
+                  err instanceof Error ? err.message : String(err)
+                }`;
               }
-            } catch (err) {
-              resultOutput = `Tool error: ${
-                err instanceof Error ? err.message : String(err)
-              }`;
             }
+          } catch (error) {
+            resultOutput = `Tool error: ${
+              error instanceof Error ? error.message : String(error)
+            }`;
           }
           return {
             role: "tool",
@@ -350,13 +315,89 @@ export async function runManualLoop(
         }),
       );
 
+      // Process tools with permission sequentially
+      const sequentialToolMessages: ToolModelMessage[] = [];
+      for (const call of toolsWithPermission) {
+        const toolName = call.toolName as keyof CompleteToolSet;
+        let resultOutput = "Unknown result.";
+        try {
+          thisStepToolCalls.push({ toolName });
+          thisStepToolResults.push({ toolName });
+
+          const exec = executors.get(toolName);
+
+          if (!exec) {
+            resultOutput = `No executor for tool ${toolName}`;
+          } else {
+            let approved = true;
+            const permFunc = permissions.get(toolName);
+            if (permFunc) {
+              const permResult = await permFunc(call.input, {
+                toolCallId: call.toolCallId,
+                messages: messageHistory.get(),
+                abortSignal,
+              });
+
+              if (!permResult.approve) {
+                approved = false;
+                resultOutput = permResult.reason;
+              }
+            }
+
+            if (approved) {
+              try {
+                const output = await exec(call.input, {
+                  toolCallId: call.toolCallId,
+                  messages: messageHistory.get(),
+                  abortSignal,
+                });
+                if (isAsyncIterable(output)) {
+                  const { finalValue, messages } =
+                    await consumeToolAsyncIterable(output);
+                  resultOutput = formatToolResult(finalValue);
+                  if (messages.length > 0) {
+                    toolEventMessages.set(call.toolCallId, messages);
+                  }
+                } else {
+                  resultOutput = formatToolResult(output);
+                }
+              } catch (err) {
+                resultOutput = `Tool error: ${
+                  err instanceof Error ? err.message : String(err)
+                }`;
+              }
+            }
+          }
+        } catch (err) {
+          resultOutput = `Tool error: ${
+            err instanceof Error ? err.message : String(err)
+          }`;
+        }
+        sequentialToolMessages.push({
+          role: "tool",
+          content: [
+            {
+              type: "tool-result",
+              toolName,
+              toolCallId: call.toolCallId,
+              output: {
+                type: "text",
+                value: resultOutput,
+              },
+            },
+          ],
+        });
+      }
+
       // Combine all tool messages
       const toolMessages: ToolModelMessage[] = [
         ...sequentialToolMessages,
-        ...concurrentToolMessages,
+        ...(await concurrentToolMessages)
+          .filter((result) => result.status === "fulfilled")
+          .map((result) => result.value),
       ];
 
-      messageHistory.appendResponseMessages(toolMessages);
+      messageHistory.appendToolMessages(toolMessages);
 
       // Display tools calls
       for (const call of toolCalls) {
@@ -379,7 +420,7 @@ export async function runManualLoop(
       loopResult.totalUsage.reasoningTokens += stepUsage.reasoningTokens ?? 0;
 
       // Consume the rest of the team if necessary
-      await result.consumeStream();
+      // await result.consumeStream();
 
       // continue iterations
       iter += 1;
@@ -397,6 +438,10 @@ export async function runManualLoop(
           ? `${(error as Error).message.slice(0, 100)}...`
           : (error as Error).message,
       );
+
+      if (NoOutputGeneratedError.isInstance(error)) {
+        break;
+      }
 
       // Break loop if we exceed max retries
       if (consecutiveErrors > maxRetries) {
