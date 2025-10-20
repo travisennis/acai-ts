@@ -180,6 +180,13 @@ export async function runManualLoop(
         messageHistory.appendResponseMessages(responseMessages);
       }
 
+      const thisStepToolCalls: { toolName: string }[] = [];
+      const thisStepToolResults: { toolName: string }[] = [];
+      loopResult.steps.push({
+        toolCalls: thisStepToolCalls,
+        toolResults: thisStepToolResults,
+      });
+
       // If finishReason is not tool-calls, break
       const finishReason = await result.finishReason;
 
@@ -203,13 +210,6 @@ export async function runManualLoop(
 
         break;
       }
-
-      const thisStepToolCalls: { toolName: string }[] = [];
-      const thisStepToolResults: { toolName: string }[] = [];
-      loopResult.steps.push({
-        toolCalls: thisStepToolCalls,
-        toolResults: thisStepToolResults,
-      });
 
       // Execute tools in parallel (order not guaranteed)
       const toolCalls = await result.toolCalls;
