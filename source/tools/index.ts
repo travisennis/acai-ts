@@ -31,8 +31,13 @@ import { createThinkTool, ThinkTool } from "./think.ts";
 import { createWebFetchTool, WebFetchTool } from "./web-fetch.ts";
 import { createWebSearchTool, WebSearchTool } from "./web-search.ts";
 
-export type CompleteToolSet = AsyncReturnType<typeof initTools>["toolDefs"] &
-  AsyncReturnType<typeof initAgents>["toolDefs"];
+export type CompleteToolSet = {
+  -readonly [K in keyof (AsyncReturnType<typeof initTools>["toolDefs"] &
+    AsyncReturnType<typeof initAgents>["toolDefs"])]: (AsyncReturnType<
+    typeof initTools
+  >["toolDefs"] &
+    AsyncReturnType<typeof initAgents>["toolDefs"])[K];
+};
 
 export type CompleteToolCall = TypedToolCall<CompleteToolSet>;
 export type CompleteToolResult = TypedToolResult<CompleteToolSet>;
