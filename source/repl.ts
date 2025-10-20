@@ -264,7 +264,8 @@ export class Repl {
           const total = result.totalUsage;
           const inputTokens = total.inputTokens;
           const outputTokens = total.outputTokens;
-          const tokenSummary = `Tokens: ↑ ${inputTokens} ↓ ${outputTokens}`;
+          const cachedInputTokens = total.cachedInputTokens;
+          const tokenSummary = `Tokens: ↑ ${inputTokens} (${cachedInputTokens}) ↓ ${outputTokens}`;
           terminal.writeln(style.dim(tokenSummary));
 
           const inputCost = modelConfig.costPerInputToken * inputTokens;
