@@ -75,20 +75,19 @@ export class Cli {
       prompt: userPrompt,
     });
 
-    const maxTokens = aiConfig.getMaxTokens();
-
     const tools = await initCliTools({ tokenCounter });
 
     try {
       const result = await generateText({
         model: langModel,
-        maxOutputTokens: maxTokens,
+        maxOutputTokens: aiConfig.maxOutputTokens(),
         system: finalSystemPrompt,
         messages: messageHistory.get(),
-        temperature: modelConfig.defaultTemperature,
+        temperature: aiConfig.temperature(),
+        topP: aiConfig.topP(),
         stopWhen: stepCountIs(60),
         maxRetries: 2,
-        providerOptions: aiConfig.getProviderOptions(),
+        providerOptions: aiConfig.providerOptions(),
         tools: tools.toolDefs,
         // biome-ignore lint/style/useNamingConvention: third-party controlled
         experimental_activeTools: [

@@ -37,7 +37,6 @@ export type ManualLoopOptions = {
   maxIterations?: number;
   maxRetries?: number;
   abortSignal?: AbortSignal;
-  temperature?: number | undefined;
   toolCallRepair?: ToolCallRepairFunction<Record<string, Tool>>;
 };
 
@@ -64,7 +63,6 @@ export async function runManualLoop(
     maxIterations = 90,
     maxRetries = 2,
     abortSignal,
-    temperature,
     toolCallRepair,
   } = opts;
 
@@ -77,7 +75,6 @@ export async function runManualLoop(
     modelMetadata: modelConfig,
     prompt: input,
   });
-  const maxTokens = aiConfig.getMaxTokens();
 
   const loopResult: ManualLoopResult = {
     usage: {
@@ -109,17 +106,13 @@ export async function runManualLoop(
     try {
       const result = streamText({
         model: langModel,
-        maxOutputTokens: maxTokens,
+        maxOutputTokens: aiConfig.maxOutputTokens(),
         system: systemPrompt,
         messages: messageHistory.get(),
-        temperature:
-          typeof temperature === "number"
-            ? temperature
-            : modelConfig.defaultTemperature > -1
-              ? modelConfig.defaultTemperature
-              : undefined,
+        temperature: aiConfig.temperature(),
+        topP: aiConfig.topP(),
         maxRetries: 2,
-        providerOptions: aiConfig.getProviderOptions(),
+        providerOptions: aiConfig.providerOptions(),
         tools: toolDefs,
         // biome-ignore lint/style/useNamingConvention: third-party controlled
         experimental_repairToolCall: toolCallRepair,

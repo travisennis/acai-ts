@@ -53,7 +53,7 @@ export class AiConfig {
     this.prompt = prompt;
   }
 
-  getMaxTokens() {
+  maxOutputTokens() {
     const modelConfig = this.modelMetadata;
     const thinkingLevel = calculateThinkingLevel(this.prompt);
     const maxTokens =
@@ -63,7 +63,18 @@ export class AiConfig {
     return maxTokens;
   }
 
-  getProviderOptions(): SharedV2ProviderMetadata {
+  temperature() {
+    const temp = this.modelMetadata.defaultTemperature;
+    return temp > -1 ? temp : undefined;
+  }
+
+  topP() {
+    const modelId = this.modelMetadata.id;
+    if (modelId.toLowerCase().includes("qwen")) return 1;
+    return undefined;
+  }
+
+  providerOptions(): SharedV2ProviderMetadata {
     const modelConfig = this.modelMetadata;
     const thinkingLevel = calculateThinkingLevel(this.prompt);
 

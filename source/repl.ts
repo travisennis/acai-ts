@@ -243,10 +243,6 @@ export class Repl {
             permissions: permissions,
             maxIterations: projectConfig.loop.maxIterations,
             abortSignal: signal,
-            temperature:
-              modelConfig.defaultTemperature > -1
-                ? modelConfig.defaultTemperature
-                : undefined,
             toolCallRepair: toolCallRepair(modelManager),
           });
 
@@ -292,7 +288,7 @@ export class Repl {
             prompt: userPrompt,
           });
 
-          const maxTokens = aiConfig.getMaxTokens();
+          const maxTokens = aiConfig.maxOutputTokens();
 
           const result = streamText({
             model: langModel,
@@ -305,7 +301,7 @@ export class Repl {
                 : undefined,
             stopWhen: stepCountIs(90),
             maxRetries: 2,
-            providerOptions: aiConfig.getProviderOptions(),
+            providerOptions: aiConfig.providerOptions(),
             tools: autoToolDefs,
             // biome-ignore lint/style/useNamingConvention: third-party controlled
             experimental_repairToolCall: toolCallRepair(modelManager),

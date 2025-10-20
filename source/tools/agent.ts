@@ -87,12 +87,14 @@ export const createAgentTools = (options: {
 
       const { text, usage } = await generateText({
         model: modelManager.getModel("task-agent"),
-        maxOutputTokens: aiConfig.getMaxTokens(),
+        maxOutputTokens: aiConfig.maxOutputTokens(),
         system:
           "You are a code search assistant that will be given a task that will require you to search a code base to find relevant code and files.",
         prompt: prompt,
+        temperature: aiConfig.temperature(),
+        topP: aiConfig.topP(),
         stopWhen: stepCountIs(30),
-        providerOptions: aiConfig.getProviderOptions(),
+        providerOptions: aiConfig.providerOptions(),
         tools: (await initCliTools({ tokenCounter })).toolDefs,
         abortSignal: abortSignal,
         // biome-ignore lint/style/useNamingConvention: third-party code
