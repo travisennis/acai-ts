@@ -1,23 +1,24 @@
 // import { createOpenAI } from "@ai-sdk/openai";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import type { LanguageModelV2 } from "@ai-sdk/provider";
+// import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import type { LanguageModelV2, ProviderV2 } from "@ai-sdk/provider";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { objectKeys } from "@travisennis/stdlib/object";
 import { customProvider } from "ai";
 import type { ModelMetadata } from "./providers.ts";
 
-const openRouterClient = createOpenAICompatible({
-  name: "openrouter",
-  apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
-  // biome-ignore lint/style/useNamingConvention: third-party controlled
-  baseURL: "https://openrouter.ai/api/v1",
-  headers: {
-    "HTTP-Referer": "https://github.com/travisennis/acai-ts",
-    "X-Title": "acai",
-  },
-});
+// const openRouterClient = createOpenAICompatible({
+//   name: "openrouter",
+//   apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
+//   // biome-ignore lint/style/useNamingConvention: third-party controlled
+//   baseURL: "https://openrouter.ai/api/v1",
+//   headers: {
+//     "HTTP-Referer": "https://github.com/travisennis/acai-ts",
+//     "X-Title": "acai",
+//   },
+// });
 
-const openRouterClient2 = createOpenRouter({
+const openRouterClient = createOpenRouter({
+  apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
   headers: {
     "HTTP-Referer": "https://github.com/travisennis/acai-ts",
     "X-Title": "acai",
@@ -36,29 +37,69 @@ const openRouterClient2 = createOpenRouter({
 // });
 
 const openrouterModels = {
-  "deepseek-v3-1": openRouterClient("deepseek/deepseek-chat-v3.1"),
-  "deepseek-r1": openRouterClient("deepseek/deepseek-r1-0528"),
-  "gemini-flash25": openRouterClient("google/gemini-2.5-flash"),
-  "gemini-pro25": openRouterClient("google/gemini-2.5-pro"),
-  "sonnet-4.5": openRouterClient("anthropic/claude-sonnet-4.5"),
-  "opus-4.1": openRouterClient("anthropic/claude-opus-4.1"),
-  "haiku-4.5": openRouterClient("anthropic/claude-haiku-4.5"),
-  "kimi-k2": openRouterClient("moonshotai/kimi-k2:nitro"),
-  "kimi-k2-0905": openRouterClient("moonshotai/kimi-k2-0905"),
-  "devstral-medium": openRouterClient("mistralai/devstral-medium"),
-  "qwen3-coder": openRouterClient("qwen/qwen3-coder"),
-  "qwen3-coder-plus": openRouterClient("qwen/qwen3-coder-plus"),
-  "qwen3-max": openRouterClient("qwen/qwen3-max"),
-  "glm-4.6": openRouterClient("z-ai/glm-4.6"),
-  "glm-4.5": openRouterClient("z-ai/glm-4.5"),
-  "gpt-5": openRouterClient("openai/gpt-5"),
-  "gpt-5-mini": openRouterClient("openai/gpt-5-mini"),
-  "gpt-oss-120b": openRouterClient("openai/gpt-oss-120b"),
-  "grok-code-fast-1": openRouterClient2(
-    "x-ai/grok-code-fast-1",
-  ) as LanguageModelV2,
-  "grok-4-fast": openRouterClient("x-ai/grok-4-fast"),
-  "gpt-5-codex": openRouterClient("openai/gpt-5-codex"),
+  "deepseek-v3-1": openRouterClient("deepseek/deepseek-chat-v3.1", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "deepseek-r1": openRouterClient("deepseek/deepseek-r1-0528", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "gemini-flash25": openRouterClient("google/gemini-2.5-flash", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "gemini-pro25": openRouterClient("google/gemini-2.5-pro", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "sonnet-4.5": openRouterClient("anthropic/claude-sonnet-4.5", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "opus-4.1": openRouterClient("anthropic/claude-opus-4.1", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "haiku-4.5": openRouterClient("anthropic/claude-haiku-4.5", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "kimi-k2": openRouterClient("moonshotai/kimi-k2:nitro", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "kimi-k2-0905": openRouterClient("moonshotai/kimi-k2-0905", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "devstral-medium": openRouterClient("mistralai/devstral-medium", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "qwen3-coder": openRouterClient("qwen/qwen3-coder", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "qwen3-coder-plus": openRouterClient("qwen/qwen3-coder-plus", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "qwen3-max": openRouterClient("qwen/qwen3-max", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "glm-4.6": openRouterClient("z-ai/glm-4.6", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "glm-4.5": openRouterClient("z-ai/glm-4.5", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "gpt-5": openRouterClient("openai/gpt-5", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "gpt-5-mini": openRouterClient("openai/gpt-5-mini", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "gpt-oss-120b": openRouterClient("openai/gpt-oss-120b", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "grok-code-fast-1": openRouterClient("x-ai/grok-code-fast-1", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "grok-4-fast": openRouterClient("x-ai/grok-4-fast", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "gpt-5-codex": openRouterClient("openai/gpt-5-codex", {
+    usage: { include: true },
+  }) as LanguageModelV2,
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -70,7 +111,7 @@ export const openrouterModelNames: ModelName[] = objectKeys(
 export const openrouterProvider = {
   openrouter: customProvider({
     languageModels: openrouterModels,
-    fallbackProvider: openRouterClient,
+    fallbackProvider: openRouterClient as unknown as ProviderV2,
   }),
 };
 
