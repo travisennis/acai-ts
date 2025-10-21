@@ -29,22 +29,6 @@ const ProjectConfigSchema = z.object({
     .object({
       maxTokens: z.number().default(30000),
       maxResults: z.number().default(30),
-      bash: z
-        .object({
-          allowPipes: z.boolean().default(true),
-          allowChaining: z.boolean().default(true),
-          allowRedirection: z.boolean().default(true),
-          maxSegments: z.number().default(6),
-          maxOutputBytes: z.number().default(2_000_000),
-        })
-        .optional()
-        .default({
-          allowPipes: true,
-          allowChaining: true,
-          allowRedirection: true,
-          maxSegments: 6,
-          maxOutputBytes: 2_000_000,
-        }),
       dynamicTools: z
         .object({
           enabled: z.boolean().default(true),
@@ -60,13 +44,6 @@ const ProjectConfigSchema = z.object({
     .default({
       maxTokens: 30000,
       maxResults: 30,
-      bash: {
-        allowPipes: true,
-        allowChaining: true,
-        allowRedirection: true,
-        maxSegments: 6,
-        maxOutputBytes: 2_000_000,
-      },
       dynamicTools: {
         enabled: true,
         maxTools: 10,
@@ -261,13 +238,6 @@ export class ConfigManager {
         tools: {
           maxTokens: 30000,
           maxResults: 30,
-          bash: {
-            allowPipes: true,
-            allowChaining: true,
-            allowRedirection: true,
-            maxSegments: 6,
-            maxOutputBytes: 2_000_000,
-          },
           dynamicTools: {
             enabled: true,
             maxTools: 10,
