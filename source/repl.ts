@@ -119,8 +119,6 @@ export class Repl {
     });
 
     while (true) {
-      const start = performance.now();
-
       currentAbortController = new AbortController();
       const { signal } = currentAbortController;
 
@@ -210,6 +208,8 @@ export class Repl {
       } else {
         terminal.startProgress();
       }
+
+      const start = performance.now();
 
       // flag to see if the user prompt has added context
       const hasAddedContext = promptManager.hasContext();
