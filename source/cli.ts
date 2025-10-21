@@ -15,7 +15,13 @@ import type { PromptManager } from "./prompts/manager.ts";
 import { minSystemPrompt } from "./prompts.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
+import { BashTool } from "./tools/bash.ts";
+import { CodeInterpreterTool } from "./tools/code-interpreter.ts";
+import { EditFileTool } from "./tools/edit-file.ts";
+import { GlobTool } from "./tools/glob.ts";
+import { GrepTool } from "./tools/grep.ts";
 import { type CompleteCliToolSet, initCliTools } from "./tools/index.ts";
+import { ReadFileTool } from "./tools/read-file.ts";
 
 interface CliOptions {
   messageHistory: MessageHistory;
@@ -25,6 +31,15 @@ interface CliOptions {
   config: Record<PropertyKey, unknown>;
   tokenCounter: TokenCounter;
 }
+
+const activeTools = [
+  EditFileTool.name,
+  ReadFileTool.name,
+  BashTool.name,
+  GrepTool.name,
+  GlobTool.name,
+  CodeInterpreterTool.name,
+];
 
 export class Cli {
   private options: CliOptions;
@@ -84,6 +99,7 @@ export class Cli {
         maxRetries: 2,
         providerOptions: aiConfig.providerOptions(),
         tools: tools.toolDefs,
+        activeTools,
         // biome-ignore lint/style/useNamingConvention: third-party controlled
         experimental_repairToolCall:
           toolCallRepair<CompleteCliToolSet>(modelManager),
