@@ -23,7 +23,7 @@
 - **Types:** Provide explicit types. Avoid `any` unless absolutely necessary. Always check potentially `undefined`/`null` values. **Do not use non-null assertions (`!`)**.
 - **Naming:** Use camelCase for variables/functions, PascalCase for classes/types/interfaces.
 - **Error Handling:** Implement robust error handling (try/catch, result patterns, etc.).
-- **Logging:** Avoid `console.log` for debugging; use a proper logger or remove before committing.
+- **Logging:** Avoid `console.log` for debugging; use a proper logger or remove before committing. Always replace usages of `console.log` with `console.info`.
 - **Commits:** Follow the Conventional Commits standard for commit messages.
 - **Commit Message Length:** Keep commit message lines (header, body, and footer) under 100 characters.
 - **Comments** Never add comments to the code explaining the edit you are making. Comments that help explain how code works are acceptable.

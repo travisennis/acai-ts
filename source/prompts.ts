@@ -103,7 +103,21 @@ function toolUsage() {
 - Executes JavaScript code in a separate Node.js process using Node's Permission Model
 - By default, the child process has no permissions except read/write within the current working directory
 - Returns stdout, stderr, and exitCode
-- Use console.log/console.error to produce output`;
+- Use console.log/console.error to produce output
+
+### Git Workflow
+- Always stage changes before attempting to commit them
+- Never amend git commits without approval from the user
+- Never use \`git add -A\` when preparing for multiple, distinct commits; instead, selectively add files or hunks relevant to each commit
+- Always use \`git checkout -b <branch-name>\` with a branch name that accurately reflects the *type* of changes being made
+- Never stage changes for files that are specified in \`.gitignore\`
+- Always stage changes after running a formatter that modifies files, before attempting to commit
+
+### Efficiency Guidelines
+- Always use the most efficient workflow to complete tasks
+- Never re-read file content that has already been provided in the current turn or is directly accessible via a tool; instead, reuse the provided content or reference the file path directly
+- Always use direct file paths or established methods to pass content to tools that accept file input, rather than re-creating content in command strings
+- Always run a build after making code changes to verify correctness`;
 }
 
 function escalationProcedures() {
