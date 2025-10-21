@@ -7,6 +7,7 @@ export function validatePaths(
   command: string,
   baseDir: string,
   cwd: string,
+  allowedPaths?: string[],
 ): { isValid: boolean; error?: string } {
   // Simple tokenization - split on spaces but respect quotes
   const tokens: string[] = [];
@@ -62,7 +63,13 @@ export function validatePaths(
 
     try {
       const resolvedPath = path.resolve(cwd, cleanToken);
-      if (!isPathWithinBaseDir(resolvedPath, baseDir)) {
+
+      // Allow access to explicitly allowed paths
+      const isAllowedPath = allowedPaths?.some(
+        (allowedPath) => resolvedPath === path.resolve(allowedPath),
+      );
+
+      if (!isAllowedPath && !isPathWithinBaseDir(resolvedPath, baseDir)) {
         return {
           isValid: false,
           error: `Path '${cleanToken}' resolves outside the project directory (${resolvedPath}). All paths must be within ${baseDir}`,

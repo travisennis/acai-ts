@@ -10,6 +10,11 @@
 - **Run Single Test File:** `node --no-warnings --test test/path/to/your.test.ts`
 - **Find Unused Code/Deps:** `npm run knip`
 
+### Running the app
+
+- **Run command:** `acai-dev -p <prompt`
+- **Application logs:** stored at `~/.acai/logs/current.log`
+
 ### Custom Tools
 
 - **run-all-checks** use this tool when you want to typecheck, lint, and format the code you have just written

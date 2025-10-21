@@ -48,6 +48,10 @@ export const createBashTool = async ({
   toolExecutor?: ToolExecutor;
 }) => {
   const execEnv = await initExecutionEnvironment();
+  const projectConfig = await config.readProjectConfig();
+  const allowedPaths = projectConfig.logs?.path
+    ? [projectConfig.logs.path]
+    : [];
   return {
     toolDef: {
       description:
@@ -79,7 +83,12 @@ export const createBashTool = async ({
           return;
         }
 
-        const pathValidation = validatePaths(command, baseDir, resolvedCwd);
+        const pathValidation = validatePaths(
+          command,
+          baseDir,
+          resolvedCwd,
+          allowedPaths,
+        );
         if (!pathValidation.isValid) {
           yield {
             event: "tool-error",

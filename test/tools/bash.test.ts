@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import path from "node:path";
 import { describe, it } from "node:test";
 import { config } from "../../source/config.ts";
 import { TokenCounter } from "../../source/tokens/counter.ts";
 import { createBashTool } from "../../source/tools/bash.ts";
+import { validatePaths } from "../../source/tools/bash-utils.ts";
 
 // Minimal token counter mock
 class MockTokenCounter extends TokenCounter {
@@ -68,6 +71,90 @@ describe("bash tool path validation for git message flags", async () => {
   it("handles multiple -m flags", async () => {
     const res = await run('git commit -m "first /copy" -m "second /path"');
     assert.ok(!res.includes("references path outside"));
+  });
+});
+
+describe("bash tool allowed paths access", async () => {
+  const tool = await createBashTool({
+    baseDir,
+    tokenCounter,
+  });
+
+  async function run(command: string) {
+    const generator = tool.execute(
+      { command, cwd: baseDir, timeout: 1000 },
+      { toolCallId: "t1", messages: [] },
+    );
+
+    let finalResult = "";
+    for await (const value of generator) {
+      if (typeof value === "string") {
+        finalResult = value;
+      }
+    }
+    return finalResult;
+  }
+
+  it("allows access to configured allowed paths", async () => {
+    const projectConfig = await config.readProjectConfig();
+    const logPath = projectConfig.logs?.path;
+
+    if (!logPath) {
+      // Skip test if no log path is configured
+      console.info("No log path configured, skipping test");
+      return;
+    }
+
+    // Ensure the log file exists for testing
+    try {
+      await fs.mkdir(path.dirname(logPath), { recursive: true });
+      await fs.writeFile(logPath, "test log content\n", "utf8");
+    } catch (error) {
+      console.info("Could not create test log file:", error);
+      return;
+    }
+
+    try {
+      // Test reading the log file
+      const res = await run(`cat "${logPath}"`);
+      assert.ok(!res.includes("resolves outside the project directory"));
+      assert.ok(res.includes("test log content"));
+    } finally {
+      // Clean up test file
+      try {
+        await fs.unlink(logPath);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+  });
+
+  it("rejects access to other files outside project directory", async () => {
+    const res = await run("cat /etc/hosts");
+    assert.ok(res.includes("resolves outside the project directory"));
+  });
+
+  it("allows access to multiple allowed paths", async () => {
+    // Test the validatePaths function directly with multiple allowed paths
+    const result = validatePaths(
+      "cat /tmp/test1.txt /tmp/test2.txt",
+      baseDir,
+      baseDir,
+      ["/tmp/test1.txt", "/tmp/test2.txt"],
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("rejects access to paths not in allowed list", async () => {
+    // Test the validatePaths function directly with specific allowed paths
+    const result = validatePaths(
+      "cat /tmp/test1.txt /tmp/test3.txt",
+      baseDir,
+      baseDir,
+      ["/tmp/test1.txt", "/tmp/test2.txt"],
+    );
+    assert.strictEqual(result.isValid, false);
+    assert.ok(result.error?.includes("resolves outside the project directory"));
   });
 });
 
