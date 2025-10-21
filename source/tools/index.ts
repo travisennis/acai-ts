@@ -5,6 +5,10 @@ import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import type { ToolExecutor } from "../tool-executor.ts";
+import {
+  AdvancedEditFileTool,
+  createAdvancedEditFileTool,
+} from "./advanced-edit-file.ts";
 import { AgentTool, createAgentTools } from "./agent.ts";
 import { BashTool, createBashTool } from "./bash.ts";
 import {
@@ -71,6 +75,12 @@ export async function initTools({
     toolExecutor,
   });
 
+  const advancedEditFileTool = await createAdvancedEditFileTool({
+    workingDir: process.cwd(),
+    terminal,
+    toolExecutor,
+  });
+
   const saveFileTool = await createSaveFileTool({
     workingDir: process.cwd(),
     terminal,
@@ -132,6 +142,7 @@ export async function initTools({
   // Build tools object for AI SDK
   const tools = {
     [EditFileTool.name]: tool(editFileTool.toolDef),
+    [AdvancedEditFileTool.name]: tool(advancedEditFileTool.toolDef),
     [BashTool.name]: tool(bashTool.toolDef),
     [SaveFileTool.name]: tool(saveFileTool.toolDef),
     [DeleteFileTool.name]: tool(deleteFileTool.toolDef),
@@ -157,17 +168,25 @@ export async function initTools({
   // Build executors and permissions maps for manual loop
   const executors = new Map();
   const permissions = new Map();
+  // const onCallHanlders = new Map();
 
   // Add bash tool
   executors.set(BashTool.name, bashTool.execute);
   if (bashTool.ask) {
     permissions.set(BashTool.name, bashTool.ask);
   }
+  // onCallHandlers.set(BashTool.name, bashTool.onCall);
 
   // Add editFile tool
   executors.set(EditFileTool.name, editFileTool.execute);
   if (editFileTool.ask) {
     permissions.set(EditFileTool.name, editFileTool.ask);
+  }
+
+  // Add advancedEditFile tool
+  executors.set(AdvancedEditFileTool.name, advancedEditFileTool.execute);
+  if (advancedEditFileTool.ask) {
+    permissions.set(AdvancedEditFileTool.name, advancedEditFileTool.ask);
   }
 
   // Add saveFile tool
@@ -250,6 +269,11 @@ export async function initCliTools({
     terminal: undefined,
   });
 
+  const advancedEditFileTool = await createAdvancedEditFileTool({
+    workingDir: process.cwd(),
+    terminal: undefined,
+  });
+
   const saveFileTool = await createSaveFileTool({
     workingDir: process.cwd(),
     terminal: undefined,
@@ -308,6 +332,10 @@ export async function initCliTools({
     [EditFileTool.name]: tool({
       ...editFileTool.toolDef,
       execute: editFileTool.execute,
+    }),
+    [AdvancedEditFileTool.name]: tool({
+      ...advancedEditFileTool.toolDef,
+      execute: advancedEditFileTool.execute,
     }),
     [BashTool.name]: tool({
       ...bashTool.toolDef,
