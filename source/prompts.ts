@@ -161,8 +161,9 @@ ${gitSection}
 
 export async function systemPrompt(options?: {
   supportsToolCalling?: boolean;
+  includeRules?: boolean;
 }) {
-  const { supportsToolCalling = true } = options ?? {};
+  const { supportsToolCalling = true, includeRules = true } = options ?? {};
 
   const prompt = dedent`
 ${intro()}
@@ -173,7 +174,7 @@ ${supportsToolCalling ? toolUsage() : ""}
 
 ${escalationProcedures()}
 
-${await getRules()}
+${includeRules ? await getRules() : ""}
 
 ${await environmentInfo()}
 `;

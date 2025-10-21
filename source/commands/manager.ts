@@ -9,6 +9,7 @@ import type { ToolExecutor } from "../tool-executor.ts";
 import { applicationLogCommand } from "./application-log-command.ts";
 import { clearCommand } from "./clear-command.ts";
 import { compactCommand } from "./compact-command.ts";
+import { contextCommand } from "./context-command.ts";
 import { copyCommand } from "./copy-command.ts";
 import { editCommand } from "./edit-command.ts";
 import { editPromptCommand } from "./edit-prompt-command.ts";
@@ -88,6 +89,7 @@ export class CommandManager {
     const cmds = [
       clearCommand(options),
       compactCommand(options),
+      contextCommand(options),
       editCommand(options),
       editPromptCommand(options),
       exitCommand(options),
