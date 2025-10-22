@@ -51,10 +51,20 @@ export function isPathWithinBaseDir(
   return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
 }
 
+// Check if path is within any of the allowed directories
+export function isPathWithinAllowedDirs(
+  requestedPath: string,
+  allowedDirs: string[],
+): boolean {
+  return allowedDirs.some((allowedDir) =>
+    isPathWithinBaseDir(requestedPath, allowedDir),
+  );
+}
+
 // Security utilities
 export async function validatePath(
   requestedPath: string,
-  allowedDirectory: string,
+  allowedDirectory: string | string[],
   options: { requireExistence?: boolean; abortSignal?: AbortSignal } = {},
 ): Promise<string> {
   const { requireExistence = true, abortSignal } = options;
@@ -67,29 +77,43 @@ export async function validatePath(
     ? path.resolve(expandedPath)
     : path.resolve(process.cwd(), expandedPath);
   const normalizedRequested = normalizePath(absolute);
-  let normalizedAllowed = normalizePath(path.resolve(allowedDirectory));
-  // Try to resolve real path for allowedDirectory when it exists to handle symlinked roots
-  try {
-    const stats = await fs.stat(normalizedAllowed);
-    if (stats.isDirectory()) {
-      const allowedReal = await fs.realpath(normalizedAllowed);
-      normalizedAllowed = normalizePath(allowedReal);
-    }
-  } catch (_err) {
-    // If allowedDirectory doesn't exist, keep normalizedAllowed as-is
-  }
 
-  // Helper to check if a path is within the allowed directory using path.relative
+  // Handle both single directory and array of directories
+  const allowedDirectories = Array.isArray(allowedDirectory)
+    ? allowedDirectory
+    : [allowedDirectory];
+
+  // Resolve and normalize all allowed directories
+  const normalizedAllowedDirs = await Promise.all(
+    allowedDirectories.map(async (dir) => {
+      let normalizedDir = normalizePath(path.resolve(dir));
+      // Try to resolve real path for allowedDirectory when it exists to handle symlinked roots
+      try {
+        const stats = await fs.stat(normalizedDir);
+        if (stats.isDirectory()) {
+          const allowedReal = await fs.realpath(normalizedDir);
+          normalizedDir = normalizePath(allowedReal);
+        }
+      } catch (_err) {
+        // If allowedDirectory doesn't exist, keep normalizedDir as-is
+      }
+      return normalizedDir;
+    }),
+  );
+
+  // Helper to check if a path is within any allowed directory using path.relative
   const isWithinAllowed = (targetPath: string): boolean => {
-    const rel = path.relative(normalizedAllowed, targetPath);
-    // Allow the allowed directory itself (rel === "") and any descendant paths
-    return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+    return normalizedAllowedDirs.some((normalizedAllowed) => {
+      const rel = path.relative(normalizedAllowed, targetPath);
+      // Allow the allowed directory itself (rel === "") and any descendant paths
+      return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+    });
   };
 
-  // Check intended path is within allowed directory
+  // Check intended path is within any allowed directory
   if (!isWithinAllowed(normalizedRequested)) {
     throw new Error(
-      `Access denied - path outside allowed directories: ${absolute} not in ${allowedDirectory}`,
+      `Access denied - path outside allowed directories: ${absolute} not in any of ${allowedDirectories.join(", ")}`,
     );
   }
 

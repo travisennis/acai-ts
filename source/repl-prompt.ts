@@ -1,14 +1,144 @@
+import type { Dirent } from "node:fs";
 import { readdir } from "node:fs/promises";
-import { parse, sep } from "node:path";
+import { parse, relative, resolve, sep } from "node:path";
 import { createInterface, type Interface } from "node:readline/promises";
 import Clipboard from "@crosscopy/clipboard";
 import { asyncTry } from "@travisennis/stdlib/try";
 import type { CommandManager } from "./commands/manager.ts";
+import type { WorkspaceContext } from "./index.ts";
 import { logger } from "./logger.ts";
 
 const whitespaceRegex = /\s+/;
 
-async function fileSystemCompleter(line: string): Promise<[string[], string]> {
+// Cache for directory listings to improve performance
+class DirectoryCache {
+  private cache = new Map<string, { entries: Dirent[]; timestamp: number }>();
+  private ttl = 3000; // 3 seconds
+
+  async get(dir: string): Promise<Dirent[] | null> {
+    const cached = this.cache.get(dir);
+    if (cached && Date.now() - cached.timestamp < this.ttl) {
+      return cached.entries;
+    }
+    return null;
+  }
+
+  set(dir: string, entries: Dirent[]): void {
+    this.cache.set(dir, { entries, timestamp: Date.now() });
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+const directoryCache = new DirectoryCache();
+
+// Helper function to get directory entries with caching
+async function getDirectoryEntries(dir: string): Promise<Dirent[]> {
+  const cached = await directoryCache.get(dir);
+  if (cached) {
+    return cached;
+  }
+
+  const tryAttempt = await asyncTry(readdir(dir, { withFileTypes: true }));
+  if (tryAttempt.isFailure) {
+    return [];
+  }
+
+  const entries = tryAttempt.unwrap();
+  directoryCache.set(dir, entries);
+  return entries;
+}
+
+// Helper function to get completions from a specific directory
+async function getCompletionsFromDir(
+  line: string,
+  dir: string,
+  workspace: WorkspaceContext,
+): Promise<string[]> {
+  try {
+    const words = line.split(" ");
+    let last = words.at(-1);
+    if (!last) {
+      return [];
+    }
+    const isAt = last.startsWith("@");
+    if (isAt) {
+      last = last.slice(1);
+    }
+
+    let { dir: pathDir, base } = parse(last);
+
+    // If pathDir is empty, use current directory
+    if (!pathDir) {
+      pathDir = ".";
+    }
+
+    // Resolve the path relative to the current directory
+    const resolvedPath = resolve(dir, pathDir);
+
+    // Check if resolved path is within any allowed directory
+    const isWithinAllowed = workspace.allowedDirs.some((allowedDir) =>
+      resolvedPath.startsWith(allowedDir),
+    );
+
+    if (!isWithinAllowed) {
+      return [];
+    }
+
+    let dirEntries = await getDirectoryEntries(resolvedPath);
+
+    // If we couldn't read the directory, try current directory
+    if (dirEntries.length === 0 && pathDir !== ".") {
+      dirEntries = await getDirectoryEntries(dir);
+      pathDir = ".";
+    }
+
+    // For an exact match that is a directory, read the contents of the directory
+    if (
+      dirEntries.find((entry) => entry.name === base && entry.isDirectory())
+    ) {
+      const newPath =
+        pathDir === "/" || pathDir === sep
+          ? `${pathDir}${base}`
+          : `${pathDir}/${base}`;
+      const newResolvedPath = resolve(dir, newPath);
+      dirEntries = await getDirectoryEntries(newResolvedPath);
+      base = "";
+      pathDir = newPath;
+    } else {
+      dirEntries = dirEntries.filter((entry) => entry.name.startsWith(base));
+    }
+
+    const hits = dirEntries
+      .filter((entry) => entry.isFile() || entry.isDirectory())
+      .map((entry) => {
+        const prefix =
+          pathDir === "."
+            ? ""
+            : pathDir === sep || pathDir === "/"
+              ? ""
+              : `${pathDir}/`;
+        const fullPath = `${prefix}${entry.name}${entry.isDirectory() && !entry.name.endsWith("/") ? "/" : ""}`;
+
+        // Convert to relative path from primary directory for display
+        const absolutePath = resolve(dir, fullPath);
+        const relativePath = relative(workspace.primaryDir, absolutePath);
+
+        return `${isAt ? "@" : ""}${relativePath.startsWith("..") ? relativePath : `./${relativePath}`}`;
+      });
+
+    return hits;
+  } catch (_error) {
+    return [];
+  }
+}
+
+async function fileSystemCompleter(
+  line: string,
+  workspace: WorkspaceContext,
+): Promise<[string[], string]> {
   try {
     const words = line.split(" ");
     let last = words.at(-1);
@@ -20,40 +150,18 @@ async function fileSystemCompleter(line: string): Promise<[string[], string]> {
       last = last.slice(1);
     }
 
-    let { dir, base } = parse(last);
+    // Search all directories in parallel
+    const completionPromises = workspace.allowedDirs.map((dir) =>
+      getCompletionsFromDir(line, dir, workspace),
+    );
 
-    // If dir is empty, use current directory
-    if (!dir) {
-      dir = ".";
-    }
+    const allResults = await Promise.all(completionPromises);
+    const flattenedResults = allResults.flat();
 
-    let tryAttempt = await asyncTry(readdir(dir, { withFileTypes: true }));
-    if (tryAttempt.isFailure) {
-      tryAttempt = await asyncTry(readdir(".", { withFileTypes: true }));
-    }
+    // Remove duplicates while preserving order
+    const uniqueResults = [...new Set(flattenedResults)];
 
-    let dirEntries = tryAttempt.unwrap();
-
-    // for an exact match that is a directory, read the contents of the directory
-    if (
-      dirEntries.find((entry) => entry.name === base && entry.isDirectory())
-    ) {
-      dir = dir === "/" || dir === sep ? `${dir}${base}` : `${dir}/${base}`;
-      dirEntries = await readdir(dir, { withFileTypes: true });
-      base = "";
-    } else {
-      dirEntries = dirEntries.filter((entry) => entry.name.startsWith(base));
-    }
-
-    const hits = dirEntries
-      .filter((entry) => entry.isFile() || entry.isDirectory())
-      .map((entry) => {
-        const prefix =
-          dir === "." ? "" : dir === sep || dir === "/" ? "" : `${dir}/`;
-        return `${isAt ? "@" : ""}${prefix}${entry.name}${entry.isDirectory() && !entry.name.endsWith("/") ? "/" : ""}`;
-      });
-
-    return [hits, `${isAt ? "@" : ""}${last}`];
+    return [uniqueResults, `${isAt ? "@" : ""}${last}`];
   } catch (_error) {
     logger.error(_error);
     return [[], line];
@@ -70,7 +178,12 @@ export class ReplPrompt {
   constructor({
     commands,
     history,
-  }: { commands: CommandManager; history: string[] }) {
+    workspace,
+  }: {
+    commands: CommandManager;
+    history: string[];
+    workspace: WorkspaceContext;
+  }) {
     this.history = history;
 
     this.rl = createInterface({
@@ -108,7 +221,7 @@ export class ReplPrompt {
           return [matchingCommands, line];
         }
 
-        return fileSystemCompleter(line); // [completions, line];
+        return fileSystemCompleter(line, workspace); // [completions, line];
       },
     });
 

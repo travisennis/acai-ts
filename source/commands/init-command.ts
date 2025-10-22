@@ -8,6 +8,7 @@ export const initCommand = ({
   terminal,
   modelManager,
   tokenCounter,
+  workspace,
 }: CommandOptions): ReplCommand => {
   return {
     command: "/init",
@@ -34,6 +35,7 @@ Platform: ${platform()}`,
         tools: (
           await initCliTools({
             tokenCounter,
+            workspace,
           })
         ).toolDefs,
       });

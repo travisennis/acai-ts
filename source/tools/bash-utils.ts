@@ -1,11 +1,11 @@
 import fs, { type Stats } from "node:fs";
 import path from "node:path";
-import { isPathWithinBaseDir } from "./filesystem-utils.ts";
+import { isPathWithinAllowedDirs } from "./filesystem-utils.ts";
 
 // Validate path arguments to ensure they're within the project
 export function validatePaths(
   command: string,
-  baseDir: string,
+  allowedDirs: string[],
   cwd: string,
   allowedPaths?: string[],
 ): { isValid: boolean; error?: string } {
@@ -69,10 +69,13 @@ export function validatePaths(
         (allowedPath) => resolvedPath === path.resolve(allowedPath),
       );
 
-      if (!isAllowedPath && !isPathWithinBaseDir(resolvedPath, baseDir)) {
+      if (
+        !isAllowedPath &&
+        !isPathWithinAllowedDirs(resolvedPath, allowedDirs)
+      ) {
         return {
           isValid: false,
-          error: `Path '${cleanToken}' resolves outside the project directory (${resolvedPath}). All paths must be within ${baseDir}`,
+          error: `Path '${cleanToken}' resolves outside the allowed directories (${resolvedPath}). All paths must be within ${allowedDirs.join(", ")}`,
         };
       }
     } catch (_e) {}

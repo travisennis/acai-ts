@@ -1,4 +1,5 @@
 import type { ConfigManager } from "../config.ts";
+import type { WorkspaceContext } from "../index.ts";
 import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManagerApi } from "../prompts/manager.ts";
@@ -25,4 +26,5 @@ export interface CommandOptions {
   tokenCounter: TokenCounter;
   toolExecutor?: ToolExecutor;
   promptHistory: string[];
+  workspace: WorkspaceContext;
 }

@@ -20,14 +20,16 @@ type DeleteFileInputSchema = z.infer<typeof inputSchema>;
 
 export const createDeleteFileTool = async ({
   workingDir,
+  allowedDirs,
   terminal,
   toolExecutor,
 }: {
   workingDir: string;
+  allowedDirs?: string[];
   terminal?: Terminal;
   toolExecutor?: ToolExecutor;
 }) => {
-  const allowedDirectory = workingDir;
+  const allowedDirectory = allowedDirs ?? [workingDir];
 
   return {
     toolDef: {

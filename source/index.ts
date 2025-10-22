@@ -19,6 +19,30 @@ import { TokenTracker } from "./tokens/tracker.ts";
 import { ToolExecutor } from "./tool-executor.ts";
 import { getPackageVersion } from "./version.ts";
 
+// Workspace context for managing multiple working directories
+export interface WorkspaceContext {
+  primaryDir: string;
+  allowedDirs: string[];
+}
+
+// Create workspace context from CLI arguments
+export function createWorkspaceContext(
+  addDirArgs: string[] = [],
+): WorkspaceContext {
+  const primaryDir = process.cwd();
+  const allowedDirs = [primaryDir, ...addDirArgs];
+
+  // Remove duplicates while preserving order
+  const uniqueDirs = allowedDirs.filter(
+    (dir, index, array) => array.indexOf(dir) === index,
+  );
+
+  return {
+    primaryDir,
+    allowedDirs: uniqueDirs,
+  };
+}
+
 const helpText = `
 Usage
   $ acai <input>
@@ -29,12 +53,14 @@ Options
   --continue         Load the most recent conversation
   --resume           Select a recent conversation to resume
   --autoAcceptAll    Accept all commands and edits without prompting
+  --add-dir          Add additional working directory (can be used multiple times)
   --help, -h         Show help
   --version, -v      Show version
 
 Examples
   $ acai --model anthopric:sonnet
   $ acai -p "initial prompt"
+  $ acai --add-dir /path/to/project1 --add-dir /path/to/project2
 `;
 
 const parsed = parseArgs({
@@ -44,6 +70,7 @@ const parsed = parseArgs({
     continue: { type: "boolean", default: false },
     resume: { type: "boolean", default: false },
     autoAcceptAll: { type: "boolean", default: false },
+    "add-dir": { type: "string", multiple: true },
     help: { type: "boolean", short: "h" },
     version: { type: "boolean", short: "v" },
   },
@@ -52,6 +79,9 @@ const parsed = parseArgs({
 
 const flags = parsed.values;
 const input = parsed.positionals;
+
+// Create workspace context from CLI arguments
+const workspace = createWorkspaceContext(flags["add-dir"]);
 
 /**
  * Global error handler function.
@@ -114,7 +144,7 @@ async function main() {
   }
 
   const terminal = initTerminal();
-  terminal.setTitle(`acai: ${process.cwd()}`);
+  terminal.setTitle(`acai: ${workspace.primaryDir}`);
 
   const chosenModel: ModelName = isSupportedModel(flags.model)
     ? (flags.model as ModelName)
@@ -203,6 +233,7 @@ async function main() {
     tokenCounter,
     toolExecutor,
     promptHistory,
+    workspace,
   });
 
   await commands.initializeCommmands();
@@ -215,6 +246,7 @@ async function main() {
       modelManager,
       tokenTracker,
       tokenCounter,
+      workspace,
     });
     return (await asyncTry(cliProcess.run())).recover(handleError);
   }
@@ -230,6 +262,7 @@ async function main() {
     tokenCounter,
     toolExecutor,
     promptHistory,
+    workspace,
     showLastMessage: hasContinueOrResume
       ? !!(messageHistory.get() && messageHistory.get().length > 0)
       : false,

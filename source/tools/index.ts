@@ -1,5 +1,6 @@
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import { type TypedToolCall, type TypedToolResult, tool } from "ai";
+import type { WorkspaceContext } from "../index.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
@@ -54,52 +55,62 @@ export async function initTools({
   terminal,
   tokenCounter,
   toolExecutor,
+  workspace,
 }: {
   terminal: Terminal;
   tokenCounter: TokenCounter;
   toolExecutor?: ToolExecutor;
+  workspace: WorkspaceContext;
 }) {
   const readFileTool = await createReadFileTool({
-    workingDir: process.cwd(),
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     tokenCounter,
   });
 
   const readMultipleFilesTool = await createReadMultipleFilesTool({
-    workingDir: process.cwd(),
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     tokenCounter,
   });
 
   const editFileTool = await createEditFileTool({
-    workingDir: process.cwd(),
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     terminal,
     toolExecutor,
   });
 
   const advancedEditFileTool = await createAdvancedEditFileTool({
-    workingDir: process.cwd(),
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     terminal,
     toolExecutor,
   });
 
   const saveFileTool = await createSaveFileTool({
-    workingDir: process.cwd(),
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     terminal,
     toolExecutor,
   });
 
   const moveFileTool = await createMoveFileTool({
-    workingDir: process.cwd(),
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     terminal,
     toolExecutor,
   });
 
   const directoryTreeTool = await createDirectoryTreeTool({
-    workingDir: process.cwd(),
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     tokenCounter,
   });
 
   const deleteFileTool = await createDeleteFileTool({
-    workingDir: process.cwd(),
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     terminal,
     toolExecutor,
   });
@@ -127,14 +138,15 @@ export async function initTools({
   });
 
   const bashTool = await createBashTool({
-    baseDir: process.cwd(),
+    baseDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     tokenCounter,
     terminal,
     toolExecutor,
   });
 
   const dynamicTools = await loadDynamicTools({
-    baseDir: process.cwd(),
+    baseDir: workspace.primaryDir,
     toolExecutor,
     terminal,
   });
@@ -251,46 +263,56 @@ export async function initTools({
 
 export async function initCliTools({
   tokenCounter,
+  workspace,
 }: {
   tokenCounter: TokenCounter;
+  workspace: WorkspaceContext;
 }) {
   const readFileTool = await createReadFileTool({
-    workingDir: process.cwd(),
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     tokenCounter,
   });
 
   const readMultipleFilesTool = await createReadMultipleFilesTool({
-    workingDir: process.cwd(),
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     tokenCounter,
   });
 
   const editFileTool = await createEditFileTool({
-    workingDir: process.cwd(),
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     terminal: undefined,
   });
 
   const advancedEditFileTool = await createAdvancedEditFileTool({
-    workingDir: process.cwd(),
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     terminal: undefined,
   });
 
   const saveFileTool = await createSaveFileTool({
-    workingDir: process.cwd(),
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     terminal: undefined,
   });
 
   const moveFileTool = await createMoveFileTool({
-    workingDir: process.cwd(),
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     terminal: undefined,
   });
 
   const directoryTreeTool = await createDirectoryTreeTool({
-    workingDir: process.cwd(),
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     tokenCounter,
   });
 
   const deleteFileTool = await createDeleteFileTool({
-    workingDir: process.cwd(),
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     terminal: undefined,
   });
 
@@ -317,13 +339,14 @@ export async function initCliTools({
   });
 
   const bashTool = await createBashTool({
-    baseDir: process.cwd(),
+    baseDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
     tokenCounter,
     terminal: undefined,
   });
 
   const dynamicTools = await loadDynamicTools({
-    baseDir: process.cwd(),
+    baseDir: workspace.primaryDir,
     toolExecutor: undefined,
     terminal: undefined,
   });
@@ -410,16 +433,19 @@ export async function initAgents({
   modelManager,
   tokenTracker,
   tokenCounter,
+  workspace,
 }: {
   terminal: Terminal;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
   tokenCounter: TokenCounter;
+  workspace: WorkspaceContext;
 }) {
   const agentTools = createAgentTools({
     modelManager,
     tokenTracker,
     tokenCounter,
+    workspace,
   });
 
   const tools = {
@@ -440,16 +466,19 @@ export async function initCliAgents({
   modelManager,
   tokenTracker,
   tokenCounter,
+  workspace,
 }: {
   terminal: Terminal;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
   tokenCounter: TokenCounter;
+  workspace: WorkspaceContext;
 }) {
   const agentTools = createAgentTools({
     modelManager,
     tokenTracker,
     tokenCounter,
+    workspace,
   });
 
   const tools = {

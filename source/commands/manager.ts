@@ -1,4 +1,5 @@
 import type { ConfigManager } from "../config.ts";
+import type { WorkspaceContext } from "../index.ts";
 import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManagerApi } from "../prompts/manager.ts";
@@ -6,6 +7,7 @@ import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import type { ToolExecutor } from "../tool-executor.ts";
+import { addDirectoryCommand } from "./add-directory-command.ts";
 import { applicationLogCommand } from "./application-log-command.ts";
 import { clearCommand } from "./clear-command.ts";
 import { compactCommand } from "./compact-command.ts";
@@ -20,10 +22,12 @@ import { healthCommand } from "./health-command.ts";
 import { helpCommand } from "./help-command.ts";
 import { initCommand } from "./init-command.ts";
 import { lastLogCommand } from "./last-log-command.ts";
+import { listDirectoriesCommand } from "./list-directories-command.ts";
 import { listToolsCommand } from "./list-tools-command.ts";
 import { modelCommand } from "./model-command.ts";
 import { pasteCommand } from "./paste-command.ts";
 import { promptCommand } from "./prompt-command.ts";
+import { removeDirectoryCommand } from "./remove-directory-command.ts";
 import { resetCommand } from "./reset-command.ts";
 import { rulesCommand } from "./rules-command.ts";
 import { saveCommand } from "./save-command.ts";
@@ -42,6 +46,7 @@ export class CommandManager {
   private tokenCounter: TokenCounter;
   private toolExecutor?: ToolExecutor;
   private promptHistory: string[];
+  private workspace: WorkspaceContext;
   private initialized: boolean;
 
   constructor({
@@ -54,6 +59,7 @@ export class CommandManager {
     tokenCounter,
     toolExecutor,
     promptHistory,
+    workspace,
   }: CommandOptions) {
     this.commands = new Map();
     this.promptManager = promptManager;
@@ -65,6 +71,7 @@ export class CommandManager {
     this.tokenCounter = tokenCounter;
     this.toolExecutor = toolExecutor;
     this.promptHistory = promptHistory;
+    this.workspace = workspace;
     this.initialized = false;
   }
 
@@ -83,10 +90,12 @@ export class CommandManager {
       tokenCounter: this.tokenCounter,
       toolExecutor: this.toolExecutor,
       promptHistory: this.promptHistory,
+      workspace: this.workspace,
     };
 
     // Register all commands
     const cmds = [
+      addDirectoryCommand(options),
       clearCommand(options),
       compactCommand(options),
       contextCommand(options),
@@ -96,8 +105,10 @@ export class CommandManager {
       filesCommand(options),
       healthCommand(options),
       initCommand(options),
+      listDirectoriesCommand(options),
       pasteCommand(options),
       promptCommand(options),
+      removeDirectoryCommand(options),
       resetCommand(options),
       saveCommand(options),
       rulesCommand(options),

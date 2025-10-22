@@ -20,14 +20,16 @@ type MoveFileInputSchema = z.infer<typeof inputSchema>;
 
 export const createMoveFileTool = async ({
   workingDir,
+  allowedDirs,
   terminal,
   toolExecutor,
 }: {
   workingDir: string;
+  allowedDirs?: string[];
   terminal?: Terminal;
   toolExecutor?: ToolExecutor;
 }) => {
-  const allowedDirectory = workingDir;
+  const allowedDirectory = allowedDirs ?? [workingDir];
   return {
     toolDef: {
       description:

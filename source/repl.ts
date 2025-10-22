@@ -4,6 +4,7 @@ import { runManualLoop } from "./agent/manual-loop.ts";
 import type { CommandManager } from "./commands/manager.ts";
 import { config as configManager } from "./config.ts";
 import { formatDuration } from "./formatting.ts";
+import type { WorkspaceContext } from "./index.ts";
 import { logger } from "./logger.ts";
 import { PromptError, processPrompt } from "./mentions.ts";
 import type { MessageHistory } from "./messages.ts";
@@ -39,6 +40,7 @@ interface ReplOptions {
   showLastMessage: boolean; // For displaying last message when continuing/resuming
   toolExecutor?: ToolExecutor;
   promptHistory: string[];
+  workspace: WorkspaceContext;
 }
 
 export class Repl {
@@ -78,6 +80,7 @@ export class Repl {
       terminal,
       tokenCounter,
       toolExecutor,
+      workspace: this.options.workspace,
     });
 
     const agentTools = await initAgents({
@@ -85,6 +88,7 @@ export class Repl {
       modelManager,
       tokenTracker,
       tokenCounter,
+      workspace: this.options.workspace,
     });
 
     const completeToolDefs = {
@@ -99,12 +103,16 @@ export class Repl {
     } as const;
 
     // Build auto-mode tools (with execute) once
-    const cliTools = await initCliTools({ tokenCounter });
+    const cliTools = await initCliTools({
+      tokenCounter,
+      workspace: this.options.workspace,
+    });
     const cliAgents = await initCliAgents({
       terminal,
       modelManager,
       tokenTracker,
       tokenCounter,
+      workspace: this.options.workspace,
     });
     const autoToolDefs = {
       ...cliTools.toolDefs,
@@ -151,7 +159,11 @@ export class Repl {
 
       if (!promptManager.isPending()) {
         // For interactive input
-        const prompt = new ReplPrompt({ commands, history: promptHistory });
+        const prompt = new ReplPrompt({
+          commands,
+          history: promptHistory,
+          workspace: this.options.workspace,
+        });
         const userInput = await prompt.input();
         prompt.close();
 

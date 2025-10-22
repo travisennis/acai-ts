@@ -1,5 +1,6 @@
 import { generateText, stepCountIs, type ToolCallOptions } from "ai";
 import { z } from "zod";
+import type { WorkspaceContext } from "../index.ts";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
 import style from "../terminal/style.ts";
@@ -56,6 +57,7 @@ export const createAgentTools = (options: {
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
   tokenCounter: TokenCounter;
+  workspace: WorkspaceContext;
 }) => {
   const { modelManager, tokenTracker, tokenCounter } = options;
 
@@ -95,7 +97,9 @@ export const createAgentTools = (options: {
         topP: aiConfig.topP(),
         stopWhen: stepCountIs(30),
         providerOptions: aiConfig.providerOptions(),
-        tools: (await initCliTools({ tokenCounter })).toolDefs,
+        tools: (
+          await initCliTools({ tokenCounter, workspace: options.workspace })
+        ).toolDefs,
         abortSignal: abortSignal,
         // biome-ignore lint/style/useNamingConvention: third-party code
         experimental_activeTools: [...TOOLS] as ToolName[],

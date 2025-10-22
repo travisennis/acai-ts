@@ -25,14 +25,16 @@ type SaveFileInputSchema = z.infer<typeof inputSchema>;
 
 export const createSaveFileTool = async ({
   workingDir,
+  allowedDirs,
   terminal,
   toolExecutor,
 }: {
   workingDir: string;
+  allowedDirs?: string[];
   terminal?: Terminal;
   toolExecutor?: ToolExecutor;
 }) => {
-  const allowedDirectory = workingDir;
+  const allowedDirectory = allowedDirs ?? [workingDir];
 
   return {
     toolDef: {

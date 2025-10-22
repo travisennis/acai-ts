@@ -20,12 +20,14 @@ type ReadMultipleFilesInputSchema = z.infer<typeof inputSchema>;
 
 export const createReadMultipleFilesTool = async ({
   workingDir,
+  allowedDirs,
   tokenCounter,
 }: {
   workingDir: string;
+  allowedDirs?: string[];
   tokenCounter: TokenCounter;
 }) => {
-  const allowedDirectory = workingDir;
+  const allowedDirectory = allowedDirs ?? [workingDir];
 
   return {
     toolDef: {
@@ -144,7 +146,7 @@ export const createReadMultipleFilesTool = async ({
 async function validateAndReadFile(
   filePath: string,
   workingDir: string,
-  allowedDirectory: string,
+  allowedDirectory: string | string[],
 ): Promise<{
   path: string;
   content: string | null;

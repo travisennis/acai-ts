@@ -22,12 +22,14 @@ type DirectoryTreeInputSchema = z.infer<typeof inputSchema>;
 
 export const createDirectoryTreeTool = async ({
   workingDir,
+  allowedDirs,
   tokenCounter,
 }: {
   workingDir: string;
+  allowedDirs?: string[];
   tokenCounter: TokenCounter;
 }) => {
-  const allowedDirectory = workingDir;
+  const allowedDirectory = allowedDirs ?? [workingDir];
   return {
     toolDef: {
       description:

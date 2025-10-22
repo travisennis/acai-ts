@@ -15,12 +15,14 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
         const tools = await initTools({
           terminal: options.terminal,
           tokenCounter: options.tokenCounter,
+          workspace: options.workspace,
         });
         const agentTools = await initAgents({
           terminal: options.terminal,
           modelManager: options.modelManager,
           tokenTracker: options.tokenTracker,
           tokenCounter: options.tokenCounter,
+          workspace: options.workspace,
         });
         const toolNames = Object.keys({ ...tools, ...agentTools }).sort();
 

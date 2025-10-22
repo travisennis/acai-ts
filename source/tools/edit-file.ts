@@ -32,14 +32,16 @@ type EditFileInputSchema = z.infer<typeof inputSchema>;
 
 export const createEditFileTool = async ({
   workingDir,
+  allowedDirs,
   terminal,
   toolExecutor,
 }: {
   workingDir: string;
+  allowedDirs?: string[];
   terminal?: Terminal;
   toolExecutor?: ToolExecutor;
 }) => {
-  const allowedDirectory = workingDir;
+  const allowedDirectory = allowedDirs ?? [workingDir];
   return {
     toolDef: {
       description:

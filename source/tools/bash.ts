@@ -8,7 +8,7 @@ import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { isMutatingCommand, resolveCwd, validatePaths } from "./bash-utils.ts";
-import { isPathWithinBaseDir } from "./filesystem-utils.ts";
+import { isPathWithinAllowedDirs } from "./filesystem-utils.ts";
 import type { ToolResult } from "./types.ts";
 
 export const BashTool = {
@@ -38,11 +38,13 @@ type BashInputSchema = z.infer<typeof inputSchema>;
 
 export const createBashTool = async ({
   baseDir,
+  allowedDirs,
   tokenCounter,
   terminal,
   toolExecutor,
 }: {
   baseDir: string;
+  allowedDirs?: string[];
   tokenCounter: TokenCounter;
   terminal?: Terminal;
   toolExecutor?: ToolExecutor;
@@ -52,6 +54,7 @@ export const createBashTool = async ({
   const allowedPaths = projectConfig.logs?.path
     ? [projectConfig.logs.path]
     : [];
+  const allowedDirectories = allowedDirs ?? [baseDir];
   return {
     toolDef: {
       description:
@@ -76,8 +79,8 @@ export const createBashTool = async ({
           data: `Executing: ${style.cyan(command)} in ${style.cyan(resolvedCwd)}`,
         };
 
-        if (!isPathWithinBaseDir(resolvedCwd, baseDir)) {
-          const errorMsg = `Working directory must be within the project directory: ${baseDir}`;
+        if (!isPathWithinAllowedDirs(resolvedCwd, allowedDirectories)) {
+          const errorMsg = `Working directory must be within the allowed directories: ${allowedDirectories.join(", ")}`;
           yield { event: "tool-error", id: toolCallId, data: errorMsg };
           yield errorMsg;
           return;
@@ -85,7 +88,7 @@ export const createBashTool = async ({
 
         const pathValidation = validatePaths(
           command,
-          baseDir,
+          allowedDirectories,
           resolvedCwd,
           allowedPaths,
         );
@@ -159,7 +162,6 @@ export const createBashTool = async ({
       }: { toolCallId: string; abortSignal?: AbortSignal },
     ): Promise<{ approve: true } | { approve: false; reason: string }> => {
       if (terminal) {
-        const baseDir = process.cwd();
         // grok doesn't follow my instructions
         const safeCwd = cwd === "null" ? null : cwd;
         const resolvedCwd = resolveCwd(safeCwd, baseDir);

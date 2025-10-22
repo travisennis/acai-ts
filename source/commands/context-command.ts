@@ -51,6 +51,7 @@ export function contextCommand({
   tokenCounter,
   modelManager,
   messageHistory,
+  workspace,
 }: CommandOptions): ReplCommand {
   return {
     command: "/context",
@@ -70,7 +71,7 @@ export function contextCommand({
       // 2) Tools (MVP approximation)
       let toolsTokens = 0;
       try {
-        const tools = await initCliTools({ tokenCounter });
+        const tools = await initCliTools({ tokenCounter, workspace });
         const toolDefs = tools.toolDefs;
         const toolNames = JSON.stringify(prepareTools(toolDefs));
         toolsTokens = tokenCounter.count(toolNames);

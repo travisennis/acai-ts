@@ -34,12 +34,14 @@ type ReadFileInputSchema = z.infer<typeof inputSchema>;
 
 export const createReadFileTool = async ({
   workingDir,
+  allowedDirs,
   tokenCounter,
 }: {
   workingDir: string;
+  allowedDirs?: string[];
   tokenCounter: TokenCounter;
 }) => {
-  const allowedDirectory = workingDir;
+  const allowedDirectory = allowedDirs ?? [workingDir];
   return {
     toolDef: {
       description:

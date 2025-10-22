@@ -60,12 +60,12 @@ describe("bash tool path validation for git message flags", async () => {
 
   it("rejects absolute path in git add", async () => {
     const res = await run("git add /etc/hosts");
-    assert.ok(res.includes("resolves outside the project directory"));
+    assert.ok(res.includes("resolves outside the allowed directories"));
   });
 
   it("rejects commit -F with file outside", async () => {
     const res = await run("git commit -F /tmp/message.txt");
-    assert.ok(res.includes("resolves outside the project directory"));
+    assert.ok(res.includes("resolves outside the allowed directories"));
   });
 
   it("handles multiple -m flags", async () => {
@@ -117,7 +117,7 @@ describe("bash tool allowed paths access", async () => {
     try {
       // Test reading the log file
       const res = await run(`cat "${logPath}"`);
-      assert.ok(!res.includes("resolves outside the project directory"));
+      assert.ok(!res.includes("resolves outside the allowed directories"));
       assert.ok(res.includes("test log content"));
     } finally {
       // Clean up test file
@@ -131,14 +131,14 @@ describe("bash tool allowed paths access", async () => {
 
   it("rejects access to other files outside project directory", async () => {
     const res = await run("cat /etc/hosts");
-    assert.ok(res.includes("resolves outside the project directory"));
+    assert.ok(res.includes("resolves outside the allowed directories"));
   });
 
   it("allows access to multiple allowed paths", async () => {
     // Test the validatePaths function directly with multiple allowed paths
     const result = validatePaths(
       "cat /tmp/test1.txt /tmp/test2.txt",
-      baseDir,
+      [baseDir],
       baseDir,
       ["/tmp/test1.txt", "/tmp/test2.txt"],
     );
@@ -149,12 +149,14 @@ describe("bash tool allowed paths access", async () => {
     // Test the validatePaths function directly with specific allowed paths
     const result = validatePaths(
       "cat /tmp/test1.txt /tmp/test3.txt",
-      baseDir,
+      [baseDir],
       baseDir,
       ["/tmp/test1.txt", "/tmp/test2.txt"],
     );
     assert.strictEqual(result.isValid, false);
-    assert.ok(result.error?.includes("resolves outside the project directory"));
+    assert.ok(
+      result.error?.includes("resolves outside the allowed directories"),
+    );
   });
 });
 

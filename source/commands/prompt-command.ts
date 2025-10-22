@@ -9,6 +9,7 @@ export const promptCommand = ({
   promptManager,
   config,
   promptHistory,
+  workspace,
 }: CommandOptions): ReplCommand => {
   return {
     command: "/prompt",
@@ -104,7 +105,7 @@ export const promptCommand = ({
         }
 
         const processedPrompt = await processPrompt(promptContent, {
-          baseDir: process.cwd(),
+          baseDir: workspace.primaryDir,
           model: modelManager.getModelMetadata("repl"),
         });
 

@@ -7,6 +7,7 @@ import {
   type ToolSet,
 } from "ai";
 import type z from "zod";
+import type { WorkspaceContext } from "./index.ts";
 import { logger } from "./logger.ts";
 import type { MessageHistory } from "./messages.ts";
 import { AiConfig } from "./models/ai-config.ts";
@@ -30,6 +31,7 @@ interface CliOptions {
   tokenTracker: TokenTracker;
   config: Record<PropertyKey, unknown>;
   tokenCounter: TokenCounter;
+  workspace: WorkspaceContext;
 }
 
 const activeTools = [
@@ -85,7 +87,10 @@ export class Cli {
       prompt: userPrompt,
     });
 
-    const tools = await initCliTools({ tokenCounter });
+    const tools = await initCliTools({
+      tokenCounter,
+      workspace: this.options.workspace,
+    });
 
     try {
       const result = await generateText({

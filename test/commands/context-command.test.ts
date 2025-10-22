@@ -69,6 +69,10 @@ describe("contextCommand", () => {
       promptManager: mockPromptManager,
       toolExecutor: mockToolExecutor,
       promptHistory: mockPromptHistory,
+      workspace: {
+        primaryDir: process.cwd(),
+        allowedDirs: [process.cwd()],
+      },
     };
 
     const command = contextCommand(options);
@@ -88,6 +92,10 @@ describe("contextCommand", () => {
       promptManager: mockPromptManager,
       toolExecutor: mockToolExecutor,
       promptHistory: mockPromptHistory,
+      workspace: {
+        primaryDir: process.cwd(),
+        allowedDirs: [process.cwd()],
+      },
     };
 
     const command = contextCommand(options);
@@ -107,6 +115,10 @@ describe("contextCommand", () => {
       promptManager: mockPromptManager,
       toolExecutor: mockToolExecutor,
       promptHistory: mockPromptHistory,
+      workspace: {
+        primaryDir: process.cwd(),
+        allowedDirs: [process.cwd()],
+      },
     };
 
     const command = contextCommand(options);
@@ -134,6 +146,10 @@ describe("contextCommand", () => {
       promptManager: mockPromptManager,
       toolExecutor: mockToolExecutor,
       promptHistory: mockPromptHistory,
+      workspace: {
+        primaryDir: process.cwd(),
+        allowedDirs: [process.cwd()],
+      },
     };
 
     const command = contextCommand(options);
