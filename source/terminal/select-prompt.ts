@@ -337,6 +337,8 @@ export async function select<T = unknown>({
       stdin.resume();
       stdin.setEncoding("utf8");
       stdout.write(ANSI.hideCursor);
+      // Reset previous output lines counter to ensure clean start
+      previousOutputLines = 0;
       renderToScreen();
       stdin.on("data", onData);
 

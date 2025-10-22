@@ -8,7 +8,7 @@
 const ESC = "\x1b[";
 const hideCursor = () => process.stdout.write(`${ESC}?25l`);
 const showCursor = () => process.stdout.write(`${ESC}?25h`);
-const clearLine = () => process.stdout.write("\x1b[2K\r");
+// const clearLine = () => process.stdout.write("\x1b[2K\r");
 
 interface ChoiceObject<T = unknown> {
   name: string;
@@ -96,17 +96,18 @@ export async function search<T = unknown>({
 
   let previousOutputLines = 0;
 
-  function renderToScreen() {
-    clearLine();
-    // Move cursor to beginning of line
-    stdout.write("\x1b[0G");
-    stdout.write("\x1b[0J"); // clear from cursor to end of screen
-
-    // Clear previous output by moving up and clearing lines
-    for (let i = 0; i < previousOutputLines; i++) {
-      stdout.write("\x1b[1A"); // Move up one line
-      stdout.write("\x1b[2K"); // Clear the entire line
+  function clearPreviousOutput(lineCount: number) {
+    for (let i = 0; i < lineCount; i++) {
+      stdout.write("\x1b[1A\x1b[2K"); // Move up and clear line
     }
+  }
+
+  function renderToScreen() {
+    stdout.write("\x1b[2K"); // Clear current line
+    stdout.write("\x1b[0G"); // Move to start of line
+    stdout.write("\x1b[0J"); // Clear from cursor to end of screen
+
+    clearPreviousOutput(previousOutputLines);
 
     const out = render(
       choices,
@@ -298,6 +299,8 @@ export async function search<T = unknown>({
     }
 
     hideCursor();
+    // Reset previous output lines counter to ensure clean start
+    previousOutputLines = 0;
     // Initial render with empty search
     updateChoices("");
     stdin.on("data", onData);

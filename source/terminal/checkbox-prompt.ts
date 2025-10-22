@@ -235,16 +235,22 @@ export async function checkbox<T = unknown>({
 
   let previousOutputLines = 0;
 
+  function clearPreviousOutput(lineCount: number) {
+    for (let i = 0; i < lineCount; i++) {
+      stdout.write(`${ANSI.moveUp}${ANSI.clearLine}`);
+    }
+  }
+
   function renderToScreen() {
+    // Clear current line and move to start
     stdout.write(ANSI.clearLine);
     stdout.write(ANSI.moveToStart);
+
+    // Clear from cursor to end of screen to remove any existing output below
     stdout.write(ANSI.clearFromCursor);
 
     // Clear previous output by moving up and clearing lines
-    for (let i = 0; i < previousOutputLines; i++) {
-      stdout.write(ANSI.moveUp);
-      stdout.write(ANSI.clearLine);
-    }
+    clearPreviousOutput(previousOutputLines);
 
     const out = render(
       normalized,
@@ -424,6 +430,8 @@ export async function checkbox<T = unknown>({
 
     try {
       stdout.write(ANSI.hideCursor);
+      // Reset previous output lines counter to ensure clean start
+      previousOutputLines = 0;
       renderToScreen();
       stdin.on("data", onData);
 
