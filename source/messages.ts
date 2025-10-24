@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import EventEmitter from "node:events";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -64,6 +65,8 @@ It can be either an assistant message or a tool message.
 type ResponseMessage = AssistantModelMessage | ToolModelMessage;
 
 type SavedMessageHistory = {
+  sessionId: string;
+  modelId: string;
   title: string;
   createdAt: Date;
   updatedAt: Date;
@@ -85,6 +88,8 @@ interface MessageHistoryEvents {
 
 export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
   private history: ModelMessage[];
+  private sessionId: string;
+  private modelId: string;
   private title: string;
   private createdAt: Date;
   private updatedAt: Date;
@@ -103,12 +108,23 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
   }) {
     super();
     this.history = [];
+    this.sessionId = randomUUID();
+    this.modelId = "";
     this.title = "";
     this.createdAt = new Date();
     this.updatedAt = new Date();
     this.stateDir = stateDir;
     this.modelManager = modelManager;
     this.tokenTracker = tokenTracker;
+  }
+
+  create(modelId: string) {
+    this.history = [];
+    this.modelId = modelId;
+    this.sessionId = randomUUID();
+    this.title = "";
+    this.createdAt = new Date();
+    this.updatedAt = new Date();
   }
 
   private validMessage(msg: ModelMessage) {
@@ -186,11 +202,12 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
 
   async save() {
     const msgHistoryDir = this.stateDir;
-    const timestamp = new Date().toISOString().replace(/:/g, "-");
-    const fileName = `message-history-${timestamp}.json`;
+    const fileName = `message-history-${this.sessionId}.json`;
     const filePath = join(msgHistoryDir, fileName);
 
     const output: SavedMessageHistory = {
+      sessionId: this.sessionId,
+      modelId: this.modelId,
       title: this.title,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,

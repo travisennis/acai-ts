@@ -58,8 +58,8 @@ Your summary should include the following sections:
 
   tokenTracker.trackUsage(app, usage);
 
-  //clear messages
-  messageHistory.clear();
+  //create new session
+  messageHistory.create(modelManager.getModel("repl").modelId);
 
   messageHistory.appendUserMessage(createUserMessage([text]));
 }

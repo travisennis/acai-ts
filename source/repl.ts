@@ -292,6 +292,8 @@ export class Repl {
           // Derive current context window from final step usage
           currentContextWindow = result.usage.totalTokens;
 
+          messageHistory.save();
+
           terminal.hr();
 
           terminal.lineBreak();
@@ -446,6 +448,8 @@ export class Repl {
           }
 
           terminal.lineBreak(); // Add a final newline for clarity
+
+          messageHistory.save();
 
           await result.consumeStream();
         }

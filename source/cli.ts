@@ -118,6 +118,8 @@ export class Cli {
       // this tracks the usage of every step in the call to streamText. it's a cumulative usage.
       tokenTracker.trackUsage("cli", result.usage);
 
+      messageHistory.save();
+
       process.stdout.end(
         result.text.endsWith("\n") ? result.text : `${result.text}\n`,
       );

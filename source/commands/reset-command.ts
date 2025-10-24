@@ -1,6 +1,7 @@
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const resetCommand = ({
+  modelManager,
   terminal,
   messageHistory,
 }: CommandOptions): ReplCommand => {
@@ -12,7 +13,7 @@ export const resetCommand = ({
     execute: async () => {
       if (!messageHistory.isEmpty()) {
         await messageHistory.save();
-        messageHistory.clear();
+        messageHistory.create(modelManager.getModel("repl").modelId);
       }
       terminal.setTitle(`acai: ${process.cwd()}`);
 
