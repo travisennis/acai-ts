@@ -214,6 +214,8 @@ export class Repl {
             }
             throw error; // Re-throw other errors
           }
+        } else {
+          promptHistory.push(promptManager.get());
         }
 
         terminal.lineBreak();
