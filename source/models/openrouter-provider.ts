@@ -37,7 +37,7 @@ const openRouterClient = createOpenRouter({
 // });
 
 const openrouterModels = {
-  "deepseek-v3-1": openRouterClient("deepseek/deepseek-chat-v3.1", {
+  "deepseek-v3-1": openRouterClient("deepseek/deepseek-v3.1-terminus:exacto", {
     usage: { include: true },
   }) as LanguageModelV2,
   "deepseek-r1": openRouterClient("deepseek/deepseek-r1-0528", {
@@ -58,16 +58,13 @@ const openrouterModels = {
   "haiku-4.5": openRouterClient("anthropic/claude-haiku-4.5", {
     usage: { include: true },
   }) as LanguageModelV2,
-  "kimi-k2": openRouterClient("moonshotai/kimi-k2:nitro", {
-    usage: { include: true },
-  }) as LanguageModelV2,
-  "kimi-k2-0905": openRouterClient("moonshotai/kimi-k2-0905", {
+  "kimi-k2": openRouterClient("moonshotai/kimi-k2-0905:exacto", {
     usage: { include: true },
   }) as LanguageModelV2,
   "devstral-medium": openRouterClient("mistralai/devstral-medium", {
     usage: { include: true },
   }) as LanguageModelV2,
-  "qwen3-coder": openRouterClient("qwen/qwen3-coder", {
+  "qwen3-coder": openRouterClient("qwen/qwen3-coder:exacto", {
     usage: { include: true },
   }) as LanguageModelV2,
   "qwen3-coder-plus": openRouterClient("qwen/qwen3-coder-plus", {
@@ -76,10 +73,7 @@ const openrouterModels = {
   "qwen3-max": openRouterClient("qwen/qwen3-max", {
     usage: { include: true },
   }) as LanguageModelV2,
-  "glm-4.6": openRouterClient("z-ai/glm-4.6", {
-    usage: { include: true },
-  }) as LanguageModelV2,
-  "glm-4.5": openRouterClient("z-ai/glm-4.5", {
+  "glm-4.6": openRouterClient("z-ai/glm-4.6:exacto", {
     usage: { include: true },
   }) as LanguageModelV2,
   "gpt-5": openRouterClient("openai/gpt-5", {
@@ -88,7 +82,7 @@ const openrouterModels = {
   "gpt-5-mini": openRouterClient("openai/gpt-5-mini", {
     usage: { include: true },
   }) as LanguageModelV2,
-  "gpt-oss-120b": openRouterClient("openai/gpt-oss-120b", {
+  "gpt-oss-120b": openRouterClient("openai/gpt-oss-120b:exacto", {
     usage: { include: true },
   }) as LanguageModelV2,
   "grok-code-fast-1": openRouterClient("x-ai/grok-code-fast-1", {
@@ -198,22 +192,8 @@ export const openrouterModelRegistry: {
     costPerOutputToken: 0.000015,
     category: "powerful",
   },
-
   "openrouter:kimi-k2": {
     id: "openrouter:kimi-k2",
-    provider: "openrouter",
-    contextWindow: 131072,
-    maxOutputTokens: 8192,
-    defaultTemperature: 0.6,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.00000057,
-    costPerOutputToken: 0.0000023,
-    category: "balanced",
-  },
-  "openrouter:kimi-k2-0905": {
-    id: "openrouter:kimi-k2-0905",
     provider: "openrouter",
     contextWindow: 262144,
     maxOutputTokens: 8192,
@@ -283,19 +263,6 @@ export const openrouterModelRegistry: {
     contextWindow: 200000,
     maxOutputTokens: 128000,
     defaultTemperature: 0.6,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000006,
-    costPerOutputToken: 0.0000022,
-    category: "balanced",
-  },
-  "openrouter:glm-4.5": {
-    id: "openrouter:glm-4.5",
-    provider: "openrouter",
-    contextWindow: 128000,
-    maxOutputTokens: 8192,
-    defaultTemperature: 0.7,
     promptFormat: "markdown",
     supportsReasoning: true,
     supportsToolCalling: true,
