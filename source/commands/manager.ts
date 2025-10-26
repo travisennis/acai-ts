@@ -20,6 +20,7 @@ import { filesCommand } from "./files-command.ts";
 import { generateRulesCommand } from "./generate-rules-command.ts";
 import { healthCommand } from "./health-command.ts";
 import { helpCommand } from "./help-command.ts";
+import { historyCommand } from "./history-command.ts";
 import { initCommand } from "./init-command.ts";
 import { lastLogCommand } from "./last-log-command.ts";
 import { listDirectoriesCommand } from "./list-directories-command.ts";
@@ -104,6 +105,7 @@ export class CommandManager {
       exitCommand(options),
       filesCommand(options),
       healthCommand(options),
+      historyCommand(options),
       initCommand(options),
       listDirectoriesCommand(options),
       pasteCommand(options),
