@@ -1,65 +1,42 @@
-/** biome-ignore-all lint/suspicious/noExplicitAny: test file */
 import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
-import type { ModelMessage } from "ai";
+import { beforeEach, describe, it, mock } from "node:test";
 import { contextCommand } from "../../source/commands/context-command.ts";
+import {
+  createMockCommandOptions,
+  createMockConfig,
+  createMockMessageHistory,
+  createMockModelManager,
+  createMockPromptManager,
+  createMockTerminal,
+  createMockTokenCounter,
+  createMockTokenTracker,
+} from "../utils/mocking.ts";
 
 describe("contextCommand", () => {
-  let mockTerminal: any;
-  let mockTokenCounter: any;
-  let mockModelManager: any;
-  let mockMessageHistory: any;
-  let mockConfig: any;
-  let mockTokenTracker: any;
-  let mockToolExecutor: any;
-  let mockPromptManager: any;
+  let mockTerminal: ReturnType<typeof createMockTerminal>;
+  let mockTokenCounter: ReturnType<typeof createMockTokenCounter>;
+  let mockModelManager: ReturnType<typeof createMockModelManager>;
+  let mockMessageHistory: ReturnType<typeof createMockMessageHistory>;
+  let mockConfig: ReturnType<typeof createMockConfig>;
+  let mockTokenTracker: ReturnType<typeof createMockTokenTracker>;
+  let mockPromptManager: ReturnType<typeof createMockPromptManager>;
+  let mockToolExecutor: undefined;
   let mockPromptHistory: string[];
 
   beforeEach(() => {
-    mockTerminal = {
-      header: () => {},
-      table: () => {},
-      lineBreak: () => {},
-      displayProgressBar: () => {},
-      display: () => {},
-    };
-
-    mockTokenCounter = {
-      count: (text: string) => text.length,
-    };
-
-    mockModelManager = {
-      getModelMetadata: () => ({
-        contextWindow: 200000,
-        supportsToolCalling: true,
-      }),
-    };
-
-    mockMessageHistory = {
-      get: () =>
-        [
-          { role: "user", content: [{ type: "text", text: "Hello" }] },
-          { role: "assistant", content: [{ type: "text", text: "Hi there!" }] },
-        ] as ModelMessage[],
-    };
-
-    mockConfig = {
-      project: {
-        getPath: () => ".acai",
-      },
-    };
-
-    mockTokenTracker = {
-      getUsageBreakdown: () => ({}),
-    };
-
-    mockPromptManager = {};
+    mockTerminal = createMockTerminal();
+    mockTokenCounter = createMockTokenCounter();
+    mockModelManager = createMockModelManager();
+    mockMessageHistory = createMockMessageHistory();
+    mockConfig = createMockConfig();
+    mockTokenTracker = createMockTokenTracker();
+    mockPromptManager = createMockPromptManager();
     mockToolExecutor = undefined;
     mockPromptHistory = [];
   });
 
   it("should create a command with correct properties", () => {
-    const options = {
+    const options = createMockCommandOptions({
       terminal: mockTerminal,
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
@@ -69,11 +46,7 @@ describe("contextCommand", () => {
       promptManager: mockPromptManager,
       toolExecutor: mockToolExecutor,
       promptHistory: mockPromptHistory,
-      workspace: {
-        primaryDir: process.cwd(),
-        allowedDirs: [process.cwd()],
-      },
-    };
+    });
 
     const command = contextCommand(options);
 
@@ -82,7 +55,7 @@ describe("contextCommand", () => {
   });
 
   it("should return subcommands", async () => {
-    const options = {
+    const options = createMockCommandOptions({
       terminal: mockTerminal,
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
@@ -92,11 +65,7 @@ describe("contextCommand", () => {
       promptManager: mockPromptManager,
       toolExecutor: mockToolExecutor,
       promptHistory: mockPromptHistory,
-      workspace: {
-        primaryDir: process.cwd(),
-        allowedDirs: [process.cwd()],
-      },
-    };
+    });
 
     const command = contextCommand(options);
     const subCommands = await command.getSubCommands();
@@ -105,7 +74,7 @@ describe("contextCommand", () => {
   });
 
   it("should execute without throwing", async () => {
-    const options = {
+    const options = createMockCommandOptions({
       terminal: mockTerminal,
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
@@ -115,11 +84,7 @@ describe("contextCommand", () => {
       promptManager: mockPromptManager,
       toolExecutor: mockToolExecutor,
       promptHistory: mockPromptHistory,
-      workspace: {
-        primaryDir: process.cwd(),
-        allowedDirs: [process.cwd()],
-      },
-    };
+    });
 
     const command = contextCommand(options);
 
@@ -129,14 +94,12 @@ describe("contextCommand", () => {
 
   it("should handle json output flag", async () => {
     let displayedJson = "";
-    const mockTerminalWithJson = {
-      ...mockTerminal,
-      display: (content: string) => {
-        displayedJson = content;
-      },
-    };
+    const mockTerminalWithJson = createMockTerminal();
+    mock.method(mockTerminalWithJson, "display", (content: string) => {
+      displayedJson = content;
+    });
 
-    const options = {
+    const options = createMockCommandOptions({
       terminal: mockTerminalWithJson,
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
@@ -146,11 +109,7 @@ describe("contextCommand", () => {
       promptManager: mockPromptManager,
       toolExecutor: mockToolExecutor,
       promptHistory: mockPromptHistory,
-      workspace: {
-        primaryDir: process.cwd(),
-        allowedDirs: [process.cwd()],
-      },
-    };
+    });
 
     const command = contextCommand(options);
 

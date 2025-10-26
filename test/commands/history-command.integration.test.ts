@@ -1,54 +1,42 @@
 import assert from "node:assert/strict";
-import { before, describe, it } from "node:test";
+import { before, describe, it, mock } from "node:test";
 import { historyCommand } from "../../source/commands/history-command.ts";
-import type { CommandOptions } from "../../source/commands/types.ts";
-import type { ConfigManager } from "../../source/config.ts";
 import { MessageHistory } from "../../source/messages.ts";
+import {
+  createMockCommandOptions,
+  createMockConfig,
+  createMockMessageHistory,
+  createMockTerminal,
+} from "../utils/mocking.ts";
 
 describe("historyCommand integration", () => {
-  let mockConfig: ConfigManager;
+  let mockConfig: ReturnType<typeof createMockConfig>;
 
   before(() => {
     // Mock config that provides a temporary directory for testing
-    mockConfig = {
-      app: {
-        ensurePath: async (_path: string) => {
-          // Return a temporary directory path for testing
-          return "/tmp/test-message-history";
-        },
-      },
-    } as unknown as ConfigManager;
+    mockConfig = createMockConfig();
+    mock.method(mockConfig.app, "ensurePath", async (_path: string) => {
+      // Return a temporary directory path for testing
+      return "/tmp/test-message-history";
+    });
   });
 
   it("should handle no histories gracefully", async () => {
-    const mockTerminal = {
-      info: (message: string) => {
-        assert.equal(message, "No previous conversations found.");
-      },
-      error: () => {
-        assert.fail("Should not call error when no histories exist");
-      },
-      setTitle: () => {},
-    };
+    const mockTerminal = createMockTerminal();
+    mock.method(mockTerminal, "info", (message: string) => {
+      assert.equal(message, "No previous conversations found.");
+    });
+    mock.method(mockTerminal, "error", () => {
+      assert.fail("Should not call error when no histories exist");
+    });
 
-    const mockMessageHistory = {
-      restore: () => {
-        assert.fail("Should not call restore when no histories exist");
-      },
-    };
+    const mockMessageHistory = createMockMessageHistory();
 
-    const commandOptions = {
+    const commandOptions = createMockCommandOptions({
       messageHistory: mockMessageHistory,
       terminal: mockTerminal,
       config: mockConfig,
-      promptManager: {},
-      modelManager: {},
-      tokenTracker: {},
-      tokenCounter: {},
-      toolExecutor: undefined,
-      promptHistory: [],
-      workspace: {},
-    } as unknown as CommandOptions;
+    });
 
     const command = historyCommand(commandOptions);
 

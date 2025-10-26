@@ -3,25 +3,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, it } from "node:test";
 import { config } from "../../source/config.ts";
-import { TokenCounter } from "../../source/tokens/counter.ts";
 import { createBashTool } from "../../source/tools/bash.ts";
 import { validatePaths } from "../../source/tools/bash-utils.ts";
+import { createMockTokenCounter } from "../utils/mocking.ts";
 
-// Minimal token counter mock
-class MockTokenCounter extends TokenCounter {
-  constructor() {
-    super("gpt-4");
-  }
-
-  override count(s: string) {
-    return s.length;
-  }
-  override free() {
-    // noop
-  }
-}
-
-const tokenCounter = new MockTokenCounter();
+const tokenCounter = createMockTokenCounter((s: string) => s.length);
 
 await config.readProjectConfig();
 
