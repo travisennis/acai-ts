@@ -135,6 +135,7 @@ export async function runManualLoop(
             terminal.write(style.dim(chunk.text));
             lastType = "reasoning";
           } else {
+            terminal.stopProgress();
             if (lastType === "reasoning") {
               terminal.writeln(style.dim("\n</think>\n"));
             }
@@ -142,7 +143,7 @@ export async function runManualLoop(
             lastType = "text";
           }
         } else if (chunk.type === "tool-call") {
-          terminal.stopProgress();
+          terminal.startProgress();
         } else {
           // finish off this step
           if (lastType === "reasoning") {

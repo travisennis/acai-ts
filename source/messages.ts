@@ -119,7 +119,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
   }
 
   create(modelId: string) {
-    this.history = [];
+    this.clear();
     this.modelId = modelId;
     this.sessionId = randomUUID();
     this.title = "";

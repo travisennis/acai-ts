@@ -411,6 +411,7 @@ export class Repl {
                 terminal.write(style.dim(chunk.text)); // Stream reasoning directly
                 lastType = "reasoning";
               } else if (chunk.type === "text-delta") {
+                terminal.stopProgress();
                 if (lastType === "reasoning") {
                   // Finishing reasoning: Print </think>
                   terminal.writeln(style.dim("\n</think>\n"));
@@ -419,7 +420,7 @@ export class Repl {
                 lastType = "text";
               }
             } else if (chunk.type === "tool-call") {
-              terminal.stopProgress();
+              terminal.startProgress();
             } else {
               // Close thinking tags when moving from reasoning to any other chunk type
               if (lastType === "reasoning") {
