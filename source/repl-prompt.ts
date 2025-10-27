@@ -174,6 +174,8 @@ export class ReplPrompt {
   private rl: Interface;
   private history: string[];
   private maxHistory = 25;
+  private pasteCounter = 0;
+  private pasteStore = new Map<number, string>();
 
   constructor({
     commands,
@@ -254,12 +256,24 @@ export class ReplPrompt {
               const beforeCursor = currentLine.substring(0, cursorPos);
               const afterCursor = currentLine.substring(cursorPos);
 
-              const newLine = beforeCursor + clipboardText + afterCursor;
+              let textToInsert: string;
+
+              // Smart paste: use placeholder for text > 50 characters
+              if (clipboardText.length > 50) {
+                this.pasteCounter++;
+                const pasteId = this.pasteCounter;
+                this.pasteStore.set(pasteId, clipboardText);
+                textToInsert = `[Paste #${pasteId}, ${clipboardText.length} characters]`;
+              } else {
+                textToInsert = clipboardText;
+              }
+
+              const newLine = beforeCursor + textToInsert + afterCursor;
 
               // biome-ignore lint/suspicious/noExplicitAny: Accessing internal readline method
               (this.rl as any).line = newLine;
               // biome-ignore lint/suspicious/noExplicitAny: Accessing internal readline method
-              (this.rl as any).cursor = cursorPos + clipboardText.length;
+              (this.rl as any).cursor = cursorPos + textToInsert.length;
 
               // biome-ignore lint/suspicious/noExplicitAny: Accessing internal readline method
               (this.rl as any)._refreshLine();
@@ -293,6 +307,15 @@ export class ReplPrompt {
     }
 
     return input;
+  }
+
+  getPasteStore(): Map<number, string> {
+    return new Map(this.pasteStore);
+  }
+
+  resetPasteStore(): void {
+    this.pasteCounter = 0;
+    this.pasteStore.clear();
   }
 
   close() {
