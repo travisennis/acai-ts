@@ -1,31 +1,41 @@
 import assert from "node:assert/strict";
-import type { ExecSyncOptions, execSync } from "node:child_process";
-import { describe, it } from "node:test";
+import { describe, it, mock } from "node:test";
 import { healthCommand } from "../../source/commands/health-command.ts";
-import type { CommandOptions } from "../../source/commands/types.ts";
+import {
+  createMockCommandOptions,
+  createMockExecSync,
+  createMockTerminal,
+} from "../utils/mocking.ts";
 
 describe("/health command", () => {
   it("displays environment variables status", async () => {
     const outputs: string[] = [];
     const tables: (string | number)[][][] = [];
 
-    const options = {
-      terminal: {
-        info: (msg: string) => outputs.push(msg),
-        success: (_msg: string) => outputs.push("success"),
-        error: (_msg: string) => outputs.push("error"),
-        warn: (_msg: string) => outputs.push("warn"),
-        lineBreak: () => outputs.push("lineBreak"),
-        table: (
-          data: (string | number)[][],
-          options?: { header?: string[]; colWidths?: number[] },
-        ) => {
-          tables.push(data);
-          outputs.push(`table:${options?.header?.join(",")}`);
-        },
-        writeln: (msg: string) => outputs.push(`${msg}\n`),
+    const mockTerminal = createMockTerminal();
+    mock.method(mockTerminal, "info", (msg: string) => outputs.push(msg));
+    mock.method(mockTerminal, "success", () => outputs.push("success"));
+    mock.method(mockTerminal, "error", () => outputs.push("error"));
+    mock.method(mockTerminal, "warn", () => outputs.push("warn"));
+    mock.method(mockTerminal, "lineBreak", () => outputs.push("lineBreak"));
+    mock.method(
+      mockTerminal,
+      "table",
+      (
+        data: (string | number)[][],
+        options?: { header?: string[]; colWidths?: number[] },
+      ) => {
+        tables.push(data);
+        outputs.push(`table:${options?.header?.join(",")}`);
       },
-    } as unknown as CommandOptions;
+    );
+    mock.method(mockTerminal, "writeln", (msg: string) =>
+      outputs.push(`${msg}\n`),
+    );
+
+    const options = createMockCommandOptions({
+      terminal: mockTerminal,
+    });
 
     const cmd = healthCommand(options);
     await cmd.execute([]);
@@ -78,22 +88,20 @@ describe("/health command", () => {
         delete process.env[envVar];
       });
 
-      const options = {
-        terminal: {
-          info: (msg: string) => outputs.push(msg),
-          success: (_msg: string) => outputs.push("success"),
-          error: (_msg: string) => outputs.push("error"),
-          warn: (msg: string) => outputs.push(msg),
-          lineBreak: () => outputs.push("lineBreak"),
-          table: (
-            _data: (string | number)[][],
-            _options?: { header?: string[]; colWidths?: number[] },
-          ) => {
-            outputs.push("table");
-          },
-          writeln: (msg: string) => outputs.push(`${msg}\n`),
-        },
-      } as unknown as CommandOptions;
+      const mockTerminal = createMockTerminal();
+      mock.method(mockTerminal, "info", (msg: string) => outputs.push(msg));
+      mock.method(mockTerminal, "success", () => outputs.push("success"));
+      mock.method(mockTerminal, "error", () => outputs.push("error"));
+      mock.method(mockTerminal, "warn", (msg: string) => outputs.push(msg));
+      mock.method(mockTerminal, "lineBreak", () => outputs.push("lineBreak"));
+      mock.method(mockTerminal, "table", () => outputs.push("table"));
+      mock.method(mockTerminal, "writeln", (msg: string) =>
+        outputs.push(`${msg}\n`),
+      );
+
+      const options = createMockCommandOptions({
+        terminal: mockTerminal,
+      });
 
       const cmd = healthCommand(options);
       await cmd.execute([]);
@@ -115,22 +123,20 @@ describe("/health command", () => {
   it("shows success when at least one AI provider is configured", async () => {
     const outputs: string[] = [];
 
-    const options = {
-      terminal: {
-        info: (msg: string) => outputs.push(msg),
-        success: (_msg: string) => outputs.push("success"),
-        error: (_msg: string) => outputs.push("error"),
-        warn: (_msg: string) => outputs.push("warn"),
-        lineBreak: () => outputs.push("lineBreak"),
-        table: (
-          _data: (string | number)[][],
-          _options?: { header?: string[]; colWidths?: number[] },
-        ) => {
-          outputs.push("table");
-        },
-        writeln: (msg: string) => outputs.push(`${msg}\n`),
-      },
-    } as unknown as CommandOptions;
+    const mockTerminal = createMockTerminal();
+    mock.method(mockTerminal, "info", (msg: string) => outputs.push(msg));
+    mock.method(mockTerminal, "success", () => outputs.push("success"));
+    mock.method(mockTerminal, "error", () => outputs.push("error"));
+    mock.method(mockTerminal, "warn", () => outputs.push("warn"));
+    mock.method(mockTerminal, "lineBreak", () => outputs.push("lineBreak"));
+    mock.method(mockTerminal, "table", () => outputs.push("table"));
+    mock.method(mockTerminal, "writeln", (msg: string) =>
+      outputs.push(`${msg}\n`),
+    );
+
+    const options = createMockCommandOptions({
+      terminal: mockTerminal,
+    });
 
     // Set an environment variable
     process.env["OPENAI_API_KEY"] = "test-key";
@@ -152,7 +158,7 @@ describe("/health command", () => {
       const outputs: string[] = [];
       const tables: string[][][] = [];
 
-      const mockExecSync = ((command: string, _options?: ExecSyncOptions) => {
+      const mockExecSync = createMockExecSync((command: string) => {
         if (
           command === "git --version" ||
           command === "gh --version" ||
@@ -165,25 +171,32 @@ describe("/health command", () => {
           return Buffer.from("");
         }
         throw new Error("Unexpected command");
-      }) as typeof execSync;
+      });
 
-      const options = {
-        terminal: {
-          info: (msg: string) => outputs.push(msg),
-          success: (_msg: string) => outputs.push("success"),
-          error: (_msg: string) => outputs.push("error"),
-          warn: (_msg: string) => outputs.push("warn"),
-          lineBreak: () => outputs.push("lineBreak"),
-          table: (
-            data: string[][],
-            options?: { header?: string[]; colWidths?: number[] },
-          ) => {
-            tables.push(data);
-            outputs.push(`tool_table:${options?.header?.join(",")}`);
-          },
-          writeln: (msg: string) => outputs.push(`${msg}\n`),
+      const mockTerminal = createMockTerminal();
+      mock.method(mockTerminal, "info", (msg: string) => outputs.push(msg));
+      mock.method(mockTerminal, "success", () => outputs.push("success"));
+      mock.method(mockTerminal, "error", () => outputs.push("error"));
+      mock.method(mockTerminal, "warn", () => outputs.push("warn"));
+      mock.method(mockTerminal, "lineBreak", () => outputs.push("lineBreak"));
+      mock.method(
+        mockTerminal,
+        "table",
+        (
+          data: string[][],
+          options?: { header?: string[]; colWidths?: number[] },
+        ) => {
+          tables.push(data);
+          outputs.push(`tool_table:${options?.header?.join(",")}`);
         },
-      } as unknown as CommandOptions;
+      );
+      mock.method(mockTerminal, "writeln", (msg: string) =>
+        outputs.push(`${msg}\n`),
+      );
+
+      const options = createMockCommandOptions({
+        terminal: mockTerminal,
+      });
 
       const cmd = healthCommand(options, mockExecSync);
       await cmd.execute([]);
@@ -213,7 +226,7 @@ describe("/health command", () => {
     it("displays warning when some tools are missing", async () => {
       const outputs: string[] = [];
 
-      const mockExecSync = ((command: string, _options?: ExecSyncOptions) => {
+      const mockExecSync = createMockExecSync((command: string) => {
         if (
           command === "fd --version" ||
           command === "ast-grep --version" ||
@@ -223,24 +236,22 @@ describe("/health command", () => {
           throw new Error("Tool not found");
         }
         return Buffer.from("");
-      }) as typeof execSync;
+      });
 
-      const options = {
-        terminal: {
-          info: (msg: string) => outputs.push(msg),
-          success: (_msg: string) => outputs.push("success"),
-          error: (_msg: string) => outputs.push("error"),
-          warn: (msg: string) => outputs.push(msg),
-          lineBreak: () => outputs.push("lineBreak"),
-          table: (
-            _data: string[][],
-            _options?: { header?: string[]; colWidths?: number[] },
-          ) => {
-            outputs.push("tool_table");
-          },
-          writeln: (msg: string) => outputs.push(`${msg}\n`),
-        },
-      } as unknown as CommandOptions;
+      const mockTerminal = createMockTerminal();
+      mock.method(mockTerminal, "info", (msg: string) => outputs.push(msg));
+      mock.method(mockTerminal, "success", () => outputs.push("success"));
+      mock.method(mockTerminal, "error", () => outputs.push("error"));
+      mock.method(mockTerminal, "warn", (msg: string) => outputs.push(msg));
+      mock.method(mockTerminal, "lineBreak", () => outputs.push("lineBreak"));
+      mock.method(mockTerminal, "table", () => outputs.push("tool_table"));
+      mock.method(mockTerminal, "writeln", (msg: string) =>
+        outputs.push(`${msg}\n`),
+      );
+
+      const options = createMockCommandOptions({
+        terminal: mockTerminal,
+      });
 
       const cmd = healthCommand(options, mockExecSync);
       await cmd.execute([]);

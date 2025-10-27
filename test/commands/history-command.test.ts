@@ -1,23 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { historyCommand } from "../../source/commands/history-command.ts";
-import type { CommandOptions } from "../../source/commands/types.ts";
+import { createMockCommandOptions } from "../utils/mocking.ts";
 
 describe("historyCommand", () => {
   it("should create a command with correct properties", () => {
-    // Use type assertion for test mocks
-    const mockOptions = {
-      promptManager: {},
-      modelManager: {},
-      terminal: {},
-      messageHistory: {},
-      tokenTracker: {},
-      config: {},
-      tokenCounter: {},
-      toolExecutor: undefined,
-      promptHistory: [],
-      workspace: {},
-    } as unknown as CommandOptions;
+    const mockOptions = createMockCommandOptions();
 
     const command = historyCommand(mockOptions);
 

@@ -6,6 +6,10 @@ import {
   type ExitCommandOptions,
   exitCommand,
 } from "../../source/commands/exit-command.ts";
+import {
+  createMockMessageHistory,
+  createMockTerminal,
+} from "../utils/mocking.ts";
 
 describe("exit command", () => {
   const testBaseDir = path.join(process.cwd(), ".test-temp");
@@ -36,14 +40,10 @@ describe("exit command", () => {
   });
 
   it("should clear .tmp directory on exit with custom baseDir", async () => {
-    const mockTerminal = {
-      clear: mock.fn(),
-    };
+    const mockTerminal = createMockTerminal();
+    mock.method(mockTerminal, "clear", mock.fn());
 
-    const mockMessageHistory = {
-      isEmpty: mock.fn(() => false),
-      save: mock.fn(() => Promise.resolve()),
-    };
+    const mockMessageHistory = createMockMessageHistory();
 
     const options: ExitCommandOptions = {
       messageHistory: mockMessageHistory,
@@ -55,9 +55,12 @@ describe("exit command", () => {
     const result = await command.execute([]);
 
     assert.equal(result, "break");
-    assert.equal(mockTerminal.clear.mock.calls.length, 1);
-    assert.equal(mockMessageHistory.isEmpty.mock.calls.length, 1);
-    assert.equal(mockMessageHistory.save.mock.calls.length, 1);
+    // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
+    assert.equal((mockTerminal.clear as any).mock.calls.length, 1);
+    // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
+    assert.equal((mockMessageHistory.isEmpty as any).mock.calls.length, 1);
+    // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
+    assert.equal((mockMessageHistory.save as any).mock.calls.length, 1);
 
     // Verify .tmp directory is empty or doesn't exist
     try {
@@ -73,14 +76,10 @@ describe("exit command", () => {
   });
 
   it("should handle empty message history", async () => {
-    const mockTerminal = {
-      clear: mock.fn(),
-    };
+    const mockTerminal = createMockTerminal();
+    mock.method(mockTerminal, "clear", mock.fn());
 
-    const mockMessageHistory = {
-      isEmpty: mock.fn(() => true),
-      save: mock.fn(() => Promise.resolve()),
-    };
+    const mockMessageHistory = createMockMessageHistory([]);
 
     const options: ExitCommandOptions = {
       messageHistory: mockMessageHistory,
@@ -92,9 +91,12 @@ describe("exit command", () => {
     const result = await command.execute([]);
 
     assert.equal(result, "break");
-    assert.equal(mockTerminal.clear.mock.calls.length, 1);
-    assert.equal(mockMessageHistory.isEmpty.mock.calls.length, 1);
-    assert.equal(mockMessageHistory.save.mock.calls.length, 0);
+    // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
+    assert.equal((mockTerminal.clear as any).mock.calls.length, 1);
+    // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
+    assert.equal((mockMessageHistory.isEmpty as any).mock.calls.length, 1);
+    // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
+    assert.equal((mockMessageHistory.save as any).mock.calls.length, 0);
 
     // Verify .tmp directory is empty or doesn't exist
     try {
@@ -110,14 +112,10 @@ describe("exit command", () => {
   });
 
   it("should not block exit on cleanup failure", async () => {
-    const mockTerminal = {
-      clear: mock.fn(),
-    };
+    const mockTerminal = createMockTerminal();
+    mock.method(mockTerminal, "clear", mock.fn());
 
-    const mockMessageHistory = {
-      isEmpty: mock.fn(() => false),
-      save: mock.fn(() => Promise.resolve()),
-    };
+    const mockMessageHistory = createMockMessageHistory();
 
     // Mock console.error to verify error logging
     const originalConsoleError = console.error;
@@ -135,9 +133,12 @@ describe("exit command", () => {
       const result = await command.execute([]);
 
       assert.equal(result, "break");
-      assert.equal(mockTerminal.clear.mock.calls.length, 1);
-      assert.equal(mockMessageHistory.isEmpty.mock.calls.length, 1);
-      assert.equal(mockMessageHistory.save.mock.calls.length, 1);
+      // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
+      assert.equal((mockTerminal.clear as any).mock.calls.length, 1);
+      // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
+      assert.equal((mockMessageHistory.isEmpty as any).mock.calls.length, 1);
+      // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
+      assert.equal((mockMessageHistory.save as any).mock.calls.length, 1);
 
       // Error should be logged but not prevent exit
       // Note: In practice, cleanup might succeed, but the error handling is tested
