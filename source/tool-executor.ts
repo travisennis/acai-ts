@@ -62,6 +62,10 @@ export class ToolExecutor {
         signal: abortSignal,
       });
     } catch (e) {
+      // Handle Ctrl-C cancellation
+      if (e instanceof Error && "isCanceled" in e && e.isCanceled === true) {
+        throw new Error("Operation cancelled by user");
+      }
       if ((e as Error).name === "AbortError") {
         throw new Error("Operation aborted during user input");
       }
@@ -76,6 +80,10 @@ export class ToolExecutor {
           signal: abortSignal,
         });
       } catch (e) {
+        // Handle Ctrl-C cancellation
+        if (e instanceof Error && "isCanceled" in e && e.isCanceled === true) {
+          throw new Error("Operation cancelled by user");
+        }
         if ((e as Error).name === "AbortError") {
           throw new Error("Operation aborted during user input");
         }
