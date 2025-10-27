@@ -65,7 +65,7 @@ export const createCodeInterpreterTool = async ({
       yield {
         event: "tool-init",
         id: toolCallId,
-        data: "Initializing code interpreter environment",
+        data: "CodeInterpreter",
       };
 
       const scriptType = "typescript";

@@ -77,7 +77,7 @@ export const createAgentTools = (options: {
     yield {
       event: "tool-init",
       id: toolCallId,
-      data: `Initializing agent with prompt: ${style.cyan(prompt)}`,
+      data: `Agent: ${style.cyan(prompt)}`,
     };
 
     try {

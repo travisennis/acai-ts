@@ -36,7 +36,7 @@ export const createThinkTool = () => {
           throw new Error("Thinking process aborted");
         }
 
-        yield { event: "tool-init", id: toolCallId, data: "Logging Thought" };
+        yield { event: "tool-init", id: toolCallId, data: "Think" };
 
         // Replace literal '\\n' with actual newline characters
         const formattedThought = thought.replace(/\\n/g, "\n");

@@ -236,7 +236,7 @@ export function createDynamicTool(
           yield {
             event: "tool-init",
             id: toolCallId,
-            data: `Executing dynamic tool: ${metadata.name}`,
+            data: `${metadata.name}`,
           };
 
           // Validate params again for safety
