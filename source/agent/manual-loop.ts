@@ -17,7 +17,7 @@ import { displayToolMessages } from "../repl/display-tool-messages.ts";
 import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
 import type { CompleteToolSet } from "../tools/index.ts";
-import { isToolMessage, type Message } from "../tools/types.ts";
+import { isToolMessage } from "../tools/types.ts";
 import { isAsyncIterable } from "../utils/iterables.ts";
 
 // - readOnly=true (parallel): readFile, readMultipleFiles, grep, webFetch, webSearch, think
@@ -201,8 +201,6 @@ export async function runManualLoop(
 
       // Execute tools in parallel (order not guaranteed)
 
-      const toolEventMessages = new Map<string, Message[]>();
-
       // Check response.messages for already-processed tool results
       const alreadyProcessedToolCallIds = new Set<string>();
 
@@ -279,12 +277,11 @@ export async function runManualLoop(
                   abortSignal,
                 });
                 if (isAsyncIterable(output)) {
-                  const { finalValue, messages } =
-                    await consumeToolAsyncIterable(output);
+                  const { finalValue } = await consumeToolAsyncIterable(
+                    output,
+                    terminal,
+                  );
                   resultOutput = formatToolResult(finalValue);
-                  if (messages.length > 0) {
-                    toolEventMessages.set(call.toolCallId, messages);
-                  }
                 } else {
                   resultOutput = formatToolResult(output);
                 }
@@ -353,12 +350,11 @@ export async function runManualLoop(
                   abortSignal,
                 });
                 if (isAsyncIterable(output)) {
-                  const { finalValue, messages } =
-                    await consumeToolAsyncIterable(output);
+                  const { finalValue } = await consumeToolAsyncIterable(
+                    output,
+                    terminal,
+                  );
                   resultOutput = formatToolResult(finalValue);
-                  if (messages.length > 0) {
-                    toolEventMessages.set(call.toolCallId, messages);
-                  }
                 } else {
                   resultOutput = formatToolResult(output);
                 }
@@ -399,16 +395,6 @@ export async function runManualLoop(
       ];
 
       messageHistory.appendToolMessages(toolMessages);
-
-      // Display tools calls
-      for (const call of toolCalls) {
-        const messages = toolEventMessages.get(call.toolCallId);
-        if (messages) {
-          terminal.stopProgress();
-          displayToolMessages(messages, terminal);
-          toolEventMessages.delete(call.toolCallId);
-        }
-      }
 
       // Calculate usage for the current step/iteration
       const stepUsage = await result.usage;
@@ -459,9 +445,9 @@ export async function runManualLoop(
 
 export async function consumeToolAsyncIterable(
   iterable: AsyncIterable<unknown>,
-): Promise<{ finalValue: unknown; messages: Message[] }> {
+  terminal?: Terminal,
+): Promise<{ finalValue: unknown }> {
   const iterator = iterable[Symbol.asyncIterator]();
-  const messages: Message[] = [];
   const toolResultValues: unknown[] = [];
 
   let next = await iterator.next();
@@ -469,7 +455,9 @@ export async function consumeToolAsyncIterable(
   while (!next.done) {
     const value = next.value;
     if (isToolMessage(value)) {
-      messages.push(value);
+      if (terminal) {
+        displayToolMessages(value, terminal);
+      }
     } else {
       toolResultValues.push(value);
     }
@@ -480,7 +468,7 @@ export async function consumeToolAsyncIterable(
     next.value ??
     (toolResultValues.length > 0 ? toolResultValues.at(-1) : undefined);
 
-  return { finalValue, messages };
+  return { finalValue };
 }
 
 function formatToolResult(value: unknown): string {
