@@ -29,7 +29,7 @@ export const createWebFetchTool = (options: { tokenCounter: TokenCounter }) => {
         yield {
           event: "tool-init",
           id: toolCallId,
-          data: `Reading URL: ${style.cyan(url)}`,
+          data: `WebFetch: ${style.cyan(url)}`,
         };
         logger.info(`Initiating fetch for URL: ${url}`);
 

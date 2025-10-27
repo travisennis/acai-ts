@@ -38,7 +38,7 @@ export const createWebSearchTool = ({
       yield {
         event: "tool-init",
         id: toolCallId,
-        data: `Web search: ${style.cyan(query)}`,
+        data: `WebSearch: ${style.cyan(query)}`,
       };
 
       if (abortSignal?.aborted) {

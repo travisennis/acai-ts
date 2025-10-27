@@ -77,7 +77,7 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
         yield {
           event: "tool-init",
           id: toolCallId,
-          data: `Searching for files matching ${style.cyan(inspect(patternArray))} in ${style.cyan(path)}`,
+          data: `Glob: ${style.cyan(inspect(patternArray))} in ${style.cyan(path)}`,
         };
 
         // Build glob options
