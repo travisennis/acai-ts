@@ -165,7 +165,9 @@ export class Repl {
           workspace: this.options.workspace,
         });
         const userInput = await prompt.input();
+        const pasteStore = prompt.getPasteStore();
         prompt.close();
+        prompt.resetPasteStore();
 
         terminal.startProgress();
 
@@ -192,6 +194,7 @@ export class Repl {
             const processedPrompt = await processPrompt(userInput, {
               baseDir: process.cwd(),
               model: modelConfig,
+              pasteStore,
             });
             for (const context of processedPrompt.context) {
               promptManager.addContext(context);
