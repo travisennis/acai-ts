@@ -193,7 +193,15 @@ async function processUrlCommand(
 
 export async function processPrompt(
   message: string,
-  { baseDir, model }: { baseDir: string; model: ModelMetadata },
+  {
+    baseDir,
+    model,
+    pasteStore,
+  }: {
+    baseDir: string;
+    model: ModelMetadata;
+    pasteStore?: Map<number, string>;
+  },
 ): Promise<{ message: string; context: ContextItem[] }> {
   const fileRegex = /@([^\s@]+(?:\.[\w\d]+))/g;
   const urlRegex = /@(https?:\/\/[^\s]+)/g;
@@ -235,6 +243,26 @@ export async function processPrompt(
   }
 
   let processedMessage = message;
+
+  // Process paste placeholders
+  if (pasteStore && pasteStore.size > 0) {
+    const pasteRegex = /\[Paste #(\d+), (\d+) characters\]/g;
+    let match: RegExpExecArray | null = pasteRegex.exec(processedMessage);
+
+    while (match !== null) {
+      const pasteId = Number.parseInt(match[1], 10);
+      const pasteContent = pasteStore.get(pasteId);
+
+      if (pasteContent) {
+        processedMessage = processedMessage.replace(match[0], pasteContent);
+        // Reset regex lastIndex since we modified the string
+        pasteRegex.lastIndex = 0;
+      }
+
+      match = pasteRegex.exec(processedMessage);
+    }
+  }
+
   // Process shell commands
   for (const match of shellMatches) {
     const command = match[1];
