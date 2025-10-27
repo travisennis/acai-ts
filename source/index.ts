@@ -186,23 +186,37 @@ async function main() {
   } else if (flags.resume === true) {
     const histories = await MessageHistory.load(messageHistoryDir, 10);
     if (histories.length > 0) {
-      const choice = await select({
-        message: "Select a conversation to resume:",
-        choices: histories.map((h, index) => ({
-          name: `${index + 1}: ${h.title} (${h.updatedAt.toLocaleString()})`,
-          value: index,
-          description: `${h.messages.length} messages`,
-        })),
-      });
-      const selectedHistory = histories.at(choice);
-      if (selectedHistory) {
-        messageHistory.restore(selectedHistory);
-        logger.info(`Resuming conversation: ${selectedHistory.title}`);
-        // Set terminal title after restoring
-        terminal.setTitle(selectedHistory.title || `acai: ${process.cwd()}`);
-      } else {
-        // This case should theoretically not happen if choice is valid
-        logger.error("Selected history index out of bounds.");
+      try {
+        const choice = await select({
+          message: "Select a conversation to resume:",
+          choices: histories.map((h, index) => ({
+            name: `${index + 1}: ${h.title} (${h.updatedAt.toLocaleString()})`,
+            value: index,
+            description: `${h.messages.length} messages`,
+          })),
+        });
+        const selectedHistory = histories.at(choice);
+        if (selectedHistory) {
+          messageHistory.restore(selectedHistory);
+          logger.info(`Resuming conversation: ${selectedHistory.title}`);
+          // Set terminal title after restoring
+          terminal.setTitle(selectedHistory.title || `acai: ${process.cwd()}`);
+        } else {
+          // This case should theoretically not happen if choice is valid
+          logger.error("Selected history index out of bounds.");
+        }
+      } catch (error) {
+        // Handle Ctrl-C cancellation
+        if (
+          error instanceof Error &&
+          "isCanceled" in error &&
+          error.isCanceled === true
+        ) {
+          logger.info("Resume selection cancelled.");
+        } else {
+          // Re-throw other errors
+          throw error;
+        }
       }
     } else {
       logger.info("No previous conversations found to resume.");
