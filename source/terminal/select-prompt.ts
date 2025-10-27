@@ -118,11 +118,17 @@ function render<T>(
   pageSize: number,
   prompt: string,
   typed: string,
+  totalChoices: number,
 ): string {
   const visible = choices.slice(pageStart, pageStart + pageSize);
   const lines: string[] = [];
 
-  lines.push(`${prompt}${typed ? ` (search: ${typed})` : ""}`);
+  const searchInfo = typed ? ` (search: ${typed})` : "";
+  const filterInfo =
+    typed && choices.length !== totalChoices
+      ? ` [${choices.length}/${totalChoices}]`
+      : "";
+  lines.push(`${prompt}${searchInfo}${filterInfo}`);
 
   for (let i = 0; i < visible.length; i++) {
     const actualIndex = pageStart + i;
@@ -180,13 +186,21 @@ export async function select<T = unknown>({
   if (!stdin.isTTY) throw new Error("TTY required");
 
   let searchBuffer = "";
-  let searchTimer: NodeJS.Timeout | null = null;
+  const searchTimer: NodeJS.Timeout | null = null;
+  let filteredChoices: NormalizedChoice<T>[] = [...normalized];
 
-  const resetSearchBuffer = () => {
+  const clearSearchBuffer = () => {
+    searchBuffer = "";
+    filteredChoices = [...normalized];
+    // Reset pointer to first enabled choice when clearing search
+    pointer = findFirstEnabledIndex(filteredChoices);
+    pageStart = updatePageStart(pointer, pageSize, filteredChoices.length);
+    renderToScreen();
+  };
+
+  const resetSearchTimer = () => {
     if (searchTimer) clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => {
-      searchBuffer = "";
-    }, 800);
+    // Don't auto-clear the search buffer - let user clear it explicitly
   };
 
   let previousOutputLines = 0;
@@ -205,12 +219,13 @@ export async function select<T = unknown>({
     clearPreviousOutput(previousOutputLines);
 
     const out = render(
-      normalized,
+      filteredChoices,
       pointer,
       pageStart,
       pageSize,
       message,
       searchBuffer,
+      normalized.length,
     );
 
     previousOutputLines = out.split("\n").length;
@@ -219,25 +234,24 @@ export async function select<T = unknown>({
   }
 
   function move(delta: 1 | -1) {
-    pointer = findNextEnabledIndex(normalized, pointer, delta);
-    pageStart = updatePageStart(pointer, pageSize, normalized.length);
+    pointer = findNextEnabledIndex(filteredChoices, pointer, delta);
+    pageStart = updatePageStart(pointer, pageSize, filteredChoices.length);
     renderToScreen();
   }
 
-  function jumpToIndexStartingWith(prefix: string): boolean {
-    const start = (pointer + 1) % normalized.length;
-    const lowerPref = prefix.toLowerCase();
-    for (let i = 0; i < normalized.length; i++) {
-      const idx = (start + i) % normalized.length;
-      if (normalized[idx].disabled) continue;
-      if (normalized[idx].name.toLowerCase().startsWith(lowerPref)) {
-        pointer = idx;
-        pageStart = updatePageStart(pointer, pageSize, normalized.length);
-        renderToScreen();
-        return true;
-      }
+  function filterChoices(search: string): void {
+    if (!search) {
+      filteredChoices = [...normalized];
+    } else {
+      const lowerSearch = search.toLowerCase();
+      filteredChoices = normalized.filter((choice) =>
+        choice.name.toLowerCase().includes(lowerSearch),
+      );
     }
-    return false;
+
+    // Reset pointer to first enabled choice
+    pointer = findFirstEnabledIndex(filteredChoices);
+    pageStart = updatePageStart(pointer, pageSize, filteredChoices.length);
   }
 
   return new Promise<T>((resolve, reject) => {
@@ -281,7 +295,7 @@ export async function select<T = unknown>({
 
       if (key === Keys.enter || key === Keys.newline) {
         cleanup();
-        const chosen = normalized[pointer];
+        const chosen = filteredChoices[pointer];
         stdout.write("\n");
         resolve(chosen.value);
         return;
@@ -297,14 +311,14 @@ export async function select<T = unknown>({
       }
 
       if (key === Keys.home || key === Keys.homeAlt) {
-        pointer = findFirstEnabledIndex(normalized);
-        pageStart = updatePageStart(pointer, pageSize, normalized.length);
+        pointer = findFirstEnabledIndex(filteredChoices);
+        pageStart = updatePageStart(pointer, pageSize, filteredChoices.length);
         renderToScreen();
         return;
       }
       if (key === Keys.end || key === Keys.endAlt) {
-        pointer = findLastEnabledIndex(normalized);
-        pageStart = updatePageStart(pointer, pageSize, normalized.length);
+        pointer = findLastEnabledIndex(filteredChoices);
+        pageStart = updatePageStart(pointer, pageSize, filteredChoices.length);
         renderToScreen();
         return;
       }
@@ -312,21 +326,20 @@ export async function select<T = unknown>({
       if (key === Keys.backspace || key === Keys.backspaceAlt) {
         if (searchBuffer.length > 0) {
           searchBuffer = searchBuffer.slice(0, -1);
-          if (searchBuffer.length === 0) resetSearchBuffer();
-          renderToScreen();
+          if (searchBuffer.length === 0) {
+            clearSearchBuffer();
+          } else {
+            filterChoices(searchBuffer);
+            renderToScreen();
+          }
         }
         return;
       }
 
       if (key && key >= " " && key <= "~") {
         searchBuffer += key;
-        resetSearchBuffer();
-        const found = jumpToIndexStartingWith(searchBuffer);
-        if (!found) {
-          searchBuffer = key;
-          resetSearchBuffer();
-          jumpToIndexStartingWith(searchBuffer);
-        }
+        resetSearchTimer();
+        filterChoices(searchBuffer);
         renderToScreen();
         return;
       }
