@@ -23,30 +23,44 @@ export const historyCommand = ({
         return "continue";
       }
 
-      const choice = await select({
-        message: "Select a conversation to resume:",
-        choices: histories.map(
-          (
-            h: { title: string; updatedAt: Date; messages: unknown[] },
-            index: number,
-          ) => ({
-            name: `${index + 1}: ${h.title} (${h.updatedAt.toLocaleString()})`,
-            value: index,
-            description: `${h.messages.length} messages`,
-          }),
-        ),
-        pageSize: 15,
-      });
+      try {
+        const choice = await select({
+          message: "Select a conversation to resume:",
+          choices: histories.map(
+            (
+              h: { title: string; updatedAt: Date; messages: unknown[] },
+              index: number,
+            ) => ({
+              name: `${index + 1}: ${h.title} (${h.updatedAt.toLocaleString()})`,
+              value: index,
+              description: `${h.messages.length} messages`,
+            }),
+          ),
+          pageSize: 15,
+        });
 
-      const selectedHistory = histories.at(choice);
-      if (selectedHistory) {
-        messageHistory.restore(selectedHistory);
-        terminal.info(`Resuming conversation: ${selectedHistory.title}`);
-        // Set terminal title after restoring
-        terminal.setTitle(selectedHistory.title || `acai: ${process.cwd()}`);
-      } else {
-        // This case should theoretically not happen if choice is valid
-        terminal.error("Selected history index out of bounds.");
+        const selectedHistory = histories.at(choice);
+        if (selectedHistory) {
+          messageHistory.restore(selectedHistory);
+          terminal.info(`Resuming conversation: ${selectedHistory.title}`);
+          // Set terminal title after restoring
+          terminal.setTitle(selectedHistory.title || `acai: ${process.cwd()}`);
+        } else {
+          // This case should theoretically not happen if choice is valid
+          terminal.error("Selected history index out of bounds.");
+        }
+      } catch (error) {
+        // Handle Ctrl-C cancellation
+        if (
+          error instanceof Error &&
+          "isCanceled" in error &&
+          error.isCanceled === true
+        ) {
+          terminal.info("History selection cancelled.");
+          return "continue";
+        }
+        // Re-throw other errors
+        throw error;
       }
 
       return "continue";
