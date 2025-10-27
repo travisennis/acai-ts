@@ -180,14 +180,12 @@ export async function initTools({
   // Build executors and permissions maps for manual loop
   const executors = new Map();
   const permissions = new Map();
-  // const onCallHanlders = new Map();
 
   // Add bash tool
   executors.set(BashTool.name, bashTool.execute);
   if (bashTool.ask) {
     permissions.set(BashTool.name, bashTool.ask);
   }
-  // onCallHandlers.set(BashTool.name, bashTool.onCall);
 
   // Add editFile tool
   executors.set(EditFileTool.name, editFileTool.execute);
