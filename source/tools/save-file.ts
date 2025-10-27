@@ -57,7 +57,7 @@ export const createSaveFileTool = async ({
         yield {
           event: "tool-init",
           id: toolCallId,
-          data: `Saving file: ${style.cyan(userPath)}`,
+          data: `SaveFile: ${style.cyan(userPath)}`,
         };
 
         const filePath = await validatePath(

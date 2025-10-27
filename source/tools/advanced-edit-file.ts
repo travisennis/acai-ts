@@ -101,7 +101,7 @@ export const createAdvancedEditFileTool = async ({
         yield {
           id: toolCallId,
           event: "tool-init",
-          data: `Advanced editing file: ${style.cyan(path)} (mode: ${mode})`,
+          data: `EditFile: ${style.cyan(path)} (mode: ${mode})`,
         };
 
         const validPath = await validatePath(

@@ -65,7 +65,7 @@ export const createEditFileTool = async ({
         yield {
           id: toolCallId,
           event: "tool-init",
-          data: `Editing file: ${style.cyan(path)}`,
+          data: `EditFile: ${style.cyan(path)}`,
         };
 
         const validPath = await validatePath(

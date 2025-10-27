@@ -52,7 +52,7 @@ export const createReadMultipleFilesTool = async ({
         yield {
           id: toolCallId,
           event: "tool-init",
-          data: `Reading files: ${paths.map((p) => style.cyan(p)).join(", ")}`,
+          data: `ReadFiles: ${paths.map((p) => style.cyan(p)).join(", ")}`,
         };
 
         if (abortSignal?.aborted) {

@@ -51,7 +51,7 @@ export const createMoveFileTool = async ({
         yield {
           id: toolCallId,
           event: "tool-init",
-          data: `Moving file from ${style.cyan(source)} to ${style.cyan(destination)}`,
+          data: `MoveFile: ${style.cyan(source)} => ${style.cyan(destination)}`,
         };
 
         const validSourcePath = await validatePath(

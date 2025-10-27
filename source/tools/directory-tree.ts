@@ -49,7 +49,7 @@ export const createDirectoryTreeTool = async ({
         yield {
           id: toolCallId,
           event: "tool-init",
-          data: `Listing directory tree: ${style.cyan(path)}`,
+          data: `DirectoryTree: ${style.cyan(path)}`,
         };
 
         const validPath = await validatePath(

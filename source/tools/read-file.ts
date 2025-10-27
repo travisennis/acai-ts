@@ -68,7 +68,7 @@ export const createReadFileTool = async ({
         yield {
           id: toolCallId,
           event: "tool-init",
-          data: `Reading file: ${style.cyan(providedPath)}${startLine ? style.cyan(`:${startLine}`) : ""}${lineCount ? style.cyan(`:${lineCount}`) : ""}`,
+          data: `ReadFile: ${style.cyan(providedPath)}${startLine ? style.cyan(`:${startLine}`) : ""}${lineCount ? style.cyan(`:${lineCount}`) : ""}`,
         };
 
         const filePath = await validatePath(

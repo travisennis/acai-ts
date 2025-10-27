@@ -47,7 +47,7 @@ export const createDeleteFileTool = async ({
         yield {
           id: toolCallId,
           event: "tool-init",
-          data: `Deleting file: ${style.cyan(userPath)}`,
+          data: `DeleteFile: ${style.cyan(userPath)}`,
         };
 
         const filePath = await validatePath(
