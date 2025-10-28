@@ -12,7 +12,7 @@ describe("historyCommand", () => {
     assert.equal(command.command, "/history");
     assert.equal(
       command.description,
-      "Browse and resume previous conversations.",
+      "Browse and manage previous conversations.",
     );
     assert.equal(typeof command.execute, "function");
     assert.equal(typeof command.getSubCommands, "function");
