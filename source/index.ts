@@ -16,7 +16,7 @@ import { initTerminal } from "./terminal/index.ts";
 import { select } from "./terminal/select-prompt.ts";
 import { TokenCounter } from "./tokens/counter.ts";
 import { TokenTracker } from "./tokens/tracker.ts";
-import { ToolExecutor } from "./tool-executor.ts";
+
 import { getPackageVersion } from "./version.ts";
 
 // Workspace context for managing multiple working directories
@@ -52,7 +52,7 @@ Options
   --prompt, -p       Sets the prompt (runs in CLI mode)
   --continue         Load the most recent conversation
   --resume           Select a recent conversation to resume
-  --autoAcceptAll    Accept all commands and edits without prompting
+
   --add-dir          Add additional working directory (can be used multiple times)
   --help, -h         Show help
   --version, -v      Show version
@@ -69,7 +69,7 @@ const parsed = parseArgs({
     prompt: { type: "string", short: "p" },
     continue: { type: "boolean", default: false },
     resume: { type: "boolean", default: false },
-    autoAcceptAll: { type: "boolean", default: false },
+
     "add-dir": { type: "string", multiple: true },
     help: { type: "boolean", short: "h" },
     version: { type: "boolean", short: "v" },
@@ -223,8 +223,6 @@ async function main() {
     }
   }
 
-  const toolExecutor = new ToolExecutor(flags.autoAcceptAll === true);
-
   // --- Setup Prompt Manager (only if not continuing/resuming) ---
   const promptManager = new PromptManager(tokenCounter);
   if (!hasContinueOrResume && isDefined(initialPromptInput)) {
@@ -245,7 +243,7 @@ async function main() {
     tokenTracker,
     config,
     tokenCounter,
-    toolExecutor,
+
     promptHistory,
     workspace,
   });
@@ -274,7 +272,7 @@ async function main() {
     tokenTracker,
     commands,
     tokenCounter,
-    toolExecutor,
+
     promptHistory,
     workspace,
     showLastMessage: hasContinueOrResume

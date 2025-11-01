@@ -6,7 +6,6 @@ import type { PromptManagerApi } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
-import type { ToolExecutor } from "../tool-executor.ts";
 import { addDirectoryCommand } from "./add-directory-command.ts";
 import { applicationLogCommand } from "./application-log-command.ts";
 import { clearCommand } from "./clear-command.ts";
@@ -45,7 +44,6 @@ export class CommandManager {
   private terminal: Terminal;
   private config: ConfigManager;
   private tokenCounter: TokenCounter;
-  private toolExecutor?: ToolExecutor;
   private promptHistory: string[];
   private workspace: WorkspaceContext;
   private initialized: boolean;
@@ -58,7 +56,6 @@ export class CommandManager {
     tokenTracker,
     config,
     tokenCounter,
-    toolExecutor,
     promptHistory,
     workspace,
   }: CommandOptions) {
@@ -70,7 +67,6 @@ export class CommandManager {
     this.tokenTracker = tokenTracker;
     this.config = config;
     this.tokenCounter = tokenCounter;
-    this.toolExecutor = toolExecutor;
     this.promptHistory = promptHistory;
     this.workspace = workspace;
     this.initialized = false;
@@ -89,7 +85,6 @@ export class CommandManager {
       tokenTracker: this.tokenTracker,
       config: this.config,
       tokenCounter: this.tokenCounter,
-      toolExecutor: this.toolExecutor,
       promptHistory: this.promptHistory,
       workspace: this.workspace,
     };

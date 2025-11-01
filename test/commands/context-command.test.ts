@@ -20,7 +20,6 @@ describe("contextCommand", () => {
   let mockConfig: ReturnType<typeof createMockConfig>;
   let mockTokenTracker: ReturnType<typeof createMockTokenTracker>;
   let mockPromptManager: ReturnType<typeof createMockPromptManager>;
-  let mockToolExecutor: undefined;
   let mockPromptHistory: string[];
 
   beforeEach(() => {
@@ -31,7 +30,6 @@ describe("contextCommand", () => {
     mockConfig = createMockConfig();
     mockTokenTracker = createMockTokenTracker();
     mockPromptManager = createMockPromptManager();
-    mockToolExecutor = undefined;
     mockPromptHistory = [];
   });
 
@@ -44,7 +42,6 @@ describe("contextCommand", () => {
       tokenTracker: mockTokenTracker,
       config: mockConfig,
       promptManager: mockPromptManager,
-      toolExecutor: mockToolExecutor,
       promptHistory: mockPromptHistory,
     });
 
@@ -63,7 +60,6 @@ describe("contextCommand", () => {
       tokenTracker: mockTokenTracker,
       config: mockConfig,
       promptManager: mockPromptManager,
-      toolExecutor: mockToolExecutor,
       promptHistory: mockPromptHistory,
     });
 
@@ -82,7 +78,6 @@ describe("contextCommand", () => {
       tokenTracker: mockTokenTracker,
       config: mockConfig,
       promptManager: mockPromptManager,
-      toolExecutor: mockToolExecutor,
       promptHistory: mockPromptHistory,
     });
 
@@ -107,7 +102,6 @@ describe("contextCommand", () => {
       tokenTracker: mockTokenTracker,
       config: mockConfig,
       promptManager: mockPromptManager,
-      toolExecutor: mockToolExecutor,
       promptHistory: mockPromptHistory,
     });
 

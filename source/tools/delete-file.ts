@@ -2,9 +2,7 @@ import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
-import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
-import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { ToolResult } from "./types.ts";
 
@@ -21,13 +19,9 @@ type DeleteFileInputSchema = z.infer<typeof inputSchema>;
 export const createDeleteFileTool = async ({
   workingDir,
   allowedDirs,
-  terminal,
-  toolExecutor,
 }: {
   workingDir: string;
   allowedDirs?: string[];
-  terminal?: Terminal;
-  toolExecutor?: ToolExecutor;
 }) => {
   const allowedDirectory = allowedDirs ?? [workingDir];
 
@@ -93,71 +87,6 @@ export const createDeleteFileTool = async ({
         };
         yield errorMessage;
       }
-    },
-    ask: async (
-      { path: userPath }: DeleteFileInputSchema,
-      {
-        toolCallId,
-        abortSignal,
-      }: { toolCallId: string; abortSignal?: AbortSignal },
-    ): Promise<{ approve: true } | { approve: false; reason: string }> => {
-      if (terminal) {
-        terminal.writeln(
-          `\n${style.red.bold("●")} Proposing file deletion: ${style.cyan(userPath)}`,
-        );
-
-        terminal.lineBreak();
-        terminal.writeln("This action cannot be undone.");
-        terminal.lineBreak();
-
-        let userResponse: AskResponse | undefined;
-        if (toolExecutor) {
-          const ctx = {
-            toolName: DeleteFileTool.name,
-            toolCallId,
-            message: "What would you like to do with this deletion?",
-            choices: {
-              accept: "Accept this deletion",
-              acceptAll: "Accept all future deletions (including this)",
-              reject: "Reject this deletion",
-            },
-          };
-          try {
-            userResponse = await toolExecutor.ask(ctx, { abortSignal });
-          } catch (e) {
-            if ((e as Error).name === "AbortError") {
-              throw new Error("File deletion aborted during user input");
-            }
-            throw e;
-          }
-        }
-
-        const { result: userChoice, reason } = userResponse ?? {
-          result: "accept",
-        };
-
-        terminal.lineBreak();
-
-        if (userChoice === "accept-all") {
-          terminal.writeln(
-            style.yellow("✓ Auto-accept mode enabled for all deletions"),
-          );
-          terminal.lineBreak();
-        }
-
-        if (userChoice === "reject") {
-          terminal.lineBreak();
-
-          const rejectionReason = reason || "No reason provided";
-          return {
-            approve: false,
-            reason: `The user rejected this deletion. Reason: ${rejectionReason}`,
-          };
-        }
-      }
-      return {
-        approve: true,
-      };
     },
   };
 };

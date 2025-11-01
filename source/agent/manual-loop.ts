@@ -1,6 +1,5 @@
 import type {
   LanguageModelUsage,
-  ToolCallOptions,
   ToolExecuteFunction,
   ToolModelMessage,
 } from "ai";
@@ -20,9 +19,6 @@ import type { CompleteToolSet } from "../tools/index.ts";
 import { isToolMessage } from "../tools/types.ts";
 import { isAsyncIterable } from "../utils/iterables.ts";
 
-// - readOnly=true (parallel): readFile, readMultipleFiles, grep, webFetch, webSearch, think
-// - serialize (readOnly=false): editFile, saveFile, moveFile, deleteFile, bash, codeInterpreter
-
 export type ManualLoopOptions = {
   modelManager: ModelManager;
   terminal: Terminal;
@@ -31,13 +27,6 @@ export type ManualLoopOptions = {
   input: string;
   toolDefs: CompleteToolSet;
   executors: Map<keyof CompleteToolSet, ToolExecuteFunction<unknown, string>>;
-  permissions: Map<
-    keyof CompleteToolSet,
-    (
-      input: unknown,
-      options: ToolCallOptions,
-    ) => Promise<{ approve: true } | { approve: false; reason: string }>
-  >;
   maxIterations?: number;
   maxRetries?: number;
   abortSignal?: AbortSignal;
@@ -63,7 +52,6 @@ export async function runManualLoop(
     input,
     toolDefs,
     executors,
-    permissions,
     maxIterations = 90,
     maxRetries = 2,
     abortSignal,
@@ -241,25 +229,11 @@ export async function runManualLoop(
         );
       }
 
-      // Split validToolCalls into two groups: those with permission functions and those without
-      const toolsWithPermission: typeof validToolCalls = [];
-      const toolsWithoutPermission: typeof validToolCalls = [];
-
-      for (const call of validToolCalls) {
-        const toolName = call.toolName as keyof CompleteToolSet;
-        const permFunc = permissions.get(toolName);
-        if (permFunc) {
-          toolsWithPermission.push(call);
-        } else {
-          toolsWithoutPermission.push(call);
-        }
-      }
-
-      // Process tools without permission concurrently
-      const concurrentToolMessages: Promise<
+      // Process all tools concurrently
+      const toolMessagesPromise: Promise<
         PromiseSettledResult<ToolModelMessage>[]
       > = Promise.allSettled(
-        toolsWithoutPermission.map(async (call) => {
+        validToolCalls.map(async (call) => {
           const toolName = call.toolName as keyof CompleteToolSet;
           let resultOutput = "Unknown result.";
           try {
@@ -313,86 +287,9 @@ export async function runManualLoop(
         }),
       );
 
-      // Process tools with permission sequentially
-      const sequentialToolMessages: ToolModelMessage[] = [];
-      for (const call of toolsWithPermission) {
-        const toolName = call.toolName as keyof CompleteToolSet;
-        let resultOutput = "Unknown result.";
-        try {
-          thisStepToolCalls.push({ toolName });
-          thisStepToolResults.push({ toolName });
-
-          const exec = executors.get(toolName);
-
-          if (!exec) {
-            resultOutput = `No executor for tool ${toolName}`;
-          } else {
-            let approved = true;
-            const permFunc = permissions.get(toolName);
-            if (permFunc) {
-              const permResult = await permFunc(call.input, {
-                toolCallId: call.toolCallId,
-                messages: messageHistory.get(),
-                abortSignal,
-              });
-
-              if (!permResult.approve) {
-                approved = false;
-                resultOutput = permResult.reason;
-              }
-            }
-
-            if (approved) {
-              try {
-                const output = await exec(call.input, {
-                  toolCallId: call.toolCallId,
-                  messages: messageHistory.get(),
-                  abortSignal,
-                });
-                if (isAsyncIterable(output)) {
-                  const { finalValue } = await consumeToolAsyncIterable(
-                    output,
-                    terminal,
-                  );
-                  resultOutput = formatToolResult(finalValue);
-                } else {
-                  resultOutput = formatToolResult(output);
-                }
-              } catch (err) {
-                resultOutput = `Tool error: ${
-                  err instanceof Error ? err.message : String(err)
-                }`;
-              }
-            }
-          }
-        } catch (err) {
-          resultOutput = `Tool error: ${
-            err instanceof Error ? err.message : String(err)
-          }`;
-        }
-        sequentialToolMessages.push({
-          role: "tool",
-          content: [
-            {
-              type: "tool-result",
-              toolName,
-              toolCallId: call.toolCallId,
-              output: {
-                type: "text",
-                value: resultOutput,
-              },
-            },
-          ],
-        });
-      }
-
-      // Combine all tool messages
-      const toolMessages: ToolModelMessage[] = [
-        ...sequentialToolMessages,
-        ...(await concurrentToolMessages)
-          .filter((result) => result.status === "fulfilled")
-          .map((result) => result.value),
-      ];
+      const toolMessages: ToolModelMessage[] = (await toolMessagesPromise)
+        .filter((result) => result.status === "fulfilled")
+        .map((result) => result.value);
 
       messageHistory.appendToolMessages(toolMessages);
 

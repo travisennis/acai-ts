@@ -20,7 +20,6 @@ import type { Terminal } from "./terminal/index.ts";
 import style from "./terminal/style.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
-import type { ToolExecutor } from "./tool-executor.ts";
 import {
   initAgents,
   initCliAgents,
@@ -38,7 +37,6 @@ interface ReplOptions {
   config: Record<PropertyKey, unknown>;
   tokenCounter: TokenCounter;
   showLastMessage: boolean; // For displaying last message when continuing/resuming
-  toolExecutor?: ToolExecutor;
   promptHistory: string[];
   workspace: WorkspaceContext;
 }
@@ -62,7 +60,6 @@ export class Repl {
       messageHistory,
       commands,
       tokenCounter,
-      toolExecutor,
       promptHistory,
     } = this.options;
 
@@ -77,9 +74,7 @@ export class Repl {
 
     // Initialize tools once outside the loop - all models support tool calling
     const coreTools = await initTools({
-      terminal,
       tokenCounter,
-      toolExecutor,
       workspace: this.options.workspace,
     });
 
@@ -99,7 +94,6 @@ export class Repl {
     const tools = {
       toolDefs: completeToolDefs,
       executors: new Map([...coreTools.executors, ...agentTools.executors]),
-      permissions: coreTools.permissions,
     } as const;
 
     // Build auto-mode tools (with execute) once
@@ -248,7 +242,7 @@ export class Repl {
 
       try {
         if (projectConfig.agentLoop === "manual") {
-          const { toolDefs, executors, permissions } = tools;
+          const { toolDefs, executors } = tools;
           const result = await runManualLoop({
             modelManager,
             terminal,
@@ -257,7 +251,6 @@ export class Repl {
             input: userPrompt,
             toolDefs,
             executors,
-            permissions,
             maxIterations: projectConfig.loop.maxIterations,
             abortSignal: signal,
             toolCallRepair: toolCallRepair(modelManager),

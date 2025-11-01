@@ -13,7 +13,6 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
 
       try {
         const tools = await initTools({
-          terminal: options.terminal,
           tokenCounter: options.tokenCounter,
           workspace: options.workspace,
         });

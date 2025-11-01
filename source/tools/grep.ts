@@ -122,14 +122,6 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
           try {
             if (likelyUnbalancedRegex(pattern)) {
               effectiveLiteral = true;
-              yield {
-                event: "tool-update",
-                id: toolCallId,
-                data: {
-                  primary:
-                    "Pattern appears to contain unbalanced regex metacharacters; using fixed-string mode (-F).",
-                },
-              };
             } else {
               effectiveLiteral = false;
             }
@@ -158,14 +150,6 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
           tokenCounter,
           threshold: maxTokens,
         });
-
-        if (managed.truncated) {
-          yield {
-            event: "tool-update",
-            id: toolCallId,
-            data: { primary: managed.warning },
-          };
-        }
 
         // Get actual matches (excluding context lines)
         const actualMatches = grepResult.parsedMatches.filter(

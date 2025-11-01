@@ -5,7 +5,6 @@ import type { ModelManager } from "../models/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
-import type { ToolExecutor } from "../tool-executor.ts";
 import {
   AdvancedEditFileTool,
   createAdvancedEditFileTool,
@@ -52,14 +51,10 @@ export type CompleteCliToolSet = AsyncReturnType<
 >["toolDefs"];
 
 export async function initTools({
-  terminal,
   tokenCounter,
-  toolExecutor,
   workspace,
 }: {
-  terminal: Terminal;
   tokenCounter: TokenCounter;
-  toolExecutor?: ToolExecutor;
   workspace: WorkspaceContext;
 }) {
   const readFileTool = await createReadFileTool({
@@ -77,29 +72,21 @@ export async function initTools({
   const editFileTool = await createEditFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    terminal,
-    toolExecutor,
   });
 
   const advancedEditFileTool = await createAdvancedEditFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    terminal,
-    toolExecutor,
   });
 
   const saveFileTool = await createSaveFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    terminal,
-    toolExecutor,
   });
 
   const moveFileTool = await createMoveFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    terminal,
-    toolExecutor,
   });
 
   const directoryTreeTool = await createDirectoryTreeTool({
@@ -111,8 +98,6 @@ export async function initTools({
   const deleteFileTool = await createDeleteFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    terminal,
-    toolExecutor,
   });
 
   const codeInterpreterTool = await createCodeInterpreterTool({
@@ -141,14 +126,10 @@ export async function initTools({
     baseDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
     tokenCounter,
-    terminal,
-    toolExecutor,
   });
 
   const dynamicTools = await loadDynamicTools({
     baseDir: workspace.primaryDir,
-    toolExecutor,
-    terminal,
   });
 
   // Build tools object for AI SDK
@@ -177,45 +158,26 @@ export async function initTools({
     ),
   } as const;
 
-  // Build executors and permissions maps for manual loop
+  // Build executors map for manual loop
   const executors = new Map();
-  const permissions = new Map();
 
   // Add bash tool
   executors.set(BashTool.name, bashTool.execute);
-  if (bashTool.ask) {
-    permissions.set(BashTool.name, bashTool.ask);
-  }
 
   // Add editFile tool
   executors.set(EditFileTool.name, editFileTool.execute);
-  if (editFileTool.ask) {
-    permissions.set(EditFileTool.name, editFileTool.ask);
-  }
 
   // Add advancedEditFile tool
   executors.set(AdvancedEditFileTool.name, advancedEditFileTool.execute);
-  if (advancedEditFileTool.ask) {
-    permissions.set(AdvancedEditFileTool.name, advancedEditFileTool.ask);
-  }
 
   // Add saveFile tool
   executors.set(SaveFileTool.name, saveFileTool.execute);
-  if (saveFileTool.ask) {
-    permissions.set(SaveFileTool.name, saveFileTool.ask);
-  }
 
   // Add deleteFile tool
   executors.set(DeleteFileTool.name, deleteFileTool.execute);
-  if (deleteFileTool.ask) {
-    permissions.set(DeleteFileTool.name, deleteFileTool.ask);
-  }
 
   // Add moveFile tool
   executors.set(MoveFileTool.name, moveFileTool.execute);
-  if (moveFileTool.ask) {
-    permissions.set(MoveFileTool.name, moveFileTool.ask);
-  }
 
   // Add readFile tool
   executors.set(ReadFileTool.name, readFileTool.execute);
@@ -244,18 +206,14 @@ export async function initTools({
   // Add codeInterpreter tool
   executors.set(CodeInterpreterTool.name, codeInterpreterTool.execute);
 
-  // Add dynamic tools to executors and permissions
+  // Add dynamic tools to executors
   for (const [name, toolObj] of Object.entries(dynamicTools)) {
     executors.set(name, toolObj.execute);
-    if (toolObj.ask) {
-      permissions.set(name, toolObj.ask);
-    }
   }
 
   return {
     toolDefs: tools,
     executors,
-    permissions,
   };
 }
 
@@ -281,25 +239,21 @@ export async function initCliTools({
   const editFileTool = await createEditFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    terminal: undefined,
   });
 
   const advancedEditFileTool = await createAdvancedEditFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    terminal: undefined,
   });
 
   const saveFileTool = await createSaveFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    terminal: undefined,
   });
 
   const moveFileTool = await createMoveFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    terminal: undefined,
   });
 
   const directoryTreeTool = await createDirectoryTreeTool({
@@ -311,7 +265,6 @@ export async function initCliTools({
   const deleteFileTool = await createDeleteFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    terminal: undefined,
   });
 
   const codeInterpreterTool = await createCodeInterpreterTool({
@@ -340,13 +293,10 @@ export async function initCliTools({
     baseDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
     tokenCounter,
-    terminal: undefined,
   });
 
   const dynamicTools = await loadDynamicTools({
     baseDir: workspace.primaryDir,
-    toolExecutor: undefined,
-    terminal: undefined,
   });
 
   const tools = {

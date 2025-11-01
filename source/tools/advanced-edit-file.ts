@@ -3,9 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import type { ToolCallOptions } from "ai";
 import { createTwoFilesPatch } from "diff";
 import { z } from "zod";
-import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
-import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { ToolResult } from "./types.ts";
 
@@ -66,13 +64,9 @@ interface FileOperation {
 export const createAdvancedEditFileTool = async ({
   workingDir,
   allowedDirs,
-  terminal,
-  toolExecutor,
 }: {
   workingDir: string;
   allowedDirs?: string[];
-  terminal?: Terminal;
-  toolExecutor?: ToolExecutor;
 }) => {
   const allowedDirectory = allowedDirs ?? [workingDir];
   return {
@@ -134,109 +128,6 @@ export const createAdvancedEditFileTool = async ({
           data: `Failed to edit file: ${(error as Error).message}`,
         };
         yield `Failed to edit file: ${(error as Error).message}`;
-      }
-    },
-    ask: async (
-      {
-        path,
-        mode,
-        operations,
-        astPattern,
-        astReplacement,
-      }: AdvancedEditFileInputSchema,
-      {
-        toolCallId,
-        abortSignal,
-      }: { toolCallId: string; abortSignal?: AbortSignal },
-    ): Promise<{ approve: true } | { approve: false; reason: string }> => {
-      try {
-        if (terminal) {
-          const validPath = await validatePath(
-            joinWorkingDir(path, workingDir),
-            allowedDirectory,
-            { abortSignal },
-          );
-
-          // Show diff preview
-          terminal.writeln(
-            `\n${style.blue.bold("●")} Proposing advanced file changes: ${style.cyan(path)} (mode: ${mode})`,
-          );
-
-          terminal.lineBreak();
-
-          const diffPreview = await applyAdvancedFileEdits(
-            validPath,
-            mode,
-            operations,
-            astPattern,
-            astReplacement,
-            true, // dry run for preview
-            abortSignal,
-          );
-
-          terminal.writeln(
-            `The agent is proposing the following ${style.cyan(operations.length)} operations in ${style.cyan(mode)} mode:`,
-          );
-
-          terminal.hr();
-
-          terminal.display(diffPreview);
-
-          terminal.hr();
-
-          let userResponse: AskResponse | undefined;
-          // Prompt only when a toolExecutor is present
-          if (toolExecutor) {
-            const ctx = {
-              toolName: AdvancedEditFileTool.name,
-              toolCallId,
-              message: "What would you like to do with these changes?",
-              choices: {
-                accept: "Accept these changes",
-                acceptAll: "Accept all future edits (including these)",
-                reject: "Reject these changes",
-              },
-            };
-            try {
-              userResponse = await toolExecutor.ask(ctx, { abortSignal });
-            } catch (e) {
-              if ((e as Error).name === "AbortError") {
-                throw new Error("File editing aborted during user input");
-              }
-              throw e;
-            }
-          }
-
-          const { result: userChoice, reason } = userResponse ?? {
-            result: "accept",
-          };
-
-          terminal.lineBreak();
-
-          if (userChoice === "accept-all") {
-            terminal.writeln(
-              style.yellow("✓ Auto-accept mode enabled for all edits"),
-            );
-            terminal.lineBreak();
-          }
-
-          if (userChoice === "reject") {
-            terminal.lineBreak();
-
-            const rejectionReason = reason || "No reason provided";
-            return {
-              approve: false,
-              reason: `The user rejected these changes. Reason: ${rejectionReason}`,
-            };
-          }
-        }
-        return {
-          approve: true,
-        };
-      } catch (_error) {
-        return {
-          approve: true,
-        };
       }
     },
   };

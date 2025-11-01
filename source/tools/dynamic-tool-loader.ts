@@ -6,9 +6,6 @@ import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
 import { logger } from "../logger.ts";
-import type { Terminal } from "../terminal/index.ts";
-import style from "../terminal/style.ts";
-import type { ToolExecutor } from "../tool-executor.ts";
 import { parseToolMetadata, type ToolMetadata } from "./dynamic-tool-parser.ts";
 import type { ToolResult } from "./types.ts";
 
@@ -212,8 +209,6 @@ export interface DynamicToolObject {
 export function createDynamicTool(
   scriptPath: string,
   metadata: ToolMetadata,
-  toolExecutor?: ToolExecutor,
-  terminal?: Terminal,
 ): { [x: string]: DynamicToolObject } {
   const inputSchema = generateZodSchema(metadata.parameters);
   const toolName = `dynamic-${metadata.name}`;
@@ -283,98 +278,11 @@ export function createDynamicTool(
           yield (error as Error).message;
         }
       },
-      ask: async (
-        input: Record<string, unknown>,
-        { toolCallId, abortSignal }: ToolCallOptions,
-      ) => {
-        if (abortSignal?.aborted) {
-          return { approve: false, reason: "Execution aborted" };
-        }
-
-        if (metadata.needsApproval === false) {
-          return { approve: true };
-        }
-
-        if (toolExecutor) {
-          if (terminal) {
-            terminal.writeln(
-              `\n${style.blue.bold("●")} Proposing to run dynamic tool: ${style.cyan(metadata.name)}`,
-            );
-            terminal.lineBreak();
-            terminal.writeln(metadata.description);
-            terminal.lineBreak();
-            const previewArgs = Object.entries(input)
-              .slice(0, 10)
-              .map(([k, v]) => `${k}: ${JSON.stringify(v)}`);
-            if (previewArgs.length > 0) {
-              terminal.writeln("Arguments (preview):");
-              for (const line of previewArgs) terminal.writeln(`  - ${line}`);
-              terminal.lineBreak();
-            }
-          }
-          try {
-            const ctx = {
-              toolName: `dynamic-${metadata.name}`,
-              toolCallId,
-              message:
-                "What would you like to do with this dynamic tool execution?",
-              choices: {
-                accept: "Execute this dynamic tool",
-                acceptAll:
-                  "Accept all future executions for this tool (including this)",
-                reject: "Reject this execution",
-              },
-            } as const;
-            const resp = await toolExecutor.ask(ctx, { abortSignal });
-            const { result: userChoice, reason } = resp;
-            terminal?.lineBreak();
-            if (userChoice === "accept-all") {
-              terminal?.writeln(
-                style.yellow(
-                  "✓ Auto-accept mode enabled for this dynamic tool",
-                ),
-              );
-              terminal?.lineBreak();
-            }
-            if (userChoice === "reject") {
-              return {
-                approve: false,
-                reason: `The user rejected this execution. Reason: ${
-                  reason || "No reason provided"
-                }`,
-              };
-            }
-            return { approve: true };
-          } catch (e) {
-            if ((e as Error).name === "AbortError") {
-              return { approve: false, reason: "Execution aborted" };
-            }
-            return {
-              approve: false,
-              reason: (e as Error).message ?? "Unknown error during approval",
-            };
-          }
-        }
-
-        return {
-          approve: false,
-          reason:
-            "Dynamic tools require explicit user approval due to security considerations",
-        };
-      },
     } as DynamicToolObject,
   };
 }
 
-export async function loadDynamicTools({
-  baseDir,
-  toolExecutor,
-  terminal,
-}: {
-  baseDir: string;
-  toolExecutor?: ToolExecutor;
-  terminal?: Terminal;
-}) {
+export async function loadDynamicTools({ baseDir }: { baseDir: string }) {
   const projectConfig = await config.readProjectConfig();
   const dynamicConfig = projectConfig.tools.dynamicTools;
 
@@ -434,10 +342,7 @@ export async function loadDynamicTools({
 
   const tools: Record<string, DynamicToolObject> = {};
   for (const [_, { path, metadata }] of toolMap) {
-    Object.assign(
-      tools,
-      createDynamicTool(path, metadata, toolExecutor, terminal),
-    );
+    Object.assign(tools, createDynamicTool(path, metadata));
   }
 
   return tools;

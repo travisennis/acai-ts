@@ -3,11 +3,9 @@ import { z } from "zod";
 import { config } from "../config.ts";
 import { initExecutionEnvironment } from "../execution/index.ts";
 import { logger } from "../logger.ts";
-import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
-import type { AskResponse, ToolExecutor } from "../tool-executor.ts";
-import { isMutatingCommand, resolveCwd, validatePaths } from "./bash-utils.ts";
+import { resolveCwd, validatePaths } from "./bash-utils.ts";
 import { isPathWithinAllowedDirs } from "./filesystem-utils.ts";
 import type { ToolResult } from "./types.ts";
 
@@ -40,14 +38,10 @@ export const createBashTool = async ({
   baseDir,
   allowedDirs,
   tokenCounter,
-  terminal,
-  toolExecutor,
 }: {
   baseDir: string;
   allowedDirs?: string[];
   tokenCounter: TokenCounter;
-  terminal?: Terminal;
-  toolExecutor?: ToolExecutor;
 }) => {
   const execEnv = await initExecutionEnvironment();
   const projectConfig = await config.readProjectConfig();
@@ -153,78 +147,6 @@ export const createBashTool = async ({
         yield { event: "tool-error", id: toolCallId, data: errorMsg };
         yield errorMsg;
       }
-    },
-    ask: async (
-      { command, cwd }: { command: string; cwd: string },
-      {
-        toolCallId,
-        abortSignal,
-      }: { toolCallId: string; abortSignal?: AbortSignal },
-    ): Promise<{ approve: true } | { approve: false; reason: string }> => {
-      if (terminal) {
-        // grok doesn't follow my instructions
-        const safeCwd = cwd === "null" ? null : cwd;
-        const resolvedCwd = resolveCwd(safeCwd, baseDir);
-        let userResponse: AskResponse | undefined;
-        // Prompt only for potentially mutating commands when a toolExecutor is present
-        if (toolExecutor && isMutatingCommand(command)) {
-          // Display if autoAccept is false
-          if (!toolExecutor.autoAccept(BashTool.name)) {
-            terminal.writeln(
-              `\n${style.blue.bold("●")} Proposing to execute command: ${style.cyan(command)} in ${style.cyan(resolvedCwd)}`,
-            );
-            terminal.lineBreak();
-          }
-
-          const ctx = {
-            toolName: BashTool.name,
-            toolCallId,
-            message: "What would you like to do with this command execution?",
-            choices: {
-              accept: "Execute this command",
-              acceptAll:
-                "Accept all future command executions (including this)",
-              reject: "Reject this command execution",
-            },
-          };
-          try {
-            userResponse = await toolExecutor.ask(ctx, { abortSignal });
-          } catch (e) {
-            if ((e as Error).name === "AbortError") {
-              throw new Error("Command execution aborted during user input");
-            }
-            throw e;
-          }
-        }
-
-        const { result: userChoice, reason } = userResponse ?? {
-          result: "accept",
-        };
-
-        terminal.lineBreak();
-
-        if (userChoice === "accept-all") {
-          terminal.writeln(
-            style.yellow(
-              "✓ Auto-accept mode enabled for all command executions",
-            ),
-          );
-          terminal.lineBreak();
-        }
-
-        if (userChoice === "reject") {
-          terminal.lineBreak();
-
-          const rejectionReason = reason || "No reason provided";
-          return {
-            approve: false,
-            reason: `The user rejected this command execution. Reason: ${rejectionReason}`,
-          };
-        }
-      }
-      return {
-        approve: true,
-      };
     },
   };
 };

@@ -196,24 +196,9 @@ if (process.env.TOOL_ACTION === 'execute') {
         args: { message: string },
         meta: { toolCallId: string; abortSignal?: AbortSignal },
       ) => AsyncGenerator<unknown, string>;
-      ask: (
-        args: { message: string },
-        meta: { toolCallId: string; abortSignal?: AbortSignal },
-      ) => Promise<{ approve: boolean; reason?: string }>;
     };
 
-    // Test that ask returns true when needsApproval is false
-    const approvalResult = await toolImpl.ask(
-      { message: "Test" },
-      { toolCallId: "test-approval" },
-    );
-    assert.equal(
-      approvalResult.approve,
-      true,
-      "Should auto-approve when needsApproval is false",
-    );
-
-    // Test tool execution still works
+    // Test tool execution works
     const result = await consumeToolAsyncIterable(
       toolImpl.execute(
         { message: "Auto-approved" },
