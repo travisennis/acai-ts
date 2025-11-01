@@ -130,8 +130,6 @@ export async function runManualLoop(
             accumulatedText += chunk.text;
             lastType = "text";
           }
-        } else if (chunk.type === "tool-call") {
-          terminal.startProgress();
         } else {
           // finish off this step
           if (lastType === "reasoning") {

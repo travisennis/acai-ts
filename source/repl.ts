@@ -415,8 +415,6 @@ export class Repl {
                 accumulatedText += chunk.text;
                 lastType = "text";
               }
-            } else if (chunk.type === "tool-call") {
-              terminal.startProgress();
             } else {
               // Close thinking tags when moving from reasoning to any other chunk type
               if (lastType === "reasoning") {
