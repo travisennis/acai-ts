@@ -61,9 +61,56 @@ function generateMarkdown(history: ConversationHistory): string {
 
     if (Array.isArray(message.content)) {
       message.content.forEach(
-        (part: TextPart | { type: string; text?: string }) => {
+        (
+          part:
+            | TextPart
+            | {
+                type: string;
+                text?: string;
+                toolCallId?: string;
+                toolName?: string;
+                input?: unknown;
+                output?: unknown;
+              },
+        ) => {
           if (part.type === "text" && part.text?.trim()) {
             lines.push(part.text);
+            lines.push("");
+          } else if (part.type === "tool-call") {
+            lines.push(`**Tool Call**: ${part.toolName}`);
+            lines.push(`**Call ID**: ${part.toolCallId}`);
+            lines.push("**Input**:");
+            lines.push("```json");
+            lines.push(JSON.stringify(part.input, null, 2));
+            lines.push("```");
+            lines.push("");
+          } else if (part.type === "tool-result") {
+            lines.push(`**Tool Result**: ${part.toolName}`);
+            lines.push(`**Call ID**: ${part.toolCallId}`);
+            lines.push("**Output**:");
+            if (
+              typeof part.output === "object" &&
+              part.output !== null &&
+              "type" in part.output &&
+              part.output.type === "text" &&
+              "text" in part.output
+            ) {
+              lines.push("```");
+              lines.push(String((part.output as { text: string }).text));
+              lines.push("```");
+            } else {
+              lines.push("```json");
+              lines.push(JSON.stringify(part.output, null, 2));
+              lines.push("```");
+            }
+            lines.push("");
+          } else if (part.type === "tool-error") {
+            lines.push(`**Tool Error**: ${part.toolName}`);
+            lines.push(`**Call ID**: ${part.toolCallId}`);
+            lines.push("**Error**:");
+            lines.push("```");
+            lines.push(String(part.output));
+            lines.push("```");
             lines.push("");
           }
         },
