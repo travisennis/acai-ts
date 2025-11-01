@@ -157,7 +157,9 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
         );
         const matchCount = grepResult.matchCount;
 
-        // Show first matches as a preview (more useful than last matches)
+        // Build completion message with preview information
+        let completionMessage = `Found ${style.cyan(matchCount)} match${matchCount === 1 ? "" : "es"}`;
+
         if (matchCount > 0) {
           const previewCount = Math.min(8, matchCount);
           const previewMatches = actualMatches.slice(0, previewCount);
@@ -168,28 +170,15 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
             return `${match.line}:${match.content}`;
           });
 
-          yield {
-            event: "tool-update",
-            id: toolCallId,
-            data: {
-              primary: `Found ${matchCount} match${matchCount === 1 ? "" : "es"}${matchCount > previewCount ? ` (showing first ${previewCount})` : ""}`,
-              secondary: previewStrings,
-            },
-          };
+          if (matchCount > previewCount) {
+            completionMessage += ` (showing first ${previewCount})`;
+          }
+          completionMessage += `\n\nPreview:\n${previewStrings.join("\n")}`;
         } else {
-          // Show search completed message even for no matches
-          yield {
-            event: "tool-update",
-            id: toolCallId,
-            data: {
-              primary: "Search completed - no matches found",
-            },
-          };
+          completionMessage = "Search completed - no matches found";
         }
 
         // Enhanced completion message with detailed statistics
-        let completionMessage = `Found ${style.cyan(matchCount)} match${matchCount === 1 ? "" : "es"}`;
-
         if (grepResult.isTruncated) {
           completionMessage += ` (showing first ${style.cyan(grepResult.displayedCount)})`;
         }

@@ -111,15 +111,6 @@ export const createBashTool = async ({
           throwOnError: false,
         });
 
-        yield {
-          event: "tool-update",
-          id: toolCallId,
-          data: {
-            primary: "Result",
-            secondary: output.trim().split("\n").slice(-20),
-          },
-        };
-
         let tokenCount = 0;
         try {
           tokenCount = tokenCounter.count(output);
@@ -134,10 +125,7 @@ export const createBashTool = async ({
         yield {
           event: "tool-completion",
           id: toolCallId,
-          data:
-            tokenCount <= maxTokens
-              ? `Command executed successfully: ${exitCode} (${tokenCount} tokens)`
-              : `Output of command (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}).`,
+          data: `Command executed successfully: ${exitCode} (${tokenCount} tokens)${output.trim() ? `\n\nResult (last 20 lines):\n${output.trim().split("\n").slice(-20).join("\n")}` : ""}`,
         };
 
         yield finalResult;

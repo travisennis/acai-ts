@@ -14,11 +14,6 @@ export const fileEncodingSchema = z.enum([
   "hex",
 ]);
 
-interface MessageData {
-  primary: string;
-  secondary?: string[] | undefined;
-}
-
 interface BaseMessage {
   id: string;
   retry?: number;
@@ -39,16 +34,10 @@ interface ToolCompletionMessage extends BaseMessage {
   data: string;
 }
 
-interface ToolUpdateMessage extends BaseMessage {
-  event: "tool-update";
-  data: MessageData;
-}
-
 export type Message =
   | ToolInitMessage
   | ToolErrorMessage
-  | ToolCompletionMessage
-  | ToolUpdateMessage;
+  | ToolCompletionMessage;
 
 export type ToolResult = Message | string;
 

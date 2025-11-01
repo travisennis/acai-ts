@@ -250,22 +250,13 @@ export function createDynamicTool(
             abortSignal,
           );
 
-          // Send tool-update event with last 20 lines of output
+          // Include output preview in completion message
           const outputLines = result.split("\n");
           const lastLines = outputLines.slice(-20).join("\n");
           yield {
-            event: "tool-update",
-            id: toolCallId,
-            data: {
-              primary: `Last 20 lines of output from ${metadata.name}:`,
-              secondary: lastLines.split("\n"),
-            },
-          };
-
-          yield {
             event: "tool-completion",
             id: toolCallId,
-            data: `Dynamic tool ${metadata.name} completed`,
+            data: `Dynamic tool ${metadata.name} completed\n\nLast 20 lines of output:\n${lastLines}`,
           };
 
           yield result;

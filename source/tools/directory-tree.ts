@@ -72,18 +72,16 @@ export const createDirectoryTreeTool = async ({
           threshold: maxTokens,
         });
 
+        let completionMessage = "Done";
         if (managed.truncated) {
-          yield {
-            id: toolCallId,
-            event: "tool-update",
-            data: { primary: managed.warning },
-          };
+          completionMessage += ` - ${managed.warning}`;
         }
+        completionMessage += ` (${managed.tokenCount} tokens)`;
 
         yield {
           id: toolCallId,
           event: "tool-completion",
-          data: `Done (${managed.tokenCount} tokens)`,
+          data: completionMessage,
         };
 
         yield managed.content;

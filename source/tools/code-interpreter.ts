@@ -62,23 +62,12 @@ export const createCodeInterpreterTool = async ({
     const workingDirectory = process.cwd();
 
     try {
-      yield {
-        event: "tool-init",
-        id: toolCallId,
-        data: "CodeInterpreter",
-      };
-
       const scriptType = "typescript";
 
       yield {
-        event: "tool-update",
+        event: "tool-init",
         id: toolCallId,
-        data: {
-          primary: "Executing...",
-          secondary: [
-            `${"`".repeat(3)} ${scriptType}}\n${code.slice(0, 500)}${"`".repeat(3)}`,
-          ],
-        },
+        data: `CodeInterpreter: Executing...\n\n${"`".repeat(3)} ${scriptType}}\n${code.slice(0, 500)}${"`".repeat(3)}`,
       };
 
       if (code.trim().length === 0) {

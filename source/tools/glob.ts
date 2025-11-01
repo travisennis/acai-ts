@@ -160,32 +160,23 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
           threshold: maxTokens,
         });
 
+        let completionMessage = `Glob search completed. Found ${style.cyan(sortedFiles.length)} files.`;
+
         if (managed.truncated) {
-          yield {
-            event: "tool-update",
-            id: toolCallId,
-            data: { primary: managed.warning },
-          };
+          completionMessage += ` ${managed.warning}`;
         }
 
-        // Show file count and sample files
         if (sortedFiles.length > 0) {
           const sampleFiles = sortedFiles.slice(0, 10);
-
-          yield {
-            event: "tool-update",
-            id: toolCallId,
-            data: {
-              primary: `Found ${style.cyan(sortedFiles.length)} files. First ${sampleFiles.length} files:`,
-              secondary: sampleFiles,
-            },
-          };
+          completionMessage += `\n\nFirst ${sampleFiles.length} files:\n${sampleFiles.join("\n")}`;
         }
+
+        completionMessage += ` (${managed.tokenCount} tokens)`;
 
         yield {
           event: "tool-completion",
           id: toolCallId,
-          data: `Glob search completed. Found ${style.cyan(sortedFiles.length)} files. (${managed.tokenCount} tokens)`,
+          data: completionMessage,
         };
 
         yield managed.content;

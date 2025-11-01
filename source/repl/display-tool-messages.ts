@@ -1,18 +1,11 @@
 import { logger } from "../logger.ts";
 import type { Terminal } from "../terminal/index.ts";
-import { isMarkdown } from "../terminal/markdown-utils.ts";
 import style from "../terminal/style.ts";
 import type { Message } from "../tools/types.ts";
 
 export function displayToolMessages(message: Message, terminal: Terminal) {
   const msg = message;
   switch (msg.event) {
-    case "tool-update":
-      handleToolUpdateMessage(
-        msg.data as { primary: string; secondary?: string[] },
-        terminal,
-      );
-      break;
     case "tool-completion":
       handleToolCompletionMessage(String(msg.data), terminal);
       break;
@@ -34,25 +27,6 @@ export function displayToolMessages(message: Message, terminal: Terminal) {
   }
 
   terminal.lineBreak();
-}
-
-function handleToolUpdateMessage(
-  data: { primary: string; secondary?: string[] },
-  terminal: Terminal,
-) {
-  if (data.secondary && data.secondary.length > 0) {
-    const content = data.secondary.join("\n");
-    if (content.trim().length !== 0) {
-      if (isMarkdown(content)) {
-        terminal.display(content, true);
-      } else {
-        terminal.write(style.green(content));
-        terminal.lineBreak();
-      }
-    }
-  } else {
-    terminal.header(`${data.primary}`);
-  }
 }
 
 function handleToolCompletionMessage(data: string, terminal: Terminal) {
