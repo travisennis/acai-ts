@@ -94,6 +94,12 @@ const openrouterModels = {
   "gpt-5-codex": openRouterClient("openai/gpt-5-codex", {
     usage: { include: true },
   }) as LanguageModelV2,
+  "minimax-m2": openRouterClient("minimax/minimax-m2", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "minimax-m2-free": openRouterClient("minimax/minimax-m2:free", {
+    usage: { include: true },
+  }) as LanguageModelV2,
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -360,5 +366,31 @@ export const openrouterModelRegistry: {
     costPerInputToken: 0.000001,
     costPerOutputToken: 0.000005,
     category: "fast",
+  },
+  "openrouter:minimax-m2": {
+    id: "openrouter:minimax-m2",
+    provider: "openrouter",
+    contextWindow: 196608,
+    maxOutputTokens: 32768,
+    defaultTemperature: 0.6,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000015,
+    costPerOutputToken: 0.00000045,
+    category: "balanced",
+  },
+  "openrouter:minimax-m2-free": {
+    id: "openrouter:minimax-m2-free",
+    provider: "openrouter",
+    contextWindow: 204800,
+    maxOutputTokens: 32768,
+    defaultTemperature: 0.6,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0,
+    costPerOutputToken: 0,
+    category: "balanced",
   },
 };
