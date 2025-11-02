@@ -169,3 +169,80 @@ describe("bash tool abort signal handling", async () => {
     assert.match(finalResult, /aborted/);
   });
 });
+
+describe("bash tool home directory (~) validation", () => {
+  it("rejects ls ~ command", () => {
+    const result = validatePaths("ls ~", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, false);
+    assert.ok(
+      result.error?.includes("resolves outside the allowed directories"),
+    );
+  });
+
+  it("rejects ls ~/Documents command", () => {
+    const result = validatePaths("ls ~/Documents", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, false);
+    assert.ok(
+      result.error?.includes("resolves outside the allowed directories"),
+    );
+  });
+
+  it("rejects echo > ~/test.txt command", () => {
+    const result = validatePaths(
+      'echo "test" > ~/test.txt',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, false);
+    assert.ok(
+      result.error?.includes("resolves outside the allowed directories"),
+    );
+  });
+
+  it("allows commands without ~ paths", () => {
+    const result = validatePaths("ls ./source", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, true);
+  });
+});
+
+describe("bash tool mutating command warnings", async () => {
+  const tool = await createBashTool({
+    baseDir,
+    tokenCounter,
+  });
+
+  async function collectEvents(command: string) {
+    const generator = tool.execute(
+      { command, cwd: baseDir, timeout: 100 },
+      { toolCallId: "t1", messages: [] },
+    );
+
+    const events: Array<{ event: string; data: string }> = [];
+    for await (const value of generator) {
+      if (typeof value === "object" && "event" in value) {
+        events.push({ event: value.event, data: value.data });
+      }
+    }
+    return events;
+  }
+
+  it("shows warning indicator for mutating commands", async () => {
+    const events = await collectEvents("touch test-file.txt");
+    const initEvent = events.find((e) => e.event === "tool-init");
+    assert.ok(initEvent, "Should emit tool-init event");
+    assert.ok(
+      initEvent?.data.includes("⚠️"),
+      "Should include warning indicator for mutating command",
+    );
+  });
+
+  it("does not show warning indicator for non-mutating commands", async () => {
+    const events = await collectEvents("ls ./source");
+    const initEvent = events.find((e) => e.event === "tool-init");
+    assert.ok(initEvent, "Should emit tool-init event");
+    assert.ok(
+      !initEvent?.data.includes("⚠️"),
+      "Should not include warning indicator for non-mutating command",
+    );
+  });
+});

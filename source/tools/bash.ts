@@ -5,7 +5,7 @@ import { initExecutionEnvironment } from "../execution/index.ts";
 import { logger } from "../logger.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
-import { resolveCwd, validatePaths } from "./bash-utils.ts";
+import { isMutatingCommand, resolveCwd, validatePaths } from "./bash-utils.ts";
 import { isPathWithinAllowedDirs } from "./filesystem-utils.ts";
 import type { ToolResult } from "./types.ts";
 
@@ -67,10 +67,12 @@ export const createBashTool = async ({
         const safeCwd = cwd === "null" ? null : cwd;
         const resolvedCwd = resolveCwd(safeCwd, baseDir);
         const safeTimeout = timeout ?? DEFAULT_TIMEOUT;
+        // Safety warning for potentially mutating commands
+        const isMutating = isMutatingCommand(command);
         yield {
           event: "tool-init",
           id: toolCallId,
-          data: `Bash: ${style.cyan(command)}`,
+          data: `Bash: ${style.cyan(command)}${isMutating ? " ⚠️" : ""}`,
         };
 
         if (!isPathWithinAllowedDirs(resolvedCwd, allowedDirectories)) {
