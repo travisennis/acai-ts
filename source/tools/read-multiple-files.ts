@@ -52,7 +52,7 @@ export const createReadMultipleFilesTool = async ({
         yield {
           id: toolCallId,
           event: "tool-init",
-          data: `ReadFiles: ${paths.map((p) => style.cyan(p)).join(", ")}`,
+          data: `ReadMultipleFiles: ${paths.map((p) => style.cyan(p)).join(", ")}`,
         };
 
         if (abortSignal?.aborted) {
@@ -126,12 +126,12 @@ export const createReadMultipleFilesTool = async ({
         yield {
           id: toolCallId,
           event: "tool-completion",
-          data: completionMessage,
+          data: `ReadMultipleFiles: ${completionMessage}`,
         };
 
         yield formattedResults.join("\n---\n");
       } catch (error) {
-        const errorMsg = `Multiple file reading failed: ${(error as Error).message}`;
+        const errorMsg = `ReadMultipleFiles: ${(error as Error).message}`;
         yield {
           id: toolCallId,
           event: "tool-error",

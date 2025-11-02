@@ -56,14 +56,18 @@ export const createWebSearchTool = ({
       yield {
         event: "tool-completion",
         id: toolCallId,
-        data: `Found ${result.results.length} results. (${tokenCount} tokens)`,
+        data: `WebSearch: Found ${result.results.length} results. (${tokenCount} tokens)`,
       };
 
       yield resultText;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      yield { event: "tool-error", id: toolCallId, data: errorMessage };
+      yield {
+        event: "tool-error",
+        id: toolCallId,
+        data: `WebSearch: ${errorMessage}`,
+      };
       yield errorMessage;
     }
   };

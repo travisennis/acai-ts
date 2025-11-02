@@ -75,11 +75,11 @@ export const createDeleteFileTool = async ({
         yield {
           id: toolCallId,
           event: "tool-completion",
-          data: "File deleted successfully",
+          data: "DeleteFile: File deleted successfully",
         };
         yield `Successfully deleted ${filePath}`;
       } catch (error) {
-        const errorMessage = `Failed to delete file: ${(error as Error).message}`;
+        const errorMessage = `DeleteFile: ${(error as Error).message}`;
         yield {
           id: toolCallId,
           event: "tool-error",

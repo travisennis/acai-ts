@@ -110,7 +110,7 @@ export const createAgentTools = (options: {
       yield {
         event: "tool-completion",
         id: toolCallId,
-        data: "Finished running the agent tool.",
+        data: `Agent: Finished running the agent tool (${usage.totalTokens} tokens)`,
       };
 
       yield text;
@@ -118,7 +118,7 @@ export const createAgentTools = (options: {
       yield {
         event: "tool-error",
         id: toolCallId,
-        data: "Error running agent tool.",
+        data: `Agent: ${(error as Error).message}`,
       };
       yield (error as Error).message;
     }

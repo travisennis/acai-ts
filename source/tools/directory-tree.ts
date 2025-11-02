@@ -72,7 +72,7 @@ export const createDirectoryTreeTool = async ({
           threshold: maxTokens,
         });
 
-        let completionMessage = "Done";
+        let completionMessage = "DirectoryTree: Done";
         if (managed.truncated) {
           completionMessage += ` - ${managed.warning}`;
         }
@@ -86,7 +86,7 @@ export const createDirectoryTreeTool = async ({
 
         yield managed.content;
       } catch (error) {
-        const errorMsg = `Failed to show directory tree: ${(error as Error).message}`;
+        const errorMsg = `DirectoryTree: ${(error as Error).message}`;
         yield {
           id: toolCallId,
           event: "tool-error",

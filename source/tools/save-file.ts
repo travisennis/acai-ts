@@ -93,14 +93,14 @@ export const createSaveFileTool = async ({
         yield {
           event: "tool-completion",
           id: toolCallId,
-          data: `File saved successfully: ${userPath}`,
+          data: "SaveFile: File saved successfully",
         };
         yield `File saved successfully: ${filePath}`;
       } catch (error) {
         yield {
           event: "tool-error",
           id: toolCallId,
-          data: `Failed to save file: ${(error as Error).message}`,
+          data: `SaveFile: ${(error as Error).message}`,
         };
         yield `Failed to save file: ${(error as Error).message}`;
       }

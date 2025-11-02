@@ -203,7 +203,7 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
         yield {
           event: "tool-completion",
           id: toolCallId,
-          data: completionMessage,
+          data: `Grep: ${completionMessage}`,
         };
         yield managed.content;
       } catch (error) {
@@ -226,7 +226,7 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
         yield {
           event: "tool-error",
           id: toolCallId,
-          data: userFriendlyError,
+          data: `Grep: ${userFriendlyError}`,
         };
         yield errorMessage;
       }

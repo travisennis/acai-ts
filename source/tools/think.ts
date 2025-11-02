@@ -45,12 +45,20 @@ export const createThinkTool = () => {
           data: `Think: ${formattedThought}`,
         };
 
-        yield { event: "tool-completion", id: toolCallId, data: "Done" };
+        yield {
+          event: "tool-completion",
+          id: toolCallId,
+          data: "Think: Completed",
+        };
         yield "Your thought has been logged.";
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
-        yield { event: "tool-error", id: toolCallId, data: errorMessage };
+        yield {
+          event: "tool-error",
+          id: toolCallId,
+          data: `Think: ${errorMessage}`,
+        };
         yield errorMessage;
       }
     },

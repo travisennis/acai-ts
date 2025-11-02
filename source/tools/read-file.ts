@@ -128,12 +128,12 @@ export const createReadFileTool = async ({
           // Include token count only if calculated (i.e., for text files)
           data:
             tokenCount <= maxTokens
-              ? `File read successfully ${tokenCount > 0 ? ` (${tokenCount} tokens)` : ""}`
-              : result,
+              ? `ReadFile: File read successfully ${tokenCount > 0 ? ` (${tokenCount} tokens)` : ""}`
+              : `ReadFile: ${result}`,
         };
         yield result;
       } catch (error) {
-        const errorMsg = `Failed to read file: ${(error as Error).message}`;
+        const errorMsg = `ReadFile: ${(error as Error).message}`;
         yield { event: "tool-error", id: toolCallId, data: errorMsg };
         yield errorMsg;
       }

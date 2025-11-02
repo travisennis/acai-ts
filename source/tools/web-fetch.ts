@@ -40,7 +40,7 @@ export const createWebFetchTool = (options: { tokenCounter: TokenCounter }) => {
         yield {
           event: "tool-completion",
           id: toolCallId,
-          data: `Read URL successfully (${tokenCount} tokens)`,
+          data: `WebFetch: Read URL successfully (${tokenCount} tokens)`,
         };
         logger.info(`Successfully read URL: ${url} (${tokenCount} tokens)`);
         yield urlContent;
@@ -49,7 +49,7 @@ export const createWebFetchTool = (options: { tokenCounter: TokenCounter }) => {
         yield {
           event: "tool-error",
           id: toolCallId,
-          data: `Error reading URL ${url}: ${errorMessage}`,
+          data: `WebFetch: ${errorMessage}`,
         };
         logger.error(`Error reading URL ${url}: ${errorMessage}`);
         yield `Failed to read URL: ${errorMessage}`;

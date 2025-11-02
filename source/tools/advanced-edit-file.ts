@@ -95,7 +95,7 @@ export const createAdvancedEditFileTool = async ({
         yield {
           id: toolCallId,
           event: "tool-init",
-          data: `EditFile: ${style.cyan(path)} (mode: ${mode})`,
+          data: `AdvancedEditFile: ${style.cyan(path)} (mode: ${mode})`,
         };
 
         const validPath = await validatePath(
@@ -117,7 +117,7 @@ export const createAdvancedEditFileTool = async ({
         yield {
           id: toolCallId,
           event: "tool-completion",
-          data: "Advanced edits applied successfully.",
+          data: `AdvancedEditFile: ${operations.length} edits applied successfully`,
         };
 
         yield result;
@@ -125,7 +125,7 @@ export const createAdvancedEditFileTool = async ({
         yield {
           event: "tool-error",
           id: toolCallId,
-          data: `Failed to edit file: ${(error as Error).message}`,
+          data: `AdvancedEditFile: ${(error as Error).message}`,
         };
         yield `Failed to edit file: ${(error as Error).message}`;
       }

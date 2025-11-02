@@ -69,7 +69,7 @@ export const createMoveFileTool = async ({
         yield {
           id: toolCallId,
           event: "tool-completion",
-          data: "File moved successfully",
+          data: "MoveFile: File moved successfully",
         };
 
         yield `Successfully moved ${source} to ${destination}`;
@@ -77,7 +77,7 @@ export const createMoveFileTool = async ({
         yield {
           event: "tool-error",
           id: toolCallId,
-          data: `Failed to move file: ${(error as Error).message}`,
+          data: `MoveFile: ${(error as Error).message}`,
         };
         yield `Failed to move file: ${(error as Error).message}`;
       }

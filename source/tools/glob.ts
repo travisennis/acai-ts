@@ -176,7 +176,7 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
         yield {
           event: "tool-completion",
           id: toolCallId,
-          data: completionMessage,
+          data: `Glob: ${completionMessage}`,
         };
 
         yield managed.content;
@@ -184,7 +184,7 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
         yield {
           event: "tool-error",
           id: toolCallId,
-          data: `Error searching for files with patterns "${patterns}" in ${path}`,
+          data: `Glob: ${(error as Error).message}`,
         };
         yield (error as Error).message;
       }

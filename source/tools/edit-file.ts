@@ -78,7 +78,7 @@ export const createEditFileTool = async ({
         yield {
           id: toolCallId,
           event: "tool-completion",
-          data: "Edits applied successfully.",
+          data: `EditFile: ${edits.length} edits applied successfully`,
         };
 
         yield result;
@@ -86,7 +86,7 @@ export const createEditFileTool = async ({
         yield {
           event: "tool-error",
           id: toolCallId,
-          data: `Failed to edit file: ${(error as Error).message}`,
+          data: `EditFile: ${(error as Error).message}`,
         };
         yield `Failed to edit file: ${(error as Error).message}`;
       }

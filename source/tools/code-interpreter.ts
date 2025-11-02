@@ -199,7 +199,7 @@ export const createCodeInterpreterTool = async ({
       yield {
         event: "tool-completion",
         id: toolCallId,
-        data: `Code execution completed successfully${tokenCount > 0 ? ` (${tokenCount} tokens)` : ""}`,
+        data: `CodeInterpreter: Completed successfully${tokenCount > 0 ? ` (${tokenCount} tokens)` : ""}`,
       };
 
       yield truncatedResult;
@@ -213,7 +213,7 @@ export const createCodeInterpreterTool = async ({
       yield {
         event: "tool-error",
         id: toolCallId,
-        data: errorMessage,
+        data: `CodeInterpreter: ${errorMessage}`,
       };
 
       yield errorMessage;

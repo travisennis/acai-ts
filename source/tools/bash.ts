@@ -131,7 +131,7 @@ export const createBashTool = async ({
         yield finalResult;
       } catch (error) {
         logger.error(error, "Bash Tool Error:");
-        const errorMsg = `Command failed: ${(error as Error).message}`;
+        const errorMsg = `Bash: ${(error as Error).message}`;
         yield { event: "tool-error", id: toolCallId, data: errorMsg };
         yield errorMsg;
       }

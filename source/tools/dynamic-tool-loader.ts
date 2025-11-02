@@ -264,7 +264,7 @@ export function createDynamicTool(
           yield {
             event: "tool-error",
             id: toolCallId,
-            data: (error as Error).message,
+            data: `${metadata.name}: ${(error as Error).message}`,
           };
           yield (error as Error).message;
         }
