@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import EventEmitter from "node:events";
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { isString } from "@travisennis/stdlib/typeguards";
 import {
@@ -312,20 +312,44 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
   ): Promise<SavedMessageHistory[]> {
     try {
       const files = await readdir(stateDir);
-      const messageHistoryFiles = files
-        .filter(
-          (file) =>
-            file.startsWith("message-history-") && file.endsWith(".json"),
-        )
-        .sort((a, b) => {
-          // Extract timestamps and compare in reverse order (newest first)
-          const timeA = a.replace("message-history-", "").replace(".json", "");
-          const timeB = b.replace("message-history-", "").replace(".json", "");
-          return timeB.localeCompare(timeA); // Newest first
-        })
-        .slice(0, count); // Use the count parameter here
+      const messageHistoryFiles = files.filter(
+        (file) => file.startsWith("message-history-") && file.endsWith(".json"),
+      );
 
-      const fileReadPromises = messageHistoryFiles.map(async (fileName) => {
+      // Get file stats and sort by modification time (newest first)
+      const fileStatsPromises = messageHistoryFiles.map(async (fileName) => {
+        const filePath = join(stateDir, fileName);
+        try {
+          const fileStat = await stat(filePath);
+          return {
+            fileName,
+            filePath,
+            modifiedTime: fileStat.mtime,
+          };
+        } catch (error) {
+          console.error(`Error getting stats for file ${filePath}:`, error);
+          return null;
+        }
+      });
+
+      const fileStats = await Promise.all(fileStatsPromises);
+
+      // Filter out null results and sort by modification time (newest first)
+      const sortedFiles = fileStats
+        .filter(
+          (
+            stat,
+          ): stat is {
+            fileName: string;
+            filePath: string;
+            modifiedTime: Date;
+          } => stat !== null,
+        )
+        .sort((a, b) => b.modifiedTime.getTime() - a.modifiedTime.getTime())
+        .slice(0, count)
+        .map((stat) => stat.fileName);
+
+      const fileReadPromises = sortedFiles.map(async (fileName) => {
         const filePath = join(stateDir, fileName);
         try {
           const content = await readFile(filePath, "utf-8");
@@ -346,11 +370,11 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
       });
 
       const results = await Promise.all(fileReadPromises);
-      // Filter out null results (failed reads/parses)
-      //sort results by result.updatedAt which is a Date
-      return results
-        .filter((result): result is SavedMessageHistory => result !== null)
-        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+
+      // Filter out null results and return them (already sorted by file modification time)
+      return results.filter(
+        (result): result is SavedMessageHistory => result !== null,
+      );
     } catch (error) {
       // Handle cases where the directory might not exist or other readdir errors
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
