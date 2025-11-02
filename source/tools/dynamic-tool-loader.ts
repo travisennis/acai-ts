@@ -231,7 +231,7 @@ export function createDynamicTool(
           yield {
             event: "tool-init",
             id: toolCallId,
-            data: `${metadata.name}`,
+            data: `${metadata.name}: executing...`,
           };
 
           // Validate params again for safety
@@ -250,13 +250,10 @@ export function createDynamicTool(
             abortSignal,
           );
 
-          // Include output preview in completion message
-          const outputLines = result.split("\n");
-          const lastLines = outputLines.slice(-20).join("\n");
           yield {
             event: "tool-completion",
             id: toolCallId,
-            data: `Dynamic tool ${metadata.name} completed\n\nLast 20 lines of output:\n${lastLines}`,
+            data: `${metadata.name}: completed`,
           };
 
           yield result;

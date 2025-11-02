@@ -42,7 +42,7 @@ export const createThinkTool = () => {
         yield {
           event: "tool-init",
           id: toolCallId,
-          data: `Think: ${formattedThought}`,
+          data: `Think:\n${formattedThought}`,
         };
 
         yield {

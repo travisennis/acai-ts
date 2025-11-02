@@ -166,11 +166,6 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
           completionMessage += ` ${managed.warning}`;
         }
 
-        if (sortedFiles.length > 0) {
-          const sampleFiles = sortedFiles.slice(0, 10);
-          completionMessage += `\n\nFirst ${sampleFiles.length} files:\n${sampleFiles.join("\n")}`;
-        }
-
         completionMessage += ` (${managed.tokenCount} tokens)`;
 
         yield {

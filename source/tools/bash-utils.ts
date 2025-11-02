@@ -1,4 +1,5 @@
 import fs, { type Stats } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { isPathWithinAllowedDirs } from "./filesystem-utils.ts";
 
@@ -50,7 +51,7 @@ export function validatePaths(
     if (
       cleanToken.startsWith("-") ||
       cleanToken.includes("://") ||
-      !cleanToken.includes("/")
+      (!cleanToken.includes("/") && cleanToken !== "~")
     ) {
       continue;
     }
@@ -62,7 +63,13 @@ export function validatePaths(
     }
 
     try {
-      const resolvedPath = path.resolve(cwd, cleanToken);
+      // Expand ~ to home directory for proper validation
+      const expandedToken =
+        cleanToken.startsWith("~/") || cleanToken === "~"
+          ? path.join(os.homedir(), cleanToken.slice(1))
+          : cleanToken;
+
+      const resolvedPath = path.resolve(cwd, expandedToken);
 
       // Allow access to explicitly allowed paths
       const isAllowedPath = allowedPaths?.some(

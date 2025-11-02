@@ -125,7 +125,7 @@ export const createBashTool = async ({
         yield {
           event: "tool-completion",
           id: toolCallId,
-          data: `Command executed successfully: ${exitCode} (${tokenCount} tokens)${output.trim() ? `\n\nResult (last 20 lines):\n${output.trim().split("\n").slice(-20).join("\n")}` : ""}`,
+          data: `Bash: ${exitCode} (${tokenCount} tokens)`,
         };
 
         yield finalResult;

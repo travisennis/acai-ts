@@ -61,13 +61,12 @@ export const createCodeInterpreterTool = async ({
     }
     const workingDirectory = process.cwd();
 
+    const lines = code.split("\n");
     try {
-      const scriptType = "typescript";
-
       yield {
         event: "tool-init",
         id: toolCallId,
-        data: `CodeInterpreter: Executing...\n\n${"`".repeat(3)} ${scriptType}}\n${code.slice(0, 500)}${"`".repeat(3)}`,
+        data: `CodeInterpreter: Executing ${lines.length} of code.`,
       };
 
       if (code.trim().length === 0) {

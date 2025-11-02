@@ -88,7 +88,10 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
 
       try {
         // grok doesn't follow my instructions
-        const safeFilePattern = filePattern === "null" ? null : filePattern;
+        const safeFilePattern =
+          filePattern === "null" || filePattern === "undefined"
+            ? null
+            : filePattern;
 
         // Enhanced tool-init with detailed search parameters
         let initMessage = `Grep: ${style.cyan(inspect(pattern))} in ${style.cyan(path)}`;
