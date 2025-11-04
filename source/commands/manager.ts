@@ -27,6 +27,7 @@ import { listDirectoriesCommand } from "./list-directories-command.ts";
 import { listToolsCommand } from "./list-tools-command.ts";
 import { modelCommand } from "./model-command.ts";
 import { pasteCommand } from "./paste-command.ts";
+import { pickupCommand } from "./pickup-command.ts";
 import { promptCommand } from "./prompt-command.ts";
 import { removeDirectoryCommand } from "./remove-directory-command.ts";
 import { resetCommand } from "./reset-command.ts";
@@ -105,6 +106,7 @@ export class CommandManager {
       initCommand(options),
       listDirectoriesCommand(options),
       pasteCommand(options),
+      pickupCommand(options),
       promptCommand(options),
       removeDirectoryCommand(options),
       resetCommand(options),
