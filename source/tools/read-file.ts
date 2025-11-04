@@ -102,17 +102,6 @@ export const createReadFileTool = async ({
           file = lines.slice(startIndex, endIndex).join("\n");
         }
 
-        // For non-text files, just return the content directly without token management
-        if (!encoding.startsWith("utf")) {
-          yield {
-            id: toolCallId,
-            event: "tool-completion",
-            data: "ReadFile: File read successfully",
-          };
-          yield file;
-          return;
-        }
-
         const result = await manageTokenLimit(
           file,
           tokenCounter,
@@ -120,6 +109,7 @@ export const createReadFileTool = async ({
           isNumber(startLine) || isNumber(lineCount)
             ? "Consider adjusting startLine/lineCount or using grepFiles"
             : "Use startLine and lineCount parameters to read specific portions, or use grepFiles for targeted access",
+          encoding,
         );
 
         yield {

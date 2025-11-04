@@ -75,10 +75,16 @@ export const createReadMultipleFilesTool = async ({
           }),
         );
 
-        const formattedResults = await Promise.all(
+        const processedResults = await Promise.all(
           results.map(async (result) => {
             if (result.error) {
-              return `${result.path}: Error - ${result.error}`;
+              return {
+                path: result.path,
+                content: `${result.path}: Error - ${result.error}`,
+                tokenCount: 0,
+                error: result.error,
+                truncated: false,
+              };
             }
             // Apply token limit check to each file
             const managedResult = await manageTokenLimit(
@@ -87,10 +93,21 @@ export const createReadMultipleFilesTool = async ({
               "ReadMultipleFiles",
               "Use readFile with startLine/lineCount or grepFiles for targeted access",
             );
-            return formatFile(result.path, managedResult.content, "markdown");
+            return {
+              path: result.path,
+              content: formatFile(
+                result.path,
+                managedResult.content,
+                "markdown",
+              ),
+              tokenCount: managedResult.tokenCount,
+              error: null,
+              truncated: managedResult.truncated,
+            };
           }),
         );
 
+        const formattedResults = processedResults.map((r) => r.content);
         const finalResult = await manageTokenLimit(
           formattedResults.join("\n---\n"),
           tokenCounter,
@@ -98,19 +115,47 @@ export const createReadMultipleFilesTool = async ({
           "Reduce number of files or use more specific paths",
         );
 
-        let completionMessage: string;
-        const filesReadCount = results.filter((r) => !r.error).length;
-        const filesErrorCount = results.filter((r) => r.error).length;
+        // Aggregate results with detailed breakdown
+        let totalTokens = 0;
+        let filesReadCount = 0;
+        let filesExceededLimitCount = 0;
+        let filesErrorCount = 0;
 
-        if (finalResult.truncated) {
-          completionMessage = `Read ${filesReadCount} files, but combined output exceeded token limit. ${finalResult.content}`;
-        } else {
-          completionMessage = `Read ${filesReadCount} files successfully (${finalResult.tokenCount} tokens)`;
+        for (const processedResult of processedResults) {
+          if (processedResult.error) {
+            filesErrorCount++;
+          } else if (processedResult.truncated) {
+            filesExceededLimitCount++;
+            totalTokens += processedResult.tokenCount;
+          } else {
+            filesReadCount++;
+            totalTokens += processedResult.tokenCount;
+          }
+        }
+
+        const parts: string[] = [];
+
+        if (filesReadCount > 0) {
+          parts.push(
+            `Read ${filesReadCount} files successfully (${totalTokens} total tokens)`,
+          );
+        }
+
+        if (filesExceededLimitCount > 0) {
+          parts.push(`${filesExceededLimitCount} files exceeded token limit`);
         }
 
         if (filesErrorCount > 0) {
-          completionMessage += `, ${filesErrorCount} files could not be read`;
+          parts.push(`${filesErrorCount} files could not be read`);
         }
+
+        if (finalResult.truncated) {
+          parts.push(
+            `Combined output exceeded token limit. ${finalResult.content}`,
+          );
+        }
+
+        const completionMessage = `${parts.join(", ")}.`;
 
         yield {
           id: toolCallId,
