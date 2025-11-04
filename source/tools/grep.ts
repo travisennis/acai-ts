@@ -154,36 +154,13 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
           threshold: maxTokens,
         });
 
-        // Get actual matches (excluding context lines)
-        const actualMatches = grepResult.parsedMatches.filter(
-          (match) => match.isMatch && !match.isContext,
-        );
         const matchCount = grepResult.matchCount;
 
         // Build completion message with preview information
         let completionMessage = `Found ${style.cyan(matchCount)} match${matchCount === 1 ? "" : "es"}`;
 
-        if (matchCount > 0) {
-          const previewCount = Math.min(8, matchCount);
-          const previewMatches = actualMatches.slice(0, previewCount);
-          const previewStrings = previewMatches.map((match) => {
-            if (match.file) {
-              return `${match.file}:${match.line}:${match.content}`;
-            }
-            return `${match.line}:${match.content}`;
-          });
-
-          if (matchCount > previewCount) {
-            completionMessage += ` (showing first ${previewCount})`;
-          }
-          completionMessage += `\n\nPreview:\n${previewStrings.join("\n")}`;
-        } else {
+        if (matchCount === 0) {
           completionMessage = "Search completed - no matches found";
-        }
-
-        // Enhanced completion message with detailed statistics
-        if (grepResult.isTruncated) {
-          completionMessage += ` (showing first ${style.cyan(grepResult.displayedCount)})`;
         }
 
         // Calculate unique files with matches

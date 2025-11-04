@@ -160,7 +160,7 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
           threshold: maxTokens,
         });
 
-        let completionMessage = `Glob search completed. Found ${style.cyan(sortedFiles.length)} files.`;
+        let completionMessage = `Found ${style.cyan(sortedFiles.length)} files.`;
 
         if (managed.truncated) {
           completionMessage += ` ${managed.warning}`;
