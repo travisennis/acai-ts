@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
+import { rmSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { describe, it } from "node:test";
+import { after, describe, it } from "node:test";
 import { config } from "../../source/config.ts";
 import { createBashTool } from "../../source/tools/bash.ts";
 import { validatePaths } from "../../source/tools/bash-utils.ts";
@@ -209,6 +210,10 @@ describe("bash tool mutating command warnings", async () => {
   const tool = await createBashTool({
     baseDir,
     tokenCounter,
+  });
+
+  after(() => {
+    rmSync("test-file.txt");
   });
 
   async function collectEvents(command: string) {
