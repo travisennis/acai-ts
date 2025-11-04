@@ -41,7 +41,8 @@ type App =
   | "conversation-analyzer"
   | "tool-repair"
   | "init-project"
-  | "task-agent";
+  | "task-agent"
+  | "handoff-agent";
 
 export class ModelManager {
   private modelMap: Map<App, LanguageModelV2>;

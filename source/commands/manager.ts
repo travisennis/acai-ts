@@ -17,6 +17,7 @@ import { editPromptCommand } from "./edit-prompt-command.ts";
 import { exitCommand } from "./exit-command.ts";
 import { filesCommand } from "./files-command.ts";
 import { generateRulesCommand } from "./generate-rules-command.ts";
+import { handoffCommand } from "./handoff-command.ts";
 import { healthCommand } from "./health-command.ts";
 import { helpCommand } from "./help-command.ts";
 import { historyCommand } from "./history-command.ts";
@@ -113,6 +114,7 @@ export class CommandManager {
       usageCommand(options),
       lastLogCommand(options),
       generateRulesCommand(options),
+      handoffCommand(options),
       applicationLogCommand(options),
       copyCommand(options),
       listToolsCommand(options),

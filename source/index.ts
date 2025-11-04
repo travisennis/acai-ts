@@ -161,6 +161,7 @@ async function main() {
   modelManager.setModel("conversation-analyzer", "openrouter:gemini-flash25");
   modelManager.setModel("init-project", chosenModel);
   modelManager.setModel("task-agent", "openrouter:gpt-5-mini");
+  modelManager.setModel("handoff-agent", chosenModel);
 
   const tokenTracker = new TokenTracker();
   const tokenCounter = new TokenCounter();
