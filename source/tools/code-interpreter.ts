@@ -5,8 +5,8 @@ import { join } from "node:path";
 import process from "node:process";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
-import { config } from "../config.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
+import { manageTokenLimit } from "../tokens/threshold.ts";
 import type { ToolResult } from "./types.ts";
 
 export const CodeInterpreterTool = {
@@ -180,28 +180,21 @@ export const createCodeInterpreterTool = async ({
         exitCode: completed.code ?? -1,
       };
 
-      let tokenCount = 0;
-      try {
-        tokenCount = tokenCounter.count(JSON.stringify(result));
-      } catch (tokenError) {
-        console.info("Error calculating token count:", tokenError);
-      }
-
-      const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
-
       const resultJson = JSON.stringify(result, null, 2);
-      const truncatedResult =
-        tokenCount <= maxTokens
-          ? resultJson
-          : `Script output exceeded maximum allowed tokens (${tokenCount} tokens). Max: ${maxTokens} tokens. Output was truncated.\n\nStdout preview (first 500 chars):\n${result.stdout.slice(0, 500)}${result.stdout.length > 500 ? "\n..." : ""}\n\nStderr preview (first 500 chars):\n${result.stderr.slice(0, 500)}${result.stderr.length > 500 ? "\n..." : ""}`;
+      const managedResult = await manageTokenLimit(
+        resultJson,
+        tokenCounter,
+        "CodeInterpreter",
+        "Reduce script complexity or output size",
+      );
 
       yield {
         event: "tool-completion",
         id: toolCallId,
-        data: `CodeInterpreter: Completed successfully${tokenCount > 0 ? ` (${tokenCount} tokens)` : ""}`,
+        data: `CodeInterpreter: Completed successfully${managedResult.tokenCount > 0 ? ` (${managedResult.tokenCount} tokens)` : ""}`,
       };
 
-      yield truncatedResult;
+      yield managedResult.content;
     } catch (err) {
       const errorMessage =
         (err as Error).name === "ETIMEDOUT" ||

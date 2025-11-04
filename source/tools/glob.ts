@@ -3,10 +3,9 @@ import * as nodePath from "node:path";
 import { inspect } from "node:util";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
-import { config } from "../config.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
-import { manageOutput } from "../tokens/manage-output.ts";
+import { manageTokenLimit } from "../tokens/threshold.ts";
 import { glob } from "../utils/glob.ts";
 import type { ToolResult } from "./types.ts";
 
@@ -147,26 +146,26 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
           })
           .map((file) => file.path);
 
-        const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
-
         // Format results
         const resultContent =
           sortedFiles.length > 0
             ? sortedFiles.join("\n")
             : "No files found matching the specified patterns.";
 
-        const managed = manageOutput(resultContent, {
+        const result = await manageTokenLimit(
+          resultContent,
           tokenCounter,
-          threshold: maxTokens,
-        });
+          "Glob",
+          "Use more specific glob patterns or recursive=false to reduce matches",
+        );
 
         let completionMessage = `Found ${style.cyan(sortedFiles.length)} files.`;
 
-        if (managed.truncated) {
-          completionMessage += ` ${managed.warning}`;
+        if (result.truncated) {
+          completionMessage += ` ${result.content}`;
         }
 
-        completionMessage += ` (${managed.tokenCount} tokens)`;
+        completionMessage += ` (${result.tokenCount} tokens)`;
 
         yield {
           event: "tool-completion",
@@ -174,7 +173,7 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
           data: `Glob: ${completionMessage}`,
         };
 
-        yield managed.content;
+        yield result.content;
       } catch (error) {
         yield {
           event: "tool-error",

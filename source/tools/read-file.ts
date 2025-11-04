@@ -2,9 +2,9 @@ import fs from "node:fs/promises";
 import { isNumber } from "@travisennis/stdlib/typeguards";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
-import { config } from "../config.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
+import { manageTokenLimit } from "../tokens/threshold.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { ToolResult } from "./types.ts";
 import { fileEncodingSchema } from "./types.ts";
@@ -102,36 +102,35 @@ export const createReadFileTool = async ({
           file = lines.slice(startIndex, endIndex).join("\n");
         }
 
-        let tokenCount = 0;
-        try {
-          // Only calculate tokens for non-image files and if encoding is text-based
-          if (encoding.startsWith("utf")) {
-            tokenCount = tokenCounter.count(file);
-          }
-        } catch (tokenError) {
-          console.info("Error calculating token count:", tokenError);
-          // Log or handle error, but don't block file return
+        // For non-text files, just return the content directly without token management
+        if (!encoding.startsWith("utf")) {
+          yield {
+            id: toolCallId,
+            event: "tool-completion",
+            data: "ReadFile: File read successfully",
+          };
+          yield file;
+          return;
         }
 
-        const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
-        // Adjust max token check message if line selection was used
-        const maxTokenMessage =
+        const result = await manageTokenLimit(
+          file,
+          tokenCounter,
+          "ReadFile",
           isNumber(startLine) || isNumber(lineCount)
-            ? `Selected file content (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Consider adjusting startLine/lineCount or using grepFiles.`
-            : `File content (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Please use startLine and lineCount parameters to read specific portions of the file, or using grepFiles to search for specific content.`;
-
-        const result = tokenCount <= maxTokens ? file : maxTokenMessage;
+            ? "Consider adjusting startLine/lineCount or using grepFiles"
+            : "Use startLine and lineCount parameters to read specific portions, or use grepFiles for targeted access",
+        );
 
         yield {
           id: toolCallId,
           event: "tool-completion",
           // Include token count only if calculated (i.e., for text files)
-          data:
-            tokenCount <= maxTokens
-              ? `ReadFile: File read successfully ${tokenCount > 0 ? ` (${tokenCount} tokens)` : ""}`
-              : `ReadFile: ${result}`,
+          data: !result.truncated
+            ? `ReadFile: File read successfully ${result.tokenCount > 0 ? ` (${result.tokenCount} tokens)` : ""}`
+            : `ReadFile: ${result.content}`,
         };
-        yield result;
+        yield result.content;
       } catch (error) {
         const errorMsg = `ReadFile: ${(error as Error).message}`;
         yield { event: "tool-error", id: toolCallId, data: errorMsg };

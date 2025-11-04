@@ -1,10 +1,10 @@
 import { readFile } from "node:fs/promises";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
-import { config } from "../config.ts";
 import { formatFile } from "../formatting.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
+import { manageTokenLimit } from "../tokens/threshold.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { ToolResult } from "./types.ts";
 
@@ -59,7 +59,6 @@ export const createReadMultipleFilesTool = async ({
           throw new Error("Multiple file reading aborted before reading files");
         }
 
-        const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
         const results = await Promise.all(
           paths.map(async (filePath) => {
             if (abortSignal?.aborted) {
@@ -72,55 +71,45 @@ export const createReadMultipleFilesTool = async ({
               workingDir,
               allowedDirectory,
             );
-            return countTokensAndCheckLimit(
-              fileResult,
-              tokenCounter,
-              maxTokens,
-            );
+            return fileResult;
           }),
         );
 
-        let totalTokens = 0;
-        let filesReadCount = 0;
-        let filesExceededLimitCount = 0;
-        let filesErrorCount = 0;
-        const formattedResults = results.map((result) => {
-          if (result.error) {
-            filesErrorCount++;
-            return `${result.path}: Error - ${result.error}`;
-          }
-          // Check if tokenCount is > 0, meaning it wasn't skipped
-          if (result.tokenCount > 0) {
-            filesReadCount++;
-          } else if (
-            result.content?.includes("exceeds maximum allowed tokens")
-          ) {
-            filesExceededLimitCount++;
-          }
-          totalTokens += result.tokenCount; // Add the token count (will be 0 for skipped files)
-          // Return content (or max token message)
-          return formatFile(result.path, result.content ?? "", "markdown");
-        });
+        const formattedResults = await Promise.all(
+          results.map(async (result) => {
+            if (result.error) {
+              return `${result.path}: Error - ${result.error}`;
+            }
+            // Apply token limit check to each file
+            const managedResult = await manageTokenLimit(
+              result.content ?? "",
+              tokenCounter,
+              "ReadMultipleFiles",
+              "Use readFile with startLine/lineCount or grepFiles for targeted access",
+            );
+            return formatFile(result.path, managedResult.content, "markdown");
+          }),
+        );
+
+        const finalResult = await manageTokenLimit(
+          formattedResults.join("\n---\n"),
+          tokenCounter,
+          "ReadMultipleFiles",
+          "Reduce number of files or use more specific paths",
+        );
 
         let completionMessage: string;
-        if (filesReadCount === paths.length) {
-          completionMessage = `Read ${paths.length} files successfully (${totalTokens} total tokens).`;
+        const filesReadCount = results.filter((r) => !r.error).length;
+        const filesErrorCount = results.filter((r) => r.error).length;
+
+        if (finalResult.truncated) {
+          completionMessage = `Read ${filesReadCount} files, but combined output exceeded token limit. ${finalResult.content}`;
         } else {
-          const parts: string[] = [];
-          if (filesReadCount > 0) {
-            parts.push(
-              `Read ${filesReadCount} files successfully (${totalTokens} total tokens)`,
-            );
-          }
-          if (filesExceededLimitCount > 0) {
-            parts.push(
-              `${filesExceededLimitCount} files exceeded token limit and were skipped`,
-            );
-          }
-          if (filesErrorCount > 0) {
-            parts.push(`${filesErrorCount} files could not be read`);
-          }
-          completionMessage = `${parts.join(", ")}.`;
+          completionMessage = `Read ${filesReadCount} files successfully (${finalResult.tokenCount} tokens)`;
+        }
+
+        if (filesErrorCount > 0) {
+          completionMessage += `, ${filesErrorCount} files could not be read`;
         }
 
         yield {
@@ -129,7 +118,7 @@ export const createReadMultipleFilesTool = async ({
           data: `ReadMultipleFiles: ${completionMessage}`,
         };
 
-        yield formattedResults.join("\n---\n");
+        yield finalResult.content;
       } catch (error) {
         const errorMsg = `ReadMultipleFiles: ${(error as Error).message}`;
         yield {
@@ -171,45 +160,4 @@ async function validateAndReadFile(
       error: errorMessage,
     };
   }
-}
-
-async function countTokensAndCheckLimit(
-  fileResult: { path: string; content: string | null; error: string | null },
-  tokenCounter: TokenCounter,
-  maxTokens: number,
-): Promise<{
-  path: string;
-  content: string | null;
-  tokenCount: number;
-  error: string | null;
-}> {
-  if (fileResult.error || fileResult.content === null) {
-    return {
-      path: fileResult.path,
-      content: null,
-      tokenCount: 0,
-      error: fileResult.error,
-    };
-  }
-
-  let tokenCount = 0;
-  try {
-    tokenCount = tokenCounter.count(fileResult.content);
-  } catch (tokenError) {
-    console.error("Error calculating token count:", tokenError);
-    // Handle token calculation error if needed
-  }
-
-  const maxTokenMessage = `File content (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Use readFile with startLine/lineCount or grepFiles for targeted access.`;
-
-  const finalContent =
-    tokenCount > maxTokens ? maxTokenMessage : fileResult.content;
-  const actualTokenCount = tokenCount > maxTokens ? 0 : tokenCount; // Don't count tokens for skipped files
-
-  return {
-    path: fileResult.path,
-    content: finalContent,
-    tokenCount: actualTokenCount,
-    error: null,
-  };
 }

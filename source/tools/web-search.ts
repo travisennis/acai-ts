@@ -4,6 +4,7 @@ import { z } from "zod";
 import Exa from "../api/exa/index.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
+import { manageTokenLimit } from "../tokens/threshold.ts";
 import type { ToolResult } from "./types.ts";
 
 export const WebSearchTool = {
@@ -51,15 +52,21 @@ export const createWebSearchTool = ({
         (source) => `## ${source.title}\nURL: ${source.url}\n\n${source.text}`,
       );
       const resultText = `# Search Results:\n\n${sources.join("\n\n")}`;
-      const tokenCount = tokenCounter.count(resultText);
+
+      const searchResult = await manageTokenLimit(
+        resultText,
+        tokenCounter,
+        "WebSearch",
+        "Use more specific search queries or reduce number of results",
+      );
 
       yield {
         event: "tool-completion",
         id: toolCallId,
-        data: `WebSearch: Found ${result.results.length} results. (${tokenCount} tokens)`,
+        data: `WebSearch: Found ${result.results.length} results. (${searchResult.tokenCount} tokens)`,
       };
 
-      yield resultText;
+      yield searchResult.content;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);

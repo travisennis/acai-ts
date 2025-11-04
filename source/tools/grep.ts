@@ -5,7 +5,7 @@ import { z } from "zod";
 import { config } from "../config.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
-import { manageOutput } from "../tokens/manage-output.ts";
+import { manageTokenLimit } from "../tokens/threshold.ts";
 import type { ToolResult } from "./types.ts";
 
 export const GrepTool = {
@@ -147,12 +147,12 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
           maxResults: effectiveMaxResults,
         });
 
-        const maxTokens = projectConfig.tools.maxTokens;
-
-        const managed = manageOutput(grepResult.rawOutput, {
+        const result = await manageTokenLimit(
+          grepResult.rawOutput,
           tokenCounter,
-          threshold: maxTokens,
-        });
+          "Grep",
+          "Use maxResults parameter, more specific patterns, or contextLines=0 to reduce output",
+        );
 
         const matchCount = grepResult.matchCount;
 
@@ -178,14 +178,14 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
           completionMessage += ` with ${style.cyan(grepResult.contextCount)} context line${grepResult.contextCount === 1 ? "" : "s"}`;
         }
 
-        completionMessage += ` (${managed.tokenCount} tokens)`;
+        completionMessage += ` (${result.tokenCount} tokens)`;
 
         yield {
           event: "tool-completion",
           id: toolCallId,
           data: `Grep: ${completionMessage}`,
         };
-        yield managed.content;
+        yield result.content;
       } catch (error) {
         const errorMessage = (error as Error).message;
         let userFriendlyError = `Error searching for "${pattern}" in ${path}: ${errorMessage}`;

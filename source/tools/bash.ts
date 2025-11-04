@@ -5,6 +5,7 @@ import { initExecutionEnvironment } from "../execution/index.ts";
 import { logger } from "../logger.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
+import { manageTokenLimit } from "../tokens/threshold.ts";
 import { isMutatingCommand, resolveCwd, validatePaths } from "./bash-utils.ts";
 import { isPathWithinAllowedDirs } from "./filesystem-utils.ts";
 import type { ToolResult } from "./types.ts";
@@ -113,24 +114,20 @@ export const createBashTool = async ({
           throwOnError: false,
         });
 
-        let tokenCount = 0;
-        try {
-          tokenCount = tokenCounter.count(output);
-        } catch (tokenError) {
-          console.info("Error calculating token count:", tokenError);
-        }
-
-        const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
-        const maxTokenMessage = `Output of command (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). Please adjust how you call the command to get back more specific results.`;
-        const finalResult = tokenCount <= maxTokens ? output : maxTokenMessage;
+        const result = await manageTokenLimit(
+          output,
+          tokenCounter,
+          "Bash",
+          "Adjust command to return more specific results",
+        );
 
         yield {
           event: "tool-completion",
           id: toolCallId,
-          data: `Bash: ${exitCode} (${tokenCount} tokens)`,
+          data: `Bash: ${exitCode} (${result.tokenCount} tokens)`,
         };
 
-        yield finalResult;
+        yield result.content;
       } catch (error) {
         logger.error(error, "Bash Tool Error:");
         const errorMsg = `Bash: ${(error as Error).message}`;

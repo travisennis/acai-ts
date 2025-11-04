@@ -2,10 +2,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
-import { config } from "../config.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
-import { manageOutput } from "../tokens/manage-output.ts";
+import { manageTokenLimit } from "../tokens/threshold.ts";
 import ignore, { type Ignore } from "../utils/ignore.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { ToolResult } from "./types.ts";
@@ -64,19 +63,19 @@ export const createDirectoryTreeTool = async ({
           );
         }
 
-        const maxTokens = (await config.readProjectConfig()).tools.maxTokens;
-
         const rawTree = await directoryTree(validPath);
-        const managed = manageOutput(rawTree, {
+        const result = await manageTokenLimit(
+          rawTree,
           tokenCounter,
-          threshold: maxTokens,
-        });
+          "DirectoryTree",
+          "Use excludeDirPatterns or recursive=false to reduce output",
+        );
 
         let completionMessage = "DirectoryTree: Done";
-        if (managed.truncated) {
-          completionMessage += ` - ${managed.warning}`;
+        if (result.truncated) {
+          completionMessage += ` - ${result.content}`;
         }
-        completionMessage += ` (${managed.tokenCount} tokens)`;
+        completionMessage += ` (${result.tokenCount} tokens)`;
 
         yield {
           id: toolCallId,
@@ -84,7 +83,7 @@ export const createDirectoryTreeTool = async ({
           data: completionMessage,
         };
 
-        yield managed.content;
+        yield result.content;
       } catch (error) {
         const errorMsg = `DirectoryTree: ${(error as Error).message}`;
         yield {
