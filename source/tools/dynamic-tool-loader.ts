@@ -140,44 +140,36 @@ async function spawnChildProcess(
       stderr += data.toString();
     });
 
-    child.on("close", (code) => {
+    child.on("close", () => {
       clearTimeout(timer);
       if (hasTimedOut) return;
 
-      if (code !== 0) {
-        reject(
-          new Error(
-            `Dynamic tool failed: ${stderr || `Exited with code ${code}`}`,
-          ),
-        );
-      } else {
-        let output = stdout.trim();
-        const maxOutputBytes = 2000000;
-        if (output.length > maxOutputBytes) {
-          output = `${output.substring(0, maxOutputBytes)}\n[Output truncated]`;
-        }
+      let output = stdout.trim();
+      const maxOutputBytes = 2000000;
+      if (output.length > maxOutputBytes) {
+        output = `${output.substring(0, maxOutputBytes)}\n[Output truncated]`;
+      }
 
-        // If no stdout, prefer stderr so callers get useful info
-        const errText = stderr.trim();
-        if (!output && errText) {
-          output = errText;
-        }
+      // If no stdout, prefer stderr so callers get useful info
+      const errText = stderr.trim();
+      if (!output && errText) {
+        output = errText;
+      }
 
-        // Fallback to a non-empty placeholder to satisfy callers
-        if (!output) {
-          output = "[No output from dynamic tool]";
-        }
+      // Fallback to a non-empty placeholder to satisfy callers
+      if (!output) {
+        output = "[No output from dynamic tool]";
+      }
 
-        // Attempt to parse as JSON if structured
-        if (output && (output.startsWith("{") || output.startsWith("["))) {
-          try {
-            resolve(JSON.stringify(JSON.parse(output)));
-          } catch {
-            resolve(output);
-          }
-        } else {
+      // Attempt to parse as JSON if structured
+      if (output && (output.startsWith("{") || output.startsWith("["))) {
+        try {
+          resolve(JSON.stringify(JSON.parse(output)));
+        } catch {
           resolve(output);
         }
+      } else {
+        resolve(output);
       }
     });
 
