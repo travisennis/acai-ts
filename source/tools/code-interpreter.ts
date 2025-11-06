@@ -66,7 +66,7 @@ export const createCodeInterpreterTool = async ({
       yield {
         event: "tool-init",
         id: toolCallId,
-        data: `CodeInterpreter: Executing ${lines.length} of code.`,
+        data: `CodeInterpreter: Executing ${lines.length} lines of code.`,
       };
 
       if (code.trim().length === 0) {
