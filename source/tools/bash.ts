@@ -73,7 +73,7 @@ export const createBashTool = async ({
         yield {
           event: "tool-init",
           id: toolCallId,
-          data: `Bash: ${style.cyan(command)}${isMutating ? " ⚠️" : ""}`,
+          data: `Bash: ${style.cyan(command)}${isMutating ? " *" : ""}`,
         };
 
         if (!isPathWithinAllowedDirs(resolvedCwd, allowedDirectories)) {

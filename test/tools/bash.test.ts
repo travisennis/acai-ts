@@ -236,7 +236,7 @@ describe("bash tool mutating command warnings", async () => {
     const initEvent = events.find((e) => e.event === "tool-init");
     assert.ok(initEvent, "Should emit tool-init event");
     assert.ok(
-      initEvent?.data.includes("⚠️"),
+      initEvent?.data.includes("*"),
       "Should include warning indicator for mutating command",
     );
   });
