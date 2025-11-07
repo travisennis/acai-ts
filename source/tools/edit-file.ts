@@ -232,8 +232,6 @@ async function applyEditWithLlmFix(
 
   // Try the original edit first
   const originalResult = applyLiteralEdit(content, oldText, newText);
-  console.log("Original edit");
-  console.dir(originalResult);
   if (originalResult.matchCount > 0) {
     return { success: true, content: originalResult.content };
   }
@@ -254,9 +252,6 @@ async function applyEditWithLlmFix(
         options.modelManager ?? undefined,
         abortSignal,
       );
-
-      console.log("Fixed edit");
-      console.dir(fixedEdit);
 
       if (fixedEdit && !fixedEdit.noChangesRequired) {
         // Retry the edit with the corrected search string
