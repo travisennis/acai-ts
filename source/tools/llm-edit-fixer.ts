@@ -64,7 +64,7 @@ const SearchReplaceEditSchema = z.object({
   explanation: z.string(),
 });
 
-export type SearchReplaceEdit = z.infer<typeof SearchReplaceEditSchema>;
+type SearchReplaceEdit = z.infer<typeof SearchReplaceEditSchema>;
 
 /**
  * Auto-generates an instruction based on edit parameters when none is provided

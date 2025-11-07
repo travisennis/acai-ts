@@ -1,5 +1,5 @@
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
-import { type TypedToolCall, type TypedToolResult, tool } from "ai";
+import { tool } from "ai";
 import type { WorkspaceContext } from "../index.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
@@ -42,9 +42,6 @@ export type CompleteToolSet = {
   >["toolDefs"] &
     AsyncReturnType<typeof initAgents>["toolDefs"])[K];
 };
-
-export type CompleteToolCall = TypedToolCall<CompleteToolSet>;
-export type CompleteToolResult = TypedToolResult<CompleteToolSet>;
 
 export type CompleteCliToolSet = AsyncReturnType<
   typeof initCliTools

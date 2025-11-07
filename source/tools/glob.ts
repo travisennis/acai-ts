@@ -42,7 +42,7 @@ export const inputSchema = z.object({
     .describe("Current working directory override. (default: process.cwd())"),
 });
 
-export type GlobInputSchema = z.infer<typeof inputSchema>;
+type GlobInputSchema = z.infer<typeof inputSchema>;
 
 export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
   const { tokenCounter } = options;

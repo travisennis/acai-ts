@@ -57,7 +57,7 @@ const inputSchema = z.object({
     ),
 });
 
-export type GrepInputSchema = z.infer<typeof inputSchema>;
+type GrepInputSchema = z.infer<typeof inputSchema>;
 
 export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
   const { tokenCounter } = options;
@@ -434,7 +434,7 @@ export interface ParsedMatch {
   isContext?: boolean;
 }
 
-export interface GrepResult {
+interface GrepResult {
   rawOutput: string;
   parsedMatches: ParsedMatch[];
   matchCount: number;
