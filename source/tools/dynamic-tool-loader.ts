@@ -182,7 +182,7 @@ async function spawnChildProcess(
 }
 
 // Type for individual dynamic tool objects
-export interface DynamicToolObject {
+interface DynamicToolObject {
   toolDef: {
     description: string;
     // biome-ignore lint/suspicious/noExplicitAny: makes it easier to handle dynamic input schemas

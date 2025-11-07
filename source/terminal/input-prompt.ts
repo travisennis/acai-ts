@@ -13,7 +13,7 @@ import {
 } from "./errors.ts";
 import style from "./style.ts";
 
-export interface InputOptions {
+interface InputOptions {
   message?: string; // prompt message
   default?: string; // default value if user presses Enter on empty
   validate?: (input: string) => true | string; // return true if valid, else error message

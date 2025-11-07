@@ -36,7 +36,7 @@ interface ChoiceObject<T = unknown> {
   value: T;
   disabled?: boolean;
 }
-export type Choice<T = unknown> = string | ChoiceObject<T>;
+type Choice<T = unknown> = string | ChoiceObject<T>;
 
 interface NormalizedChoice<T = unknown> {
   name: string;
@@ -49,7 +49,7 @@ interface TerminalIo {
   stdout: NodeJS.WriteStream;
 }
 
-export interface SelectOptions<T = unknown> {
+interface SelectOptions<T = unknown> {
   message?: string;
   choices: Choice<T>[];
   initial?: number;

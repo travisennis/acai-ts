@@ -19,7 +19,7 @@ import type { CompleteToolSet } from "../tools/index.ts";
 import { isToolMessage } from "../tools/types.ts";
 import { isAsyncIterable } from "../utils/iterables.ts";
 
-export type ManualLoopOptions = {
+type ManualLoopOptions = {
   modelManager: ModelManager;
   terminal: Terminal;
   messageHistory: MessageHistory;
@@ -33,7 +33,7 @@ export type ManualLoopOptions = {
   toolCallRepair?: ToolCallRepairFunction<CompleteToolSet>;
 };
 
-export type ManualLoopResult = {
+type ManualLoopResult = {
   steps: {
     toolResults: Array<{ toolName: string }>;
     toolCalls: Array<{ toolName: string }>;
