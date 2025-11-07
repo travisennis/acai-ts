@@ -53,9 +53,13 @@ export type CompleteCliToolSet = AsyncReturnType<
 export async function initTools({
   tokenCounter,
   workspace,
+  modelManager,
+  tokenTracker,
 }: {
   tokenCounter: TokenCounter;
   workspace: WorkspaceContext;
+  modelManager?: ModelManager;
+  tokenTracker?: TokenTracker;
 }) {
   const readFileTool = await createReadFileTool({
     workingDir: workspace.primaryDir,
@@ -72,6 +76,8 @@ export async function initTools({
   const editFileTool = await createEditFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
+    modelManager,
+    tokenTracker,
   });
 
   const advancedEditFileTool = await createAdvancedEditFileTool({
@@ -220,9 +226,13 @@ export async function initTools({
 export async function initCliTools({
   tokenCounter,
   workspace,
+  modelManager,
+  tokenTracker,
 }: {
   tokenCounter: TokenCounter;
   workspace: WorkspaceContext;
+  modelManager?: ModelManager;
+  tokenTracker?: TokenTracker;
 }) {
   const readFileTool = await createReadFileTool({
     workingDir: workspace.primaryDir,
@@ -239,6 +249,8 @@ export async function initCliTools({
   const editFileTool = await createEditFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
+    modelManager,
+    tokenTracker,
   });
 
   const advancedEditFileTool = await createAdvancedEditFileTool({

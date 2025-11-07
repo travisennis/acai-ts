@@ -2,8 +2,12 @@ import { readFile, writeFile } from "node:fs/promises";
 import type { ToolCallOptions } from "ai";
 import { createTwoFilesPatch } from "diff";
 import { z } from "zod";
+import { logger } from "../logger.ts";
+import type { ModelManager } from "../models/manager.ts";
 import style from "../terminal/style.ts";
+import type { TokenTracker } from "../tokens/tracker.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
+import { fixLlmEditWithInstruction } from "./llm-edit-fixer.ts";
 import type { ToolResult } from "./types.ts";
 
 export const EditFileTool = {
@@ -31,9 +35,15 @@ type EditFileInputSchema = z.infer<typeof inputSchema>;
 export const createEditFileTool = async ({
   workingDir,
   allowedDirs,
+  modelManager,
+  tokenTracker,
+  enableLlmFix = true,
 }: {
   workingDir: string;
   allowedDirs?: string[];
+  modelManager?: ModelManager;
+  tokenTracker?: TokenTracker;
+  enableLlmFix?: boolean;
 }) => {
   const allowedDirectory = allowedDirs ?? [workingDir];
   return {
@@ -73,6 +83,11 @@ export const createEditFileTool = async ({
           edits,
           false,
           abortSignal,
+          {
+            modelManager,
+            tokenTracker,
+            enableLlmFix,
+          },
         );
 
         yield {
@@ -127,6 +142,12 @@ export async function applyFileEdits(
   edits: FileEdit[],
   dryRun = false,
   abortSignal?: AbortSignal,
+  options?: {
+    modelManager?: ModelManager;
+    tokenTracker?: TokenTracker;
+    enableLlmFix?: boolean;
+    instruction?: string;
+  },
 ): Promise<string> {
   if (abortSignal?.aborted) {
     throw new Error("File edit operation aborted");
@@ -149,31 +170,17 @@ export async function applyFileEdits(
     if (abortSignal?.aborted) {
       throw new Error("File edit operation aborted during processing");
     }
-    const { oldText, newText } = edit; // Use literal oldText and newText
 
-    // Find all occurrences of oldText
-    let currentIndex = 0;
-    let matchCount = 0;
+    const result = await applyEditWithLlmFix(
+      edit,
+      modifiedContent,
+      abortSignal,
+      options,
+    );
 
-    while (currentIndex < modifiedContent.length) {
-      const matchIndex = modifiedContent.indexOf(oldText, currentIndex);
-      if (matchIndex === -1) {
-        break;
-      }
-
-      matchCount++;
-
-      // Apply the replacement
-      modifiedContent =
-        modifiedContent.slice(0, matchIndex) +
-        newText +
-        modifiedContent.slice(matchIndex + oldText.length);
-
-      // Move current index past the replacement
-      currentIndex = matchIndex + newText.length;
-    }
-
-    if (matchCount === 0) {
+    if (result.success) {
+      modifiedContent = result.content;
+    } else {
       throw new Error("oldText not found in content");
     }
   }
@@ -200,4 +207,114 @@ export async function applyFileEdits(
   }
 
   return formattedDiff;
+}
+
+interface ApplyEditResult {
+  success: boolean;
+  content: string;
+}
+
+/**
+ * Applies a single edit with LLM fix fallback
+ */
+async function applyEditWithLlmFix(
+  edit: FileEdit,
+  content: string,
+  abortSignal?: AbortSignal,
+  options?: {
+    modelManager?: ModelManager;
+    tokenTracker?: TokenTracker;
+    enableLlmFix?: boolean;
+    instruction?: string;
+  },
+): Promise<ApplyEditResult> {
+  const { oldText, newText } = edit;
+
+  // Try the original edit first
+  const originalResult = applyLiteralEdit(content, oldText, newText);
+  console.log("Original edit");
+  console.dir(originalResult);
+  if (originalResult.matchCount > 0) {
+    return { success: true, content: originalResult.content };
+  }
+
+  // If LLM fix is enabled and dependencies are available, try to fix the edit
+  if (
+    options?.enableLlmFix !== false &&
+    options?.modelManager &&
+    options?.tokenTracker
+  ) {
+    try {
+      const fixedEdit = await fixLlmEditWithInstruction(
+        options.instruction,
+        oldText,
+        newText,
+        "oldText not found in content",
+        content,
+        options.modelManager ?? undefined,
+        abortSignal,
+      );
+
+      console.log("Fixed edit");
+      console.dir(fixedEdit);
+
+      if (fixedEdit && !fixedEdit.noChangesRequired) {
+        // Retry the edit with the corrected search string
+        const correctedResult = applyLiteralEdit(
+          content,
+          fixedEdit.search,
+          fixedEdit.replace,
+        );
+        if (correctedResult.matchCount > 0) {
+          return { success: true, content: correctedResult.content };
+        }
+      } else if (fixedEdit?.noChangesRequired) {
+        // No changes required, skip this edit
+        return { success: true, content };
+      }
+    } catch (llmError) {
+      // If LLM fix fails, fall back to original error
+      logger.warn(llmError, "LLM edit fix failed:");
+    }
+  }
+
+  return { success: false, content };
+}
+
+interface LiteralEditResult {
+  matchCount: number;
+  content: string;
+}
+
+/**
+ * Applies a literal search and replace operation
+ */
+function applyLiteralEdit(
+  content: string,
+  search: string,
+  replace: string,
+): LiteralEditResult {
+  let modifiedContent = content;
+  let matchCount = 0;
+  let currentIndex = 0;
+
+  while (currentIndex < modifiedContent.length) {
+    const matchIndex = modifiedContent.indexOf(search, currentIndex);
+    if (matchIndex === -1) {
+      break;
+    }
+
+    matchCount++;
+
+    // Apply the replacement
+    modifiedContent =
+      modifiedContent.slice(0, matchIndex) +
+      replace +
+      modifiedContent.slice(matchIndex + search.length);
+
+    // Move current index past the replacement
+    currentIndex = matchIndex + replace.length;
+  }
+
+  return { matchCount, content: modifiedContent };
 }

@@ -76,9 +76,22 @@ export function createMockModelManager(
     ...metadata,
   };
 
-  return {
-    getModelMetadata: mock.fn(() => defaultMetadata),
+  const getModelMock = mock.fn();
+  const getModelMetadataMock = mock.fn(() => defaultMetadata);
+
+  const mockManager = {
+    getModel: getModelMock,
+    getModelMetadata: getModelMetadataMock,
   } as unknown as ModelManager;
+
+  // Add mock property for easier access in tests
+  // biome-ignore lint/suspicious/noExplicitAny: for testing, fix later
+  (mockManager as any).mock = {
+    getModel: getModelMock,
+    getModelMetadata: getModelMetadataMock,
+  };
+
+  return mockManager;
 }
 
 /**

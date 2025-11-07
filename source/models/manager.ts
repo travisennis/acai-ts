@@ -1,10 +1,11 @@
 import type { LanguageModelV2 } from "@ai-sdk/provider";
-import { wrapLanguageModel } from "ai";
+import { generateText, wrapLanguageModel } from "ai";
 import {
   auditMessage,
   cacheMiddleware,
   createRateLimitMiddleware,
 } from "../middleware/index.ts";
+import { AiConfig } from "./ai-config.ts";
 import {
   languageModel,
   type ModelMetadata,
@@ -42,7 +43,8 @@ type App =
   | "tool-repair"
   | "init-project"
   | "task-agent"
-  | "handoff-agent";
+  | "handoff-agent"
+  | "edit-fix";
 
 export class ModelManager {
   private modelMap: Map<App, LanguageModelV2>;
@@ -83,5 +85,32 @@ export class ModelManager {
       throw new Error("Model not initialized.");
     }
     return metadata;
+  }
+
+  async getText(app: App, system: string, prompt: string, signal: AbortSignal) {
+    const model = this.getModel(app);
+    const modelConfig = this.getModelMetadata(app);
+
+    if (!model || !modelConfig) {
+      throw new Error(`${app} model not available`);
+    }
+
+    const aiConfig = new AiConfig({
+      modelMetadata: modelConfig,
+      prompt: prompt,
+    });
+
+    const result = await generateText({
+      model,
+      maxOutputTokens: aiConfig.maxOutputTokens(),
+      system: system,
+      prompt: prompt,
+      temperature: aiConfig.temperature(),
+      topP: aiConfig.topP(),
+      providerOptions: aiConfig.providerOptions(),
+      abortSignal: signal,
+    });
+
+    return result;
   }
 }

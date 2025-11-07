@@ -76,6 +76,8 @@ export class Repl {
     const coreTools = await initTools({
       tokenCounter,
       workspace: this.options.workspace,
+      modelManager,
+      tokenTracker,
     });
 
     const agentTools = await initAgents({
