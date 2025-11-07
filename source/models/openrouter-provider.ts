@@ -61,6 +61,9 @@ const openrouterModels = {
   "kimi-k2": openRouterClient("moonshotai/kimi-k2-0905:exacto", {
     usage: { include: true },
   }) as LanguageModelV2,
+  "kimi-k2-thinking": openRouterClient("moonshotai/kimi-k2-thinking", {
+    usage: { include: true },
+  }) as LanguageModelV2,
   "devstral-medium": openRouterClient("mistralai/devstral-medium", {
     usage: { include: true },
   }) as LanguageModelV2,
@@ -71,6 +74,9 @@ const openrouterModels = {
     usage: { include: true },
   }) as LanguageModelV2,
   "qwen3-max": openRouterClient("qwen/qwen3-max", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "polaris-alpha": openRouterClient("openrouter/polaris-alpha", {
     usage: { include: true },
   }) as LanguageModelV2,
   "glm-4.6": openRouterClient("z-ai/glm-4.6:exacto", {
@@ -211,6 +217,19 @@ export const openrouterModelRegistry: {
     costPerOutputToken: 0.0000025,
     category: "balanced",
   },
+  "openrouter:kimi-k2-thinking": {
+    id: "openrouter:kimi-k2-thinking",
+    provider: "openrouter",
+    contextWindow: 262144,
+    maxOutputTokens: 8192,
+    defaultTemperature: 0.6,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.0000006,
+    costPerOutputToken: 0.0000025,
+    category: "powerful",
+  },
   "openrouter:devstral-medium": {
     id: "openrouter:devstral-medium",
     provider: "openrouter",
@@ -261,6 +280,19 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000012,
     costPerOutputToken: 0.000006,
+    category: "powerful",
+  },
+  "openrouter:polaris-alpha": {
+    id: "openrouter:polaris-alpha",
+    provider: "openrouter",
+    contextWindow: 256000,
+    maxOutputTokens: 128000,
+    defaultTemperature: 0.6,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0,
+    costPerOutputToken: 0,
     category: "powerful",
   },
   "openrouter:glm-4.6": {
