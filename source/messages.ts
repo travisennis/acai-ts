@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import EventEmitter from "node:events";
 import { readdir, readFile, stat, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { isString } from "@travisennis/stdlib/typeguards";
 import {
   type AssistantModelMessage,
@@ -65,6 +65,7 @@ It can be either an assistant message or a tool message.
 type ResponseMessage = AssistantModelMessage | ToolModelMessage;
 
 type SavedMessageHistory = {
+  project: string;
   sessionId: string;
   modelId: string;
   title: string;
@@ -205,7 +206,10 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     const fileName = `message-history-${this.sessionId}.json`;
     const filePath = join(msgHistoryDir, fileName);
 
+    const project = basename(process.cwd());
+
     const output: SavedMessageHistory = {
+      project,
       sessionId: this.sessionId,
       modelId: this.modelId,
       title: this.title,
