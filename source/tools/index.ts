@@ -194,8 +194,8 @@ export async function initTools({
   // Add grep tool
   executors.set(GrepTool.name, grepTool.execute);
 
-  // Add directoryTree tool (commented out - not currently used)
-  // executors.set(DirectoryTreeTool.name, directoryTreeTool.execute);
+  // Add directoryTree tool
+  executors.set(DirectoryTreeTool.name, directoryTreeTool.execute);
 
   // Add webFetch tool
   executors.set(WebFetchTool.name, webFetchTool.execute);
