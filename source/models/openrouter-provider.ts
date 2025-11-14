@@ -76,9 +76,6 @@ const openrouterModels = {
   "qwen3-max": openRouterClient("qwen/qwen3-max", {
     usage: { include: true },
   }) as LanguageModelV2,
-  "polaris-alpha": openRouterClient("openrouter/polaris-alpha", {
-    usage: { include: true },
-  }) as LanguageModelV2,
   "glm-4.6": openRouterClient("z-ai/glm-4.6:exacto", {
     usage: { include: true },
   }) as LanguageModelV2,
@@ -101,9 +98,6 @@ const openrouterModels = {
     usage: { include: true },
   }) as LanguageModelV2,
   "minimax-m2": openRouterClient("minimax/minimax-m2", {
-    usage: { include: true },
-  }) as LanguageModelV2,
-  "minimax-m2-free": openRouterClient("minimax/minimax-m2:free", {
     usage: { include: true },
   }) as LanguageModelV2,
 } as const;
@@ -282,19 +276,7 @@ export const openrouterModelRegistry: {
     costPerOutputToken: 0.000006,
     category: "powerful",
   },
-  "openrouter:polaris-alpha": {
-    id: "openrouter:polaris-alpha",
-    provider: "openrouter",
-    contextWindow: 256000,
-    maxOutputTokens: 128000,
-    defaultTemperature: 0.6,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-    category: "powerful",
-  },
+
   "openrouter:glm-4.6": {
     id: "openrouter:glm-4.6",
     provider: "openrouter",
@@ -410,19 +392,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000015,
     costPerOutputToken: 0.00000045,
-    category: "balanced",
-  },
-  "openrouter:minimax-m2-free": {
-    id: "openrouter:minimax-m2-free",
-    provider: "openrouter",
-    contextWindow: 204800,
-    maxOutputTokens: 32768,
-    defaultTemperature: 0.6,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
     category: "balanced",
   },
 };
