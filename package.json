@@ -50,12 +50,12 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.44",
     "@ai-sdk/deepseek": "^1.0.28",
-    "@ai-sdk/google": "^2.0.31",
+    "@ai-sdk/google": "^2.0.33",
     "@ai-sdk/groq": "^2.0.29",
-    "@ai-sdk/openai": "^2.0.65",
+    "@ai-sdk/openai": "^2.0.67",
     "@ai-sdk/openai-compatible": "^1.0.27",
     "@crosscopy/clipboard": "^0.2.8",
-    "@openrouter/ai-sdk-provider": "^1.2.2",
+    "@openrouter/ai-sdk-provider": "^1.2.3",
     "@travisennis/stdlib": "^0.0.14",
     "ai": "^5.0.93",
 
