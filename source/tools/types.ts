@@ -15,6 +15,7 @@ export const fileEncodingSchema = z.enum([
 ]);
 
 interface BaseMessage {
+  name: string;
   id: string;
   retry?: number;
 }

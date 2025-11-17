@@ -4,9 +4,9 @@ import { parse, relative, resolve, sep } from "node:path";
 import { createInterface, type Interface } from "node:readline/promises";
 import Clipboard from "@crosscopy/clipboard";
 import { asyncTry } from "@travisennis/stdlib/try";
-import type { CommandManager } from "./commands/manager.ts";
-import type { WorkspaceContext } from "./index.ts";
-import { logger } from "./logger.ts";
+import type { CommandManager } from "../commands/manager.ts";
+import type { WorkspaceContext } from "../index.ts";
+import { logger } from "../logger.ts";
 
 const whitespaceRegex = /\s+/;
 

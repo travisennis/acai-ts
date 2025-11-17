@@ -1,6 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { config } from "../config.ts";
 import { editor } from "../terminal/editor-prompt.ts";
+import style from "../terminal/style.ts";
+import type { Container, Editor, TUI } from "../tui/index.ts";
+import { Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const applicationLogCommand = ({
@@ -49,6 +52,78 @@ export const applicationLogCommand = ({
             `Error reading or displaying log file ${logFilePath ?? "specified in config"}: ${error}`,
           );
         }
+        return "continue";
+      }
+    },
+    async handle(
+      _args: string[],
+      {
+        tui,
+        container,
+        editor,
+      }: { tui: TUI; container: Container; editor: Editor },
+    ): Promise<"break" | "continue" | "use"> {
+      let logFilePath: string | undefined;
+      try {
+        const projectConfig = await config.readProjectConfig();
+        logFilePath = projectConfig.logs?.path;
+
+        if (!logFilePath) {
+          container.addChild(
+            new Text(
+              style.red(
+                "Application log path is not defined in .acai/acai.json under the 'logs.path' key.",
+              ),
+              1,
+              0,
+            ),
+          );
+          tui.requestRender();
+          editor.setText("");
+          return "continue";
+        }
+
+        const content = await readFile(logFilePath, { encoding: "utf8" });
+
+        // For TUI mode, we'll just display a message since we can't use the editor prompt
+        container.addChild(
+          new Text(`Viewing application log: ${style.blue(logFilePath)}`, 1, 0),
+        );
+        container.addChild(
+          new Text(`Content length: ${content.length} characters`, 2, 0),
+        );
+        container.addChild(
+          new Text(
+            style.dim("Note: Full log viewing not available in TUI mode"),
+            3,
+            0,
+          ),
+        );
+        tui.requestRender();
+        editor.setText("");
+        return "continue";
+      } catch (error) {
+        if (logFilePath && (error as NodeJS.ErrnoException).code === "ENOENT") {
+          container.addChild(
+            new Text(
+              style.red(`Application log file not found at: ${logFilePath}`),
+              1,
+              0,
+            ),
+          );
+        } else {
+          container.addChild(
+            new Text(
+              style.red(
+                `Error reading log file ${logFilePath ?? "specified in config"}: ${error}`,
+              ),
+              1,
+              0,
+            ),
+          );
+        }
+        tui.requestRender();
+        editor.setText("");
         return "continue";
       }
     },

@@ -6,7 +6,10 @@ import type { ModelManager } from "../models/manager.ts";
 import { systemPrompt } from "../prompts.ts";
 import { checkbox } from "../terminal/checkbox-prompt.ts";
 import type { Terminal } from "../terminal/index.ts";
+import style from "../terminal/style.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
+import type { Container, Editor, TUI } from "../tui/index.ts";
+import { Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 async function _processAndSaveRules(
@@ -85,6 +88,80 @@ export const generateRulesCommand = ({
         return "continue";
       }
       return "continue";
+    },
+    async handle(
+      _args: string[],
+      {
+        tui,
+        container,
+        editor,
+      }: { tui: TUI; container: Container; editor: Editor },
+    ): Promise<"break" | "continue" | "use"> {
+      if (messageHistory.isEmpty()) {
+        container.addChild(
+          new Text(
+            style.yellow("Cannot generate rules from an empty conversation."),
+            1,
+            0,
+          ),
+        );
+        tui.requestRender();
+        editor.setText("");
+        return "continue";
+      }
+
+      container.addChild(
+        new Text("Analyzing conversation to generate rules...", 1, 0),
+      );
+      tui.requestRender();
+
+      try {
+        const newRules = await analyzeConversation({
+          modelManager,
+          messages: messageHistory.get(),
+          tokenTracker,
+          terminal,
+        });
+
+        // For TUI mode, we'll just show the rules without the checkbox selection
+        if (!newRules || newRules.length === 0) {
+          container.addChild(
+            new Text(
+              style.yellow("No new generalizable rules were identified."),
+              2,
+              0,
+            ),
+          );
+        } else {
+          container.addChild(
+            new Text(style.green("Generated potential rules:"), 2, 0),
+          );
+          newRules.forEach((rule, index) => {
+            container.addChild(new Text(`- ${rule}`, 3 + index, 0));
+          });
+          container.addChild(
+            new Text(
+              style.dim("Note: Rule selection not available in TUI mode"),
+              3 + newRules.length,
+              0,
+            ),
+          );
+        }
+
+        tui.requestRender();
+        editor.setText("");
+        return "continue";
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        container.addChild(
+          new Text(style.red(`Error generating rules: ${errorMessage}`), 1, 0),
+        );
+        logger.error(error, "Error during rule generation:");
+        tui.requestRender();
+        editor.setText("");
+        return "continue";
+      }
     },
   };
 };

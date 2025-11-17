@@ -1,3 +1,6 @@
+import style from "../terminal/style.ts";
+import type { Container, Editor, TUI } from "../tui/index.ts";
+import { Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const saveCommand = ({
@@ -14,6 +17,23 @@ export const saveCommand = ({
       }
 
       terminal.info("Message history saved.");
+      return "continue";
+    },
+    async handle(
+      _args: string[],
+      {
+        tui,
+        container,
+        editor,
+      }: { tui: TUI; container: Container; editor: Editor },
+    ): Promise<"break" | "continue" | "use"> {
+      if (!messageHistory.isEmpty()) {
+        await messageHistory.save();
+      }
+
+      container.addChild(new Text(style.green("Message history saved."), 1, 0));
+      tui.requestRender();
+      editor.setText("");
       return "continue";
     },
   };

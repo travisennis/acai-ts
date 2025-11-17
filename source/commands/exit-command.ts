@@ -1,4 +1,6 @@
 import path from "node:path";
+import type { Container, Editor, TUI } from "../tui/index.ts";
+import { Text } from "../tui/index.ts";
 import { clearDirectory } from "../utils/filesystem.ts";
 import type { ReplCommand } from "./types.ts";
 
@@ -38,6 +40,32 @@ export const exitCommand = ({
         console.error("Failed to clear .tmp directory:", error);
       }
 
+      return "break";
+    },
+    async handle(
+      _args: string[],
+      {
+        tui,
+        container,
+        editor,
+      }: { tui: TUI; container: Container; editor: Editor },
+    ): Promise<"break" | "continue" | "use"> {
+      if (!messageHistory.isEmpty()) {
+        await messageHistory.save();
+      }
+
+      // Clear the .tmp directory on exit
+      try {
+        const tmpDirPath = path.join(baseDir ?? process.cwd(), ".tmp");
+        await clearDirectory(tmpDirPath);
+      } catch (error) {
+        // Log error but don't block exit
+        console.error("Failed to clear .tmp directory:", error);
+      }
+
+      container.addChild(new Text("Exiting...", 1, 0));
+      tui.requestRender();
+      editor.setText("");
       return "break";
     },
   };

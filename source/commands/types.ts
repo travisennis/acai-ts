@@ -6,6 +6,7 @@ import type { PromptManagerApi } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
+import type { Container, Editor, TUI } from "../tui/index.ts";
 
 export interface ReplCommand {
   command: string;
@@ -13,6 +14,10 @@ export interface ReplCommand {
   description: string;
   getSubCommands: () => Promise<string[]>;
   execute: (args: string[]) => Promise<"break" | "continue" | "use">;
+  handle: (
+    args: string[],
+    options: { tui: TUI; container: Container; editor: Editor },
+  ) => Promise<"break" | "continue" | "use">;
 }
 
 export interface CommandOptions {

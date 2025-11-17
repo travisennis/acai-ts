@@ -37,9 +37,10 @@ export const createWebSearchTool = ({
       }
 
       yield {
+        name: WebSearchTool.name,
         event: "tool-init",
         id: toolCallId,
-        data: `WebSearch: ${style.cyan(query)}`,
+        data: `${style.cyan(query)}`,
       };
 
       if (abortSignal?.aborted) {
@@ -61,9 +62,10 @@ export const createWebSearchTool = ({
       );
 
       yield {
+        name: WebSearchTool.name,
         event: "tool-completion",
         id: toolCallId,
-        data: `WebSearch: Found ${result.results.length} results. (${searchResult.tokenCount} tokens)`,
+        data: `Found ${result.results.length} results. (${searchResult.tokenCount} tokens)`,
       };
 
       yield searchResult.content;
@@ -71,9 +73,10 @@ export const createWebSearchTool = ({
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       yield {
+        name: WebSearchTool.name,
         event: "tool-error",
         id: toolCallId,
-        data: `WebSearch: ${errorMessage}`,
+        data: errorMessage,
       };
       yield errorMessage;
     }

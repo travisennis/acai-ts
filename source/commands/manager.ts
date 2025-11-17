@@ -6,6 +6,7 @@ import type { PromptManagerApi } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
+import type { Container, Editor, TUI } from "../tui/index.ts";
 import { addDirectoryCommand } from "./add-directory-command.ts";
 import { applicationLogCommand } from "./application-log-command.ts";
 import { clearCommand } from "./clear-command.ts";
@@ -147,10 +148,16 @@ export class CommandManager {
         this.commands.set(`/${cmd}`, {
           command: `/${cmd}`,
           description: "",
+          getSubCommands: (): Promise<string[]> => Promise.resolve([]),
           execute: (args: string[]): Promise<"break" | "continue" | "use"> => {
             return promptCmd.execute([cmd, ...args]);
           },
-          getSubCommands: (): Promise<string[]> => Promise.resolve([]),
+          async handle(
+            args: string[],
+            options: { tui: TUI; container: Container; editor: Editor },
+          ): Promise<"break" | "continue" | "use"> {
+            return promptCmd.handle([cmd, ...args], options);
+          },
         });
       }
     }
@@ -164,6 +171,11 @@ export class CommandManager {
         "Commands have not been initialized. Call initializeCommmands() first.",
       );
     }
+  }
+
+  getCmds() {
+    this.ensureInitialized();
+    return Array.from(this.commands.values());
   }
 
   getCommands() {
@@ -186,6 +198,39 @@ export class CommandManager {
       const replCommand = this.commands.get(command);
       if (replCommand) {
         const result = await replCommand.execute(args);
+        if (result === "continue") {
+          return {
+            continue: true,
+            break: false,
+          };
+        }
+        if (result === "break") {
+          return {
+            continue: false,
+            break: true,
+          };
+        }
+      }
+    }
+    return {
+      continue: false,
+      break: false,
+    };
+  }
+
+  async handle2(
+    { userInput }: { userInput: string },
+    options: { tui: TUI; container: Container; editor: Editor },
+  ) {
+    this.ensureInitialized();
+    const commandArgs = userInput.split(" ");
+    const command = commandArgs.at(0);
+    const args = commandArgs.slice(1);
+
+    if (command) {
+      const replCommand = this.commands.get(command);
+      if (replCommand) {
+        const result = await replCommand.handle(args, options);
         if (result === "continue") {
           return {
             continue: true,

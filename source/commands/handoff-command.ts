@@ -1,5 +1,8 @@
 import { generateText } from "ai";
+import style from "../terminal/style.ts";
 import { initCliTools } from "../tools/index.ts";
+import type { Container, Editor, TUI } from "../tui/index.ts";
+import { Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const handoffCommand = (options: CommandOptions): ReplCommand => {
@@ -22,6 +25,49 @@ export const handoffCommand = (options: CommandOptions): ReplCommand => {
       }
 
       await createHandoffDocument(options, purpose);
+      return "continue";
+    },
+    async handle(
+      args: string[],
+      {
+        tui,
+        container,
+        editor,
+      }: { tui: TUI; container: Container; editor: Editor },
+    ): Promise<"break" | "continue" | "use"> {
+      // Validate that purpose is provided
+      const purpose = args.join(" ").trim();
+      if (!purpose) {
+        container.addChild(
+          new Text(
+            style.red(
+              "Please provide a purpose for the handoff. Usage: /handoff <the purpose of the handoff>",
+            ),
+            1,
+            0,
+          ),
+        );
+        tui.requestRender();
+        editor.setText("");
+        return "continue";
+      }
+
+      container.addChild(
+        new Text(
+          `Creating handoff document for purpose: ${style.blue(purpose)}`,
+          1,
+          0,
+        ),
+      );
+      tui.requestRender();
+
+      await createHandoffDocument(options, purpose);
+
+      container.addChild(
+        new Text(style.green("Handoff document created"), 2, 0),
+      );
+      tui.requestRender();
+      editor.setText("");
       return "continue";
     },
   };

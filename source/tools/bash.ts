@@ -71,14 +71,20 @@ export const createBashTool = async ({
         // Safety warning for potentially mutating commands
         const isMutating = isMutatingCommand(command);
         yield {
+          name: BashTool.name,
           event: "tool-init",
           id: toolCallId,
-          data: `Bash: ${style.cyan(command)}${isMutating ? " *" : ""}`,
+          data: `${style.cyan(command)}${isMutating ? " *" : ""}`,
         };
 
         if (!isPathWithinAllowedDirs(resolvedCwd, allowedDirectories)) {
           const errorMsg = `Working directory must be within the allowed directories: ${allowedDirectories.join(", ")}`;
-          yield { event: "tool-error", id: toolCallId, data: errorMsg };
+          yield {
+            name: BashTool.name,
+            event: "tool-error",
+            id: toolCallId,
+            data: errorMsg,
+          };
           yield errorMsg;
           return;
         }
@@ -91,6 +97,7 @@ export const createBashTool = async ({
         );
         if (!pathValidation.isValid) {
           yield {
+            name: BashTool.name,
             event: "tool-error",
             id: toolCallId,
             data: pathValidation.error ?? "Unknown error.",
@@ -122,16 +129,22 @@ export const createBashTool = async ({
         );
 
         yield {
+          name: BashTool.name,
           event: "tool-completion",
           id: toolCallId,
-          data: `Bash: ${exitCode} (${result.tokenCount} tokens)`,
+          data: `${exitCode} (${result.tokenCount} tokens)`,
         };
 
         yield result.content;
       } catch (error) {
         logger.error(error, "Bash Tool Error:");
         const errorMsg = `Bash: ${(error as Error).message}`;
-        yield { event: "tool-error", id: toolCallId, data: errorMsg };
+        yield {
+          name: BashTool.name,
+          event: "tool-error",
+          id: toolCallId,
+          data: errorMsg,
+        };
         yield errorMsg;
       }
     },

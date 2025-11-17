@@ -3,6 +3,9 @@ import type { ModelMessage, TextPart } from "ai";
 import { generateText } from "ai";
 import { MessageHistory } from "../messages.ts";
 import { select } from "../terminal/select-prompt.ts";
+import style from "../terminal/style.ts";
+import type { Container, Editor, TUI } from "../tui/index.ts";
+import { Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 interface ConversationHistory {
@@ -285,6 +288,52 @@ export const historyCommand = ({
         throw error;
       }
 
+      return "continue";
+    },
+    async handle(
+      _args: string[],
+      {
+        tui,
+        container,
+        editor,
+      }: { tui: TUI; container: Container; editor: Editor },
+    ): Promise<"break" | "continue" | "use"> {
+      const appDir = config.app;
+      const messageHistoryDir = await appDir.ensurePath("message-history");
+
+      // Load all histories (use a large number to get all)
+      const histories = await MessageHistory.load(messageHistoryDir, 1000);
+
+      if (histories.length === 0) {
+        container.addChild(
+          new Text(style.yellow("No previous conversations found."), 1, 0),
+        );
+        tui.requestRender();
+        editor.setText("");
+        return "continue";
+      }
+
+      // For TUI mode, we'll just show the available conversations
+      container.addChild(new Text("Available conversations:", 1, 0));
+      histories.forEach((history, index) => {
+        container.addChild(
+          new Text(
+            `${index + 1}: ${history.title} (${history.updatedAt.toLocaleString()}) - ${history.messages.length} messages`,
+            2 + index,
+            0,
+          ),
+        );
+      });
+      container.addChild(
+        new Text(
+          style.dim("Note: Conversation selection not available in TUI mode"),
+          2 + histories.length,
+          0,
+        ),
+      );
+
+      tui.requestRender();
+      editor.setText("");
       return "continue";
     },
   };

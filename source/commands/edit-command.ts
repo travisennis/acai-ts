@@ -2,6 +2,9 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { editor } from "../terminal/editor-prompt.ts";
 import { search } from "../terminal/search-prompt.ts";
+import style from "../terminal/style.ts";
+import type { Container, Editor, TUI } from "../tui/index.ts";
+import { Text } from "../tui/index.ts";
 import { glob } from "../utils/glob.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
@@ -60,6 +63,64 @@ export const editCommand = ({ terminal }: CommandOptions): ReplCommand => {
       if (content !== edit) {
         terminal.info(`File updated: ${fileToEdit}`);
       }
+      return "continue";
+    },
+    async handle(
+      args: string[],
+      {
+        tui,
+        container,
+        editor,
+      }: { tui: TUI; container: Container; editor: Editor },
+    ): Promise<"break" | "continue" | "use"> {
+      let fileToEdit: string;
+
+      if (args.length > 0) {
+        // File path provided as argument
+        const filePath = args.join(" "); // Handle file paths with spaces
+        const resolvedPath = resolve(filePath);
+
+        if (!existsSync(resolvedPath)) {
+          container.addChild(
+            new Text(style.red(`File not found: ${filePath}`), 1, 0),
+          );
+          tui.requestRender();
+          editor.setText("");
+          return "continue";
+        }
+
+        fileToEdit = filePath;
+      } else {
+        // No file path provided, show message for TUI
+        container.addChild(
+          new Text(style.red("File path required for /edit in TUI mode"), 1, 0),
+        );
+        container.addChild(
+          new Text(style.dim("Usage: /edit <file-path>"), 2, 0),
+        );
+        tui.requestRender();
+        editor.setText("");
+        return "continue";
+      }
+
+      const content = readFileSync(fileToEdit, { encoding: "utf8" });
+
+      // For TUI mode, we can't use the editor prompt, so we'll just show file info
+      container.addChild(
+        new Text(`Editing file: ${style.blue(fileToEdit)}`, 1, 0),
+      );
+      container.addChild(
+        new Text(`Content length: ${content.length} characters`, 2, 0),
+      );
+      container.addChild(
+        new Text(
+          style.dim("Note: Full file editing not available in TUI mode"),
+          3,
+          0,
+        ),
+      );
+      tui.requestRender();
+      editor.setText("");
       return "continue";
     },
   };

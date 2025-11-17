@@ -67,9 +67,10 @@ export const createEditFileTool = async ({
         }
 
         yield {
+          name: EditFileTool.name,
           id: toolCallId,
           event: "tool-init",
-          data: `EditFile: ${style.cyan(path)}`,
+          data: `${style.cyan(path)}`,
         };
 
         const validPath = await validatePath(
@@ -91,17 +92,19 @@ export const createEditFileTool = async ({
         );
 
         yield {
+          name: EditFileTool.name,
           id: toolCallId,
           event: "tool-completion",
-          data: `EditFile: ${edits.length} edits applied successfully`,
+          data: `${edits.length} edits applied successfully`,
         };
 
         yield result;
       } catch (error) {
         yield {
+          name: EditFileTool.name,
           event: "tool-error",
           id: toolCallId,
-          data: `EditFile: ${(error as Error).message}`,
+          data: (error as Error).message,
         };
         yield `Failed to edit file: ${(error as Error).message}`;
       }

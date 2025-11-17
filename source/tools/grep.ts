@@ -109,6 +109,7 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
         }
 
         yield {
+          name: GrepTool.name,
           event: "tool-init",
           id: toolCallId,
           data: initMessage,
@@ -181,9 +182,10 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
         completionMessage += ` (${result.tokenCount} tokens)`;
 
         yield {
+          name: GrepTool.name,
           event: "tool-completion",
           id: toolCallId,
-          data: `Grep: ${completionMessage}`,
+          data: completionMessage,
         };
         yield result.content;
       } catch (error) {
@@ -204,9 +206,10 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
         }
 
         yield {
+          name: GrepTool.name,
           event: "tool-error",
           id: toolCallId,
-          data: `Grep: ${userFriendlyError}`,
+          data: userFriendlyError,
         };
         yield errorMessage;
       }
