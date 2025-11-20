@@ -14,6 +14,8 @@ export class UserMessageComponent extends Container {
     // Add spacer before user message (except first one)
     if (!isFirst) {
       this.addChild(new Spacer(1));
+    } else {
+      this.addChild(new Spacer(1));
     }
 
     // User messages with dark gray background
