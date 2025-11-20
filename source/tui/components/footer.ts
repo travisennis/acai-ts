@@ -20,28 +20,33 @@ export class FooterComponent {
   render(width: number): string[] {
     const results: string[] = [];
 
-    results.push(style.dim(hr(width)));
+    if (this.state.steps.length === 0) {
+      return results;
+    }
+
+    results.push(hr(width));
 
     // Create a more visual representation of steps/tool usage
     results.push(...displayToolUse(this.state));
 
+    let status = "";
+    status += `Steps: ${this.state.steps.length} - `;
+
     // Show time spend on this prompt
-    results.push(
-      style.dim(
-        `Time: ${formatDuration(this.state.timestamps.stop - this.state.timestamps.start)}`,
-      ),
-    );
+    status += `Time: ${formatDuration(this.state.timestamps.stop - this.state.timestamps.start)} - `;
 
     const total = this.state.totalUsage;
     const inputTokens = total.inputTokens;
     const outputTokens = total.outputTokens;
     const cachedInputTokens = total.cachedInputTokens;
-    const tokenSummary = `Tokens: ↑ ${inputTokens} (${cachedInputTokens}) ↓ ${outputTokens}`;
-    results.push(style.dim(tokenSummary));
+    const tokenSummary = `Tokens: ↑ ${inputTokens} (${cachedInputTokens}) ↓ ${outputTokens} - `;
+    status += tokenSummary;
 
     const inputCost = this.state.modelConfig.costPerInputToken * inputTokens;
     const outputCost = this.state.modelConfig.costPerOutputToken * outputTokens;
-    results.push(style.dim(`Cost: $${(inputCost + outputCost).toFixed(2)}`));
+    status += `Cost: $${(inputCost + outputCost).toFixed(2)}`;
+
+    results.push(style.dim(status));
 
     return results;
     //   // Calculate cumulative usage from all assistant messages
@@ -181,8 +186,6 @@ export function displayToolUse(result: { steps: MinimalStep[] }) {
   ] as const;
 
   const results: string[] = [];
-
-  results.push(style.dim(`Steps: ${result.steps.length}`));
 
   for (const step of result.steps) {
     let currentToolCalls: Array<{ toolName: string }> = [];
