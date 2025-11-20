@@ -2,10 +2,11 @@ import { writeFile } from "node:fs/promises";
 import type { ModelMessage, TextPart } from "ai";
 import { generateText } from "ai";
 import { MessageHistory } from "../messages.ts";
+import { getTerminalSize } from "../terminal/formatting.ts";
 import { select } from "../terminal/select-prompt.ts";
 import style from "../terminal/style.ts";
-import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Text } from "../tui/index.ts";
+import type { Editor, TUI } from "../tui/index.ts";
+import { Container, Input, Spacer, Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 interface ConversationHistory {
@@ -15,6 +16,7 @@ interface ConversationHistory {
   messages: ModelMessage[];
   sessionId: string;
   modelId: string;
+  project: string;
 }
 
 async function exportConversation(
@@ -295,8 +297,14 @@ export const historyCommand = ({
       {
         tui,
         container,
+        inputContainer,
         editor,
-      }: { tui: TUI; container: Container; editor: Editor },
+      }: {
+        tui: TUI;
+        container: Container;
+        inputContainer: Container;
+        editor: Editor;
+      },
     ): Promise<"break" | "continue" | "use"> {
       const appDir = config.app;
       const messageHistoryDir = await appDir.ensurePath("message-history");
@@ -313,28 +321,433 @@ export const historyCommand = ({
         return "continue";
       }
 
-      // For TUI mode, we'll just show the available conversations
-      container.addChild(new Text("Available conversations:", 1, 0));
-      histories.forEach((history, index) => {
-        container.addChild(
-          new Text(
-            `${index + 1}: ${history.title} (${history.updatedAt.toLocaleString()}) - ${history.messages.length} messages`,
-            2 + index,
-            0,
-          ),
-        );
-      });
-      container.addChild(
-        new Text(
-          style.dim("Note: Conversation selection not available in TUI mode"),
-          2 + histories.length,
-          0,
-        ),
+      // Create conversation selector
+      const conversationSelector = new ConversationSelectorComponent(
+        histories,
+        async (conversation) => {
+          // Handle conversation selection
+          const actionSelector = new ActionSelectorComponent(
+            conversation,
+            async (action) => {
+              // Handle action selection
+              switch (action) {
+                case "resume":
+                  messageHistory.restore(conversation);
+                  container.addChild(
+                    new Text(
+                      style.green(
+                        `Resuming conversation: ${conversation.title}`,
+                      ),
+                      1,
+                      0,
+                    ),
+                  );
+                  terminal.setTitle(
+                    conversation.title || `acai: ${process.cwd()}`,
+                  );
+                  break;
+
+                case "export":
+                  try {
+                    await exportConversation(conversation, terminal);
+                    container.addChild(
+                      new Text(
+                        style.green("Conversation exported successfully"),
+                        1,
+                        0,
+                      ),
+                    );
+                  } catch (error) {
+                    container.addChild(
+                      new Text(
+                        style.red(`Failed to export conversation: ${error}`),
+                        1,
+                        0,
+                      ),
+                    );
+                  }
+                  break;
+
+                case "summarize":
+                  try {
+                    await summarizeConversation(
+                      conversation,
+                      terminal,
+                      modelManager,
+                      tokenTracker,
+                    );
+                    container.addChild(
+                      new Text(style.green("Conversation summarized"), 1, 0),
+                    );
+                  } catch (error) {
+                    container.addChild(
+                      new Text(
+                        style.red(`Failed to summarize conversation: ${error}`),
+                        1,
+                        0,
+                      ),
+                    );
+                  }
+                  break;
+              }
+
+              // Hide selectors and show editor again
+              hideHistorySelectors(inputContainer, editor, tui);
+              tui.requestRender();
+            },
+            () => {
+              // Cancel action selection - go back to conversation selection
+              hideHistorySelectors(inputContainer, editor, tui);
+              inputContainer.addChild(conversationSelector);
+              tui.setFocus(conversationSelector);
+              tui.requestRender();
+            },
+          );
+
+          // Replace conversation selector with action selector
+          inputContainer.clear();
+          inputContainer.addChild(actionSelector);
+          tui.setFocus(actionSelector);
+          tui.requestRender();
+        },
+        () => {
+          // Cancel conversation selection - just hide selector
+          hideHistorySelectors(inputContainer, editor, tui);
+          tui.requestRender();
+        },
       );
 
+      // Replace editor with conversation selector
+      inputContainer.clear();
+      inputContainer.addChild(conversationSelector);
+      tui.setFocus(conversationSelector);
       tui.requestRender();
-      editor.setText("");
       return "continue";
     },
   };
 };
+
+function hideHistorySelectors(
+  editorContainer: Container,
+  editor: Editor,
+  tui: TUI,
+): void {
+  // Replace selector with editor in the container
+  editorContainer.clear();
+  editorContainer.addChild(editor);
+  tui.setFocus(editor);
+}
+
+/**
+ * Component that renders a conversation selector with search
+ */
+class ConversationSelectorComponent extends Container {
+  private searchInput: Input;
+  private listContainer: Container;
+  private allConversations: ConversationHistory[] = [];
+  private filteredConversations: ConversationHistory[] = [];
+  private selectedIndex = 0;
+  private onSelectCallback: (conversation: ConversationHistory) => void;
+  private onCancelCallback: () => void;
+
+  constructor(
+    conversations: ConversationHistory[],
+    onSelect: (conversation: ConversationHistory) => void,
+    onCancel: () => void,
+  ) {
+    super();
+
+    this.onSelectCallback = onSelect;
+    this.onCancelCallback = onCancel;
+
+    // Load all conversations
+    this.allConversations = conversations;
+    this.filteredConversations = conversations;
+
+    const { columns } = getTerminalSize();
+
+    // Add top border
+    this.addChild(new Text(style.blue("─".repeat(columns)), 0, 0));
+    this.addChild(new Spacer(1));
+
+    // Create search input
+    this.searchInput = new Input();
+    // Note: setPlaceholder not available on Input component
+    this.searchInput.onSubmit = () => {
+      // Enter on search input selects the first filtered item
+      if (this.filteredConversations[this.selectedIndex]) {
+        this.handleSelect(this.filteredConversations[this.selectedIndex]);
+      }
+    };
+    this.addChild(this.searchInput);
+
+    this.addChild(new Spacer(1));
+
+    // Create list container
+    this.listContainer = new Container();
+    this.addChild(this.listContainer);
+
+    this.addChild(new Spacer(1));
+
+    // Add bottom border
+    this.addChild(new Text(style.blue("─".repeat(columns)), 0, 0));
+
+    // Initial render
+    this.updateList();
+  }
+
+  private filterConversations(query: string): void {
+    if (!query.trim()) {
+      this.filteredConversations = this.allConversations;
+    } else {
+      const searchTokens = query
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((t) => t);
+      this.filteredConversations = this.allConversations.filter(
+        (conversation) => {
+          const searchText =
+            `${conversation.title} ${conversation.sessionId}`.toLowerCase();
+          return searchTokens.every((token) => searchText.includes(token));
+        },
+      );
+    }
+
+    this.selectedIndex = Math.min(
+      this.selectedIndex,
+      Math.max(0, this.filteredConversations.length - 1),
+    );
+    this.updateList();
+  }
+
+  private updateList(): void {
+    this.listContainer.clear();
+
+    const maxVisible = 10;
+    const startIndex = Math.max(
+      0,
+      Math.min(
+        this.selectedIndex - Math.floor(maxVisible / 2),
+        this.filteredConversations.length - maxVisible,
+      ),
+    );
+    const endIndex = Math.min(
+      startIndex + maxVisible,
+      this.filteredConversations.length,
+    );
+
+    // Show visible slice of filtered conversations
+    for (let i = startIndex; i < endIndex; i++) {
+      const conversation = this.filteredConversations[i];
+      if (!conversation) continue;
+
+      const isSelected = i === this.selectedIndex;
+
+      let line = "";
+      if (isSelected) {
+        const prefix = style.blue("→ ");
+        const title = conversation.title;
+        const date = conversation.updatedAt.toLocaleString();
+        const messages = conversation.messages.length;
+        line = `${prefix + style.blue(title)} ${style.gray(`(${date}) - ${messages} messages`)}`;
+      } else {
+        const title = `  ${conversation.title}`;
+        const date = conversation.updatedAt.toLocaleString();
+        const messages = conversation.messages.length;
+        line = `${title} ${style.gray(`(${date}) - ${messages} messages`)}`;
+      }
+
+      this.listContainer.addChild(new Text(line, 0, 0));
+    }
+
+    // Add scroll indicator if needed
+    if (startIndex > 0 || endIndex < this.filteredConversations.length) {
+      const scrollInfo = style.gray(
+        `  (${this.selectedIndex + 1}/${this.filteredConversations.length})`,
+      );
+      this.listContainer.addChild(new Text(scrollInfo, 0, 0));
+    }
+
+    // Show "no results" if empty
+    if (this.filteredConversations.length === 0) {
+      this.listContainer.addChild(
+        new Text(style.gray("  No matching conversations"), 0, 0),
+      );
+    }
+  }
+
+  handleInput(keyData: string): void {
+    // Up arrow
+    if (keyData === "\x1b[A") {
+      this.selectedIndex = Math.max(0, this.selectedIndex - 1);
+      this.updateList();
+    }
+    // Down arrow
+    else if (keyData === "\x1b[B") {
+      this.selectedIndex = Math.min(
+        this.filteredConversations.length - 1,
+        this.selectedIndex + 1,
+      );
+      this.updateList();
+    }
+    // Enter
+    else if (keyData === "\r") {
+      const selectedConversation =
+        this.filteredConversations[this.selectedIndex];
+      if (selectedConversation) {
+        this.handleSelect(selectedConversation);
+      }
+    }
+    // Escape
+    else if (keyData === "\x1b") {
+      this.onCancelCallback();
+    }
+    // Pass everything else to search input
+    else {
+      this.searchInput.handleInput(keyData);
+      this.filterConversations(this.searchInput.getValue());
+    }
+  }
+
+  private handleSelect(conversation: ConversationHistory): void {
+    this.onSelectCallback(conversation);
+  }
+
+  getSearchInput(): Input {
+    return this.searchInput;
+  }
+}
+
+/**
+ * Component that renders an action selector for a conversation
+ */
+class ActionSelectorComponent extends Container {
+  private selectedIndex = 0;
+  private conversationTitle: string;
+  private onSelectCallback: (action: "resume" | "export" | "summarize") => void;
+  private onCancelCallback: () => void;
+
+  constructor(
+    conversation: ConversationHistory,
+    onSelect: (action: "resume" | "export" | "summarize") => void,
+    onCancel: () => void,
+  ) {
+    super();
+
+    this.conversationTitle = conversation.title;
+    this.onSelectCallback = onSelect;
+    this.onCancelCallback = onCancel;
+
+    const { columns } = getTerminalSize();
+
+    // Add top border
+    this.addChild(new Text(style.blue("─".repeat(columns)), 0, 0));
+    this.addChild(new Spacer(1));
+
+    // Show conversation title
+    this.addChild(new Text(`Selected: ${conversation.title}`, 0, 0));
+    this.addChild(new Spacer(1));
+
+    // Create action list
+    this.addChild(new Text("Choose an action:", 0, 0));
+    this.addChild(new Spacer(1));
+
+    const actions = [
+      { name: "Resume - Continue this conversation", value: "resume" },
+      { name: "Export - Save as markdown file", value: "export" },
+      {
+        name: "Summarize - Generate AI summary of conversation",
+        value: "summarize",
+      },
+    ];
+
+    actions.forEach((action, index) => {
+      const isSelected = index === this.selectedIndex;
+      let line = "";
+      if (isSelected) {
+        line = `${style.blue("→ ") + style.blue(action.name)}`;
+      } else {
+        line = `  ${action.name}`;
+      }
+      this.addChild(new Text(line, 0, 0));
+    });
+
+    this.addChild(new Spacer(1));
+
+    // Add bottom border
+    this.addChild(new Text(style.blue("─".repeat(columns)), 0, 0));
+  }
+
+  handleInput(keyData: string): void {
+    // Up arrow
+    if (keyData === "\x1b[A") {
+      this.selectedIndex = Math.max(0, this.selectedIndex - 1);
+      this.updateList();
+    }
+    // Down arrow
+    else if (keyData === "\x1b[B") {
+      this.selectedIndex = Math.min(2, this.selectedIndex + 1);
+      this.updateList();
+    }
+    // Enter
+    else if (keyData === "\r") {
+      const actions = ["resume", "export", "summarize"] as const;
+      const selectedAction = actions[this.selectedIndex];
+      if (selectedAction) {
+        this.handleSelect(selectedAction);
+      }
+    }
+    // Escape
+    else if (keyData === "\x1b") {
+      this.onCancelCallback();
+    }
+  }
+
+  private updateList(): void {
+    // Clear and rebuild the action list
+    this.clear();
+
+    const { columns } = getTerminalSize();
+
+    // Add top border
+    this.addChild(new Text(style.blue("─".repeat(columns)), 0, 0));
+    this.addChild(new Spacer(1));
+
+    // Show conversation title
+    this.addChild(new Text(`Selected: ${this.conversationTitle}`, 0, 0));
+    this.addChild(new Spacer(1));
+
+    // Create action list
+    this.addChild(new Text("Choose an action:", 0, 0));
+    this.addChild(new Spacer(1));
+
+    const actions = [
+      { name: "Resume - Continue this conversation", value: "resume" },
+      { name: "Export - Save as markdown file", value: "export" },
+      {
+        name: "Summarize - Generate AI summary of conversation",
+        value: "summarize",
+      },
+    ];
+
+    actions.forEach((action, index) => {
+      const isSelected = index === this.selectedIndex;
+      let line = "";
+      if (isSelected) {
+        line = `${style.blue("→ ") + style.blue(action.name)}`;
+      } else {
+        line = `  ${action.name}`;
+      }
+      this.addChild(new Text(line, 0, 0));
+    });
+
+    this.addChild(new Spacer(1));
+
+    // Add bottom border
+    this.addChild(new Text(style.blue("─".repeat(columns)), 0, 0));
+  }
+
+  private handleSelect(action: "resume" | "export" | "summarize"): void {
+    this.onSelectCallback(action);
+  }
+}

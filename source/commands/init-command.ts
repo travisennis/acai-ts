@@ -4,7 +4,7 @@ import style from "../terminal/style.ts";
 import { inGitDirectory } from "../tools/git-utils.ts";
 import { initCliTools } from "../tools/index.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Text } from "../tui/index.ts";
+import { Spacer, Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const initCommand = ({
@@ -85,11 +85,15 @@ Platform: ${platform()}`,
         ).toolDefs,
       });
 
+      container.addChild(new Spacer(1));
+
       let output = "";
+      const t = new Text(output, 2, 0);
+      container.addChild(t);
       for await (const text of result.textStream) {
         output += text;
         // Update the display with the latest output
-        container.addChild(new Text(output, 2, 0));
+        t.setText(output);
         tui.requestRender();
       }
 

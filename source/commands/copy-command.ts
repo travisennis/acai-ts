@@ -2,7 +2,7 @@ import Clipboard from "@crosscopy/clipboard";
 import type { ModelMessage, TextPart } from "ai";
 import style from "../terminal/style.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Text } from "../tui/index.ts";
+import { Spacer, Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 function extractLastAssistantText(messages: ModelMessage[]): string | null {
@@ -66,6 +66,8 @@ export function copyCommand(options: CommandOptions): ReplCommand {
     ): Promise<"break" | "continue" | "use"> {
       const { messageHistory } = options;
       const history = messageHistory.get();
+
+      container.addChild(new Spacer(1));
 
       const lastText = extractLastAssistantText(history);
       if (!lastText) {

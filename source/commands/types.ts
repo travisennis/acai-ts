@@ -16,7 +16,12 @@ export interface ReplCommand {
   execute: (args: string[]) => Promise<"break" | "continue" | "use">;
   handle: (
     args: string[],
-    options: { tui: TUI; container: Container; editor: Editor },
+    options: {
+      tui: TUI;
+      container: Container;
+      inputContainer: Container;
+      editor: Editor;
+    },
   ) => Promise<"break" | "continue" | "use">;
 }
 

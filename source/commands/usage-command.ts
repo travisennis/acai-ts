@@ -1,7 +1,7 @@
 import { getTerminalSize } from "../terminal/formatting.ts";
 import { table } from "../terminal/index.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Text } from "../tui/index.ts";
+import { Spacer, Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export function usageCommand({
@@ -36,6 +36,7 @@ export function usageCommand({
     ): Promise<"break" | "continue" | "use"> {
       const entries = Object.entries(tokenTracker.getUsageBreakdown());
       if (entries.length === 0) {
+        container.addChild(new Spacer(1));
         container.addChild(new Text("No usage yet.", 1, 0));
       } else {
         const { columns } = getTerminalSize();

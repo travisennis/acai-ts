@@ -1,6 +1,6 @@
 import style from "../terminal/style.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Text } from "../tui/index.ts";
+import { Spacer, Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const saveCommand = ({
@@ -31,6 +31,7 @@ export const saveCommand = ({
         await messageHistory.save();
       }
 
+      container.addChild(new Spacer(1));
       container.addChild(new Text(style.green("Message history saved."), 1, 0));
       tui.requestRender();
       editor.setText("");

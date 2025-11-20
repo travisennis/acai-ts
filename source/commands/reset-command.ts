@@ -1,5 +1,4 @@
 import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const resetCommand = ({
@@ -35,7 +34,7 @@ export const resetCommand = ({
         messageHistory.create(modelManager.getModel("repl").modelId);
       }
 
-      container.addChild(new Text("Session reset", 1, 0));
+      container.clear();
       tui.requestRender();
       editor.setText("");
       return "continue";

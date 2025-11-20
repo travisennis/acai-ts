@@ -1,5 +1,4 @@
 import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const clearCommand = ({ terminal }: CommandOptions): ReplCommand => {
@@ -21,7 +20,7 @@ export const clearCommand = ({ terminal }: CommandOptions): ReplCommand => {
     ): Promise<"break" | "continue" | "use"> {
       // In TUI mode, we can't clear the screen like terminal.clear()
       // Instead, we'll just clear the input and show a message
-      container.addChild(new Text("Screen cleared", 1, 0));
+      container.clear();
       tui.requestRender();
       editor.setText("");
       return "continue";

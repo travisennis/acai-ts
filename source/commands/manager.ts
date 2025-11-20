@@ -6,7 +6,13 @@ import type { PromptManagerApi } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
-import type { Container, Editor, TUI } from "../tui/index.ts";
+import type {
+  AutocompleteItem,
+  Container,
+  Editor,
+  SlashCommand,
+  TUI,
+} from "../tui/index.ts";
 import { addDirectoryCommand } from "./add-directory-command.ts";
 import { applicationLogCommand } from "./application-log-command.ts";
 import { clearCommand } from "./clear-command.ts";
@@ -154,7 +160,12 @@ export class CommandManager {
           },
           async handle(
             args: string[],
-            options: { tui: TUI; container: Container; editor: Editor },
+            options: {
+              tui: TUI;
+              container: Container;
+              inputContainer: Container;
+              editor: Editor;
+            },
           ): Promise<"break" | "continue" | "use"> {
             return promptCmd.handle([cmd, ...args], options);
           },
@@ -173,9 +184,27 @@ export class CommandManager {
     }
   }
 
-  getCmds() {
+  async getCompletions(): Promise<SlashCommand[]> {
     this.ensureInitialized();
-    return Array.from(this.commands.values());
+    return Promise.all(
+      Array.from(this.commands.entries()).map(async (entry) => {
+        const subs = await entry[1].getSubCommands();
+        return {
+          name: entry[0].slice(1),
+          // value: entry[0].slice(1),
+          // label: entry[0].slice(1),
+          description: entry[1].description,
+          getArgumentCompletions(
+            _argumentPrefix: string,
+          ): AutocompleteItem[] | null {
+            return subs.map((sub) => ({
+              value: sub,
+              label: sub,
+            }));
+          },
+        };
+      }),
+    );
   }
 
   getCommands() {
@@ -220,7 +249,12 @@ export class CommandManager {
 
   async handle2(
     { userInput }: { userInput: string },
-    options: { tui: TUI; container: Container; editor: Editor },
+    options: {
+      tui: TUI;
+      container: Container;
+      inputContainer: Container;
+      editor: Editor;
+    },
   ) {
     this.ensureInitialized();
     const commandArgs = userInput.split(" ");

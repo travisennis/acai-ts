@@ -1,4 +1,5 @@
 import path from "node:path";
+import { logger } from "../logger.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
 import { Text } from "../tui/index.ts";
 import { clearDirectory } from "../utils/filesystem.ts";
@@ -60,7 +61,7 @@ export const exitCommand = ({
         await clearDirectory(tmpDirPath);
       } catch (error) {
         // Log error but don't block exit
-        console.error("Failed to clear .tmp directory:", error);
+        logger.error(error, "Failed to clear .tmp directory:");
       }
 
       container.addChild(new Text("Exiting...", 1, 0));

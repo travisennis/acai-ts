@@ -221,14 +221,14 @@ export function contextCommand({
         width: columns,
       });
 
-      container.addChild(new Text(tableOutput, 2, 0));
+      container.addChild(new Text(tableOutput, 0, 0));
 
       // Simple progress bar for TUI
       const progressBar = `[${"#".repeat(Math.floor((used / window) * 20))}${"-".repeat(20 - Math.floor((used / window) * 20))}] ${pct(used, window)}`;
-      container.addChild(new Text(progressBar, 3, 0));
+      container.addChild(new Text(progressBar, 0, 0));
 
       if (args.includes("--json")) {
-        container.addChild(new Text(JSON.stringify(breakdown, null, 2), 4, 0));
+        container.addChild(new Text(JSON.stringify(breakdown, null, 2), 0, 0));
       }
 
       tui.requestRender();
