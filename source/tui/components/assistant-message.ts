@@ -9,7 +9,7 @@ export class AssistantMessageComponent extends Container {
   private contentContainer: Container;
 
   constructor(message?: {
-    type: "message";
+    type: "message-start" | "message" | "message-end";
     role: "assistant";
     content: string;
   }) {
@@ -25,7 +25,7 @@ export class AssistantMessageComponent extends Container {
   }
 
   updateContent(message: {
-    type: "message";
+    type: "message-start" | "message" | "message-end";
     role: "assistant";
     content: string;
   }): void {

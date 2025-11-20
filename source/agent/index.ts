@@ -46,8 +46,9 @@ export type AgentEvent =
   | { type: "thinking-start"; content: string }
   | { type: "thinking"; content: string }
   | { type: "thinking-end"; content: string }
+  | { type: "message"; role: "user"; content: string }
   | { type: "message-start"; role: "assistant"; content: string }
-  | { type: "message"; role: "user" | "assistant"; content: string }
+  | { type: "message"; role: "assistant"; content: string }
   | { type: "message-end"; role: "assistant"; content: string }
   // Tool execution lifecycle
   | {

@@ -69,9 +69,8 @@ export class NewRepl {
     this.statusContainer = new Container();
     this.editorContainer = new Container(); // Container to hold editor or selector
     this.footer = new FooterComponent(options.agent.state);
-    this.promptStatus = new PromptStatusComponent({
+    this.promptStatus = new PromptStatusComponent(options.modelManager, {
       projectStatus: "",
-      modelId: options.modelManager.getModel("repl").modelId,
       currentContextWindow: 0,
       contextWindow:
         options.modelManager.getModelMetadata("repl").contextWindow,
@@ -80,25 +79,18 @@ export class NewRepl {
     this.isInitialized = false;
     this.isFirstUserMessage = false;
     this.pendingTools = new Map();
-
-    // Setup autocomplete for file paths and slash commands
-    const autocompleteProvider = new CombinedAutocompleteProvider(
-      [
-        ...this.options.commands.getCmds().map((cmd) => ({
-          value: cmd.command,
-          label: cmd.command,
-          description: cmd.description,
-        })),
-      ],
-      process.cwd(),
-    );
-    this.editor.setAutocompleteProvider(autocompleteProvider);
   }
 
   async init() {
     if (this.isInitialized) {
       return;
     }
+    // Setup autocomplete for file paths and slash commands
+    const autocompleteProvider = new CombinedAutocompleteProvider(
+      [...(await this.options.commands.getCompletions())],
+      process.cwd(),
+    );
+    this.editor.setAutocompleteProvider(autocompleteProvider);
 
     const {
       promptManager,
@@ -109,11 +101,9 @@ export class NewRepl {
       promptHistory,
     } = this.options;
 
-    const langModel = modelManager.getModel("repl");
     const modelConfig = modelManager.getModelMetadata("repl");
     this.promptStatus.setState({
       projectStatus: await getProjectStatusLine(),
-      modelId: langModel.modelId,
       currentContextWindow: 0,
       contextWindow: modelConfig.contextWindow,
     });
@@ -123,9 +113,8 @@ export class NewRepl {
     this.tui.addChild(this.statusContainer);
     this.tui.addChild(new Spacer(1));
     this.tui.addChild(this.footer);
-    this.tui.addChild(this.promptStatus);
     this.tui.addChild(this.editorContainer); // Use container that can hold editor or selector
-    // this.tui.addChild(this.footer);
+    this.tui.addChild(this.promptStatus);
     this.tui.setFocus(this.editor);
 
     // Set up custom key handlers on the editor
@@ -146,12 +135,20 @@ export class NewRepl {
         // see if the text contains a command
         const commandResult = await commands.handle2(
           { userInput: text },
-          { tui: this.tui, container: this.chatContainer, editor: this.editor },
+          {
+            tui: this.tui,
+            container: this.chatContainer,
+            inputContainer: this.editorContainer,
+            editor: this.editor,
+          },
         );
         if (commandResult.break) {
-          return;
+          this.stop();
+          process.exit(0);
         }
         if (commandResult.continue) {
+          this.editor.setText("");
+          this.tui.requestRender();
           return;
         }
         if (!promptManager.isPending()) {
@@ -219,8 +216,7 @@ export class NewRepl {
 
     this.promptStatus.setState({
       projectStatus: await getProjectStatusLine(),
-      modelId: this.options.modelManager.getModel("repl").modelId,
-      currentContextWindow: state.totalUsage.totalTokens,
+      currentContextWindow: state.usage.totalTokens,
       contextWindow:
         this.options.modelManager.getModelMetadata("repl").contextWindow,
     });
@@ -252,7 +248,7 @@ export class NewRepl {
           // Create assistant component for streaming
           this.streamingComponent = new AssistantMessageComponent();
           this.chatContainer.addChild(this.streamingComponent);
-          this.streamingComponent.updateContent(event as any);
+          this.streamingComponent.updateContent(event);
           this.tui.requestRender();
         }
         break;
@@ -266,7 +262,7 @@ export class NewRepl {
         } else if (event.role === "assistant") {
           // Update streaming component
           if (this.streamingComponent && event.role === "assistant") {
-            this.streamingComponent.updateContent(event as any);
+            this.streamingComponent.updateContent(event);
 
             this.tui.requestRender();
           }
@@ -276,7 +272,7 @@ export class NewRepl {
       case "message-end":
         if (this.streamingComponent && event.role === "assistant") {
           // Update streaming component with final message (includes stopReason)
-          this.streamingComponent.updateContent(event as any);
+          this.streamingComponent.updateContent(event);
 
           // Keep the streaming component - it's now the final assistant message
           this.streamingComponent = null;
@@ -347,10 +343,7 @@ export class NewRepl {
     }
   }
 
-  private addMessageToChat(message: {
-    role: "user" | "assistant";
-    content: string;
-  }): void {
+  private addMessageToChat(message: { role: "user"; content: string }): void {
     if (message.role === "user") {
       // Extract text content from content blocks
       const textContent = message.content;
@@ -362,12 +355,7 @@ export class NewRepl {
         this.chatContainer.addChild(userComponent);
         this.isFirstUserMessage = false;
       }
-    } else if (message.role === "assistant") {
-      // Add assistant message component
-      const assistantComponent = new AssistantMessageComponent(message as any);
-      this.chatContainer.addChild(assistantComponent);
     }
-    // Note: tool calls and results are now handled via tool_execution_start/end events
   }
 
   async getUserInput(): Promise<string> {
@@ -395,6 +383,7 @@ export class NewRepl {
 
     if (timeSinceLastCtrlC < 500) {
       // Second Ctrl+C within 500ms - exit
+      this.options.messageHistory.save();
       this.stop();
       process.exit(0);
     } else {
