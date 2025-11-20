@@ -25,7 +25,7 @@ export function getShell() {
 }
 
 export function hr(width: number) {
-  return `${"─".repeat(Math.max(1, width - 1))} `;
+  return `${style.gray("─").repeat(width)} `;
 }
 
 export function table(
@@ -128,10 +128,7 @@ export function displayProgressBar(
   const progressText = `${currentFormatted}/${totalFormatted}`;
   const progressTextLength = progressText.length + 1; // Add 1 for space
 
-  const progressBarMaxWidth = Math.max(
-    1,
-    terminalWidth - progressTextLength - 1,
-  );
+  const progressBarMaxWidth = Math.max(1, terminalWidth - progressTextLength);
 
   const percentage = total === 0 ? 1 : current / total;
   const filledWidth = Math.max(
