@@ -34,9 +34,11 @@ export const resetCommand = ({
         messageHistory.create(modelManager.getModel("repl").modelId);
       }
 
+      terminal.setTitle(`acai: ${process.cwd()}`);
+
       container.clear();
-      tui.requestRender();
       editor.setText("");
+      tui.requestRender();
       return "continue";
     },
   };
