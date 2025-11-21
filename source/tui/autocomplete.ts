@@ -1,7 +1,14 @@
 import type { Dirent } from "node:fs";
-import { readdir, stat } from "node:fs/promises";
-import { homedir } from "node:os";
-import { basename, dirname, extname, join } from "node:path";
+import { readdir, realpath, stat } from "node:fs/promises";
+import {
+  basename,
+  dirname,
+  extname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+} from "node:path";
 
 // Cache for directory listings to improve performance
 class DirectoryCache {
@@ -150,14 +157,14 @@ export interface AutocompleteProvider {
 // Combined provider that handles both slash commands and file paths
 export class CombinedAutocompleteProvider implements AutocompleteProvider {
   private commands: (SlashCommand | AutocompleteItem)[];
-  private basePath: string;
+  private allowedDirs: string[];
 
   constructor(
     commands: (SlashCommand | AutocompleteItem)[] = [],
-    basePath: string = process.cwd(),
+    allowedDirs: string[] = [process.cwd()],
   ) {
     this.commands = commands;
-    this.basePath = basePath;
+    this.allowedDirs = allowedDirs;
   }
 
   async getSuggestions(
@@ -372,19 +379,29 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
     return null;
   }
 
-  // Expand home directory (~/) to actual home path
-  private expandHomePath(path: string): string {
-    if (path.startsWith("~/")) {
-      const expandedPath = join(homedir(), path.slice(2));
-      // Preserve trailing slash if original path had one
-      return path.endsWith("/") && !expandedPath.endsWith("/")
-        ? `${expandedPath}/`
-        : expandedPath;
+  // Check if a path is within any allowed directory
+  private async isPathWithinAllowedDirs(
+    requestedPath: string,
+  ): Promise<boolean> {
+    for (const allowedDir of this.allowedDirs) {
+      // Resolve both paths to handle relative paths and symlinks
+      const absRequested = resolve(requestedPath);
+      const absAllowed = resolve(allowedDir);
+
+      let target = absRequested;
+      try {
+        // Try to resolve symlinks for the target path
+        target = await realpath(absRequested);
+      } catch {
+        // If target doesn't exist, use the intended path
+      }
+
+      const rel = relative(absAllowed, target);
+      if (rel === "" || (!rel.startsWith("..") && !isAbsolute(rel))) {
+        return true;
+      }
     }
-    if (path === "~") {
-      return homedir();
-    }
-    return path;
+    return false;
   }
 
   // Get file/directory suggestions for a given path prefix
@@ -403,49 +420,52 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
         expandedPrefix = prefix.slice(1); // Remove the @
       }
 
-      // Handle home directory expansion
+      // Remove home directory expansion - not allowed
       if (expandedPrefix.startsWith("~")) {
-        expandedPrefix = this.expandHomePath(expandedPrefix);
+        // Home directory access not allowed - return empty suggestions
+        return [];
+      }
+
+      // Check if we're trying to access root - not allowed
+      if (expandedPrefix.startsWith("/")) {
+        // Root access not allowed - return empty suggestions
+        return [];
       }
 
       if (
         expandedPrefix === "" ||
         expandedPrefix === "./" ||
         expandedPrefix === "../" ||
-        expandedPrefix === "~" ||
-        expandedPrefix === "~/" ||
         prefix === "@"
       ) {
-        // Complete from specified position
-        if (prefix.startsWith("~")) {
-          searchDir = expandedPrefix;
-        } else {
-          searchDir = join(this.basePath, expandedPrefix);
-        }
+        // Start from primary directory
+        searchDir = this.allowedDirs[0];
         searchPrefix = "";
       } else if (expandedPrefix.endsWith("/")) {
         // If prefix ends with /, show contents of that directory
-        if (
-          prefix.startsWith("~") ||
-          (isAtPrefix && expandedPrefix.startsWith("/"))
-        ) {
-          searchDir = expandedPrefix;
-        } else {
-          searchDir = join(this.basePath, expandedPrefix);
+        // Try to find which allowed directory this path belongs to
+        const resolvedPath = join(this.allowedDirs[0], expandedPrefix);
+        const isWithinAllowed =
+          await this.isPathWithinAllowedDirs(resolvedPath);
+        if (!isWithinAllowed) {
+          return [];
         }
+        searchDir = resolvedPath;
         searchPrefix = "";
       } else {
         // Split into directory and file prefix
         const dir = dirname(expandedPrefix);
         const file = basename(expandedPrefix);
-        if (
-          prefix.startsWith("~") ||
-          (isAtPrefix && expandedPrefix.startsWith("/"))
-        ) {
-          searchDir = dir;
-        } else {
-          searchDir = join(this.basePath, dir);
+        const resolvedPath = join(this.allowedDirs[0], dir);
+
+        // Check if the resolved path is within allowed directories
+        const isWithinAllowed =
+          await this.isPathWithinAllowedDirs(resolvedPath);
+        if (!isWithinAllowed) {
+          return [];
         }
+
+        searchDir = resolvedPath;
         searchPrefix = file;
       }
 
@@ -466,6 +486,11 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
           continue;
         }
 
+        // Check if the resulting path is within allowed directories
+        if (!(await this.isPathWithinAllowedDirs(fullPath))) {
+          continue;
+        }
+
         let relativePath: string;
 
         // Handle @ prefix path construction
@@ -474,39 +499,17 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
           if (pathWithoutAt.endsWith("/")) {
             relativePath = `@${pathWithoutAt}${entryName}`;
           } else if (pathWithoutAt.includes("/")) {
-            if (pathWithoutAt.startsWith("~/")) {
-              const homeRelativeDir = pathWithoutAt.slice(2); // Remove ~/
-              const dir = dirname(homeRelativeDir);
-              relativePath = `@~/${dir === "." ? entryName : join(dir, entryName)}`;
-            } else {
-              relativePath = `@${join(dirname(pathWithoutAt), entryName)}`;
-            }
+            relativePath = `@${join(dirname(pathWithoutAt), entryName)}`;
           } else {
-            if (pathWithoutAt.startsWith("~")) {
-              relativePath = `@~/${entryName}`;
-            } else {
-              relativePath = `@${entryName}`;
-            }
+            relativePath = `@${entryName}`;
           }
         } else if (prefix.endsWith("/")) {
           // If prefix ends with /, append entry to the prefix
           relativePath = prefix + entryName;
         } else if (prefix.includes("/")) {
-          // Preserve ~/ format for home directory paths
-          if (prefix.startsWith("~/")) {
-            const homeRelativeDir = prefix.slice(2); // Remove ~/
-            const dir = dirname(homeRelativeDir);
-            relativePath = `~/${dir === "." ? entryName : join(dir, entryName)}`;
-          } else {
-            relativePath = join(dirname(prefix), entryName);
-          }
+          relativePath = join(dirname(prefix), entryName);
         } else {
-          // For standalone entries, preserve ~/ if original prefix was ~/
-          if (prefix.startsWith("~")) {
-            relativePath = `~/${entryName}`;
-          } else {
-            relativePath = entryName;
-          }
+          relativePath = entryName;
         }
 
         suggestions.push({

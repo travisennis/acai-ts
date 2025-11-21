@@ -89,7 +89,7 @@ export class NewRepl {
     // Setup autocomplete for file paths and slash commands
     const autocompleteProvider = new CombinedAutocompleteProvider(
       [...(await this.options.commands.getCompletions())],
-      process.cwd(),
+      this.options.workspace.allowedDirs,
     );
     this.editor.setAutocompleteProvider(autocompleteProvider);
 
