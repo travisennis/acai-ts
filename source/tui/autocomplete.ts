@@ -190,7 +190,7 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
 
         return {
           items: filtered,
-          prefix: textBeforeCursor,
+          prefix: prefix, // Return the actual prefix used for filtering (without "/")
         };
       }
       // Space found - complete command arguments
@@ -210,7 +210,7 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
       }
 
       const argumentSuggestions =
-        await command.getArgumentCompletions?.(argumentText);
+        command.getArgumentCompletions?.(argumentText);
       if (!argumentSuggestions || argumentSuggestions.length === 0) {
         return null;
       }
@@ -247,18 +247,19 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
     const currentLine = lines[cursorLine] || "";
     const beforePrefix = currentLine.slice(0, cursorCol - prefix.length);
     const afterCursor = currentLine.slice(cursorCol);
+    const textBeforeCursor = currentLine.slice(0, cursorCol);
 
-    // Check if we're completing a slash command (prefix starts with "/")
-    if (prefix.startsWith("/")) {
+    // Check if we're completing a slash command (prefix doesn't start with "/" but we're in slash command context)
+    if (textBeforeCursor.startsWith("/") && !textBeforeCursor.includes(" ")) {
       // This is a command name completion
-      const newLine = `${beforePrefix}/${item.value} ${afterCursor}`;
+      const newLine = `${beforePrefix}${item.value} ${afterCursor}`;
       const newLines = [...lines];
       newLines[cursorLine] = newLine;
 
       return {
         lines: newLines,
         cursorLine,
-        cursorCol: beforePrefix.length + item.value.length + 2, // +2 for "/" and space
+        cursorCol: beforePrefix.length + item.value.length + 1, // +1 for space
       };
     }
 
@@ -277,7 +278,6 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
     }
 
     // Check if we're in a slash command context (beforePrefix contains "/command ")
-    const textBeforeCursor = currentLine.slice(0, cursorCol);
     if (textBeforeCursor.includes("/") && textBeforeCursor.includes(" ")) {
       // This is likely a command argument completion
       const newLine = beforePrefix + item.value + afterCursor;
@@ -308,7 +308,12 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
     // Check for @ file attachment syntax first
     const atMatch = text.match(/@([^\s]*)$/);
     if (atMatch) {
-      return atMatch[0]; // Return the full @path pattern
+      // For forced extraction, always return the @ prefix
+      if (forceExtract) {
+        return atMatch[0];
+      }
+      // For natural triggers, always return @ prefixes (they're always file-related)
+      return atMatch[0];
     }
 
     // Match paths - including those ending with /, ~/, or any word at end for forced extraction
@@ -329,13 +334,29 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
 
     // For forced extraction (Tab key), always return something
     if (forceExtract) {
+      // If we're not in a clear path context and we're at the end of a word,
+      // return empty string to complete from current directory
+      if (
+        !pathPrefix.includes("/") &&
+        !pathPrefix.endsWith("/") &&
+        !pathPrefix.startsWith(".") &&
+        !pathPrefix.startsWith("~/")
+      ) {
+        // Only return empty string if we're at the beginning or after space
+        // This prevents completing "source" as empty string
+        if (text === "" || text.endsWith(" ")) {
+          return "";
+        }
+      }
       return pathPrefix;
     }
 
     // For natural triggers, return if it looks like a path, ends with /, starts with ~/, .
+    // or contains a slash (indicating it's a multi-segment path)
     // Only return empty string if the text looks like it's starting a path context
     if (
       pathPrefix.includes("/") ||
+      pathPrefix.endsWith("/") ||
       pathPrefix.startsWith(".") ||
       pathPrefix.startsWith("~/")
     ) {

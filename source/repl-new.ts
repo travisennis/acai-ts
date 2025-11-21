@@ -76,6 +76,7 @@ export class NewRepl {
         options.modelManager.getModelMetadata("repl").contextWindow,
     });
     this.editorContainer.addChild(this.editor); // Start with editor
+    this.editor.onRenderRequested = () => this.tui.requestRender();
     this.isInitialized = false;
     this.isFirstUserMessage = false;
     this.pendingTools = new Map();

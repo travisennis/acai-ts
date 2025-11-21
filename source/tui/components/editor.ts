@@ -1,5 +1,6 @@
 import style from "../../terminal/style.ts";
 import type {
+  AutocompleteItem,
   AutocompleteProvider,
   CombinedAutocompleteProvider,
 } from "../autocomplete.ts";
@@ -50,6 +51,7 @@ export class Editor implements Component {
   // Custom key handlers for coding-agent
   public onEscape?: () => void;
   public onCtrlC?: () => void;
+  public onRenderRequested?: () => void;
 
   constructor(config?: TextEditorConfig) {
     if (config) {
@@ -712,14 +714,16 @@ export class Editor implements Component {
     if (explicitTab) {
       const provider = this
         .autocompleteProvider as CombinedAutocompleteProvider;
-      const shouldTrigger =
-        !provider.shouldTriggerFileCompletion ||
-        provider.shouldTriggerFileCompletion(
+      // Only check file completion triggering if the provider has the method
+      // For slash commands, we always want to show autocomplete
+      if (
+        provider.shouldTriggerFileCompletion &&
+        !provider.shouldTriggerFileCompletion(
           this.state.lines,
           this.state.cursorLine,
           this.state.cursorCol,
-        );
-      if (!shouldTrigger) {
+        )
+      ) {
         return;
       }
     }
@@ -732,8 +736,14 @@ export class Editor implements Component {
 
     if (suggestions && suggestions.items.length > 0) {
       this.autocompletePrefix = suggestions.prefix;
-      this.autocompleteList = new SelectList(suggestions.items, 5);
       this.isAutocompleting = true;
+      if (this.autocompleteList) {
+        this.autocompleteList.updateItems(suggestions.items);
+      } else {
+        this.autocompleteList = new SelectList(suggestions.items, 5);
+      }
+      // Request re-render to show autocomplete list
+      this.onRenderRequested?.();
     } else {
       this.cancelAutocomplete();
     }
@@ -769,7 +779,7 @@ export class Editor implements Component {
         cursorLine: number,
         cursorCol: number,
       ) => Promise<{
-        items: import("../autocomplete.ts").AutocompleteItem[];
+        items: AutocompleteItem[];
         prefix: string;
       } | null>;
     };
@@ -786,8 +796,14 @@ export class Editor implements Component {
 
     if (suggestions && suggestions.items.length > 0) {
       this.autocompletePrefix = suggestions.prefix;
-      this.autocompleteList = new SelectList(suggestions.items, 5);
+      if (this.autocompleteList) {
+        this.autocompleteList.updateItems(suggestions.items);
+      } else {
+        this.autocompleteList = new SelectList(suggestions.items, 5);
+      }
       this.isAutocompleting = true;
+      // Request re-render to show autocomplete list
+      this.onRenderRequested?.();
     } else {
       this.cancelAutocomplete();
     }
@@ -816,11 +832,18 @@ export class Editor implements Component {
       this.autocompletePrefix = suggestions.prefix;
       if (this.autocompleteList) {
         // Update the existing list with new items
+        this.autocompleteList.updateItems(suggestions.items);
+      } else {
         this.autocompleteList = new SelectList(suggestions.items, 5);
       }
+      this.isAutocompleting = true;
+      // Request re-render to show updated autocomplete list
+      this.onRenderRequested?.();
     } else {
       // No more matches, cancel autocomplete
       this.cancelAutocomplete();
+      // Request re-render to hide autocomplete
+      this.onRenderRequested?.();
     }
   }
 
