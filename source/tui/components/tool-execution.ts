@@ -33,10 +33,12 @@ type ToolEvent =
     };
 
 export class ToolExecutionComponent extends Container {
-  private text: Text;
+  private startText: Text;
+  private endText: Text;
   private toolName: string;
   private message: string;
   private status: "start" | "running" | "done" | "error";
+  private initialMessage: string;
 
   constructor(
     event: ToolEvent,
@@ -46,44 +48,37 @@ export class ToolExecutionComponent extends Container {
     this.toolName = event.name;
     this.message = event.msg;
     this.status = status;
-
-    this.text = new Text(this.makeText());
-    this.addChild(this.text);
+    this.initialMessage = event.msg;
+    this.startText = new Text(this.handleToolInitMessage());
+    this.addChild(this.startText);
+    this.endText = new Text("...");
+    this.addChild(this.endText);
   }
 
-  update(event: ToolEvent, status: "start" | "running" | "done" | "error") {
+  update(event: ToolEvent, status: "running" | "done" | "error") {
     this.toolName = event.name;
-    this.message = event.msg;
+    if (status === "running") {
+      this.initialMessage = event.msg;
+    } else {
+      this.message = event.msg;
+    }
     this.status = status;
-
-    this.text.setText(this.makeText());
-  }
-
-  private makeText() {
-    let message = "";
     switch (this.status) {
-      case "start":
-        message = this.handleToolInitMessage();
-        break;
       case "running":
-        message = this.handleToolInitMessage();
+        this.startText.setText(this.handleToolInitMessage());
         break;
       case "done":
-        message = this.handleToolCompletionMessage();
+        this.endText.setText(`-- ${this.handleToolCompletionMessage()}`);
         break;
       case "error":
-        message = this.handleToolErrorMessage();
+        this.endText.setText(`-- ${this.handleToolErrorMessage()}`);
         break;
-      default:
-        message = `${style.blue.bold("●")} ${style.bold(capitalize(this.toolName))} unknown event`;
     }
-
-    return message;
   }
 
   private handleToolInitMessage() {
     const indicator = style.blue.bold("●");
-    const message = String(this.message);
+    const message = String(this.initialMessage);
     const newlineIndex = message.indexOf("\n");
 
     let result = `${indicator} ${style.bold(capitalize(this.toolName))} `;
@@ -102,11 +97,10 @@ export class ToolExecutionComponent extends Container {
   }
 
   private handleToolCompletionMessage() {
-    const indicator = style.green.bold("●");
     const message = String(this.message);
     const newlineIndex = message.indexOf("\n");
 
-    let result = `${indicator} ${style.bold(capitalize(this.toolName))} `;
+    let result = "";
 
     if (newlineIndex === -1) {
       result += style.bold(message);
@@ -122,7 +116,6 @@ export class ToolExecutionComponent extends Container {
   }
 
   private handleToolErrorMessage() {
-    const indicator = style.red.bold("●");
-    return `${indicator} ${style.bold(capitalize(this.toolName))} ${this.message}`;
+    return this.message;
   }
 }
