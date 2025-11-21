@@ -49,9 +49,9 @@ export class ToolExecutionComponent extends Container {
     this.message = event.msg;
     this.status = status;
     this.initialMessage = event.msg;
-    this.startText = new Text(this.handleToolInitMessage());
+    this.startText = new Text(this.handleToolInitMessage(), 0, 0);
     this.addChild(this.startText);
-    this.endText = new Text("...");
+    this.endText = new Text("...", 0, 0);
     this.addChild(this.endText);
   }
 
