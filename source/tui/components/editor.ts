@@ -255,7 +255,7 @@ export class Editor implements Component {
 
     // Tab key - context-aware completion (but not when already autocompleting)
     if (data === "\t" && !this.isAutocompleting) {
-      this.handleTabCompletion();
+      void this.handleTabCompletion();
       return;
     }
 
@@ -463,7 +463,7 @@ export class Editor implements Component {
     if (!this.isAutocompleting) {
       // Auto-trigger for "/" at the start of a line (slash commands)
       if (char === "/" && this.isAtStartOfMessage()) {
-        this.tryTriggerAutocomplete();
+        void this.tryTriggerAutocomplete();
       }
       // Also auto-trigger when typing letters in a slash command context
       else if (/[a-zA-Z0-9]/.test(char)) {
@@ -474,11 +474,11 @@ export class Editor implements Component {
           textBeforeCursor.startsWith("/") &&
           textBeforeCursor.includes(" ")
         ) {
-          this.tryTriggerAutocomplete();
+          void this.tryTriggerAutocomplete();
         }
       }
     } else {
-      this.updateAutocomplete();
+      void this.updateAutocomplete();
     }
   }
 
@@ -617,7 +617,7 @@ export class Editor implements Component {
 
     // Update autocomplete after backspace
     if (this.isAutocompleting) {
-      this.updateAutocomplete();
+      void this.updateAutocomplete();
     }
   }
 
@@ -705,7 +705,7 @@ export class Editor implements Component {
   }
 
   // Autocomplete methods
-  private tryTriggerAutocomplete(explicitTab = false): void {
+  private async tryTriggerAutocomplete(explicitTab = false): Promise<void> {
     if (!this.autocompleteProvider) return;
 
     // Check if we should trigger file completion on Tab
@@ -724,7 +724,7 @@ export class Editor implements Component {
       }
     }
 
-    const suggestions = this.autocompleteProvider.getSuggestions(
+    const suggestions = await this.autocompleteProvider.getSuggestions(
       this.state.lines,
       this.state.cursorLine,
       this.state.cursorCol,
@@ -739,7 +739,7 @@ export class Editor implements Component {
     }
   }
 
-  private handleTabCompletion(): void {
+  private async handleTabCompletion(): Promise<void> {
     if (!this.autocompleteProvider) return;
 
     const currentLine = this.state.lines[this.state.cursorLine] || "";
@@ -747,19 +747,19 @@ export class Editor implements Component {
 
     // Check if we're in a slash command context
     if (beforeCursor.trimStart().startsWith("/")) {
-      this.handleSlashCommandCompletion();
+      await this.handleSlashCommandCompletion();
     } else {
-      this.forceFileAutocomplete();
+      await this.forceFileAutocomplete();
     }
   }
 
-  private handleSlashCommandCompletion(): void {
+  private async handleSlashCommandCompletion(): Promise<void> {
     // For now, fall back to regular autocomplete (slash commands)
     // This can be extended later to handle command-specific argument completion
-    this.tryTriggerAutocomplete(true);
+    await this.tryTriggerAutocomplete(true);
   }
 
-  private forceFileAutocomplete(): void {
+  private async forceFileAutocomplete(): Promise<void> {
     if (!this.autocompleteProvider) return;
 
     // Check if provider has the force method
@@ -768,17 +768,17 @@ export class Editor implements Component {
         lines: string[],
         cursorLine: number,
         cursorCol: number,
-      ) => {
+      ) => Promise<{
         items: import("../autocomplete.ts").AutocompleteItem[];
         prefix: string;
-      } | null;
+      } | null>;
     };
     if (!provider.getForceFileSuggestions) {
-      this.tryTriggerAutocomplete(true);
+      await this.tryTriggerAutocomplete(true);
       return;
     }
 
-    const suggestions = provider.getForceFileSuggestions(
+    const suggestions = await provider.getForceFileSuggestions(
       this.state.lines,
       this.state.cursorLine,
       this.state.cursorCol,
@@ -803,10 +803,10 @@ export class Editor implements Component {
     return this.isAutocompleting;
   }
 
-  private updateAutocomplete(): void {
+  private async updateAutocomplete(): Promise<void> {
     if (!this.isAutocompleting || !this.autocompleteProvider) return;
 
-    const suggestions = this.autocompleteProvider.getSuggestions(
+    const suggestions = await this.autocompleteProvider.getSuggestions(
       this.state.lines,
       this.state.cursorLine,
       this.state.cursorCol,
