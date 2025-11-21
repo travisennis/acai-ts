@@ -253,25 +253,6 @@ export class Agent {
         const finishReason = await result.finishReason;
 
         if (finishReason !== "tool-calls") {
-          const lastStepUsage = await result.usage;
-
-          this._state.usage.inputTokens = lastStepUsage.inputTokens ?? 0;
-          this._state.usage.outputTokens = lastStepUsage.outputTokens ?? 0;
-          this._state.usage.totalTokens = lastStepUsage.totalTokens ?? 0;
-          this._state.usage.cachedInputTokens =
-            lastStepUsage.cachedInputTokens ?? 0;
-          this._state.usage.reasoningTokens =
-            lastStepUsage.reasoningTokens ?? 0;
-
-          this._state.totalUsage.inputTokens += lastStepUsage.inputTokens ?? 0;
-          this._state.totalUsage.outputTokens +=
-            lastStepUsage.outputTokens ?? 0;
-          this._state.totalUsage.totalTokens += lastStepUsage.totalTokens ?? 0;
-          this._state.totalUsage.cachedInputTokens +=
-            lastStepUsage.cachedInputTokens ?? 0;
-          this._state.totalUsage.reasoningTokens +=
-            lastStepUsage.reasoningTokens ?? 0;
-
           yield {
             type: "agent-stop",
           };
@@ -444,6 +425,12 @@ export class Agent {
         // Calculate usage for the current step/iteration
         const stepUsage = await result.usage;
 
+        this._state.usage.inputTokens = stepUsage.inputTokens ?? 0;
+        this._state.usage.outputTokens = stepUsage.outputTokens ?? 0;
+        this._state.usage.totalTokens = stepUsage.totalTokens ?? 0;
+        this._state.usage.cachedInputTokens = stepUsage.cachedInputTokens ?? 0;
+        this._state.usage.reasoningTokens = stepUsage.reasoningTokens ?? 0;
+
         this._state.totalUsage.inputTokens += stepUsage.inputTokens ?? 0;
         this._state.totalUsage.outputTokens += stepUsage.outputTokens ?? 0;
         this._state.totalUsage.totalTokens += stepUsage.totalTokens ?? 0;
@@ -499,7 +486,7 @@ export class Agent {
     this.abortController?.abort();
   }
 
-  private resetState() {
+  resetState() {
     const {
       modelManager,
       // messageHistory,
