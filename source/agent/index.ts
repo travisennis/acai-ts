@@ -274,6 +274,13 @@ export class Agent {
                   content.type === "tool-error") &&
                 content.toolCallId
               ) {
+                yield {
+                  type: "tool-call-error",
+                  name: content.toolName,
+                  toolCallId: content.toolCallId,
+                  msg: "invalid tool call",
+                  args: undefined,
+                };
                 alreadyProcessedToolCallIds.add(content.toolCallId);
               }
             }
