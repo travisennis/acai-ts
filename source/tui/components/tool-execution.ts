@@ -1,6 +1,6 @@
 import { capitalize } from "../../formatting.ts";
 import style from "../../terminal/style.ts";
-import { Container, Text } from "../index.ts";
+import { Container, Spacer, Text } from "../index.ts";
 
 type ToolEvent =
   | {
@@ -49,6 +49,7 @@ export class ToolExecutionComponent extends Container {
     this.message = event.msg;
     this.status = status;
     this.initialMessage = event.msg;
+    this.addChild(new Spacer(1));
     this.startText = new Text(this.handleToolInitMessage(), 0, 0);
     this.addChild(this.startText);
     this.endText = new Text("...", 0, 0);
