@@ -22,6 +22,11 @@ export class SelectList implements Component {
     this.maxVisible = maxVisible;
   }
 
+  updateItems(items: SelectItem[]) {
+    this.items = items;
+    this.filteredItems = items;
+  }
+
   setFilter(filter: string): void {
     this.filteredItems = this.items.filter((item) =>
       item.value.toLowerCase().startsWith(filter.toLowerCase()),
