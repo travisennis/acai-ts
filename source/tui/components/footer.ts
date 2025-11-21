@@ -2,14 +2,16 @@ import type { AgentState } from "../../agent/index.ts";
 import { formatDuration } from "../../formatting.ts";
 import { hr } from "../../terminal/index.ts";
 import style, { type StyleInstance } from "../../terminal/style.ts";
+import { Container } from "../tui.ts";
 
 /**
  * Footer component that shows pwd, token stats, and context usage
  */
-export class FooterComponent {
+export class FooterComponent extends Container {
   private state: AgentState;
 
   constructor(state: AgentState) {
+    super();
     this.state = state;
   }
 
@@ -17,7 +19,7 @@ export class FooterComponent {
     this.state = state;
   }
 
-  render(width: number): string[] {
+  override render(width: number): string[] {
     const results: string[] = [];
 
     if (this.state.steps.length === 0) {
