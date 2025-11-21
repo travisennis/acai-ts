@@ -275,6 +275,10 @@ async function main() {
     tokenTracker,
   });
 
+  messageHistory.on("clear-history", () => {
+    agent.resetState();
+  });
+
   if (flags["new-repl"]) {
     const repl = new NewRepl({
       agent,
