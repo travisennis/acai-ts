@@ -216,7 +216,6 @@ export function displayToolUse(result: { steps: MinimalStep[] }) {
   }
 
   if (toolsCalled.length > 0) {
-    results.push("");
     results.push(style.dim("Tools:"));
     let toolBlocks = "";
     for (const toolCalled of toolsCalled) {
