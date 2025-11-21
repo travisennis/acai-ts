@@ -157,8 +157,8 @@ export class SelectList implements Component {
     if (keyData === "\x1b[A") {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
     }
-    // Down arrow
-    else if (keyData === "\x1b[B") {
+    // Down arrow or Tab
+    else if (keyData === "\x1b[B" || keyData === "\t") {
       this.selectedIndex = Math.min(
         this.filteredItems.length - 1,
         this.selectedIndex + 1,

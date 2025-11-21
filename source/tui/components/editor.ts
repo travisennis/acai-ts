@@ -219,13 +219,13 @@ export class Editor implements Component {
         data === "\r" ||
         data === "\t"
       ) {
-        // Only pass arrow keys to the list, not Enter/Tab (we handle those directly)
-        if (data === "\x1b[A" || data === "\x1b[B") {
+        // Pass arrow keys and Tab to the list for navigation
+        if (data === "\x1b[A" || data === "\x1b[B" || data === "\t") {
           this.autocompleteList.handleInput(data);
         }
 
-        // If Tab or Enter was pressed, apply the selection
-        if (data === "\t" || data === "\r") {
+        // Only Enter applies the selection
+        if (data === "\r") {
           const selected = this.autocompleteList.getSelectedItem();
           if (selected && this.autocompleteProvider) {
             const result = this.autocompleteProvider.applyCompletion(
