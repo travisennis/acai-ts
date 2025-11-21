@@ -195,7 +195,7 @@ export function healthCommand(
         width: columns,
       });
 
-      container.addChild(new Text(envTable, 2, 0));
+      container.addChild(new Text(envTable, 0, 1));
 
       // Count how many are set
       const setCount = envStatus.filter((row) => row[1] === "✓ Set").length;
@@ -204,7 +204,7 @@ export function healthCommand(
       container.addChild(
         new Text(
           `Summary: ${setCount}/${totalCount} environment variables are set`,
-          3,
+          0,
           0,
         ),
       );
@@ -245,7 +245,7 @@ export function healthCommand(
         return [tool.name, status];
       });
 
-      container.addChild(new Text("Bash Tools Status:", 5, 0));
+      container.addChild(new Text("Bash Tools Status:", 0, 0));
 
       const toolTable = table(toolStatus, {
         header: ["Tool", "Status"],
@@ -253,7 +253,7 @@ export function healthCommand(
         width: columns,
       });
 
-      container.addChild(new Text(toolTable, 6, 0));
+      container.addChild(new Text(toolTable, 0, 0));
 
       const installedCount = toolStatus.filter(
         (row) => row[1] === "✓ Installed",
@@ -262,7 +262,7 @@ export function healthCommand(
       container.addChild(
         new Text(
           `Tool Summary: ${installedCount}/${totalTools} tools are installed.`,
-          7,
+          0,
           0,
         ),
       );
@@ -271,25 +271,25 @@ export function healthCommand(
         container.addChild(
           new Text(
             "⚠️  Some tools are missing. Install them for full functionality.",
-            8,
+            0,
             0,
           ),
         );
       } else {
         container.addChild(
-          new Text("✓ All required tools are installed.", 8, 0),
+          new Text("✓ All required tools are installed.", 0, 0),
         );
       }
 
-      container.addChild(new Text("Current Process:", 9, 0));
+      container.addChild(new Text("Current Process:", 0, 0));
       // Display memory usage
       const usage = process.memoryUsage().rss;
       const formattedUsage = formatMemoryUsage(usage);
 
       if (usage >= 2 * 1024 * 1024 * 1024) {
-        container.addChild(new Text(`Memory Usage: ${formattedUsage}`, 10, 1));
+        container.addChild(new Text(`Memory Usage: ${formattedUsage}`, 0, 1));
       } else {
-        container.addChild(new Text(`Memory Usage: ${formattedUsage}`, 10, 1));
+        container.addChild(new Text(`Memory Usage: ${formattedUsage}`, 0, 1));
       }
 
       tui.requestRender();
