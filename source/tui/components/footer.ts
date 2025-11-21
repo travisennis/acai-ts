@@ -31,8 +31,7 @@ export class FooterComponent extends Container {
     // Create a more visual representation of steps/tool usage
     results.push(...displayToolUse(this.state));
 
-    let status = "";
-    status += `Steps: ${this.state.steps.length} - `;
+    let status = `Steps: ${this.state.steps.length} - `;
 
     // Show time spend on this prompt
     status += `Time: ${formatDuration(this.state.timestamps.stop - this.state.timestamps.start)} - `;
