@@ -123,7 +123,7 @@ export const pickupCommand = (options: CommandOptions): ReplCommand => {
           );
         } else {
           container.addChild(
-            new Text(style.red("Please specify a handoff file to load."), 1, 0),
+            new Text(style.red("Please specify a handoff file to load."), 0, 1),
           );
           container.addChild(new Text("Available handoff files:", 2, 0));
           availableFiles.forEach((file, index) => {
@@ -193,7 +193,7 @@ export const pickupCommand = (options: CommandOptions): ReplCommand => {
           }
         } else {
           container.addChild(
-            new Text(style.red(`Error reading handoff file: ${error}`), 1, 0),
+            new Text(style.red(`Error reading handoff file: ${error}`), 0, 1),
           );
         }
         tui.requestRender();

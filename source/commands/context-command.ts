@@ -194,7 +194,7 @@ export function contextCommand({
       // Output for TUI
       const { columns } = getTerminalSize();
 
-      container.addChild(new Text("Context Usage", 1, 0));
+      container.addChild(new Text("Context Usage", 0, 1));
 
       const tableData = [
         [

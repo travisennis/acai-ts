@@ -72,7 +72,7 @@ export function copyCommand(options: CommandOptions): ReplCommand {
       const lastText = extractLastAssistantText(history);
       if (!lastText) {
         container.addChild(
-          new Text(style.dim("No assistant response to copy."), 1, 0),
+          new Text(style.dim("No assistant response to copy."), 0, 1),
         );
         tui.requestRender();
         editor.setText("");
@@ -82,7 +82,7 @@ export function copyCommand(options: CommandOptions): ReplCommand {
       try {
         await Clipboard.setText(lastText);
         container.addChild(
-          new Text(style.dim("Copied last response to clipboard."), 1, 0),
+          new Text(style.dim("Copied last response to clipboard."), 0, 1),
         );
         tui.requestRender();
         editor.setText("");
@@ -90,7 +90,7 @@ export function copyCommand(options: CommandOptions): ReplCommand {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         container.addChild(
-          new Text(style.dim(`Could not copy to clipboard: ${message}`), 1, 0),
+          new Text(style.dim(`Could not copy to clipboard: ${message}`), 0, 1),
         );
         tui.requestRender();
         editor.setText("");

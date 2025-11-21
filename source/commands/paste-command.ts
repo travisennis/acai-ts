@@ -359,7 +359,7 @@ export const pasteCommand = ({
         const clipboardContent = await Clipboard.getText();
         if (!clipboardContent || clipboardContent.trim() === "") {
           container.addChild(
-            new Text(style.yellow("Clipboard is empty."), 1, 0),
+            new Text(style.yellow("Clipboard is empty."), 0, 1),
           );
           tui.requestRender();
           editor.setText("");

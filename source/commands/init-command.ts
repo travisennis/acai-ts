@@ -57,7 +57,7 @@ Platform: ${platform()}`,
       }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
       container.addChild(
-        new Text("Initializing project and creating AGENTS.md...", 1, 0),
+        new Text("Initializing project and creating AGENTS.md...", 0, 1),
       );
       tui.requestRender();
 

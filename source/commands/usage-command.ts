@@ -37,7 +37,7 @@ export function usageCommand({
       const entries = Object.entries(tokenTracker.getUsageBreakdown());
       if (entries.length === 0) {
         container.addChild(new Spacer(1));
-        container.addChild(new Text("No usage yet.", 1, 0));
+        container.addChild(new Text("No usage yet.", 0, 1));
       } else {
         const { columns } = getTerminalSize();
         const tableOutput = table(entries, {
@@ -45,7 +45,7 @@ export function usageCommand({
           colWidths: [30, 70],
           width: columns,
         });
-        container.addChild(new Text(tableOutput, 1, 0));
+        container.addChild(new Text(tableOutput, 0, 1));
       }
 
       tui.requestRender();

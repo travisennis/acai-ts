@@ -32,7 +32,7 @@ export const saveCommand = ({
       }
 
       container.addChild(new Spacer(1));
-      container.addChild(new Text(style.green("Message history saved."), 1, 0));
+      container.addChild(new Text(style.green("Message history saved."), 0, 1));
       tui.requestRender();
       editor.setText("");
       return "continue";

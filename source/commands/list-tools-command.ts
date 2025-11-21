@@ -95,7 +95,7 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
         });
         const toolNames = Object.keys({ ...tools, ...agentTools }).sort();
 
-        container.addChild(new Text("Available tools:", 1, 0));
+        container.addChild(new Text("Available tools:", 0, 1));
 
         // Separate static and dynamic tools
         const staticTools = [];

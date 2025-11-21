@@ -66,7 +66,7 @@ export const addDirectoryCommand = ({
       const directoryPath = args?.[0];
       if (!directoryPath) {
         container.addChild(
-          new Text(style.red("Usage: /add-directory <path>"), 1, 0),
+          new Text(style.red("Usage: /add-directory <path>"), 0, 1),
         );
         tui.requestRender();
         editor.setText("");
@@ -130,7 +130,7 @@ export const addDirectoryCommand = ({
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         container.addChild(
-          new Text(style.red(`Failed to add directory: ${errorMessage}`), 1, 0),
+          new Text(style.red(`Failed to add directory: ${errorMessage}`), 0, 1),
         );
         tui.requestRender();
         editor.setText("");

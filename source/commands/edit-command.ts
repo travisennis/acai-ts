@@ -82,7 +82,7 @@ export const editCommand = ({ terminal }: CommandOptions): ReplCommand => {
 
         if (!existsSync(resolvedPath)) {
           container.addChild(
-            new Text(style.red(`File not found: ${filePath}`), 1, 0),
+            new Text(style.red(`File not found: ${filePath}`), 0, 1),
           );
           tui.requestRender();
           editor.setText("");
@@ -93,7 +93,7 @@ export const editCommand = ({ terminal }: CommandOptions): ReplCommand => {
       } else {
         // No file path provided, show message for TUI
         container.addChild(
-          new Text(style.red("File path required for /edit in TUI mode"), 1, 0),
+          new Text(style.red("File path required for /edit in TUI mode"), 0, 1),
         );
         container.addChild(
           new Text(style.dim("Usage: /edit <file-path>"), 2, 0),
@@ -107,7 +107,7 @@ export const editCommand = ({ terminal }: CommandOptions): ReplCommand => {
 
       // For TUI mode, we can't use the editor prompt, so we'll just show file info
       container.addChild(
-        new Text(`Editing file: ${style.blue(fileToEdit)}`, 1, 0),
+        new Text(`Editing file: ${style.blue(fileToEdit)}`, 0, 1),
       );
       container.addChild(
         new Text(`Content length: ${content.length} characters`, 2, 0),

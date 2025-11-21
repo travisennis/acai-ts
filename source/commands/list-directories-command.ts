@@ -39,7 +39,7 @@ export const listDirectoriesCommand = ({
         editor,
       }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
-      container.addChild(new Text("Current working directories:", 1, 0));
+      container.addChild(new Text("Current working directories:", 0, 1));
 
       workspace.allowedDirs.forEach((dir, index) => {
         const isPrimary = dir === workspace.primaryDir;

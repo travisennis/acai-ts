@@ -94,7 +94,7 @@ export const rulesCommand = ({ terminal }: CommandOptions): ReplCommand => {
           case "view": {
             const currentContent = await config.readAgentsFile();
             if (currentContent) {
-              container.addChild(new Text("--- Current Rules ---", 1, 0));
+              container.addChild(new Text("--- Current Rules ---", 0, 1));
               container.addChild(new Text(currentContent, 2, 0));
               container.addChild(new Text("---------------------", 3, 0));
             } else {
@@ -134,7 +134,7 @@ export const rulesCommand = ({ terminal }: CommandOptions): ReplCommand => {
               : `- ${newMemory}`; // Start with dash if new file
             await config.writeAgentsFile(updatedContent);
             container.addChild(
-              new Text(style.green("Rule added successfully"), 1, 0),
+              new Text(style.green("Rule added successfully"), 0, 1),
             );
             break;
           }
@@ -143,7 +143,7 @@ export const rulesCommand = ({ terminal }: CommandOptions): ReplCommand => {
             const currentContent = await config.readAgentsFile();
             // For TUI mode, we can't use the editor prompt, so we'll just show current content
             if (currentContent) {
-              container.addChild(new Text("Current rules:", 1, 0));
+              container.addChild(new Text("Current rules:", 0, 1));
               container.addChild(new Text(currentContent, 2, 0));
               container.addChild(
                 new Text(
@@ -185,7 +185,7 @@ export const rulesCommand = ({ terminal }: CommandOptions): ReplCommand => {
       } catch (_error) {
         // Errors from read/write helpers are already logged
         container.addChild(
-          new Text(style.red("Failed to execute memory command."), 1, 0),
+          new Text(style.red("Failed to execute memory command."), 0, 1),
         );
         tui.requestRender();
         editor.setText("");

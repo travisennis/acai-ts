@@ -187,7 +187,7 @@ export function healthCommand(
       // Display the table for TUI
       const { columns } = getTerminalSize();
 
-      container.addChild(new Text("Environment Variables Status:", 1, 0));
+      container.addChild(new Text("Environment Variables Status:", 0, 1));
 
       const envTable = table(envStatus, {
         header: ["Variable", "Status", "Description"],
@@ -287,9 +287,9 @@ export function healthCommand(
       const formattedUsage = formatMemoryUsage(usage);
 
       if (usage >= 2 * 1024 * 1024 * 1024) {
-        container.addChild(new Text(`Memory Usage: ${formattedUsage}`, 10, 0));
+        container.addChild(new Text(`Memory Usage: ${formattedUsage}`, 10, 1));
       } else {
-        container.addChild(new Text(`Memory Usage: ${formattedUsage}`, 10, 0));
+        container.addChild(new Text(`Memory Usage: ${formattedUsage}`, 10, 1));
       }
 
       tui.requestRender();

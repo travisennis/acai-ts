@@ -88,7 +88,7 @@ export const shellCommand = (options: CommandOptions): ReplCommand => {
       const commandStr = args.join(" ");
       if (!commandStr.trim()) {
         container.addChild(
-          new Text(style.red("Provide a non-empty command."), 1, 0),
+          new Text(style.red("Provide a non-empty command."), 0, 1),
         );
         tui.requestRender();
         editor.setText("");

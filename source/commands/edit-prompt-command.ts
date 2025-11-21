@@ -59,7 +59,7 @@ export const editPromptCommand = ({
         // For TUI mode, we can't use the editor prompt, so we'll just set the prompt
         if (initialContent.trim().length === 0) {
           container.addChild(
-            new Text(style.red("Prompt cannot be empty"), 1, 0),
+            new Text(style.red("Prompt cannot be empty"), 0, 1),
           );
           tui.requestRender();
           editor.setText("");
@@ -72,7 +72,7 @@ export const editPromptCommand = ({
         promptHistory.push(initialContent);
 
         container.addChild(
-          new Text(`Prompt set to: ${style.blue(initialContent)}`, 1, 0),
+          new Text(`Prompt set to: ${style.blue(initialContent)}`, 0, 1),
         );
         tui.requestRender();
         editor.setText("");

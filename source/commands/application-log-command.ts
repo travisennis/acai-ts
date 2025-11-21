@@ -87,7 +87,7 @@ export const applicationLogCommand = ({
 
         // For TUI mode, we'll just display a message since we can't use the editor prompt
         container.addChild(
-          new Text(`Viewing application log: ${style.blue(logFilePath)}`, 1, 0),
+          new Text(`Viewing application log: ${style.blue(logFilePath)}`, 0, 1),
         );
         container.addChild(
           new Text(`Content length: ${content.length} characters`, 2, 0),

@@ -35,7 +35,7 @@ export const compactCommand = (options: CommandOptions): ReplCommand => {
         await summarizeAndReset(options, additionalInstructions);
       }
       container.addChild(
-        new Text(style.green("Message history summarized and reset."), 1, 0),
+        new Text(style.green("Message history summarized and reset."), 0, 1),
       );
       tui.requestRender();
       editor.setText("");

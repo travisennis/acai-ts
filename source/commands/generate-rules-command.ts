@@ -124,7 +124,7 @@ export const generateRulesCommand = ({
       }
 
       container.addChild(
-        new Text("Analyzing conversation to generate rules...", 1, 0),
+        new Text("Analyzing conversation to generate rules...", 0, 1),
       );
       tui.requestRender();
 
@@ -210,7 +210,7 @@ export const generateRulesCommand = ({
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         container.addChild(
-          new Text(style.red(`Error generating rules: ${errorMessage}`), 1, 0),
+          new Text(style.red(`Error generating rules: ${errorMessage}`), 0, 1),
         );
         logger.error(error, "Error during rule generation:");
         tui.requestRender();

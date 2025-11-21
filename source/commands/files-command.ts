@@ -103,7 +103,7 @@ export const filesCommand = ({
           workingFiles = foundFiles.slice(0, 5);
 
           if (workingFiles.length === 0) {
-            container.addChild(new Text(style.yellow("No files found"), 1, 0));
+            container.addChild(new Text(style.yellow("No files found"), 0, 1));
             tui.requestRender();
             editor.setText("");
             return "continue";

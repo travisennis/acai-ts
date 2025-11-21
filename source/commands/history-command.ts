@@ -314,7 +314,7 @@ export const historyCommand = ({
 
       if (histories.length === 0) {
         container.addChild(
-          new Text(style.yellow("No previous conversations found."), 1, 0),
+          new Text(style.yellow("No previous conversations found."), 0, 1),
         );
         tui.requestRender();
         editor.setText("");
@@ -338,8 +338,8 @@ export const historyCommand = ({
                       style.green(
                         `Resuming conversation: ${conversation.title}`,
                       ),
-                      1,
                       0,
+                      1,
                     ),
                   );
                   terminal.setTitle(
@@ -377,7 +377,7 @@ export const historyCommand = ({
                       tokenTracker,
                     );
                     container.addChild(
-                      new Text(style.green("Conversation summarized"), 1, 0),
+                      new Text(style.green("Conversation summarized"), 0, 1),
                     );
                   } catch (error) {
                     container.addChild(

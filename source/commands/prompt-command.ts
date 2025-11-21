@@ -390,7 +390,7 @@ async function listAllPromptsTui(
     return;
   }
 
-  container.addChild(new Text("Available prompts:", 1, 0));
+  container.addChild(new Text("Available prompts:", 0, 1));
 
   let lineIndex = 2;
 
@@ -420,6 +420,6 @@ async function listAllPromptsTui(
     new Text("\nUsage: /prompt <prompt-name> [input...]", lineIndex, 0),
   );
   container.addChild(
-    new Text("Example: /prompt project-status", lineIndex + 1, 0),
+    new Text("Example: /prompt project-status", lineIndex + 1, 1),
   );
 }

@@ -272,7 +272,7 @@ export function modelCommand(options: CommandOptions): ReplCommand {
 
       // // Display models by provider
       // if (providers.includes(arg as ModelProvider)) {
-      //   container.addChild(new Text(`Models from ${arg}:`, 1, 0));
+      //   container.addChild(new Text(`Models from ${arg}:`, 0, 1));
       //   let lineIndex = 2;
       //   for (const model of Object.values(modelRegistry).filter(
       //     (m) => m.provider === arg,
@@ -287,7 +287,7 @@ export function modelCommand(options: CommandOptions): ReplCommand {
 
       // // Invalid model name
       // container.addChild(
-      //   new Text(style.red(`Invalid model name or category: ${arg}`), 1, 0),
+      //   new Text(style.red(`Invalid model name or category: ${arg}`), 0, 1),
       // );
       // container.addChild(
       //   new Text(

@@ -96,7 +96,7 @@ export const lastLogCommand = ({ terminal }: CommandOptions): ReplCommand => {
 
       if (!mostRecentLog) {
         container.addChild(
-          new Text(style.red(`No REPL audit logs found in '${logDir}'.`), 1, 0),
+          new Text(style.red(`No REPL audit logs found in '${logDir}'.`), 0, 1),
         );
         tui.requestRender();
         editor.setText("");

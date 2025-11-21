@@ -64,7 +64,7 @@ export const exitCommand = ({
         logger.error(error, "Failed to clear .tmp directory:");
       }
 
-      container.addChild(new Text("Exiting...", 1, 0));
+      container.addChild(new Text("Exiting...", 0, 1));
       tui.requestRender();
       editor.setText("");
       return "break";

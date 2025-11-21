@@ -72,7 +72,7 @@ export const removeDirectoryCommand = ({
       const directoryPath = args?.[0];
       if (!directoryPath) {
         container.addChild(
-          new Text(style.red("Usage: /remove-directory <path>"), 1, 0),
+          new Text(style.red("Usage: /remove-directory <path>"), 0, 1),
         );
         tui.requestRender();
         editor.setText("");
