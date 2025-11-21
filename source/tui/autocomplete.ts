@@ -504,7 +504,7 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
         return a.label.localeCompare(b.label);
       });
 
-      return suggestions.slice(0, 10); // Limit to 10 suggestions
+      return suggestions;
     } catch (_e) {
       // Directory doesn't exist or not accessible
       return [];
