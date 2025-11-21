@@ -235,6 +235,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
       const { text, usage } = await generateText({
         model: this.modelManager.getModel(app),
         system: systemPrompt,
+        maxOutputTokens: 100,
         prompt: `Request:\n${message}\nTitle:`,
       });
 
