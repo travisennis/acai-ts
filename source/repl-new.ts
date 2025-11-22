@@ -384,7 +384,15 @@ export class NewRepl {
     this.onInterruptCallback = callback;
   }
 
-  rerender() {
+  async rerender() {
+    this.footer.updateState(this.options.agent.state);
+    this.promptStatus.setState({
+      projectStatus: await getProjectStatusLine(),
+      currentContextWindow: this.options.agent.state.usage.totalTokens,
+      contextWindow:
+        this.options.modelManager.getModelMetadata("repl").contextWindow,
+    });
+
     this.tui.requestRender();
   }
 
