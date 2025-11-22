@@ -1,7 +1,10 @@
-import { getTerminalSize } from "../terminal/formatting.ts";
-import { table } from "../terminal/index.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Text } from "../tui/index.ts";
+import {
+  Modal,
+  Container as ModalContainer,
+  ModalTable,
+  ModalText,
+} from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const helpCommand = (
@@ -28,11 +31,7 @@ export const helpCommand = (
     },
     async handle(
       _args: string[],
-      {
-        tui,
-        container,
-        editor,
-      }: { tui: TUI; container: Container; editor: Editor },
+      { tui, editor }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
       const commands = cmds;
 
@@ -40,18 +39,30 @@ export const helpCommand = (
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([key, cmd]) => [key, cmd.description]);
 
-      const { columns } = getTerminalSize();
+      // Build modal content
+      const modalContent = new ModalContainer();
 
-      const output = table(entries, {
-        header: ["Command", "Description"],
-        colWidths: [30, 70],
-        width: columns,
+      if (entries.length === 0) {
+        modalContent.addChild(new ModalText("No commands available.", 0, 1));
+      } else {
+        // Convert entries to table format
+        const tableData = entries.map(([command, description]) => [
+          command,
+          description,
+        ]);
+        modalContent.addChild(
+          new ModalTable(tableData, ["Command", "Description"]),
+        );
+      }
+
+      // Create and show modal
+      const modal = new Modal("Available Commands", modalContent, true, () => {
+        // Modal closed callback
+        editor.setText("");
+        tui.requestRender();
       });
 
-      container.addChild(new Text(output));
-      tui.requestRender();
-      editor.setText("");
-
+      tui.showModal(modal);
       return "continue";
     },
   };
