@@ -131,7 +131,7 @@ export class Agent {
       toolCallRepair,
     } = this.opts;
 
-    this._state = this.resetState();
+    this.resetState();
 
     this._state.timestamps.start = performance.now();
 
@@ -498,7 +498,7 @@ export class Agent {
       // messageHistory,
     } = this.opts;
 
-    return {
+    this._state = {
       modelId: modelManager.getModel("repl").modelId,
       modelConfig: modelManager.getModelMetadata("repl"),
       usage: {
@@ -521,6 +521,8 @@ export class Agent {
         stop: 0,
       },
     };
+
+    return this._state;
   }
 }
 
