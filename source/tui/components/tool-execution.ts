@@ -58,14 +58,20 @@ export class ToolExecutionComponent extends Container {
 
   update(event: ToolEvent, status: "running" | "done" | "error") {
     this.toolName = event.name;
+
+    // Update the appropriate message based on status
     if (status === "running") {
       this.initialMessage = event.msg;
     } else {
       this.message = event.msg;
     }
+
     this.status = status;
+
+    // Always update the display text immediately
     switch (this.status) {
       case "running":
+        // Update both initial message and display text
         this.startText.setText(this.handleToolInitMessage());
         break;
       case "done":

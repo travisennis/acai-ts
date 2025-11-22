@@ -223,14 +223,6 @@ export class Agent {
               role: "assistant",
               content: accumulatedText,
             };
-          } else if (chunk.type === "tool-call") {
-            yield {
-              type: "tool-call-start",
-              name: chunk.toolName,
-              toolCallId: chunk.toolCallId,
-              args: chunk.input,
-              msg: "called",
-            };
           }
         }
 
@@ -274,6 +266,13 @@ export class Agent {
                   content.type === "tool-error") &&
                 content.toolCallId
               ) {
+                yield {
+                  type: "tool-call-start",
+                  name: content.toolName,
+                  toolCallId: content.toolCallId,
+                  args: undefined,
+                  msg: "called...",
+                };
                 yield {
                   type: "tool-call-error",
                   name: content.toolName,
@@ -362,7 +361,7 @@ export class Agent {
                             break;
                           case "tool-init":
                             eventQueue.push({
-                              type: "tool-call-update",
+                              type: "tool-call-start",
                               name: value.name,
                               toolCallId: value.id,
                               msg: value.data,

@@ -284,7 +284,7 @@ export class NewRepl {
         break;
 
       case "tool-call-start": {
-        // Component should already exist from message_update, but create if missing
+        // Create tool component for new tool call
         if (!this.pendingTools.has(event.toolCallId)) {
           const component = new ToolExecutionComponent(event, "start");
           this.chatContainer.addChild(component);
@@ -310,6 +310,13 @@ export class NewRepl {
         const component = this.pendingTools.get(event.toolCallId);
         if (component) {
           component.update(event, "running");
+          // Force immediate TUI re-render to ensure display updates
+          this.tui.requestRender();
+        } else {
+          // Defensive: create component if update arrives before start
+          const newComponent = new ToolExecutionComponent(event, "running");
+          this.chatContainer.addChild(newComponent);
+          this.pendingTools.set(event.toolCallId, newComponent);
           this.tui.requestRender();
         }
         break;
