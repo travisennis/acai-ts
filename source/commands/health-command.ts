@@ -1,9 +1,7 @@
 import { execSync } from "node:child_process";
 import { formatMemoryUsage } from "../formatting.ts";
-import { getTerminalSize } from "../terminal/formatting.ts";
-import { table } from "../terminal/index.ts";
-import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Text } from "../tui/index.ts";
+import type { Editor, TUI } from "../tui/index.ts";
+import { Container, Modal, ModalTable, ModalText } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export function healthCommand(
@@ -139,11 +137,7 @@ export function healthCommand(
     },
     async handle(
       _args: string[],
-      {
-        tui,
-        container,
-        editor,
-      }: { tui: TUI; container: Container; editor: Editor },
+      { tui, editor }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
       // Define the environment variables we care about
       const envVars = [
@@ -184,45 +178,6 @@ export function healthCommand(
         return [envVar.name, status, envVar.description];
       });
 
-      // Display the table for TUI
-      const { columns } = getTerminalSize();
-
-      container.addChild(new Text("Environment Variables Status:", 0, 1));
-
-      const envTable = table(envStatus, {
-        header: ["Variable", "Status", "Description"],
-        colWidths: [30, 15, 55],
-        width: columns,
-      });
-
-      container.addChild(new Text(envTable, 0, 1));
-
-      // Count how many are set
-      const setCount = envStatus.filter((row) => row[1] === "✓ Set").length;
-      const totalCount = envVars.length;
-
-      container.addChild(
-        new Text(
-          `Summary: ${setCount}/${totalCount} environment variables are set`,
-          0,
-          0,
-        ),
-      );
-
-      if (setCount === 0) {
-        container.addChild(
-          new Text(
-            "⚠️  No AI provider API keys are configured. The app may not function properly.",
-            4,
-            0,
-          ),
-        );
-      } else {
-        container.addChild(
-          new Text("✓ At least one AI provider is configured.", 4, 0),
-        );
-      }
-
       // Check for required bash tools
       const tools = [
         { name: "git", command: "git --version" },
@@ -245,55 +200,86 @@ export function healthCommand(
         return [tool.name, status];
       });
 
-      container.addChild(new Text("Bash Tools Status:", 0, 0));
-
-      const toolTable = table(toolStatus, {
-        header: ["Tool", "Status"],
-        colWidths: [15, 20],
-        width: columns,
-      });
-
-      container.addChild(new Text(toolTable, 0, 0));
-
+      // Count how many are set
+      const setCount = envStatus.filter((row) => row[1] === "✓ Set").length;
+      const totalCount = envVars.length;
       const installedCount = toolStatus.filter(
         (row) => row[1] === "✓ Installed",
       ).length;
       const totalTools = tools.length;
-      container.addChild(
-        new Text(
-          `Tool Summary: ${installedCount}/${totalTools} tools are installed.`,
-          0,
-          0,
-        ),
-      );
 
-      if (installedCount < totalTools) {
-        container.addChild(
-          new Text(
-            "⚠️  Some tools are missing. Install them for full functionality.",
-            0,
-            0,
-          ),
-        );
-      } else {
-        container.addChild(
-          new Text("✓ All required tools are installed.", 0, 0),
-        );
-      }
-
-      container.addChild(new Text("Current Process:", 0, 0));
       // Display memory usage
       const usage = process.memoryUsage().rss;
       const formattedUsage = formatMemoryUsage(usage);
 
-      if (usage >= 2 * 1024 * 1024 * 1024) {
-        container.addChild(new Text(`Memory Usage: ${formattedUsage}`, 0, 1));
+      // Build modal content
+      const modalContent = new Container();
+
+      // Environment variables section
+      modalContent.addChild(
+        new ModalText("Environment Variables Status:", 0, 1),
+      );
+      modalContent.addChild(
+        new ModalTable(envStatus, ["Variable", "Status", "Description"]),
+      );
+
+      const envSummary = `Summary: ${setCount}/${totalCount} environment variables are set`;
+      modalContent.addChild(new ModalText(envSummary, 0, 1));
+
+      if (setCount === 0) {
+        modalContent.addChild(
+          new ModalText(
+            "⚠️  No AI provider API keys are configured. The app may not function properly.",
+            0,
+            1,
+          ),
+        );
       } else {
-        container.addChild(new Text(`Memory Usage: ${formattedUsage}`, 0, 1));
+        modalContent.addChild(
+          new ModalText("✓ At least one AI provider is configured.", 0, 1),
+        );
       }
 
-      tui.requestRender();
-      editor.setText("");
+      // Tools section
+      modalContent.addChild(new ModalText("", 0, 1)); // Spacer
+      modalContent.addChild(new ModalText("Bash Tools Status:", 0, 1));
+      modalContent.addChild(new ModalTable(toolStatus, ["Tool", "Status"]));
+
+      const toolSummary = `Tool Summary: ${installedCount}/${totalTools} tools are installed.`;
+      modalContent.addChild(new ModalText(toolSummary, 0, 1));
+
+      if (installedCount < totalTools) {
+        modalContent.addChild(
+          new ModalText(
+            "⚠️  Some tools are missing. Install them for full functionality.",
+            0,
+            1,
+          ),
+        );
+      } else {
+        modalContent.addChild(
+          new ModalText("✓ All required tools are installed.", 0, 1),
+        );
+      }
+
+      // Memory usage
+      modalContent.addChild(new ModalText("", 0, 1)); // Spacer
+      modalContent.addChild(new ModalText("Current Process:", 0, 1));
+
+      const memoryText =
+        usage >= 2 * 1024 * 1024 * 1024
+          ? `Memory Usage: ${formattedUsage}`
+          : `Memory Usage: ${formattedUsage}`;
+      modalContent.addChild(new ModalText(memoryText, 0, 1));
+
+      // Create and show modal
+      const modal = new Modal("Health Status", modalContent, true, () => {
+        // Modal closed callback
+        editor.setText("");
+        tui.requestRender();
+      });
+
+      tui.showModal(modal);
       return "continue";
     },
   };

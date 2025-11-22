@@ -1,7 +1,10 @@
-import { getTerminalSize } from "../terminal/formatting.ts";
-import { table } from "../terminal/index.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Spacer, Text } from "../tui/index.ts";
+import {
+  Modal,
+  Container as ModalContainer,
+  ModalTable,
+  ModalText,
+} from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export function usageCommand({
@@ -28,28 +31,29 @@ export function usageCommand({
     },
     async handle(
       _args: string[],
-      {
-        tui,
-        container,
-        editor,
-      }: { tui: TUI; container: Container; editor: Editor },
+      { tui, editor }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
       const entries = Object.entries(tokenTracker.getUsageBreakdown());
+
+      // Build modal content
+      const modalContent = new ModalContainer();
+
       if (entries.length === 0) {
-        container.addChild(new Spacer(1));
-        container.addChild(new Text("No usage yet.", 0, 1));
+        modalContent.addChild(new ModalText("No usage yet.", 0, 1));
       } else {
-        const { columns } = getTerminalSize();
-        const tableOutput = table(entries, {
-          header: ["App", "Tokens"],
-          colWidths: [30, 70],
-          width: columns,
-        });
-        container.addChild(new Text(tableOutput, 0, 1));
+        // Convert entries to table format
+        const tableData = entries.map(([app, tokens]) => [app, String(tokens)]);
+        modalContent.addChild(new ModalTable(tableData, ["App", "Tokens"]));
       }
 
-      tui.requestRender();
-      editor.setText("");
+      // Create and show modal
+      const modal = new Modal("Token Usage", modalContent, true, () => {
+        // Modal closed callback
+        editor.setText("");
+        tui.requestRender();
+      });
+
+      tui.showModal(modal);
       return "continue";
     },
   };

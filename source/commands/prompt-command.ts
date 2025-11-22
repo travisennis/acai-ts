@@ -140,15 +140,8 @@ export const promptCommand = ({
       }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
       const promptName = args?.[0];
-      if (!promptName) {
-        await listAllPromptsTui(container, config);
-        tui.requestRender();
-        editor.setText("");
-        return "continue";
-      }
-
-      // Handle 'list' subcommand
-      if (promptName === "list") {
+      // Handle no subcommand or 'list' subcommand
+      if (!promptName || promptName === "list") {
         await listAllPromptsTui(container, config);
         tui.requestRender();
         editor.setText("");

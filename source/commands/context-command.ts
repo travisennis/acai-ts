@@ -1,11 +1,9 @@
 import type { ModelMessage } from "ai";
 import { systemPrompt } from "../prompts.ts";
-import { getTerminalSize } from "../terminal/formatting.ts";
-import { table } from "../terminal/index.ts";
 import { initCliTools } from "../tools/index.ts";
 import { prepareTools } from "../tools/utils.ts";
-import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Text } from "../tui/index.ts";
+import type { Editor, TUI } from "../tui/index.ts";
+import { Container, Modal, ModalTable, ModalText } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 type Breakdown = {
@@ -143,11 +141,7 @@ export function contextCommand({
     },
     async handle(
       args: string[],
-      {
-        tui,
-        container,
-        editor,
-      }: { tui: TUI; container: Container; editor: Editor },
+      { tui, editor }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
       const meta = modelManager.getModelMetadata("repl");
       const window = meta.contextWindow;
@@ -191,11 +185,10 @@ export function contextCommand({
         free,
       };
 
-      // Output for TUI
-      const { columns } = getTerminalSize();
+      // Build modal content
+      const modalContent = new Container();
 
-      container.addChild(new Text("Context Usage", 0, 1));
-
+      // Context usage table
       const tableData = [
         [
           "System prompt",
@@ -215,24 +208,37 @@ export function contextCommand({
         ["Free space", formatNum(breakdown.free), pct(breakdown.free, window)],
       ];
 
-      const tableOutput = table(tableData, {
-        header: ["Section", "Tokens", "Percent"],
-        colWidths: [40, 30, 30],
-        width: columns,
-      });
+      modalContent.addChild(new ModalText("Context Usage", 0, 1));
+      modalContent.addChild(
+        new ModalTable(tableData, ["Section", "Tokens", "Percent"]),
+      );
 
-      container.addChild(new Text(tableOutput, 0, 0));
-
-      // Simple progress bar for TUI
+      // Progress bar
       const progressBar = `[${"#".repeat(Math.floor((used / window) * 20))}${"-".repeat(20 - Math.floor((used / window) * 20))}] ${pct(used, window)}`;
-      container.addChild(new Text(progressBar, 0, 0));
+      modalContent.addChild(new ModalText("", 0, 1)); // Spacer
+      modalContent.addChild(new ModalText(progressBar, 0, 1));
 
       if (args.includes("--json")) {
-        container.addChild(new Text(JSON.stringify(breakdown, null, 2), 0, 0));
+        modalContent.addChild(new ModalText("", 0, 1)); // Spacer
+        modalContent.addChild(new ModalText("JSON Output:", 0, 1));
+        modalContent.addChild(
+          new ModalText(JSON.stringify(breakdown, null, 2), 0, 1),
+        );
       }
 
-      tui.requestRender();
-      editor.setText("");
+      // Create and show modal
+      const modal = new Modal(
+        "Context Window Usage",
+        modalContent,
+        true,
+        () => {
+          // Modal closed callback
+          editor.setText("");
+          tui.requestRender();
+        },
+      );
+
+      tui.showModal(modal);
       return "continue";
     },
   };
