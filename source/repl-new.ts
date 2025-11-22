@@ -252,8 +252,9 @@ export class NewRepl {
       case "message-start":
         if (event.role === "assistant") {
           // Create assistant component for streaming
-          this.streamingComponent = new AssistantMessageComponent();
-          this.chatContainer.addChild(this.streamingComponent);
+          const assistantMessageComponent = new AssistantMessageComponent();
+          this.streamingComponent = assistantMessageComponent;
+          this.chatContainer.addChild(assistantMessageComponent);
           this.streamingComponent.updateContent(event);
           this.tui.requestRender();
         }
@@ -277,13 +278,9 @@ export class NewRepl {
 
       case "message-end":
         if (this.streamingComponent && event.role === "assistant") {
-          // Update streaming component with final message (includes stopReason)
           this.streamingComponent.updateContent(event);
 
-          // Keep the streaming component - it's now the final assistant message
           this.streamingComponent = null;
-
-          // this.addMessageToChat(event);
         }
         this.tui.requestRender();
         break;
@@ -345,11 +342,11 @@ export class NewRepl {
           this.loadingAnimation = null;
           this.statusContainer.clear();
         }
+        // Clear streaming component reference
         if (this.streamingComponent) {
-          this.chatContainer.removeChild(this.streamingComponent);
           this.streamingComponent = null;
         }
-        // this.pendingTools.clear();
+        this.pendingTools.clear();
         this.editor.disableSubmit = false;
         this.tui.requestRender();
         break;
