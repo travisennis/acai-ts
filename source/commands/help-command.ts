@@ -51,7 +51,7 @@ export const helpCommand = (
           description,
         ]);
         modalContent.addChild(
-          new ModalTable(tableData, ["Command", "Description"]),
+          new ModalTable(tableData, ["Command", "Description"], [30, 70]),
         );
       }
 
