@@ -481,12 +481,12 @@ export class Agent {
           };
           break;
         }
+      } finally {
+        this._state.timestamps.stop = performance.now();
       }
     }
     // Track aggregate usage across all steps when available
     tokenTracker.trackUsage("repl", this._state.totalUsage);
-
-    this._state.timestamps.stop = performance.now();
   }
 
   abort() {
