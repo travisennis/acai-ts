@@ -242,6 +242,9 @@ export class NewRepl {
 
       case "step-start":
         this.isFirstUserMessage = true;
+        this.tui.requestRender();
+        break;
+
       case "step-stop":
         this.tui.requestRender();
         break;
