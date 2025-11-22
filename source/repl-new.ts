@@ -377,6 +377,10 @@ export class NewRepl {
     this.onInterruptCallback = callback;
   }
 
+  rerender() {
+    this.tui.requestRender();
+  }
+
   private handleCtrlC(): void {
     // Handle Ctrl+C double-press logic
     const now = Date.now();

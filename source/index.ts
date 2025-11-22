@@ -275,10 +275,6 @@ async function main() {
     tokenTracker,
   });
 
-  messageHistory.on("clear-history", () => {
-    agent.resetState();
-  });
-
   if (flags["new-repl"]) {
     const repl = new NewRepl({
       agent,
@@ -296,6 +292,12 @@ async function main() {
 
     // Initialize TUI
     await repl.init();
+
+    messageHistory.on("clear-history", () => {
+      logger.info("Resetting agent state.");
+      agent.resetState();
+      repl.rerender();
+    });
 
     // Set interrupt callback
     repl.setInterruptCallback(() => {
