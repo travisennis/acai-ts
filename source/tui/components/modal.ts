@@ -151,6 +151,7 @@ export class Modal extends Container implements Component {
       const scrollInfo = ` (${this.scrollPosition + 1}-${Math.min(this.scrollPosition + visibleContentHeight, contentHeight)}/${contentHeight})`;
       displayTitle = this.title + scrollInfo;
     }
+    displayTitle += " [esc to exit]";
 
     // Update title line with scroll info
     const titleText = ` ${displayTitle} `;
