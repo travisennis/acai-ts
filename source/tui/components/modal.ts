@@ -13,6 +13,7 @@ export class Modal extends Container implements Component {
   private onClose?: () => void;
   private maxWidth: number;
   private maxHeight: number;
+  private scrollPosition = 0;
 
   constructor(
     title: string,
@@ -39,6 +40,38 @@ export class Modal extends Container implements Component {
       return;
     }
 
+    // Handle scrolling
+    if (data === "\x1b[A") {
+      // Up arrow
+      this.scrollPosition = Math.max(0, this.scrollPosition - 1);
+      return;
+    }
+    if (data === "\x1b[B") {
+      // Down arrow
+      this.scrollPosition += 1;
+      return;
+    }
+    if (data === "\x1b[5~") {
+      // Page up
+      this.scrollPosition = Math.max(0, this.scrollPosition - 10);
+      return;
+    }
+    if (data === "\x1b[6~") {
+      // Page down
+      this.scrollPosition += 10;
+      return;
+    }
+    if (data === "\x1b[H" || data === "g") {
+      // Home key or 'g' for top
+      this.scrollPosition = 0;
+      return;
+    }
+    if (data === "\x1b[F" || data === "G") {
+      // End key or 'G' for bottom
+      this.scrollPosition = Number.POSITIVE_INFINITY; // Will be clamped in render
+      return;
+    }
+
     // Pass input to focused child component
     if (this.children.length > 0) {
       const focusedChild = this.children[0];
@@ -58,7 +91,8 @@ export class Modal extends Container implements Component {
     const lines: string[] = [];
 
     // Calculate modal dimensions - use dynamic sizing
-    const modalWidth = Math.min(this.maxWidth, Math.max(40, width - 8));
+    // Use the provided width directly, ensuring reasonable minimum and maximum
+    const modalWidth = Math.max(40, width - 2);
     const contentWidth = modalWidth - 4; // Account for borders and padding
 
     // Calculate content height
@@ -73,7 +107,7 @@ export class Modal extends Container implements Component {
 
     // Calculate vertical positioning (centered)
     const { rows } = getTerminalSize();
-    const terminalHeight = rows; // 24; // Default terminal height for calculation
+    const terminalHeight = rows;
     const topOffset = Math.max(
       0,
       Math.floor((terminalHeight - modalHeight) / 2),
@@ -81,7 +115,7 @@ export class Modal extends Container implements Component {
 
     // Add top offset for centering
     for (let i = 0; i < topOffset; i++) {
-      lines.push("");
+      lines.push(" ".repeat(width));
     }
 
     // Render modal frame
@@ -89,53 +123,82 @@ export class Modal extends Container implements Component {
     const emptyLine =
       style.white("│") + " ".repeat(modalWidth - 2) + style.white("│");
 
+    // Calculate horizontal offset for centering
+    // Use different offsets for left and right to ensure full width coverage
+    const leftOffset = Math.floor((width - modalWidth) / 2);
+    const rightOffset = width - modalWidth - leftOffset;
+
     // Top border
     lines.push(
-      " ".repeat(Math.floor((width - modalWidth) / 2)) +
+      " ".repeat(leftOffset) +
         style.white("┌") +
         horizontalBorder +
-        style.white("┐"),
+        style.white("┐") +
+        " ".repeat(rightOffset),
     );
 
-    // Title line
-    const titleText = ` ${this.title} `;
+    // Render content lines with scrolling support
+    const visibleContentHeight = Math.min(contentHeight, modalHeight - 4);
+    const maxScroll = Math.max(0, contentHeight - visibleContentHeight);
+
+    // Clamp scroll position
+    this.scrollPosition = Math.min(maxScroll, Math.max(0, this.scrollPosition));
+
+    // Add scroll indicator to title if content is scrollable
+    let displayTitle = this.title;
+    if (contentHeight > visibleContentHeight) {
+      const scrollInfo = ` (${this.scrollPosition + 1}-${Math.min(this.scrollPosition + visibleContentHeight, contentHeight)}/${contentHeight})`;
+      displayTitle = this.title + scrollInfo;
+    }
+
+    // Update title line with scroll info
+    const titleText = ` ${displayTitle} `;
     const titlePadding = Math.max(0, modalWidth - 2 - visibleWidth(titleText));
     const titleLine =
       style.white("│") +
       style.bold(titleText) +
       " ".repeat(titlePadding) +
       style.white("│");
-    lines.push(" ".repeat(Math.floor((width - modalWidth) / 2)) + titleLine);
+    lines.push(" ".repeat(leftOffset) + titleLine + " ".repeat(rightOffset));
 
     // Separator line
     const separator =
       style.white("├") + "─".repeat(modalWidth - 2) + style.white("┤");
-    lines.push(" ".repeat(Math.floor((width - modalWidth) / 2)) + separator);
-
-    // Render content lines
-    const visibleContentHeight = Math.min(contentHeight, modalHeight - 4);
+    lines.push(" ".repeat(leftOffset) + separator + " ".repeat(rightOffset));
 
     for (let i = 0; i < visibleContentHeight; i++) {
-      const contentLine = contentLines[i] || "";
+      const contentLineIndex = this.scrollPosition + i;
+      const contentLine = contentLines[contentLineIndex] || "";
       const visibleLength = visibleWidth(contentLine);
       const padding = " ".repeat(Math.max(0, contentWidth - visibleLength));
       const line = `${style.white("│")} ${contentLine}${padding} ${style.white("│")}`;
-      lines.push(" ".repeat(Math.floor((width - modalWidth) / 2)) + line);
+      lines.push(" ".repeat(leftOffset) + line + " ".repeat(rightOffset));
     }
 
     // Fill remaining content area with empty lines if needed
     const remainingLines = modalHeight - 4 - visibleContentHeight;
     for (let i = 0; i < remainingLines; i++) {
-      lines.push(" ".repeat(Math.floor((width - modalWidth) / 2)) + emptyLine);
+      lines.push(" ".repeat(leftOffset) + emptyLine + " ".repeat(rightOffset));
     }
 
     // Bottom border
     lines.push(
-      " ".repeat(Math.floor((width - modalWidth) / 2)) +
+      " ".repeat(leftOffset) +
         style.white("└") +
         horizontalBorder +
-        style.white("┘"),
+        style.white("┘") +
+        " ".repeat(rightOffset),
     );
+
+    // Fill remaining terminal height with empty lines
+    const totalLinesSoFar = lines.length;
+    const remainingTerminalLines = Math.max(
+      0,
+      terminalHeight - totalLinesSoFar,
+    );
+    for (let i = 0; i < remainingTerminalLines; i++) {
+      lines.push(" ".repeat(width));
+    }
 
     return lines;
   }
