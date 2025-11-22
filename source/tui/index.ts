@@ -12,6 +12,7 @@ export { Editor, type TextEditorConfig } from "./components/editor.ts";
 export { Input } from "./components/input.ts";
 export { Loader } from "./components/loader.ts";
 export { Markdown } from "./components/markdown.ts";
+export { Modal, ModalTable, ModalText } from "./components/modal.ts";
 export { type SelectItem, SelectList } from "./components/select-list.ts";
 export { Spacer } from "./components/spacer.ts";
 export { Text } from "./components/text.ts";

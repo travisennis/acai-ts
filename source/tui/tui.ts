@@ -2,6 +2,9 @@
  * Minimal TUI implementation with differential rendering
  */
 
+import { getTerminalSize } from "../terminal/formatting.ts";
+import style from "../terminal/style.ts";
+import type { Modal } from "./components/modal.ts";
 import type { Terminal } from "./terminal.ts";
 import { visibleWidth } from "./utils.ts";
 
@@ -70,6 +73,7 @@ export class TUI extends Container {
   private terminal: Terminal;
   private focusedComponent: Component | null = null;
   private renderRequested = false;
+  private activeModal: Modal | null = null;
 
   constructor(terminal: Terminal) {
     super();
@@ -111,8 +115,17 @@ export class TUI extends Container {
       process.exit(0);
     }
 
-    // Pass input to focused component
-    if (this.focusedComponent?.handleInput) {
+    // Handle Escape key to close modal if one is active
+    if (data === "\x1b" && this.activeModal) {
+      this.hideModal();
+      return;
+    }
+
+    // Pass input to active modal first, then focused component
+    if (this.activeModal?.handleInput) {
+      this.activeModal.handleInput(data);
+      this.requestRender();
+    } else if (this.focusedComponent?.handleInput) {
       this.focusedComponent.handleInput(data);
       this.requestRender();
     }
@@ -132,6 +145,32 @@ export class TUI extends Container {
       if (i > 0) buffer += "\r\n";
       buffer += newLines[i];
     }
+
+    // Render modal on top if active
+    if (this.activeModal) {
+      const modalLines = this.activeModal.render(width);
+
+      // Render backdrop first if modal has backdrop
+      if (this.activeModal.backdrop) {
+        const backdropLine = style.bgRgb(0, 0, 0)(" ".repeat(width));
+        const { columns } = getTerminalSize(); // 24
+        for (let i = 0; i < columns; i++) {
+          // Cover entire terminal
+          buffer += `\x1b[${i + 1};1H`;
+          buffer += backdropLine;
+        }
+      }
+
+      // Render modal content
+      for (let i = 0; i < modalLines.length; i++) {
+        if (modalLines[i]) {
+          // Position cursor and overwrite existing content
+          buffer += `\x1b[${i + 1};1H`;
+          buffer += modalLines[i];
+        }
+      }
+    }
+
     buffer += "\x1b[?2026l"; // End synchronized output
     this.terminal.write(buffer);
   }
@@ -174,4 +213,27 @@ export class TUI extends Container {
   //   this.terminal.write(`\x1b[H\x1b[${absoluteRow + 1}B\x1b[${absoluteCol + 1}G`);
   //   this.terminal.showCursor();
   // }
+
+  /**
+   * Show a modal dialog
+   */
+  showModal(modal: Modal): void {
+    this.activeModal = modal;
+    this.requestRender();
+  }
+
+  /**
+   * Hide the active modal
+   */
+  hideModal(): void {
+    this.activeModal = null;
+    this.requestRender();
+  }
+
+  /**
+   * Check if a modal is currently active
+   */
+  isModalActive(): boolean {
+    return this.activeModal !== null;
+  }
 }
