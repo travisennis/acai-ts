@@ -52,7 +52,7 @@ export class ToolExecutionComponent extends Container {
     this.addChild(new Spacer(1));
     this.startText = new Text(this.handleToolInitMessage(), 0, 0);
     this.addChild(this.startText);
-    this.endText = new Text("...", 0, 0);
+    this.endText = new Text("-- running...", 0, 0);
     this.addChild(this.endText);
   }
 
