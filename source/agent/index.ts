@@ -42,6 +42,7 @@ export type AgentEvent =
   | { type: "agent-error"; message: string }
   // Step lifecycle
   | { type: "step-start" }
+  | { type: "step-stop" }
   // Thinking and message streaming
   | { type: "thinking-start"; content: string }
   | { type: "thinking"; content: string }
@@ -447,6 +448,10 @@ export class Agent {
 
         // Consume the rest of the team if necessary
         // await result.consumeStream();
+
+        yield {
+          type: "step-stop",
+        };
 
         // continue iterations
         iter += 1;
