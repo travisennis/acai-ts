@@ -1,4 +1,5 @@
 import { getTerminalSize } from "../../terminal/formatting.ts";
+import { table } from "../../terminal/index.ts";
 import style from "../../terminal/style.ts";
 import type { Component } from "../tui.ts";
 import { Container } from "../tui.ts";
@@ -333,6 +334,7 @@ export class ModalText extends Container {
 
 /**
  * ModalTable component - displays tabular data in a modal
+ * Uses the terminal table function for proper text wrapping and formatting
  */
 export class ModalTable extends Container {
   private data: (string | number)[][];
@@ -351,89 +353,18 @@ export class ModalTable extends Container {
   }
 
   override render(width: number): string[] {
-    const lines: string[] = [];
-
     if (this.data.length === 0) {
-      return lines;
+      return [];
     }
 
-    // Calculate column widths if not provided
-    const actualColWidths = this.colWidths || this.calculateColumnWidths(width);
+    // Use the terminal table function for proper text wrapping and formatting
+    const tableString = table(this.data, {
+      header: this.headers,
+      colWidths: this.colWidths,
+      width: width,
+    });
 
-    // Render headers if provided
-    if (this.headers) {
-      const headerLine = this.formatRow(this.headers, actualColWidths);
-      lines.push(headerLine);
-
-      // Add separator line
-      const separator = actualColWidths.map((w) => "─".repeat(w)).join("─┼─");
-      lines.push(`─┼─${separator}─┼─`);
-    }
-
-    // Render data rows
-    for (const row of this.data) {
-      const rowLine = this.formatRow(row, actualColWidths);
-      lines.push(rowLine);
-    }
-
-    return lines;
-  }
-
-  private calculateColumnWidths(maxWidth: number): number[] {
-    const numCols = this.data[0]?.length || 0;
-    if (numCols === 0) return [];
-
-    // Calculate max width for each column
-    const maxColWidths: number[] = Array(numCols).fill(0);
-
-    // Include headers in calculation
-    const allRows = this.headers ? [this.headers, ...this.data] : this.data;
-
-    for (const row of allRows) {
-      for (let i = 0; i < numCols; i++) {
-        const cell = String(row[i] || "");
-        const visibleLength = visibleWidth(cell);
-        maxColWidths[i] = Math.max(maxColWidths[i], visibleLength);
-      }
-    }
-
-    // Adjust widths to fit maxWidth
-    const totalWidth =
-      maxColWidths.reduce((sum, w) => sum + w, 0) + (numCols - 1) * 3;
-    if (totalWidth <= maxWidth) {
-      return maxColWidths;
-    }
-
-    // Scale down proportionally
-    const scale = maxWidth / totalWidth;
-    return maxColWidths.map((w) => Math.max(3, Math.floor(w * scale)));
-  }
-
-  private formatRow(row: (string | number)[], colWidths: number[]): string {
-    const cells: string[] = [];
-
-    for (let i = 0; i < colWidths.length; i++) {
-      const cell = String(row[i] || "");
-      const width = colWidths[i];
-      const visibleLength = visibleWidth(cell);
-
-      if (visibleLength <= width) {
-        // Pad with spaces
-        const padding = " ".repeat(width - visibleLength);
-        cells.push(cell + padding);
-      } else {
-        // Truncate
-        let truncated = "";
-        for (const char of cell) {
-          if (visibleWidth(truncated + char) > width) {
-            break;
-          }
-          truncated += char;
-        }
-        cells.push(truncated);
-      }
-    }
-
-    return ` │ ${cells.join(" │ ")} │`;
+    // Split the table string into lines and return
+    return tableString.split("\n");
   }
 }
