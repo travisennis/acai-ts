@@ -351,6 +351,22 @@ export class NewRepl {
         this.tui.requestRender();
         break;
 
+      case "agent-error":
+        // Stop loading animation
+        if (this.loadingAnimation) {
+          this.loadingAnimation.stop();
+          this.loadingAnimation = null;
+          this.statusContainer.clear();
+        }
+        // Clear streaming component reference
+        if (this.streamingComponent) {
+          this.streamingComponent = null;
+        }
+        this.pendingTools.clear();
+        this.editor.disableSubmit = false;
+        this.tui.requestRender();
+        break;
+
       case "thinking-start": {
         const component = new ThinkingBlockComponent();
         this.thinkingBlockComponent = component;
