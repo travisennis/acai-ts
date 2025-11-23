@@ -35,23 +35,7 @@ type RunOptions = {
   abortSignal?: AbortSignal;
 };
 
-export type AgentEvent =
-  // Agent lifecycle
-  | { type: "agent-start" }
-  | { type: "agent-stop" }
-  | { type: "agent-error"; message: string }
-  // Step lifecycle
-  | { type: "step-start" }
-  | { type: "step-stop" }
-  // Thinking and message streaming
-  | { type: "thinking-start"; content: string }
-  | { type: "thinking"; content: string }
-  | { type: "thinking-end"; content: string }
-  | { type: "message"; role: "user"; content: string }
-  | { type: "message-start"; role: "assistant"; content: string }
-  | { type: "message"; role: "assistant"; content: string }
-  | { type: "message-end"; role: "assistant"; content: string }
-  // Tool execution lifecycle
+export type ToolEvent =
   | {
       type: "tool-call-start";
       name: string;
@@ -80,6 +64,25 @@ export type AgentEvent =
       msg: string;
       args: unknown;
     };
+
+export type AgentEvent =
+  // Agent lifecycle
+  | { type: "agent-start" }
+  | { type: "agent-stop" }
+  | { type: "agent-error"; message: string }
+  // Step lifecycle
+  | { type: "step-start" }
+  | { type: "step-stop" }
+  // Thinking and message streaming
+  | { type: "thinking-start"; content: string }
+  | { type: "thinking"; content: string }
+  | { type: "thinking-end"; content: string }
+  | { type: "message"; role: "user"; content: string }
+  | { type: "message-start"; role: "assistant"; content: string }
+  | { type: "message"; role: "assistant"; content: string }
+  | { type: "message-end"; role: "assistant"; content: string }
+  // Tool execution lifecycle
+  | ToolEvent;
 
 // export interface AgentState {
 // systemPrompt: string;
@@ -267,19 +270,24 @@ export class Agent {
                   content.type === "tool-error") &&
                 content.toolCallId
               ) {
+                logger.debug(content, "Invalid tool call:");
                 yield {
                   type: "tool-call-start",
                   name: content.toolName,
                   toolCallId: content.toolCallId,
-                  args: undefined,
-                  msg: "called...",
+                  args: toolCalls.find(
+                    (call) => call.toolCallId === content.toolCallId,
+                  )?.input,
+                  msg: "",
                 };
                 yield {
                   type: "tool-call-error",
                   name: content.toolName,
                   toolCallId: content.toolCallId,
                   msg: "invalid tool call",
-                  args: undefined,
+                  args: toolCalls.find(
+                    (call) => call.toolCallId === content.toolCallId,
+                  )?.input,
                 };
                 alreadyProcessedToolCallIds.add(content.toolCallId);
               }
@@ -309,125 +317,133 @@ export class Agent {
           );
         }
 
-        const eventQueue: AgentEvent[] = [];
+        // Process all tools
+        const toolMessages: ToolModelMessage[] = [];
+        for (const call of validToolCalls) {
+          const toolName = call.toolName as keyof CompleteToolSet;
+          yield {
+            type: "tool-call-start",
+            name: toolName,
+            toolCallId: call.toolCallId,
+            msg: "",
+            args: call.input,
+          };
+          let resultOutput = "Unknown result.";
+          try {
+            thisStepToolCalls.push({ toolName });
+            thisStepToolResults.push({ toolName });
 
-        // Process all tools concurrently
-        const toolMessagesPromise: Promise<
-          PromiseSettledResult<ToolModelMessage>[]
-        > = Promise.allSettled(
-          validToolCalls.map(async (call) => {
-            const toolName = call.toolName as keyof CompleteToolSet;
-            let resultOutput = "Unknown result.";
-            try {
-              thisStepToolCalls.push({ toolName });
-              thisStepToolResults.push({ toolName });
-
-              const toolExec = executors.get(toolName);
-              if (!toolExec) {
-                resultOutput = `No executor for tool ${toolName}`;
-              } else {
-                try {
-                  const output = await toolExec(call.input, {
-                    toolCallId: call.toolCallId,
-                    messages: messageHistory.get(),
-                    abortSignal,
-                  });
-                  if (isAsyncIterable(output)) {
-                    const iterator = output[Symbol.asyncIterator]();
-                    const toolResultValues: unknown[] = [];
-
-                    let next = await iterator.next();
-
-                    while (!next.done) {
-                      const value = next.value;
-                      if (isToolMessage(value)) {
-                        switch (value.event) {
-                          case "tool-completion":
-                            eventQueue.push({
-                              type: "tool-call-end",
-                              name: value.name,
-                              toolCallId: value.id,
-                              msg: value.data,
-                              args: null,
-                            });
-                            break;
-                          case "tool-error":
-                            eventQueue.push({
-                              type: "tool-call-error",
-                              name: value.name,
-                              toolCallId: value.id,
-                              msg: value.data,
-                              args: null,
-                            });
-                            break;
-                          case "tool-init":
-                            eventQueue.push({
-                              type: "tool-call-start",
-                              name: value.name,
-                              toolCallId: value.id,
-                              msg: value.data,
-                              args: null,
-                            });
-                            break;
-                          default:
-                            logger.debug(
-                              `Unhandled tool message event: ${(value as { event: string }).event}`,
-                            );
-                            break;
-                        }
-                      } else {
-                        toolResultValues.push(value);
-                      }
-                      next = await iterator.next();
-                    }
-
-                    const finalValue =
-                      next.value ??
-                      (toolResultValues.length > 0
-                        ? toolResultValues.at(-1)
-                        : undefined);
-
-                    resultOutput = formatToolResult(finalValue);
-                  } else {
-                    resultOutput = formatToolResult(output);
-                  }
-                } catch (err) {
-                  resultOutput = `Tool error: ${
-                    err instanceof Error ? err.message : String(err)
-                  }`;
-                }
-              }
-            } catch (error) {
-              resultOutput = `Tool error: ${
-                error instanceof Error ? error.message : String(error)
-              }`;
-            }
-            return {
-              role: "tool",
-              content: [
-                {
-                  type: "tool-result",
-                  toolName,
+            const toolExec = executors.get(toolName);
+            if (!toolExec) {
+              resultOutput = `No executor for tool ${toolName}`;
+            } else {
+              try {
+                const output = await toolExec(call.input, {
                   toolCallId: call.toolCallId,
-                  output: {
-                    type: "text",
-                    value: resultOutput,
-                  },
-                },
-              ],
-            } as const;
-          }),
-        );
+                  messages: messageHistory.get(),
+                  abortSignal,
+                });
+                if (isAsyncIterable(output)) {
+                  const toolResultValues: unknown[] = [];
+                  for await (const value of output) {
+                    if (isToolMessage(value)) {
+                      switch (value.event) {
+                        case "tool-completion":
+                          yield {
+                            type: "tool-call-end",
+                            name: value.name,
+                            toolCallId: value.id,
+                            msg: value.data,
+                            args: call.input,
+                          };
+                          break;
+                        case "tool-error":
+                          yield {
+                            type: "tool-call-error",
+                            name: value.name,
+                            toolCallId: value.id,
+                            msg: value.data,
+                            args: call.input,
+                          };
+                          break;
+                        case "tool-init":
+                          yield {
+                            type: "tool-call-update",
+                            name: value.name,
+                            toolCallId: value.id,
+                            msg: value.data,
+                            args: call.input,
+                          };
+                          break;
+                        default:
+                          logger.debug(
+                            `Unhandled tool message event: ${(value as { event: string }).event}`,
+                          );
+                          break;
+                      }
+                    } else {
+                      toolResultValues.push(value);
+                    }
+                  }
 
-        const toolMessages: ToolModelMessage[] = (await toolMessagesPromise)
-          .filter((result) => result.status === "fulfilled")
-          .map((result) => result.value);
+                  const finalValue =
+                    toolResultValues.length > 0
+                      ? toolResultValues.at(-1)
+                      : undefined;
+
+                  resultOutput = formatToolResult(finalValue);
+                } else {
+                  resultOutput = formatToolResult(output);
+                  yield {
+                    type: "tool-call-end",
+                    name: call.toolName,
+                    toolCallId: call.toolCallId,
+                    msg: "success",
+                    args: null,
+                  };
+                }
+              } catch (err) {
+                resultOutput = `Tool error: ${
+                  err instanceof Error ? err.message : String(err)
+                }`;
+                yield {
+                  type: "tool-call-error",
+                  name: toolName,
+                  toolCallId: call.toolCallId,
+                  msg: resultOutput,
+                  args: null,
+                };
+              }
+            }
+          } catch (error) {
+            resultOutput = `Tool error: ${
+              error instanceof Error ? error.message : String(error)
+            }`;
+            yield {
+              type: "tool-call-error",
+              name: toolName,
+              toolCallId: call.toolCallId,
+              msg: resultOutput,
+              args: null,
+            };
+          }
+          toolMessages.push({
+            role: "tool",
+            content: [
+              {
+                type: "tool-result",
+                toolName,
+                toolCallId: call.toolCallId,
+                output: {
+                  type: "text",
+                  value: resultOutput,
+                },
+              },
+            ],
+          } as const);
+        }
 
         messageHistory.appendToolMessages(toolMessages);
-
-        for (const event of eventQueue) {
-          yield event;
-        }
 
         // Calculate usage for the current step/iteration
         const stepUsage = await result.usage;

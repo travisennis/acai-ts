@@ -224,7 +224,8 @@ export class NewRepl {
         this.options.modelManager.getModelMetadata("repl").contextWindow,
     });
 
-    switch (event.type) {
+    const eventType = event.type;
+    switch (eventType) {
       case "agent-start":
         // Show loading animation
         this.editor.disableSubmit = true;
@@ -287,10 +288,14 @@ export class NewRepl {
 
       case "tool-call-start": {
         // Create tool component for new tool call
-        if (!this.pendingTools.has(event.toolCallId)) {
-          const component = new ToolExecutionComponent(event, "start");
-          this.chatContainer.addChild(component);
-          this.pendingTools.set(event.toolCallId, component);
+        const component = this.pendingTools.get(event.toolCallId);
+        if (component) {
+          component.update(event);
+          this.tui.requestRender();
+        } else {
+          const newComponent = new ToolExecutionComponent(event);
+          this.chatContainer.addChild(newComponent);
+          this.pendingTools.set(event.toolCallId, newComponent);
           this.tui.requestRender();
         }
         break;
@@ -300,7 +305,7 @@ export class NewRepl {
         // Update the existing tool component with the result
         const component = this.pendingTools.get(event.toolCallId);
         if (component) {
-          component.update(event, "done");
+          component.update(event);
           this.pendingTools.delete(event.toolCallId);
           this.tui.requestRender();
         }
@@ -311,12 +316,12 @@ export class NewRepl {
         // Update the existing tool component with the result
         const component = this.pendingTools.get(event.toolCallId);
         if (component) {
-          component.update(event, "running");
+          component.update(event);
           // Force immediate TUI re-render to ensure display updates
           this.tui.requestRender();
         } else {
           // Defensive: create component if update arrives before start
-          const newComponent = new ToolExecutionComponent(event, "running");
+          const newComponent = new ToolExecutionComponent(event);
           this.chatContainer.addChild(newComponent);
           this.pendingTools.set(event.toolCallId, newComponent);
           this.tui.requestRender();
@@ -328,7 +333,7 @@ export class NewRepl {
         // Update the existing tool component with the result
         const component = this.pendingTools.get(event.toolCallId);
         if (component) {
-          component.update(event, "error");
+          component.update(event);
           this.pendingTools.delete(event.toolCallId);
           this.tui.requestRender();
         }
@@ -392,6 +397,8 @@ export class NewRepl {
         this.tui.requestRender();
         break;
 
+      default:
+        eventType satisfies never;
     }
   }
 
