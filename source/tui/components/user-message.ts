@@ -11,6 +11,8 @@ export class UserMessageComponent extends Container {
   constructor(text: string) {
     super();
 
+    this.addChild(new Spacer(1));
+
     // User messages with dark gray background
     this.markdown = new Markdown(text, undefined, undefined, {
       r: 52,
@@ -18,6 +20,7 @@ export class UserMessageComponent extends Container {
       b: 65,
     });
     this.addChild(this.markdown);
+
     this.addChild(new Spacer(1));
   }
 }
