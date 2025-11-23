@@ -72,7 +72,9 @@ export const createDirectoryTreeTool = async ({
           "Use excludeDirPatterns or recursive=false to reduce output",
         );
 
-        let completionMessage = "Done";
+        // Count files in the tree output
+        const fileCount = (result.content.match(/\n/g) || []).length + 1;
+        let completionMessage = `Found ${fileCount} files`;
         if (result.truncated) {
           completionMessage += ` - ${result.content}`;
         }
