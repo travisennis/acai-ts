@@ -127,12 +127,12 @@ export const createReadFileTool = async ({
           event: "tool-completion",
           // Include success, line count, and token count
           data: !result.truncated
-            ? `success: read ${linesRead} lines (${result.tokenCount} tokens)`
+            ? `Read ${linesRead} lines (${result.tokenCount} tokens)`
             : result.content,
         };
         yield result.content;
       } catch (error) {
-        const errorMsg = `ReadFile: ${(error as Error).message}`;
+        const errorMsg = `${(error as Error).message}`;
         yield {
           name: ReadFileTool.name,
           event: "tool-error",
