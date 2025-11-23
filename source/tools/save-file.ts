@@ -91,11 +91,14 @@ export const createSaveFileTool = async ({
           signal: abortSignal,
         });
 
+        const lines = content.split("\n").length;
+        const bytes = Buffer.byteLength(content, encoding);
+
         yield {
           name: SaveFileTool.name,
           event: "tool-completion",
           id: toolCallId,
-          data: "File saved successfully",
+          data: `File saved successfully (${lines} lines, ${bytes} bytes)`,
         };
         yield `File saved successfully: ${filePath}`;
       } catch (error) {
