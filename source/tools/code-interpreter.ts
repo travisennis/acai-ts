@@ -202,7 +202,7 @@ export const createCodeInterpreterTool = async ({
         (err as Error).name === "ETIMEDOUT" ||
         (err as Error).message.includes("timed out")
           ? "Script timed out"
-          : `Error:\n${(err as Error).message}`;
+          : (err as Error).message;
 
       yield {
         name: CodeInterpreterTool.name,

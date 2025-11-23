@@ -138,14 +138,13 @@ export const createBashTool = async ({
         yield result.content;
       } catch (error) {
         logger.error(error, "Bash Tool Error:");
-        const errorMsg = `Bash: ${(error as Error).message}`;
         yield {
           name: BashTool.name,
           event: "tool-error",
           id: toolCallId,
-          data: errorMsg,
+          data: (error as Error).message,
         };
-        yield errorMsg;
+        yield (error as Error).message;
       }
     },
   };
