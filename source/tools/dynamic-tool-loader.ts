@@ -224,7 +224,7 @@ export function createDynamicTool(
             name: "dynamic-tool-loader",
             event: "tool-init",
             id: toolCallId,
-            data: `${metadata.name}: executing...`,
+            data: "executing...",
           };
 
           // Validate params again for safety
@@ -252,7 +252,7 @@ export function createDynamicTool(
             name: "dynamic-tool-loader",
             event: "tool-completion",
             id: toolCallId,
-            data: `${metadata.name}: completed`,
+            data: `completed ${result.substring(0, 50)}`,
           };
 
           yield result;
