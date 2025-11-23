@@ -77,7 +77,7 @@ export const createDeleteFileTool = async ({
           name: DeleteFileTool.name,
           id: toolCallId,
           event: "tool-completion",
-          data: "File deleted successfully",
+          data: "File deleted",
         };
         yield `Successfully deleted ${filePath}`;
       } catch (error) {

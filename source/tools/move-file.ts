@@ -71,7 +71,7 @@ export const createMoveFileTool = async ({
           name: MoveFileTool.name,
           id: toolCallId,
           event: "tool-completion",
-          data: "File moved successfully",
+          data: "File moved",
         };
 
         yield `Successfully moved ${source} to ${destination}`;
