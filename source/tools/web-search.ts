@@ -65,7 +65,7 @@ export const createWebSearchTool = ({
         name: WebSearchTool.name,
         event: "tool-completion",
         id: toolCallId,
-        data: `Found ${result.results.length} results. (${searchResult.tokenCount} tokens)`,
+        data: `Found ${result.results.length} results (${searchResult.tokenCount} tokens)`,
       };
 
       yield searchResult.content;

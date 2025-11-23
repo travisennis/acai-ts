@@ -50,7 +50,7 @@ export const createThinkTool = () => {
           name: ThinkTool.name,
           event: "tool-completion",
           id: toolCallId,
-          data: "Completed",
+          data: "Thought logged",
         };
         yield "Your thought has been logged.";
       } catch (error) {
