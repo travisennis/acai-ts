@@ -377,10 +377,14 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
 
     // Additional check: don't trigger if the path looks like it's already completed
     // (i.e., doesn't end with a partial filename)
+    // Only apply this check for paths that don't have clear path indicators
+    // and look like single directory names (no path separators)
     if (
-      pathPrefix.includes("/") &&
-      !pathPrefix.endsWith("/") &&
+      !pathPrefix.includes("/") &&
       !pathPrefix.includes(".") &&
+      !pathPrefix.startsWith("./") &&
+      !pathPrefix.startsWith("../") &&
+      !pathPrefix.startsWith("~/") &&
       pathPrefix.length > 3
     ) {
       // This might be a completed directory name, not a partial path
