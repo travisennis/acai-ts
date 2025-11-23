@@ -98,7 +98,7 @@ export const createSaveFileTool = async ({
           name: SaveFileTool.name,
           event: "tool-completion",
           id: toolCallId,
-          data: `File saved successfully (${lines} lines, ${bytes} bytes)`,
+          data: `Saved ${lines} lines, ${bytes} bytes`,
         };
         yield `File saved successfully: ${filePath}`;
       } catch (error) {
