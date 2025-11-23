@@ -119,7 +119,7 @@ export const createAdvancedEditFileTool = async ({
           name: AdvancedEditFileTool.name,
           id: toolCallId,
           event: "tool-completion",
-          data: `${operations.length} edits applied successfully`,
+          data: `Applied ${operations.length} edits`,
         };
 
         yield result;

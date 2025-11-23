@@ -95,7 +95,7 @@ export const createEditFileTool = async ({
           name: EditFileTool.name,
           id: toolCallId,
           event: "tool-completion",
-          data: `${edits.length} edits applied successfully`,
+          data: `Applied ${edits.length} edits`,
         };
 
         yield result;
