@@ -8,15 +8,8 @@ import { Spacer } from "./spacer.ts";
 export class UserMessageComponent extends Container {
   private markdown: Markdown;
 
-  constructor(text: string, isFirst: boolean) {
+  constructor(text: string) {
     super();
-
-    // Add spacer before user message (except first one)
-    if (!isFirst) {
-      this.addChild(new Spacer(1));
-    } else {
-      this.addChild(new Spacer(1));
-    }
 
     // User messages with dark gray background
     this.markdown = new Markdown(text, undefined, undefined, {

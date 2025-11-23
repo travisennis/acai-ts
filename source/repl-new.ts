@@ -54,7 +54,6 @@ export class NewRepl {
   private loadingAnimation: Loader | null = null;
   private onInterruptCallback?: () => void;
   private lastSigintTime = 0;
-  private isFirstUserMessage: boolean;
   private pendingTools: Map<string, ToolExecutionComponent>;
 
   // Streaming message tracking
@@ -78,7 +77,6 @@ export class NewRepl {
     this.editorContainer.addChild(this.editor); // Start with editor
     this.editor.onRenderRequested = () => this.tui.requestRender();
     this.isInitialized = false;
-    this.isFirstUserMessage = false;
     this.pendingTools = new Map();
   }
 
@@ -224,7 +222,6 @@ export class NewRepl {
 
     switch (event.type) {
       case "agent-start":
-        this.isFirstUserMessage = true;
         // Show loading animation
         this.editor.disableSubmit = true;
         // Stop old loader before clearing
@@ -241,7 +238,6 @@ export class NewRepl {
         break;
 
       case "step-start":
-        this.isFirstUserMessage = true;
         this.tui.requestRender();
         break;
 
@@ -358,12 +354,8 @@ export class NewRepl {
       // Extract text content from content blocks
       const textContent = message.content;
       if (textContent) {
-        const userComponent = new UserMessageComponent(
-          textContent,
-          this.isFirstUserMessage,
-        );
+        const userComponent = new UserMessageComponent(textContent);
         this.chatContainer.addChild(userComponent);
-        this.isFirstUserMessage = false;
       }
     }
   }
