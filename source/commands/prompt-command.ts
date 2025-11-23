@@ -236,8 +236,6 @@ export const promptCommand = ({
         // Add the loaded prompt to history
         promptHistory.push(processedPrompt.message);
 
-        container.addChild(new Text(processedPrompt.message, 3, 0));
-
         tui.requestRender();
         editor.setText("");
         return "use";
