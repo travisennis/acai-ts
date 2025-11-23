@@ -12,6 +12,7 @@ import type { TokenTracker } from "./tokens/tracker.ts";
 import { AssistantMessageComponent } from "./tui/components/assistant-message.ts";
 import { FooterComponent } from "./tui/components/footer.ts";
 import { PromptStatusComponent } from "./tui/components/prompt-status.ts";
+import { ThinkingBlockComponent } from "./tui/components/thinking-block.ts";
 import { ToolExecutionComponent } from "./tui/components/tool-execution.ts";
 import { Welcome } from "./tui/components/welcome.ts";
 import {
@@ -58,6 +59,9 @@ export class NewRepl {
 
   // Streaming message tracking
   private streamingComponent: AssistantMessageComponent | null = null;
+
+  // thinking block tracking
+  private thinkingBlockComponent: ThinkingBlockComponent | null = null;
 
   constructor(options: ReplOptions) {
     this.options = options;
@@ -346,6 +350,32 @@ export class NewRepl {
         this.editor.disableSubmit = false;
         this.tui.requestRender();
         break;
+
+      case "thinking-start": {
+        const component = new ThinkingBlockComponent();
+        this.thinkingBlockComponent = component;
+        this.chatContainer.addChild(component);
+        this.thinkingBlockComponent.updateContent(event);
+        this.tui.requestRender();
+        break;
+      }
+
+      case "thinking":
+        if (this.thinkingBlockComponent) {
+          this.thinkingBlockComponent.updateContent(event);
+        }
+        this.tui.requestRender();
+        break;
+
+      case "thinking-end":
+        if (this.thinkingBlockComponent) {
+          this.thinkingBlockComponent.updateContent(event);
+
+          this.thinkingBlockComponent = null;
+        }
+        this.tui.requestRender();
+        break;
+
     }
   }
 
