@@ -12,7 +12,6 @@ const ProjectConfigSchema = z.object({
       path: z.string(),
     })
     .optional(),
-  agentLoop: z.enum(["auto", "manual"]).optional().default("manual"),
   loop: z
     .object({
       maxIterations: z.number().default(90),
@@ -229,7 +228,6 @@ export class ConfigManager {
         logs: {
           path: path.join(this.app.getPath(), "logs", "current.log"),
         },
-        agentLoop: "auto" as const,
         loop: {
           maxIterations: 90,
           parallelTools: true,

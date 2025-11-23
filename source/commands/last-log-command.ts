@@ -3,6 +3,8 @@ import { join } from "node:path";
 import { config } from "../config.ts";
 import { editor } from "../terminal/editor-prompt.ts";
 import style from "../terminal/style.ts";
+import type { Container, Editor, TUI } from "../tui/index.ts";
+import { Text } from "../tui/index.ts";
 import { glob } from "../utils/glob.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
@@ -78,6 +80,63 @@ export const lastLogCommand = ({ terminal }: CommandOptions): ReplCommand => {
         terminal.error(
           `Error reading or displaying log file ${mostRecentLog}: ${error}`,
         );
+        return "continue";
+      }
+    },
+    async handle(
+      _args: string[],
+      {
+        tui,
+        container,
+        editor,
+      }: { tui: TUI; container: Container; editor: Editor },
+    ): Promise<"break" | "continue" | "use"> {
+      const logDir = config.app.ensurePathSync("audit");
+      const mostRecentLog = await findMostRecentLog(logDir);
+
+      if (!mostRecentLog) {
+        container.addChild(
+          new Text(style.red(`No REPL audit logs found in '${logDir}'.`), 0, 1),
+        );
+        tui.requestRender();
+        editor.setText("");
+        return "continue";
+      }
+
+      try {
+        const content = await readFile(mostRecentLog, { encoding: "utf8" });
+
+        // For TUI mode, we'll just display a message since we can't use the editor prompt
+        container.addChild(
+          new Text(
+            `Viewing most recent log: ${style.blue(mostRecentLog)}`,
+            1,
+            0,
+          ),
+        );
+        container.addChild(
+          new Text(`Content length: ${content.length} characters`, 2, 0),
+        );
+        container.addChild(
+          new Text(
+            style.dim("Note: Full log viewing not available in TUI mode"),
+            3,
+            0,
+          ),
+        );
+        tui.requestRender();
+        editor.setText("");
+        return "continue";
+      } catch (error) {
+        container.addChild(
+          new Text(
+            style.red(`Error reading log file ${mostRecentLog}: ${error}`),
+            1,
+            0,
+          ),
+        );
+        tui.requestRender();
+        editor.setText("");
         return "continue";
       }
     },

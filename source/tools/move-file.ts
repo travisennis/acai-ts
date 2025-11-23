@@ -43,9 +43,10 @@ export const createMoveFileTool = async ({
         }
 
         yield {
+          name: MoveFileTool.name,
           id: toolCallId,
           event: "tool-init",
-          data: `MoveFile: ${style.cyan(source)} => ${style.cyan(destination)}`,
+          data: `${style.cyan(source)} => ${style.cyan(destination)}`,
         };
 
         const validSourcePath = await validatePath(
@@ -67,17 +68,19 @@ export const createMoveFileTool = async ({
         await fs.rename(validSourcePath, validDestPath);
 
         yield {
+          name: MoveFileTool.name,
           id: toolCallId,
           event: "tool-completion",
-          data: "MoveFile: File moved successfully",
+          data: "File moved successfully",
         };
 
         yield `Successfully moved ${source} to ${destination}`;
       } catch (error) {
         yield {
+          name: MoveFileTool.name,
           event: "tool-error",
           id: toolCallId,
-          data: `MoveFile: ${(error as Error).message}`,
+          data: (error as Error).message,
         };
         yield `Failed to move file: ${(error as Error).message}`;
       }

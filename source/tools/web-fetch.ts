@@ -27,9 +27,10 @@ export const createWebFetchTool = (options: { tokenCounter: TokenCounter }) => {
     ): AsyncGenerator<ToolResult> {
       try {
         yield {
+          name: WebFetchTool.name,
           event: "tool-init",
           id: toolCallId,
-          data: `WebFetch: ${style.cyan(url)}`,
+          data: `${style.cyan(url)}`,
         };
         logger.info(`Initiating fetch for URL: ${url}`);
 
@@ -38,18 +39,20 @@ export const createWebFetchTool = (options: { tokenCounter: TokenCounter }) => {
         const tokenCount = options.tokenCounter.count(urlContent);
 
         yield {
+          name: WebFetchTool.name,
           event: "tool-completion",
           id: toolCallId,
-          data: `WebFetch: ${style.cyan(url)} ✅ (${tokenCount} tokens)`,
+          data: `${style.cyan(url)} (${tokenCount} tokens)`,
         };
         logger.info(`Successfully read URL: ${url} (${tokenCount} tokens)`);
         yield urlContent;
       } catch (error) {
         const errorMessage = (error as Error).message;
         yield {
+          name: WebFetchTool.name,
           event: "tool-error",
           id: toolCallId,
-          data: `WebFetch: ${errorMessage}`,
+          data: `${style.cyan(url)} ${errorMessage}`,
         };
         logger.error(`Error reading URL ${url}: ${errorMessage}`);
         yield `Failed to read URL: ${errorMessage}`;

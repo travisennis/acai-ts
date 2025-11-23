@@ -66,9 +66,10 @@ export const createReadFileTool = async ({
           throw new Error("File reading aborted");
         }
         yield {
+          name: ReadFileTool.name,
           id: toolCallId,
           event: "tool-init",
-          data: `ReadFile: ${style.cyan(providedPath)}${startLine ? style.cyan(`:${startLine}`) : ""}${lineCount ? style.cyan(`:${lineCount}`) : ""}`,
+          data: `${style.cyan(providedPath)}${startLine ? style.cyan(`:${startLine}`) : ""}${lineCount ? style.cyan(`:${lineCount}`) : ""}`,
         };
 
         const filePath = await validatePath(
@@ -93,7 +94,12 @@ export const createReadFileTool = async ({
 
           if (startIndex < 0 || startIndex >= totalLines) {
             const errorMsg = `startLine ${startLine} is out of bounds for file with ${totalLines} lines.`;
-            yield { event: "tool-error", id: toolCallId, data: errorMsg };
+            yield {
+              name: ReadFileTool.name,
+              event: "tool-error",
+              id: toolCallId,
+              data: errorMsg,
+            };
             yield errorMsg;
             return;
           }
@@ -112,18 +118,27 @@ export const createReadFileTool = async ({
           encoding,
         );
 
+        // Calculate line count for the returned content
+        const linesRead = result.content.split("\n").length;
+
         yield {
+          name: ReadFileTool.name,
           id: toolCallId,
           event: "tool-completion",
-          // Include token count only if calculated (i.e., for text files)
+          // Include success, line count, and token count
           data: !result.truncated
-            ? `ReadFile: File read successfully ${result.tokenCount > 0 ? ` (${result.tokenCount} tokens)` : ""}`
-            : `ReadFile: ${result.content}`,
+            ? `success: read ${linesRead} lines (${result.tokenCount} tokens)`
+            : result.content,
         };
         yield result.content;
       } catch (error) {
         const errorMsg = `ReadFile: ${(error as Error).message}`;
-        yield { event: "tool-error", id: toolCallId, data: errorMsg };
+        yield {
+          name: ReadFileTool.name,
+          event: "tool-error",
+          id: toolCallId,
+          data: errorMsg,
+        };
         yield errorMsg;
       }
     },

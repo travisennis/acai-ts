@@ -6,23 +6,30 @@ import type { PromptManagerApi } from "../prompts/manager.ts";
 import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
+import type {
+  AutocompleteItem,
+  Container,
+  Editor,
+  SlashCommand,
+  TUI,
+} from "../tui/index.ts";
 import { addDirectoryCommand } from "./add-directory-command.ts";
-import { applicationLogCommand } from "./application-log-command.ts";
+// import { applicationLogCommand } from "./application-log-command.ts";
 import { clearCommand } from "./clear-command.ts";
-import { compactCommand } from "./compact-command.ts";
+// import { compactCommand } from "./compact-command.ts";
 import { contextCommand } from "./context-command.ts";
 import { copyCommand } from "./copy-command.ts";
-import { editCommand } from "./edit-command.ts";
-import { editPromptCommand } from "./edit-prompt-command.ts";
+// import { editCommand } from "./edit-command.ts";
+// import { editPromptCommand } from "./edit-prompt-command.ts";
 import { exitCommand } from "./exit-command.ts";
-import { filesCommand } from "./files-command.ts";
+// import { filesCommand } from "./files-command.ts";
 import { generateRulesCommand } from "./generate-rules-command.ts";
 import { handoffCommand } from "./handoff-command.ts";
 import { healthCommand } from "./health-command.ts";
 import { helpCommand } from "./help-command.ts";
 import { historyCommand } from "./history-command.ts";
 import { initCommand } from "./init-command.ts";
-import { lastLogCommand } from "./last-log-command.ts";
+// import { lastLogCommand } from "./last-log-command.ts";
 import { listDirectoriesCommand } from "./list-directories-command.ts";
 import { listToolsCommand } from "./list-tools-command.ts";
 import { modelCommand } from "./model-command.ts";
@@ -31,7 +38,7 @@ import { pickupCommand } from "./pickup-command.ts";
 import { promptCommand } from "./prompt-command.ts";
 import { removeDirectoryCommand } from "./remove-directory-command.ts";
 import { resetCommand } from "./reset-command.ts";
-import { rulesCommand } from "./rules-command.ts";
+// import { rulesCommand } from "./rules-command.ts";
 import { saveCommand } from "./save-command.ts";
 import { shellCommand } from "./shell-command.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
@@ -95,12 +102,12 @@ export class CommandManager {
     const cmds = [
       addDirectoryCommand(options),
       clearCommand(options),
-      compactCommand(options),
+      // compactCommand(options),
       contextCommand(options),
-      editCommand(options),
-      editPromptCommand(options),
+      // editCommand(options),
+      // editPromptCommand(options),
       exitCommand(options),
-      filesCommand(options),
+      // filesCommand(options),
       healthCommand(options),
       historyCommand(options),
       initCommand(options),
@@ -111,13 +118,13 @@ export class CommandManager {
       removeDirectoryCommand(options),
       resetCommand(options),
       saveCommand(options),
-      rulesCommand(options),
+      // rulesCommand(options),
       modelCommand(options),
       usageCommand(options),
-      lastLogCommand(options),
+      // lastLogCommand(options),
       generateRulesCommand(options),
       handoffCommand(options),
-      applicationLogCommand(options),
+      // applicationLogCommand(options),
       copyCommand(options),
       listToolsCommand(options),
       shellCommand(options),
@@ -133,10 +140,10 @@ export class CommandManager {
     // Register all commands
     for (const cmd of cmds) {
       this.commands.set(cmd.command, cmd);
-      const aliases: string[] = cmd.aliases ?? [];
-      for (const alias of aliases) {
-        this.commands.set(alias, cmd);
-      }
+      // const aliases: string[] = cmd.aliases ?? [];
+      // for (const alias of aliases) {
+      //   this.commands.set(alias, cmd);
+      // }
     }
 
     const promptCmd = this.commands.get("/prompt");
@@ -147,10 +154,21 @@ export class CommandManager {
         this.commands.set(`/${cmd}`, {
           command: `/${cmd}`,
           description: "",
+          getSubCommands: (): Promise<string[]> => Promise.resolve([]),
           execute: (args: string[]): Promise<"break" | "continue" | "use"> => {
             return promptCmd.execute([cmd, ...args]);
           },
-          getSubCommands: (): Promise<string[]> => Promise.resolve([]),
+          async handle(
+            args: string[],
+            options: {
+              tui: TUI;
+              container: Container;
+              inputContainer: Container;
+              editor: Editor;
+            },
+          ): Promise<"break" | "continue" | "use"> {
+            return promptCmd.handle([cmd, ...args], options);
+          },
         });
       }
     }
@@ -164,6 +182,29 @@ export class CommandManager {
         "Commands have not been initialized. Call initializeCommmands() first.",
       );
     }
+  }
+
+  async getCompletions(): Promise<SlashCommand[]> {
+    this.ensureInitialized();
+    return Promise.all(
+      Array.from(this.commands.entries()).map(async (entry) => {
+        const subs = await entry[1].getSubCommands();
+        return {
+          name: entry[0].slice(1),
+          // value: entry[0].slice(1),
+          // label: entry[0].slice(1),
+          description: entry[1].description,
+          getArgumentCompletions(
+            _argumentPrefix: string,
+          ): AutocompleteItem[] | null {
+            return subs.map((sub) => ({
+              value: sub,
+              label: sub,
+            }));
+          },
+        };
+      }),
+    );
   }
 
   getCommands() {
@@ -186,6 +227,44 @@ export class CommandManager {
       const replCommand = this.commands.get(command);
       if (replCommand) {
         const result = await replCommand.execute(args);
+        if (result === "continue") {
+          return {
+            continue: true,
+            break: false,
+          };
+        }
+        if (result === "break") {
+          return {
+            continue: false,
+            break: true,
+          };
+        }
+      }
+    }
+    return {
+      continue: false,
+      break: false,
+    };
+  }
+
+  async handle2(
+    { userInput }: { userInput: string },
+    options: {
+      tui: TUI;
+      container: Container;
+      inputContainer: Container;
+      editor: Editor;
+    },
+  ) {
+    this.ensureInitialized();
+    const commandArgs = userInput.split(" ");
+    const command = commandArgs.at(0);
+    const args = commandArgs.slice(1);
+
+    if (command) {
+      const replCommand = this.commands.get(command);
+      if (replCommand) {
+        const result = await replCommand.handle(args, options);
         if (result === "continue") {
           return {
             continue: true,

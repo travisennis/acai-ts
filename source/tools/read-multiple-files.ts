@@ -50,9 +50,10 @@ export const createReadMultipleFilesTool = async ({
         }
 
         yield {
+          name: ReadMultipleFilesTool.name,
           id: toolCallId,
           event: "tool-init",
-          data: `ReadMultipleFiles: ${paths.map((p) => style.cyan(p)).join(", ")}`,
+          data: `${paths.map((p) => style.cyan(p)).join(", ")}`,
         };
 
         if (abortSignal?.aborted) {
@@ -158,15 +159,17 @@ export const createReadMultipleFilesTool = async ({
         const completionMessage = `${parts.join(", ")}.`;
 
         yield {
+          name: ReadMultipleFilesTool.name,
           id: toolCallId,
           event: "tool-completion",
-          data: `ReadMultipleFiles: ${completionMessage}`,
+          data: completionMessage,
         };
 
         yield finalResult.content;
       } catch (error) {
-        const errorMsg = `ReadMultipleFiles: ${(error as Error).message}`;
+        const errorMsg = (error as Error).message;
         yield {
+          name: ReadMultipleFilesTool.name,
           id: toolCallId,
           event: "tool-error",
           data: errorMsg,

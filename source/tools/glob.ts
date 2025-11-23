@@ -74,9 +74,10 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
         const patternArray = Array.isArray(patterns) ? patterns : [patterns];
 
         yield {
+          name: GlobTool.name,
           event: "tool-init",
           id: toolCallId,
-          data: `Glob: ${style.cyan(inspect(patternArray))} in ${style.cyan(path)}`,
+          data: `${style.cyan(inspect(patternArray))} in ${style.cyan(path)}`,
         };
 
         // Build glob options
@@ -168,17 +169,19 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
         completionMessage += ` (${result.tokenCount} tokens)`;
 
         yield {
+          name: GlobTool.name,
           event: "tool-completion",
           id: toolCallId,
-          data: `Glob: ${completionMessage}`,
+          data: completionMessage,
         };
 
         yield result.content;
       } catch (error) {
         yield {
+          name: GlobTool.name,
           event: "tool-error",
           id: toolCallId,
-          data: `Glob: ${(error as Error).message}`,
+          data: (error as Error).message,
         };
         yield (error as Error).message;
       }

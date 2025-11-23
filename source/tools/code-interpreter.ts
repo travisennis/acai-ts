@@ -64,9 +64,10 @@ export const createCodeInterpreterTool = async ({
     const lines = code.split("\n");
     try {
       yield {
+        name: CodeInterpreterTool.name,
         event: "tool-init",
         id: toolCallId,
-        data: `CodeInterpreter: Executing ${lines.length} lines of code.`,
+        data: `Executing ${lines.length} lines of code.`,
       };
 
       if (code.trim().length === 0) {
@@ -189,9 +190,10 @@ export const createCodeInterpreterTool = async ({
       );
 
       yield {
+        name: CodeInterpreterTool.name,
         event: "tool-completion",
         id: toolCallId,
-        data: `CodeInterpreter: Completed successfully${managedResult.tokenCount > 0 ? ` (${managedResult.tokenCount} tokens)` : ""}`,
+        data: `Completed successfully${managedResult.tokenCount > 0 ? ` (${managedResult.tokenCount} tokens)` : ""}`,
       };
 
       yield managedResult.content;
@@ -203,9 +205,10 @@ export const createCodeInterpreterTool = async ({
           : `Error:\n${(err as Error).message}`;
 
       yield {
+        name: CodeInterpreterTool.name,
         event: "tool-error",
         id: toolCallId,
-        data: `CodeInterpreter: ${errorMessage}`,
+        data: errorMessage,
       };
 
       yield errorMessage;

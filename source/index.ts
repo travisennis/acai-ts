@@ -3,6 +3,7 @@ import { text } from "node:stream/consumers";
 import { parseArgs } from "node:util";
 import { asyncTry } from "@travisennis/stdlib/try";
 import { isDefined } from "@travisennis/stdlib/typeguards";
+import { Agent } from "./agent/index.ts";
 import { Cli } from "./cli.ts";
 import { CommandManager } from "./commands/manager.ts";
 import { config } from "./config.ts";
@@ -11,12 +12,14 @@ import { MessageHistory } from "./messages.ts";
 import { ModelManager } from "./models/manager.ts";
 import { isSupportedModel, type ModelName } from "./models/providers.ts";
 import { PromptManager } from "./prompts/manager.ts";
+import { systemPrompt } from "./prompts.ts";
 import { Repl } from "./repl.ts";
+import { NewRepl } from "./repl-new.ts";
 import { initTerminal } from "./terminal/index.ts";
 import { select } from "./terminal/select-prompt.ts";
 import { TokenCounter } from "./tokens/counter.ts";
 import { TokenTracker } from "./tokens/tracker.ts";
-
+import { initAgents, initTools } from "./tools/index.ts";
 import { getPackageVersion } from "./version.ts";
 
 // Workspace context for managing multiple working directories
@@ -52,8 +55,8 @@ Options
   --prompt, -p       Sets the prompt (runs in CLI mode)
   --continue         Load the most recent conversation
   --resume           Select a recent conversation to resume
-
   --add-dir          Add additional working directory (can be used multiple times)
+  --new-repl
   --help, -h         Show help
   --version, -v      Show version
 
@@ -71,6 +74,7 @@ const parsed = parseArgs({
     resume: { type: "boolean", default: false },
 
     "add-dir": { type: "string", multiple: true },
+    "new-repl": { type: "boolean" },
     help: { type: "boolean", short: "h" },
     version: { type: "boolean", short: "v" },
   },
@@ -265,6 +269,93 @@ async function main() {
     return (await asyncTry(cliProcess.run())).recover(handleError);
   }
 
+  const agent = new Agent({
+    messageHistory,
+    modelManager,
+    tokenTracker,
+  });
+
+  if (flags["new-repl"]) {
+    const repl = new NewRepl({
+      agent,
+      promptManager,
+      terminal,
+      config: appConfig,
+      messageHistory,
+      modelManager,
+      tokenTracker,
+      commands,
+      tokenCounter,
+      promptHistory,
+      workspace,
+    });
+
+    // Initialize TUI
+    await repl.init();
+
+    messageHistory.on("clear-history", () => {
+      logger.info("Resetting agent state.");
+      agent.resetState();
+      repl.rerender();
+    });
+
+    // Set interrupt callback
+    repl.setInterruptCallback(() => {
+      agent.abort();
+    });
+
+    // Render any existing messages (from --continue mode)
+    // repl.renderInitialMessages(agent.state);
+
+    // Initialize tools once outside the loop - all models support tool calling
+    const coreTools = await initTools({
+      tokenCounter,
+      workspace,
+      modelManager,
+      tokenTracker,
+    });
+
+    const agentTools = await initAgents({
+      terminal,
+      modelManager,
+      tokenTracker,
+      tokenCounter,
+      workspace,
+    });
+
+    const completeToolDefs = {
+      ...coreTools.toolDefs,
+      ...agentTools.toolDefs,
+    };
+
+    const tools = {
+      toolDefs: completeToolDefs,
+      executors: new Map([...coreTools.executors, ...agentTools.executors]),
+    } as const;
+
+    // Interactive loop
+    while (true) {
+      const userInput = await repl.getUserInput();
+
+      // Process the message - agent.prompt will add user message and trigger state updates
+      try {
+        const results = agent.run({
+          systemPrompt: await systemPrompt(),
+          input: userInput,
+          toolDefs: tools.toolDefs,
+          executors: tools.executors,
+        });
+        for await (const result of results) {
+          repl.handle(result, agent.state);
+        }
+
+        messageHistory.save();
+      } catch (_error) {
+        // Display error in the TUI by adding an error message to the chat
+        // repl.showError((error as Error).message || "Unknown error occurred");
+      }
+    }
+  }
   const repl = new Repl({
     promptManager,
     terminal,
@@ -274,7 +365,6 @@ async function main() {
     tokenTracker,
     commands,
     tokenCounter,
-
     promptHistory,
     workspace,
     showLastMessage: hasContinueOrResume

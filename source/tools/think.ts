@@ -40,24 +40,27 @@ export const createThinkTool = () => {
         const formattedThought = thought.replace(/\\n/g, "\n");
 
         yield {
+          name: ThinkTool.name,
           event: "tool-init",
           id: toolCallId,
-          data: `Think:\n${formattedThought}`,
+          data: `\n${formattedThought}`,
         };
 
         yield {
+          name: ThinkTool.name,
           event: "tool-completion",
           id: toolCallId,
-          data: "Think: Completed",
+          data: "Completed",
         };
         yield "Your thought has been logged.";
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         yield {
+          name: ThinkTool.name,
           event: "tool-error",
           id: toolCallId,
-          data: `Think: ${errorMessage}`,
+          data: errorMessage,
         };
         yield errorMessage;
       }

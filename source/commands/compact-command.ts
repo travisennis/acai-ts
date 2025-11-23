@@ -1,5 +1,8 @@
 import { generateText } from "ai";
 import { createUserMessage } from "../messages.ts";
+import style from "../terminal/style.ts";
+import type { Container, Editor, TUI } from "../tui/index.ts";
+import { Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const compactCommand = (options: CommandOptions): ReplCommand => {
@@ -16,6 +19,26 @@ export const compactCommand = (options: CommandOptions): ReplCommand => {
         await summarizeAndReset(options, additionalInstructions);
       }
       terminal.info("Message history summarized and reset.");
+      return "continue";
+    },
+    async handle(
+      args: string[],
+      {
+        tui,
+        container,
+        editor,
+      }: { tui: TUI; container: Container; editor: Editor },
+    ): Promise<"break" | "continue" | "use"> {
+      const { messageHistory } = options;
+      if (!messageHistory.isEmpty()) {
+        const additionalInstructions = args.join(" ");
+        await summarizeAndReset(options, additionalInstructions);
+      }
+      container.addChild(
+        new Text(style.green("Message history summarized and reset."), 0, 1),
+      );
+      tui.requestRender();
+      editor.setText("");
       return "continue";
     },
   };

@@ -75,9 +75,10 @@ export const createAgentTools = (options: {
     }
 
     yield {
+      name: AgentTool.name,
       event: "tool-init",
       id: toolCallId,
-      data: `Agent:\n${style.cyan(prompt)}`,
+      data: `\n${style.cyan(prompt)}`,
     };
 
     try {
@@ -108,17 +109,19 @@ export const createAgentTools = (options: {
       tokenTracker.trackUsage("task-agent", usage);
 
       yield {
+        name: AgentTool.name,
         event: "tool-completion",
         id: toolCallId,
-        data: `Agent: Finished running the agent tool (${usage.totalTokens} tokens)`,
+        data: `Finished running the agent tool (${usage.totalTokens} tokens)`,
       };
 
       yield text;
     } catch (error) {
       yield {
+        name: AgentTool.name,
         event: "tool-error",
         id: toolCallId,
-        data: `Agent: ${(error as Error).message}`,
+        data: (error as Error).message,
       };
       yield (error as Error).message;
     }

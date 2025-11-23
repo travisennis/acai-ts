@@ -46,9 +46,10 @@ export const createDirectoryTreeTool = async ({
         }
 
         yield {
+          name: DirectoryTreeTool.name,
           id: toolCallId,
           event: "tool-init",
-          data: `DirectoryTree: ${style.cyan(path)}`,
+          data: `${style.cyan(path)}`,
         };
 
         const validPath = await validatePath(
@@ -71,13 +72,14 @@ export const createDirectoryTreeTool = async ({
           "Use excludeDirPatterns or recursive=false to reduce output",
         );
 
-        let completionMessage = "DirectoryTree: Done";
+        let completionMessage = "Done";
         if (result.truncated) {
           completionMessage += ` - ${result.content}`;
         }
         completionMessage += ` (${result.tokenCount} tokens)`;
 
         yield {
+          name: DirectoryTreeTool.name,
           id: toolCallId,
           event: "tool-completion",
           data: completionMessage,
@@ -85,8 +87,9 @@ export const createDirectoryTreeTool = async ({
 
         yield result.content;
       } catch (error) {
-        const errorMsg = `DirectoryTree: ${(error as Error).message}`;
+        const errorMsg = (error as Error).message;
         yield {
+          name: DirectoryTreeTool.name,
           id: toolCallId,
           event: "tool-error",
           data: errorMsg,

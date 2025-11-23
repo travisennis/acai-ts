@@ -48,9 +48,10 @@ export const createSaveFileTool = async ({
         }
 
         yield {
+          name: SaveFileTool.name,
           event: "tool-init",
           id: toolCallId,
-          data: `SaveFile: ${style.cyan(userPath)}`,
+          data: `${style.cyan(userPath)}`,
         };
 
         const filePath = await validatePath(
@@ -91,16 +92,18 @@ export const createSaveFileTool = async ({
         });
 
         yield {
+          name: SaveFileTool.name,
           event: "tool-completion",
           id: toolCallId,
-          data: "SaveFile: File saved successfully",
+          data: "File saved successfully",
         };
         yield `File saved successfully: ${filePath}`;
       } catch (error) {
         yield {
+          name: SaveFileTool.name,
           event: "tool-error",
           id: toolCallId,
-          data: `SaveFile: ${(error as Error).message}`,
+          data: (error as Error).message,
         };
         yield `Failed to save file: ${(error as Error).message}`;
       }

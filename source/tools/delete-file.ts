@@ -39,9 +39,10 @@ export const createDeleteFileTool = async ({
           throw new Error("File deletion aborted");
         }
         yield {
+          name: DeleteFileTool.name,
           id: toolCallId,
           event: "tool-init",
-          data: `DeleteFile: ${style.cyan(userPath)}`,
+          data: `${style.cyan(userPath)}`,
         };
 
         const filePath = await validatePath(
@@ -73,14 +74,16 @@ export const createDeleteFileTool = async ({
         await fs.unlink(filePath);
 
         yield {
+          name: DeleteFileTool.name,
           id: toolCallId,
           event: "tool-completion",
-          data: "DeleteFile: File deleted successfully",
+          data: "File deleted successfully",
         };
         yield `Successfully deleted ${filePath}`;
       } catch (error) {
-        const errorMessage = `DeleteFile: ${(error as Error).message}`;
+        const errorMessage = (error as Error).message;
         yield {
+          name: DeleteFileTool.name,
           id: toolCallId,
           event: "tool-error",
           data: errorMessage,
