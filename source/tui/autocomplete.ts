@@ -34,7 +34,7 @@ class DirectoryCache {
 
 const directoryCache = new DirectoryCache();
 
-// Helper function to get directory entries with caching
+// Helper function to get directory entries with caching and timeout
 async function getDirectoryEntries(dir: string): Promise<Dirent[]> {
   const cached = await directoryCache.get(dir);
   if (cached) {
@@ -42,7 +42,13 @@ async function getDirectoryEntries(dir: string): Promise<Dirent[]> {
   }
 
   try {
-    const entries = await readdir(dir, { withFileTypes: true });
+    // Add timeout to prevent hanging on slow file systems
+    const entries = await Promise.race([
+      readdir(dir, { withFileTypes: true }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Directory read timeout")), 2000),
+      ),
+    ]);
     directoryCache.set(dir, entries);
     return entries;
   } catch (_e) {
@@ -323,14 +329,13 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
       return atMatch[0];
     }
 
-    // Match paths - including those ending with /, ~/, or any word at end for forced extraction
+    // Match paths - more conservative approach to avoid matching already completed paths
     // This regex captures:
-    // - Paths starting from beginning of line or after space/quote/equals
-    // - Optional ./ or ../ or ~/ prefix (including the trailing slash for ~/)
-    // - The path itself (can include / in the middle)
-    // - For forced extraction, capture any word at the end
+    // - Paths starting from beginning of line or after space
+    // - Optional ./ or ../ or ~/ prefix
+    // - The path itself (must contain at least one / or start with ./ or ../ or ~/)
     const matches = text.match(
-      /(?:^|[\s"'=])((?:~\/|\.{0,2}\/?)?(?:[^\s"'=]*\/?)*[^\s"'=]*)$/,
+      /(?:^|\s)((?:\.{1,2}\/|~\/)?(?:[^\s]*\/)*[^\s/]*)$/,
     );
     if (!matches) {
       // If forced extraction and no matches, return empty string to trigger from current dir
@@ -358,25 +363,31 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
       return pathPrefix;
     }
 
-    // For natural triggers, return if it looks like a path, ends with /, starts with ~/, .
-    // or contains a slash (indicating it's a multi-segment path)
-    // Only return empty string if the text looks like it's starting a path context
-    if (
+    // For natural triggers, be more conservative:
+    // Only trigger if we have a clear path indicator
+    const hasPathIndicator =
       pathPrefix.includes("/") ||
       pathPrefix.endsWith("/") ||
       pathPrefix.startsWith(".") ||
-      pathPrefix.startsWith("~/")
+      pathPrefix.startsWith("~/");
+
+    if (!hasPathIndicator) {
+      return null;
+    }
+
+    // Additional check: don't trigger if the path looks like it's already completed
+    // (i.e., doesn't end with a partial filename)
+    if (
+      pathPrefix.includes("/") &&
+      !pathPrefix.endsWith("/") &&
+      !pathPrefix.includes(".") &&
+      pathPrefix.length > 3
     ) {
-      return pathPrefix;
+      // This might be a completed directory name, not a partial path
+      return null;
     }
 
-    // Return empty string only if we're at the beginning of the line or after a space
-    // (not after quotes or other delimiters that don't suggest file paths)
-    if (pathPrefix === "" && (text === "" || text.endsWith(" "))) {
-      return pathPrefix;
-    }
-
-    return null;
+    return pathPrefix;
   }
 
   // Check if a path is within any allowed directory
@@ -479,7 +490,20 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
         }
 
         const fullPath = join(searchDir, entryName);
-        const isDirectory = (await stat(fullPath)).isDirectory();
+        let isDirectory = false;
+        try {
+          // Add timeout to prevent hanging on slow file systems
+          const stats = await Promise.race([
+            stat(fullPath),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("File stat timeout")), 1000),
+            ),
+          ]);
+          isDirectory = stats.isDirectory();
+        } catch {
+          // If stat fails or times out, skip this entry
+          continue;
+        }
 
         // For @ prefix, filter to only show directories and attachable files
         if (isAtPrefix && !isDirectory && !isAttachableFile(fullPath)) {

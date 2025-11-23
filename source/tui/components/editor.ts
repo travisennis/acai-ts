@@ -35,6 +35,7 @@ export class Editor implements Component {
   private autocompleteList?: SelectList;
   private isAutocompleting = false;
   private autocompletePrefix = "";
+  private autocompleteDebounceTimer?: NodeJS.Timeout;
 
   // Paste tracking for large pastes
   private pastes: Map<number, string> = new Map();
@@ -813,6 +814,10 @@ export class Editor implements Component {
     this.isAutocompleting = false;
     this.autocompleteList = undefined;
     this.autocompletePrefix = "";
+    if (this.autocompleteDebounceTimer) {
+      clearTimeout(this.autocompleteDebounceTimer);
+      this.autocompleteDebounceTimer = undefined;
+    }
   }
 
   public isShowingAutocomplete(): boolean {
@@ -822,29 +827,48 @@ export class Editor implements Component {
   private async updateAutocomplete(): Promise<void> {
     if (!this.isAutocompleting || !this.autocompleteProvider) return;
 
-    const suggestions = await this.autocompleteProvider.getSuggestions(
-      this.state.lines,
-      this.state.cursorLine,
-      this.state.cursorCol,
-    );
+    // Check if the current text still matches our autocomplete prefix
+    // This prevents unnecessary updates when typing unrelated text
+    const currentLine = this.state.lines[this.state.cursorLine] || "";
+    const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
 
-    if (suggestions && suggestions.items.length > 0) {
-      this.autocompletePrefix = suggestions.prefix;
-      if (this.autocompleteList) {
-        // Update the existing list with new items
-        this.autocompleteList.updateItems(suggestions.items);
-      } else {
-        this.autocompleteList = new SelectList(suggestions.items, 5);
-      }
-      this.isAutocompleting = true;
-      // Request re-render to show updated autocomplete list
-      this.onRenderRequested?.();
-    } else {
-      // No more matches, cancel autocomplete
+    // If we're no longer in the context that triggered autocomplete, cancel it
+    if (!textBeforeCursor.endsWith(this.autocompletePrefix)) {
       this.cancelAutocomplete();
-      // Request re-render to hide autocomplete
-      this.onRenderRequested?.();
+      return;
     }
+
+    // Clear any existing debounce timer
+    if (this.autocompleteDebounceTimer) {
+      clearTimeout(this.autocompleteDebounceTimer);
+    }
+
+    // Debounce autocomplete updates to prevent rapid-fire file system operations
+    this.autocompleteDebounceTimer = setTimeout(async () => {
+      const suggestions = await this.autocompleteProvider?.getSuggestions(
+        this.state.lines,
+        this.state.cursorLine,
+        this.state.cursorCol,
+      );
+
+      if (suggestions && suggestions.items.length > 0) {
+        this.autocompletePrefix = suggestions.prefix;
+        if (this.autocompleteList) {
+          // Update the existing list with new items
+          this.autocompleteList.updateItems(suggestions.items);
+        } else {
+          this.autocompleteList = new SelectList(suggestions.items, 5);
+        }
+        this.isAutocompleting = true;
+        // Request re-render to show updated autocomplete list
+        this.onRenderRequested?.();
+      } else {
+        // No more matches, cancel autocomplete
+        this.cancelAutocomplete();
+        // Request re-render to hide autocomplete
+        this.onRenderRequested?.();
+      }
+    }, 50); // 50ms debounce delay
   }
 
   private isModifiedEnter(data: string): boolean {
