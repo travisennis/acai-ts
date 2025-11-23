@@ -94,7 +94,7 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
             : filePattern;
 
         // Enhanced tool-init with detailed search parameters
-        let initMessage = `Grep: ${style.cyan(inspect(pattern))} in ${style.cyan(path)}`;
+        let initMessage = `${style.cyan(inspect(pattern))} in ${style.cyan(path)}`;
         if (safeFilePattern) {
           initMessage += ` ${style.dim(`(filter: ${safeFilePattern})`)}`;
         }
