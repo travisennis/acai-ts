@@ -118,13 +118,16 @@ export const createReadFileTool = async ({
           encoding,
         );
 
+        // Calculate line count for the returned content
+        const linesRead = result.content.split("\n").length;
+
         yield {
           name: ReadFileTool.name,
           id: toolCallId,
           event: "tool-completion",
-          // Include token count only if calculated (i.e., for text files)
+          // Include success, line count, and token count
           data: !result.truncated
-            ? `File read successfully ${result.tokenCount > 0 ? ` (${result.tokenCount} tokens)` : ""}`
+            ? `success: read ${linesRead} lines (${result.tokenCount} tokens)`
             : result.content,
         };
         yield result.content;
