@@ -92,7 +92,7 @@ function toolUsage() {
 ### Bash Commands (\`${BashTool.name}\`)
 - Execute commands with a sandboxed executor that supports pipes (|), conditional chaining (&&, ||, ;), and redirection (> >> < 2> 2>>).
 - Run single commands or compose multi-step flows using shell operators.
-- For large gh/git messages with newlines:
+- For extremely large gh/git messages:
   1. Create temp file with ${SaveFileTool.name} in the project's .tmp directory
   2. Use git commit --file path/to/temp/file or gh pr create --title "Title of PR" --body-file path/to/temp/file
 - Note: The .tmp directory in the current working directory is deleted each time the agent shuts down.
