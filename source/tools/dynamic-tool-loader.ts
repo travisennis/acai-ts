@@ -221,7 +221,7 @@ export function createDynamicTool(
           }
 
           yield {
-            name: "dynamic-tool-loader",
+            name: metadata.name,
             event: "tool-init",
             id: toolCallId,
             data: "Running",
@@ -233,7 +233,7 @@ export function createDynamicTool(
           } catch (e) {
             const errMsg = `Invalid parameters for tool ${metadata.name}: ${(e as Error).message}`;
             yield {
-              name: "dynamic-tool-loader",
+              name: metadata.name,
               event: "tool-error",
               id: toolCallId,
               data: errMsg,
@@ -249,7 +249,7 @@ export function createDynamicTool(
           );
 
           yield {
-            name: "dynamic-tool-loader",
+            name: metadata.name,
             event: "tool-completion",
             id: toolCallId,
             data: "Completed",
@@ -258,7 +258,7 @@ export function createDynamicTool(
           yield result;
         } catch (error) {
           yield {
-            name: "dynamic-tool-loader",
+            name: metadata.name,
             event: "tool-error",
             id: toolCallId,
             data: `${metadata.name}: ${(error as Error).message}`,
