@@ -83,9 +83,7 @@ export class Markdown implements Component {
   constructor(
     text = "",
     bgColor?: Color,
-    // biome-ignore lint/suspicious/noExplicitAny: Maintain backward compatibility
-    // @ts-expect-error: Maintain backward compatibility
-    _fgColor?: any,
+    _fgColor?: Color,
     customBgRgb?: { r: number; g: number; b: number },
     paddingX = 1,
     paddingY = 1,
