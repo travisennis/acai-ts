@@ -344,6 +344,7 @@ async function main() {
           input: userInput,
           toolDefs: tools.toolDefs,
           executors: tools.executors,
+          abortSignal: agent.abortSignal,
         });
         for await (const result of results) {
           repl.handle(result, agent.state);

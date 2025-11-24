@@ -114,15 +114,20 @@ export type AgentState = {
 export class Agent {
   private opts: AgentOptions;
   private _state: AgentState;
-  private abortController?: AbortController;
+  private abortController: AbortController;
 
   constructor(opts: AgentOptions) {
     this.opts = opts;
+    this.abortController = new AbortController();
     this._state = this.resetState();
   }
 
   get state() {
     return this._state;
+  }
+
+  get abortSignal() {
+    return this.abortController.signal;
   }
 
   async *run(args: RunOptions): AsyncGenerator<AgentEvent> {
@@ -510,7 +515,9 @@ export class Agent {
   }
 
   abort() {
-    this.abortController?.abort();
+    this.abortController.abort();
+    // Reset the abort controller for the next run
+    this.abortController = new AbortController();
   }
 
   resetState() {
