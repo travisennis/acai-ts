@@ -827,15 +827,23 @@ export class Editor implements Component {
   private async updateAutocomplete(): Promise<void> {
     if (!this.isAutocompleting || !this.autocompleteProvider) return;
 
-    // Check if the current text still matches our autocomplete prefix
+    // Check if the current text still matches our autocomplete context
     // This prevents unnecessary updates when typing unrelated text
     const currentLine = this.state.lines[this.state.cursorLine] || "";
     const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
 
     // If we're no longer in the context that triggered autocomplete, cancel it
-    if (!textBeforeCursor.endsWith(this.autocompletePrefix)) {
-      this.cancelAutocomplete();
-      return;
+    // For slash commands, check if we're still in slash command context
+    // For file paths, check if we're still in the same path context
+    if (textBeforeCursor.startsWith("/")) {
+      // For slash commands, we should continue autocomplete as long as we're in slash command context
+      // Don't cancel based on prefix matching for progressive typing
+    } else {
+      // For file paths, check if we're still in the same path context
+      if (!textBeforeCursor.endsWith(this.autocompletePrefix)) {
+        this.cancelAutocomplete();
+        return;
+      }
     }
 
     // Clear any existing debounce timer
