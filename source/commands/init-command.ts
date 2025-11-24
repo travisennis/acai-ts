@@ -4,8 +4,27 @@ import style from "../terminal/style.ts";
 import { inGitDirectory } from "../tools/git-utils.ts";
 import { initCliTools } from "../tools/index.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Spacer, Text } from "../tui/index.ts";
+import { Markdown, Spacer, Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
+
+const initPrompt = `Please analyze this codebase and create a AGENTS.md file containing:
+1. An overview of the project including how the project is structured and the tech stack used.
+2. Build/lint/test commands - especially for running a single test
+3. Directions on how to run the app
+4. Custom tools defined in ./.acai/tools
+3. Code style guidelines including imports, formatting, types, naming conventions, error handling, etc.
+4. Commit format (does the repository use Conventional Commits?)
+5. Branch strategy
+6. PR requirements
+
+The file you create will be given to agentic coding agents (such as yourself) that operate in this repository. Make it about 50 lines long.
+
+If there's already a AGENTS.md, improve it.
+If there are Cursor rules (in .cursor/rules/ or .cursorrules), Copilot rules (in .github/copilot-instructions.md or .github/instructions/), or Windsurf rules (in .windsurf/rules), make sure to include them.
+
+Your current working directory is ${process.cwd()}
+Is directory a git repo: ${(await inGitDirectory()) ? "Yes" : "No"}
+Platform: ${platform()}`;
 
 export const initCommand = ({
   terminal,
@@ -22,18 +41,7 @@ export const initCommand = ({
       const result = streamText({
         model: modelManager.getModel("init-project"),
         temperature: 0.5,
-        prompt: `Please analyze this codebase and create a AGENTS.md file containing:
-1. Build/lint/test commands - especially for running a single test
-2. Code style guidelines including imports, formatting, types, naming conventions, error handling, etc.
-
-The file you create will be given to agentic coding agents (such as yourself) that operate in this repository. Make it about 20 lines long.
-
-If there's already a AGENTS.md, improve it.
-If there are Cursor rules (in .cursor/rules/ or .cursorrules), Copilot rules (in .github/copilot-instructions.md), or Windsurf rules (in .windsurf/rules), make sure to include them.
-
-Your current working directory is ${process.cwd()}
-Is directory a git repo: ${(await inGitDirectory()) ? "Yes" : "No"}
-Platform: ${platform()}`,
+        prompt: initPrompt,
         stopWhen: stepCountIs(40),
         tools: (
           await initCliTools({
@@ -57,25 +65,14 @@ Platform: ${platform()}`,
       }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
       container.addChild(
-        new Text("Initializing project and creating AGENTS.md...", 0, 1),
+        new Text("Initializing project and creating AGENTS.md...", 1, 1),
       );
       tui.requestRender();
 
       const result = streamText({
         model: modelManager.getModel("init-project"),
         temperature: 0.5,
-        prompt: `Please analyze this codebase and create a AGENTS.md file containing:
-1. Build/lint/test commands - especially for running a single test
-2. Code style guidelines including imports, formatting, types, naming conventions, error handling, etc.
-
-The file you create will be given to agentic coding agents (such as yourself) that operate in this repository. Make it about 20 lines long.
-
-If there's already a AGENTS.md, improve it.
-If there are Cursor rules (in .cursor/rules/ or .cursorrules), Copilot rules (in .github/copilot-instructions.md), or Windsurf rules (in .windsurf/rules), make sure to include them.
-
-Your current working directory is ${process.cwd()}
-Is directory a git repo: ${(await inGitDirectory()) ? "Yes" : "No"}
-Platform: ${platform()}`,
+        prompt: initPrompt,
         stopWhen: stepCountIs(40),
         tools: (
           await initCliTools({
@@ -88,7 +85,7 @@ Platform: ${platform()}`,
       container.addChild(new Spacer(1));
 
       let output = "";
-      const t = new Text(output, 2, 0);
+      const t = new Markdown(output, undefined, undefined, undefined, 1, 0);
       container.addChild(t);
       for await (const text of result.textStream) {
         output += text;
@@ -97,8 +94,10 @@ Platform: ${platform()}`,
         tui.requestRender();
       }
 
+      container.addChild(new Spacer(1));
+
       container.addChild(
-        new Text(style.green("AGENTS.md file created successfully"), 3, 0),
+        new Text(style.green("AGENTS.md file created successfully"), 1, 0),
       );
       tui.requestRender();
       editor.setText("");

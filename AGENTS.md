@@ -1,5 +1,9 @@
-### Commands
+# Agent Guidelines for Acai-ts
 
+## Project Overview
+Acai-TS is an AI assistant CLI tool built with TypeScript. The project uses a modular architecture with source code in `./source`, organized into commands, tools, models, and UI components. Tests are in `/test`. Tech stack: Node.js ≥20, TypeScript (ESNext), Biome for linting/formatting, and AI SDK providers.
+
+## Build & Development Commands
 - **Build:** `npm run build`
 - **Typecheck:** `npm run typecheck`
 - **Lint:** `npm run lint`
@@ -7,51 +11,41 @@
 - **Format:** `npm run format`
 - **Fix Lint/Format:** `npm run lint:fix`
 - **Test:** `npm test`
-- **Run Single Test File:** `node --no-warnings --test test/path/to/your.test.ts`
+- **Run Single Test:** `node --no-warnings --test test/path/to/test.ts`
+- **Dev Mode:** `npm run dev`
 - **Find Unused Code/Deps:** `npm run knip`
 
-### Running the app
+## Running the App
+- **CLI:** `acai-dev -p <prompt>`
+- **Application logs:** `~/.acai/logs/current.log`
 
-- **Run command:** `acai-dev -p <prompt`
-- **Application logs:** stored at `~/.acai/logs/current.log`
+## Custom Tools
+- **run-all-checks:** Use this tool to typecheck, lint, and format code after changes
 
-### Custom Tools
+## Code Style Guidelines
+- **Language:** Strict TypeScript with ESNext target
+- **Modules:** ES Modules only. Use `.ts` extensions for relative imports
+- **Node Built-ins:** Use `node:` prefix (e.g., `import fs from 'node:fs'`)
+- **Formatting:** Biome rules (2-space indents, 80 char line width)
+- **Types:** Explicit types required. Avoid `any`. No non-null assertions (`!`)
+- **Naming:** camelCase (variables/functions), PascalCase (classes/types)
+- **Error Handling:** Robust try/catch, result patterns
+- **Logging:** Use `console.info`, never `console.log` for debugging
+- **Testing:** `node:test` and `node:assert/strict` in `./test` directory
 
-- **run-all-checks** use this tool when you want to typecheck, lint, and format the code you have just written
+## Commit & Branch Strategy
+- **Commits:** Conventional Commits standard
+- **Message Length:** Keep lines under 100 characters
+- **Branch Strategy:** Feature branches (`feat/`, `fix/`) merged to `master`
 
-### Code Style & Guidelines
+## PR Requirements
+- Follow PR template with description, testing details, and checklist
+- All tests must pass
+- Code follows style guidelines
+- No new warnings generated
+- Documentation updated if needed
 
-- **Code Organization:** All source code for this project is stored in `./source`.
-- **Language:** Strict TypeScript (ESNext target). Enable all strict checks.
-- **Modules:** Use ES Modules (`import`/`export`). Add `.ts` extensions to relative imports. Use `node:` prefix for Node.js built-ins (e.g., `import fs from 'node:fs'`).
-- **Formatting/Linting:** Adhere strictly to Biome rules (`npm run format`, `npm run lint`).
-- **Types:** Provide explicit types. Avoid `any` unless absolutely necessary. Always check potentially `undefined`/`null` values. **Do not use non-null assertions (`!`)**.
-- **Naming:** Use camelCase for variables/functions, PascalCase for classes/types/interfaces.
-- **Error Handling:** Implement robust error handling (try/catch, result patterns, etc.).
-- **Logging:** Avoid `console.log` for debugging; use a proper logger or remove before committing. Always replace usages of `console.log` with `console.info`.
-- **Commits:** Follow the Conventional Commits standard for commit messages.
-- **Commit Message Length:** Keep commit message lines (header, body, and footer) under 100 characters.
-- **Comments** Never add comments to the code explaining the edit you are making. Comments that help explain how code works are acceptable.
-- **Testing** Use `node:test` and `node:assert/strict` to write unit tests in the `./test` directory. Test directory should follow the same folder structure as source.
-
-### Terminal Usage
-
-When you need to call tools from the shell, use this rubric:
-
-- Find files by file name: `fd`
-- Find files with path name: `fd -p <file-path>`
-- List files in a directory: `fd . <directory>`
-- Find files with extension and pattern: `fd -e <extension> <pattern>`
-- Find Text: `rg <pattern> .` (ripgrep)
-- Find Code Structure: `ast-grep`
-  - Default to TypeScript when in TS/TSX repos:
-    - `.ts` → `ast-grep --lang ts -p '<pattern>'`
-    - `.tsx` (React) → `ast-grep --lang tsx -p '<pattern>'`
-  - Other common languages:
-    - Python → `ast-grep --lang python -p '<pattern>'`
-    - Bash → `ast-grep --lang bash -p '<pattern>'`
-    - JavaScript → `ast-grep --lang js -p '<pattern>'`
-    - Rust → `ast-grep --lang rust -p '<pattern>'`
-    - JSON → `ast-grep --lang json -p '<pattern>'`
-- JSON: `jq`
-- YAML/XML: `yq`
+## Important Notes
+- Never add comments explaining edits - only comments that explain how code works
+- Always run checks before committing
+- Use custom tools for automated quality checks
