@@ -13,3 +13,26 @@ export function visibleWidth(str: string): number {
   const normalized = str.replace(/\t/g, "   ");
   return stringWidth(normalized);
 }
+
+/**
+ * Apply background color to a line, padding to full width.
+ *
+ * @param line - Line of text (may contain ANSI codes)
+ * @param width - Total width to pad to
+ * @param bgFn - Background color function
+ * @returns Line with background applied and padded to width
+ */
+export function applyBackgroundToLine(
+  line: string,
+  width: number,
+  bgFn: (text: string) => string,
+): string {
+  // Calculate padding needed
+  const visibleLen = visibleWidth(line);
+  const paddingNeeded = Math.max(0, width - visibleLen);
+  const padding = " ".repeat(paddingNeeded);
+
+  // Apply background to content + padding
+  const withPadding = line + padding;
+  return bgFn(withPadding);
+}

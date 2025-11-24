@@ -6,7 +6,7 @@ import { getListNumber } from "../../terminal/markdown-utils.ts";
 import style from "../../terminal/style.ts";
 import wrapAnsi from "../../terminal/wrap-ansi.ts";
 import type { Component } from "../tui.ts";
-import { visibleWidth } from "../utils.ts";
+import { applyBackgroundToLine, visibleWidth } from "../utils.ts";
 
 type Color =
   | "black"
@@ -28,10 +28,49 @@ type Color =
   | "bgWhite"
   | "bgGray";
 
+/**
+ * Default text styling for markdown content.
+ * Applied to all text unless overridden by markdown formatting.
+ */
+export interface DefaultTextStyle {
+  /** Foreground color function */
+  color?: (text: string) => string;
+  /** Background color function */
+  bgColor?: (text: string) => string;
+  /** Bold text */
+  bold?: boolean;
+  /** Italic text */
+  italic?: boolean;
+  /** Strikethrough text */
+  strikethrough?: boolean;
+  /** Underline text */
+  underline?: boolean;
+}
+
+/**
+ * Theme functions for markdown elements.
+ * Each function takes text and returns styled text with ANSI codes.
+ */
+export interface MarkdownTheme {
+  heading: (text: string) => string;
+  link: (text: string) => string;
+  linkUrl: (text: string) => string;
+  code: (text: string) => string;
+  codeBlock: (text: string) => string;
+  codeBlockBorder: (text: string) => string;
+  quote: (text: string) => string;
+  quoteBorder: (text: string) => string;
+  hr: (text: string) => string;
+  listBullet: (text: string) => string;
+  bold: (text: string) => string;
+  italic: (text: string) => string;
+  strikethrough: (text: string) => string;
+  underline: (text: string) => string;
+}
+
 export class Markdown implements Component {
   private text: string;
   private bgColor?: Color;
-  private fgColor?: Color;
   private customBgRgb?: { r: number; g: number; b: number };
   private paddingX: number; // Left/right padding
   private paddingY: number; // Top/bottom padding
@@ -44,14 +83,15 @@ export class Markdown implements Component {
   constructor(
     text = "",
     bgColor?: Color,
-    fgColor?: Color,
+    // biome-ignore lint/suspicious/noExplicitAny: Maintain backward compatibility
+    // @ts-expect-error: Maintain backward compatibility
+    _fgColor?: any,
     customBgRgb?: { r: number; g: number; b: number },
     paddingX = 1,
     paddingY = 1,
   ) {
     this.text = text;
     this.bgColor = bgColor;
-    this.fgColor = fgColor;
     this.customBgRgb = customBgRgb;
     this.paddingX = paddingX;
     this.paddingY = paddingY;
@@ -73,20 +113,36 @@ export class Markdown implements Component {
     this.cachedLines = undefined;
   }
 
-  setFgColor(fgColor?: Color): void {
-    this.fgColor = fgColor;
-    // Invalidate cache when color changes
-    this.cachedText = undefined;
-    this.cachedWidth = undefined;
-    this.cachedLines = undefined;
-  }
-
   setCustomBgRgb(customBgRgb?: { r: number; g: number; b: number }): void {
     this.customBgRgb = customBgRgb;
     // Invalidate cache when color changes
     this.cachedText = undefined;
     this.cachedWidth = undefined;
     this.cachedLines = undefined;
+  }
+
+  invalidate(): void {
+    this.cachedText = undefined;
+    this.cachedWidth = undefined;
+    this.cachedLines = undefined;
+  }
+
+  /**
+   * Get the background color function based on current configuration
+   */
+  private getBackgroundFunction(): ((text: string) => string) | undefined {
+    if (this.customBgRgb) {
+      const { r, g, b } = this.customBgRgb;
+      return (text: string) => style.bgRgb(r, g, b)(text);
+    }
+    if (this.bgColor) {
+      const bgColor = this.bgColor;
+      return (text: string) =>
+        (style as unknown as Record<string, (text: string) => string>)[bgColor](
+          text,
+        );
+    }
+    return undefined;
   }
 
   render(width: number): string[] {
@@ -128,88 +184,42 @@ export class Markdown implements Component {
       renderedLines.push(...tokenLines);
     }
 
-    // Wrap lines to fit content width
+    // Wrap lines (NO padding, NO background yet)
     const wrappedLines: string[] = [];
     for (const line of renderedLines) {
       wrappedLines.push(...this.wrapLine(line, contentWidth));
     }
 
-    // Add padding and apply colors
-    const leftPad = " ".repeat(this.paddingX);
-    const paddedLines: string[] = [];
+    // Add margins and background to each wrapped line
+    const leftMargin = " ".repeat(this.paddingX);
+    const rightMargin = " ".repeat(this.paddingX);
+    const bgFn = this.getBackgroundFunction();
+    const contentLines: string[] = [];
 
     for (const line of wrappedLines) {
-      // Calculate visible length
-      const visibleLength = visibleWidth(line);
-      // Right padding to fill to width (accounting for left padding and content)
-      const rightPadLength = Math.max(0, width - this.paddingX - visibleLength);
-      const rightPad = " ".repeat(rightPadLength);
+      const lineWithMargins = leftMargin + line + rightMargin;
 
-      // Add left padding, content, and right padding
-      let paddedLine = leftPad + line + rightPad;
-
-      // Apply foreground color if specified
-      if (this.fgColor) {
-        paddedLine = (
-          style as unknown as Record<string, (text: string) => string>
-        )[this.fgColor](paddedLine);
+      if (bgFn) {
+        contentLines.push(applyBackgroundToLine(lineWithMargins, width, bgFn));
+      } else {
+        // No background - just pad to width
+        const visibleLen = visibleWidth(lineWithMargins);
+        const paddingNeeded = Math.max(0, width - visibleLen);
+        contentLines.push(lineWithMargins + " ".repeat(paddingNeeded));
       }
-
-      // Apply background color if specified
-      if (this.customBgRgb) {
-        paddedLine = style.bgRgb(
-          this.customBgRgb.r,
-          this.customBgRgb.g,
-          this.customBgRgb.b,
-        )(paddedLine);
-      } else if (this.bgColor) {
-        paddedLine = (
-          style as unknown as Record<string, (text: string) => string>
-        )[this.bgColor](paddedLine);
-      }
-
-      paddedLines.push(paddedLine);
     }
 
-    // Add top padding (empty lines)
+    // Add top/bottom padding (empty lines)
     const emptyLine = " ".repeat(width);
-    const topPadding: string[] = [];
+    const emptyLines: string[] = [];
     for (let i = 0; i < this.paddingY; i++) {
-      let emptyPaddedLine = emptyLine;
-      if (this.customBgRgb) {
-        emptyPaddedLine = style.bgRgb(
-          this.customBgRgb.r,
-          this.customBgRgb.g,
-          this.customBgRgb.b,
-        )(emptyPaddedLine);
-      } else if (this.bgColor) {
-        emptyPaddedLine = (
-          style as unknown as Record<string, (text: string) => string>
-        )[this.bgColor](emptyPaddedLine);
-      }
-      topPadding.push(emptyPaddedLine);
+      const line = bgFn
+        ? applyBackgroundToLine(emptyLine, width, bgFn)
+        : emptyLine;
+      emptyLines.push(line);
     }
 
-    // Add bottom padding (empty lines)
-    const bottomPadding: string[] = [];
-    for (let i = 0; i < this.paddingY; i++) {
-      let emptyPaddedLine = emptyLine;
-      if (this.customBgRgb) {
-        emptyPaddedLine = style.bgRgb(
-          this.customBgRgb.r,
-          this.customBgRgb.g,
-          this.customBgRgb.b,
-        )(emptyPaddedLine);
-      } else if (this.bgColor) {
-        emptyPaddedLine = (
-          style as unknown as Record<string, (text: string) => string>
-        )[this.bgColor](emptyPaddedLine);
-      }
-      bottomPadding.push(emptyPaddedLine);
-    }
-
-    // Combine top padding, content, and bottom padding
-    const result = [...topPadding, ...paddedLines, ...bottomPadding];
+    const result = [...emptyLines, ...contentLines, ...emptyLines];
 
     // Update cache
     this.cachedText = this.text;
