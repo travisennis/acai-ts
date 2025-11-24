@@ -4,6 +4,7 @@ import { DEFAULT_THEME } from "../../terminal/default-theme.ts";
 import { highlight, supportsLanguage } from "../../terminal/highlight/index.ts";
 import { getListNumber } from "../../terminal/markdown-utils.ts";
 import style from "../../terminal/style.ts";
+import wrapAnsi from "../../terminal/wrap-ansi.ts";
 import type { Component } from "../tui.ts";
 import { visibleWidth } from "../utils.ts";
 
@@ -415,112 +416,14 @@ export class Markdown implements Component {
   }
 
   private wrapLine(line: string, width: number): string[] {
-    // Handle ANSI escape codes properly when wrapping
-    const wrapped: string[] = [];
-
     // Handle undefined or null lines
     if (!line) {
       return [""];
     }
 
-    // Split by newlines first - wrap each line individually
-    const splitLines = line.split("\n");
-    for (const splitLine of splitLines) {
-      const visibleLength = visibleWidth(splitLine);
-
-      if (visibleLength <= width) {
-        wrapped.push(splitLine);
-        continue;
-      }
-
-      // This line needs wrapping
-      wrapped.push(...this.wrapSingleLine(splitLine, width));
-    }
-
-    return wrapped.length > 0 ? wrapped : [""];
-  }
-
-  private wrapSingleLine(line: string, width: number): string[] {
-    const wrapped: string[] = [];
-
-    // Track active ANSI codes to preserve them across wrapped lines
-    const activeAnsiCodes: string[] = [];
-    let currentLine = "";
-    let currentLength = 0;
-    let i = 0;
-
-    while (i < line.length) {
-      if (line[i] === "\x1b" && line[i + 1] === "[") {
-        // ANSI escape sequence - parse and track it
-        let j = i + 2;
-        while (j < line.length && line[j] && !/[mGKHJ]/.test(line[j])) {
-          j++;
-        }
-        if (j < line.length) {
-          const ansiCode = line.substring(i, j + 1);
-          currentLine += ansiCode;
-
-          // Track styling codes (ending with 'm')
-          if (line[j] === "m") {
-            // Reset code
-            if (ansiCode === "\x1b[0m" || ansiCode === "\x1b[m") {
-              activeAnsiCodes.length = 0;
-            } else {
-              // Add to active codes (replacing similar ones)
-              activeAnsiCodes.push(ansiCode);
-            }
-          }
-
-          i = j + 1;
-        } else {
-          // Incomplete ANSI sequence at end - don't include it
-          break;
-        }
-      } else {
-        // Regular character - extract full grapheme cluster
-        // Handle multi-byte characters (emoji, surrogate pairs, etc.)
-        let char: string;
-        let charByteLength: number;
-
-        // Check for surrogate pair (emoji and other multi-byte chars)
-        const codePoint = line.charCodeAt(i);
-        if (codePoint >= 0xd800 && codePoint <= 0xdbff && i + 1 < line.length) {
-          // High surrogate - get the pair
-          char = line.substring(i, i + 2);
-          charByteLength = 2;
-        } else {
-          // Regular character
-          char = line[i];
-          charByteLength = 1;
-        }
-
-        const charWidth = visibleWidth(char);
-
-        // Check if adding this character would exceed width
-        if (currentLength + charWidth > width) {
-          // Need to wrap - close current line with reset if needed
-          if (activeAnsiCodes.length > 0) {
-            wrapped.push(`${currentLine}\x1b[0m`);
-            // Start new line with active codes
-            currentLine = activeAnsiCodes.join("");
-          } else {
-            wrapped.push(currentLine);
-            currentLine = "";
-          }
-          currentLength = 0;
-        }
-
-        currentLine += char;
-        currentLength += charWidth;
-        i += charByteLength;
-      }
-    }
-
-    if (currentLine) {
-      wrapped.push(currentLine);
-    }
-
-    return wrapped.length > 0 ? wrapped : [""];
+    // Use the existing wrapAnsi function for robust ANSI-aware wrapping
+    const wrappedText = wrapAnsi(line, width, { trim: false });
+    return wrappedText.split("\n");
   }
 
   /**
