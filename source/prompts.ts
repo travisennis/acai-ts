@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { platform } from "node:os";
 import path from "node:path";
@@ -99,6 +100,10 @@ function toolUsage() {
 - Commands execute only within the project directory; always use absolute paths.
 - Avoid interactive commands; prefer non-interactive flags (e.g., npm init -y).
 
+#### Additional Installed Tools
+
+${getInstalledTools()}
+
 ### Code Interpreter (\`${CodeInterpreterTool.name}\`)
 - Executes JavaScript code in a separate Node.js process using Node's Permission Model
 - By default, the child process has no permissions except read/write within the current working directory
@@ -194,4 +199,34 @@ ${await environmentInfo()}
 `;
 
   return prompt;
+}
+
+function getInstalledTools() {
+  // Check for required bash tools
+  const tools = [
+    { name: "git", command: "git --version" },
+    { name: "gh", command: "gh --version" },
+    { name: "rg", command: "rg --version" },
+    { name: "fd", command: "fd --version" },
+    { name: "ast-grep", command: "ast-grep --version" },
+    { name: "jq", command: "jq --version" },
+    { name: "yq", command: "yq --version" },
+  ];
+
+  const toolStatus = tools
+    .map((tool) => {
+      let status = false;
+      try {
+        execSync(tool.command, { stdio: "ignore", timeout: 5000 });
+        status = true;
+      } catch (_error) {
+        // Ignore error, tool is not installed
+      }
+      return [tool.name, status];
+    })
+    .filter((tool) => tool[1])
+    .map((tool) => tool[0])
+    .join("\n");
+
+  return toolStatus;
 }
