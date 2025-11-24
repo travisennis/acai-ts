@@ -1,4 +1,8 @@
+import Table from "cli-table3";
 import { marked, type Token } from "marked";
+import { DEFAULT_THEME } from "../../terminal/default-theme.ts";
+import { highlight, supportsLanguage } from "../../terminal/highlight/index.ts";
+import { getListNumber } from "../../terminal/markdown-utils.ts";
 import style from "../../terminal/style.ts";
 import type { Component } from "../tui.ts";
 import { visibleWidth } from "../utils.ts";
@@ -252,13 +256,27 @@ export class Markdown implements Component {
       }
 
       case "code": {
-        lines.push(style.gray(`\`\`\`${token.lang || ""}`));
-        // Split code by newlines and style each line
-        const codeLines = token.text.split("\n");
-        for (const codeLine of codeLines) {
-          lines.push(style.dim("  ") + style.green(codeLine));
+        if (token.lang && supportsLanguage(token.lang)) {
+          // Use syntax highlighting for supported languages
+          const highlightedCode = highlight(token.text, {
+            language: token.lang,
+            theme: DEFAULT_THEME,
+          });
+          const codeLines = highlightedCode.split("\n");
+          lines.push(style.gray(`\`\`\`${token.lang}`));
+          for (const codeLine of codeLines) {
+            lines.push(style.dim("  ") + codeLine);
+          }
+          lines.push(style.gray("```"));
+        } else {
+          // Fallback to basic styling for unsupported languages
+          lines.push(style.gray(`\`\`\`${token.lang || ""}`));
+          const codeLines = token.text.split("\n");
+          for (const codeLine of codeLines) {
+            lines.push(style.dim("  ") + style.green(codeLine));
+          }
+          lines.push(style.gray("```"));
         }
-        lines.push(style.gray("```"));
         lines.push(""); // Add spacing after code blocks
         break;
       }
@@ -297,8 +315,19 @@ export class Markdown implements Component {
         lines.push(""); // Add spacing after horizontal rules
         break;
 
+      case "image": {
+        const alt = (token.title ?? token.text ?? "").toString().trim();
+        if (alt.length > 0) {
+          lines.push(`[Image: ${alt} (${token.href})]`);
+        } else {
+          lines.push(`[Image: ${token.href}]`);
+        }
+        break;
+      }
+
       case "html":
-        // Skip HTML for terminal output
+        // Render HTML tags with dim styling and content as normal text
+        lines.push(style.dim(token.text));
         break;
 
       case "space":
@@ -363,6 +392,16 @@ export class Markdown implements Component {
             this.renderInlineTokens(token.tokens || []),
           );
           break;
+
+        case "image": {
+          const alt = (token.title ?? token.text ?? "").toString().trim();
+          if (alt.length > 0) {
+            result += `[Image: ${alt} (${token.href})]`;
+          } else {
+            result += `[Image: ${token.href}]`;
+          }
+          break;
+        }
 
         default:
           // Handle any other inline token types as plain text
@@ -488,7 +527,11 @@ export class Markdown implements Component {
    * Render a list with proper nesting support
    */
   private renderList(
-    token: Token & { items: unknown[]; ordered: boolean },
+    token: Token & {
+      items: unknown[];
+      ordered: boolean;
+      start?: number | string;
+    },
     depth: number,
   ): string[] {
     const lines: string[] = [];
@@ -496,7 +539,13 @@ export class Markdown implements Component {
 
     for (let i = 0; i < token.items.length; i++) {
       const item = token.items[i] as { tokens?: Token[] };
-      const bullet = token.ordered ? `${i + 1}. ` : "- ";
+      const startNumber =
+        typeof token.start === "string"
+          ? Number.parseInt(token.start, 10)
+          : token.start;
+      const bullet = token.ordered
+        ? `${getListNumber(depth, (startNumber ?? 1) + i)}. `
+        : "- ";
 
       // Process item tokens to handle nested lists
       const itemLines = this.renderListItem(item.tokens || [], depth);
@@ -547,7 +596,11 @@ export class Markdown implements Component {
         // Nested list - render with one additional indent level
         // These lines will have their own indent, so we just add them as-is
         const nestedLines = this.renderList(
-          token as Token & { items: unknown[]; ordered: boolean },
+          token as Token & {
+            items: unknown[];
+            ordered: boolean;
+            start?: number | string;
+          },
           parentDepth + 1,
         );
         lines.push(...nestedLines);
@@ -590,57 +643,42 @@ export class Markdown implements Component {
   ): string[] {
     const lines: string[] = [];
 
-    // Calculate column widths
-    const columnWidths: number[] = [];
-
-    // Check header
-    for (let i = 0; i < token.header.length; i++) {
-      const headerCell = token.header[i] as { tokens?: Token[] };
-      const headerText = this.renderInlineTokens(headerCell.tokens || []);
-      const width = visibleWidth(headerText);
-      columnWidths[i] = Math.max(columnWidths[i] || 0, width);
-    }
-
-    // Check rows
-    for (const row of token.rows) {
-      for (let i = 0; i < row.length; i++) {
-        const cell = row[i] as { tokens?: Token[] };
-        const cellText = this.renderInlineTokens(cell.tokens || []);
-        const width = visibleWidth(cellText);
-        columnWidths[i] = Math.max(columnWidths[i] || 0, width);
-      }
-    }
-
-    // Limit column widths to reasonable max
-    const maxColWidth = 40;
-    for (let i = 0; i < columnWidths.length; i++) {
-      columnWidths[i] = Math.min(columnWidths[i], maxColWidth);
-    }
-
-    // Render header
-    const headerCells = token.header.map((cell, i) => {
+    // Extract header and row texts
+    const header = token.header.map((cell) => {
       const headerCell = cell as { tokens?: Token[] };
-      const text = this.renderInlineTokens(headerCell.tokens || []);
-      return style.bold(text.padEnd(columnWidths[i]));
+      return this.renderInlineTokens(headerCell.tokens || []);
     });
-    lines.push(`│ ${headerCells.join(" │ ")} │`);
 
-    // Render separator
-    const separatorCells = columnWidths.map((width) => "─".repeat(width));
-    lines.push(`├─${separatorCells.join("─┼─")}─┤`);
-
-    // Render rows
-    for (const row of token.rows) {
-      const rowCells = row.map((cell, i) => {
+    const rows = token.rows.map((row) =>
+      row.map((cell) => {
         const rowCell = cell as { tokens?: Token[] };
-        const text = this.renderInlineTokens(rowCell.tokens || []);
-        const visWidth = visibleWidth(text);
-        const padding = " ".repeat(Math.max(0, columnWidths[i] - visWidth));
-        return text + padding;
-      });
-      lines.push(`│ ${rowCells.join(" │ ")} │`);
-    }
+        return this.renderInlineTokens(rowCell.tokens || []);
+      }),
+    );
 
+    // Calculate column widths based on available width
+    const padding = 5; // Account for table borders and padding
+    const availableWidth = Math.max(10, 80 - padding); // Use reasonable default width for TUI
+    const colCount = header?.length ?? 1;
+    const width = Math.max(
+      10,
+      Math.floor(availableWidth / Math.max(1, colCount)),
+    );
+    const computedColWidths: number[] = new Array(colCount).fill(width);
+
+    // Create table using cli-table3
+    const table = new Table({
+      head: header,
+      colWidths: computedColWidths,
+      wordWrap: true, // Enable word wrapping for the description column
+    });
+
+    table.push(...rows);
+
+    // Split table output into lines
+    const tableOutput = table.toString();
+    const tableLines = tableOutput.split("\n");
+    lines.push(...tableLines);
     lines.push(""); // Add spacing after table
     return lines;
   }
