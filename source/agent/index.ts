@@ -170,6 +170,9 @@ export class Agent {
       if (abortSignal?.aborted) {
         logger.warn("The agent loop was aborted by the user.");
         // terminal.warn("Operation aborted by user.");
+        yield {
+          type: "agent-stop",
+        };
         break;
       }
 
