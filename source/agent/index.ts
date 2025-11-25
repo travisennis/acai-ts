@@ -65,6 +65,12 @@ export type ToolEvent =
       args: unknown;
     };
 
+type ToolCallLifeCycle = {
+  type: "tool-call-lifecycle";
+  toolCallId: string;
+  events: ToolEvent[];
+};
+
 export type AgentEvent =
   // Agent lifecycle
   | { type: "agent-start" }
@@ -82,7 +88,7 @@ export type AgentEvent =
   | { type: "message"; role: "assistant"; content: string }
   | { type: "message-end"; role: "assistant"; content: string }
   // Tool execution lifecycle
-  | ToolEvent;
+  | ToolCallLifeCycle;
 
 // export interface AgentState {
 // systemPrompt: string;
@@ -179,6 +185,8 @@ export class Agent {
       yield {
         type: "step-start",
       };
+
+      const toolsCalled: Map<string, ToolEvent[]> = new Map();
 
       try {
         const result = streamText({
@@ -279,7 +287,7 @@ export class Agent {
                 content.toolCallId
               ) {
                 logger.debug(content, "Invalid tool call:");
-                yield {
+                yield this.processToolEvent(toolsCalled, {
                   type: "tool-call-start",
                   name: content.toolName,
                   toolCallId: content.toolCallId,
@@ -287,8 +295,8 @@ export class Agent {
                     (call) => call.toolCallId === content.toolCallId,
                   )?.input,
                   msg: "",
-                };
-                yield {
+                });
+                yield this.processToolEvent(toolsCalled, {
                   type: "tool-call-error",
                   name: content.toolName,
                   toolCallId: content.toolCallId,
@@ -296,7 +304,7 @@ export class Agent {
                   args: toolCalls.find(
                     (call) => call.toolCallId === content.toolCallId,
                   )?.input,
-                };
+                });
                 alreadyProcessedToolCallIds.add(content.toolCallId);
               }
             }
@@ -329,13 +337,13 @@ export class Agent {
         const toolMessages: ToolModelMessage[] = [];
         for (const call of validToolCalls) {
           const toolName = call.toolName as keyof CompleteToolSet;
-          yield {
+          yield this.processToolEvent(toolsCalled, {
             type: "tool-call-start",
             name: toolName,
             toolCallId: call.toolCallId,
             msg: "",
             args: call.input,
-          };
+          });
           let resultOutput = "Unknown result.";
           try {
             thisStepToolCalls.push({ toolName });
@@ -355,33 +363,38 @@ export class Agent {
                   const toolResultValues: unknown[] = [];
                   for await (const value of output) {
                     if (isToolMessage(value)) {
+                      if (call.toolCallId !== value.id) {
+                        logger.debug(
+                          `Tool ${call.toolName} ids don't match: ${call.toolCallId} != ${value.id}`,
+                        );
+                      }
                       switch (value.event) {
                         case "tool-completion":
-                          yield {
+                          yield this.processToolEvent(toolsCalled, {
                             type: "tool-call-end",
                             name: value.name,
-                            toolCallId: value.id,
+                            toolCallId: call.toolCallId,
                             msg: value.data,
                             args: call.input,
-                          };
+                          });
                           break;
                         case "tool-error":
-                          yield {
+                          yield this.processToolEvent(toolsCalled, {
                             type: "tool-call-error",
                             name: value.name,
-                            toolCallId: value.id,
+                            toolCallId: call.toolCallId,
                             msg: value.data,
                             args: call.input,
-                          };
+                          });
                           break;
                         case "tool-init":
-                          yield {
+                          yield this.processToolEvent(toolsCalled, {
                             type: "tool-call-update",
                             name: value.name,
-                            toolCallId: value.id,
+                            toolCallId: call.toolCallId,
                             msg: value.data,
                             args: call.input,
-                          };
+                          });
                           break;
                         default:
                           logger.debug(
@@ -402,38 +415,38 @@ export class Agent {
                   resultOutput = formatToolResult(finalValue);
                 } else {
                   resultOutput = formatToolResult(output);
-                  yield {
+                  yield this.processToolEvent(toolsCalled, {
                     type: "tool-call-end",
                     name: call.toolName,
                     toolCallId: call.toolCallId,
                     msg: "success",
                     args: null,
-                  };
+                  });
                 }
               } catch (err) {
                 resultOutput = `Tool error: ${
                   err instanceof Error ? err.message : String(err)
                 }`;
-                yield {
+                yield this.processToolEvent(toolsCalled, {
                   type: "tool-call-error",
                   name: toolName,
                   toolCallId: call.toolCallId,
                   msg: resultOutput,
                   args: null,
-                };
+                });
               }
             }
           } catch (error) {
             resultOutput = `Tool error: ${
               error instanceof Error ? error.message : String(error)
             }`;
-            yield {
+            yield this.processToolEvent(toolsCalled, {
               type: "tool-call-error",
               name: toolName,
               toolCallId: call.toolCallId,
               msg: resultOutput,
               args: null,
-            };
+            });
           }
           toolMessages.push({
             role: "tool",
@@ -554,6 +567,32 @@ export class Agent {
     };
 
     return this._state;
+  }
+
+  private processToolEvent(
+    toolsCalled: Map<string, ToolEvent[]>,
+    event: ToolEvent,
+  ): ToolCallLifeCycle {
+    const toolCallId = event.toolCallId;
+    let events: ToolEvent[];
+    if (toolsCalled.has(toolCallId)) {
+      const currentEvents = toolsCalled.get(toolCallId);
+      if (currentEvents) {
+        events = currentEvents;
+        events.push(event);
+      } else {
+        events = [event];
+        toolsCalled.set(toolCallId, events);
+      }
+    } else {
+      events = [event];
+      toolsCalled.set(toolCallId, events);
+    }
+    return {
+      type: "tool-call-lifecycle",
+      toolCallId: toolCallId,
+      events,
+    };
   }
 }
 

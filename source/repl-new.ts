@@ -288,53 +288,17 @@ export class NewRepl {
         this.tui.requestRender();
         break;
 
-      case "tool-call-start": {
-        // Create tool component for new tool call
-        const newComponent = new ToolExecutionComponent(event);
-        this.pendingTools.set(event.toolCallId, newComponent);
-        this.chatContainer.addChild(newComponent);
-        this.tui.requestRender();
-        break;
-      }
-
-      case "tool-call-update": {
-        // Update the existing tool component with the result
+      case "tool-call-lifecycle": {
         const component = this.pendingTools.get(event.toolCallId);
         if (component) {
-          component.update(event);
+          component.update(event.events);
         } else {
-          // Retry mechanism for timing issues where tool-call-update arrives before tool-call-start
-          setTimeout(() => {
-            const retryComponent = this.pendingTools.get(event.toolCallId);
-            if (retryComponent) {
-              retryComponent.update(event);
-              this.tui.requestRender();
-            }
-          }, 10); // Short delay to allow tool-call-start to complete
+          // Create tool component for new tool call
+          const newComponent = new ToolExecutionComponent(event.events);
+          this.pendingTools.set(event.toolCallId, newComponent);
+          this.chatContainer.addChild(newComponent);
         }
         this.tui.requestRender();
-        break;
-      }
-
-      case "tool-call-end": {
-        // Update the existing tool component with the result
-        const component = this.pendingTools.get(event.toolCallId);
-        if (component) {
-          component.update(event);
-          this.pendingTools.delete(event.toolCallId);
-          this.tui.requestRender();
-        }
-        break;
-      }
-
-      case "tool-call-error": {
-        // Update the existing tool component with the result
-        const component = this.pendingTools.get(event.toolCallId);
-        if (component) {
-          component.update(event);
-          this.pendingTools.delete(event.toolCallId);
-          this.tui.requestRender();
-        }
         break;
       }
 

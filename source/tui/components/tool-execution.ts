@@ -10,10 +10,10 @@ export class ToolExecutionComponent extends Container {
   private toolName: string;
   private events: ToolEvent[];
 
-  constructor(event: ToolEvent) {
+  constructor(events: ToolEvent[]) {
     super();
-    this.toolName = event.name;
-    this.events = [event];
+    this.toolName = events[0].name;
+    this.events = events;
 
     // Container for text/thinking content
     this.contentContainer = new Container();
@@ -22,8 +22,8 @@ export class ToolExecutionComponent extends Container {
     this.renderDisplay();
   }
 
-  update(event: ToolEvent) {
-    this.events.push(event);
+  update(events: ToolEvent[]) {
+    this.events = events;
     this.renderDisplay();
   }
 
