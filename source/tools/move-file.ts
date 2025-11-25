@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
+import { clearProjectStatusCache } from "../repl/project-status-line.ts";
 import style from "../terminal/style.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { ToolResult } from "./types.ts";
@@ -73,6 +74,9 @@ export const createMoveFileTool = async ({
           event: "tool-completion",
           data: "File moved",
         };
+
+        // Clear project status cache since file operations change git status
+        clearProjectStatusCache();
 
         yield `Successfully moved ${source} to ${destination}`;
       } catch (error) {
