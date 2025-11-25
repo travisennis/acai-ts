@@ -124,12 +124,12 @@ export class Cli {
         result.text.endsWith("\n") ? result.text : `${result.text}\n`,
       );
     } catch (e) {
-      // AGENT: since this is a cli have this provide an exit code to indicate this command failed
       if (e instanceof Error) {
         logger.error(e);
       } else {
         logger.error(JSON.stringify(e, null, 2));
       }
+      process.exit(1);
     }
   }
 }
