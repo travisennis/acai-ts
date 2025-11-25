@@ -247,6 +247,7 @@ export class NewRepl {
         break;
 
       case "step-stop":
+        this.pendingTools.clear();
         this.tui.requestRender();
         break;
 
@@ -291,13 +292,12 @@ export class NewRepl {
         const component = this.pendingTools.get(event.toolCallId);
         if (component) {
           component.update(event);
-          this.tui.requestRender();
         } else {
           const newComponent = new ToolExecutionComponent(event);
-          this.chatContainer.addChild(newComponent);
           this.pendingTools.set(event.toolCallId, newComponent);
-          this.tui.requestRender();
+          this.chatContainer.addChild(newComponent);
         }
+        this.tui.requestRender();
         break;
       }
 
@@ -317,15 +317,13 @@ export class NewRepl {
         const component = this.pendingTools.get(event.toolCallId);
         if (component) {
           component.update(event);
-          // Force immediate TUI re-render to ensure display updates
-          this.tui.requestRender();
         } else {
           // Defensive: create component if update arrives before start
           const newComponent = new ToolExecutionComponent(event);
-          this.chatContainer.addChild(newComponent);
           this.pendingTools.set(event.toolCallId, newComponent);
-          this.tui.requestRender();
+          this.chatContainer.addChild(newComponent);
         }
+        this.tui.requestRender();
         break;
       }
 
