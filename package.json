@@ -48,7 +48,7 @@
     "typecheck:staged": "npm run typecheck"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.0.47",
+    "@ai-sdk/anthropic": "^2.0.49",
     "@ai-sdk/deepseek": "^1.0.29",
     "@ai-sdk/google": "^2.0.43",
     "@ai-sdk/groq": "^2.0.31",
