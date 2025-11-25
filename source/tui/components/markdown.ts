@@ -423,7 +423,7 @@ export class Markdown implements Component {
     return result;
   }
 
-  private wrapLine(line: string, width: number): string[] {
+  private wrapLine(line: string, contentWidth: number): string[] {
     // Handle undefined or null lines
     if (!line) {
       return [""];
@@ -434,7 +434,8 @@ export class Markdown implements Component {
     const { protectedText, codeSpans } = this.protectCodeSpans(line);
 
     // Use the existing wrapAnsi function for robust ANSI-aware wrapping
-    const wrappedText = wrapAnsi(protectedText, width, { trim: false });
+    // Use contentWidth (available width after padding) for wrapping
+    const wrappedText = wrapAnsi(protectedText, contentWidth, { trim: false });
     const lines = wrappedText.split("\n");
 
     // Restore the code spans
