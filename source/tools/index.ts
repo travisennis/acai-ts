@@ -392,7 +392,6 @@ export async function initAgents({
   tokenCounter,
   workspace,
 }: {
-  terminal: Terminal;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
   tokenCounter: TokenCounter;

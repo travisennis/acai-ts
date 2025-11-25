@@ -3,7 +3,6 @@ import type { WorkspaceContext } from "../index.ts";
 import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManagerApi } from "../prompts/manager.ts";
-import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import type {
@@ -50,7 +49,6 @@ export class CommandManager {
   private modelManager: ModelManager;
   private messageHistory: MessageHistory;
   private tokenTracker: TokenTracker;
-  private terminal: Terminal;
   private config: ConfigManager;
   private tokenCounter: TokenCounter;
   private promptHistory: string[];
@@ -60,7 +58,6 @@ export class CommandManager {
   constructor({
     promptManager,
     modelManager,
-    terminal,
     messageHistory,
     tokenTracker,
     config,
@@ -71,7 +68,6 @@ export class CommandManager {
     this.commands = new Map();
     this.promptManager = promptManager;
     this.modelManager = modelManager;
-    this.terminal = terminal;
     this.messageHistory = messageHistory;
     this.tokenTracker = tokenTracker;
     this.config = config;
@@ -89,7 +85,6 @@ export class CommandManager {
     const options: CommandOptions = {
       promptManager: this.promptManager,
       modelManager: this.modelManager,
-      terminal: this.terminal,
       messageHistory: this.messageHistory,
       tokenTracker: this.tokenTracker,
       config: this.config,
@@ -132,10 +127,7 @@ export class CommandManager {
 
     // Add help command with access to all commands
     const helpCmd = helpCommand(options, this.commands);
-    cmds.push({
-      ...helpCmd,
-      execute: () => helpCmd.execute([]),
-    });
+    cmds.push(helpCmd);
 
     // Register all commands
     for (const cmd of cmds) {
@@ -155,9 +147,6 @@ export class CommandManager {
           command: `/${cmd}`,
           description: "",
           getSubCommands: (): Promise<string[]> => Promise.resolve([]),
-          execute: (args: string[]): Promise<"break" | "continue" | "use"> => {
-            return promptCmd.execute([cmd, ...args]);
-          },
           async handle(
             args: string[],
             options: {
@@ -217,37 +206,7 @@ export class CommandManager {
     return (await this.commands.get(command)?.getSubCommands()) ?? [];
   }
 
-  async handle({ userInput }: { userInput: string }) {
-    this.ensureInitialized();
-    const commandArgs = userInput.split(" ");
-    const command = commandArgs.at(0);
-    const args = commandArgs.slice(1);
-
-    if (command) {
-      const replCommand = this.commands.get(command);
-      if (replCommand) {
-        const result = await replCommand.execute(args);
-        if (result === "continue") {
-          return {
-            continue: true,
-            break: false,
-          };
-        }
-        if (result === "break") {
-          return {
-            continue: false,
-            break: true,
-          };
-        }
-      }
-    }
-    return {
-      continue: false,
-      break: false,
-    };
-  }
-
-  async handle2(
+  async handle(
     { userInput }: { userInput: string },
     options: {
       tui: TUI;

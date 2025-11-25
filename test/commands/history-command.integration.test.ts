@@ -5,8 +5,10 @@ import { MessageHistory } from "../../source/messages.ts";
 import {
   createMockCommandOptions,
   createMockConfig,
+  createMockContainer,
+  createMockEditor,
   createMockMessageHistory,
-  createMockTerminal,
+  createMockTui,
 } from "../utils/mocking.ts";
 
 describe("historyCommand integration", () => {
@@ -22,19 +24,14 @@ describe("historyCommand integration", () => {
   });
 
   it("should handle no histories gracefully", async () => {
-    const mockTerminal = createMockTerminal();
-    mock.method(mockTerminal, "info", (message: string) => {
-      assert.equal(message, "No previous conversations found.");
-    });
-    mock.method(mockTerminal, "error", () => {
-      assert.fail("Should not call error when no histories exist");
-    });
+    const mockTui = createMockTui();
+    const mockContainer = createMockContainer();
+    const mockEditor = createMockEditor();
 
     const mockMessageHistory = createMockMessageHistory();
 
     const commandOptions = createMockCommandOptions({
       messageHistory: mockMessageHistory,
-      terminal: mockTerminal,
       config: mockConfig,
     });
 
@@ -45,8 +42,17 @@ describe("historyCommand integration", () => {
     MessageHistory.load = async () => [];
 
     try {
-      const result = await command.execute([]);
+      const result = await command.handle([], {
+        tui: mockTui,
+        container: mockContainer,
+        inputContainer: mockContainer,
+        editor: mockEditor,
+      });
       assert.equal(result, "continue");
+      // Should have called requestRender
+      assert.equal(mockTui.requestRender.mock.calls.length, 1);
+      // Should have called setText to clear editor
+      assert.equal(mockEditor.setText.mock.calls.length, 1);
     } finally {
       // Restore original method
       MessageHistory.load = originalLoad;

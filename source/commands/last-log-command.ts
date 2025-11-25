@@ -1,7 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { config } from "../config.ts";
-import { editor } from "../terminal/editor-prompt.ts";
 import style from "../terminal/style.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
 import { Text } from "../tui/index.ts";
@@ -47,42 +46,13 @@ async function findMostRecentLog(logDir: string): Promise<string | null> {
   return datedFiles[0]?.file ?? null; // The first file is the most recent
 }
 
-export const lastLogCommand = ({ terminal }: CommandOptions): ReplCommand => {
+export const lastLogCommand = (_options: CommandOptions): ReplCommand => {
   return {
     command: "/last-log",
     description: "Opens the most recent REPL audit log in the editor.",
 
     getSubCommands: () => Promise.resolve([]),
-    execute: async (): Promise<"break" | "continue" | "use"> => {
-      const logDir = config.app.ensurePathSync("audit");
-      const mostRecentLog = await findMostRecentLog(logDir);
 
-      if (!mostRecentLog) {
-        terminal.error(`No REPL audit logs found in '${logDir}'.`);
-        return "continue";
-      }
-
-      try {
-        const content = await readFile(mostRecentLog, { encoding: "utf8" });
-
-        // Use the editor prompt to display the content (read-only)
-        await editor({
-          message: `Viewing ${style.green(mostRecentLog)}`,
-          postfix: ".json", // Set postfix for syntax highlighting if editor supports it
-          default: content,
-          // By not providing an onSubmit or similar handler to write the file,
-          // and not calling writeFileSync after, this effectively becomes read-only.
-          skipPrompt: true,
-        });
-        terminal.info("Closed log view");
-        return "continue";
-      } catch (error) {
-        terminal.error(
-          `Error reading or displaying log file ${mostRecentLog}: ${error}`,
-        );
-        return "continue";
-      }
-    },
     async handle(
       _args: string[],
       {

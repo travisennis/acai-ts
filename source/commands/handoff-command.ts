@@ -12,21 +12,7 @@ export const handoffCommand = (options: CommandOptions): ReplCommand => {
       "Creates a detailed handoff plan of the conversation for continuing the work in a new session. Usage: /handoff <the purpose of the handoff>",
 
     getSubCommands: () => Promise.resolve([]),
-    execute: async (args: string[]): Promise<"break" | "continue" | "use"> => {
-      const { terminal } = options;
 
-      // Validate that purpose is provided
-      const purpose = args.join(" ").trim();
-      if (!purpose) {
-        terminal.error(
-          "Please provide a purpose for the handoff. Usage: /handoff <the purpose of the handoff>",
-        );
-        return "continue";
-      }
-
-      await createHandoffDocument(options, purpose);
-      return "continue";
-    },
     async handle(
       args: string[],
       {

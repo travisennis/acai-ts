@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
-import test, { mock } from "node:test";
+import test from "node:test";
 import { shellCommand } from "../../source/commands/shell-command.ts";
 import {
   createMockCommandOptions,
-  createMockTerminal,
+  createMockContainer,
+  createMockEditor,
+  createMockTui,
 } from "../utils/mocking.ts";
 
 test("shell command registration", () => {
@@ -14,17 +16,26 @@ test("shell command registration", () => {
 });
 
 test("shell command - empty input", async () => {
-  const mockTerminal = createMockTerminal();
-  mock.method(mockTerminal, "error", (msg: string) => {
-    throw new Error(msg);
-  });
+  const mockTui = createMockTui();
+  const mockContainer = createMockContainer();
+  const mockEditor = createMockEditor();
 
-  const mockOptions = createMockCommandOptions({
-    terminal: mockTerminal,
-  });
+  const mockOptions = createMockCommandOptions();
 
   const cmd = shellCommand(mockOptions);
-  await assert.rejects(() => cmd.execute([]), /non-empty/);
+  const result = await cmd.handle([], {
+    tui: mockTui,
+    container: mockContainer,
+    inputContainer: mockContainer,
+    editor: mockEditor,
+  });
+
+  // Should return "continue" for empty input
+  assert.equal(result, "continue");
+  // Should have called requestRender
+  assert.equal(mockTui.requestRender.mock.calls.length, 1);
+  // Should have called setText to clear editor
+  assert.equal(mockEditor.setText.mock.calls.length, 1);
 });
 
 // TODO: Add more comprehensive tests for risky confirmation, truncation, context addition, etc.

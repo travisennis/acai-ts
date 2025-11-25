@@ -1,83 +1,17 @@
 import { config } from "../config.ts";
-import { editor } from "../terminal/editor-prompt.ts";
 import style from "../terminal/style.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
 import { Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const rulesCommand = ({ terminal }: CommandOptions): ReplCommand => {
+export const rulesCommand = (_options: CommandOptions): ReplCommand => {
   return {
     command: "/rules",
     description:
       "View, add, or edit rules. Usage: /rules [view|add <text>|edit]",
 
     getSubCommands: () => Promise.resolve(["view", "add", "edit"]),
-    execute: async (args: string[]): Promise<"break" | "continue" | "use"> => {
-      const subCommand = args[0] ?? "view"; // Default to 'view'
-      const commandArgs = args.slice(1).join(" ");
 
-      try {
-        switch (subCommand) {
-          case "view": {
-            const currentContent = await config.readAgentsFile();
-            if (currentContent) {
-              terminal.writeln("--- Current Rules ---");
-              terminal.writeln(currentContent);
-              terminal.writeln("---------------------");
-            } else {
-              terminal.writeln(
-                "No rules defined yet. Use '/rules add' or '/rules edit'.",
-              );
-            }
-            break;
-          }
-
-          case "add": {
-            const newMemory = commandArgs.trim();
-            if (!newMemory) {
-              terminal.error("Error: Memory text cannot be empty for 'add'.");
-              terminal.writeln("Usage: /memory add <new memory text>");
-              return "continue";
-            }
-            const currentContent = await config.readAgentsFile();
-            const updatedContent = currentContent
-              ? `${currentContent.trim()}\n- ${newMemory}` // Ensure space after dash
-              : `- ${newMemory}`; // Start with dash if new file
-            await config.writeAgentsFile(updatedContent);
-            break;
-          }
-
-          case "edit": {
-            const currentContent = await config.readAgentsFile();
-            const updatedContent = await editor({
-              message: "Edit rules:",
-              postfix: "md",
-              default: currentContent,
-              skipPrompt: true,
-            });
-            // Check if the user cancelled the edit (editor returns the original content)
-            // Or if the content is actually different
-            if (updatedContent !== currentContent) {
-              await config.writeAgentsFile(updatedContent);
-            } else {
-              terminal.writeln("Edit cancelled or no changes made.");
-            }
-            break;
-          }
-
-          default:
-            terminal.writeln(
-              "Invalid subcommand. Usage: /rules [view|add <text>|edit]",
-            );
-            break;
-        }
-        return "continue";
-      } catch (_error) {
-        // Errors from read/write helpers are already logged
-        terminal.error("Failed to execute memory command.");
-        return "continue";
-      }
-    },
     async handle(
       args: string[],
       {

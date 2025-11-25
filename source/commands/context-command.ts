@@ -49,7 +49,6 @@ function pct(n: number, d: number): string {
 }
 
 export function contextCommand({
-  terminal,
   tokenCounter,
   modelManager,
   messageHistory,
@@ -59,86 +58,6 @@ export function contextCommand({
     command: "/context",
     description: "Show context window usage breakdown",
     getSubCommands: () => Promise.resolve(["--details", "--json"]),
-    async execute(args: string[]) {
-      const meta = modelManager.getModelMetadata("repl");
-      const window = meta.contextWindow;
-
-      // 1) System prompt
-      const sys = await systemPrompt({
-        supportsToolCalling: meta.supportsToolCalling,
-        includeRules: true,
-      });
-      const systemPromptTokens = tokenCounter.count(sys);
-
-      // 2) Tools (MVP approximation)
-      let toolsTokens = 0;
-      try {
-        const tools = await initCliTools({ tokenCounter, workspace });
-        const toolDefs = tools.toolDefs;
-        const toolNames = JSON.stringify(prepareTools(toolDefs));
-        toolsTokens = tokenCounter.count(toolNames);
-        // v2: replace with exact serialized definitions
-      } catch (error) {
-        console.error(error);
-        toolsTokens = 0;
-      }
-
-      // 3) Messages
-      const messagesTokens = countMessageTokens(
-        messageHistory.get(),
-        tokenCounter,
-      );
-
-      // 4) Totals
-      const used = systemPromptTokens + toolsTokens + messagesTokens;
-      const free = Math.max(0, window - used);
-
-      const breakdown: Breakdown = {
-        systemPrompt: systemPromptTokens,
-        tools: toolsTokens,
-        messages: messagesTokens,
-        totalUsed: used,
-        window,
-        free,
-      };
-
-      // Output
-      terminal.header("Context Usage");
-      terminal.table(
-        [
-          [
-            "System prompt",
-            formatNum(breakdown.systemPrompt),
-            pct(breakdown.systemPrompt, window),
-          ],
-          [
-            "System tools",
-            formatNum(breakdown.tools),
-            pct(breakdown.tools, window),
-          ],
-          [
-            "Messages",
-            formatNum(breakdown.messages),
-            pct(breakdown.messages, window),
-          ],
-          [
-            "Free space",
-            formatNum(breakdown.free),
-            pct(breakdown.free, window),
-          ],
-        ],
-        { header: ["Section", "Tokens", "Percent"], colWidths: [40, 30, 30] },
-      );
-      terminal.lineBreak();
-      terminal.displayProgressBar(used, window);
-
-      if (args.includes("--json")) {
-        terminal.lineBreak();
-        terminal.display(JSON.stringify(breakdown, null, 2));
-      }
-
-      return "continue";
-    },
     async handle(
       args: string[],
       { tui, editor }: { tui: TUI; container: Container; editor: Editor },

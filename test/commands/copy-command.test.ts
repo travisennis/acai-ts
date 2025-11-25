@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
-import { describe, it, mock } from "node:test";
+import { describe, it } from "node:test";
 import type { ModelMessage, TextPart } from "ai";
 import { copyCommand } from "../../source/commands/copy-command.ts";
 import {
   createMockCommandOptions,
+  createMockContainer,
+  createMockEditor,
   createMockMessageHistory,
-  createMockTerminal,
+  createMockTui,
 } from "../utils/mocking.ts";
 
 function makeAssistant(text: string): ModelMessage {
@@ -24,43 +26,34 @@ function makeUser(text: string): ModelMessage {
 
 describe("/copy command", () => {
   it("returns info when no assistant response exists", async () => {
-    const outputs: string[] = [];
-    const mockTerminal = createMockTerminal();
-    mock.method(mockTerminal, "info", (msg: string) =>
-      outputs.push(`info:${msg}`),
-    );
-    mock.method(mockTerminal, "success", (_msg: string) =>
-      outputs.push("success"),
-    );
-    mock.method(mockTerminal, "error", (_msg: string) => outputs.push("error"));
+    const mockTui = createMockTui();
+    const mockContainer = createMockContainer();
+    const mockEditor = createMockEditor();
 
     const options = createMockCommandOptions({
-      terminal: mockTerminal,
       messageHistory: createMockMessageHistory([makeUser("hello")]),
     });
 
     const cmd = copyCommand(options);
-    await cmd.execute([]);
+    await cmd.handle([], {
+      tui: mockTui,
+      container: mockContainer,
+      inputContainer: mockContainer,
+      editor: mockEditor,
+    });
 
-    assert(outputs.some((o) => o.startsWith("info:")));
+    // Should have called requestRender
+    assert.equal(mockTui.requestRender.mock.calls.length, 1);
+    // Should have called setText to clear editor
+    assert.equal(mockEditor.setText.mock.calls.length, 1);
   });
 
   it("copies last assistant text via clipboard and reports success", async (_t) => {
-    // Temporarily replace writeToClipboard by monkey-patching module function via dynamic import cache
-    const outputs: string[] = [];
-    const mockTerminal = createMockTerminal();
-    mock.method(mockTerminal, "info", (msg: string) =>
-      outputs.push(`info:${msg}`),
-    );
-    mock.method(mockTerminal, "success", (msg: string) =>
-      outputs.push(`success:${msg}`),
-    );
-    mock.method(mockTerminal, "error", (msg: string) =>
-      outputs.push(`error:${msg}`),
-    );
+    const mockTui = createMockTui();
+    const mockContainer = createMockContainer();
+    const mockEditor = createMockEditor();
 
     const options = createMockCommandOptions({
-      terminal: mockTerminal,
       messageHistory: createMockMessageHistory([
         makeUser("hello"),
         makeAssistant("world"),
@@ -68,16 +61,23 @@ describe("/copy command", () => {
     });
 
     // We cannot easily mock child_process spawn without a mocking framework; this test focuses on flow.
-    // Execute should attempt clipboard; since environment may not have tools, we only assert it didn't crash synchronously.
+    // Handle should attempt clipboard; since environment may not have tools, we only assert it didn't crash synchronously.
     const cmd = copyCommand(options);
 
     try {
-      await cmd.execute([]);
+      await cmd.handle([], {
+        tui: mockTui,
+        container: mockContainer,
+        inputContainer: mockContainer,
+        editor: mockEditor,
+      });
     } catch {
       // Ignore runtime env clipboard errors
     }
 
-    // Should either success or error, but not be silent
-    assert(outputs.length > 0);
+    // Should have called requestRender
+    assert.equal(mockTui.requestRender.mock.calls.length, 1);
+    // Should have called setText to clear editor
+    assert.equal(mockEditor.setText.mock.calls.length, 1);
   });
 });

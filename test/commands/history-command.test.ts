@@ -14,7 +14,7 @@ describe("historyCommand", () => {
       command.description,
       "Browse and manage previous conversations.",
     );
-    assert.equal(typeof command.execute, "function");
+    assert.equal(typeof command.handle, "function");
     assert.equal(typeof command.getSubCommands, "function");
   });
 });

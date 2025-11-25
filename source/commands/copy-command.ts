@@ -36,26 +36,7 @@ export function copyCommand(options: CommandOptions): ReplCommand {
     async getSubCommands() {
       return [];
     },
-    async execute(_args: string[]): Promise<"break" | "continue" | "use"> {
-      const { messageHistory, terminal } = options;
-      const history = messageHistory.get();
 
-      const lastText = extractLastAssistantText(history);
-      if (!lastText) {
-        terminal.info("No assistant response to copy.");
-        return "continue";
-      }
-
-      try {
-        await Clipboard.setText(lastText);
-        terminal.success("Copied last response to clipboard.");
-        return "continue";
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        terminal.error(`Could not copy to clipboard: ${message}`);
-        return "continue";
-      }
-    },
     async handle(
       _args: string[],
       {

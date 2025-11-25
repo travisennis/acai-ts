@@ -7,28 +7,12 @@ import {
 } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export function usageCommand({
-  terminal,
-  tokenTracker,
-}: CommandOptions): ReplCommand {
+export function usageCommand({ tokenTracker }: CommandOptions): ReplCommand {
   return {
     command: "/usage",
     description: "Show token usage breakdown",
 
     getSubCommands: () => Promise.resolve([]),
-    async execute(): Promise<"break" | "continue" | "use"> {
-      const entries = Object.entries(tokenTracker.getUsageBreakdown());
-      if (entries.length === 0) {
-        terminal.info("No usage yet.");
-      } else {
-        terminal.table(entries, {
-          header: ["App", "Tokens"],
-          colWidths: [30, 70],
-        });
-      }
-
-      return "continue";
-    },
     async handle(
       _args: string[],
       { tui, editor }: { tui: TUI; container: Container; editor: Editor },

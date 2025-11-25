@@ -14,7 +14,7 @@ import { isSupportedModel, type ModelName } from "./models/providers.ts";
 import { PromptManager } from "./prompts/manager.ts";
 import { systemPrompt } from "./prompts.ts";
 import { NewRepl } from "./repl-new.ts";
-import { initTerminal } from "./terminal/index.ts";
+import { setTerminalTitle } from "./terminal/formatting.ts";
 import { select } from "./terminal/select-prompt.ts";
 import { TokenCounter } from "./tokens/counter.ts";
 import { TokenTracker } from "./tokens/tracker.ts";
@@ -146,8 +146,7 @@ async function main() {
     process.exit(1);
   }
 
-  const terminal = initTerminal();
-  terminal.setTitle(`acai: ${workspace.primaryDir}`);
+  setTerminalTitle(`acai: ${workspace.primaryDir}`);
 
   const chosenModel: ModelName = isSupportedModel(flags.model)
     ? (flags.model as ModelName)
@@ -158,14 +157,14 @@ async function main() {
   });
   modelManager.setModel("repl", chosenModel);
   modelManager.setModel("cli", chosenModel);
-  modelManager.setModel("title-conversation", "openrouter:gemini-flash25");
-  modelManager.setModel("conversation-summarizer", "openrouter:gemini-flash25");
-  modelManager.setModel("tool-repair", "openai:gpt-4.1");
-  modelManager.setModel("conversation-analyzer", "openrouter:gemini-flash25");
+  modelManager.setModel("title-conversation", chosenModel); // "openrouter:gemini-flash25");
+  modelManager.setModel("conversation-summarizer", chosenModel); //  "openrouter:gemini-flash25");
+  modelManager.setModel("tool-repair", chosenModel); //  "openai:gpt-4.1");
+  modelManager.setModel("conversation-analyzer", chosenModel); //  "openrouter:gemini-flash25");
   modelManager.setModel("init-project", chosenModel);
-  modelManager.setModel("task-agent", "openrouter:gpt-5-mini");
+  modelManager.setModel("task-agent", chosenModel); //  "openrouter:gpt-5-mini");
   modelManager.setModel("handoff-agent", chosenModel);
-  modelManager.setModel("edit-fix", "openrouter:gemini-flash25");
+  modelManager.setModel("edit-fix", chosenModel); //  "openrouter:gemini-flash25");
 
   const tokenTracker = new TokenTracker();
   const tokenCounter = new TokenCounter();
@@ -175,7 +174,7 @@ async function main() {
     modelManager,
     tokenTracker,
   });
-  messageHistory.on("update-title", (title) => terminal.setTitle(title));
+  messageHistory.on("update-title", (title) => setTerminalTitle(title));
 
   if (flags.continue === true) {
     const histories = await MessageHistory.load(messageHistoryDir, 1);
@@ -184,7 +183,7 @@ async function main() {
       messageHistory.restore(latestHistory);
       console.info(`Resuming conversation: ${latestHistory.title}`);
       // Set terminal title after restoring
-      terminal.setTitle(latestHistory.title || `acai: ${process.cwd()}`);
+      setTerminalTitle(latestHistory.title || `acai: ${process.cwd()}`);
     } else {
       logger.info("No previous conversation found to continue.");
     }
@@ -205,7 +204,7 @@ async function main() {
           messageHistory.restore(selectedHistory);
           logger.info(`Resuming conversation: ${selectedHistory.title}`);
           // Set terminal title after restoring
-          terminal.setTitle(selectedHistory.title || `acai: ${process.cwd()}`);
+          setTerminalTitle(selectedHistory.title || `acai: ${process.cwd()}`);
         } else {
           // This case should theoretically not happen if choice is valid
           logger.error("Selected history index out of bounds.");
@@ -243,12 +242,10 @@ async function main() {
   const commands = new CommandManager({
     promptManager,
     modelManager,
-    terminal,
     messageHistory,
     tokenTracker,
     config,
     tokenCounter,
-
     promptHistory,
     workspace,
   });
@@ -277,7 +274,6 @@ async function main() {
   const repl = new NewRepl({
     agent,
     promptManager,
-    terminal,
     config: appConfig,
     messageHistory,
     modelManager,
@@ -315,7 +311,6 @@ async function main() {
   });
 
   const agentTools = await initAgents({
-    terminal,
     modelManager,
     tokenTracker,
     tokenCounter,

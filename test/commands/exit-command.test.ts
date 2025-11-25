@@ -7,8 +7,10 @@ import {
   exitCommand,
 } from "../../source/commands/exit-command.ts";
 import {
+  createMockContainer,
+  createMockEditor,
   createMockMessageHistory,
-  createMockTerminal,
+  createMockTui,
 } from "../utils/mocking.ts";
 
 describe("exit command", () => {
@@ -40,27 +42,34 @@ describe("exit command", () => {
   });
 
   it("should clear .tmp directory on exit with custom baseDir", async () => {
-    const mockTerminal = createMockTerminal();
-    mock.method(mockTerminal, "clear", mock.fn());
+    const mockTui = createMockTui();
+    const mockContainer = createMockContainer();
+    const mockEditor = createMockEditor();
 
     const mockMessageHistory = createMockMessageHistory();
 
     const options: ExitCommandOptions = {
       messageHistory: mockMessageHistory,
-      terminal: mockTerminal,
       baseDir: testBaseDir,
     };
 
     const command = exitCommand(options);
-    const result = await command.execute([]);
+    const result = await command.handle([], {
+      tui: mockTui,
+      container: mockContainer,
+      inputContainer: mockContainer,
+      editor: mockEditor,
+    });
 
     assert.equal(result, "break");
-    // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
-    assert.equal((mockTerminal.clear as any).mock.calls.length, 1);
     // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
     assert.equal((mockMessageHistory.isEmpty as any).mock.calls.length, 1);
     // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
     assert.equal((mockMessageHistory.save as any).mock.calls.length, 1);
+    // Should have called requestRender
+    assert.equal(mockTui.requestRender.mock.calls.length, 1);
+    // Should have called setText to clear editor
+    assert.equal(mockEditor.setText.mock.calls.length, 1);
 
     // Verify .tmp directory is empty or doesn't exist
     try {
@@ -76,27 +85,34 @@ describe("exit command", () => {
   });
 
   it("should handle empty message history", async () => {
-    const mockTerminal = createMockTerminal();
-    mock.method(mockTerminal, "clear", mock.fn());
+    const mockTui = createMockTui();
+    const mockContainer = createMockContainer();
+    const mockEditor = createMockEditor();
 
     const mockMessageHistory = createMockMessageHistory([]);
 
     const options: ExitCommandOptions = {
       messageHistory: mockMessageHistory,
-      terminal: mockTerminal,
       baseDir: testBaseDir,
     };
 
     const command = exitCommand(options);
-    const result = await command.execute([]);
+    const result = await command.handle([], {
+      tui: mockTui,
+      container: mockContainer,
+      inputContainer: mockContainer,
+      editor: mockEditor,
+    });
 
     assert.equal(result, "break");
-    // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
-    assert.equal((mockTerminal.clear as any).mock.calls.length, 1);
     // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
     assert.equal((mockMessageHistory.isEmpty as any).mock.calls.length, 1);
     // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
     assert.equal((mockMessageHistory.save as any).mock.calls.length, 0);
+    // Should have called requestRender
+    assert.equal(mockTui.requestRender.mock.calls.length, 1);
+    // Should have called setText to clear editor
+    assert.equal(mockEditor.setText.mock.calls.length, 1);
 
     // Verify .tmp directory is empty or doesn't exist
     try {
@@ -112,8 +128,9 @@ describe("exit command", () => {
   });
 
   it("should not block exit on cleanup failure", async () => {
-    const mockTerminal = createMockTerminal();
-    mock.method(mockTerminal, "clear", mock.fn());
+    const mockTui = createMockTui();
+    const mockContainer = createMockContainer();
+    const mockEditor = createMockEditor();
 
     const mockMessageHistory = createMockMessageHistory();
 
@@ -125,20 +142,26 @@ describe("exit command", () => {
     try {
       const options: ExitCommandOptions = {
         messageHistory: mockMessageHistory,
-        terminal: mockTerminal,
         baseDir: testBaseDir,
       };
 
       const command = exitCommand(options);
-      const result = await command.execute([]);
+      const result = await command.handle([], {
+        tui: mockTui,
+        container: mockContainer,
+        inputContainer: mockContainer,
+        editor: mockEditor,
+      });
 
       assert.equal(result, "break");
-      // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
-      assert.equal((mockTerminal.clear as any).mock.calls.length, 1);
       // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
       assert.equal((mockMessageHistory.isEmpty as any).mock.calls.length, 1);
       // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
       assert.equal((mockMessageHistory.save as any).mock.calls.length, 1);
+      // Should have called requestRender
+      assert.equal(mockTui.requestRender.mock.calls.length, 1);
+      // Should have called setText to clear editor
+      assert.equal(mockEditor.setText.mock.calls.length, 1);
 
       // Error should be logged but not prevent exit
       // Note: In practice, cleanup might succeed, but the error handling is tested

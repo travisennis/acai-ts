@@ -123,7 +123,6 @@ function extractMimeTypeFromDataUrl(dataUrl: string): string {
 }
 
 export const pasteCommand = ({
-  terminal,
   modelManager,
   promptManager,
   tokenCounter,
@@ -134,115 +133,6 @@ export const pasteCommand = ({
       "Pastes image or text content from the clipboard into the next prompt.",
 
     getSubCommands: () => Promise.resolve([]),
-    execute: async (): Promise<"break" | "continue" | "use"> => {
-      try {
-        if (Clipboard.hasImage()) {
-          const base64DataUrl = await Clipboard.getImageBase64();
-
-          // Validate the base64 data
-          if (!isValidBase64(base64DataUrl)) {
-            terminal.error(
-              "Invalid base64 data in clipboard. The image data may be corrupted.",
-            );
-            return "continue";
-          }
-
-          // Extract MIME type with better error handling and actual image format detection
-          let mimeType: string;
-          try {
-            // First, try to get MIME type from data URL
-            const dataUrlMimeType = extractMimeTypeFromDataUrl(base64DataUrl);
-
-            // Then, detect actual image format from base64 content
-            const base64Content = extractBase64Content(base64DataUrl);
-            const detectedFormat = detectImageFormatFromBase64(base64Content);
-
-            // Use detected format if available, otherwise fall back to data URL MIME type
-            if (detectedFormat !== "unknown") {
-              mimeType = detectedFormat;
-
-              // Log if there's a mismatch between data URL and actual format
-              if (dataUrlMimeType !== detectedFormat) {
-                logger.warn(
-                  `Clipboard library reported ${dataUrlMimeType} but actual image format is ${detectedFormat}. Using detected format.`,
-                );
-              }
-            } else {
-              mimeType = dataUrlMimeType;
-              logger.warn(
-                `Could not detect image format, using data URL MIME type: ${mimeType}`,
-              );
-            }
-          } catch (error) {
-            logger.warn(
-              `Failed to extract MIME type from clipboard image: ${error}`,
-            );
-            mimeType = "image/png";
-          }
-
-          // Ensure the data URL format is correct
-          if (!base64DataUrl.startsWith(`data:${mimeType};base64,`)) {
-            // Fix malformed data URLs
-            const base64Content = base64DataUrl.replace(
-              /^data:.*?;base64,/,
-              "",
-            );
-            const correctedDataUrl = `data:${mimeType};base64,${base64Content}`;
-
-            // Final validation
-            if (!isValidBase64(correctedDataUrl)) {
-              terminal.error(
-                "Failed to correct base64 data format. The image data may be corrupted.",
-              );
-              return "continue";
-            }
-
-            promptManager.addContext({
-              type: "image",
-              image: correctedDataUrl,
-              mediaType: mimeType,
-            });
-          } else {
-            promptManager.addContext({
-              type: "image",
-              image: base64DataUrl,
-              mediaType: mimeType,
-            });
-          }
-
-          terminal.success(
-            "Image from clipboard will be added to your next prompt.",
-          );
-          return "continue";
-        }
-
-        const clipboardContent = await Clipboard.getText();
-        if (!clipboardContent || clipboardContent.trim() === "") {
-          terminal.warn("Clipboard is empty.");
-          return "continue";
-        }
-
-        const content = formatBlock(
-          clipboardContent,
-          "clipboard",
-          modelManager.getModelMetadata("repl").promptFormat,
-        );
-
-        promptManager.addContext(content);
-
-        const tokenCount = tokenCounter.count(content);
-
-        terminal.success(
-          `Clipboard content will be added to your next prompt. (${tokenCount} tokens)`,
-        );
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        terminal.error(`Error processing clipboard content: ${message}`);
-        logger.error(error, "Paste command error:");
-        return "continue";
-      }
-      return "continue";
-    },
     async handle(
       _args: string[],
       {

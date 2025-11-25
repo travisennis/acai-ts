@@ -1,15 +1,11 @@
 import type { Container, Editor, TUI } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-export const clearCommand = ({ terminal }: CommandOptions): ReplCommand => {
+export const clearCommand = (_options: CommandOptions): ReplCommand => {
   return {
     command: "/clear",
     description: "Clears the terminal screen.",
     getSubCommands: () => Promise.resolve([]),
-    execute: async () => {
-      terminal.clear();
-      return "continue";
-    },
     async handle(
       _args: string[],
       {

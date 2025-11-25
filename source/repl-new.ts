@@ -7,7 +7,7 @@ import type { MessageHistory } from "./messages.ts";
 import type { ModelManager } from "./models/manager.ts";
 import type { PromptManager } from "./prompts/manager.ts";
 import { getProjectStatusLine } from "./repl/project-status-line.ts";
-import type { Terminal } from "./terminal/index.ts";
+import style from "./terminal/style.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
 import { AssistantMessageComponent } from "./tui/components/assistant-message.ts";
@@ -23,6 +23,7 @@ import {
   Loader,
   ProcessTerminal,
   Spacer,
+  Text,
   TUI,
   UserMessageComponent,
 } from "./tui/index.ts";
@@ -33,7 +34,6 @@ interface ReplOptions {
   promptManager: PromptManager;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
-  terminal: Terminal;
   commands: CommandManager;
   config: Record<PropertyKey, unknown>;
   tokenCounter: TokenCounter;
@@ -98,7 +98,6 @@ export class NewRepl {
 
     const {
       promptManager,
-      terminal,
       modelManager,
       messageHistory,
       commands,
@@ -137,7 +136,7 @@ export class NewRepl {
     this.editor.onSubmit = async (text) => {
       if (text.trim()) {
         // see if the text contains a command
-        const commandResult = await commands.handle2(
+        const commandResult = await commands.handle(
           { userInput: text },
           {
             tui: this.tui,
@@ -167,14 +166,22 @@ export class NewRepl {
             promptManager.set(processedPrompt.message);
           } catch (error) {
             if (error instanceof PromptError) {
-              terminal.error(`Prompt processing failed: ${error.message}`);
+              this.chatContainer.addChild(
+                new Text(
+                  style.red(`Prompt processing failed: ${error.message}`),
+                  1,
+                  1,
+                ),
+              );
               if (
                 error.cause &&
                 typeof error.cause === "object" &&
                 "command" in error.cause &&
                 typeof error.cause.command === "string"
               ) {
-                terminal.error(`Command: ${error.cause.command}`);
+                this.chatContainer.addChild(
+                  new Text(style.red(`Command: ${error.cause.command}`, 1, 1)),
+                );
               }
             }
             throw error; // Re-throw other errors
@@ -187,10 +194,15 @@ export class NewRepl {
 
         if (hasAddedContext) {
           const contextTokenCount = promptManager.getContextTokenCount();
-          terminal.info(
-            `Context will be added to prompt. (${contextTokenCount} tokens)`,
+          this.chatContainer.addChild(
+            new Text(
+              style.green(
+                `Context will be added to prompt. (${contextTokenCount} tokens)`,
+                1,
+                1,
+              ),
+            ),
           );
-          terminal.lineBreak();
         }
 
         const userPrompt = promptManager.get();

@@ -27,7 +27,6 @@ Is directory a git repo: ${(await inGitDirectory()) ? "Yes" : "No"}
 Platform: ${platform()}`;
 
 export const initCommand = ({
-  terminal,
   modelManager,
   tokenCounter,
   workspace,
@@ -37,25 +36,7 @@ export const initCommand = ({
     description: "Creates the AGENTS.md file.",
 
     getSubCommands: () => Promise.resolve([]),
-    execute: async (): Promise<"break" | "continue" | "use"> => {
-      const result = streamText({
-        model: modelManager.getModel("init-project"),
-        temperature: 0.5,
-        prompt: initPrompt,
-        stopWhen: stepCountIs(40),
-        tools: (
-          await initCliTools({
-            tokenCounter,
-            workspace,
-          })
-        ).toolDefs,
-      });
 
-      for await (const text of result.textStream) {
-        terminal.write(text);
-      }
-      return "continue";
-    },
     async handle(
       _args: string[],
       {

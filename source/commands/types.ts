@@ -3,7 +3,6 @@ import type { WorkspaceContext } from "../index.ts";
 import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManagerApi } from "../prompts/manager.ts";
-import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
@@ -13,7 +12,6 @@ export interface ReplCommand {
   aliases?: string[];
   description: string;
   getSubCommands: () => Promise<string[]>;
-  execute: (args: string[]) => Promise<"break" | "continue" | "use">;
   handle: (
     args: string[],
     options: {
@@ -28,7 +26,6 @@ export interface ReplCommand {
 export interface CommandOptions {
   promptManager: PromptManagerApi;
   modelManager: ModelManager;
-  terminal: Terminal;
   messageHistory: MessageHistory;
   tokenTracker: TokenTracker;
   config: ConfigManager;

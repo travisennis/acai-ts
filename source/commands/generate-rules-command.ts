@@ -4,7 +4,6 @@ import { logger } from "../logger.ts"; // Import logger
 import { createUserMessage } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
 import { systemPrompt } from "../prompts.ts";
-import { checkbox } from "../terminal/checkbox-prompt.ts";
 import { getTerminalSize } from "../terminal/formatting.ts";
 import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
@@ -19,45 +18,7 @@ import {
 } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
-async function _processAndSaveRules(
-  newRules: string[] | null,
-  terminal: CommandOptions["terminal"],
-  config: CommandOptions["config"], // Simplified type
-) {
-  if (!newRules || newRules.length === 0) {
-    terminal.warn("No new generalizable rules were identified.");
-    return;
-  }
-
-  terminal.info("Generated potential rules:");
-  terminal.lineBreak();
-
-  const rulesToKeep = await checkbox({
-    message: "Select the rules you want to keep:",
-    choices: newRules.map((rule) => ({ name: rule, value: rule })),
-  });
-
-  if (rulesToKeep.length === 0) {
-    terminal.warn("No rules selected to save.");
-    return;
-  }
-
-  terminal.info("Saving selected rules...");
-  const existingRules = await config.readProjectLearnedRulesFile();
-  const rulesToAdd = rulesToKeep.join("\n");
-  const updatedProjectRules =
-    existingRules.endsWith("\n") || existingRules.length === 0
-      ? `${existingRules}${rulesToAdd}`
-      : `${existingRules}\n${rulesToAdd}`;
-
-  await config.writeProjectLearnedRulesFile(updatedProjectRules);
-  terminal.success("Selected rules saved to project learned rules.");
-  terminal.lineBreak();
-  terminal.display(rulesToAdd); // Display only the saved rules
-}
-
 export const generateRulesCommand = ({
-  terminal,
   messageHistory,
   modelManager,
   tokenTracker,
@@ -69,33 +30,7 @@ export const generateRulesCommand = ({
       "Analyzes the current conversation to generate and save new interaction rules, then displays them.",
 
     getSubCommands: () => Promise.resolve([]),
-    execute: async (): Promise<"break" | "continue" | "use"> => {
-      if (messageHistory.isEmpty()) {
-        terminal.writeln("Cannot generate rules from an empty conversation.");
-        return "continue";
-      }
 
-      terminal.lineBreak();
-      terminal.info("Analyzing conversation to generate rules...");
-      try {
-        const newRules = await analyzeConversation({
-          modelManager,
-          messages: messageHistory.get(),
-          tokenTracker,
-          terminal,
-        });
-
-        // Pass the config object available in CommandOptions scope
-        await _processAndSaveRules(newRules, terminal, config);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        terminal.error(`Error generating rules: ${errorMessage}`);
-        logger.error(error, "Error during rule generation:");
-        return "continue";
-      }
-      return "continue";
-    },
     async handle(
       _args: string[],
       {
@@ -133,7 +68,6 @@ export const generateRulesCommand = ({
           modelManager,
           messages: messageHistory.get(),
           tokenTracker,
-          terminal,
         });
 
         if (!newRules || newRules.length === 0) {

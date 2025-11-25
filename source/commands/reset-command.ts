@@ -1,9 +1,9 @@
+import { setTerminalTitle } from "../terminal/formatting.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const resetCommand = ({
   modelManager,
-  terminal,
   messageHistory,
 }: CommandOptions): ReplCommand => {
   return {
@@ -11,16 +11,7 @@ export const resetCommand = ({
     aliases: ["/new"],
     description: "Saves the chat history and then resets it.",
     getSubCommands: () => Promise.resolve([]),
-    execute: async () => {
-      if (!messageHistory.isEmpty()) {
-        await messageHistory.save();
-        messageHistory.create(modelManager.getModel("repl").modelId);
-      }
-      terminal.setTitle(`acai: ${process.cwd()}`);
 
-      terminal.clear();
-      return "continue";
-    },
     async handle(
       _args: string[],
       {
@@ -34,7 +25,7 @@ export const resetCommand = ({
         messageHistory.create(modelManager.getModel("repl").modelId);
       }
 
-      terminal.setTitle(`acai: ${process.cwd()}`);
+      setTerminalTitle(`acai: ${process.cwd()}`);
 
       container.clear();
       editor.setText("");

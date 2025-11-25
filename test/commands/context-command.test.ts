@@ -1,19 +1,23 @@
 import assert from "node:assert/strict";
-import { beforeEach, describe, it, mock } from "node:test";
+import { beforeEach, describe, it } from "node:test";
 import { contextCommand } from "../../source/commands/context-command.ts";
 import {
   createMockCommandOptions,
   createMockConfig,
+  createMockContainer,
+  createMockEditor,
   createMockMessageHistory,
   createMockModelManager,
   createMockPromptManager,
-  createMockTerminal,
   createMockTokenCounter,
   createMockTokenTracker,
+  createMockTui,
 } from "../utils/mocking.ts";
 
 describe("contextCommand", () => {
-  let mockTerminal: ReturnType<typeof createMockTerminal>;
+  let mockTui: ReturnType<typeof createMockTui>;
+  let mockContainer: ReturnType<typeof createMockContainer>;
+  let mockEditor: ReturnType<typeof createMockEditor>;
   let mockTokenCounter: ReturnType<typeof createMockTokenCounter>;
   let mockModelManager: ReturnType<typeof createMockModelManager>;
   let mockMessageHistory: ReturnType<typeof createMockMessageHistory>;
@@ -23,7 +27,9 @@ describe("contextCommand", () => {
   let mockPromptHistory: string[];
 
   beforeEach(() => {
-    mockTerminal = createMockTerminal();
+    mockTui = createMockTui();
+    mockContainer = createMockContainer();
+    mockEditor = createMockEditor();
     mockTokenCounter = createMockTokenCounter();
     mockModelManager = createMockModelManager();
     mockMessageHistory = createMockMessageHistory();
@@ -35,7 +41,6 @@ describe("contextCommand", () => {
 
   it("should create a command with correct properties", () => {
     const options = createMockCommandOptions({
-      terminal: mockTerminal,
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
       messageHistory: mockMessageHistory,
@@ -53,7 +58,6 @@ describe("contextCommand", () => {
 
   it("should return subcommands", async () => {
     const options = createMockCommandOptions({
-      terminal: mockTerminal,
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
       messageHistory: mockMessageHistory,
@@ -69,9 +73,8 @@ describe("contextCommand", () => {
     assert.deepEqual(subCommands, ["--details", "--json"]);
   });
 
-  it("should execute without throwing", async () => {
+  it("should handle without throwing", async () => {
     const options = createMockCommandOptions({
-      terminal: mockTerminal,
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
       messageHistory: mockMessageHistory,
@@ -84,18 +87,18 @@ describe("contextCommand", () => {
     const command = contextCommand(options);
 
     // Should not throw
-    await assert.doesNotReject(() => command.execute([]));
+    await assert.doesNotReject(() =>
+      command.handle([], {
+        tui: mockTui,
+        container: mockContainer,
+        inputContainer: mockContainer,
+        editor: mockEditor,
+      }),
+    );
   });
 
   it("should handle json output flag", async () => {
-    let displayedJson = "";
-    const mockTerminalWithJson = createMockTerminal();
-    mock.method(mockTerminalWithJson, "display", (content: string) => {
-      displayedJson = content;
-    });
-
     const options = createMockCommandOptions({
-      terminal: mockTerminalWithJson,
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
       messageHistory: mockMessageHistory,
@@ -107,14 +110,14 @@ describe("contextCommand", () => {
 
     const command = contextCommand(options);
 
-    await command.execute(["--json"]);
+    await command.handle(["--json"], {
+      tui: mockTui,
+      container: mockContainer,
+      inputContainer: mockContainer,
+      editor: mockEditor,
+    });
 
-    // Should display JSON output
-    assert(displayedJson.includes('"systemPrompt"'));
-    assert(displayedJson.includes('"tools"'));
-    assert(displayedJson.includes('"messages"'));
-    assert(displayedJson.includes('"totalUsed"'));
-    assert(displayedJson.includes('"window"'));
-    assert(displayedJson.includes('"free"'));
+    // Should have called showModal
+    assert.equal(mockTui.showModal.mock.calls.length, 1);
   });
 });

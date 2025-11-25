@@ -2,11 +2,10 @@ import { writeFile } from "node:fs/promises";
 import type { ModelMessage, TextPart } from "ai";
 import { generateText } from "ai";
 import { MessageHistory } from "../messages.ts";
-import { getTerminalSize } from "../terminal/formatting.ts";
-import { select } from "../terminal/select-prompt.ts";
+import { getTerminalSize, setTerminalTitle } from "../terminal/formatting.ts";
 import style from "../terminal/style.ts";
 import type { Editor, TUI } from "../tui/index.ts";
-import { Container, Input, Spacer, Text } from "../tui/index.ts";
+import { Container, Input, Markdown, Spacer, Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 interface ConversationHistory {
@@ -21,8 +20,7 @@ interface ConversationHistory {
 
 async function exportConversation(
   history: ConversationHistory,
-  terminal: CommandOptions["terminal"],
-): Promise<void> {
+): Promise<string> {
   const sanitizedTitle = history.title
     .replace(/[^a-zA-Z0-9\s-_]/g, "")
     .replace(/\s+/g, "-")
@@ -32,13 +30,8 @@ async function exportConversation(
 
   const markdownContent = generateMarkdown(history);
 
-  try {
-    await writeFile(filename, markdownContent);
-    terminal.info(`Conversation exported to: ${filename}`);
-  } catch (error) {
-    terminal.error(`Failed to export conversation: ${error}`);
-    throw error;
-  }
+  await writeFile(filename, markdownContent);
+  return filename;
 }
 
 function generateMarkdown(history: ConversationHistory): string {
@@ -134,10 +127,9 @@ function generateMarkdown(history: ConversationHistory): string {
 
 async function summarizeConversation(
   history: { title: string; messages: ModelMessage[] },
-  terminal: CommandOptions["terminal"],
   modelManager: CommandOptions["modelManager"],
   tokenTracker: CommandOptions["tokenTracker"],
-): Promise<void> {
+): Promise<string> {
   const systemPrompt = `You are an expert at summarizing conversations between a coding assistant and a user. Your task is to provide a clear, concise summary of the conversation that captures:
 
 1. The main topic and objectives
@@ -169,28 +161,24 @@ Keep the summary focused and informative, around 3-5 paragraphs. Use plain text 
     .filter((text: string | undefined) => text?.trim())
     .join("\n\n");
 
-  try {
-    const { text, usage } = await generateText({
-      model: modelManager.getModel("conversation-summarizer"),
-      system: systemPrompt,
-      prompt: `Please summarize this conversation:\n\n${conversationText}`,
-    });
+  const { text, usage } = await generateText({
+    model: modelManager.getModel("conversation-summarizer"),
+    system: systemPrompt,
+    prompt: `Please summarize this conversation:\n\n${conversationText}`,
+  });
 
-    tokenTracker.trackUsage("conversation-summarizer", usage);
+  tokenTracker.trackUsage("conversation-summarizer", usage);
 
-    terminal.writeln(`Summary of "${history.title}":`);
-    terminal.lineBreak();
-    terminal.display(text);
-    terminal.lineBreak();
-  } catch (error) {
-    terminal.error(`Failed to generate summary: ${error}`);
-    throw error;
-  }
+  const results: string[] = [];
+  results.push(`# Summary of "${history.title}":`);
+  results.push("");
+  results.push(text);
+  results.push("");
+  return results.join("\n");
 }
 
 export const historyCommand = ({
   messageHistory,
-  terminal,
   config,
   modelManager,
   tokenTracker,
@@ -199,99 +187,7 @@ export const historyCommand = ({
     command: "/history",
     description: "Browse and manage previous conversations.",
     getSubCommands: () => Promise.resolve([]),
-    execute: async () => {
-      const appDir = config.app;
-      const messageHistoryDir = await appDir.ensurePath("message-history");
 
-      // Load all histories (use a large number to get all)
-      const histories = await MessageHistory.load(messageHistoryDir, 1000);
-
-      if (histories.length === 0) {
-        terminal.info("No previous conversations found.");
-        return "continue";
-      }
-
-      try {
-        // Step 1: Select conversation
-        const conversationChoice = await select({
-          message: "Select a conversation:",
-          choices: histories.map(
-            (
-              h: { title: string; updatedAt: Date; messages: unknown[] },
-              index: number,
-            ) => ({
-              name: `${index + 1}: ${h.title} (${h.updatedAt.toLocaleString()})`,
-              value: index,
-              description: `${h.messages.length} messages`,
-            }),
-          ),
-          pageSize: 15,
-        });
-
-        const selectedHistory = histories.at(conversationChoice);
-        if (!selectedHistory) {
-          terminal.error("Selected history index out of bounds.");
-          return "continue";
-        }
-
-        // Step 2: Select action
-        const actionChoice = await select({
-          message: `What would you like to do with "${selectedHistory.title}"?`,
-          choices: [
-            {
-              name: "Resume - Continue this conversation",
-              value: "resume",
-            },
-            {
-              name: "Export - Save as markdown file",
-              value: "export",
-            },
-            {
-              name: "Summarize - Generate AI summary of conversation",
-              value: "summarize",
-            },
-          ],
-          pageSize: 5,
-        });
-
-        switch (actionChoice) {
-          case "resume":
-            messageHistory.restore(selectedHistory);
-            terminal.info(`Resuming conversation: ${selectedHistory.title}`);
-            terminal.setTitle(
-              selectedHistory.title || `acai: ${process.cwd()}`,
-            );
-            break;
-
-          case "export":
-            await exportConversation(selectedHistory, terminal);
-            break;
-
-          case "summarize":
-            await summarizeConversation(
-              selectedHistory,
-              terminal,
-              modelManager,
-              tokenTracker,
-            );
-            break;
-        }
-      } catch (error) {
-        // Handle Ctrl-C cancellation
-        if (
-          error instanceof Error &&
-          "isCanceled" in error &&
-          error.isCanceled === true
-        ) {
-          terminal.info("Operation cancelled.");
-          return "continue";
-        }
-        // Re-throw other errors
-        throw error;
-      }
-
-      return "continue";
-    },
     async handle(
       _args: string[],
       {
@@ -342,17 +238,19 @@ export const historyCommand = ({
                       1,
                     ),
                   );
-                  terminal.setTitle(
+                  setTerminalTitle(
                     conversation.title || `acai: ${process.cwd()}`,
                   );
                   break;
 
                 case "export":
                   try {
-                    await exportConversation(conversation, terminal);
+                    const destFile = await exportConversation(conversation);
                     container.addChild(
                       new Text(
-                        style.green("Conversation exported successfully"),
+                        style.green(
+                          `Conversation exported successfully: ${destFile}`,
+                        ),
                         1,
                         0,
                       ),
@@ -370,14 +268,17 @@ export const historyCommand = ({
 
                 case "summarize":
                   try {
-                    await summarizeConversation(
+                    const result = await summarizeConversation(
                       conversation,
-                      terminal,
                       modelManager,
                       tokenTracker,
                     );
                     container.addChild(
-                      new Text(style.green("Conversation summarized"), 0, 1),
+                      new Markdown(result, undefined, undefined, {
+                        r: 52,
+                        g: 53,
+                        b: 65,
+                      }),
                     );
                   } catch (error) {
                     container.addChild(

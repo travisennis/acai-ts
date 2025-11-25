@@ -6,50 +6,79 @@ import type { ConfigManager } from "../../source/config.ts";
 import type { MessageHistory } from "../../source/messages.ts";
 import type { ModelManager } from "../../source/models/manager.ts";
 import type { PromptManager } from "../../source/prompts/manager.ts";
-import type { Terminal } from "../../source/terminal/index.ts";
 import type { TokenCounter } from "../../source/tokens/counter.ts";
 import type { TokenTracker } from "../../source/tokens/tracker.ts";
+import type { Container, Editor, TUI } from "../../source/tui/index.ts";
 
 /**
- * Creates a standardized mock terminal for testing
+ * Creates a mock TUI component for testing
  */
-export function createMockTerminal(): Terminal {
-  const mockTerminal = {
-    config: {
-      theme: "dark" as const,
-      useColors: true,
-      showProgressIndicators: true,
-      codeHighlighting: true,
-    },
-    terminalWidth: 80,
-    terminalHeight: 24,
-    isInteractive: true,
-    header: mock.fn(),
-    table: mock.fn(),
-    lineBreak: mock.fn(),
-    displayProgressBar: mock.fn(),
-    display: mock.fn(),
-    info: mock.fn(),
-    success: mock.fn(),
-    error: mock.fn(),
-    warn: mock.fn(),
-    writeln: mock.fn(),
-    write: mock.fn(),
+export function createMockTui(): TUI & {
+  showModal: ReturnType<typeof mock.fn>;
+  hideModal: ReturnType<typeof mock.fn>;
+  isModalActive: ReturnType<typeof mock.fn>;
+  requestRender: ReturnType<typeof mock.fn>;
+  setFocus: ReturnType<typeof mock.fn>;
+  addChild: ReturnType<typeof mock.fn>;
+  removeChild: ReturnType<typeof mock.fn>;
+  clear: ReturnType<typeof mock.fn>;
+  render: ReturnType<typeof mock.fn>;
+} {
+  const mockTui = {
+    showModal: mock.fn(),
+    hideModal: mock.fn(),
+    isModalActive: mock.fn(() => false),
+    requestRender: mock.fn(),
+    setFocus: mock.fn(),
+    addChild: mock.fn(),
+    removeChild: mock.fn(),
     clear: mock.fn(),
-    startProgress: mock.fn(),
-    stopProgress: mock.fn(),
-    emphasize: mock.fn(),
-    alert: mock.fn(),
-    hr: mock.fn(),
-    link: mock.fn((text: string, url: string) => `[${text}](${url})`),
-    box: mock.fn(),
-    setTitle: mock.fn(),
-    getLogo: mock.fn(() => ""),
-    displayWelcome: mock.fn(),
-    detectCapabilities: mock.fn(),
+    render: mock.fn(() => []),
   };
 
-  return mockTerminal as unknown as Terminal;
+  return mockTui as unknown as TUI & typeof mockTui;
+}
+
+/**
+ * Creates a mock container for testing
+ */
+export function createMockContainer(): Container & {
+  addChild: ReturnType<typeof mock.fn>;
+  removeChild: ReturnType<typeof mock.fn>;
+  clear: ReturnType<typeof mock.fn>;
+  render: ReturnType<typeof mock.fn>;
+} {
+  const mockContainer = {
+    addChild: mock.fn(),
+    removeChild: mock.fn(),
+    clear: mock.fn(),
+    render: mock.fn(() => []),
+  };
+
+  return mockContainer as unknown as Container & typeof mockContainer;
+}
+
+/**
+ * Creates a mock editor for testing
+ */
+export function createMockEditor(): Editor & {
+  setText: ReturnType<typeof mock.fn>;
+  getValue: ReturnType<typeof mock.fn>;
+  addChild: ReturnType<typeof mock.fn>;
+  removeChild: ReturnType<typeof mock.fn>;
+  clear: ReturnType<typeof mock.fn>;
+  render: ReturnType<typeof mock.fn>;
+} {
+  const mockEditor = {
+    setText: mock.fn(),
+    getValue: mock.fn(() => ""),
+    addChild: mock.fn(),
+    removeChild: mock.fn(),
+    clear: mock.fn(),
+    render: mock.fn(() => []),
+  };
+
+  return mockEditor as unknown as Editor & typeof mockEditor;
 }
 
 /**
@@ -168,7 +197,6 @@ export function createMockCommandOptions(
   overrides: Partial<CommandOptions> = {},
 ): CommandOptions {
   const defaults = {
-    terminal: createMockTerminal(),
     tokenCounter: createMockTokenCounter(),
     modelManager: createMockModelManager(),
     messageHistory: createMockMessageHistory(),
