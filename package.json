@@ -1,6 +1,6 @@
 {
   "name": "@travisennis/acai",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "An AI assistant for developing software.",
   "type": "module",
   "main": "dist/index.js",
@@ -58,7 +58,6 @@
     "@openrouter/ai-sdk-provider": "^1.2.5",
     "@travisennis/stdlib": "^0.0.14",
     "ai": "^5.0.101",
-
     "cheerio": "^1.1.2",
     "cli-table3": "^0.6.5",
     "diff": "^8.0.2",
