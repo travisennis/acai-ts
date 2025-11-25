@@ -5,7 +5,7 @@
  * Handles input/output, formatting, and display.
  */
 
-import Table from "cli-table3";
+import Table from "./table/index.ts";
 import { logger } from "../logger.ts";
 import { getPackageVersion } from "../version.ts";
 import {

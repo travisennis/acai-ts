@@ -1,5 +1,5 @@
 import { EOL } from "node:os";
-import Table from "cli-table3";
+import Table from "./table/index.ts";
 import { marked, type Token } from "marked";
 import { logger } from "../logger.ts";
 import { DEFAULT_THEME } from "./default-theme.ts";

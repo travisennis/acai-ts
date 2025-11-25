@@ -1,4 +1,4 @@
-import Table from "cli-table3";
+import Table from "../../terminal/table/index.ts";
 import { marked, type Token } from "marked";
 import { DEFAULT_THEME } from "../../terminal/default-theme.ts";
 import { highlight, supportsLanguage } from "../../terminal/highlight/index.ts";
