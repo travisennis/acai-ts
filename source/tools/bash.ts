@@ -46,9 +46,11 @@ export const createBashTool = async ({
 }) => {
   const execEnv = await initExecutionEnvironment();
   const projectConfig = await config.readProjectConfig();
-  const allowedPaths = projectConfig.logs?.path
-    ? [projectConfig.logs.path]
-    : [];
+  const accessibleLogPath = config.getAccessibleLogPath();
+  const allowedPaths = new Set([
+    ...(projectConfig.logs?.path ? [projectConfig.logs.path] : []),
+    accessibleLogPath,
+  ]);
   const allowedDirectories = allowedDirs ?? [baseDir];
   return {
     toolDef: {
@@ -93,7 +95,7 @@ export const createBashTool = async ({
           command,
           allowedDirectories,
           resolvedCwd,
-          allowedPaths,
+          [...allowedPaths],
         );
         if (!pathValidation.isValid) {
           yield {
