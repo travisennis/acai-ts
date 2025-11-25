@@ -104,6 +104,12 @@ function toolUsage() {
 
 ${getInstalledTools()}
 
+#### Using acai as sub-agent
+
+You can run acai in cli mode and it will receive a prompt and return a result. This version of acai is a separate process, but it has access to the same system prompt and tools as you do.
+
+How to run: \`acai -p <prompt>\`
+
 ### Code Interpreter (\`${CodeInterpreterTool.name}\`)
 - Executes JavaScript code in a separate Node.js process using Node's Permission Model
 - By default, the child process has no permissions except read/write within the current working directory
