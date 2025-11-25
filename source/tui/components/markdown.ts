@@ -429,9 +429,135 @@ export class Markdown implements Component {
       return [""];
     }
 
+    // Protect inline code spans from being split across lines
+    // by temporarily replacing them with placeholders
+    const { protectedText, codeSpans } = this.protectCodeSpans(line);
+
     // Use the existing wrapAnsi function for robust ANSI-aware wrapping
-    const wrappedText = wrapAnsi(line, width, { trim: false });
-    return wrappedText.split("\n");
+    const wrappedText = wrapAnsi(protectedText, width, { trim: false });
+    const lines = wrappedText.split("\n");
+
+    // Restore the code spans
+    const restoredLines = this.restoreCodeSpans(lines, codeSpans);
+
+    return restoredLines;
+  }
+
+  /**
+   * Protect inline code spans by replacing them with placeholders
+   * This prevents wrapAnsi from breaking code spans across lines
+   */
+  private protectCodeSpans(text: string): {
+    protectedText: string;
+    codeSpans: string[];
+  } {
+    const codeSpans: string[] = [];
+    let protectedText = text;
+    let placeholderIndex = 0;
+
+    // Find all inline code spans (text between backticks with ANSI styling)
+    // Only protect actual code spans that have been styled by renderInlineTokens
+    // Pattern: gray backtick + cyan content + gray backtick
+    // Use a simpler approach that doesn't rely on specific ANSI codes
+    const codeSpanRegex = /`[^`]+`/g;
+    let match: RegExpExecArray | null = null;
+
+    // biome-ignore lint/suspicious/noAssignInExpressions: Need assignment in while condition
+    while ((match = codeSpanRegex.exec(text)) !== null) {
+      const codeSpan = match[0];
+
+      // Only protect code spans that are actual code (not escaped backticks)
+      // We can identify actual code spans by checking if they're surrounded by ANSI codes
+      // or if they appear in contexts where escaped backticks would have been processed
+      const startIndex = match.index;
+      const endIndex = startIndex + codeSpan.length;
+
+      // Check if this looks like an actual code span (not escaped backticks)
+      // Escaped backticks would appear as literal backticks without ANSI styling
+      // Actual code spans would have been processed by renderInlineTokens
+      if (this.isActualCodeSpan(text, startIndex, endIndex)) {
+        const placeholder = `__CODE_SPAN_${placeholderIndex}__`;
+        codeSpans.push(codeSpan);
+        protectedText = protectedText.replace(codeSpan, placeholder);
+        placeholderIndex++;
+      }
+    }
+
+    return { protectedText, codeSpans };
+  }
+
+  /**
+   * Check if a potential code span is an actual code span (not escaped backticks)
+   */
+  private isActualCodeSpan(
+    text: string,
+    startIndex: number,
+    endIndex: number,
+  ): boolean {
+    // If the text around the code span contains ANSI escape sequences,
+    // it's likely an actual code span that was processed by renderInlineTokens
+    // Look for ANSI escape sequences in the surrounding context
+    const contextStart = Math.max(0, startIndex - 10);
+    const contextEnd = Math.min(text.length, endIndex + 10);
+    const context = text.slice(contextStart, contextEnd);
+
+    // Check for ANSI escape sequences that would indicate styled code
+    // Use String.fromCharCode(27) to avoid control characters in regex
+    const escapeChar = String.fromCharCode(27);
+    return context.includes(`${escapeChar}[`);
+  }
+
+  /**
+   * Check if a line represents a nested list item
+   */
+  private isNestedListLine(line: string, currentDepth: number): boolean {
+    // A nested list line should have proper indentation for its depth
+    // and typically starts with a bullet (cyan colored number or dash)
+    const expectedIndent = "  ".repeat(currentDepth + 1);
+    const escapeChar = String.fromCharCode(27);
+
+    // Check if the line starts with the expected indent for a nested list
+    // and contains a cyan bullet (either number or dash) after the indent
+    if (line.startsWith(expectedIndent)) {
+      const afterIndent = line.slice(expectedIndent.length);
+
+      // Look for cyan-colored content at the start (bullet)
+      // Pattern: cyan escape sequence followed by content, then reset
+      const cyanPattern = `${escapeChar}[36m`;
+      const resetPattern = `${escapeChar}[39m`;
+
+      if (afterIndent.startsWith(cyanPattern)) {
+        const afterCyan = afterIndent.slice(cyanPattern.length);
+        const resetIndex = afterCyan.indexOf(resetPattern);
+
+        if (resetIndex > 0) {
+          const bulletContent = afterCyan.slice(0, resetIndex);
+          // Check if this looks like a list bullet (number with dot or dash)
+          return /^(\d+\.|-)/.test(bulletContent);
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Restore code spans from placeholders after wrapping
+   */
+  private restoreCodeSpans(lines: string[], codeSpans: string[]): string[] {
+    return lines.map((line) => {
+      let restoredLine = line;
+
+      // Restore each code span placeholder
+      for (let i = 0; i < codeSpans.length; i++) {
+        const placeholder = `__CODE_SPAN_${i}__`;
+        const codeSpan = codeSpans[i];
+
+        restoredLine = restoredLine.replace(placeholder, codeSpan);
+      }
+
+      return restoredLine;
+    });
   }
 
   /**
@@ -462,9 +588,9 @@ export class Markdown implements Component {
       const itemLines = this.renderListItem(item.tokens || [], depth);
 
       if (itemLines.length > 0) {
-        // First line - check if it's a nested list (contains cyan ANSI code for bullets)
+        // First line - check if it's a nested list
         const firstLine = itemLines[0];
-        const isNestedList = firstLine.includes("\x1b[36m"); // cyan color code
+        const isNestedList = this.isNestedListLine(firstLine, depth);
 
         if (isNestedList) {
           // This is a nested list, just add it as-is (already has full indent)
