@@ -10,27 +10,29 @@ Acai is a powerful **AI-driven command-line interface (CLI) tool** designed to a
 
 ### Core Functionality:
 
-*   **Interactive AI Assistant:** Engage in a conversational REPL (Read-Eval-Print Loop) to get assistance with coding, debugging, refactoring, and more.
+*   **Interactive AI Assistant:** Engage in a conversational REPL (Read-Eval-Print Loop) or TUI (Terminal User Interface) to get assistance with coding, debugging, refactoring, and more.
 *   **Codebase Interaction:** Read, edit, and navigate files; search code; and understand project structure.
 *   **Git Integration:** Generate conventional commits, review pull requests, and manage local changes.
 *   **Extensible Tooling:** Utilizes a suite of internal tools (e.g., `bash`, `codeInterpreter`, `webSearch`) to perform actions.
 *   **Multi-Model Support:** Seamlessly switch between various AI providers (e.g., OpenAI, Google, Anthropic, DeepSeek, Groq, OpenRouter).
 *   **Context Management:** Automatically incorporates relevant file content, clipboard data, and conversation history into AI prompts.
 *   **Configurable & Learnable:** Customize behavior through project-specific rules and learn from user corrections.
+*   **Terminal User Interface:** Modern TUI with modal dialogs, autocomplete, and rich text formatting.
 
 ## ✨ Features
 
-*   **Conversational REPL:** Intuitive command-line interface for interacting with the AI.
+*   **Conversational REPL/TUI:** Intuitive command-line interface and modern terminal UI for interacting with the AI.
 *   **File System Operations:** Read, write, edit, move, and delete files.
 *   **File & Directory Mentions:** Include file contents and entire directories in prompts using `@filename` and `@dirname` syntax.
-*   **Code Navigation & Analysis:** Leverage Tree-sitter for intelligent code understanding.
+*   **Code Navigation & Analysis:** Advanced file searching and code analysis capabilities.
 *   **Git Workflow Automation:** Streamline commit messages and code reviews.
 *   **Web Integration:** Perform web searches and fetch content from URLs.
-*   **Extensible Commands:** A rich set of built-in commands (`/files`, `/edit`, `/commit`, `/model`, `/help`, etc.).
+*   **Extensible Commands:** A rich set of built-in commands (`/help`, `/model`, `/usage`, `/list-tools`, etc.).
 *   **Token Usage Tracking:** Monitor AI token consumption.
 *   **Configurable AI Models:** Easily switch between different LLM providers and models.
-*   **Shell Integration:** Execute shell commands inline using `!`command`` syntax.
+*   **Shell Integration:** Execute shell commands inline using `!`command`` syntax or via `/shell` command.
 *   **Dynamic Tools:** Create and load custom tools from JavaScript files in your project or user directory.
+*   **Multi-workspace Support:** Work across multiple project directories simultaneously.
 
 ## 🛠️ Technologies Used
 
@@ -225,23 +227,27 @@ For a list of available commands, type `/help` within the REPL.
 - `/help` - Shows usage information
 - `/reset` - Saves chat history and resets the conversation
 - `/save` - Saves chat history
-- `/compact` - Saves, summarizes and resets the chat history
 - `/exit` or `/bye` - Exits and saves chat history
-- `/files [pattern]` - Select files interactively or by pattern, adding content to prompt
 - `/init` - Generate or improve `AGENTS.md`
-- `/editPrompt` - Edit the current prompt
 - `/paste` - Add clipboard contents to the next prompt
 - `/prompt <name>` - Load saved prompts. Project prompts override user prompts.
-- `/rules [view|add <text>|edit]` - View or edit persistent project rules/memories (formerly /memory)
 - `/model [provider:model|category|provider]` - List or switch models
 - `/usage` - Show token usage breakdown
 - `/clear` - Clears the terminal screen for the current session
-- `/lastLog` - Show the last application log entries
-- `/appLog` - Show or follow the application log
 - `/generateRules` - Analyze the current conversation and suggest project rules
-- `/edit <path> "<change description>"` - Edit a file with AI assistance
 - `/copy` - Copy the last assistant response to the system clipboard
 - `/list-tools` or `/lt` - List all available static and dynamic tools
+- `/add-dir <path>` - Add additional working directory
+- `/list-dirs` - List all working directories
+- `/remove-dir <path>` - Remove a working directory
+- `/context` - Manage context selections
+- `/health` - Check system health and dependencies
+- `/history` - View and manage conversation history
+- `/pickup` - Resume a previous conversation
+- `/handoff` - Hand off conversation to another agent
+- `/shell` - Execute shell commands
+
+**Note**: Some commands mentioned in older documentation (like `/files`, `/edit`, `/compact`, `/rules`, `/lastLog`, `/appLog`) are currently disabled in the codebase.
 
 Clipboard notes:
 - macOS: uses `pbcopy`
@@ -562,6 +568,7 @@ Here's a list of useful `npm` scripts for development:
 | `npm run knip`  | Detects unused files, dependencies, and exports.                         |
 | `npm run check` | Interactively checks for and updates outdated npm packages.              |
 | `npm run cpd`   | Checks for copy-pasted code using `jscpd`.                               |
+| `npm run typecheck` | Type checks the codebase without emitting files.                        |
 
 ### Code Structure
 
@@ -571,15 +578,20 @@ The project is organized as follows:
 .
 ├── .acai/             # Internal configuration, context, and temporary files
 ├── source/            # Main application source code
+│   ├── agent/         # Agent loop and manual execution
+│   ├── api/           # External API integrations (e.g., Exa)
 │   ├── cli.ts         # CLI entry point
-│   ├── code-utils/    # Code parsing and navigation utilities (Tree-sitter)
-│   ├── commands/      # Implementations of REPL commands (e.g., /edit, /commit)
+│   ├── commands/      # Implementations of REPL commands
+│   ├── execution/     # Command execution utilities
 │   ├── middleware/    # AI request/response middleware (logging, rate limiting)
 │   ├── models/        # AI model providers and management
 │   ├── prompts/       # Prompt generation and management
+│   ├── repl/          # REPL interface components
 │   ├── terminal/      # Terminal output formatting and rendering
+│   ├── tui/           # Terminal User Interface components
 │   ├── tools/         # AI-callable tools (filesystem, git, web, bash, etc.)
-│   └── ...            # Other core modules (config, logger, repl, token tracking)
+│   ├── tokens/        # Token counting and tracking
+│   └── utils/         # Utility functions
 ├── test/              # Unit tests
 ├── ARCHITECTURE.md    # Detailed architectural overview and flow diagrams
 ├── AGENTS.md          # Project-specific AI rules and guidelines

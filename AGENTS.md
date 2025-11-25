@@ -16,7 +16,7 @@ Acai-TS is an AI assistant CLI tool built with TypeScript. The project uses a mo
 - **Find Unused Code/Deps:** `npm run knip`
 
 ## Running the App
-- **CLI:** `acai-dev -p <prompt>`
+- **CLI:** `acai -p <prompt>`
 - **Application logs:** `~/.acai/logs/current.log`
 
 ## Custom Tools

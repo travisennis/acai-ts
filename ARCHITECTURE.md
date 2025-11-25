@@ -20,30 +20,38 @@ acai-ts
 ├── tsconfig.json
 ├── source
 │   ├── agent
+│   │   ├── index.ts
 │   │   └── manual-loop.ts
 │   ├── api
 │   │   └── exa
 │   │       └── index.ts
 │   ├── cli.ts
 │   ├── commands
+│   │   ├── add-directory-command.ts
 │   │   ├── application-log-command.ts
 │   │   ├── clear-command.ts
 │   │   ├── compact-command.ts
+│   │   ├── context-command.ts
 │   │   ├── copy-command.ts
 │   │   ├── edit-command.ts
 │   │   ├── edit-prompt-command.ts
 │   │   ├── exit-command.ts
 │   │   ├── files-command.ts
 │   │   ├── generate-rules-command.ts
+│   │   ├── handoff-command.ts
 │   │   ├── health-command.ts
 │   │   ├── help-command.ts
+│   │   ├── history-command.ts
 │   │   ├── init-command.ts
 │   │   ├── last-log-command.ts
+│   │   ├── list-directories-command.ts
 │   │   ├── list-tools-command.ts
 │   │   ├── manager.ts
 │   │   ├── model-command.ts
 │   │   ├── paste-command.ts
+│   │   ├── pickup-command.ts
 │   │   ├── prompt-command.ts
+│   │   ├── remove-directory-command.ts
 │   │   ├── reset-command.ts
 │   │   ├── rules-command.ts
 │   │   ├── save-command.ts
@@ -51,7 +59,6 @@ acai-ts
 │   │   ├── types.ts
 │   │   └── usage-command.ts
 │   ├── config.ts
-│   ├── conversation-analyzer.ts
 │   ├── dedent.ts
 │   ├── execution
 │   │   └── index.ts
@@ -84,10 +91,11 @@ acai-ts
 │   │   ├── display-tool-messages.ts
 │   │   ├── display-tool-use.ts
 │   │   ├── get-prompt-header.ts
+│   │   ├── project-status-line.ts
+│   │   ├── prompt.ts
 │   │   └── tool-call-repair.ts
-│   ├── repl-prompt.ts
+│   ├── repl-new.ts
 │   ├── repl.ts
-│   ├── saved-selections
 │   ├── terminal
 │   │   ├── ansi-styles.ts
 │   │   ├── checkbox-prompt.ts
@@ -115,10 +123,10 @@ acai-ts
 │   ├── terminal-output.test.ts
 │   ├── tokens
 │   │   ├── counter.ts
-│   │   ├── manage-output.ts
+│   │   ├── threshold.ts
 │   │   └── tracker.ts
-│   ├── tool-executor.ts
 │   ├── tools
+│   │   ├── advanced-edit-file.ts
 │   │   ├── agent.ts
 │   │   ├── bash-utils.ts
 │   │   ├── bash.ts
@@ -128,20 +136,44 @@ acai-ts
 │   │   ├── dynamic-tool-loader.ts
 │   │   ├── dynamic-tool-parser.ts
 │   │   ├── edit-file.ts
-│   │   ├── file-editing-utils.ts
 │   │   ├── filesystem-utils.ts
 │   │   ├── git-utils.ts
 │   │   ├── glob.ts
 │   │   ├── grep.ts
 │   │   ├── index.ts
+│   │   ├── llm-edit-fixer.ts
 │   │   ├── move-file.ts
 │   │   ├── read-file.ts
 │   │   ├── read-multiple-files.ts
 │   │   ├── save-file.ts
 │   │   ├── think.ts
 │   │   ├── types.ts
+│   │   ├── utils.ts
 │   │   ├── web-fetch.ts
 │   │   └── web-search.ts
+│   ├── tui
+│   │   ├── autocomplete.ts
+│   │   ├── components
+│   │   │   ├── assistant-message.ts
+│   │   │   ├── editor.ts
+│   │   │   ├── footer.ts
+│   │   │   ├── input.ts
+│   │   │   ├── loader.ts
+│   │   │   ├── markdown.ts
+│   │   │   ├── modal.ts
+│   │   │   ├── prompt-status.ts
+│   │   │   ├── select-list.ts
+│   │   │   ├── spacer.ts
+│   │   │   ├── text.ts
+│   │   │   ├── thinking-block.ts
+│   │   │   ├── tool-execution.ts
+│   │   │   ├── user-message.ts
+│   │   │   └── welcome.ts
+│   │   ├── index.ts
+│   │   ├── terminal.ts
+│   │   ├── tui-output.test.ts
+│   │   ├── tui.ts
+│   │   └── utils.ts
 │   ├── utils
 │   │   ├── filesystem.ts
 │   │   ├── filetype-detection.ts
@@ -153,13 +185,17 @@ acai-ts
 │   │   └── zod-utils.ts
 │   └── version.ts
 ├── test
+│   ├── advanced-edit-file.test.ts
 │   ├── agent
 │   ├── commands
+│   │   ├── context-command.test.ts
 │   │   ├── copy-command.test.ts
 │   │   ├── exit-command.test.ts
 │   │   ├── health-command.test.ts
+│   │   ├── history-command.integration.test.ts
+│   │   ├── history-command.test.ts
 │   │   ├── prompt-history.test.ts
-│   │   ├── shell-command.test.ts
+│   │   └── shell-command.test.ts
 │   ├── config.test.ts
 │   ├── execution.test.ts
 │   ├── mentions.test.ts
@@ -170,6 +206,8 @@ acai-ts
 │   │   ├── markdown-utils.test.ts
 │   │   ├── markdown.test.ts
 │   │   ├── search-prompt.test.ts
+│   ├── tokens
+│   │   └── threshold.test.ts
 │   ├── tools
 │   │   ├── bash-utils.test.ts
 │   │   ├── bash.test.ts
@@ -179,16 +217,26 @@ acai-ts
 │   │   ├── edit-file.test.ts
 │   │   ├── filesystem-utils.test.ts
 │   │   ├── glob.test.ts
+│   │   ├── grep-enhanced-ux.test.ts
 │   │   ├── grep-error-handling.test.ts
 │   │   ├── grep-issue-96.test.ts
+│   │   ├── grep-match-counting.test.ts
+│   │   ├── grep-max-results.test.ts
 │   │   ├── grep.test.ts
-│   │   └── is-mutating-command.test.ts
+│   │   ├── is-mutating-command.test.ts
+│   │   └── llm-edit-fixer.test.ts
+│   ├── tui
+│   │   ├── autocomplete.test.ts
+│   │   ├── components
+│   │   │   └── modal-table.test.ts
+│   │   └── modal.test.ts
 │   ├── utils
-│       ├── filesystem.test.ts
-│       ├── generators.test.ts
-│       ├── glob.test.ts
-│       ├── ignore.test.ts
-│       └── process.test.ts
+│   │   ├── filesystem.test.ts
+│   │   ├── generators.test.ts
+│   │   ├── glob.test.ts
+│   │   ├── ignore.test.ts
+│   │   ├── mocking.ts
+│   │   └── process.test.ts
 ```
 
 Notes:
@@ -214,27 +262,35 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **tsconfig.json**: TypeScript configuration for development and type-checking.
 
 ### source/ Directory
+- **agent/index.ts**: Main agent loop implementation for AI interactions and tool execution.
 - **agent/manual-loop.ts**: Manual loop implementation for agent operations.
 - **api/exa/index.ts**: Integration for Exa API, likely for advanced search or data retrieval tools.
 - **cli.ts**: Parses command-line arguments and flags for the application.
+- **commands/add-directory-command.ts**: Command to add additional working directories.
 - **commands/application-log-command.ts**: Command to view or manage application logs.
 - **commands/clear-command.ts**: Command to clear the conversation history or screen.
 - **commands/compact-command.ts**: Command to compact or summarize conversation history.
+- **commands/context-command.ts**: Command to manage context selections.
 - **commands/copy-command.ts**: Command to copy output or selections to clipboard.
 - **commands/edit-command.ts**: Command to edit files or prompts using AI.
 - **commands/edit-prompt-command.ts**: Command to edit saved prompts.
 - **commands/exit-command.ts**: Command to exit the REPL.
 - **commands/files-command.ts**: Command to list or manage project files.
 - **commands/generate-rules-command.ts**: Command to generate or update agent rules.
+- **commands/handoff-command.ts**: Command to hand off conversation to another agent.
 - **commands/health-command.ts**: Command to check application health and status.
 - **commands/help-command.ts**: Command to display help information.
+- **commands/history-command.ts**: Command to view and manage conversation history.
 - **commands/init-command.ts**: Command to initialize the project or configuration.
 - **commands/last-log-command.ts**: Command to show the last log entry.
+- **commands/list-directories-command.ts**: Command to list all working directories.
 - **commands/list-tools-command.ts**: Command to list available tools.
 - **commands/manager.ts**: Manages registration and execution of all commands.
 - **commands/model-command.ts**: Command to switch or configure AI models.
 - **commands/paste-command.ts**: Command to paste input from clipboard.
+- **commands/pickup-command.ts**: Command to resume a previous conversation.
 - **commands/prompt-command.ts**: Command to manage or execute saved prompts.
+- **commands/remove-directory-command.ts**: Command to remove a working directory.
 - **commands/reset-command.ts**: Command to reset conversation or state.
 - **commands/rules-command.ts**: Command to view or edit rules.
 - **commands/save-command.ts**: Command to save conversation or outputs.
@@ -242,7 +298,6 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **commands/types.ts**: Type definitions for commands.
 - **commands/usage-command.ts**: Command to show usage statistics or token usage.
 - **config.ts**: Loads and validates configuration from env, files, and defaults.
-- **conversation-analyzer.ts**: Analyzes conversation history for patterns or summaries.
 - **dedent.ts**: Utility function to remove indentation from multi-line strings.
 - **execution/index.ts**: Handles execution of code or commands, possibly wrapping tools.
 - **formatting.ts**: Utilities for formatting text, code, or output.
@@ -270,10 +325,11 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **repl/display-tool-messages.ts**: Displays messages related to tool executions in REPL.
 - **repl/display-tool-use.ts**: Handles display of tool usage in the REPL.
 - **repl/get-prompt-header.ts**: Generates headers for REPL prompts.
+- **repl/project-status-line.ts**: Displays project status information in REPL.
+- **repl/prompt.ts**: Configures the interactive prompt for the REPL.
 - **repl/tool-call-repair.ts**: Repairs or handles errors in tool calls.
-- **repl-prompt.ts**: Configures the interactive prompt for the REPL.
+- **repl-new.ts**: New REPL implementation with enhanced features.
 - **repl.ts**: Implements the Read-Eval-Print Loop for interactive sessions.
-- **saved-selections/**: Directory for storing user-saved file selections (empty currently).
 - **terminal/ansi-styles.ts**: ANSI color and style utilities for terminal output.
 - **terminal/checkbox-prompt.ts**: Interactive prompt for checkbox selections.
 - **terminal/default-theme.ts**: Default color theme for terminal output.
@@ -298,9 +354,9 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **terminal/wrap-ansi.ts**: Wraps text with ANSI escape codes.
 - **terminal-output.test.ts**: Unit tests for terminal output rendering.
 - **tokens/counter.ts**: Utilities for counting tokens in text.
-- **tokens/manage-output.ts**: Manages token usage in outputs.
+- **tokens/threshold.ts**: Manages token usage thresholds and limits.
 - **tokens/tracker.ts**: Tracks token usage across sessions.
-- **tool-executor.ts**: Executes AI tools based on model requests.
+- **tools/advanced-edit-file.ts**: Advanced file editing tool with multiple modes.
 - **tools/agent.ts**: AI agent logic for coordinating tool usage.
 - **tools/bash-utils.ts**: Utilities for bash command execution.
 - **tools/bash.ts**: Tool for executing shell commands safely.
@@ -310,20 +366,42 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **tools/dynamic-tool-loader.ts**: Dynamically loads tool definitions.
 - **tools/dynamic-tool-parser.ts**: Parses dynamic tool specifications.
 - **tools/edit-file.ts**: Tool to edit files with diff support.
-- **tools/file-editing-utils.ts**: Utilities for file editing operations.
 - **tools/filesystem-utils.ts**: General filesystem utilities for tools.
 - **tools/git-utils.ts**: Utilities for Git operations.
 - **tools/glob.ts**: Tool for glob-based file searching.
 - **tools/grep.ts**: Tool for searching files using ripgrep.
 - **tools/index.ts**: Registry and exports for all tools.
+- **tools/llm-edit-fixer.ts**: Tool for fixing LLM-generated edits.
 - **tools/move-file.ts**: Tool to move or rename files.
 - **tools/read-file.ts**: Tool to read file contents.
 - **tools/read-multiple-files.ts**: Tool to read multiple files at once.
 - **tools/save-file.ts**: Tool to save or create files.
 - **tools/think.ts**: Tool for agent to log thoughts without side effects.
 - **tools/types.ts**: Type definitions for tools.
+- **tools/utils.ts**: Utility functions for tools.
 - **tools/web-fetch.ts**: Tool to fetch web content.
 - **tools/web-search.ts**: Tool for web searching.
+- **tui/autocomplete.ts**: Autocomplete functionality for TUI.
+- **tui/components/assistant-message.ts**: Component for displaying AI assistant messages.
+- **tui/components/editor.ts**: Text editor component for TUI.
+- **tui/components/footer.ts**: Footer component for TUI.
+- **tui/components/input.ts**: Input component for TUI.
+- **tui/components/loader.ts**: Loading indicator component.
+- **tui/components/markdown.ts**: Markdown rendering component.
+- **tui/components/modal.ts**: Modal dialog component.
+- **tui/components/prompt-status.ts**: Status display for prompts.
+- **tui/components/select-list.ts**: Selectable list component.
+- **tui/components/spacer.ts**: Spacer component for layout.
+- **tui/components/text.ts**: Text display component.
+- **tui/components/thinking-block.ts**: Component for displaying AI thinking state.
+- **tui/components/tool-execution.ts**: Component for displaying tool execution.
+- **tui/components/user-message.ts**: Component for displaying user messages.
+- **tui/components/welcome.ts**: Welcome screen component.
+- **tui/index.ts**: Main exports for TUI components and interfaces.
+- **tui/terminal.ts**: Terminal interface implementation for TUI.
+- **tui/tui-output.test.ts**: Unit tests for TUI output rendering.
+- **tui/tui.ts**: Main TUI (Terminal User Interface) implementation.
+- **tui/utils.ts**: Utility functions for TUI.
 - **utils/filesystem.ts**: Filesystem-related utilities.
 - **utils/filetype-detection.ts**: Detects file types based on content or extension.
 - **utils/generators.ts**: Utilities for generating unique IDs or names.
@@ -335,10 +413,14 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **version.ts**: Manages and exposes application version.
 
 ### test/ Directory
+- **advanced-edit-file.test.ts**: Unit tests for advanced edit file tool.
 - **agent/**: Directory for agent-related tests (empty currently).
+- **commands/context-command.test.ts**: Unit tests for context command.
 - **commands/copy-command.test.ts**: Unit tests for copy command.
 - **commands/exit-command.test.ts**: Unit tests for exit command.
 - **commands/health-command.test.ts**: Unit tests for health command.
+- **commands/history-command.integration.test.ts**: Integration tests for history command.
+- **commands/history-command.test.ts**: Unit tests for history command.
 - **commands/prompt-history.test.ts**: Unit tests for prompt history.
 - **commands/shell-command.test.ts**: Unit tests for shell command.
 - **config.test.ts**: Unit tests for configuration loading.
@@ -350,6 +432,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **terminal/markdown-utils.test.ts**: Unit tests for Markdown utilities.
 - **terminal/markdown.test.ts**: Unit tests for Markdown rendering.
 - **terminal/search-prompt.test.ts**: Unit tests for search prompt.
+- **tokens/threshold.test.ts**: Unit tests for token threshold management.
 - **tools/bash-utils.test.ts**: Unit tests for bash utilities.
 - **tools/bash.test.ts**: Unit tests for bash tool.
 - **tools/code-interpreter.test.ts**: Unit tests for code interpreter tool.
@@ -358,14 +441,22 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **tools/edit-file.test.ts**: Unit tests for edit file tool.
 - **tools/filesystem-utils.test.ts**: Unit tests for filesystem utilities.
 - **tools/glob.test.ts**: Unit tests for glob tool.
+- **tools/grep-enhanced-ux.test.ts**: Unit tests for grep enhanced UX.
 - **tools/grep-error-handling.test.ts**: Unit tests for grep error handling.
 - **tools/grep-issue-96.test.ts**: Unit tests for specific grep issue.
+- **tools/grep-match-counting.test.ts**: Unit tests for grep match counting.
+- **tools/grep-max-results.test.ts**: Unit tests for grep max results.
 - **tools/grep.test.ts**: Unit tests for grep tool.
 - **tools/is-mutating-command.test.ts**: Unit tests for mutating command detection.
+- **tools/llm-edit-fixer.test.ts**: Unit tests for LLM edit fixer.
+- **tui/autocomplete.test.ts**: Unit tests for TUI autocomplete.
+- **tui/components/modal-table.test.ts**: Unit tests for modal table component.
+- **tui/modal.test.ts**: Unit tests for modal component.
 - **utils/filesystem.test.ts**: Unit tests for filesystem utilities.
 - **utils/generators.test.ts**: Unit tests for generators.
 - **utils/glob.test.ts**: Unit tests for glob utilities.
 - **utils/ignore.test.ts**: Unit tests for ignore utilities.
+- **utils/mocking.ts**: Mocking utilities for tests.
 - **utils/process.test.ts**: Unit tests for process utilities.
 
 ## Flow Diagram
@@ -374,7 +465,7 @@ Entry points from package.json:
 - Binary: `acai` -> `dist/index.js` (built from source/index.ts)
 - Development: `npm run dev` -> `node ./source/index.ts`
 
-### Application Startup and REPL
+### Application Startup and Interface Selection
 
 ```mermaid
 graph TD
@@ -384,15 +475,18 @@ graph TD
   D --> E[Initialize models source/models/manager.ts]
   E --> F[Initialize prompts and messages]
   F --> G[Setup commands source/commands/manager.ts]
-  G --> H[Start REPL source/repl.ts]
-  H --> I[Interactive loop: input -> process -> output]
+  G --> H{Environment supports TUI?}
+  H -->|Yes| I[Start TUI source/tui/tui.ts]
+  H -->|No| J[Start REPL source/repl.ts]
+  I --> K[TUI Interactive loop]
+  J --> L[REPL Interactive loop]
 ```
 
 ### User Input Handling (Command vs AI Prompt)
 
 ```mermaid
 graph TD
-  A[User input in REPL] --> B{Starts with / ?}
+  A[User input in REPL/TUI] --> B{Starts with / ?}
   B -->|Yes| C[Execute command via manager]
   C --> D[Display command result]
   B -->|No| E[Build prompt source/prompts.ts]
@@ -400,11 +494,11 @@ graph TD
   F --> G[Provider adapter e.g. openai-provider.ts]
   G --> H[AI response]
   H --> I{Includes tool calls?}
-  I -->|Yes| J[Execute tools via agent.ts]
+  I -->|Yes| J[Execute tools via agent/index.ts]
   J --> K[Feed results back to AI]
   K --> L[Final response]
   I -->|No| L
-  L --> M[Display in terminal]
+  L --> M[Display in terminal/TUI]
   M --> N[Update history source/messages.ts]
 ```
 
@@ -413,9 +507,9 @@ graph TD
 ```mermaid
 sequenceDiagram
   participant U as User
-  participant R as REPL
+  participant R as REPL/TUI
   participant M as Model Manager
-  participant A as Agent (tools/agent.ts)
+  participant A as Agent (agent/index.ts)
   participant T as Tool (e.g. bash.ts)
   participant P as Provider (e.g. openai-provider.ts)
 
@@ -439,7 +533,7 @@ sequenceDiagram
   M-->>R: Display to user
 ```
 
-### Dynamic Tool Loading (New)
+### Dynamic Tool Loading
 
 ```mermaid
 graph TD
@@ -452,4 +546,21 @@ graph TD
   C -->|No| H[Error: Unknown tool]
 ```
 
-These diagrams cover the primary flows: startup, input processing, tool invocation, and dynamic tool support.
+### TUI Component Rendering Flow
+
+```mermaid
+graph TD
+  A[TUI startup] --> B[Initialize components]
+  B --> C[Render welcome screen]
+  C --> D[Wait for user input]
+  D --> E[Process input]
+  E --> F{Command or prompt?}
+  F -->|Command| G[Execute command]
+  F -->|Prompt| H[Send to AI]
+  G --> I[Update UI state]
+  H --> I
+  I --> J[Re-render components]
+  J --> D
+```
+
+These diagrams cover the primary flows: startup, interface selection, input processing, tool invocation, dynamic tool support, and TUI component rendering.
