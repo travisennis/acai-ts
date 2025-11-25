@@ -1,6 +1,7 @@
 import type { Agent, AgentEvent, AgentState } from "./agent/index.ts";
 import type { CommandManager } from "./commands/manager.ts";
 import type { WorkspaceContext } from "./index.ts";
+import { logger } from "./logger.ts";
 import { PromptError, processPrompt } from "./mentions.ts";
 import type { MessageHistory } from "./messages.ts";
 import type { ModelManager } from "./models/manager.ts";
@@ -247,7 +248,7 @@ export class NewRepl {
         break;
 
       case "step-stop":
-        this.pendingTools.clear();
+        // this.pendingTools.clear();
         this.tui.requestRender();
         break;
 
@@ -354,6 +355,7 @@ export class NewRepl {
         break;
 
       case "agent-error":
+        logger.error(event, "agent-error");
         // Stop loading animation
         if (this.loadingAnimation) {
           this.loadingAnimation.stop();
