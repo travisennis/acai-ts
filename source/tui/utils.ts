@@ -1,4 +1,4 @@
-import stringWidth from "string-width";
+import stringWidth from "../terminal/string-width.ts";
 
 /**
  * Calculate the visible width of a string in terminal columns.
