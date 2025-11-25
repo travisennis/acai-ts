@@ -12,11 +12,10 @@ import { logger } from "../logger.ts";
 import type { MessageHistory } from "../messages.ts";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
-import { displayToolMessages } from "../repl/display-tool-messages.ts";
 import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
+import { consumeToolAsyncIterable } from "../tools/async-iterable.ts";
 import type { CompleteToolSet } from "../tools/index.ts";
-import { isToolMessage } from "../tools/types.ts";
 import { isAsyncIterable } from "../utils/iterables.ts";
 
 type ManualLoopOptions = {
@@ -336,34 +335,6 @@ export async function runManualLoop(
   }
 
   return loopResult;
-}
-
-export async function consumeToolAsyncIterable(
-  iterable: AsyncIterable<unknown>,
-  terminal?: Terminal,
-): Promise<{ finalValue: unknown }> {
-  const iterator = iterable[Symbol.asyncIterator]();
-  const toolResultValues: unknown[] = [];
-
-  let next = await iterator.next();
-
-  while (!next.done) {
-    const value = next.value;
-    if (isToolMessage(value)) {
-      if (terminal) {
-        displayToolMessages(value, terminal);
-      }
-    } else {
-      toolResultValues.push(value);
-    }
-    next = await iterator.next();
-  }
-
-  const finalValue =
-    next.value ??
-    (toolResultValues.length > 0 ? toolResultValues.at(-1) : undefined);
-
-  return { finalValue };
 }
 
 function formatToolResult(value: unknown): string {
