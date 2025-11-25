@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
+import { clearProjectStatusCache } from "../repl/project-status-line.ts";
 import style from "../terminal/style.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import { fileEncodingSchema, type ToolResult } from "./types.ts";
@@ -100,6 +101,10 @@ export const createSaveFileTool = async ({
           id: toolCallId,
           data: `Saved ${lines} lines, ${bytes} bytes`,
         };
+
+        // Clear project status cache since file operations change git status
+        clearProjectStatusCache();
+
         yield `File saved successfully: ${filePath}`;
       } catch (error) {
         yield {
