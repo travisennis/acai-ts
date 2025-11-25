@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
-import { consumeToolAsyncIterable } from "../../source/agent/manual-loop.ts";
+import { consumeToolAsyncIterable } from "../../source/tools/async-iterable.ts";
 import { loadDynamicTools } from "../../source/tools/dynamic-tool-loader.ts";
 
 test("Dynamic tool integration - end-to-end functionality", async () => {
