@@ -4,6 +4,7 @@ import { createTwoFilesPatch } from "diff";
 import { z } from "zod";
 import { logger } from "../logger.ts";
 import type { ModelManager } from "../models/manager.ts";
+import { clearProjectStatusCache } from "../repl/project-status-line.ts";
 import style from "../terminal/style.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
@@ -97,6 +98,9 @@ export const createEditFileTool = async ({
           event: "tool-completion",
           data: `Applied ${edits.length} edits`,
         };
+
+        // Clear project status cache since file operations change git status
+        clearProjectStatusCache();
 
         yield result;
       } catch (error) {
