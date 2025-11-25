@@ -301,6 +301,7 @@ async function main() {
 
     // Set interrupt callback
     repl.setInterruptCallback(() => {
+      messageHistory.save();
       agent.abort();
     });
 
