@@ -163,6 +163,17 @@ interface MinimalStep {
   toolCalls: Array<{ toolName: string }>;
 }
 
+// Simple hash function to convert tool names to consistent numbers
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash);
+}
+
 export function displayToolUse(result: { steps: MinimalStep[] }) {
   const toolsCalled: string[] = [];
   const toolColors = new Map<string, StyleInstance>();
@@ -200,16 +211,9 @@ export function displayToolUse(result: { steps: MinimalStep[] }) {
     for (const toolCallOrResult of currentToolCalls) {
       const toolName = toolCallOrResult.toolName;
       if (!toolColors.has(toolName)) {
-        const availableColors = styleColors.filter(
-          (color) =>
-            !Array.from(toolColors.values()).some((c) => c === style[color]),
-        );
-        const color =
-          availableColors.length > 0
-            ? (availableColors[
-                Math.floor(Math.random() * availableColors.length)
-              ] ?? "white")
-            : "white";
+        const hash = hashString(toolName);
+        const colorIndex = hash % styleColors.length;
+        const color = styleColors[colorIndex];
         toolColors.set(toolName, style[color]);
       }
       toolsCalled.push(toolName);
