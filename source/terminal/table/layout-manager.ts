@@ -1,7 +1,6 @@
-import debug from './debug.ts';
-import { Cell, ColSpanCell, RowSpanCell } from './cell.ts';
-import type { CellOptions } from './utils.ts';
-
+import { Cell, ColSpanCell, RowSpanCell } from "./cell.ts";
+import debug from "./debug.ts";
+import type { CellOptions } from "./utils.ts";
 
 interface AllocMap {
   [key: string]: number;
@@ -54,7 +53,10 @@ export function maxHeight(table: Cell[][]): number {
   return table.length;
 }
 
-export function cellsConflict(cell1: { x: number; y: number; rowSpan?: number; colSpan?: number }, cell2: { x: number; y: number; rowSpan?: number; colSpan?: number }): boolean {
+export function cellsConflict(
+  cell1: { x: number; y: number; rowSpan?: number; colSpan?: number },
+  cell2: { x: number; y: number; rowSpan?: number; colSpan?: number },
+): boolean {
   const yMin1 = cell1.y;
   const yMax1 = cell1.y - 1 + (cell1.rowSpan || 1);
   const yMin2 = cell2.y;
@@ -78,7 +80,14 @@ export function conflictExists(rows: Cell[][], x: number, y: number): boolean {
     for (let j = 0; j < row.length; j++) {
       const currentCell = row[j];
       if (currentCell.x !== null && currentCell.y !== null) {
-        if (cellsConflict(cell, { x: currentCell.x, y: currentCell.y, rowSpan: currentCell.rowSpan, colSpan: currentCell.colSpan })) {
+        if (
+          cellsConflict(cell, {
+            x: currentCell.x,
+            y: currentCell.y,
+            rowSpan: currentCell.rowSpan,
+            colSpan: currentCell.colSpan,
+          })
+        ) {
           return true;
         }
       }
@@ -87,7 +96,12 @@ export function conflictExists(rows: Cell[][], x: number, y: number): boolean {
   return false;
 }
 
-export function allBlank(rows: Cell[][], y: number, xMin: number, xMax: number): boolean {
+export function allBlank(
+  rows: Cell[][],
+  y: number,
+  xMin: number,
+  xMax: number,
+): boolean {
   for (let x = xMin; x < xMax; x++) {
     if (conflictExists(rows, x, y)) {
       return false;
@@ -122,7 +136,11 @@ export function addColSpanCells(cellRows: Cell[][]): void {
         if (cell.x !== null && cell.y !== null) {
           colSpanCell.x = cell.x + k;
           colSpanCell.y = cell.y;
-          cellColumns.splice(columnIndex + 1, 0, colSpanCell as unknown as Cell);
+          cellColumns.splice(
+            columnIndex + 1,
+            0,
+            colSpanCell as unknown as Cell,
+          );
         }
       }
     }
@@ -156,11 +174,14 @@ export function fillInTable(table: Cell[][]): void {
           x++;
         }
         let y2 = y + 1;
-        while (y2 < hMax && allBlank(table, y2, opts.x, opts.x + opts.colSpan)) {
+        while (
+          y2 < hMax &&
+          allBlank(table, y2, opts.x, opts.x + opts.colSpan)
+        ) {
           opts.rowSpan++;
           y2++;
         }
-        const cell = new Cell({ ...opts, content: '' });
+        const cell = new Cell({ ...opts, content: "" });
         cell.x = opts.x;
         cell.y = opts.y;
         debug.warn(`Missing cell at ${cell.y}-${cell.x}.`);
@@ -172,20 +193,22 @@ export function fillInTable(table: Cell[][]): void {
 
 export function generateCells(rows: unknown[]): Cell[][] {
   return rows.map((row) => {
-    if (!Array.isArray(row)) {
-      const key = Object.keys(row as Record<string, unknown>)[0];
-      const rowValue = (row as Record<string, unknown>)[key];
+    let processedRow = row;
+    if (!Array.isArray(processedRow)) {
+      const key = Object.keys(processedRow as Record<string, unknown>)[0];
+      const rowValue = (processedRow as Record<string, unknown>)[key];
       if (Array.isArray(rowValue)) {
         const newRow = rowValue.slice();
         newRow.unshift(key);
-        row = newRow;
+        processedRow = newRow;
       } else {
-        row = [key, rowValue];
+        processedRow = [key, rowValue];
       }
     }
-    return (row as unknown[])
-      .filter((cell): cell is CellOptions | string | number | boolean | bigint => 
-        cell !== null && cell !== undefined
+    return (processedRow as unknown[])
+      .filter(
+        (cell): cell is CellOptions | string | number | boolean | bigint =>
+          cell !== null && cell !== undefined,
       )
       .map((cell) => {
         return new Cell(cell);
@@ -203,9 +226,9 @@ export function makeTableLayout(rows: unknown[]): Cell[][] {
 }
 
 export function makeComputeWidths(
-  colSpan: 'colSpan',
-  desiredWidth: 'desiredWidth' | 'desiredHeight',
-  x: 'x' | 'y',
+  colSpan: "colSpan",
+  desiredWidth: "desiredWidth" | "desiredHeight",
+  x: "x" | "y",
   forcedMin: number,
 ): (vals: Array<number | null>, table: Cell[][]) => void {
   return (vals: Array<number | null>, table: Cell[][]): void => {
@@ -219,14 +242,18 @@ export function makeComputeWidths(
         } else {
           const key = cell[x];
           if (key !== null) {
-            result[key] = Math.max(result[key] || 0, cell[desiredWidth] || 0, forcedMin);
+            result[key] = Math.max(
+              result[key] || 0,
+              cell[desiredWidth] || 0,
+              forcedMin,
+            );
           }
         }
       });
     });
 
     vals.forEach((val, index) => {
-      if (typeof val === 'number') {
+      if (typeof val === "number") {
         result[index] = val;
       }
     });
@@ -238,16 +265,17 @@ export function makeComputeWidths(
       const col = cell[x];
       if (col === null) continue;
       let existingWidth = result[col];
-      let editableCols = typeof vals[col] === 'number' ? 0 : 1;
-      if (typeof existingWidth === 'number') {
+      let editableCols = typeof vals[col] === "number" ? 0 : 1;
+      if (typeof existingWidth === "number") {
         for (let i = 1; i < span; i++) {
           existingWidth += 1 + result[col + i];
-          if (typeof vals[col + i] !== 'number') {
+          if (typeof vals[col + i] !== "number") {
             editableCols++;
           }
         }
       } else {
-        existingWidth = desiredWidth === 'desiredWidth' ? cell.desiredWidth - 1 : 1;
+        existingWidth =
+          desiredWidth === "desiredWidth" ? cell.desiredWidth - 1 : 1;
         if (!auto[col] || auto[col] < existingWidth) {
           auto[col] = existingWidth;
         }
@@ -256,8 +284,10 @@ export function makeComputeWidths(
       if (cell[desiredWidth] > existingWidth) {
         let i = 0;
         while (editableCols > 0 && cell[desiredWidth] > existingWidth) {
-          if (typeof vals[col + i] !== 'number') {
-            const dif = Math.round((cell[desiredWidth] - existingWidth) / editableCols);
+          if (typeof vals[col + i] !== "number") {
+            const dif = Math.round(
+              (cell[desiredWidth] - existingWidth) / editableCols,
+            );
             existingWidth += dif;
             result[col + i] += dif;
             editableCols--;
@@ -274,5 +304,15 @@ export function makeComputeWidths(
   };
 }
 
-export const computeWidths = makeComputeWidths('colSpan', 'desiredWidth', 'x', 1);
-export const computeHeights = makeComputeWidths('rowSpan' as 'colSpan', 'desiredHeight', 'y', 1);
+export const computeWidths = makeComputeWidths(
+  "colSpan",
+  "desiredWidth",
+  "x",
+  1,
+);
+export const computeHeights = makeComputeWidths(
+  "rowSpan" as "colSpan",
+  "desiredHeight",
+  "y",
+  1,
+);

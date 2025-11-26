@@ -1,24 +1,24 @@
-import stringWidth from 'string-width';
+import stringWidth from "../string-width.ts";
 
 type CharName =
-  | 'top'
-  | 'topMid'
-  | 'topLeft'
-  | 'topRight'
-  | 'bottom'
-  | 'bottomMid'
-  | 'bottomLeft'
-  | 'bottomRight'
-  | 'left'
-  | 'leftMid'
-  | 'mid'
-  | 'midMid'
-  | 'right'
-  | 'rightMid'
-  | 'middle';
+  | "top"
+  | "topMid"
+  | "topLeft"
+  | "topRight"
+  | "bottom"
+  | "bottomMid"
+  | "bottomLeft"
+  | "bottomRight"
+  | "left"
+  | "leftMid"
+  | "mid"
+  | "midMid"
+  | "right"
+  | "rightMid"
+  | "middle";
 
-type HorizontalAlignment = 'left' | 'center' | 'right';
-type VerticalAlignment = 'top' | 'center' | 'bottom';
+type HorizontalAlignment = "left" | "center" | "right";
+type VerticalAlignment = "top" | "center" | "bottom";
 
 interface TableOptions {
   truncate: string;
@@ -29,13 +29,14 @@ interface TableOptions {
   head: Cell[];
   wordWrap: boolean;
   wrapOnWordBoundary: boolean;
+  textWrap?: boolean; // Legacy property name for wordWrap
 }
 
 interface TableInstanceOptions extends TableOptions {
   chars: Record<CharName, string>;
   style: {
-    'padding-left': number;
-    'padding-right': number;
+    "padding-left": number;
+    "padding-right": number;
     head: string[];
     border: string[];
     compact: boolean;
@@ -45,7 +46,7 @@ interface TableInstanceOptions extends TableOptions {
 
 interface TableConstructorOptions extends Partial<TableOptions> {
   chars?: Partial<Record<CharName, string>>;
-  style?: Partial<TableInstanceOptions['style']>;
+  style?: Partial<TableInstanceOptions["style"]>;
 }
 
 type CellValue = boolean | number | bigint | string | null | undefined;
@@ -62,8 +63,8 @@ interface CellOptions {
   wrapOnWordBoundary?: boolean;
   href?: string;
   style?: {
-    'padding-left'?: number;
-    'padding-right'?: number;
+    "padding-left"?: number;
+    "padding-right"?: number;
     head?: string[];
     border?: string[];
   };
@@ -81,13 +82,17 @@ interface CodeCache {
 }
 
 function codeRegex(capture: boolean): RegExp {
-  return capture ? /\u001b\[((?:\d*;){0,5}\d*)m/g : /\u001b\[(?:\d*;){0,5}\d*m/g;
+  return capture
+    ? // biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI escape sequences for terminal formatting
+      /\u001b\[((?:\d*;){0,5}\d*)m/g
+    : // biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI escape sequences for terminal formatting
+      /\u001b\[(?:\d*;){0,5}\d*m/g;
 }
 
 export function strlen(str: string): number {
   const code = codeRegex(false);
-  const stripped = (`${str}`).replace(code, '');
-  const split = stripped.split('\n');
+  const stripped = `${str}`.replace(code, "");
+  const split = stripped.split("\n");
   return split.reduce((memo: number, s: string) => {
     return stringWidth(s) > memo ? stringWidth(s) : memo;
   }, 0);
@@ -97,28 +102,34 @@ export function repeat(str: string, times: number): string {
   return Array(times + 1).join(str);
 }
 
-export function pad(str: string, len: number, padChar: string, dir: HorizontalAlignment): string {
+export function pad(
+  str: string,
+  len: number,
+  padChar: string,
+  dir: HorizontalAlignment,
+): string {
   const length = strlen(str);
+  let result = str;
   if (len + 1 >= length) {
     const padlen = len - length;
     switch (dir) {
-      case 'right': {
-        str = repeat(padChar, padlen) + str;
+      case "right": {
+        result = repeat(padChar, padlen) + result;
         break;
       }
-      case 'center': {
+      case "center": {
         const right = Math.ceil(padlen / 2);
         const left = padlen - right;
-        str = repeat(padChar, left) + str + repeat(padChar, right);
+        result = repeat(padChar, left) + result + repeat(padChar, right);
         break;
       }
       default: {
-        str = str + repeat(padChar, padlen);
+        result = result + repeat(padChar, padlen);
         break;
       }
     }
   }
-  return str;
+  return result;
 }
 
 const codeCache: CodeCache = {};
@@ -132,11 +143,11 @@ function addToCodeCache(name: string, on: string, off: string): void {
 }
 
 // https://github.com/Marak/colors.js/blob/master/lib/styles.js
-addToCodeCache('bold', '1', '22');
-addToCodeCache('italics', '3', '23');
-addToCodeCache('underline', '4', '24');
-addToCodeCache('inverse', '7', '27');
-addToCodeCache('strikethrough', '9', '29');
+addToCodeCache("bold", "1", "22");
+addToCodeCache("italics", "3", "23");
+addToCodeCache("underline", "4", "24");
+addToCodeCache("inverse", "7", "27");
+addToCodeCache("strikethrough", "9", "29");
 
 interface State {
   [key: string]: boolean | string | undefined;
@@ -145,12 +156,20 @@ interface State {
 }
 
 function updateState(state: State, controlChars: RegExpExecArray): void {
-  const controlCode = controlChars[1] ? Number.parseInt(controlChars[1].split(';')[0], 10) : 0;
-  if ((controlCode >= 30 && controlCode <= 39) || (controlCode >= 90 && controlCode <= 97)) {
+  const controlCode = controlChars[1]
+    ? Number.parseInt(controlChars[1].split(";")[0], 10)
+    : 0;
+  if (
+    (controlCode >= 30 && controlCode <= 39) ||
+    (controlCode >= 90 && controlCode <= 97)
+  ) {
     state.lastForegroundAdded = controlChars[0];
     return;
   }
-  if ((controlCode >= 40 && controlCode <= 49) || (controlCode >= 100 && controlCode <= 107)) {
+  if (
+    (controlCode >= 40 && controlCode <= 49) ||
+    (controlCode >= 100 && controlCode <= 107)
+  ) {
     state.lastBackgroundAdded = controlChars[0];
     return;
   }
@@ -187,21 +206,22 @@ function unwindState(state: State, ret: string): string {
   delete state.lastBackgroundAdded;
   delete state.lastForegroundAdded;
 
+  let result = ret;
   Object.keys(state).forEach((key) => {
     if (state[key]) {
       const cacheEntry = codeCache[key] as { off: string };
-      ret += cacheEntry.off;
+      result += cacheEntry.off;
     }
   });
 
-  if (lastBackgroundAdded && lastBackgroundAdded !== '\u001b[49m') {
-    ret += '\u001b[49m';
+  if (lastBackgroundAdded && lastBackgroundAdded !== "\u001b[49m") {
+    result += "\u001b[49m";
   }
-  if (lastForegroundAdded && lastForegroundAdded !== '\u001b[39m') {
-    ret += '\u001b[39m';
+  if (lastForegroundAdded && lastForegroundAdded !== "\u001b[39m") {
+    result += "\u001b[39m";
   }
 
-  return ret;
+  return result;
 }
 
 function rewindState(state: State, ret: string): string {
@@ -211,21 +231,22 @@ function rewindState(state: State, ret: string): string {
   delete state.lastBackgroundAdded;
   delete state.lastForegroundAdded;
 
+  let result = ret;
   Object.keys(state).forEach((key) => {
     if (state[key]) {
       const cacheEntry = codeCache[key] as { on: string };
-      ret = cacheEntry.on + ret;
+      result = cacheEntry.on + result;
     }
   });
 
-  if (lastBackgroundAdded && lastBackgroundAdded !== '\u001b[49m') {
-    ret = lastBackgroundAdded + ret;
+  if (lastBackgroundAdded && lastBackgroundAdded !== "\u001b[49m") {
+    result = lastBackgroundAdded + result;
   }
-  if (lastForegroundAdded && lastForegroundAdded !== '\u001b[39m') {
-    ret = lastForegroundAdded + ret;
+  if (lastForegroundAdded && lastForegroundAdded !== "\u001b[39m") {
+    result = lastForegroundAdded + result;
   }
 
-  return ret;
+  return result;
 }
 
 function truncateWidth(str: string, desiredLength: number): string {
@@ -233,11 +254,12 @@ function truncateWidth(str: string, desiredLength: number): string {
     return str.substr(0, desiredLength);
   }
 
-  while (strlen(str) > desiredLength) {
-    str = str.slice(0, -1);
+  let result = str;
+  while (strlen(result) > desiredLength) {
+    result = result.slice(0, -1);
   }
 
-  return str;
+  return result;
 }
 
 function truncateWidthWithAnsi(str: string, desiredLength: number): string {
@@ -245,7 +267,7 @@ function truncateWidthWithAnsi(str: string, desiredLength: number): string {
   const split = str.split(codeRegex(false));
   let splitIndex = 0;
   let retLen = 0;
-  let ret = '';
+  let ret = "";
   let myArray: RegExpExecArray | null;
   const state: State = {};
 
@@ -271,19 +293,23 @@ function truncateWidthWithAnsi(str: string, desiredLength: number): string {
   return unwindState(state, ret);
 }
 
-export function truncate(str: string, desiredLength: number, truncateChar?: string): string {
-  truncateChar = truncateChar || '…';
+export function truncate(
+  str: string,
+  desiredLength: number,
+  truncateChar?: string,
+): string {
+  const finalTruncateChar = truncateChar || "…";
   const lengthOfStr = strlen(str);
   if (lengthOfStr <= desiredLength) {
     return str;
   }
-  desiredLength -= strlen(truncateChar);
+  const finalDesiredLength = desiredLength - strlen(finalTruncateChar);
 
-  let ret = truncateWidthWithAnsi(str, desiredLength);
+  let ret = truncateWidthWithAnsi(str, finalDesiredLength);
 
-  ret += truncateChar;
+  ret += finalTruncateChar;
 
-  const hrefTag = '\x1B]8;;\x07';
+  const hrefTag = "\x1B]8;;\x07";
 
   if (str.includes(hrefTag) && !ret.includes(hrefTag)) {
     ret += hrefTag;
@@ -295,32 +321,32 @@ export function truncate(str: string, desiredLength: number, truncateChar?: stri
 export function defaultOptions(): TableInstanceOptions {
   return {
     chars: {
-      top: '─',
-      topMid: '┬',
-      topLeft: '┌',
-      topRight: '┐',
-      bottom: '─',
-      bottomMid: '┴',
-      bottomLeft: '└',
-      bottomRight: '┘',
-      left: '│',
-      leftMid: '├',
-      mid: '─',
-      midMid: '┼',
-      right: '│',
-      rightMid: '┤',
-      middle: '│',
+      top: "─",
+      topMid: "┬",
+      topLeft: "┌",
+      topRight: "┐",
+      bottom: "─",
+      bottomMid: "┴",
+      bottomLeft: "└",
+      bottomRight: "┘",
+      left: "│",
+      leftMid: "├",
+      mid: "─",
+      midMid: "┼",
+      right: "│",
+      rightMid: "┤",
+      middle: "│",
     },
-    truncate: '…',
+    truncate: "…",
     colWidths: [],
     rowHeights: [],
     colAligns: [],
     rowAligns: [],
     style: {
-      'padding-left': 1,
-      'padding-right': 1,
-      head: ['red'],
-      border: ['grey'],
+      "padding-left": 1,
+      "padding-right": 1,
+      head: ["red"],
+      border: ["grey"],
       compact: false,
     },
     head: [],
@@ -333,11 +359,11 @@ export function mergeOptions(
   options?: Partial<TableConstructorOptions>,
   defaults?: TableInstanceOptions,
 ): TableInstanceOptions {
-  options = options || {};
-  defaults = defaults || defaultOptions();
-  const ret = Object.assign({}, defaults, options);
-  ret.chars = Object.assign({}, defaults.chars, options.chars);
-  ret.style = Object.assign({}, defaults.style, options.style);
+  const finalOptions = options || {};
+  const finalDefaults = defaults || defaultOptions();
+  const ret = Object.assign({}, finalDefaults, finalOptions);
+  ret.chars = Object.assign({}, finalDefaults.chars, finalOptions.chars);
+  ret.style = Object.assign({}, finalDefaults.style, finalOptions.style);
   return ret;
 }
 
@@ -347,7 +373,7 @@ function wordWrap(maxLength: number, input: string): string[] {
   const split = input.split(/(\s+)/g);
   const line: string[] = [];
   let lineLength = 0;
-  let whitespace = '';
+  let whitespace = "";
   for (let i = 0; i < split.length; i += 2) {
     const word = split[i];
     let newLength = lineLength + strlen(word);
@@ -356,19 +382,19 @@ function wordWrap(maxLength: number, input: string): string[] {
     }
     if (newLength > maxLength) {
       if (lineLength !== 0) {
-        lines.push(line.join(''));
+        lines.push(line.join(""));
       }
       line.length = 0;
       line.push(word);
       lineLength = strlen(word);
     } else {
-      line.push(whitespace || '', word);
+      line.push(whitespace || "", word);
       lineLength = newLength;
     }
     whitespace = split[i + 1];
   }
   if (lineLength) {
-    lines.push(line.join(''));
+    lines.push(line.join(""));
   }
   return lines;
 }
@@ -376,7 +402,7 @@ function wordWrap(maxLength: number, input: string): string[] {
 // Wrap text (ignoring word boundaries)
 function textWrap(maxLength: number, input: string): string[] {
   const lines: string[] = [];
-  let line = '';
+  let line = "";
   function pushLine(str: string, ws: string): void {
     if (line.length && ws) line += ws;
     line += str;
@@ -387,15 +413,19 @@ function textWrap(maxLength: number, input: string): string[] {
   }
   const split = input.split(/(\s+)/g);
   for (let i = 0; i < split.length; i += 2) {
-    pushLine(split[i], i ? split[i - 1] : '');
+    pushLine(split[i], i ? split[i - 1] : "");
   }
   if (line.length) lines.push(line);
   return lines;
 }
 
-export function multiLineWordWrap(maxLength: number, input: string, wrapOnWordBoundary = true): string[] {
+export function multiLineWordWrap(
+  maxLength: number,
+  input: string,
+  wrapOnWordBoundary = true,
+): string[] {
   const output: string[] = [];
-  const lines = input.split('\n');
+  const lines = input.split("\n");
   const handler = wrapOnWordBoundary ? wordWrap : textWrap;
   for (let i = 0; i < lines.length; i++) {
     output.push(...handler(maxLength, lines[i]));
@@ -419,21 +449,32 @@ export function colorizeLines(input: string[]): string[] {
  * Credit: Matheus Sampaio https://github.com/matheussampaio
  */
 export function hyperlink(url: string, text: string): string {
-  const Osc = '\u001B]';
-  const Bel = '\u0007';
-  const Sep = ';';
+  const Osc = "\u001B]";
+  const Bel = "\u0007";
+  const Sep = ";";
 
-  return [Osc, '8', Sep, Sep, url || text, Bel, text, Osc, '8', Sep, Sep, Bel].join('');
+  return [
+    Osc,
+    "8",
+    Sep,
+    Sep,
+    url || text,
+    Bel,
+    text,
+    Osc,
+    "8",
+    Sep,
+    Sep,
+    Bel,
+  ].join("");
 }
 
 export type {
   CharName,
   HorizontalAlignment,
   VerticalAlignment,
-  TableOptions,
   TableInstanceOptions,
   TableConstructorOptions,
-  CellValue,
   CellOptions,
   Cell,
 };
