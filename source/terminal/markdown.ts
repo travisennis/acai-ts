@@ -1,5 +1,4 @@
 import { EOL } from "node:os";
-import Table from "./table/index.ts";
 import { marked, type Token } from "marked";
 import { logger } from "../logger.ts";
 import { DEFAULT_THEME } from "./default-theme.ts";
@@ -7,6 +6,7 @@ import { link as terminalLink } from "./formatting.ts";
 import { highlight, supportsLanguage } from "./highlight/index.ts";
 import { getListNumber } from "./markdown-utils.ts";
 import style from "./style.ts";
+import { Table } from "./table/index.ts";
 
 function logError(msg: string) {
   logger.error(msg);

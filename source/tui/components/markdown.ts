@@ -1,9 +1,9 @@
-import Table from "../../terminal/table/index.ts";
 import { marked, type Token } from "marked";
 import { DEFAULT_THEME } from "../../terminal/default-theme.ts";
 import { highlight, supportsLanguage } from "../../terminal/highlight/index.ts";
 import { getListNumber } from "../../terminal/markdown-utils.ts";
 import style from "../../terminal/style.ts";
+import { Table } from "../../terminal/table/index.ts";
 import wrapAnsi from "../../terminal/wrap-ansi.ts";
 import type { Component } from "../tui.ts";
 import { applyBackgroundToLine, visibleWidth } from "../utils.ts";

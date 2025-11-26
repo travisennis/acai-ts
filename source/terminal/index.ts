@@ -5,7 +5,6 @@
  * Handles input/output, formatting, and display.
  */
 
-import Table from "./table/index.ts";
 import { logger } from "../logger.ts";
 import { getPackageVersion } from "../version.ts";
 import {
@@ -17,6 +16,7 @@ import {
 import { applyMarkdown } from "./markdown.ts";
 import stripAnsi from "./strip-ansi.ts";
 import style, { type StyleInstance } from "./style.ts";
+import { Table } from "./table/index.ts";
 import type { TerminalConfig } from "./types.ts";
 import wrapAnsi from "./wrap-ansi.ts";
 
