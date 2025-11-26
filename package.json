@@ -59,7 +59,6 @@
     "@travisennis/stdlib": "^0.0.14",
     "ai": "^5.0.101",
     "cheerio": "^1.1.2",
-
     "diff": "^8.0.2",
     "duck-duck-scrape": "^2.2.7",
     "fast-glob": "^3.3.3",
