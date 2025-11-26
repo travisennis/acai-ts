@@ -18,11 +18,11 @@ debug.reset = (): void => {
 };
 
 debug.setDebugLevel = (v: number | string | boolean): void => {
-  if (typeof v === 'boolean') {
+  if (typeof v === "boolean") {
     level = v ? debug.WARN : 0;
-  } else if (typeof v === 'number') {
+  } else if (typeof v === "number") {
     level = v as DebugLevel;
-  } else if (typeof v === 'string') {
+  } else if (typeof v === "string") {
     level = Number.parseInt(v, 10) as DebugLevel;
   } else {
     level = debug.WARN;

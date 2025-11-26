@@ -1,7 +1,16 @@
-import debug from './debug.ts';
-import { mergeOptions, type TableConstructorOptions, type TableInstanceOptions, type Cell as CellType } from './utils.ts';
-import { makeTableLayout, computeWidths, computeHeights } from './layout-manager.ts';
-import type { Cell } from './cell.ts';
+import type { Cell } from "./cell.ts";
+import debug from "./debug.ts";
+import {
+  computeHeights,
+  computeWidths,
+  makeTableLayout,
+} from "./layout-manager.ts";
+import {
+  type Cell as CellType,
+  mergeOptions,
+  type TableConstructorOptions,
+  type TableInstanceOptions,
+} from "./utils.ts";
 
 export class Table extends Array<unknown> {
   options: TableInstanceOptions;
@@ -11,27 +20,29 @@ export class Table extends Array<unknown> {
 
     const options = mergeOptions(opts);
     this.options = options;
-    Object.defineProperty(this, 'options', {
+    Object.defineProperty(this, "options", {
       value: options,
       enumerable: Boolean(options.debug),
     });
 
     if (options.debug) {
       switch (typeof options.debug) {
-        case 'boolean':
+        case "boolean":
           debug.setDebugLevel(debug.WARN);
           break;
-        case 'number':
+        case "number":
           debug.setDebugLevel(options.debug);
           break;
-        case 'string':
+        case "string":
           debug.setDebugLevel(Number.parseInt(options.debug, 10));
           break;
         default:
           debug.setDebugLevel(debug.WARN);
-          debug.warn(`Debug option is expected to be boolean, number, or string. Received a ${typeof options.debug}`);
+          debug.warn(
+            `Debug option is expected to be boolean, number, or string. Received a ${typeof options.debug}`,
+          );
       }
-      Object.defineProperty(this, 'messages', {
+      Object.defineProperty(this, "messages", {
         get() {
           return debug.debugMessages();
         },
@@ -74,8 +85,12 @@ export class Table extends Array<unknown> {
       const row = cells[rowIndex];
       const heightOfRow = this.options.rowHeights[rowIndex];
 
-      if (rowIndex === 0 || !this.options.style.compact || (rowIndex === 1 && headersPresent)) {
-        doDraw(row, 'top', result);
+      if (
+        rowIndex === 0 ||
+        !this.options.style.compact ||
+        (rowIndex === 1 && headersPresent)
+      ) {
+        doDraw(row, "top", result);
       }
 
       for (let lineNum = 0; lineNum < (heightOfRow || 0); lineNum++) {
@@ -83,15 +98,15 @@ export class Table extends Array<unknown> {
       }
 
       if (rowIndex + 1 === cells.length) {
-        doDraw(row, 'bottom', result);
+        doDraw(row, "bottom", result);
       }
     }
 
-    return result.join('\n');
+    return result.join("\n");
   }
 
   get width(): number {
-    const str = this.toString().split('\n');
+    const str = this.toString().split("\n");
     return str[0].length;
   }
 
@@ -100,15 +115,17 @@ export class Table extends Array<unknown> {
   }
 }
 
-function doDraw(row: CellType[], lineNum: 'top' | 'bottom' | number, result: string[]): void {
+function doDraw(
+  row: CellType[],
+  lineNum: "top" | "bottom" | number,
+  result: string[],
+): void {
   const line: string[] = [];
   row.forEach((cell) => {
-    if (cell && typeof (cell as Cell).draw === 'function') {
+    if (cell && typeof (cell as Cell).draw === "function") {
       line.push((cell as Cell).draw(lineNum));
     }
   });
-  const str = line.join('');
+  const str = line.join("");
   if (str.length) result.push(str);
 }
-
-export default Table;
