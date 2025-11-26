@@ -274,10 +274,12 @@ export const historyCommand = ({
                       tokenTracker,
                     );
                     container.addChild(
-                      new Markdown(result, undefined, undefined, {
-                        r: 52,
-                        g: 53,
-                        b: 65,
+                      new Markdown(result, {
+                        customBgRgb: {
+                          r: 52,
+                          g: 53,
+                          b: 65,
+                        },
                       }),
                     );
                   } catch (error) {

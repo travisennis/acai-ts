@@ -1,6 +1,7 @@
 import { marked, type Token } from "marked";
-import { DEFAULT_THEME } from "../../terminal/default-theme.ts";
+import { DEFAULT_HIGHLIGHT_THEME } from "../../terminal/default-theme.ts";
 import { highlight, supportsLanguage } from "../../terminal/highlight/index.ts";
+import type { Theme } from "../../terminal/highlight/theme.ts";
 import { getListNumber } from "../../terminal/markdown-utils.ts";
 import style from "../../terminal/style.ts";
 import { Table } from "../../terminal/table/index.ts";
@@ -29,30 +30,12 @@ type Color =
   | "bgGray";
 
 /**
- * Default text styling for markdown content.
- * Applied to all text unless overridden by markdown formatting.
- */
-export interface DefaultTextStyle {
-  /** Foreground color function */
-  color?: (text: string) => string;
-  /** Background color function */
-  bgColor?: (text: string) => string;
-  /** Bold text */
-  bold?: boolean;
-  /** Italic text */
-  italic?: boolean;
-  /** Strikethrough text */
-  strikethrough?: boolean;
-  /** Underline text */
-  underline?: boolean;
-}
-
-/**
  * Theme functions for markdown elements.
  * Each function takes text and returns styled text with ANSI codes.
  */
 export interface MarkdownTheme {
   heading: (text: string) => string;
+  paragraph: (text: string) => string;
   link: (text: string) => string;
   linkUrl: (text: string) => string;
   code: (text: string) => string;
@@ -68,31 +51,49 @@ export interface MarkdownTheme {
   underline: (text: string) => string;
 }
 
+// AGENT: create a default MarkdownTheme using the colors that are used in the code below for each of these items below.
+const DEFAULT_THEME: MarkdownTheme = {};
+
+/**
+ * Options for configuring Markdown component
+ */
+export interface MarkdownOptions {
+  /** Background color */
+  bgColor?: Color;
+  /** Custom background RGB color */
+  customBgRgb?: { r: number; g: number; b: number };
+  /** Horizontal padding */
+  paddingX?: number;
+  /** Vertical padding */
+  paddingY?: number;
+  /** Theme for markdown */
+  theme?: MarkdownTheme;
+  /** Theme for code highlighting */
+  highlightTheme?: Theme;
+}
+
 export class Markdown implements Component {
   private text: string;
   private bgColor?: Color;
   private customBgRgb?: { r: number; g: number; b: number };
   private paddingX: number; // Left/right padding
   private paddingY: number; // Top/bottom padding
+  private theme: MarkdownTheme;
+  private highlightTheme: Theme;
 
   // Cache for rendered output
   private cachedText?: string;
   private cachedWidth?: number;
   private cachedLines?: string[];
 
-  constructor(
-    text = "",
-    bgColor?: Color,
-    _fgColor?: Color,
-    customBgRgb?: { r: number; g: number; b: number },
-    paddingX = 1,
-    paddingY = 1,
-  ) {
+  constructor(text: string, options: MarkdownOptions = {}) {
     this.text = text;
-    this.bgColor = bgColor;
-    this.customBgRgb = customBgRgb;
-    this.paddingX = paddingX;
-    this.paddingY = paddingY;
+    this.bgColor = options.bgColor;
+    this.customBgRgb = options.customBgRgb;
+    this.paddingX = options.paddingX ?? 1;
+    this.paddingY = options.paddingY ?? 1;
+    this.theme = options.theme ?? DEFAULT_THEME;
+    this.highlightTheme = options.highlightTheme ?? DEFAULT_HIGHLIGHT_THEME;
   }
 
   setText(text: string): void {
@@ -269,7 +270,7 @@ export class Markdown implements Component {
           // Use syntax highlighting for supported languages
           const highlightedCode = highlight(token.text, {
             language: token.lang,
-            theme: DEFAULT_THEME,
+            theme: this.highlightTheme,
           });
           const codeLines = highlightedCode.split("\n");
           lines.push(style.gray(`\`\`\`${token.lang}`));

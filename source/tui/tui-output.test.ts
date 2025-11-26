@@ -37,11 +37,10 @@ function testTuiOutput(): void {
   container.addChild(
     new Markdown(
       "# TUI Markdown Test\n\nThis demonstrates the TUI markdown rendering capabilities.",
-      undefined,
-      undefined,
-      undefined,
-      1,
-      0,
+      {
+        paddingX: 1,
+        paddingY: 0,
+      },
     ),
   );
 
@@ -49,11 +48,10 @@ function testTuiOutput(): void {
   container.addChild(
     new Markdown(
       "# H1 Header\n## H2 Header\n### H3 Header\n#### H4 Header\n##### H5 Header\n###### H6 Header",
-      undefined,
-      undefined,
-      undefined,
-      1,
-      0,
+      {
+        paddingX: 1,
+        paddingY: 0,
+      },
     ),
   );
 
@@ -61,35 +59,29 @@ function testTuiOutput(): void {
   container.addChild(
     new Markdown(
       "**Bold text**\n*Italic text*\n***Bold and italic***\n`Inline code`\n~~Strikethrough~~",
-      undefined,
-      undefined,
-      undefined,
-      1,
-      0,
+      {
+        paddingX: 1,
+        paddingY: 0,
+      },
     ),
   );
 
   // Links
   container.addChild(
-    new Markdown(
-      "[Link to example](https://example.com)",
-      undefined,
-      undefined,
-      undefined,
-      1,
-      0,
-    ),
+    new Markdown("[Link to example](https://example.com)", {
+      paddingX: 1,
+      paddingY: 0,
+    }),
   );
 
   // Lists
   container.addChild(
     new Markdown(
       "- Unordered list item 1\n- Unordered list item 2\n  - Nested item\n    - Double nested\n\n1. Ordered list item 1\n2. Ordered list item 2\n   1. Nested ordered\n   2. Another nested",
-      undefined,
-      undefined,
-      undefined,
-      1,
-      0,
+      {
+        paddingX: 1,
+        paddingY: 0,
+      },
     ),
   );
 
@@ -97,11 +89,10 @@ function testTuiOutput(): void {
   container.addChild(
     new Markdown(
       "```javascript\nconst greeting = 'Hello World';\nconsole.log(greeting);\n```\n\n```python\ndef hello():\n    print('Hello World')\n```",
-      undefined,
-      undefined,
-      undefined,
-      1,
-      0,
+      {
+        paddingX: 1,
+        paddingY: 0,
+      },
     ),
   );
 
@@ -109,11 +100,10 @@ function testTuiOutput(): void {
   container.addChild(
     new Markdown(
       "| Header 1 | Header 2 | Header 3 |\n|----------|----------|----------|\n| Cell 1   | Cell 2   | Cell 3   |\n| Cell 4   | Cell 5   | Cell 6   |",
-      undefined,
-      undefined,
-      undefined,
-      1,
-      0,
+      {
+        paddingX: 1,
+        paddingY: 0,
+      },
     ),
   );
 
@@ -121,18 +111,15 @@ function testTuiOutput(): void {
   container.addChild(
     new Markdown(
       "> This is a blockquote\n> \n> With multiple lines\n> \n> > And nested blockquotes",
-      undefined,
-      undefined,
-      undefined,
-      1,
-      0,
+      {
+        paddingX: 1,
+        paddingY: 0,
+      },
     ),
   );
 
   // Horizontal rule
-  container.addChild(
-    new Markdown("---", undefined, undefined, undefined, 1, 0),
-  );
+  container.addChild(new Markdown("---", { paddingX: 1, paddingY: 0 }));
 
   // Complex markdown example
   const complexMarkdown = `
@@ -210,7 +197,7 @@ The end of this complex example.
   `;
 
   container.addChild(
-    new Markdown(complexMarkdown, undefined, undefined, undefined, 1, 0),
+    new Markdown(complexMarkdown, { paddingX: 1, paddingY: 0 }),
   );
 
   // Test Text component with different backgrounds
@@ -250,11 +237,11 @@ The end of this complex example.
   container.addChild(
     new Markdown(
       "# Markdown with Background\n\nThis markdown has a custom background color.",
-      undefined,
-      undefined,
-      { r: 30, g: 60, b: 30 },
-      2,
-      1,
+      {
+        customBgRgb: { r: 30, g: 60, b: 30 },
+        paddingX: 2,
+        paddingY: 1,
+      },
     ),
   );
 

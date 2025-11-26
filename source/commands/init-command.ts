@@ -66,7 +66,7 @@ export const initCommand = ({
       container.addChild(new Spacer(1));
 
       let output = "";
-      const t = new Markdown(output, undefined, undefined, undefined, 1, 0);
+      const t = new Markdown(output, { paddingX: 1, paddingY: 0 });
       container.addChild(t);
       for await (const text of result.textStream) {
         output += text;
