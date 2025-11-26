@@ -1,7 +1,7 @@
 import { EOL } from "node:os";
 import { marked, type Token } from "marked";
 import { logger } from "../logger.ts";
-import { DEFAULT_THEME } from "./default-theme.ts";
+import { DEFAULT_HIGHLIGHT_THEME } from "./default-theme.ts";
 import { link as terminalLink } from "./formatting.ts";
 import { highlight, supportsLanguage } from "./highlight/index.ts";
 import { getListNumber } from "./markdown-utils.ts";
@@ -39,7 +39,7 @@ function format(
         return (
           highlight(token.text, {
             language: token.lang,
-            theme: DEFAULT_THEME,
+            theme: DEFAULT_HIGHLIGHT_THEME,
           }) + EOL
         );
       }
@@ -47,8 +47,10 @@ function format(
         `Language not supported while highlighting code, falling back to markdown: ${token.lang}`,
       );
       return (
-        highlight(token.text, { language: "markdown", theme: DEFAULT_THEME }) +
-        EOL
+        highlight(token.text, {
+          language: "markdown",
+          theme: DEFAULT_HIGHLIGHT_THEME,
+        }) + EOL
       );
     }
     case "codespan":

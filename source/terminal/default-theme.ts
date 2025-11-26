@@ -5,7 +5,7 @@ import style from "./style.ts";
 /**
  * The default theme. It is possible to override just individual keys.
  */
-export const DEFAULT_THEME: Theme = {
+export const DEFAULT_HIGHLIGHT_THEME: Theme = {
   /**
    * keyword in a regular Algol-style language
    */

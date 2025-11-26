@@ -1,6 +1,6 @@
 import { strictEqual } from "node:assert";
 import { describe, it } from "node:test";
-import { DEFAULT_THEME } from "../../source/terminal/default-theme.ts";
+import { DEFAULT_HIGHLIGHT_THEME } from "../../source/terminal/default-theme.ts";
 import {
   highlight,
   listLanguages,
@@ -13,7 +13,7 @@ describe("highlight functionality", () => {
     // Create a custom theme with forced color support
     const forcedStyle = createStyle({ level: 1 });
     const forcedTheme = {
-      ...DEFAULT_THEME,
+      ...DEFAULT_HIGHLIGHT_THEME,
       keyword: forcedStyle.blue,
       // biome-ignore lint/style/useNamingConvention: API name from highlight.js
       built_in: forcedStyle.cyan,
@@ -55,7 +55,7 @@ describe("highlight functionality", () => {
 
   it("should auto-detect language", () => {
     const jsCode = `const test = "hello";`;
-    const result = highlight(jsCode, { theme: DEFAULT_THEME });
+    const result = highlight(jsCode, { theme: DEFAULT_HIGHLIGHT_THEME });
     strictEqual(typeof result, "string");
     strictEqual(result.length > 0, true);
   });
@@ -64,7 +64,7 @@ describe("highlight functionality", () => {
     const plainText = "Just some plain text";
     const result = highlight(plainText, {
       language: "plaintext",
-      theme: DEFAULT_THEME,
+      theme: DEFAULT_HIGHLIGHT_THEME,
     });
     strictEqual(typeof result, "string");
     strictEqual(result.length > 0, true);
