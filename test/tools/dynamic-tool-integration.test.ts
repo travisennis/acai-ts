@@ -2,8 +2,25 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
-import { consumeToolAsyncIterable } from "../../source/tools/async-iterable.ts";
 import { loadDynamicTools } from "../../source/tools/dynamic-tool-loader.ts";
+
+// Helper function to consume tool async iterable and return final value
+async function consumeToolAsyncIterable<T>(
+  iterable: AsyncGenerator<unknown, T>,
+): Promise<{ finalValue: T; yields: unknown[] }> {
+  const yields: unknown[] = [];
+  let finalValue: T | undefined;
+
+  for await (const value of iterable) {
+    yields.push(value);
+    // The last yielded value is the final result
+    if (typeof value === "string") {
+      finalValue = value as T;
+    }
+  }
+
+  return { finalValue: finalValue as T, yields };
+}
 
 test("Dynamic tool integration - end-to-end functionality", async () => {
   // Create a temporary test tool

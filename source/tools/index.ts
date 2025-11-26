@@ -2,7 +2,6 @@ import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import { tool } from "ai";
 import type { WorkspaceContext } from "../index.ts";
 import type { ModelManager } from "../models/manager.ts";
-import type { Terminal } from "../terminal/index.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import {
@@ -424,7 +423,6 @@ export async function initCliAgents({
   tokenCounter,
   workspace,
 }: {
-  terminal: Terminal;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
   tokenCounter: TokenCounter;

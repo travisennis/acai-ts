@@ -3,6 +3,7 @@
  *
  * Provides functions for formatting and displaying text in the terminal.
  */
+import style from "./style.ts";
 import { supportsHyperlinks } from "./supports-hyperlinks.ts";
 
 /**
@@ -147,3 +148,54 @@ export const image = (
 
   return `${returnValue}:${Buffer.from(data).toString("base64")}${BEL}`;
 };
+
+/**
+ * Start progress indicator in terminal
+ * Sends terminal escape sequence to show progress animation
+ */
+export function startProgress(): void {
+  process.stdout.write("\u001b]9;4;3;0\u0007");
+}
+
+/**
+ * Stop progress indicator in terminal
+ * Sends terminal escape sequence to hide progress animation
+ */
+export function stopProgress(): void {
+  process.stdout.write("\u001b]9;4;0;0\u0007");
+}
+
+/**
+ * Display a message with emphasis
+ */
+export function emphasize(message: string): string {
+  return style.cyan.bold(message);
+}
+
+/**
+ * Display an informational message
+ */
+export function info(message: string): string {
+  return style.blue(`ℹ ${message}`);
+}
+
+/**
+ * Display a success message
+ */
+export function success(message: string): string {
+  return style.green(`✓ ${message}`);
+}
+
+/**
+ * Display a warning message
+ */
+export function warn(message: string): string {
+  return style.yellow(`⚠ ${message}`);
+}
+
+/**
+ * Display an error message
+ */
+export function error(message: string): string {
+  return style.red(`✗ ${message}`);
+}

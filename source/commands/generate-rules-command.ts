@@ -5,7 +5,6 @@ import { createUserMessage } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
 import { systemPrompt } from "../prompts.ts";
 import { getTerminalSize } from "../terminal/formatting.ts";
-import type { Terminal } from "../terminal/index.ts";
 import style from "../terminal/style.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import {
@@ -201,7 +200,6 @@ async function analyzeConversation({
 }: {
   modelManager: ModelManager;
   messages: ModelMessage[];
-  terminal?: Terminal | undefined;
   tokenTracker: TokenTracker;
 }): Promise<string[]> {
   const learnedRules = await config.readCachedLearnedRulesFile();
