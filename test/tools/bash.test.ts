@@ -213,7 +213,11 @@ describe("bash tool mutating command warnings", async () => {
   });
 
   after(() => {
-    rmSync("test-file.txt");
+    try {
+      rmSync("test-file.txt");
+    } catch {
+      // Ignore if file doesn't exist
+    }
   });
 
   async function collectEvents(command: string) {
