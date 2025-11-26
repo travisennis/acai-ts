@@ -2,19 +2,15 @@ import type { AnyNode, Element, Text } from "domhandler";
 import hljs from "highlight.js";
 import * as parse5 from "parse5";
 import { adapter as htmlparser2Adapter } from "parse5-htmlparser2-tree-adapter";
+import { id } from "../../utils.ts";
 import type { Theme } from "./theme.ts";
-
-/**
- * Identity function for tokens that should not be styled (returns the input string as-is).
- */
-const plain = (codePart: string): string => codePart;
 
 function colorizeNode(node: AnyNode, theme: Theme, context?: string): string {
   switch (node.type) {
     case "text": {
       const text = (node as Text).data;
       if (context === undefined) {
-        return (theme.default || plain)(text);
+        return (theme.default || id)(text);
       }
       return text;
     }
@@ -31,7 +27,7 @@ function colorizeNode(node: AnyNode, theme: Theme, context?: string): string {
           const themeToken = (
             theme as Record<string, (codePart: string) => string>
           )[token];
-          const themeFn = themeToken || plain;
+          const themeFn = themeToken || id;
           return themeFn(nodeData);
         }
       }

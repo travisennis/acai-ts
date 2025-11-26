@@ -1,11 +1,6 @@
+import { id } from "../utils.ts";
 import type { Theme } from "./highlight/theme.ts";
 import style from "./style.ts";
-
-/**
- * Identity function for tokens that should not be styled (returns the input string as-is).
- * See [[Theme]] for an example.
- */
-const plain = (codePart: string): string => codePart;
 
 /**
  * The default theme. It is possible to override just individual keys.
@@ -51,12 +46,12 @@ export const DEFAULT_THEME: Theme = {
   /**
    * parsed section inside a literal string
    */
-  subst: plain,
+  subst: id,
 
   /**
    * symbolic constant, interned string, goto label
    */
-  symbol: plain,
+  symbol: id,
 
   /**
    * class or class-level declaration (interfaces, traits, modules, etc)
@@ -71,12 +66,12 @@ export const DEFAULT_THEME: Theme = {
   /**
    * name of a class or a function at the place of declaration
    */
-  title: plain,
+  title: id,
 
   /**
    * block of function arguments (parameters) at the place of declaration
    */
-  params: plain,
+  params: id,
 
   /**
    * comment
@@ -96,17 +91,17 @@ export const DEFAULT_THEME: Theme = {
   /**
    * keyword or built-in within meta construct
    */
-  "meta-keyword": plain,
+  "meta-keyword": id,
 
   /**
    * string within meta construct
    */
-  "meta-string": plain,
+  "meta-string": id,
 
   /**
    * heading of a section in a config file, heading in text markup
    */
-  section: plain,
+  section: id,
 
   /**
    * XML/HTML tag
@@ -121,7 +116,7 @@ export const DEFAULT_THEME: Theme = {
   /**
    * s-expression name from the language standard library
    */
-  "builtin-name": plain,
+  "builtin-name": id,
 
   /**
    * name of an attribute with no language defined semantics (keys in JSON, setting names in
@@ -132,22 +127,22 @@ export const DEFAULT_THEME: Theme = {
   /**
    * name of an attribute followed by a structured value part, like CSS properties
    */
-  attribute: plain,
+  attribute: id,
 
   /**
    * variable in a config or a template file, environment var expansion in a script
    */
-  variable: plain,
+  variable: id,
 
   /**
    * list item bullet in text markup
    */
-  bullet: plain,
+  bullet: id,
 
   /**
    * code block in text markup
    */
-  code: plain,
+  code: id,
 
   /**
    * emphasis in text markup
@@ -162,7 +157,7 @@ export const DEFAULT_THEME: Theme = {
   /**
    * mathematical formula in text markup
    */
-  formula: plain,
+  formula: id,
 
   /**
    * hyperlink in text markup
@@ -172,42 +167,42 @@ export const DEFAULT_THEME: Theme = {
   /**
    * quotation in text markup
    */
-  quote: plain,
+  quote: id,
 
   /**
    * tag selector in CSS
    */
-  "selector-tag": plain,
+  "selector-tag": id,
 
   /**
    * #id selector in CSS
    */
-  "selector-id": plain,
+  "selector-id": id,
 
   /**
    * .class selector in CSS
    */
-  "selector-class": plain,
+  "selector-class": id,
 
   /**
    * [attr] selector in CSS
    */
-  "selector-attr": plain,
+  "selector-attr": id,
 
   /**
    * :pseudo selector in CSS
    */
-  "selector-pseudo": plain,
+  "selector-pseudo": id,
 
   /**
    * tag of a template language
    */
-  "template-tag": plain,
+  "template-tag": id,
 
   /**
    * variable in a template language
    */
-  "template-variable": plain,
+  "template-variable": id,
 
   /**
    * added or changed line in a diff
@@ -222,5 +217,5 @@ export const DEFAULT_THEME: Theme = {
   /**
    * things not matched by any token
    */
-  default: plain,
+  default: id,
 };

@@ -1,3 +1,4 @@
+import { id } from "../../utils.ts";
 import style from "../style.ts";
 
 /**
@@ -286,12 +287,6 @@ export interface Theme extends Tokens<(codePart: string) => string> {
 }
 
 /**
- * Identity function for tokens that should not be styled (returns the input string as-is).
- * See [[Theme]] for an example.
- */
-const plain = (codePart: string): string => codePart;
-
-/**
  * Converts a [[JsonTheme]] with string values to a [[Theme]] with formatter functions. Used by [[parse]].
  */
 function fromJson(json: JsonTheme): Theme {
@@ -304,7 +299,7 @@ function fromJson(json: JsonTheme): Theme {
       (theme as any)[key] = styleValue.reduce(
         (previous: typeof style, current: string) =>
           // biome-ignore lint/suspicious/noExplicitAny: Dynamic theme access needed for highlight compatibility
-          current === "plain" ? plain : (previous as any)[current],
+          current === "plain" ? id : (previous as any)[current],
         style,
       );
     } else {
