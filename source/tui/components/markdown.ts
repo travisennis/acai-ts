@@ -51,8 +51,23 @@ export interface MarkdownTheme {
   underline: (text: string) => string;
 }
 
-// AGENT: create a default MarkdownTheme using the colors that are used in the code below for each of these items below.
-const DEFAULT_THEME: MarkdownTheme = {};
+const DEFAULT_THEME: MarkdownTheme = {
+  heading: (text: string) => style.bold.yellow(text),
+  paragraph: (text: string) => text,
+  link: (text: string) => style.underline.blue(text),
+  linkUrl: (text: string) => style.gray(text),
+  code: (text: string) => style.cyan(text),
+  codeBlock: (text: string) => style.green(text),
+  codeBlockBorder: (text: string) => style.gray(text),
+  quote: (text: string) => style.italic(text),
+  quoteBorder: (text: string) => style.gray(text),
+  hr: (text: string) => style.gray(text),
+  listBullet: (text: string) => style.cyan(text),
+  bold: (text: string) => style.bold(text),
+  italic: (text: string) => style.italic(text),
+  strikethrough: (text: string) => style.strikethrough(text),
+  underline: (text: string) => style.underline(text),
+};
 
 /**
  * Options for configuring Markdown component
@@ -241,11 +256,11 @@ export class Markdown implements Component {
         const headingPrefix = `${"#".repeat(headingLevel)} `;
         const headingText = this.renderInlineTokens(token.tokens || []);
         if (headingLevel === 1) {
-          lines.push(style.bold.underline.yellow(headingText));
+          lines.push(style.underline(this.theme.heading(headingText)));
         } else if (headingLevel === 2) {
-          lines.push(style.bold.yellow(headingText));
+          lines.push(this.theme.heading(headingText));
         } else {
-          lines.push(style.bold(headingPrefix + headingText));
+          lines.push(this.theme.heading(headingPrefix + headingText));
         }
         lines.push(""); // Add spacing after headings
         break;
@@ -253,7 +268,7 @@ export class Markdown implements Component {
 
       case "paragraph": {
         const paragraphText = this.renderInlineTokens(token.tokens || []);
-        lines.push(paragraphText);
+        lines.push(this.theme.paragraph(paragraphText));
         // Don't add spacing if next token is space or list
         if (
           nextTokenType &&
@@ -273,19 +288,19 @@ export class Markdown implements Component {
             theme: this.highlightTheme,
           });
           const codeLines = highlightedCode.split("\n");
-          lines.push(style.gray(`\`\`\`${token.lang}`));
+          lines.push(this.theme.codeBlockBorder(`\`\`\`${token.lang}`));
           for (const codeLine of codeLines) {
             lines.push(style.dim("  ") + codeLine);
           }
-          lines.push(style.gray("```"));
+          lines.push(this.theme.codeBlockBorder("```"));
         } else {
           // Fallback to basic styling for unsupported languages
-          lines.push(style.gray(`\`\`\`${token.lang || ""}`));
+          lines.push(this.theme.codeBlockBorder(`\`\`\`${token.lang || ""}`));
           const codeLines = token.text.split("\n");
           for (const codeLine of codeLines) {
-            lines.push(style.dim("  ") + style.green(codeLine));
+            lines.push(style.dim("  ") + this.theme.codeBlock(codeLine));
           }
-          lines.push(style.gray("```"));
+          lines.push(this.theme.codeBlockBorder("```"));
         }
         lines.push(""); // Add spacing after code blocks
         break;
@@ -314,14 +329,16 @@ export class Markdown implements Component {
         const quoteText = this.renderInlineTokens(token.tokens || []);
         const quoteLines = quoteText.split("\n");
         for (const quoteLine of quoteLines) {
-          lines.push(style.gray("│ ") + style.italic(quoteLine));
+          lines.push(
+            this.theme.quoteBorder("│ ") + this.theme.quote(quoteLine),
+          );
         }
         lines.push(""); // Add spacing after blockquotes
         break;
       }
 
       case "hr":
-        lines.push(style.gray("─".repeat(Math.min(width, 80))));
+        lines.push(this.theme.hr("─".repeat(Math.min(width, 80))));
         lines.push(""); // Add spacing after horizontal rules
         break;
 
@@ -370,25 +387,33 @@ export class Markdown implements Component {
           break;
 
         case "strong":
-          result += style.bold(this.renderInlineTokens(token.tokens || []));
+          result += this.theme.bold(
+            this.renderInlineTokens(token.tokens || []),
+          );
           break;
 
         case "em":
-          result += style.italic(this.renderInlineTokens(token.tokens || []));
+          result += this.theme.italic(
+            this.renderInlineTokens(token.tokens || []),
+          );
           break;
 
         case "codespan":
-          result += style.gray("`") + style.cyan(token.text) + style.gray("`");
+          result +=
+            this.theme.codeBlockBorder("`") +
+            this.theme.code(token.text) +
+            this.theme.codeBlockBorder("`");
           break;
 
         case "link": {
           const linkText = this.renderInlineTokens(token.tokens || []);
           // If link text matches href, only show the link once
           if (linkText === token.href) {
-            result += style.underline.blue(linkText);
+            result += this.theme.link(linkText);
           } else {
             result +=
-              style.underline.blue(linkText) + style.gray(` (${token.href})`);
+              this.theme.link(linkText) +
+              this.theme.linkUrl(` (${token.href})`);
           }
           break;
         }
@@ -398,7 +423,7 @@ export class Markdown implements Component {
           break;
 
         case "del":
-          result += style.strikethrough(
+          result += this.theme.strikethrough(
             this.renderInlineTokens(token.tokens || []),
           );
           break;
@@ -599,7 +624,7 @@ export class Markdown implements Component {
           lines.push(firstLine);
         } else {
           // Regular text content - add indent and bullet
-          lines.push(indent + style.cyan(bullet) + firstLine);
+          lines.push(indent + this.theme.listBullet(bullet) + firstLine);
         }
 
         // Rest of the lines
@@ -616,7 +641,7 @@ export class Markdown implements Component {
           }
         }
       } else {
-        lines.push(indent + style.cyan(bullet));
+        lines.push(indent + this.theme.listBullet(bullet));
       }
     }
 
@@ -656,12 +681,12 @@ export class Markdown implements Component {
         lines.push(text);
       } else if (token.type === "code") {
         // Code block in list item
-        lines.push(style.gray(`\`\`\`${token.lang || ""}`));
+        lines.push(this.theme.codeBlockBorder(`\`\`\`${token.lang || ""}`));
         const codeLines = token.text.split("\n");
         for (const codeLine of codeLines) {
-          lines.push(style.dim("  ") + style.green(codeLine));
+          lines.push(style.dim("  ") + this.theme.codeBlock(codeLine));
         }
-        lines.push(style.gray("```"));
+        lines.push(this.theme.codeBlockBorder("```"));
       } else {
         // Other token types - try to render as inline
         const text = this.renderInlineTokens([token]);
