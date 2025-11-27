@@ -71,15 +71,21 @@ function toolUsage() {
   return `## Tool Usage Guidelines
 
 ### Information Gathering
-- Prefer targeted queries: use \`${GrepTool.name}\` for code pattern searches and \`${ReadMultipleFilesTool.name}\` to fetch files. Avoid full directory dumps for large repositories.
-- Use \`${ReadFileTool.name}\` or \`${ReadMultipleFilesTool.name}\` for file contents if filenames are provided in the prompt
+
+#### File System
+- Use \`${ReadFileTool.name}\` or \`${ReadMultipleFilesTool.name}\` for file contents if filenames are provided in the prompt. If you do not know the path to a file use one of the following tools to find the files available. 
 - Use \`${GrepTool.name}\` for code pattern searches
-- Use \`${WebFetchTool.name}\` for text-based URLs provided in the prompt
-- Use \`${WebSearchTool.name}\` for external research (e.g., libraries, errors)
 - Use \`${AgentTool.name}\` for iterative keyword/file searches. Use this if you need to explore the project to find what you are looking for.
 - Use \`${DirectoryTreeTool.name}\` if you need a high-level overview of the project. 
-- If file contents or URLs are provided in the prompt, use them directly without re-fetching
+- Prefer targeted queries: use \`${GrepTool.name}\` for code pattern searches and \`${ReadMultipleFilesTool.name}\` to fetch files. Avoid full directory dumps for large repositories.
+- If the contents of files are provided in the prompt, assume the content is up-to-date and use it directly without re-fetching
 - Always verify file contents before suggesting changes unless provided in the prompt
+
+#### Web and Internet
+
+- Use \`${WebFetchTool.name}\` for text-based URLs provided in the prompt
+- Use \`${WebSearchTool.name}\` for external research (e.g., libraries, errors)
+- If the contents of URLs are provided in the prompt, assume the content is up-to-date and use it directly without re-fetching
 
 ### Code Modification
 - Use \`${EditFileTool.name}\` to edit existing files
