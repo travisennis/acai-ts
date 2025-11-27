@@ -621,6 +621,15 @@ export class Editor implements Component {
     // Update autocomplete after backspace
     if (this.isAutocompleting) {
       void this.updateAutocomplete();
+    } else {
+      // Check if we should trigger autocomplete after backspace in slash command context
+      const currentLine = this.state.lines[this.state.cursorLine] || "";
+      const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
+
+      // Trigger autocomplete if we're in a slash command context (typing command name)
+      if (textBeforeCursor.startsWith("/") && !textBeforeCursor.includes(" ")) {
+        void this.tryTriggerAutocomplete();
+      }
     }
   }
 
