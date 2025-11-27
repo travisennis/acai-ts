@@ -97,6 +97,7 @@ export const createCodeInterpreterTool = async ({
         "--permission",
         `--allow-fs-read=${workingDirectory}`,
         `--allow-fs-write=${workingDirectory}`,
+        "--allow-net",
         scriptPath,
       ];
 
