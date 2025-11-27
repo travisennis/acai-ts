@@ -49,10 +49,16 @@ const openrouterModels = {
   "gemini-pro25": openRouterClient("google/gemini-2.5-pro", {
     usage: { include: true },
   }) as LanguageModelV2,
+  "gemini-3-pro": openRouterClient("google/gemini-3-pro-preview", {
+    usage: { include: true },
+  }) as LanguageModelV2,
   "sonnet-4.5": openRouterClient("anthropic/claude-sonnet-4.5", {
     usage: { include: true },
   }) as LanguageModelV2,
   "opus-4.1": openRouterClient("anthropic/claude-opus-4.1", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "opus-4.5": openRouterClient("anthropic/claude-opus-4.5", {
     usage: { include: true },
   }) as LanguageModelV2,
   "haiku-4.5": openRouterClient("anthropic/claude-haiku-4.5", {
@@ -95,6 +101,15 @@ const openrouterModels = {
     usage: { include: true },
   }) as LanguageModelV2,
   "gpt-5-codex": openRouterClient("openai/gpt-5-codex", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "gpt-5.1": openRouterClient("openai/gpt-5.1", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "gpt-5.1-codex": openRouterClient("openai/gpt-5.1-codex", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "gpt-5.1-codex-mini": openRouterClient("openai/gpt-5.1-codex-mini", {
     usage: { include: true },
   }) as LanguageModelV2,
   "minimax-m2": openRouterClient("minimax/minimax-m2", {
@@ -171,6 +186,20 @@ export const openrouterModelRegistry: {
     category: "powerful",
   },
 
+  "openrouter:gemini-3-pro": {
+    id: "openrouter:gemini-3-pro",
+    provider: "openrouter",
+    contextWindow: 1048576,
+    maxOutputTokens: 65536,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.000002,
+    costPerOutputToken: 0.000012,
+    category: "powerful",
+  },
+
   "openrouter:opus-4.1": {
     id: "openrouter:opus-4.1",
     provider: "openrouter",
@@ -182,6 +211,20 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000015,
     costPerOutputToken: 0.000075,
+    category: "powerful",
+  },
+
+  "openrouter:opus-4.5": {
+    id: "openrouter:opus-4.5",
+    provider: "openrouter",
+    contextWindow: 200000,
+    maxOutputTokens: 32000,
+    defaultTemperature: 1.0,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.000005,
+    costPerOutputToken: 0.000025,
     category: "powerful",
   },
 
@@ -315,6 +358,45 @@ export const openrouterModelRegistry: {
     costPerInputToken: 0.00000125,
     costPerOutputToken: 0.00001,
     category: "powerful",
+  },
+  "openrouter:gpt-5.1": {
+    id: "openrouter:gpt-5.1",
+    provider: "openrouter",
+    contextWindow: 400000,
+    maxOutputTokens: 128000,
+    defaultTemperature: 1.0,
+    promptFormat: "xml",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000125,
+    costPerOutputToken: 0.00001,
+    category: "powerful",
+  },
+  "openrouter:gpt-5.1-codex": {
+    id: "openrouter:gpt-5.1-codex",
+    provider: "openrouter",
+    contextWindow: 400000,
+    maxOutputTokens: 128000,
+    defaultTemperature: -1,
+    promptFormat: "xml",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000125,
+    costPerOutputToken: 0.00001,
+    category: "powerful",
+  },
+  "openrouter:gpt-5.1-codex-mini": {
+    id: "openrouter:gpt-5.1-codex-mini",
+    provider: "openrouter",
+    contextWindow: 400000,
+    maxOutputTokens: 100000,
+    defaultTemperature: -1,
+    promptFormat: "xml",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000025,
+    costPerOutputToken: 0.000002,
+    category: "balanced",
   },
   "openrouter:gpt-5-mini": {
     id: "openrouter:gpt-5-mini",
