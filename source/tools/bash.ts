@@ -23,13 +23,13 @@ const inputSchema = z.object({
     .string()
     .nullable()
     .describe(
-      "Working directory file path (default: project root). Must be within the project directory.",
+      "Working directory file path (default: project root). Must be within the project directory. Required but nullable.",
     ),
   timeout: z.coerce
     .number()
     .nullable()
     .describe(
-      `Command execution timeout in milliseconds. Default: ${DEFAULT_TIMEOUT}ms`,
+      `Command execution timeout in milliseconds. Required but nullable. If null, the default value is ${DEFAULT_TIMEOUT}ms`,
     ),
 });
 

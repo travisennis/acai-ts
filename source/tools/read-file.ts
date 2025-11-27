@@ -22,12 +22,14 @@ const inputSchema = z.object({
     .number()
     .nullable()
     .describe(
-      "1-based line number to start reading from. Pass null to start at beginning of file",
+      "1-based line number to start reading from. Required but nullable. Pass null to start at beginning of file",
     ),
   lineCount: z.coerce
     .number()
     .nullable()
-    .describe("Maximum number of lines to read. Pass null to get all lines."),
+    .describe(
+      "Maximum number of lines to read. Required but nullable. Pass null to get all lines.",
+    ),
 });
 
 type ReadFileInputSchema = z.infer<typeof inputSchema>;
