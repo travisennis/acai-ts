@@ -9,6 +9,9 @@ export class ToolExecutionComponent extends Container {
   private contentContainer: Container;
   private toolName: string;
   private events: ToolEvent[];
+  private loaderFrames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+  private currentLoaderFrame = 0;
+  private loaderIntervalId: NodeJS.Timeout | null = null;
 
   constructor(events: ToolEvent[]) {
     super();
@@ -25,6 +28,25 @@ export class ToolExecutionComponent extends Container {
   update(events: ToolEvent[]) {
     this.events = events;
     this.renderDisplay();
+  }
+
+  private startLoaderAnimation() {
+    if (this.loaderIntervalId) {
+      return;
+    }
+
+    this.loaderIntervalId = setInterval(() => {
+      this.currentLoaderFrame =
+        (this.currentLoaderFrame + 1) % this.loaderFrames.length;
+      this.renderDisplay();
+    }, 80);
+  }
+
+  private stopLoaderAnimation() {
+    if (this.loaderIntervalId) {
+      clearInterval(this.loaderIntervalId);
+      this.loaderIntervalId = null;
+    }
   }
 
   private renderDisplay() {
@@ -63,6 +85,13 @@ export class ToolExecutionComponent extends Container {
     const currentStatus = this.events[this.events.length - 1].type;
     const indicator = this.getIndicator(currentStatus);
 
+    // Manage loader animation based on status
+    if (currentStatus === "tool-call-update") {
+      this.startLoaderAnimation();
+    } else {
+      this.stopLoaderAnimation();
+    }
+
     const displayLines: string[] = [];
     for (let i = 0; i < lines.length; i++) {
       let line = lines[i];
@@ -88,7 +117,7 @@ export class ToolExecutionComponent extends Container {
       case "tool-call-start":
         return style.blue.bold("●");
       case "tool-call-update":
-        return style.yellow.bold("●");
+        return style.yellow.bold(this.loaderFrames[this.currentLoaderFrame]);
       case "tool-call-end":
         return style.green.bold("●");
       case "tool-call-error":
