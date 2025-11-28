@@ -15,14 +15,10 @@ const ProjectConfigSchema = z.object({
   loop: z
     .object({
       maxIterations: z.number().default(90),
-      parallelTools: z.boolean().default(true),
-      maxDurationMs: z.number().default(0),
     })
     .optional()
     .default({
       maxIterations: 90,
-      parallelTools: true,
-      maxDurationMs: 0,
     }),
   tools: z
     .object({
