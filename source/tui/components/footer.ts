@@ -1,5 +1,5 @@
 import type { AgentState } from "../../agent/index.ts";
-import { formatDuration } from "../../formatting.ts";
+import { formatDuration, formatNumber } from "../../formatting.ts";
 import { hr } from "../../terminal/index.ts";
 import style, { type StyleInstance } from "../../terminal/style.ts";
 import { Container } from "../tui.ts";
@@ -47,7 +47,7 @@ export class FooterComponent extends Container {
     const inputTokens = total.inputTokens;
     const outputTokens = total.outputTokens;
     const cachedInputTokens = total.cachedInputTokens;
-    const tokenSummary = `Tokens: ↑ ${inputTokens} (${cachedInputTokens}) ↓ ${outputTokens} - `;
+    const tokenSummary = `Tokens: ↑ ${formatNumber(inputTokens)} (${formatNumber(cachedInputTokens)}) ↓ ${formatNumber(outputTokens)} - `;
     status += tokenSummary;
 
     const inputCost = this.state.modelConfig.costPerInputToken * inputTokens;
