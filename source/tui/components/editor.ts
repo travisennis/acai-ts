@@ -21,6 +21,21 @@ interface LayoutLine {
 
 export type TextEditorConfig = Record<PropertyKey, unknown>;
 
+/**
+ * Text editor component with support for multi-line input and autocomplete.
+ *
+ * Key bindings:
+ * - Enter: Create new line
+ * - Shift+Enter / Ctrl+Enter: Submit prompt
+ * - Tab: Trigger autocomplete
+ * - Escape: Cancel autocomplete or custom handler
+ * - Ctrl+C: Custom handler
+ * - Arrow keys: Navigate text
+ * - Backspace/Delete: Delete characters
+ * - Ctrl+A: Move to start of line
+ * - Ctrl+E: Move to end of line
+ * - Ctrl+K: Delete current line
+ */
 export class Editor implements Component {
   private state: EditorState = {
     lines: [""],
@@ -275,13 +290,12 @@ export class Editor implements Component {
     else if (data.charCodeAt(0) === 5) {
       this.moveToLineEnd();
     }
-    // Modified Enter keys (Shift+Enter, Ctrl+Enter, etc.) - create new line
-    else if (this.isModifiedEnter(data)) {
-      // Modifier + Enter = new line
+    // Plain Enter (char code 13 for CR) - create new line
+    else if (data.charCodeAt(0) === 13 && data.length === 1) {
       this.addNewLine();
     }
-    // Plain Enter (char code 13 for CR) - only CR submits, LF adds new line
-    else if (data.charCodeAt(0) === 13 && data.length === 1) {
+    // Modified Enter keys (Shift+Enter, Ctrl+Enter, etc.) - submit
+    else if (this.isModifiedEnter(data)) {
       // If submit is disabled, do nothing
       if (this.disableSubmit) {
         return;
