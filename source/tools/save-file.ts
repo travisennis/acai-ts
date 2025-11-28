@@ -2,9 +2,14 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
+import { config } from "../config.ts";
 import { clearProjectStatusCache } from "../repl/project-status-line.ts";
 import style from "../terminal/style.ts";
-import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
+import {
+  joinWorkingDir,
+  validateFileNotReadOnly,
+  validatePath,
+} from "./filesystem-utils.ts";
 import { fileEncodingSchema, type ToolResult } from "./types.ts";
 
 export const SaveFileTool = {
@@ -60,6 +65,18 @@ export const createSaveFileTool = async ({
           allowedDirectory,
           { requireExistence: false, abortSignal },
         );
+
+        // Check if file is read-only (only if it exists)
+        try {
+          await fs.stat(filePath);
+          const projectConfig = await config.readProjectConfig();
+          validateFileNotReadOnly(filePath, projectConfig, workingDir);
+        } catch (error) {
+          // File doesn't exist, so it's not read-only
+          if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+            throw error;
+          }
+        }
 
         // Check if path exists and is a directory
         try {

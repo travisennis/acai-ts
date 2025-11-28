@@ -3,8 +3,13 @@ import { readFile, writeFile } from "node:fs/promises";
 import type { ToolCallOptions } from "ai";
 import { createTwoFilesPatch } from "diff";
 import { z } from "zod";
+import { config } from "../config.ts";
 import style from "../terminal/style.ts";
-import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
+import {
+  joinWorkingDir,
+  validateFileNotReadOnly,
+  validatePath,
+} from "./filesystem-utils.ts";
 import type { ToolResult } from "./types.ts";
 
 export const AdvancedEditFileTool = {
@@ -104,6 +109,10 @@ export const createAdvancedEditFileTool = async ({
           allowedDirectory,
           { abortSignal },
         );
+
+        // Check if file is read-only
+        const projectConfig = await config.readProjectConfig();
+        validateFileNotReadOnly(validPath, projectConfig, workingDir);
 
         const result = await applyAdvancedFileEdits(
           validPath,

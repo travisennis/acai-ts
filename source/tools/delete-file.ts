@@ -2,9 +2,14 @@ import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
+import { config } from "../config.ts";
 import { clearProjectStatusCache } from "../repl/project-status-line.ts";
 import style from "../terminal/style.ts";
-import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
+import {
+  joinWorkingDir,
+  validateFileNotReadOnly,
+  validatePath,
+} from "./filesystem-utils.ts";
 import type { ToolResult } from "./types.ts";
 
 export const DeleteFileTool = {
@@ -51,6 +56,10 @@ export const createDeleteFileTool = async ({
           allowedDirectory,
           { abortSignal },
         );
+
+        // Check if file is read-only
+        const projectConfig = await config.readProjectConfig();
+        validateFileNotReadOnly(filePath, projectConfig, workingDir);
 
         // Check if file exists before attempting delete
         if (!existsSync(filePath)) {

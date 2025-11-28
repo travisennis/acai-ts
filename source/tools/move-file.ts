@@ -1,9 +1,14 @@
 import fs from "node:fs/promises";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
+import { config } from "../config.ts";
 import { clearProjectStatusCache } from "../repl/project-status-line.ts";
 import style from "../terminal/style.ts";
-import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
+import {
+  joinWorkingDir,
+  validateFileNotReadOnly,
+  validatePath,
+} from "./filesystem-utils.ts";
 import type { ToolResult } from "./types.ts";
 
 export const MoveFileTool = {
@@ -55,6 +60,10 @@ export const createMoveFileTool = async ({
           allowedDirectory,
           { abortSignal },
         );
+
+        // Check if source file is read-only
+        const projectConfig = await config.readProjectConfig();
+        validateFileNotReadOnly(validSourcePath, projectConfig, workingDir);
 
         const validDestPath = await validatePath(
           joinWorkingDir(destination, workingDir),
