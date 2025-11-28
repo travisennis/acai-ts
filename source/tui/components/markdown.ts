@@ -3,6 +3,7 @@ import { DEFAULT_HIGHLIGHT_THEME } from "../../terminal/default-theme.ts";
 import { highlight, supportsLanguage } from "../../terminal/highlight/index.ts";
 import type { Theme } from "../../terminal/highlight/theme.ts";
 import { getListNumber } from "../../terminal/markdown-utils.ts";
+import stripAnsi from "../../terminal/strip-ansi.ts";
 import style from "../../terminal/style.ts";
 import { Table } from "../../terminal/table/index.ts";
 import wrapAnsi from "../../terminal/wrap-ansi.ts";
@@ -482,32 +483,74 @@ export class Markdown implements Component {
     let protectedText = text;
     let placeholderIndex = 0;
 
-    // Find all inline code spans (text between backticks with ANSI styling)
-    // Only protect actual code spans that have been styled by renderInlineTokens
-    // Pattern: gray backtick + cyan content + gray backtick
-    // Use a simpler approach that doesn't rely on specific ANSI codes
-    const codeSpanRegex = /`[^`]+`/g;
-    let match: RegExpExecArray | null = null;
+    // Create a version of the text without ANSI codes for code span detection
+    // This allows us to reliably find code spans regardless of styling
+    const cleanText = stripAnsi(text);
 
-    // biome-ignore lint/suspicious/noAssignInExpressions: Need assignment in while condition
-    while ((match = codeSpanRegex.exec(text)) !== null) {
-      const codeSpan = match[0];
+    // Use the clean text to find code spans
+    let i = 0;
+    while (i < cleanText.length) {
+      // Find the next backtick in clean text
+      const backtickIndex = cleanText.indexOf("`", i);
+      if (backtickIndex === -1) break;
 
-      // Only protect code spans that are actual code (not escaped backticks)
-      // We can identify actual code spans by checking if they're surrounded by ANSI codes
-      // or if they appear in contexts where escaped backticks would have been processed
-      const startIndex = match.index;
-      const endIndex = startIndex + codeSpan.length;
+      // Look for the closing backtick in clean text
+      let closingIndex = -1;
+      let depth = 1;
 
-      // Check if this looks like an actual code span (not escaped backticks)
-      // Escaped backticks would appear as literal backticks without ANSI styling
-      // Actual code spans would have been processed by renderInlineTokens
-      if (this.isActualCodeSpan(text, startIndex, endIndex)) {
-        const placeholder = `__CODE_SPAN_${placeholderIndex}__`;
-        codeSpans.push(codeSpan);
-        protectedText = protectedText.replace(codeSpan, placeholder);
-        placeholderIndex++;
+      for (let j = backtickIndex + 1; j < cleanText.length; j++) {
+        if (cleanText[j] === "`") {
+          depth--;
+          if (depth === 0) {
+            closingIndex = j;
+            break;
+          }
+        }
       }
+
+      if (closingIndex !== -1) {
+        // Extract the actual code span from the original styled text
+        // We need to map the positions from clean text to styled text
+        const cleanCodeSpan = cleanText.slice(backtickIndex, closingIndex + 1);
+
+        // Find the corresponding span in the styled text
+        // This is complex due to ANSI codes, so we use a simpler approach:
+        // Just use the regex on the original text and validate with clean text
+        const regex = new RegExp(
+          cleanCodeSpan.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          "g",
+        );
+        const match = regex.exec(text);
+
+        if (match) {
+          const styledCodeSpan = match[0];
+
+          // Check if this is an actual code span
+          if (
+            this.isActualCodeSpan(
+              text,
+              match.index,
+              match.index + styledCodeSpan.length,
+            )
+          ) {
+            const placeholder = `__CODE_SPAN_${placeholderIndex}__`;
+
+            // Store the full styled code span for restoration
+            codeSpans.push(styledCodeSpan);
+
+            // Replace with placeholder
+            protectedText = protectedText.replace(styledCodeSpan, placeholder);
+            placeholderIndex++;
+
+            // Move past this code span
+            i = closingIndex + 1;
+            continue;
+          }
+        }
+      }
+
+      // Move to next character
+      i = backtickIndex + 1;
     }
 
     return { protectedText, codeSpans };
