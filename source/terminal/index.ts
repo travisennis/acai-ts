@@ -38,7 +38,7 @@ export function alert(): void {
 }
 
 export function hr(width: number) {
-  return `${style.gray("─").repeat(width)} `;
+  return `${style.gray("─").repeat(width)}`;
 }
 
 export function table(
