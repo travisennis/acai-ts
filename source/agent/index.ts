@@ -8,6 +8,7 @@ import {
   streamText,
   type ToolCallRepairFunction,
 } from "ai";
+import { config } from "../config.ts";
 import { logger } from "../logger.ts";
 import type { MessageHistory } from "../messages.ts";
 import { AiConfig } from "../models/ai-config.ts";
@@ -141,7 +142,7 @@ export class Agent {
       modelManager,
       messageHistory,
       tokenTracker,
-      maxIterations = 90,
+      maxIterations = (await config.readProjectConfig()).loop.maxIterations,
       maxRetries = 2,
       toolCallRepair,
     } = this.opts;
