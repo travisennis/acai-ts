@@ -33,6 +33,13 @@ export class FooterComponent extends Container {
 
     let status = `Steps: ${this.state.steps.length} - `;
 
+    // Calculate total tool calls across all steps
+    const totalToolCalls = this.state.steps.reduce(
+      (total, step) => total + step.toolCalls.length,
+      0,
+    );
+    status += `Tools call: ${totalToolCalls} - `;
+
     // Show time spend on this prompt
     status += `Time: ${formatDuration(this.state.timestamps.stop - this.state.timestamps.start)} - `;
 
