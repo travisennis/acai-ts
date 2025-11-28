@@ -5,6 +5,7 @@
  * Handles input/output, formatting, and display.
  */
 
+import { config } from "../config.ts";
 import { logger } from "../logger.ts";
 import { getTerminalSize, link as terminalLink } from "./formatting.ts";
 import { applyMarkdown } from "./markdown.ts";
@@ -21,7 +22,11 @@ export function isInteractive() {
   return Boolean(process.stdout.isTTY && process.stdin.isTTY);
 }
 
-export function alert(): void {
+export async function alert(): Promise<void> {
+  if (!(await config.readProjectConfig()).notify) {
+    return;
+  }
+
   const t = "acai";
   const b = "";
   try {
