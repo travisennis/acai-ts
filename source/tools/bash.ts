@@ -31,6 +31,12 @@ const inputSchema = z.object({
     .describe(
       `Command execution timeout in milliseconds. Required but nullable. If null, the default value is ${DEFAULT_TIMEOUT}ms`,
     ),
+  background: z
+    .boolean()
+    .optional()
+    .describe(
+      "Run command in background. If true, command will run until program exit.",
+    ),
 });
 
 type BashInputSchema = z.infer<typeof inputSchema>;
@@ -59,7 +65,7 @@ export const createBashTool = async ({
       inputSchema,
     },
     async *execute(
-      { command, cwd, timeout }: BashInputSchema,
+      { command, cwd, timeout, background }: BashInputSchema,
       { toolCallId, abortSignal }: ToolCallOptions,
     ): AsyncGenerator<ToolResult> {
       try {
@@ -114,30 +120,81 @@ export const createBashTool = async ({
           );
         }
 
-        const { output, exitCode } = await execEnv.executeCommand(command, {
-          cwd: resolvedCwd,
-          timeout: safeTimeout,
-          abortSignal,
-          preserveOutputOnError: true,
-          captureStderr: true,
-          throwOnError: false,
-        });
+        // Handle background execution
+        if (background) {
+          // Strip any existing & from command to avoid double backgrounding
+          let processedCommand = command.trim();
+          if (processedCommand.endsWith("&")) {
+            logger.warn(
+              `Stripping '&' from command since background=true: ${command}`,
+            );
+            processedCommand = processedCommand.slice(0, -1).trim();
+          }
 
-        const result = await manageTokenLimit(
-          output,
-          tokenCounter,
-          "Bash",
-          "Adjust command to return more specific results",
-        );
+          const backgroundProcess = execEnv.executeCommandInBackground(
+            processedCommand,
+            {
+              cwd: resolvedCwd,
+              abortSignal,
+              onOutput: (output) => {
+                logger.debug({ output }, "Background command output:");
+              },
+              onError: (error) => {
+                logger.debug({ error }, "Background command error:");
+              },
+              onExit: (code) => {
+                logger.debug(`Background command exited with code ${code}`);
+              },
+            },
+          );
 
-        yield {
-          name: BashTool.name,
-          event: "tool-completion",
-          id: toolCallId,
-          data: `${exitCode} (${result.tokenCount} tokens)`,
-        };
+          yield {
+            name: BashTool.name,
+            event: "tool-completion",
+            id: toolCallId,
+            data: `Background process started with PID: ${backgroundProcess.pid}`,
+          };
 
-        yield result.content;
+          yield `Background process started with PID: ${backgroundProcess.pid}`;
+        } else {
+          // Handle regular synchronous execution
+          // Strip & if present to ensure synchronous behavior
+          let processedCommand = command.trim();
+          if (processedCommand.endsWith("&")) {
+            logger.warn(
+              `Stripping '&' from command since background=false: ${command}`,
+            );
+            processedCommand = processedCommand.slice(0, -1).trim();
+          }
+
+          const { output, exitCode } = await execEnv.executeCommand(
+            processedCommand,
+            {
+              cwd: resolvedCwd,
+              timeout: safeTimeout,
+              abortSignal,
+              preserveOutputOnError: true,
+              captureStderr: true,
+              throwOnError: false,
+            },
+          );
+
+          const result = await manageTokenLimit(
+            output,
+            tokenCounter,
+            "Bash",
+            "Adjust command to return more specific results",
+          );
+
+          yield {
+            name: BashTool.name,
+            event: "tool-completion",
+            id: toolCallId,
+            data: `${exitCode} (${result.tokenCount} tokens)`,
+          };
+
+          yield result.content;
+        }
       } catch (error) {
         logger.error(error, "Bash Tool Error:");
         yield {
