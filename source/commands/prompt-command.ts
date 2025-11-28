@@ -4,7 +4,7 @@ import { logger } from "../logger.ts";
 import { processPrompt } from "../mentions.ts";
 import style from "../terminal/style.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Text } from "../tui/index.ts";
+import { Spacer, Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const promptCommand = ({
@@ -130,6 +130,8 @@ export const promptCommand = ({
         if (promptContent.includes("{{INPUT}}")) {
           promptContent = promptContent.replace(/{{INPUT}}/g, inputString);
         }
+
+        container.addChild(new Spacer(1));
 
         container.addChild(
           new Text(
