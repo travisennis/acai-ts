@@ -49,12 +49,21 @@ interface BackgroundProcessOptions extends ExecutionOptions {
 }
 
 /**
- * Background process handle
+ * Background process handle (public interface)
  */
 interface BackgroundProcess {
   pid: number;
   kill: () => boolean;
   isRunning: boolean;
+}
+
+/**
+ * Tracked background process with project information
+ */
+interface TrackedBackgroundProcess extends BackgroundProcess {
+  originalCwd: string;
+  startTime: Date;
+  command: string;
 }
 
 /**
@@ -116,7 +125,8 @@ function ttySizeEnv(): Record<string, string> {
 
 export class ExecutionEnvironment {
   private config: ExecutionConfig;
-  private backgroundProcesses: Map<number, BackgroundProcess> = new Map();
+  private backgroundProcesses: Map<number, TrackedBackgroundProcess> =
+    new Map();
   private executionCount = 0;
   private workingDirectory: string;
   private environmentVariables: Record<string, string>;
@@ -326,10 +336,19 @@ export class ExecutionEnvironment {
     command: string,
     options: BackgroundProcessOptions = {},
   ): BackgroundProcess {
+    const cwd = options.cwd || this.workingDirectory;
+
+    // Create the tracked process first
+    const trackedProcess: TrackedBackgroundProcess = {
+      pid: -1, // Will be set after spawn
+      kill: () => false, // Will be set after spawn
+      isRunning: true,
+      originalCwd: cwd,
+      startTime: new Date(),
+      command,
+    };
     // Validate command for safety
     this.validateCommand(command);
-
-    const cwd = options.cwd || this.workingDirectory;
     const env = {
       ...this.environmentVariables,
       ...ttySizeEnv(),
@@ -371,6 +390,24 @@ export class ExecutionEnvironment {
 
     const pid = childProcess.pid ?? -1;
     let isRunning = true;
+
+    // Update tracked process with actual PID and kill function
+    trackedProcess.pid = pid;
+    trackedProcess.kill = () => {
+      if (isRunning) {
+        childProcess.kill();
+        isRunning = false;
+        this.backgroundProcesses.delete(pid);
+
+        // Clean up abort listener
+        if (abortHandler) {
+          options.abortSignal?.removeEventListener("abort", abortHandler);
+        }
+
+        return true;
+      }
+      return false;
+    };
 
     // Set up output handlers
     if (childProcess.stdout) {
@@ -430,31 +467,54 @@ export class ExecutionEnvironment {
       });
     }
 
-    // Create the process handle
+    // Create the public process handle
     const backgroundProcess: BackgroundProcess = {
       pid,
-      kill: () => {
-        if (isRunning) {
-          childProcess.kill();
-          isRunning = false;
-          this.backgroundProcesses.delete(pid);
-
-          // Clean up abort listener
-          if (abortHandler) {
-            options.abortSignal?.removeEventListener("abort", abortHandler);
-          }
-
-          return true;
-        }
-        return false;
-      },
+      kill: trackedProcess.kill,
       isRunning: true,
     };
 
     // Track the process
-    this.backgroundProcesses.set(pid, backgroundProcess);
+    this.backgroundProcesses.set(pid, trackedProcess);
 
     return backgroundProcess;
+  }
+
+  /**
+   * Get background processes for a specific project directory
+   */
+  getBackgroundProcessesForProject(
+    projectRoot: string,
+  ): TrackedBackgroundProcess[] {
+    const processes: TrackedBackgroundProcess[] = [];
+
+    for (const process of this.backgroundProcesses.values()) {
+      // Check if process was started in or under the project root
+      if (process.originalCwd.startsWith(projectRoot)) {
+        processes.push(process);
+      }
+    }
+
+    return processes;
+  }
+
+  /**
+   * Kill all background processes for a specific project directory
+   */
+  killBackgroundProcessesForProject(projectRoot: string): void {
+    const processes = this.getBackgroundProcessesForProject(projectRoot);
+
+    logger.info(
+      `Killing ${processes.length} background processes for project: ${projectRoot}`,
+    );
+
+    for (const process of processes) {
+      try {
+        process.kill();
+      } catch (error) {
+        logger.warn(error, `Failed to kill process ${process.pid}`);
+      }
+    }
   }
 
   /**
@@ -554,6 +614,9 @@ export async function initExecutionEnvironment(
     const executionEnv = new ExecutionEnvironment(config);
     await executionEnv.initialize();
 
+    // Set up cleanup for background processes
+    setupProcessCleanup(executionEnv);
+
     logger.info("Execution environment initialized successfully");
 
     return executionEnv;
@@ -561,7 +624,9 @@ export async function initExecutionEnvironment(
     logger.error(error, "Failed to initialize execution environment");
 
     // Return a minimal execution environment even if initialization failed
-    return new ExecutionEnvironment(config);
+    const executionEnv = new ExecutionEnvironment(config);
+    setupProcessCleanup(executionEnv);
+    return executionEnv;
   }
 }
 
