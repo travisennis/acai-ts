@@ -29,7 +29,6 @@ interface CliOptions {
   promptManager: PromptManager;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
-  config: Record<PropertyKey, unknown>;
   tokenCounter: TokenCounter;
   workspace: WorkspaceContext;
 }
@@ -51,15 +50,12 @@ export class Cli {
 
   async run() {
     const {
-      config,
       promptManager,
       modelManager,
       tokenTracker,
       messageHistory,
       tokenCounter,
     } = this.options;
-
-    logger.info(config, "Config:");
 
     const abortController = new AbortController();
     const { signal } = abortController;

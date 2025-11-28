@@ -55,12 +55,7 @@ export const initCommand = ({
         temperature: 0.5,
         prompt: initPrompt,
         stopWhen: stepCountIs(40),
-        tools: (
-          await initCliTools({
-            tokenCounter,
-            workspace,
-          })
-        ).toolDefs,
+        tools: (await initCliTools({ tokenCounter, workspace })).toolDefs,
       });
 
       container.addChild(new Spacer(1));

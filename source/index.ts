@@ -255,7 +255,6 @@ async function main() {
   if (isDefined(initialPromptInput)) {
     const cliProcess = new Cli({
       promptManager,
-      config: appConfig,
       messageHistory,
       modelManager,
       tokenTracker,

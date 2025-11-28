@@ -99,7 +99,10 @@ export const createAgentTools = (options: {
         stopWhen: stepCountIs(30),
         providerOptions: aiConfig.providerOptions(),
         tools: (
-          await initCliTools({ tokenCounter, workspace: options.workspace })
+          await initCliTools({
+            tokenCounter,
+            workspace: options.workspace,
+          })
         ).toolDefs,
         abortSignal: abortSignal,
         // biome-ignore lint/style/useNamingConvention: third-party code
