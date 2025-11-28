@@ -224,3 +224,63 @@ export const formatDuration = (milliseconds: number): string => {
 
   return parts.join(" ");
 };
+
+/**
+ * Formats a number into a compact, human-readable string.
+ * Uses K, M, B, T notation for large numbers while maintaining readability.
+ *
+ * @param num - The number to format
+ * @returns A formatted string representing the number
+ *
+ * @example
+ * ```typescript
+ * formatNumber(1) // Returns: "1"
+ * formatNumber(100) // Returns: "100"
+ * formatNumber(1000) // Returns: "1K"
+ * formatNumber(1100) // Returns: "1.1K"
+ * formatNumber(1234567) // Returns: "1.2M"
+ * formatNumber(1234567890) // Returns: "1.2B"
+ * formatNumber(1234567890123) // Returns: "1.2T"
+ * ```
+ */
+export const formatNumber = (num: number): string => {
+  if (num < 1000) {
+    return num.toString();
+  }
+
+  const units = ["", "K", "M", "B", "T"];
+
+  // Calculate unit index based on number of digits
+  const numDigits = Math.floor(Math.log10(num)) + 1;
+  let unitIndex = Math.min(Math.floor((numDigits - 1) / 3), units.length - 1);
+  let unit = units[unitIndex] || "";
+
+  // Calculate scaled value
+  let scaled = num / 1000 ** unitIndex;
+
+  // Check if we need to move to the next unit (e.g., 999.999K -> 1M)
+  if (Math.round(scaled) >= 1000 && unitIndex < units.length - 1) {
+    unitIndex++;
+    unit = units[unitIndex] || "";
+    scaled = num / 1000 ** unitIndex;
+  }
+
+  // Determine decimal places based on the value
+  if (scaled < 10) {
+    // For values under 10, show one decimal place unless it's a whole number
+    // Also handle the case where rounding would give a whole number
+    const rounded = Math.round(scaled * 10) / 10;
+    return rounded % 1 === 0
+      ? `${Math.round(rounded)}${unit}`
+      : `${rounded.toFixed(1)}${unit}`;
+  }
+  if (scaled < 100) {
+    // For values between 10-100, show one decimal place unless it's a whole number
+    const rounded = Math.round(scaled * 10) / 10;
+    return rounded % 1 === 0
+      ? `${Math.round(rounded)}${unit}`
+      : `${rounded.toFixed(1)}${unit}`;
+  }
+  // For values 100+, round to nearest whole number
+  return `${Math.round(scaled)}${unit}`;
+};
