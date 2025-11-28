@@ -49,9 +49,10 @@ const ProjectConfigSchema = z.object({
       },
     }),
   notify: z.boolean().optional().default(true),
+  readOnlyFiles: z.array(z.string()).optional().default([]),
 });
 
-type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
+export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
 
 export class DirectoryProvider {
   private baseDir: string;

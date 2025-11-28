@@ -2,6 +2,7 @@ import { realpathSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import type { ProjectConfig } from "../config.ts";
 
 // Normalize all paths consistently
 function normalizePath(p: string): string {
@@ -186,4 +187,42 @@ export async function validatePath(
   }
 
   return validatedPath;
+}
+
+// Check if a file is read-only based on config
+function isFileReadOnly(
+  filePath: string,
+  readOnlyFiles: string[],
+  workingDir: string,
+): boolean {
+  if (readOnlyFiles.length === 0) {
+    return false;
+  }
+
+  const normalizedFilePath = normalizePath(path.resolve(workingDir, filePath));
+
+  return readOnlyFiles.some((readOnlyPattern) => {
+    // Handle absolute paths
+    if (path.isAbsolute(readOnlyPattern)) {
+      const normalizedPattern = normalizePath(path.resolve(readOnlyPattern));
+      return normalizedFilePath === normalizedPattern;
+    }
+
+    // Handle relative paths (relative to working directory)
+    const normalizedRelativePattern = normalizePath(
+      path.resolve(workingDir, readOnlyPattern),
+    );
+    return normalizedFilePath === normalizedRelativePattern;
+  });
+}
+
+// Validate that a file is not read-only before modification
+export function validateFileNotReadOnly(
+  filePath: string,
+  config: ProjectConfig,
+  workingDir: string,
+): void {
+  if (isFileReadOnly(filePath, config.readOnlyFiles, workingDir)) {
+    throw new Error(`File is read-only and cannot be modified: ${filePath}`);
+  }
 }

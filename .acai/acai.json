@@ -6,5 +6,9 @@
   "tools": {
     "maxTokens": 30000
   },
-  "notify": true
+  "notify": true,
+  "readOnlyFiles": [
+    "package.json",
+    "tsconfig.json"
+  ]
 }
