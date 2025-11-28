@@ -26,7 +26,7 @@ export type TextEditorConfig = Record<PropertyKey, unknown>;
  *
  * Key bindings:
  * - Enter: Create new line
- * - Shift+Enter / Ctrl+Enter: Submit prompt
+ * - Shift+Enter / Ctrl+Enter / Option+Enter: Submit prompt
  * - Tab: Trigger autocomplete
  * - Escape: Cancel autocomplete or custom handler
  * - Ctrl+C: Custom handler
@@ -910,9 +910,13 @@ export class Editor implements Component {
       "\x1bOM", // Some terminals
       "\\\r", // VS Code terminal
       "\x1b\r", // Option+Enter (macOS)
+      "\x1b[27;2;13~", // xterm shift+enter
+      "\x1b[13;2u", // libtermkey shift+enter
 
       // Ctrl+Enter sequences
       "\x1b[13;5~", // Some terminals
+      "\x1b[27;5;13~", // xterm ctrl+enter
+      "\x1b[13;5u", // libtermkey ctrl+enter
     ];
 
     // Check for known sequences
