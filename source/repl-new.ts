@@ -232,7 +232,7 @@ export class NewRepl {
 
     this.promptStatus.setState({
       projectStatus: await getProjectStatusLine(),
-      currentContextWindow: state.usage.totalTokens,
+      currentContextWindow: this.options.messageHistory.getContextWindow(),
       contextWindow:
         this.options.modelManager.getModelMetadata("repl").contextWindow,
     });
@@ -410,7 +410,7 @@ export class NewRepl {
     this.footer.updateState(this.options.agent.state);
     this.promptStatus.setState({
       projectStatus: await getProjectStatusLine(),
-      currentContextWindow: this.options.agent.state.usage.totalTokens,
+      currentContextWindow: this.options.messageHistory.getContextWindow(),
       contextWindow:
         this.options.modelManager.getModelMetadata("repl").contextWindow,
     });

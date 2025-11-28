@@ -95,6 +95,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
   private createdAt: Date;
   private updatedAt: Date;
   private stateDir: string;
+  private contextWindow: number;
   private modelManager: ModelManager;
   private tokenTracker: TokenTracker;
 
@@ -115,6 +116,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     this.createdAt = new Date();
     this.updatedAt = new Date();
     this.stateDir = stateDir;
+    this.contextWindow = 0;
     this.modelManager = modelManager;
     this.tokenTracker = tokenTracker;
   }
@@ -154,7 +156,19 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
 
   clear() {
     this.history.length = 0;
+    this.contextWindow = 0;
     this.emit("clear-history");
+  }
+
+  setContextWindow(contextWindow: number) {
+    if (contextWindow < 0) {
+      throw new Error("Context window cannot be negative");
+    }
+    this.contextWindow = contextWindow;
+  }
+
+  getContextWindow() {
+    return this.contextWindow;
   }
 
   appendUserMessage(msg: string): void;

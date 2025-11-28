@@ -261,6 +261,24 @@ export class Agent {
           toolResults: thisStepToolResults,
         });
 
+        // Calculate usage for the current step/iteration
+        const stepUsage = await result.usage;
+
+        this._state.usage.inputTokens = stepUsage.inputTokens ?? 0;
+        this._state.usage.outputTokens = stepUsage.outputTokens ?? 0;
+        this._state.usage.totalTokens = stepUsage.totalTokens ?? 0;
+        this._state.usage.cachedInputTokens = stepUsage.cachedInputTokens ?? 0;
+        this._state.usage.reasoningTokens = stepUsage.reasoningTokens ?? 0;
+        messageHistory.setContextWindow(stepUsage.totalTokens ?? 0);
+
+        this._state.totalUsage.inputTokens += stepUsage.inputTokens ?? 0;
+        this._state.totalUsage.outputTokens += stepUsage.outputTokens ?? 0;
+        this._state.totalUsage.totalTokens += stepUsage.totalTokens ?? 0;
+        this._state.totalUsage.cachedInputTokens +=
+          stepUsage.cachedInputTokens ?? 0;
+        this._state.totalUsage.reasoningTokens +=
+          stepUsage.reasoningTokens ?? 0;
+
         // If finishReason is not tool-calls, break
         const finishReason = await result.finishReason;
 
@@ -465,23 +483,6 @@ export class Agent {
         }
 
         messageHistory.appendToolMessages(toolMessages);
-
-        // Calculate usage for the current step/iteration
-        const stepUsage = await result.usage;
-
-        this._state.usage.inputTokens = stepUsage.inputTokens ?? 0;
-        this._state.usage.outputTokens = stepUsage.outputTokens ?? 0;
-        this._state.usage.totalTokens = stepUsage.totalTokens ?? 0;
-        this._state.usage.cachedInputTokens = stepUsage.cachedInputTokens ?? 0;
-        this._state.usage.reasoningTokens = stepUsage.reasoningTokens ?? 0;
-
-        this._state.totalUsage.inputTokens += stepUsage.inputTokens ?? 0;
-        this._state.totalUsage.outputTokens += stepUsage.outputTokens ?? 0;
-        this._state.totalUsage.totalTokens += stepUsage.totalTokens ?? 0;
-        this._state.totalUsage.cachedInputTokens +=
-          stepUsage.cachedInputTokens ?? 0;
-        this._state.totalUsage.reasoningTokens +=
-          stepUsage.reasoningTokens ?? 0;
 
         // Consume the rest of the team if necessary
         // await result.consumeStream();
