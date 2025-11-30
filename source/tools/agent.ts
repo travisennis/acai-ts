@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { WorkspaceContext } from "../index.ts";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
-import style from "../terminal/style.ts";
+// import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import { DirectoryTreeTool } from "./directory-tree.ts";
@@ -78,7 +78,14 @@ export const createAgentTools = (options: {
       name: AgentTool.name,
       event: "tool-init",
       id: toolCallId,
-      data: `\n${style.cyan(prompt)}`,
+      data: "Invoking agent...",
+    };
+
+    yield {
+      name: AgentTool.name,
+      event: "tool-update",
+      id: toolCallId,
+      data: prompt,
     };
 
     try {
@@ -110,6 +117,13 @@ export const createAgentTools = (options: {
       });
 
       tokenTracker.trackUsage("task-agent", usage);
+
+      yield {
+        name: AgentTool.name,
+        event: "tool-update",
+        id: toolCallId,
+        data: text,
+      };
 
       yield {
         name: AgentTool.name,
