@@ -306,7 +306,10 @@ export class NewRepl {
           component.update(event.events);
         } else {
           // Create tool component for new tool call
-          const newComponent = new ToolExecutionComponent(event.events);
+          const newComponent = new ToolExecutionComponent(
+            this.tui,
+            event.events,
+          );
           this.pendingTools.set(event.toolCallId, newComponent);
           this.chatContainer.addChild(newComponent);
         }

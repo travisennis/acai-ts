@@ -1,21 +1,34 @@
 import type { ToolEvent } from "../../agent/index.ts";
 import { capitalize } from "../../formatting.ts";
-import { formatMarkdown } from "../../terminal/index.ts";
 import style from "../../terminal/style.ts";
-import { Container, Spacer, Text } from "../index.ts";
+import {
+  Container,
+  Loader,
+  Markdown,
+  Spacer,
+  Text,
+  type TUI,
+} from "../index.ts";
 
 type Status = ToolEvent["type"];
 
+const bgColor = {
+  r: 52,
+  g: 53,
+  b: 65,
+};
+
 export class ToolExecutionComponent extends Container {
+  private tui: TUI;
   private contentContainer: Container;
+  private loaderComponent: Loader | null;
   private toolName: string;
   private events: ToolEvent[];
-  private loaderFrames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-  private currentLoaderFrame = 0;
-  private loaderIntervalId: NodeJS.Timeout | null = null;
 
-  constructor(events: ToolEvent[]) {
+  constructor(tui: TUI, events: ToolEvent[]) {
     super();
+    this.tui = tui;
+    this.loaderComponent = null;
     this.toolName = events[0].name;
     this.events = events;
 
@@ -28,36 +41,21 @@ export class ToolExecutionComponent extends Container {
 
   update(events: ToolEvent[]) {
     this.events = events;
-    this.renderDisplay();
-  }
 
-  private startLoaderAnimation() {
-    if (this.loaderIntervalId) {
-      return;
-    }
-
-    this.loaderIntervalId = setInterval(() => {
-      this.currentLoaderFrame =
-        (this.currentLoaderFrame + 1) % this.loaderFrames.length;
-      this.renderDisplay();
-    }, 80);
-  }
-
-  private stopLoaderAnimation() {
-    if (this.loaderIntervalId) {
-      clearInterval(this.loaderIntervalId);
-      this.loaderIntervalId = null;
-    }
-  }
-
-  private renderDisplay() {
     // Clear content container
     this.contentContainer.clear();
 
-    const lines: string[] = [];
+    this.renderDisplay();
+  }
 
+  private renderDisplay() {
     // Build display from complete event history with proper ordering
     const processedEvents = this.processEventsInOrder();
+
+    const currentStatus = processedEvents.at(-1)?.type ?? "tool-call-start";
+
+    this.contentContainer.addChild(new Spacer(1));
+    this.contentContainer.addChild(new Spacer(1, bgColor));
 
     for (let i = 0; i < processedEvents.length; i++) {
       const event = processedEvents[i];
@@ -65,19 +63,45 @@ export class ToolExecutionComponent extends Container {
       const eventType = event.type;
       switch (eventType) {
         case "tool-call-start":
-          lines.push(`${this.handleToolStartMessage(event)}`);
+          this.getToolCallStartComponent(event, currentStatus);
           break;
         case "tool-call-init":
-          lines.push(`→  ${this.handleToolInitMessage(event.msg)}`);
+          this.contentContainer.addChild(
+            new Text(
+              `→ ${this.handleToolInitMessage(event.msg)}`,
+              1,
+              0,
+              bgColor,
+            ),
+          );
           break;
         case "tool-call-update":
-          lines.push(`${this.handleToolUpdateMessage(event.msg)}`);
+          this.contentContainer.addChild(
+            new Markdown(this.handleToolUpdateMessage(event.msg), {
+              paddingX: 1,
+              customBgRgb: bgColor,
+            }),
+          );
           break;
         case "tool-call-end":
-          lines.push(`└── ${this.handleToolCompletionMessage(event.msg)}`);
+          this.contentContainer.addChild(
+            new Text(
+              `└ ${this.handleToolCompletionMessage(event.msg)}`,
+              1,
+              0,
+              bgColor,
+            ),
+          );
           break;
         case "tool-call-error":
-          lines.push(`└── ${this.handleToolErrorMessage(event.msg)}`);
+          this.contentContainer.addChild(
+            new Text(
+              `└ ${this.handleToolErrorMessage(event.msg)}`,
+              1,
+              0,
+              bgColor,
+            ),
+          );
           break;
         default: {
           eventType satisfies never;
@@ -85,52 +109,65 @@ export class ToolExecutionComponent extends Container {
       }
     }
 
-    // Render all lines with proper indicators
-    const currentStatus = this.events[this.events.length - 1].type;
-    const indicator = this.getIndicator(currentStatus);
-
-    // Manage loader animation based on status
-    if (currentStatus === "tool-call-update") {
-      this.startLoaderAnimation();
-    } else {
-      this.stopLoaderAnimation();
-    }
-
-    const displayLines: string[] = [];
-    for (let i = 0; i < lines.length; i++) {
-      let line = lines[i];
-      if (i === 0) {
-        line = `${indicator} ${line}`;
-      }
-      displayLines.push(line);
-    }
-
+    this.contentContainer.addChild(new Spacer(1, bgColor));
     this.contentContainer.addChild(new Spacer(1));
-
-    this.contentContainer.addChild(
-      new Text(displayLines.join("\n"), 1, 1, {
-        r: 52,
-        g: 53,
-        b: 65,
-      }),
-    );
   }
 
-  private getIndicator(status: Status) {
-    switch (status) {
+  private getToolCallStartComponent(event: ToolEvent, currentStatus: Status) {
+    switch (currentStatus) {
       case "tool-call-start":
+        this.contentContainer.addChild(
+          new Text(
+            `${style.blue.bold("●")} ${this.handleToolStartMessage(event)}`,
+            1,
+            0,
+            bgColor,
+          ),
+        );
+        break;
       case "tool-call-init":
-        return style.blue.bold("●");
       case "tool-call-update":
-        return style.yellow.bold(this.loaderFrames[this.currentLoaderFrame]);
+        if (!this.loaderComponent) {
+          this.loaderComponent = new Loader(
+            this.tui,
+            this.handleToolStartMessage(event),
+          );
+          this.contentContainer.addChild(this.loaderComponent);
+        } else {
+          this.loaderComponent.setMessage(this.handleToolStartMessage(event));
+        }
+        break;
       case "tool-call-end":
-        return style.green.bold("●");
+        if (this.loaderComponent) {
+          this.loaderComponent.stop();
+          this.loaderComponent = null;
+        }
+        this.contentContainer.addChild(
+          new Text(
+            `${style.green.bold("●")} ${this.handleToolStartMessage(event)}`,
+            1,
+            0,
+            bgColor,
+          ),
+        );
+        break;
       case "tool-call-error":
-        return style.red.bold("●");
+        if (this.loaderComponent) {
+          this.loaderComponent.stop();
+          this.loaderComponent = null;
+        }
+        this.contentContainer.addChild(
+          new Text(
+            `${style.red.bold("●")} ${this.handleToolStartMessage(event)}`,
+            1,
+            0,
+            bgColor,
+          ),
+        );
+        break;
       default:
-        status satisfies never;
+        currentStatus satisfies never;
     }
-    return style.blue.bold("●");
   }
 
   private handleToolStartMessage(event: ToolEvent) {
@@ -148,7 +185,7 @@ export class ToolExecutionComponent extends Container {
   }
 
   private handleToolUpdateMessage(message: string) {
-    return formatMarkdown(message);
+    return message;
   }
 
   private handleToolCompletionMessage(message: string) {
@@ -179,37 +216,29 @@ export class ToolExecutionComponent extends Container {
       });
     }
 
-    // Process events in the correct order: start → update → end/error
-    const startEvents = events.filter(
-      (event) => event.type === "tool-call-start",
-    );
-    const initEvents = events.filter(
-      (event) => event.type === "tool-call-init",
-    );
-    const updateEvents = events.filter(
-      (event) => event.type === "tool-call-update",
-    );
-    const endEvents = events.filter((event) => event.type === "tool-call-end");
-    const errorEvents = events.filter(
-      (event) => event.type === "tool-call-error",
-    );
+    processed.push(...events);
 
-    // Add start events first
-    processed.push(...startEvents);
-
-    // Add init events
-    processed.push(...initEvents);
-
-    // Add update events
-    processed.push(...updateEvents);
-
-    // Add end or error events (only one should be present)
-    if (endEvents.length > 0) {
-      processed.push(...endEvents);
-    } else if (errorEvents.length > 0) {
-      processed.push(...errorEvents);
-    }
+    processed.sort((a, b) => this.getEventIndex(a) - this.getEventIndex(b));
 
     return processed;
+  }
+
+  private getEventIndex(event: ToolEvent) {
+    const eventType = event.type;
+    switch (eventType) {
+      case "tool-call-start":
+        return 0;
+      case "tool-call-init":
+        return 1;
+      case "tool-call-update":
+        return 2;
+      case "tool-call-end":
+      case "tool-call-error":
+        return 3;
+      default: {
+        eventType satisfies never;
+        return -1;
+      }
+    }
   }
 }
