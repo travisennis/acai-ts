@@ -186,11 +186,12 @@ export const createBashTool = async ({
             "Adjust command to return more specific results",
           );
 
+          const statusText = exitCode === 0 ? "success" : "error";
           yield {
             name: BashTool.name,
             event: "tool-completion",
             id: toolCallId,
-            data: `${exitCode} (${result.tokenCount} tokens)`,
+            data: `${statusText}${isMutating ? " *" : ""} (${result.tokenCount} tokens)`,
           };
 
           yield result.content;
