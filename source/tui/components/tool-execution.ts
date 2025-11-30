@@ -1,5 +1,6 @@
 import type { ToolEvent } from "../../agent/index.ts";
 import { capitalize } from "../../formatting.ts";
+import { formatMarkdown } from "../../terminal/index.ts";
 import style from "../../terminal/style.ts";
 import { Container, Spacer, Text } from "../index.ts";
 
@@ -64,10 +65,13 @@ export class ToolExecutionComponent extends Container {
       const eventType = event.type;
       switch (eventType) {
         case "tool-call-start":
-          lines.push(`${this.handleToolInitMessage(event)}`);
+          lines.push(`${this.handleToolStartMessage(event)}`);
+          break;
+        case "tool-call-init":
+          lines.push(`→  ${this.handleToolInitMessage(event.msg)}`);
           break;
         case "tool-call-update":
-          lines.push(`├── ${this.handleToolUpdateMessage(event.msg)}`);
+          lines.push(`${this.handleToolUpdateMessage(event.msg)}`);
           break;
         case "tool-call-end":
           lines.push(`└── ${this.handleToolCompletionMessage(event.msg)}`);
@@ -115,6 +119,7 @@ export class ToolExecutionComponent extends Container {
   private getIndicator(status: Status) {
     switch (status) {
       case "tool-call-start":
+      case "tool-call-init":
         return style.blue.bold("●");
       case "tool-call-update":
         return style.yellow.bold(this.loaderFrames[this.currentLoaderFrame]);
@@ -128,7 +133,7 @@ export class ToolExecutionComponent extends Container {
     return style.blue.bold("●");
   }
 
-  private handleToolInitMessage(event: ToolEvent) {
+  private handleToolStartMessage(event: ToolEvent) {
     const message = event.msg;
 
     let result = `${style.bold(capitalize(this.toolName))} `;
@@ -138,36 +143,16 @@ export class ToolExecutionComponent extends Container {
     return result;
   }
 
+  private handleToolInitMessage(message: string) {
+    return style.bold(message);
+  }
+
   private handleToolUpdateMessage(message: string) {
-    const newlineIndex = message.indexOf("\n");
-
-    let result = "";
-
-    if (newlineIndex === -1) {
-      result += style.bold(message);
-    } else {
-      const firstLine = message.slice(0, newlineIndex);
-      // const remainingLines = message.slice(newlineIndex + 1);
-      result += style.bold(firstLine);
-      // if (remainingLines.trim()) {
-      //   terminal.display(remainingLines);
-      // }
-    }
-    return result;
+    return formatMarkdown(message);
   }
 
   private handleToolCompletionMessage(message: string) {
-    const newlineIndex = message.indexOf("\n");
-
-    let result = "";
-
-    if (newlineIndex === -1) {
-      result += style.bold(message);
-    } else {
-      const firstLine = message.slice(0, newlineIndex);
-      result += style.bold(firstLine);
-    }
-    return result;
+    return style.bold(message);
   }
 
   private handleToolErrorMessage(message: string) {
@@ -198,6 +183,9 @@ export class ToolExecutionComponent extends Container {
     const startEvents = events.filter(
       (event) => event.type === "tool-call-start",
     );
+    const initEvents = events.filter(
+      (event) => event.type === "tool-call-init",
+    );
     const updateEvents = events.filter(
       (event) => event.type === "tool-call-update",
     );
@@ -208,6 +196,9 @@ export class ToolExecutionComponent extends Container {
 
     // Add start events first
     processed.push(...startEvents);
+
+    // Add init events
+    processed.push(...initEvents);
 
     // Add update events
     processed.push(...updateEvents);
