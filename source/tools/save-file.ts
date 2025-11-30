@@ -19,9 +19,11 @@ export const SaveFileTool = {
 const inputSchema = z.object({
   path: z.string().describe("Absolute path to file to save to"),
   content: z.string().describe("Content to save in the file"),
-  encoding: fileEncodingSchema.describe(
-    'Encoding format for saving the file. Use "utf-8" as default for text files',
-  ),
+  encoding: fileEncodingSchema
+    .describe(
+      'Encoding format for saving the file. Use "utf-8" as default for text files',
+    )
+    .default("utf-8"),
 });
 
 type SaveFileInputSchema = z.infer<typeof inputSchema>;
