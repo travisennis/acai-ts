@@ -104,6 +104,13 @@ export const createEditFileTool = async ({
         yield {
           name: EditFileTool.name,
           id: toolCallId,
+          event: "tool-update",
+          data: result,
+        };
+
+        yield {
+          name: EditFileTool.name,
+          id: toolCallId,
           event: "tool-completion",
           data: `Applied ${edits.length} edits`,
         };
