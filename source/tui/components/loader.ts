@@ -12,8 +12,12 @@ export class Loader extends Text {
   private ui: TUI | null = null;
   private message: string;
 
-  constructor(ui: TUI, message?: string) {
-    super("", 1, 0);
+  constructor(
+    ui: TUI,
+    message?: string,
+    customBgRgb?: { r: number; g: number; b: number },
+  ) {
+    super("", 1, 0, customBgRgb);
     this.message = message ?? "Loading...";
     this.ui = ui;
     this.start();
