@@ -322,11 +322,38 @@ export class Agent {
                   )?.input,
                   msg: "",
                 });
+
+                // Extract error message from tool-error content
+                let errorMessage = "invalid tool call";
+                if (
+                  content.output &&
+                  typeof content.output === "object" &&
+                  "value" in content.output
+                ) {
+                  const outputValue = content.output.value;
+                  if (
+                    outputValue &&
+                    typeof outputValue === "object" &&
+                    "errors" in outputValue &&
+                    Array.isArray(outputValue["errors"])
+                  ) {
+                    const firstError = outputValue["errors"][0];
+                    if (
+                      firstError &&
+                      typeof firstError === "object" &&
+                      "message" in firstError &&
+                      typeof firstError["message"] === "string"
+                    ) {
+                      errorMessage = firstError["message"];
+                    }
+                  }
+                }
+
                 yield this.processToolEvent(toolsCalled, {
                   type: "tool-call-error",
                   name: content.toolName,
                   toolCallId: content.toolCallId,
-                  msg: "invalid tool call",
+                  msg: errorMessage,
                   args: toolCalls.find(
                     (call) => call.toolCallId === content.toolCallId,
                   )?.input,
