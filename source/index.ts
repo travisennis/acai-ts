@@ -6,7 +6,11 @@ import { isDefined } from "@travisennis/stdlib/typeguards";
 import { Agent } from "./agent/index.ts";
 import { Cli } from "./cli.ts";
 import { CommandManager } from "./commands/manager.ts";
-import { config } from "./config.ts";
+import {
+  config,
+  type DirectoryProvider,
+  type ProjectConfig,
+} from "./config.ts";
 import { logger } from "./logger.ts";
 import { MessageHistory } from "./messages.ts";
 import { ModelManager } from "./models/manager.ts";
@@ -97,137 +101,59 @@ export function handleError(error: Error): void {
 
 export type Flags = typeof flags;
 
-async function main() {
-  const appConfig = await config.ensureAppConfig("acai");
+// Configuration constants
+const DEFAULT_HISTORY_LIMIT = 10;
+const CONTINUE_HISTORY_LIMIT = 1;
 
-  if (flags.version === true) {
-    console.info(getPackageVersion());
-    process.exit(0);
-  }
+// Application state interface
+interface AppState {
+  appConfig: ProjectConfig;
+  modelManager: ModelManager;
+  tokenTracker: TokenTracker;
+  tokenCounter: TokenCounter;
+  messageHistory: MessageHistory;
+  promptManager: PromptManager;
+  promptHistory: string[];
+  commands: CommandManager;
+  agent?: Agent;
+  repl?: NewRepl;
+}
 
-  if (flags.help === true) {
-    console.info(helpText);
-    process.exit(0);
-  }
+// Helper functions for main()
 
+async function initializeAppState(
+  appConfig: ProjectConfig,
+  initialPromptInput: string | undefined,
+  stdInPrompt: string | undefined,
+  hasContinueOrResume: boolean,
+): Promise<AppState> {
   const appDir = config.app;
-  const messageHistoryDir = await appDir.ensurePath("message-history");
 
-  // --- Argument Validation ---
-  if (flags.continue === true && flags.resume === true) {
-    console.error("Cannot use --continue and --resume flags together.");
-    process.exit(1);
-  }
+  // Parallelize independent async operations
+  const [messageHistoryDir, modelManager] = await Promise.all([
+    appDir.ensurePath("message-history"),
+    initializeModelManager(appDir),
+  ]);
 
-  const hasContinueOrResume = flags.continue === true || flags.resume === true;
-
-  // --- Determine Initial Prompt (potential conflict) ---
-  const positionalPrompt = input.at(0);
-  let stdInPrompt: string | undefined;
-  // Check if there's data available on stdin
-  if (!process.stdin.isTTY) {
-    try {
-      // Non-TTY stdin means data is being piped in
-      stdInPrompt = await text(process.stdin);
-    } catch (error) {
-      console.error(`Error reading stdin: ${(error as Error).message}`);
-    }
-  }
-
-  const initialPromptInput =
-    typeof flags.prompt === "string" && flags.prompt.length > 0
-      ? flags.prompt
-      : positionalPrompt && positionalPrompt.length > 0
-        ? positionalPrompt
-        : undefined;
-
-  if (hasContinueOrResume && isDefined(initialPromptInput)) {
-    console.error("Cannot use --continue or --resume with an initial prompt.");
-    process.exit(1);
-  }
-
-  setTerminalTitle(`acai: ${workspace.primaryDir}`);
-
-  const chosenModel: ModelName = isSupportedModel(flags.model)
-    ? (flags.model as ModelName)
-    : "openrouter:glm-4.6";
-
-  const modelManager = new ModelManager({
-    stateDir: await appDir.ensurePath("audit"),
-  });
-  modelManager.setModel("repl", chosenModel);
-  modelManager.setModel("cli", chosenModel);
-  modelManager.setModel("title-conversation", chosenModel); // "openrouter:gemini-flash25");
-  modelManager.setModel("conversation-summarizer", chosenModel); //  "openrouter:gemini-flash25");
-  modelManager.setModel("tool-repair", chosenModel); //  "openai:gpt-4.1");
-  modelManager.setModel("conversation-analyzer", chosenModel); //  "openrouter:gemini-flash25");
-  modelManager.setModel("init-project", chosenModel);
-  modelManager.setModel("task-agent", chosenModel); //  "openrouter:gpt-5-mini");
-  modelManager.setModel("handoff-agent", chosenModel);
-  modelManager.setModel("edit-fix", chosenModel); //  "openrouter:gemini-flash25");
-
+  // Initialize synchronous components
   const tokenTracker = new TokenTracker();
   const tokenCounter = new TokenCounter();
 
-  const messageHistory = new MessageHistory({
-    stateDir: messageHistoryDir,
+  // Initialize dependent components
+  const messageHistory = await initializeMessageHistory(
+    messageHistoryDir,
     modelManager,
     tokenTracker,
-  });
-  messageHistory.on("update-title", (title) => setTerminalTitle(title));
+  );
 
-  if (flags.continue === true) {
-    const histories = await MessageHistory.load(messageHistoryDir, 1);
-    const latestHistory = histories.at(0);
-    if (latestHistory) {
-      messageHistory.restore(latestHistory);
-      console.info(`Resuming conversation: ${latestHistory.title}`);
-      // Set terminal title after restoring
-      setTerminalTitle(latestHistory.title || `acai: ${process.cwd()}`);
-    } else {
-      logger.info("No previous conversation found to continue.");
-    }
-  } else if (flags.resume === true) {
-    const histories = await MessageHistory.load(messageHistoryDir, 10);
-    if (histories.length > 0) {
-      try {
-        const choice = await select({
-          message: "Select a conversation to resume:",
-          choices: histories.map((h, index) => ({
-            name: `${index + 1}: ${h.title} (${h.updatedAt.toLocaleString()})`,
-            value: index,
-            description: `${h.messages.length} messages`,
-          })),
-        });
-        const selectedHistory = histories.at(choice);
-        if (selectedHistory) {
-          messageHistory.restore(selectedHistory);
-          logger.info(`Resuming conversation: ${selectedHistory.title}`);
-          // Set terminal title after restoring
-          setTerminalTitle(selectedHistory.title || `acai: ${process.cwd()}`);
-        } else {
-          // This case should theoretically not happen if choice is valid
-          logger.error("Selected history index out of bounds.");
-        }
-      } catch (error) {
-        // Handle Ctrl-C cancellation
-        if (
-          error instanceof Error &&
-          "isCanceled" in error &&
-          error.isCanceled === true
-        ) {
-          logger.info("Resume selection cancelled.");
-        } else {
-          // Re-throw other errors
-          throw error;
-        }
-      }
-    } else {
-      logger.info("No previous conversations found to resume.");
-    }
-  }
+  // Handle conversation history loading
+  await handleConversationHistory(
+    messageHistory,
+    messageHistoryDir,
+    hasContinueOrResume,
+  );
 
-  // --- Setup Prompt Manager (only if not continuing/resuming) ---
+  // Setup prompt manager
   const promptManager = new PromptManager(tokenCounter);
   if (!hasContinueOrResume && isDefined(initialPromptInput)) {
     promptManager.set(initialPromptInput);
@@ -252,67 +178,232 @@ async function main() {
 
   await commands.initializeCommmands();
 
-  if (isDefined(initialPromptInput)) {
-    const cliProcess = new Cli({
-      promptManager,
-      messageHistory,
-      modelManager,
-      tokenTracker,
-      tokenCounter,
-      workspace,
-    });
-    return (await asyncTry(cliProcess.run())).recover(handleError);
-  }
-
-  const agent = new Agent({
-    messageHistory,
+  return {
+    appConfig,
     modelManager,
     tokenTracker,
+    tokenCounter,
+    messageHistory,
+    promptManager,
+    promptHistory,
+    commands,
+  };
+}
+
+async function handleEarlyExits(): Promise<boolean> {
+  if (flags.version === true) {
+    console.info(getPackageVersion());
+    process.exit(0);
+  }
+
+  if (flags.help === true) {
+    console.info(helpText);
+    process.exit(0);
+  }
+
+  return false;
+}
+
+function validateCliArguments(): void {
+  if (flags.continue === true && flags.resume === true) {
+    console.error("Cannot use --continue and --resume flags together.");
+    process.exit(1);
+  }
+}
+
+async function determineInitialPrompt(): Promise<{
+  initialPromptInput: string | undefined;
+  stdInPrompt: string | undefined;
+  hasContinueOrResume: boolean;
+}> {
+  const hasContinueOrResume = flags.continue === true || flags.resume === true;
+  const positionalPrompt = input.at(0);
+  let stdInPrompt: string | undefined;
+
+  // Check if there's data available on stdin
+  if (!process.stdin.isTTY) {
+    try {
+      stdInPrompt = await text(process.stdin);
+    } catch (error) {
+      console.error(`Error reading stdin: ${(error as Error).message}`);
+    }
+  }
+
+  const initialPromptInput =
+    typeof flags.prompt === "string" && flags.prompt.length > 0
+      ? flags.prompt
+      : positionalPrompt && positionalPrompt.length > 0
+        ? positionalPrompt
+        : undefined;
+
+  if (hasContinueOrResume && isDefined(initialPromptInput)) {
+    console.error("Cannot use --continue or --resume with an initial prompt.");
+    process.exit(1);
+  }
+
+  return { initialPromptInput, stdInPrompt, hasContinueOrResume };
+}
+
+async function initializeModelManager(
+  appDir: DirectoryProvider,
+): Promise<ModelManager> {
+  const chosenModel: ModelName = isSupportedModel(flags.model)
+    ? flags.model
+    : "openrouter:glm-4.6";
+
+  const modelManager = new ModelManager({
+    stateDir: await appDir.ensurePath("audit"),
+  });
+
+  modelManager.setModel("repl", chosenModel);
+  modelManager.setModel("cli", chosenModel);
+  modelManager.setModel("title-conversation", chosenModel);
+  modelManager.setModel("conversation-summarizer", chosenModel);
+  modelManager.setModel("tool-repair", chosenModel);
+  modelManager.setModel("conversation-analyzer", chosenModel);
+  modelManager.setModel("init-project", chosenModel);
+  modelManager.setModel("task-agent", chosenModel);
+  modelManager.setModel("handoff-agent", chosenModel);
+  modelManager.setModel("edit-fix", chosenModel);
+
+  return modelManager;
+}
+
+async function initializeMessageHistory(
+  messageHistoryDir: string,
+  modelManager: ModelManager,
+  tokenTracker: TokenTracker,
+): Promise<MessageHistory> {
+  const messageHistory = new MessageHistory({
+    stateDir: messageHistoryDir,
+    modelManager,
+    tokenTracker,
+  });
+  messageHistory.on("update-title", (title) => setTerminalTitle(title));
+  return messageHistory;
+}
+
+async function handleConversationHistory(
+  messageHistory: MessageHistory,
+  messageHistoryDir: string,
+  _hasContinueOrResume: boolean,
+): Promise<void> {
+  if (flags.continue === true) {
+    const histories = await MessageHistory.load(
+      messageHistoryDir,
+      CONTINUE_HISTORY_LIMIT,
+    );
+    const latestHistory = histories.at(0);
+    if (latestHistory) {
+      messageHistory.restore(latestHistory);
+      console.info(`Resuming conversation: ${latestHistory.title}`);
+      setTerminalTitle(latestHistory.title || `acai: ${process.cwd()}`);
+    } else {
+      logger.info("No previous conversation found to continue.");
+    }
+  } else if (flags.resume === true) {
+    const histories = await MessageHistory.load(
+      messageHistoryDir,
+      DEFAULT_HISTORY_LIMIT,
+    );
+    if (histories.length > 0) {
+      try {
+        const choice = await select({
+          message: "Select a conversation to resume:",
+          choices: histories.map((h, index) => ({
+            name: `${index + 1}: ${h.title} (${h.updatedAt.toLocaleString()})`,
+            value: index,
+            description: `${h.messages.length} messages`,
+          })),
+        });
+        const selectedHistory = histories.at(choice);
+        if (selectedHistory) {
+          messageHistory.restore(selectedHistory);
+          logger.info(`Resuming conversation: ${selectedHistory.title}`);
+          setTerminalTitle(selectedHistory.title || `acai: ${process.cwd()}`);
+        } else {
+          logger.error("Selected history index out of bounds.");
+        }
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          "isCanceled" in error &&
+          error.isCanceled === true
+        ) {
+          logger.info("Resume selection cancelled.");
+        } else {
+          throw error;
+        }
+      }
+    } else {
+      logger.info("No previous conversations found to resume.");
+    }
+  }
+}
+
+async function runCliMode(state: AppState): Promise<void> {
+  const cliProcess = new Cli({
+    promptManager: state.promptManager,
+    messageHistory: state.messageHistory,
+    modelManager: state.modelManager,
+    tokenTracker: state.tokenTracker,
+    tokenCounter: state.tokenCounter,
+    workspace,
+  });
+  (await asyncTry(cliProcess.run())).recover(handleError);
+}
+
+async function runReplMode(state: AppState): Promise<void> {
+  const agent = new Agent({
+    messageHistory: state.messageHistory,
+    modelManager: state.modelManager,
+    tokenTracker: state.tokenTracker,
   });
 
   const repl = new NewRepl({
     agent,
-    promptManager,
-    config: appConfig,
-    messageHistory,
-    modelManager,
-    tokenTracker,
-    commands,
-    tokenCounter,
-    promptHistory,
+    promptManager: state.promptManager,
+    config: state.appConfig,
+    messageHistory: state.messageHistory,
+    modelManager: state.modelManager,
+    tokenTracker: state.tokenTracker,
+    commands: state.commands,
+    tokenCounter: state.tokenCounter,
+    promptHistory: state.promptHistory,
     workspace,
   });
+
+  // Update state with agent and repl
+  state.agent = agent;
+  state.repl = repl;
 
   // Initialize TUI
   await repl.init();
 
-  messageHistory.on("clear-history", () => {
+  state.messageHistory.on("clear-history", () => {
     logger.info("Resetting agent state.");
-    agent.resetState();
-    repl.rerender();
+    state.agent?.resetState();
+    state.repl?.rerender();
   });
 
   // Set interrupt callback
-  repl.setInterruptCallback(() => {
-    messageHistory.save();
-    agent.abort();
+  state.repl?.setInterruptCallback(() => {
+    state.messageHistory.save();
+    state.agent?.abort();
   });
 
-  // Render any existing messages (from --continue mode)
-  // repl.renderInitialMessages(agent.state);
-
-  // Initialize tools once outside the loop - all models support tool calling
+  // Initialize tools
   const coreTools = await initTools({
-    tokenCounter,
+    tokenCounter: state.tokenCounter,
     workspace,
-    modelManager,
-    tokenTracker,
+    modelManager: state.modelManager,
+    tokenTracker: state.tokenTracker,
   });
 
   const agentTools = await initAgents({
-    modelManager,
-    tokenTracker,
-    tokenCounter,
+    modelManager: state.modelManager,
+    tokenTracker: state.tokenTracker,
+    tokenCounter: state.tokenCounter,
     workspace,
   });
 
@@ -328,26 +419,74 @@ async function main() {
 
   // Interactive loop
   while (true) {
-    const userInput = await repl.getUserInput();
+    const userInput = await state.repl?.getUserInput();
 
-    // Process the message - agent.prompt will add user message and trigger state updates
     try {
-      const results = agent.run({
+      const results = state.agent?.run({
         systemPrompt: await systemPrompt(),
         input: userInput,
         toolDefs: tools.toolDefs,
         executors: tools.executors,
-        abortSignal: agent.abortSignal,
+        abortSignal: state.agent?.abortSignal,
       });
       for await (const result of results) {
-        repl.handle(result, agent.state);
+        state.repl?.handle(result, state.agent?.state);
       }
 
-      messageHistory.save();
+      state.messageHistory.save();
     } catch (_error) {
       // Display error in the TUI by adding an error message to the chat
       // repl.showError((error as Error).message || "Unknown error occurred");
     }
+  }
+}
+
+async function main() {
+  try {
+    const appConfig = await config.ensureAppConfig("acai");
+
+    // Setup signal handlers for graceful shutdown
+    process.on("SIGINT", () => {
+      logger.info("Received SIGINT, shutting down gracefully...");
+      process.exit(0);
+    });
+
+    process.on("SIGTERM", () => {
+      logger.info("Received SIGTERM, shutting down gracefully...");
+      process.exit(0);
+    });
+
+    // Handle early exits
+    if (await handleEarlyExits()) return;
+
+    // Validate CLI arguments
+    validateCliArguments();
+
+    // Determine initial prompt
+    const { initialPromptInput, stdInPrompt, hasContinueOrResume } =
+      await determineInitialPrompt();
+
+    // Initialize application state
+    const state = await initializeAppState(
+      appConfig,
+      initialPromptInput,
+      stdInPrompt,
+      hasContinueOrResume,
+    );
+
+    // Set terminal title after all validation is complete
+    setTerminalTitle(`acai: ${workspace.primaryDir}`);
+
+    // Handle CLI mode if initial prompt provided
+    if (isDefined(initialPromptInput)) {
+      return await runCliMode(state);
+    }
+
+    // Setup REPL mode
+    return await runReplMode(state);
+  } catch (error) {
+    handleError(error as Error);
+    process.exit(1);
   }
 }
 
