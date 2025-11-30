@@ -43,7 +43,14 @@ export const createThinkTool = () => {
           name: ThinkTool.name,
           event: "tool-init",
           id: toolCallId,
-          data: `\n${formattedThought}`,
+          data: "Logging thought",
+        };
+
+        yield {
+          name: ThinkTool.name,
+          event: "tool-update",
+          id: toolCallId,
+          data: `${formattedThought}`,
         };
 
         yield {
