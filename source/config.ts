@@ -5,6 +5,22 @@ import path from "node:path";
 import { z } from "zod";
 import { jsonParser } from "./parsing.ts";
 
+const defaultConfig = {
+  loop: {
+    maxIterations: 90,
+  },
+  tools: {
+    maxTokens: 30000,
+    maxResults: 30,
+    dynamicTools: {
+      enabled: true,
+      maxTools: 10,
+    },
+  },
+  notify: true,
+  readOnlyFiles: [] as string[],
+} as const;
+
 // Type definitions
 const ProjectConfigSchema = z.object({
   logs: z
@@ -14,38 +30,33 @@ const ProjectConfigSchema = z.object({
     .optional(),
   loop: z
     .object({
-      maxIterations: z.number().default(90),
+      maxIterations: z.number().default(defaultConfig.loop.maxIterations),
     })
     .optional()
-    .default({
-      maxIterations: 90,
-    }),
+    .default(defaultConfig.loop),
   tools: z
     .object({
-      maxTokens: z.number().default(30000),
-      maxResults: z.number().default(30),
+      maxTokens: z.number().default(defaultConfig.tools.maxTokens),
+      maxResults: z.number().default(defaultConfig.tools.maxResults),
       dynamicTools: z
         .object({
-          enabled: z.boolean().default(true),
-          maxTools: z.number().default(10),
+          enabled: z
+            .boolean()
+            .default(defaultConfig.tools.dynamicTools.enabled),
+          maxTools: z
+            .number()
+            .default(defaultConfig.tools.dynamicTools.maxTools),
         })
         .optional()
-        .default({
-          enabled: true,
-          maxTools: 10,
-        }),
+        .default(defaultConfig.tools.dynamicTools),
     })
     .optional()
-    .default({
-      maxTokens: 30000,
-      maxResults: 30,
-      dynamicTools: {
-        enabled: true,
-        maxTools: 10,
-      },
-    }),
-  notify: z.boolean().optional().default(true),
-  readOnlyFiles: z.array(z.string()).optional().default([]),
+    .default(defaultConfig.tools),
+  notify: z.boolean().optional().default(defaultConfig.notify),
+  readOnlyFiles: z
+    .array(z.string())
+    .optional()
+    .default(defaultConfig.readOnlyFiles),
 });
 
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
@@ -204,24 +215,20 @@ export class ConfigManager {
   }
 
   // App config helpers
-  async readAppConfig(
-    configName: string,
-  ): Promise<Record<PropertyKey, unknown>> {
+  async readAppConfig(configName: string): Promise<ProjectConfig> {
     const configPath = path.join(this.app.getPath(), `${configName}.json`);
     try {
       const data = await fs.readFile(configPath, "utf8");
       return JSON.parse(data);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return {};
+        return defaultConfig;
       }
       throw error;
     }
   }
 
-  async ensureAppConfig(
-    configName: string,
-  ): Promise<Record<PropertyKey, unknown>> {
+  async ensureAppConfig(configName: string): Promise<ProjectConfig> {
     const configPath = path.join(this.app.getPath(), `${configName}.json`);
 
     try {
@@ -230,26 +237,6 @@ export class ConfigManager {
     } catch {
       // Create directory and default config if missing
       await this.app.ensurePath();
-
-      const defaultConfig = {
-        logs: {
-          path: path.join(this.app.getPath(), "logs", "current.log"),
-        },
-        loop: {
-          maxIterations: 90,
-          parallelTools: true,
-          maxDurationMs: 0,
-        },
-        tools: {
-          maxTokens: 30000,
-          maxResults: 30,
-          dynamicTools: {
-            enabled: true,
-            maxTools: 10,
-          },
-        },
-        notify: true,
-      } as const;
 
       await fs.writeFile(configPath, JSON.stringify(defaultConfig, null, 2));
       return defaultConfig;
