@@ -45,6 +45,13 @@ export type ToolEvent =
       args: unknown;
     }
   | {
+      type: "tool-call-init";
+      name: string;
+      toolCallId: string;
+      msg: string;
+      args: unknown;
+    }
+  | {
       type: "tool-call-update";
       name: string;
       toolCallId: string;
@@ -387,7 +394,8 @@ export class Agent {
                           `Tool ${call.toolName} ids don't match: ${call.toolCallId} != ${value.id}`,
                         );
                       }
-                      switch (value.event) {
+                      const event = value.event;
+                      switch (event) {
                         case "tool-completion":
                           yield this.processToolEvent(toolsCalled, {
                             type: "tool-call-end",
@@ -406,7 +414,7 @@ export class Agent {
                             args: call.input,
                           });
                           break;
-                        case "tool-init":
+                        case "tool-update":
                           yield this.processToolEvent(toolsCalled, {
                             type: "tool-call-update",
                             name: value.name,
@@ -415,9 +423,19 @@ export class Agent {
                             args: call.input,
                           });
                           break;
+                        case "tool-init":
+                          yield this.processToolEvent(toolsCalled, {
+                            type: "tool-call-init",
+                            name: value.name,
+                            toolCallId: call.toolCallId,
+                            msg: value.data,
+                            args: call.input,
+                          });
+                          break;
                         default:
+                          event satisfies never;
                           logger.debug(
-                            `Unhandled tool message event: ${(value as { event: string }).event}`,
+                            `Unhandled tool message event: ${event}`,
                           );
                           break;
                       }

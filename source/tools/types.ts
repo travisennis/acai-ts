@@ -25,6 +25,11 @@ interface ToolInitMessage extends BaseMessage {
   data: string;
 }
 
+interface ToolUpdateMessage extends BaseMessage {
+  event: "tool-update";
+  data: string;
+}
+
 interface ToolErrorMessage extends BaseMessage {
   event: "tool-error";
   data: string;
@@ -37,6 +42,7 @@ interface ToolCompletionMessage extends BaseMessage {
 
 export type Message =
   | ToolInitMessage
+  | ToolUpdateMessage
   | ToolErrorMessage
   | ToolCompletionMessage;
 
