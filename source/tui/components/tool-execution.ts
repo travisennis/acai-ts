@@ -78,7 +78,7 @@ export class ToolExecutionComponent extends Container {
         case "tool-call-update":
           this.contentContainer.addChild(
             new Markdown(this.handleToolUpdateMessage(event.msg), {
-              paddingX: 1,
+              paddingX: 3,
               customBgRgb: bgColor,
             }),
           );
@@ -131,6 +131,7 @@ export class ToolExecutionComponent extends Container {
           this.loaderComponent = new Loader(
             this.tui,
             this.handleToolStartMessage(event),
+            bgColor,
           );
           this.contentContainer.addChild(this.loaderComponent);
         } else {
@@ -200,9 +201,13 @@ export class ToolExecutionComponent extends Container {
     const events = [...this.events];
     const processed: ToolEvent[] = [];
 
-    // Ensure we have a tool-call-start event
+    // Ensure we have a tool-call-start event for this specific tool call
+    // Events are grouped by toolCallId, so we need to check for start events
+    // that match the current tool call's ID
+    const toolCallId = events[0]?.toolCallId;
     const hasStartEvent = events.some(
-      (event) => event.type === "tool-call-start",
+      (event) =>
+        event.type === "tool-call-start" && event.toolCallId === toolCallId,
     );
     if (!hasStartEvent && events.length > 0) {
       // Create synthetic start event using the first event's name
