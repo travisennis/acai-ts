@@ -32,7 +32,7 @@ export const createWebFetchTool = (options: { tokenCounter: TokenCounter }) => {
           id: toolCallId,
           data: `${style.cyan(url)}`,
         };
-        logger.info(`Initiating fetch for URL: ${url}`);
+        logger.info(`${style.cyan(url)}`);
 
         const result = await readUrl(url, abortSignal);
         const urlContent = result.data;

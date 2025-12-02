@@ -129,7 +129,7 @@ export const createAgentTools = (options: {
         name: AgentTool.name,
         event: "tool-completion",
         id: toolCallId,
-        data: `Finished running the agent tool (${usage.totalTokens} tokens)`,
+        data: `Finished (${usage.totalTokens} tokens)`,
       };
 
       yield text;

@@ -105,7 +105,7 @@ export const createEditFileTool = async ({
           name: EditFileTool.name,
           id: toolCallId,
           event: "tool-update",
-          data: result,
+          data: result.trim(),
         };
 
         yield {

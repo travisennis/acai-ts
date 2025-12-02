@@ -82,7 +82,7 @@ export const createBashTool = async ({
           name: BashTool.name,
           event: "tool-init",
           id: toolCallId,
-          data: `${style.cyan(command)}${isMutating ? " *" : ""}`,
+          data: `${style.cyan(command)}`,
         };
 
         if (!isPathWithinAllowedDirs(resolvedCwd, allowedDirectories)) {
