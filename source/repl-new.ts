@@ -256,12 +256,12 @@ export class NewRepl {
         break;
 
       case "step-start":
-        this.tui.requestRender();
+        // this.tui.requestRender();
         break;
 
       case "step-stop":
         // this.pendingTools.clear();
-        this.tui.requestRender();
+        // this.tui.requestRender();
         break;
 
       case "message-start":
@@ -296,8 +296,9 @@ export class NewRepl {
           this.streamingComponent.updateContent(event);
 
           this.streamingComponent = null;
+
+          this.tui.requestRender();
         }
-        this.tui.requestRender();
         break;
 
       case "tool-call-lifecycle": {
@@ -362,8 +363,8 @@ export class NewRepl {
       case "thinking":
         if (this.thinkingBlockComponent) {
           this.thinkingBlockComponent.updateContent(event);
+          this.tui.requestRender();
         }
-        this.tui.requestRender();
         break;
 
       case "thinking-end":
@@ -371,8 +372,8 @@ export class NewRepl {
           this.thinkingBlockComponent.updateContent(event);
 
           this.thinkingBlockComponent = null;
+          this.tui.requestRender();
         }
-        this.tui.requestRender();
         break;
 
       default:
