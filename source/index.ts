@@ -115,8 +115,6 @@ interface AppState {
   promptManager: PromptManager;
   promptHistory: string[];
   commands: CommandManager;
-  agent?: Agent;
-  repl?: NewRepl;
 }
 
 // Helper functions for main()
@@ -373,23 +371,19 @@ async function runReplMode(state: AppState): Promise<void> {
     workspace,
   });
 
-  // Update state with agent and repl
-  state.agent = agent;
-  state.repl = repl;
-
   // Initialize TUI
   await repl.init();
 
   state.messageHistory.on("clear-history", () => {
     logger.info("Resetting agent state.");
-    state.agent?.resetState();
-    state.repl?.rerender();
+    agent.resetState();
+    repl.rerender();
   });
 
   // Set interrupt callback
-  state.repl?.setInterruptCallback(() => {
+  repl.setInterruptCallback(() => {
     state.messageHistory.save();
-    state.agent?.abort();
+    agent.abort();
   });
 
   // Initialize tools
@@ -419,18 +413,18 @@ async function runReplMode(state: AppState): Promise<void> {
 
   // Interactive loop
   while (true) {
-    const userInput = await state.repl?.getUserInput();
+    const userInput = await repl.getUserInput();
 
     try {
-      const results = state.agent?.run({
+      const results = agent.run({
         systemPrompt: await systemPrompt(),
         input: userInput,
         toolDefs: tools.toolDefs,
         executors: tools.executors,
-        abortSignal: state.agent?.abortSignal,
+        abortSignal: agent.abortSignal,
       });
       for await (const result of results) {
-        state.repl?.handle(result, state.agent?.state);
+        repl.handle(result, agent.state);
       }
 
       state.messageHistory.save();
