@@ -1,11 +1,145 @@
 import { readdir, readFile } from "node:fs/promises";
 import path, { basename } from "node:path";
+import type { ConfigManager } from "../config.ts";
 import { logger } from "../logger.ts";
 import { processPrompt } from "../mentions.ts";
 import style from "../terminal/style.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
 import { Spacer, Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
+
+interface PromptMetadata {
+  name: string;
+  description: string;
+  enabled: boolean;
+  path: string;
+  type: "project" | "user";
+}
+
+interface ParsedPrompt {
+  content: string;
+  metadata: {
+    description: string;
+    enabled: boolean;
+  };
+}
+
+export function parsePromptFile(content: string): ParsedPrompt {
+  // Check for YAML front matter
+  const frontMatterMatch = content.match(
+    /^---\s*\n([\s\S]*?)\n---\s*(?:\n([\s\S]*))?$/,
+  );
+
+  if (!frontMatterMatch) {
+    // No YAML front matter - use first 50 chars of entire content as description
+    return {
+      content,
+      metadata: {
+        description:
+          // Get first line, then first 50 characters of that line
+          content.split("\n")[0].trim().slice(0, 50) +
+          (content.split("\n")[0].trim().length > 50 ? "..." : ""),
+        enabled: true,
+      },
+    };
+  }
+
+  const yamlContent = frontMatterMatch[1];
+  const promptContent = frontMatterMatch[2] || "";
+
+  // Default metadata for YAML front matter case
+  const defaultDescription =
+    promptContent.split("\n")[0].trim().slice(0, 50) +
+    (promptContent.split("\n")[0].trim().length > 50 ? "..." : "");
+
+  // Parse simple YAML fields
+  let description = defaultDescription;
+  let enabled = true;
+
+  // Extract description field
+  const descriptionMatch = yamlContent.match(/^description:\s*(.+)$/m);
+  if (descriptionMatch) {
+    description = descriptionMatch[1].trim();
+  }
+
+  // Extract enabled field
+  const enabledMatch = yamlContent.match(/^enabled:\s*(true|false)$/im);
+  if (enabledMatch) {
+    enabled = enabledMatch[1].toLowerCase() === "true";
+  }
+
+  return {
+    content: promptContent,
+    metadata: {
+      description,
+      enabled,
+    },
+  };
+}
+
+export async function loadPrompts(config: ConfigManager) {
+  const getPromptsFromDir = async (
+    dirPath: string,
+    type: "project" | "user",
+  ): Promise<PromptMetadata[]> => {
+    try {
+      const dirents = await readdir(dirPath, { withFileTypes: true });
+      const mdFiles = dirents.filter(
+        (dirent) => dirent.isFile() && dirent.name.endsWith(".md"),
+      );
+
+      const prompts: PromptMetadata[] = [];
+      for (const dirent of mdFiles) {
+        const filePath = path.join(dirPath, dirent.name);
+        try {
+          const content = await readFile(filePath, "utf8");
+          const parsed = parsePromptFile(content);
+
+          if (parsed.metadata.enabled) {
+            prompts.push({
+              name: basename(dirent.name, ".md"),
+              description: parsed.metadata.description,
+              enabled: parsed.metadata.enabled,
+              path: filePath,
+              type,
+            });
+          }
+        } catch (error) {
+          logger.error(`Error reading prompt file ${filePath}: ${error}`);
+          // Skip this file but continue with others
+        }
+      }
+      return prompts;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return []; // Directory doesn't exist, return empty array
+      }
+      logger.error(`Error reading prompts from ${dirPath}: ${error}`);
+      return []; // Return empty on other errors too, but log them
+    }
+  };
+
+  const userPromptDir = config.app.ensurePathSync("prompts"); // User prompts are global (~/.acai/prompts)
+  const projectPromptDir = config.project.ensurePathSync("prompts"); // Project prompts are local (./.acai/prompts)
+
+  const userPrompts = await getPromptsFromDir(userPromptDir, "user");
+  const projectPrompts = await getPromptsFromDir(projectPromptDir, "project");
+
+  // Combine and deduplicate, with project prompts taking precedence
+  const promptMap = new Map<string, PromptMetadata>();
+
+  // Add user prompts first
+  for (const prompt of userPrompts) {
+    promptMap.set(prompt.name, prompt);
+  }
+
+  // Override with project prompts (project prompts take precedence)
+  for (const prompt of projectPrompts) {
+    promptMap.set(prompt.name, prompt);
+  }
+
+  return promptMap;
+}
 
 export const promptCommand = ({
   modelManager,
@@ -19,35 +153,13 @@ export const promptCommand = ({
     description:
       "Loads and executes prompts. Project prompts override user prompts with the same name.",
     getSubCommands: async (): Promise<string[]> => {
-      const getPromptNamesFromDir = async (
-        dirPath: string,
-      ): Promise<string[]> => {
-        try {
-          const dirents = await readdir(dirPath, { withFileTypes: true });
-          return dirents
-            .filter((dirent) => dirent.isFile() && dirent.name.endsWith(".md"))
-            .map((dirent) => basename(dirent.name, ".md"));
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-            return []; // Directory doesn't exist, return empty array
-          }
-          logger.error(`Error reading prompts from ${dirPath}: ${error}`);
-          return []; // Return empty on other errors too, but log them
-        }
-      };
+      const promptMap = await loadPrompts(config);
 
-      const userPromptDir = config.app.ensurePathSync("prompts"); // User prompts are global (~/.acai/prompts)
-      const projectPromptDir = config.project.ensurePathSync("prompts"); // Project prompts are local (./.acai/prompts)
+      const promptList = Array.from(promptMap.values())
+        .map((p) => p.name)
+        .sort();
 
-      const userPrompts = await getPromptNamesFromDir(userPromptDir);
-      const projectPrompts = await getPromptNamesFromDir(projectPromptDir);
-
-      // Combine and deduplicate, with project prompts taking precedence
-      const allPrompts = new Set([...userPrompts, ...projectPrompts]);
-      const promptList = Array.from(allPrompts).sort();
-
-      // Add 'list' as a special subcommand for listing all prompts
-      return ["list", ...promptList];
+      return promptList;
     },
 
     async handle(
@@ -59,25 +171,9 @@ export const promptCommand = ({
       }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
       const promptName = args?.[0];
-      // Handle no subcommand or 'list' subcommand
-      if (!promptName || promptName === "list") {
-        await listAllPromptsTui(container, config);
-        tui.requestRender();
-        editor.setText("");
-        return "continue";
-      }
-
-      // Check for old format and provide helpful error
-      if (promptName.includes(":")) {
-        container.addChild(
-          new Text(
-            style.yellow(
-              "The old format (user:name or project:name) is no longer supported. Use: /prompt <prompt-name> [input...]",
-            ),
-            1,
-            0,
-          ),
-        );
+      // Handle no subcommand
+      if (!promptName) {
+        container.addChild(new Text(style.red("No prompt given."), 1, 0));
         tui.requestRender();
         editor.setText("");
         return "continue";
@@ -103,7 +199,9 @@ export const promptCommand = ({
 
         let promptContent: string;
         try {
-          promptContent = await readFile(promptResult.path, "utf8");
+          const fileContent = await readFile(promptResult.path, "utf8");
+          const parsed = parsePromptFile(fileContent);
+          promptContent = parsed.content;
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code === "ENOENT") {
             container.addChild(
@@ -129,6 +227,8 @@ export const promptCommand = ({
         // Replace {{INPUT}} placeholder with the input string
         if (promptContent.includes("{{INPUT}}")) {
           promptContent = promptContent.replace(/{{INPUT}}/g, inputString);
+        } else {
+          promptContent += `\n\n${inputString}`;
         }
 
         container.addChild(new Spacer(1));
@@ -144,7 +244,7 @@ export const promptCommand = ({
           container.addChild(new Text(`Input: "${inputString}"`, 2, 0));
         }
 
-        const processedPrompt = await processPrompt(promptContent, {
+        const processedPrompt = await processPrompt(promptContent.trim(), {
           baseDir: workspace.primaryDir,
           model: modelManager.getModelMetadata("repl"),
         });
@@ -179,7 +279,7 @@ export const promptCommand = ({
 async function findPrompt(
   promptName: string,
   config: CommandOptions["config"],
-): Promise<{ path: string; type: "project" | "user" } | null> {
+): Promise<PromptMetadata | null> {
   // Check project prompts first (they take precedence)
   const projectPath = path.join(
     config.project.ensurePathSync("prompts"),
@@ -187,8 +287,20 @@ async function findPrompt(
   );
 
   try {
-    await readFile(projectPath, "utf8");
-    return { path: projectPath, type: "project" };
+    const content = await readFile(projectPath, "utf8");
+    const parsed = parsePromptFile(content);
+
+    if (!parsed.metadata.enabled) {
+      return null; // Prompt is disabled
+    }
+
+    return {
+      name: promptName,
+      description: parsed.metadata.description,
+      enabled: parsed.metadata.enabled,
+      path: projectPath,
+      type: "project",
+    };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
       throw error; // Re-throw non-file-not-found errors
@@ -202,8 +314,20 @@ async function findPrompt(
   );
 
   try {
-    await readFile(userPath, "utf8");
-    return { path: userPath, type: "user" };
+    const content = await readFile(userPath, "utf8");
+    const parsed = parsePromptFile(content);
+
+    if (!parsed.metadata.enabled) {
+      return null; // Prompt is disabled
+    }
+
+    return {
+      name: promptName,
+      description: parsed.metadata.description,
+      enabled: parsed.metadata.enabled,
+      path: userPath,
+      type: "user",
+    };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
       throw error; // Re-throw non-file-not-found errors
@@ -211,75 +335,4 @@ async function findPrompt(
   }
 
   return null; // Prompt not found in either location
-}
-
-async function listAllPromptsTui(
-  container: Container,
-  config: CommandOptions["config"],
-): Promise<void> {
-  const getPromptNamesFromDir = async (dirPath: string): Promise<string[]> => {
-    try {
-      const dirents = await readdir(dirPath, { withFileTypes: true });
-      return dirents
-        .filter((dirent) => dirent.isFile() && dirent.name.endsWith(".md"))
-        .map((dirent) => basename(dirent.name, ".md"));
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return []; // Directory doesn't exist, return empty array
-      }
-      return []; // Return empty on other errors
-    }
-  };
-
-  const userPromptDir = config.app.ensurePathSync("prompts");
-  const projectPromptDir = config.project.ensurePathSync("prompts");
-
-  const userPrompts = await getPromptNamesFromDir(userPromptDir);
-  const projectPrompts = await getPromptNamesFromDir(projectPromptDir);
-
-  if (userPrompts.length === 0 && projectPrompts.length === 0) {
-    container.addChild(
-      new Text(
-        style.yellow(
-          "No prompts found. Create prompts in ~/.acai/prompts/ or ./.acai/prompts/",
-        ),
-        1,
-        0,
-      ),
-    );
-    return;
-  }
-
-  container.addChild(new Text("Available prompts:", 0, 1));
-
-  let lineIndex = 2;
-
-  if (projectPrompts.length > 0) {
-    container.addChild(
-      new Text("  Project prompts (./.acai/prompts/):", lineIndex, 0),
-    );
-    lineIndex++;
-    projectPrompts.sort().forEach((prompt) => {
-      container.addChild(new Text(`    • ${prompt}`, lineIndex, 0));
-      lineIndex++;
-    });
-  }
-
-  if (userPrompts.length > 0) {
-    container.addChild(
-      new Text("  User prompts (~/.acai/prompts/):", lineIndex, 0),
-    );
-    lineIndex++;
-    userPrompts.sort().forEach((prompt) => {
-      container.addChild(new Text(`    • ${prompt}`, lineIndex, 0));
-      lineIndex++;
-    });
-  }
-
-  container.addChild(
-    new Text("\nUsage: /prompt <prompt-name> [input...]", lineIndex, 0),
-  );
-  container.addChild(
-    new Text("Example: /prompt project-status", lineIndex + 1, 1),
-  );
 }
