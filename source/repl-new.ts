@@ -67,6 +67,7 @@ export class NewRepl {
   // Status polling timer
   private statusPollingInterval: NodeJS.Timeout | null = null;
   private isPollingActive = false;
+  private cachedStatusLine: string | undefined;
 
   constructor(options: ReplOptions) {
     this.options = options;
@@ -449,17 +450,21 @@ export class NewRepl {
   private async updateStatus(): Promise<void> {
     if (!this.isInitialized) return;
 
-    try {
-      const modelConfig = this.options.modelManager.getModelMetadata("repl");
-      this.promptStatus.setState({
-        projectStatus: await getProjectStatusLine(),
-        currentContextWindow: this.options.messageHistory.getContextWindow(),
-        contextWindow: modelConfig.contextWindow,
-      });
-      this.tui.requestRender();
-    } catch (error) {
-      // Don't crash on status update errors
-      logger.warn(error, "Error updating status");
+    const statusLine = await getProjectStatusLine();
+    if (statusLine !== this.cachedStatusLine) {
+      try {
+        const modelConfig = this.options.modelManager.getModelMetadata("repl");
+        this.promptStatus.setState({
+          projectStatus: await getProjectStatusLine(),
+          currentContextWindow: this.options.messageHistory.getContextWindow(),
+          contextWindow: modelConfig.contextWindow,
+        });
+        this.cachedStatusLine = statusLine;
+        this.tui.requestRender();
+      } catch (error) {
+        // Don't crash on status update errors
+        logger.warn(error, "Error updating status");
+      }
     }
   }
 
