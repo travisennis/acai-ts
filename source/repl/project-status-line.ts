@@ -3,7 +3,6 @@ import {
   getCurrentBranch,
   getDiffStat,
   getGitStatus,
-  hasUncommittedChanges,
   inGitDirectory,
 } from "../tools/git-utils.ts";
 
@@ -21,20 +20,23 @@ class ProjectStatusCache {
       return this.cachedStatus;
     }
 
-    // Generate fresh status
     const currentDir = process.cwd().split("/").pop() || process.cwd();
-    const branch = await getCurrentBranch();
-
     let gitStatus = "";
-    if (branch) {
-      const hasChanges = await hasUncommittedChanges();
-      const asterisk = hasChanges ? "*" : "";
-      gitStatus = ` ${style.gray(branch + asterisk)}`;
-    }
-
     if (await inGitDirectory()) {
-      const stats = await getDiffStat();
+      // Generate fresh status
+      const branch = await getCurrentBranch();
+
       const fileChanges = await getGitStatus();
+      if (branch) {
+        const hasChanges =
+          fileChanges.added > 0 ||
+          fileChanges.deleted > 0 ||
+          fileChanges.modified > 0;
+        const asterisk = hasChanges ? "*" : "";
+        gitStatus = ` ${style.gray(branch + asterisk)}`;
+      }
+
+      const stats = await getDiffStat();
       let fileStatus = "";
       if (fileChanges.added) fileStatus += ` +${fileChanges.added}`;
       if (fileChanges.modified) fileStatus += ` ~${fileChanges.modified}`;
