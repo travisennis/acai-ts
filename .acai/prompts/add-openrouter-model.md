@@ -3,7 +3,7 @@ Your task is to add a new model to the ./source/models/openrouter-provider.ts.
 I want you to accomplish this by writing a javascript script and executing it with the code-interpreter tool.
 
 This script should do the following:
-1. fetch `openrouter.ai/api/v1/models` using https
+1. fetch (using the fetch built-in in Node.js) `openrouter.ai/api/v1/models` using https
 2. parse the json response. the shape should be `{"data":[]}`
 3. filter the `data` array to find the object whose `id` is `{{INPUT}}`
 4. log the model information found in the object
