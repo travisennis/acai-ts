@@ -92,7 +92,7 @@ export const createAgentTools = (options: {
       const modelConfig = modelManager.getModelMetadata("task-agent");
       const aiConfig = new AiConfig({
         modelMetadata: modelConfig,
-        prompt: prompt,
+        prompt: `## Prompt:\n\n${prompt}`,
       });
 
       const { text, usage } = await generateText({
@@ -122,7 +122,7 @@ export const createAgentTools = (options: {
         name: AgentTool.name,
         event: "tool-update",
         id: toolCallId,
-        data: text,
+        data: `## Response:\n\n${text}`,
       };
 
       yield {
