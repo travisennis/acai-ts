@@ -113,10 +113,6 @@ export const inGitDirectory = memoize(async (): Promise<boolean> => {
  * Check if there are uncommitted changes
  */
 export async function hasUncommittedChanges(): Promise<boolean> {
-  if (!(await inGitDirectory())) {
-    return false;
-  }
-
   try {
     const result = await executeCommand(["git", "status", "--porcelain"], {
       cwd: process.cwd(),
@@ -134,10 +130,6 @@ export async function hasUncommittedChanges(): Promise<boolean> {
  * Get the current git branch name
  */
 export async function getCurrentBranch(): Promise<string | null> {
-  if (!(await inGitDirectory())) {
-    return null;
-  }
-
   try {
     const result = await executeCommand(
       ["git", "rev-parse", "--abbrev-ref", "HEAD"],
