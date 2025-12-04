@@ -6,63 +6,20 @@
 import style from "./style.ts";
 import { supportsHyperlinks } from "./supports-hyperlinks.ts";
 
-/**
- * Clear the terminal screen
- */
-export function clearScreen(): void {
-  // Clear screen and move cursor to top-left
-  process.stdout.write("\x1b[2J\x1b[0f");
-}
+export {
+  clearScreen,
+  clearTerminal,
+  getTerminalSize,
+  setTerminalTitle,
+  startProgress,
+  stopProgress,
+} from "./control.ts";
 
 /**
- * Clear the terminal screen including scrollback buffer
- *
- * Unlike clearScreen, this function:
- * 1. Clears the entire screen (\x1b[2J)
- * 2. Clears the scrollback buffer (\x1b[3J)
- * 3. Moves cursor to home position (\x1b[H)
- * 4. Returns a Promise that resolves when the write operation completes
- *
- * @returns Promise that resolves when the terminal has been cleared
+ * Create a horizontal rule
  */
-export function clearTerminal(): Promise<void> {
-  return new Promise((resolve) => {
-    process.stdout.write("\x1b[2J\x1b[3J\x1b[H", () => {
-      resolve();
-    });
-  });
-}
-
-/**
- * Sets the terminal title
- */
-export function setTerminalTitle(title: string): void {
-  if (process.platform === "win32") {
-    process.title = title ? `✳✳ ${title}` : title;
-  } else {
-    process.stdout.write(`\x1b]0;${title ? `✳✳ ${title}` : ""}\x07`);
-  }
-}
-
-/**
- * Get the terminal size (rows and columns)
- */
-export function getTerminalSize(): { rows: number; columns: number } {
-  // Default to a reasonable size if we can't determine the actual size
-  const defaultSize = { rows: 24, columns: 80 };
-
-  try {
-    if (process.stdout.isTTY) {
-      return {
-        rows: process.stdout.rows || defaultSize.rows,
-        columns: process.stdout.columns || defaultSize.columns,
-      };
-    }
-  } catch (_error) {
-    // Ignore errors
-  }
-
-  return defaultSize;
+export function hr(width: number) {
+  return `${style.gray("─").repeat(width)}`;
 }
 
 /**
@@ -148,22 +105,6 @@ export const image = (
 
   return `${returnValue}:${Buffer.from(data).toString("base64")}${BEL}`;
 };
-
-/**
- * Start progress indicator in terminal
- * Sends terminal escape sequence to show progress animation
- */
-export function startProgress(): void {
-  process.stdout.write("\u001b]9;4;3;0\u0007");
-}
-
-/**
- * Stop progress indicator in terminal
- * Sends terminal escape sequence to hide progress animation
- */
-export function stopProgress(): void {
-  process.stdout.write("\u001b]9;4;0;0\u0007");
-}
 
 /**
  * Display a message with emphasis
