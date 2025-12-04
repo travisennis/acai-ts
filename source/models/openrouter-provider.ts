@@ -40,6 +40,9 @@ const openrouterModels = {
   "deepseek-v3-1": openRouterClient("deepseek/deepseek-v3.1-terminus:exacto", {
     usage: { include: true },
   }) as LanguageModelV2,
+  "deepseek-v3-2": openRouterClient("deepseek/deepseek-v3.2", {
+    usage: { include: true },
+  }) as LanguageModelV2,
   "deepseek-r1": openRouterClient("deepseek/deepseek-r1-0528", {
     usage: { include: true },
   }) as LanguageModelV2,
@@ -157,6 +160,19 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000002,
     costPerOutputToken: 0.0000008,
+    category: "balanced",
+  },
+  "openrouter:deepseek-v3-2": {
+    id: "openrouter:deepseek-v3-2",
+    provider: "openrouter",
+    contextWindow: 163840,
+    maxOutputTokens: 16000,
+    defaultTemperature: 1.0,
+    promptFormat: "bracket",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000027,
+    costPerOutputToken: 0.0000004,
     category: "balanced",
   },
   "openrouter:gemini-flash25": {
