@@ -10,6 +10,7 @@ import {
 } from "./advanced-edit-file.ts";
 import { AgentTool, createAgentTools } from "./agent.ts";
 import { BashTool, createBashTool } from "./bash.ts";
+import { BatchTool, createBatchTool } from "./batch.ts";
 import {
   CodeInterpreterTool,
   createCodeInterpreterTool,
@@ -213,8 +214,23 @@ export async function initTools({
     executors.set(name, toolObj.execute);
   }
 
+  // Create batch tool with access to all executors
+  const batchTool = await createBatchTool({
+    tokenCounter,
+    executors,
+  });
+
+  // Add batch tool to tools
+  const toolsWithBatch = {
+    ...tools,
+    [BatchTool.name]: tool(batchTool.toolDef),
+  } as const;
+
+  // Add batch tool to executors
+  executors.set(BatchTool.name, batchTool.execute);
+
   return {
-    toolDefs: tools,
+    toolDefs: toolsWithBatch,
     executors,
   };
 }
@@ -307,6 +323,33 @@ export async function initCliTools({
     baseDir: workspace.primaryDir,
   });
 
+  // Build executors map for batch tool
+  const executors = new Map();
+  executors.set(EditFileTool.name, editFileTool.execute);
+  executors.set(AdvancedEditFileTool.name, advancedEditFileTool.execute);
+  executors.set(BashTool.name, bashTool.execute);
+  executors.set(SaveFileTool.name, saveFileTool.execute);
+  executors.set(DeleteFileTool.name, deleteFileTool.execute);
+  executors.set(MoveFileTool.name, moveFileTool.execute);
+  executors.set(ReadFileTool.name, readFileTool.execute);
+  executors.set(ReadMultipleFilesTool.name, readMultipleFilesTool.execute);
+  executors.set(GlobTool.name, globTool.execute);
+  executors.set(GrepTool.name, grepTool.execute);
+  executors.set(DirectoryTreeTool.name, directoryTreeTool.execute);
+  executors.set(CodeInterpreterTool.name, codeInterpreterTool.execute);
+  executors.set(ThinkTool.name, thinkTool.execute);
+  executors.set(WebFetchTool.name, webFetchTool.execute);
+  executors.set(WebSearchTool.name, webSearchTool.execute);
+  for (const [name, toolObj] of Object.entries(dynamicTools)) {
+    executors.set(name, toolObj.execute);
+  }
+
+  // Create batch tool with access to all executors
+  const batchTool = await createBatchTool({
+    tokenCounter,
+    executors,
+  });
+
   const tools = {
     [EditFileTool.name]: tool({
       ...editFileTool.toolDef,
@@ -367,6 +410,10 @@ export async function initCliTools({
     [WebSearchTool.name]: tool({
       ...webSearchTool.toolDef,
       execute: webSearchTool.execute,
+    }),
+    [BatchTool.name]: tool({
+      ...batchTool.toolDef,
+      execute: batchTool.execute,
     }),
     // Add dynamic tools with execute functions
     ...Object.fromEntries(

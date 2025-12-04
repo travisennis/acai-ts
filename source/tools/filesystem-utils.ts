@@ -25,10 +25,7 @@ function expandHome(filepath: string): string {
 }
 
 // Ensure path is within base directory (handles '.', relative paths, and symlinks)
-export function isPathWithinBaseDir(
-  requestedPath: string,
-  baseDir: string,
-): boolean {
+function isPathWithinBaseDir(requestedPath: string, baseDir: string): boolean {
   const baseAbs = path.resolve(baseDir);
   let baseReal = baseAbs;
   try {

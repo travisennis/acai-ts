@@ -152,7 +152,7 @@ async function generateDirectoryTree(
  * @param dirPath - The path of the directory to generate the tree for.
  * @returns A Promise that resolves to a string representation of the directory tree.
  */
-export async function directoryTree(dirPath: string): Promise<string> {
+async function directoryTree(dirPath: string): Promise<string> {
   let ig: Ignore;
   try {
     const ignoreFile = await fs.readFile(

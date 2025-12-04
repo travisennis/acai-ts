@@ -36,7 +36,7 @@ import {
   xaiProvider,
 } from "./xai-provider.ts";
 
-export const providers = [
+const providers = [
   "anthropic",
   "openai",
   "google",
@@ -46,7 +46,7 @@ export const providers = [
   "xai",
 ] as const;
 
-export type ModelProvider = (typeof providers)[number];
+type ModelProvider = (typeof providers)[number];
 
 const registry = createProviderRegistry({
   ...anthropicProvider,
@@ -123,81 +123,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   ...xaiModelRegistry,
 };
 
-// Get available models grouped by provider
-export function getModelsByProvider(): Record<ModelProvider, ModelMetadata[]> {
-  const result: Record<ModelProvider, ModelMetadata[]> = {
-    anthropic: [],
-    openai: [],
-    google: [],
-    groq: [],
-    deepseek: [],
-    openrouter: [],
-    xai: [],
-  };
-
-  for (const model of Object.values(modelRegistry)) {
-    result[model.provider].push(model);
-  }
-
-  return result;
-}
-
-export function getModelsById(): Record<ModelName, string> {
-  const result: Map<ModelName, string> = new Map();
-
-  for (const name of models) {
-    const langModel = registry.languageModel(name);
-    result.set(name, langModel.modelId);
-  }
-
-  return Object.fromEntries(result) as Record<ModelName, string>;
-}
-
-// Get detailed information about a specific model
-export function getModelInfo(modelName: ModelName): ModelMetadata | undefined {
-  return modelRegistry[modelName];
-}
-
-// Get models by category
-export function getModelsByCategory(
-  category: "fast" | "balanced" | "powerful",
-): ModelMetadata[] {
-  return Object.values(modelRegistry).filter(
-    (model) => model.category === category,
-  );
-}
-
-// Format model information for display
-export function formatModelInfo(model: ModelMetadata): string {
-  return `${model.id} [${model.category}] - Tools: ${model.supportsToolCalling ? "✓" : "✗"}, Reasoning: ${model.supportsReasoning ? "✓" : "✗"}`;
-}
-
 // Check if a model name is valid
 export function isValidModel(modelName: string): modelName is ModelName {
   return modelName in modelRegistry;
-}
-
-// Get recommended models based on task requirements
-export function getRecommendedModels(options: {
-  requiresTools?: boolean;
-  requiresReasoning?: boolean;
-  speedPriority?: boolean;
-}): ModelName[] {
-  return Object.values(modelRegistry)
-    .filter((model) => {
-      if (options.requiresTools && !model.supportsToolCalling) {
-        return false;
-      }
-      if (options.requiresReasoning && !model.supportsReasoning) {
-        return false;
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      if (options.speedPriority) {
-        return a.category === "fast" ? -1 : 1;
-      }
-      return b.contextWindow - a.contextWindow;
-    })
-    .map((model) => model.id);
 }

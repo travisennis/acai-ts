@@ -652,7 +652,7 @@ export async function initExecutionEnvironment(
 // }
 
 // Set up cleanup on process exit
-export function setupProcessCleanup(executionEnv: ExecutionEnvironment): void {
+function setupProcessCleanup(executionEnv: ExecutionEnvironment): void {
   process.on("exit", () => {
     executionEnv.killAllBackgroundProcesses();
   });

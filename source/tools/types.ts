@@ -40,7 +40,7 @@ interface ToolCompletionMessage extends BaseMessage {
   data: string;
 }
 
-export type Message =
+type Message =
   | ToolInitMessage
   | ToolUpdateMessage
   | ToolErrorMessage

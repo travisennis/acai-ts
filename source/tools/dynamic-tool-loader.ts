@@ -198,7 +198,7 @@ interface DynamicToolObject {
   ) => Promise<{ approve: boolean; reason?: string }>;
 }
 
-export function createDynamicTool(
+function createDynamicTool(
   scriptPath: string,
   metadata: ToolMetadata,
 ): { [x: string]: DynamicToolObject } {

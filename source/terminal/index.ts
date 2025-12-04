@@ -168,7 +168,7 @@ export function displayProgressBar(
 }
 
 // Standalone terminal formatting functions
-export function createHeader(
+export function header(
   header: string,
   styleFn: StyleInstance = style.cyan,
 ): string {
@@ -178,10 +178,7 @@ export function createHeader(
   return `${style.gray("\n── ")}${styleFn(header)} ${style.gray("─".repeat(width))}`;
 }
 
-export async function createBox(
-  header: string,
-  content: string,
-): Promise<string> {
+export async function box(header: string, content: string): Promise<string> {
   const { columns } = getTerminalSize();
   const cols = columns > 0 ? columns : 80;
   const width = Math.max(4, cols - 4);
@@ -215,13 +212,7 @@ export async function createBox(
   return `${topBorder}\n${contentLines}\n${bottomBorder}`;
 }
 
-export function createHr(styleFn: StyleInstance = style.gray): string {
-  const { columns } = getTerminalSize();
-  const cols = columns > 0 ? columns : 80;
-  return styleFn(`${"─".repeat(Math.max(1, cols - 1))} `);
-}
-
-export function createLink(text: string, url: string): string {
+export function link(text: string, url: string): string {
   return style.underline.blue(terminalLink(text, url));
 }
 
@@ -235,6 +226,3 @@ export function formatMarkdown(content: string, wrap = false, width?: number) {
 
   return formatted;
 }
-
-// Re-export the types
-export * from "./types.ts";

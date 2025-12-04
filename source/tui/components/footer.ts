@@ -181,7 +181,7 @@ function hashString(str: string): number {
   return Math.abs(hash);
 }
 
-export function displayToolUse(result: { steps: MinimalStep[] }) {
+function displayToolUse(result: { steps: MinimalStep[] }) {
   const toolsCalled: string[] = [];
   const toolColors = new Map<string, StyleInstance>();
 

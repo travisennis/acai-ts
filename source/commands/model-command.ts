@@ -212,7 +212,7 @@ function hideModelSelector(
 /**
  * Component that renders a model selector with search
  */
-export class ModelSelectorComponent extends Container {
+class ModelSelectorComponent extends Container {
   private searchInput: Input;
   private listContainer: Container;
   private allModels: ModelName[] = [];
