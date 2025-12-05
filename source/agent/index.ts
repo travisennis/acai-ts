@@ -196,6 +196,11 @@ export class Agent {
       const toolsCalled: Map<string, ToolEvent[]> = new Map();
 
       try {
+        // Check abort signal again before starting streamText
+        if (abortSignal?.aborted) {
+          throw new Error("Agent aborted before streamText");
+        }
+
         const result = streamText({
           model: langModel,
           maxOutputTokens: aiConfig.maxOutputTokens(),
@@ -209,6 +214,12 @@ export class Agent {
           // biome-ignore lint/style/useNamingConvention: third-party code
           experimental_repairToolCall: toolCallRepair,
           abortSignal,
+          onAbort: ({ steps }) => {
+            logger.debug(`Aborting and processing ${steps.length} steps`);
+            steps.forEach((step) => {
+              messageHistory.appendResponseMessages(step.response.messages);
+            });
+          },
         });
 
         let accumulatedText = "";
