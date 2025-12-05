@@ -1,6 +1,14 @@
 import { randomUUID } from "node:crypto";
 import EventEmitter from "node:events";
-import { readdir, readFile, stat, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  readdir,
+  readFile,
+  rename,
+  stat,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
 import { basename, join } from "node:path";
 import { isString } from "@travisennis/stdlib/typeguards";
 import {
@@ -219,6 +227,16 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     const msgHistoryDir = this.stateDir;
     const fileName = `message-history-${this.sessionId}.json`;
     const filePath = join(msgHistoryDir, fileName);
+    const tempFilePath = `${filePath}.tmp`;
+
+    // Validate data before writing
+    if (!this.sessionId || this.sessionId.trim() === "") {
+      throw new Error("Cannot save: sessionId is empty");
+    }
+
+    if (!Array.isArray(this.history)) {
+      throw new Error("Cannot save: history is not an array");
+    }
 
     const project = basename(process.cwd());
 
@@ -232,7 +250,28 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
       messages: this.history,
     };
 
-    await writeFile(filePath, JSON.stringify(output, null, 2));
+    try {
+      // Ensure directory exists
+      await mkdir(msgHistoryDir, { recursive: true });
+
+      // Write to temporary file first
+      await writeFile(tempFilePath, JSON.stringify(output, null, 2));
+
+      // Atomically rename to final file
+      await rename(tempFilePath, filePath);
+
+      console.info(`Message history saved to ${filePath}`);
+    } catch (error) {
+      // Clean up temp file if it exists
+      try {
+        await unlink(tempFilePath);
+      } catch (_cleanupError) {
+        // Ignore cleanup errors
+      }
+
+      console.error(`Failed to save message history to ${filePath}:`, error);
+      throw error;
+    }
   }
 
   private async generateTitle(message: string) {
@@ -371,7 +410,20 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
       const fileReadPromises = sortedFiles.map(async (fileName) => {
         const filePath = join(stateDir, fileName);
         try {
+          // Check file stats first to avoid reading empty files
+          const stats = await stat(filePath);
+          if (stats.size === 0) {
+            // Silently skip empty files - they're likely from interrupted saves
+            return null;
+          }
+
           const content = await readFile(filePath, "utf-8");
+
+          // Skip files that only contain whitespace
+          if (content.trim().length === 0) {
+            return null;
+          }
+
           const parsed = JSON.parse(content) as RawMessageHistory;
           const result: SavedMessageHistory =
             parsed as unknown as SavedMessageHistory;
@@ -383,7 +435,14 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
             return result;
           }
         } catch (error) {
-          console.error(`Error reading or parsing file ${filePath}:`, error);
+          // Only log unexpected errors, not empty/malformed JSON files
+          // which are common from interrupted saves
+          if (
+            !(error instanceof SyntaxError) ||
+            !error.message.includes("Unexpected end of JSON input")
+          ) {
+            console.error(`Error reading or parsing file ${filePath}:`, error);
+          }
         }
         return null; // Return null for failed reads/parses
       });
