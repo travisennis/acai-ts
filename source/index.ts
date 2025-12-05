@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import os from "node:os";
+import path from "node:path";
 import { text } from "node:stream/consumers";
 import { parseArgs } from "node:util";
 import { asyncTry } from "@travisennis/stdlib/try";
@@ -36,7 +38,12 @@ export function createWorkspaceContext(
   addDirArgs: string[] = [],
 ): WorkspaceContext {
   const primaryDir = process.cwd();
-  const allowedDirs = [primaryDir, ...addDirArgs];
+  const allowedDirs = [
+    primaryDir,
+    "/tmp",
+    path.join(os.homedir(), ".acai"),
+    ...addDirArgs,
+  ];
 
   // Remove duplicates while preserving order
   const uniqueDirs = allowedDirs.filter(
