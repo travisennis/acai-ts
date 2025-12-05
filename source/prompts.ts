@@ -107,7 +107,7 @@ function toolUsage(_activeTools: CompleteToolNames[]) {
 - Commands execute only within the project directory; always use absolute paths.
 - Avoid interactive commands; prefer non-interactive flags (e.g., npm init -y).
 
-#### Additional Installed Tools
+#### Tools available via \`${BashTool.name}\`
 
 ${getInstalledTools()}
 
@@ -243,7 +243,7 @@ function getInstalledTools() {
       return [tool.name, status];
     })
     .filter((tool) => tool[1])
-    .map((tool) => tool[0])
+    .map((tool) => `- ${tool[0]}`)
     .join("\n");
 
   return toolStatus;
