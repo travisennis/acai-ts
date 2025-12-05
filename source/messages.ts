@@ -20,6 +20,7 @@ import {
   type ToolModelMessage,
   type UserModelMessage,
 } from "ai";
+import { logger } from "./logger.ts";
 import type { ModelManager } from "./models/manager.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
 
@@ -260,7 +261,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
       // Atomically rename to final file
       await rename(tempFilePath, filePath);
 
-      console.info(`Message history saved to ${filePath}`);
+      logger.info(`Message history saved to ${filePath}`);
     } catch (error) {
       // Clean up temp file if it exists
       try {
@@ -269,7 +270,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
         // Ignore cleanup errors
       }
 
-      console.error(`Failed to save message history to ${filePath}:`, error);
+      logger.error(error, `Failed to save message history to ${filePath}:`);
       throw error;
     }
   }
