@@ -43,6 +43,8 @@ export type CompleteToolSet = {
     AsyncReturnType<typeof initAgents>["toolDefs"])[K];
 };
 
+export type CompleteToolNames = keyof CompleteToolSet;
+
 export type CompleteCliToolSet = AsyncReturnType<
   typeof initCliTools
 >["toolDefs"];

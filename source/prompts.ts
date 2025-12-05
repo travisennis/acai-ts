@@ -13,6 +13,7 @@ import { DirectoryTreeTool } from "./tools/directory-tree.ts";
 import { EditFileTool } from "./tools/edit-file.ts";
 import { getCurrentBranch, inGitDirectory } from "./tools/git-utils.ts";
 import { GrepTool } from "./tools/grep.ts";
+import type { CompleteToolNames } from "./tools/index.ts";
 import { ReadFileTool } from "./tools/read-file.ts";
 import { ReadMultipleFilesTool } from "./tools/read-multiple-files.ts";
 import { SaveFileTool } from "./tools/save-file.ts";
@@ -67,7 +68,7 @@ async function instructions() {
 - Report errors with specific locations and suggested fixes`;
 }
 
-function toolUsage() {
+function toolUsage(_activeTools: CompleteToolNames[]) {
   return `## Tool Usage Guidelines
 
 ### Information Gathering
@@ -178,16 +179,21 @@ ${gitSection}
 
 export async function systemPrompt(options?: {
   supportsToolCalling?: boolean;
+  activeTools?: CompleteToolNames[];
   includeRules?: boolean;
 }) {
-  const { supportsToolCalling = true, includeRules = true } = options ?? {};
+  const {
+    supportsToolCalling = true,
+    activeTools = [],
+    includeRules = true,
+  } = options ?? {};
 
   const prompt = dedent`
 ${intro()}
 
 ${await instructions()}
 
-${supportsToolCalling ? toolUsage() : ""}
+${supportsToolCalling ? toolUsage(activeTools) : ""}
 
 ${escalationProcedures()}
 
