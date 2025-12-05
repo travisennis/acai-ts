@@ -6,11 +6,12 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "acai": "dist/index.js",
-    "@travisennis/acai": "dist/index.js"
+    "acai": "bin/acai-wrapper.js",
+    "@travisennis/acai": "bin/acai-wrapper.js"
   },
   "files": [
     "dist",
+    "bin",
     "README.md",
     "LICENSE"
   ],
