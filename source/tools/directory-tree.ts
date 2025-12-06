@@ -5,8 +5,8 @@ import { z } from "zod";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import { manageTokenLimit } from "../tokens/threshold.ts";
+import { joinWorkingDir, validatePath } from "../utils/filesystem/security.ts";
 import ignore, { type Ignore } from "../utils/ignore.ts";
-import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
 import type { ToolResult } from "./types.ts";
 
 export const DirectoryTreeTool = {

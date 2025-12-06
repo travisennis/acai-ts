@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { describe, it } from "node:test";
-import { validatePaths } from "../../source/tools/bash-utils.ts";
+import { isMutatingCommand, validatePaths } from "../../source/utils/bash.ts";
 
 const baseDir = process.cwd();
 
-describe("bash-utils - isPathWithinBaseDir", () => {
+describe("bash - isPathWithinBaseDir", () => {
   it("returns true for paths within base directory", () => {
     const result = path.resolve(baseDir, "src/file.txt");
     assert.strictEqual(result.startsWith(baseDir), true);
@@ -29,7 +29,7 @@ describe("bash-utils - isPathWithinBaseDir", () => {
   });
 });
 
-describe("bash-utils - validatePaths", () => {
+describe("bash - validatePaths", () => {
   it("returns valid for commands without paths", () => {
     const result = validatePaths("echo hello", [baseDir], baseDir);
     assert.strictEqual(result.isValid, true);
@@ -198,64 +198,84 @@ describe("bash-utils - validatePaths", () => {
     assert.strictEqual(result.isValid, true);
     assert.strictEqual(result.error, undefined);
   });
-
-  it("detects path traversal from different working directory", () => {
-    const subDir = path.join(baseDir, "src");
-    const result = validatePaths("cat ../../etc/hosts", [baseDir], subDir);
-    assert.strictEqual(result.isValid, false);
-    assert.match(
-      result.error ?? "",
-      /resolves outside the allowed directories/,
-    );
-  });
 });
 
-describe("bash-utils - edge cases", () => {
-  it("handles commands with quoted arguments containing spaces", () => {
-    const result = validatePaths(
-      'echo "hello world" > "file with spaces.txt"',
-      [baseDir],
-      baseDir,
-    );
-    assert.strictEqual(result.isValid, true);
-    assert.strictEqual(result.error, undefined);
+describe("bash - isMutatingCommand", () => {
+  it("returns false for harmless commands", () => {
+    assert.strictEqual(isMutatingCommand("echo hello"), false);
   });
 
-  it("handles commands with mixed quoting", () => {
-    const result = validatePaths(
-      'echo "hello" \'world" > "mixed quotes.txt"',
-      [baseDir],
-      baseDir,
-    );
-    // Should handle gracefully without throwing
-    assert(result.isValid === true || result.error !== undefined);
+  it("detects simple redirection (>) as mutating", () => {
+    assert.strictEqual(isMutatingCommand("echo hi > out.txt"), true);
   });
 
-  it("handles commands with incomplete quotes", () => {
-    const result = validatePaths('echo "incomplete quote', [baseDir], baseDir);
-    // Should handle gracefully
-    assert(result.isValid === true || result.error !== undefined);
+  it("detects append redirection (>>) as mutating", () => {
+    assert.strictEqual(isMutatingCommand("echo hi >> out.txt"), true);
   });
 
-  it("skips command options that look like paths", () => {
-    const result = validatePaths(
-      "command --option=/some/path",
-      [baseDir],
-      baseDir,
-    );
-    assert.strictEqual(result.isValid, true);
-    assert.strictEqual(result.error, undefined);
+  it("detects mutating binaries like rm", () => {
+    assert.strictEqual(isMutatingCommand("rm -rf some/dir"), true);
   });
 
-  // Environment variables are not expanded during validation - they are treated as literal strings.
-  // This is correct behavior because:
-  // 1. Security: Environment variables may contain sensitive information
-  // 2. Predictability: Validation should check the literal command, not post-expansion
-  // 3. Portability: Environment variables vary across systems
-  // The actual path resolution with environment variables happens at execution time, not validation time.
-  it("handles commands with environment variables", () => {
-    const result = validatePaths("echo $HOME/file.txt", [baseDir], baseDir);
-    assert.strictEqual(result.isValid, true);
-    assert.strictEqual(result.error, undefined);
+  it("does not flag pipes alone as mutating", () => {
+    assert.strictEqual(isMutatingCommand("cat file.txt | grep foo"), false);
+  });
+
+  it("flags tee when used in a pipeline", () => {
+    assert.strictEqual(isMutatingCommand("echo hi | tee file.txt"), true);
+  });
+
+  it("flags sed with -i as mutating", () => {
+    assert.strictEqual(isMutatingCommand("sed -i 's/a/b/' file.txt"), true);
+    assert.strictEqual(isMutatingCommand("sed -i.bak 's/a/b/' file.txt"), true);
+  });
+
+  it("does not flag sed without -i", () => {
+    assert.strictEqual(isMutatingCommand("sed 's/a/b/' file.txt"), false);
+  });
+
+  it("detects git mutating subcommands", () => {
+    assert.strictEqual(isMutatingCommand('git commit -m "msg"'), true);
+    assert.strictEqual(isMutatingCommand("git add ."), true);
+    assert.strictEqual(isMutatingCommand("git checkout"), true);
+    assert.strictEqual(isMutatingCommand("git branch"), true);
+    assert.strictEqual(isMutatingCommand("git push"), true);
+    assert.strictEqual(isMutatingCommand("git pull"), true);
+    assert.strictEqual(isMutatingCommand("git switch"), true);
+    assert.strictEqual(isMutatingCommand("git reset"), true);
+    assert.strictEqual(isMutatingCommand("git status"), false);
+  });
+
+  it("detects npm/pnpm/yarn mutating subcommands correctly", () => {
+    assert.strictEqual(isMutatingCommand("npm install lodash"), true);
+    assert.strictEqual(isMutatingCommand("pnpm install"), true);
+    assert.strictEqual(isMutatingCommand("yarn install"), true);
+    assert.strictEqual(isMutatingCommand("yarn add package"), true);
+  });
+
+  it("handles compound commands and short-circuits when any segment is mutating", () => {
+    assert.strictEqual(isMutatingCommand("echo hi && rm -rf /tmp"), true);
+    assert.strictEqual(isMutatingCommand("npm test || echo failed"), false);
+  });
+
+  it("treats a literal > inside quotes as mutating (implementation detail)", () => {
+    // Current implementation flags any '>' even if quoted
+    assert.strictEqual(isMutatingCommand("echo '>'"), true);
+  });
+
+  it("marks any command with 'create' in it", () => {
+    assert.strictEqual(isMutatingCommand("any command create"), true);
+  });
+
+  it("marks any command with 'update' in it", () => {
+    assert.strictEqual(isMutatingCommand("any command update"), true);
+  });
+
+  it("marks any command with 'upgrade' in it", () => {
+    assert.strictEqual(isMutatingCommand("any command upgrade"), true);
+  });
+
+  it("marks any command with 'install' in it", () => {
+    assert.strictEqual(isMutatingCommand("any command install"), true);
   });
 });

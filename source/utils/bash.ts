@@ -1,7 +1,7 @@
 import fs, { type Stats } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { isPathWithinAllowedDirs } from "./filesystem-utils.ts";
+import { isPathWithinAllowedDirs } from "./filesystem/security.ts";
 
 // Validate path arguments to ensure they're within the project
 export function validatePaths(

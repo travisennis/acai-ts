@@ -12,7 +12,7 @@ import {
   joinWorkingDir,
   validateFileNotReadOnly,
   validatePath,
-} from "./filesystem-utils.ts";
+} from "../utils/filesystem/security.ts";
 import { fixLlmEditWithInstruction } from "./llm-edit-fixer.ts";
 import type { ToolResult } from "./types.ts";
 

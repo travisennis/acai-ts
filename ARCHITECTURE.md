@@ -128,7 +128,6 @@ acai-ts
 │   ├── tools
 │   │   ├── advanced-edit-file.ts
 │   │   ├── agent.ts
-│   │   ├── bash-utils.ts
 │   │   ├── bash.ts
 │   │   ├── code-interpreter.ts
 │   │   ├── delete-file.ts
@@ -136,8 +135,7 @@ acai-ts
 │   │   ├── dynamic-tool-loader.ts
 │   │   ├── dynamic-tool-parser.ts
 │   │   ├── edit-file.ts
-│   │   ├── filesystem-utils.ts
-│   │   ├── git-utils.ts
+│   │   ├── git.ts
 │   │   ├── glob.ts
 │   │   ├── grep.ts
 │   │   ├── index.ts
@@ -177,12 +175,18 @@ acai-ts
 │   ├── utils
 │   │   ├── filesystem.ts
 │   │   ├── filetype-detection.ts
+│   │   ├── bash.ts
+│   │   ├── filesystem/
+│   │   │   ├── operations.ts
+│   │   │   └── security.ts
+│   │   ├── funcs.ts
 │   │   ├── generators.ts
+│   │   ├── git.ts
 │   │   ├── glob.ts
 │   │   ├── ignore.ts
 │   │   ├── iterables.ts
 │   │   ├── process.ts
-│   │   └── zod-utils.ts
+│   │   └── zod.ts
 │   └── version.ts
 ├── test
 │   ├── advanced-edit-file.test.ts
@@ -209,13 +213,11 @@ acai-ts
 │   ├── tokens
 │   │   └── threshold.test.ts
 │   ├── tools
-│   │   ├── bash-utils.test.ts
 │   │   ├── bash.test.ts
 │   │   ├── code-interpreter.test.ts
 │   │   ├── dynamic-tool-integration.test.ts
 │   │   ├── dynamic-tool-parser.test.ts
 │   │   ├── edit-file.test.ts
-│   │   ├── filesystem-utils.test.ts
 │   │   ├── glob.test.ts
 │   │   ├── grep-enhanced-ux.test.ts
 │   │   ├── grep-error-handling.test.ts
@@ -223,7 +225,6 @@ acai-ts
 │   │   ├── grep-match-counting.test.ts
 │   │   ├── grep-max-results.test.ts
 │   │   ├── grep.test.ts
-│   │   ├── is-mutating-command.test.ts
 │   │   └── llm-edit-fixer.test.ts
 │   ├── tui
 │   │   ├── autocomplete.test.ts
@@ -231,6 +232,9 @@ acai-ts
 │   │   │   └── modal-table.test.ts
 │   │   └── modal.test.ts
 │   ├── utils
+│   │   ├── bash.test.ts
+│   │   ├── filesystem/
+│   │   │   └── security.test.ts
 │   │   ├── filesystem.test.ts
 │   │   ├── generators.test.ts
 │   │   ├── glob.test.ts
@@ -358,7 +362,6 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **tokens/tracker.ts**: Tracks token usage across sessions.
 - **tools/advanced-edit-file.ts**: Advanced file editing tool with multiple modes.
 - **tools/agent.ts**: AI agent logic for coordinating tool usage.
-- **tools/bash-utils.ts**: Utilities for bash command execution.
 - **tools/bash.ts**: Tool for executing shell commands safely.
 - **tools/code-interpreter.ts**: Tool for running JavaScript code in a sandbox.
 - **tools/delete-file.ts**: Tool to delete files with validation.
@@ -366,8 +369,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **tools/dynamic-tool-loader.ts**: Dynamically loads tool definitions.
 - **tools/dynamic-tool-parser.ts**: Parses dynamic tool specifications.
 - **tools/edit-file.ts**: Tool to edit files with diff support.
-- **tools/filesystem-utils.ts**: General filesystem utilities for tools.
-- **tools/git-utils.ts**: Utilities for Git operations.
+- **tools/git.ts**: Utilities for Git operations.
 - **tools/glob.ts**: Tool for glob-based file searching.
 - **tools/grep.ts**: Tool for searching files using ripgrep.
 - **tools/index.ts**: Registry and exports for all tools.
@@ -405,11 +407,16 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **utils/filesystem.ts**: Filesystem-related utilities.
 - **utils/filetype-detection.ts**: Detects file types based on content or extension.
 - **utils/generators.ts**: Utilities for generating unique IDs or names.
+- **utils/bash.ts**: Utilities for bash command execution.
+- **utils/filesystem/operations.ts**: Filesystem operations utilities.
+- **utils/filesystem/security.ts**: Filesystem security and path validation utilities.
+- **utils/funcs.ts**: General utility functions.
+- **utils/git.ts**: Utilities for Git operations.
 - **utils/glob.ts**: Glob pattern matching utilities.
 - **utils/ignore.ts**: Handles ignore patterns for files.
 - **utils/iterables.ts**: Utilities for working with iterables.
 - **utils/process.ts**: Utilities for spawning and managing processes.
-- **utils/zod-utils.ts**: Zod schema utilities for validation.
+- **utils/zod.ts**: Zod schema utilities for validation.
 - **version.ts**: Manages and exposes application version.
 
 ### test/ Directory
@@ -433,13 +440,11 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **terminal/markdown.test.ts**: Unit tests for Markdown rendering.
 - **terminal/search-prompt.test.ts**: Unit tests for search prompt.
 - **tokens/threshold.test.ts**: Unit tests for token threshold management.
-- **tools/bash-utils.test.ts**: Unit tests for bash utilities.
 - **tools/bash.test.ts**: Unit tests for bash tool.
 - **tools/code-interpreter.test.ts**: Unit tests for code interpreter tool.
 - **tools/dynamic-tool-integration.test.ts**: Integration tests for dynamic tools.
 - **tools/dynamic-tool-parser.test.ts**: Unit tests for dynamic tool parser.
 - **tools/edit-file.test.ts**: Unit tests for edit file tool.
-- **tools/filesystem-utils.test.ts**: Unit tests for filesystem utilities.
 - **tools/glob.test.ts**: Unit tests for glob tool.
 - **tools/grep-enhanced-ux.test.ts**: Unit tests for grep enhanced UX.
 - **tools/grep-error-handling.test.ts**: Unit tests for grep error handling.
@@ -447,12 +452,14 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **tools/grep-match-counting.test.ts**: Unit tests for grep match counting.
 - **tools/grep-max-results.test.ts**: Unit tests for grep max results.
 - **tools/grep.test.ts**: Unit tests for grep tool.
-- **tools/is-mutating-command.test.ts**: Unit tests for mutating command detection.
 - **tools/llm-edit-fixer.test.ts**: Unit tests for LLM edit fixer.
 - **tui/autocomplete.test.ts**: Unit tests for TUI autocomplete.
 - **tui/components/modal-table.test.ts**: Unit tests for modal table component.
 - **tui/modal.test.ts**: Unit tests for modal component.
 - **utils/filesystem.test.ts**: Unit tests for filesystem utilities.
+- **utils/bash.test.ts**: Unit tests for bash utilities.
+- **utils/filesystem/security.test.ts**: Unit tests for filesystem security utilities.
+- **utils/filesystem.test.ts**: Unit tests for filesystem operations utilities.
 - **utils/generators.test.ts**: Unit tests for generators.
 - **utils/glob.test.ts**: Unit tests for glob utilities.
 - **utils/ignore.test.ts**: Unit tests for ignore utilities.

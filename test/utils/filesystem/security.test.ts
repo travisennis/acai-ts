@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 
-import { validatePath } from "../../source/tools/filesystem-utils.ts";
+import { validatePath } from "../../../source/utils/filesystem/security.ts";
 
 const projectRoot = process.cwd();
 

@@ -1,10 +1,10 @@
 import { platform } from "node:os";
 import { stepCountIs, streamText } from "ai";
 import style from "../terminal/style.ts";
-import { inGitDirectory } from "../tools/git-utils.ts";
 import { initCliTools } from "../tools/index.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
 import { Markdown, Spacer, Text } from "../tui/index.ts";
+import { inGitDirectory } from "../utils/git.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 const initPrompt = `Please analyze this codebase and create a AGENTS.md file containing:

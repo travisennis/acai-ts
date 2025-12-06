@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path, * as nodePath from "node:path";
 import * as process from "node:process";
 import fg, { type Entry, type Options as FastGlobOptions } from "fast-glob";
-import { isDirectory, slash, toPath } from "./filesystem.ts";
+import { isDirectory, slash, toPath } from "./filesystem/operations.ts";
 import { Ignore } from "./ignore.ts";
 
 // Cache for ignore patterns to avoid repeated IO

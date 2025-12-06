@@ -6,8 +6,8 @@ import { logger } from "../logger.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import { manageTokenLimit } from "../tokens/threshold.ts";
-import { isMutatingCommand, resolveCwd, validatePaths } from "./bash-utils.ts";
-import { isPathWithinAllowedDirs } from "./filesystem-utils.ts";
+import { isMutatingCommand, resolveCwd, validatePaths } from "../utils/bash.ts";
+import { isPathWithinAllowedDirs } from "../utils/filesystem/security.ts";
 import type { ToolResult } from "./types.ts";
 
 export const BashTool = {

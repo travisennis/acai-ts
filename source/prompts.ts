@@ -11,7 +11,6 @@ import { CodeInterpreterTool } from "./tools/code-interpreter.ts";
 import { DeleteFileTool } from "./tools/delete-file.ts";
 import { DirectoryTreeTool } from "./tools/directory-tree.ts";
 import { EditFileTool } from "./tools/edit-file.ts";
-import { getCurrentBranch, inGitDirectory } from "./tools/git-utils.ts";
 import { GrepTool } from "./tools/grep.ts";
 import type { CompleteToolNames } from "./tools/index.ts";
 import { ReadFileTool } from "./tools/read-file.ts";
@@ -20,6 +19,7 @@ import { SaveFileTool } from "./tools/save-file.ts";
 import { ThinkTool } from "./tools/think.ts";
 import { WebFetchTool } from "./tools/web-fetch.ts";
 import { WebSearchTool } from "./tools/web-search.ts";
+import { getCurrentBranch, inGitDirectory } from "./utils/git.ts";
 
 async function getCustomSystemPrompt(): Promise<string | null> {
   const systemMdPath = path.join(config.project.getPath(), "system.md");

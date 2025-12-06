@@ -2,7 +2,7 @@ import type { AnyNode, Element, Text } from "domhandler";
 import hljs from "highlight.js";
 import * as parse5 from "parse5";
 import { adapter as htmlparser2Adapter } from "parse5-htmlparser2-tree-adapter";
-import { id } from "../../utils.ts";
+import { id } from "../../utils/funcs.ts";
 import type { Theme } from "./theme.ts";
 
 function colorizeNode(node: AnyNode, theme: Theme, context?: string): string {

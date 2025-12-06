@@ -1,4 +1,4 @@
-import { id } from "../utils.ts";
+import { id } from "../utils/funcs.ts";
 import type { Theme } from "./highlight/theme.ts";
 import style from "./style.ts";
 

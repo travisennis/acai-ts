@@ -1,6 +1,6 @@
 // see https://raw.githubusercontent.com/exa-labs/exa-js/refs/heads/master/src/index.ts
 import type { ZodType } from "zod";
-import { isZodSchema, zodToJsonSchema } from "../../utils/zod-utils.ts";
+import { isZodSchema, zodToJsonSchema } from "../../utils/zod.ts";
 
 // Prefer global fetch/Headers from Node >= 18
 const fetchImpl = globalThis.fetch;

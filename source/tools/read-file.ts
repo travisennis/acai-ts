@@ -5,7 +5,7 @@ import { z } from "zod";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import { manageTokenLimit } from "../tokens/threshold.ts";
-import { joinWorkingDir, validatePath } from "./filesystem-utils.ts";
+import { joinWorkingDir, validatePath } from "../utils/filesystem/security.ts";
 import type { ToolResult } from "./types.ts";
 import { fileEncodingSchema } from "./types.ts";
 

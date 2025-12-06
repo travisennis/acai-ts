@@ -2,7 +2,7 @@ import path from "node:path";
 import { logger } from "../logger.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
 import { Text } from "../tui/index.ts";
-import { clearDirectory } from "../utils/filesystem.ts";
+import { clearDirectory } from "../utils/filesystem/operations.ts";
 import type { ReplCommand } from "./types.ts";
 
 export interface ExitCommandOptions {

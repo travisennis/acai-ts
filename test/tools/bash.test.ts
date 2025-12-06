@@ -3,7 +3,7 @@ import { rmSync } from "node:fs";
 import { after, describe, it } from "node:test";
 import { config } from "../../source/config.ts";
 import { createBashTool } from "../../source/tools/bash.ts";
-import { validatePaths } from "../../source/tools/bash-utils.ts";
+import { validatePaths } from "../../source/utils/bash.ts";
 import { createMockTokenCounter } from "../utils/mocking.ts";
 
 const tokenCounter = createMockTokenCounter((s: string) => s.length);

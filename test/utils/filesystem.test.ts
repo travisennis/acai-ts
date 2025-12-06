@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
-import { clearDirectory } from "../../source/utils/filesystem.ts";
+import { clearDirectory } from "../../source/utils/filesystem/operations.ts";
 
 describe("filesystem utilities", () => {
   const testDir = path.join(process.cwd(), ".test-temp");

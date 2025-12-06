@@ -9,7 +9,7 @@ import {
   joinWorkingDir,
   validateFileNotReadOnly,
   validatePath,
-} from "./filesystem-utils.ts";
+} from "../utils/filesystem/security.ts";
 import type { ToolResult } from "./types.ts";
 
 export const AdvancedEditFileTool = {

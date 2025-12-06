@@ -4,7 +4,7 @@ import {
   getDiffStat,
   getGitStatus,
   inGitDirectory,
-} from "../tools/git-utils.ts";
+} from "../utils/git.ts";
 
 // Cache for project status to prevent excessive Git operations
 class ProjectStatusCache {
