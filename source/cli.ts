@@ -88,6 +88,11 @@ export class Cli {
       workspace: this.options.workspace,
     });
 
+    // Cleanup function to remove signal handler
+    const cleanup = () => {
+      process.removeListener("SIGINT", cb);
+    };
+
     try {
       const result = await generateText({
         model: langModel,
@@ -119,13 +124,36 @@ export class Cli {
       process.stdout.end(
         result.text.endsWith("\n") ? result.text : `${result.text}\n`,
       );
+      cleanup();
     } catch (e) {
-      if (e instanceof Error) {
-        logger.error(e);
+      // Always cleanup signal handler
+      cleanup();
+
+      // Check if it's an abort error
+      const isAbortError =
+        e instanceof Error &&
+        (e.name === "AbortError" ||
+          e.message.includes("aborted") ||
+          e.message.includes("No output generated"));
+
+      if (isAbortError) {
+        logger.info("CLI execution interrupted by user");
+        // Try to save message history before exiting
+        try {
+          await messageHistory.save();
+        } catch (_saveError) {
+          // Ignore save errors on abort
+          logger.warn("Failed to save message history on interrupt");
+        }
+        process.exit(0); // Exit gracefully
       } else {
-        logger.error(JSON.stringify(e, null, 2));
+        if (e instanceof Error) {
+          logger.error(e);
+        } else {
+          logger.error(JSON.stringify(e, null, 2));
+        }
+        process.exit(1);
       }
-      process.exit(1);
     }
   }
 }
