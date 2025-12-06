@@ -15,7 +15,7 @@ import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { ModelMetadata } from "../models/providers.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
-import type { CompleteToolSet } from "../tools/index.ts";
+import type { CompleteToolNames, CompleteToolSet } from "../tools/index.ts";
 import { isToolMessage } from "../tools/types.ts";
 import { isAsyncIterable } from "../utils/iterables.ts";
 
@@ -32,6 +32,7 @@ type RunOptions = {
   systemPrompt: string;
   input: string;
   toolDefs: CompleteToolSet;
+  activeTools?: CompleteToolNames[];
   executors: Map<keyof CompleteToolSet, ToolExecuteFunction<unknown, string>>;
   abortSignal?: AbortSignal;
 };
@@ -158,7 +159,14 @@ export class Agent {
 
     this._state.timestamps.start = performance.now();
 
-    const { systemPrompt, input, toolDefs, executors, abortSignal } = args;
+    const {
+      systemPrompt,
+      input,
+      toolDefs,
+      activeTools = [],
+      executors,
+      abortSignal,
+    } = args;
 
     const langModel = modelManager.getModel("repl");
     const modelConfig = modelManager.getModelMetadata("repl");
@@ -211,6 +219,7 @@ export class Agent {
           maxRetries: 2,
           providerOptions: aiConfig.providerOptions(),
           tools: toolDefs,
+          activeTools,
           // biome-ignore lint/style/useNamingConvention: third-party code
           experimental_repairToolCall: toolCallRepair,
           abortSignal,
