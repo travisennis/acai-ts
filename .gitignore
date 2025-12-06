@@ -61,6 +61,7 @@ typings/
 dist
 
 # acai directories
+docs/
 .scratchpad
 .ai
 .acai-ci-tmp
