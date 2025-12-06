@@ -21,18 +21,15 @@ import { ThinkTool } from "./tools/think.ts";
 import { WebFetchTool } from "./tools/web-fetch.ts";
 import { WebSearchTool } from "./tools/web-search.ts";
 
-async function getCustomSystemPrompt() {
+async function getCustomSystemPrompt(): Promise<string | null> {
   const systemMdPath = path.join(config.project.getPath(), "system.md");
   try {
     const content = await readFile(systemMdPath, "utf8");
-    if (content.trim()) {
-      return content;
-    }
+    return content.trim() || null;
   } catch {
-    // system.md doesn't exist or is empty, use default instructions
+    // system.md doesn't exist or can't be read
     return null;
   }
-  return null;
 }
 
 function intro() {
