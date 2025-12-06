@@ -8,6 +8,51 @@ import type { Container, Editor, TUI } from "../tui/index.ts";
 import { Spacer, Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
+/**
+ * Replaces argument placeholders in prompt content.
+ * Supports:
+ * - $ARGUMENTS: All arguments joined by space
+ * - $1, $2, $3, etc.: Individual positional arguments
+ * - {{INPUT}}: Backward compatibility with existing syntax
+ * If no placeholders are found, appends arguments at the end.
+ */
+function replaceArgumentPlaceholders(content: string, args: string[]): string {
+  const allArguments = args.join(" ");
+
+  // Track if any replacements were made
+  let replacementsMade = false;
+  let result = content;
+
+  // Replace positional arguments ($1, $2, $3, etc.)
+  // Use string replacement since $ has special meaning in regex
+  for (let i = 0; i < args.length; i++) {
+    const placeholder = `$${i + 1}`;
+    if (result.includes(placeholder)) {
+      result = result.replaceAll(placeholder, args[i]);
+      replacementsMade = true;
+    }
+  }
+
+  // Replace $ARGUMENTS placeholder
+  if (result.includes("$ARGUMENTS")) {
+    result = result.replaceAll("$ARGUMENTS", allArguments);
+    replacementsMade = true;
+  }
+
+  // Replace {{INPUT}} placeholder (backward compatibility)
+  if (result.includes("{{INPUT}}")) {
+    result = result.replaceAll("{{INPUT}}", allArguments);
+    replacementsMade = true;
+  }
+
+  // If no replacements were made and we have arguments, append them
+  if (!replacementsMade && allArguments.trim().length > 0) {
+    result += `\n\n${allArguments}`;
+  }
+
+  return result;
+}
+
 interface PromptMetadata {
   name: string;
   description: string;
@@ -220,16 +265,11 @@ export const promptCommand = ({
           throw error;
         }
 
-        // Combine remaining arguments into a single string for input
+        // Get arguments for the prompt (everything after the prompt name)
         const inputArgs = args.slice(1);
-        const inputString = inputArgs.join(" ");
 
-        // Replace {{INPUT}} placeholder with the input string
-        if (promptContent.includes("{{INPUT}}")) {
-          promptContent = promptContent.replace(/{{INPUT}}/g, inputString);
-        } else {
-          promptContent += `\n\n${inputString}`;
-        }
+        // Replace argument placeholders
+        promptContent = replaceArgumentPlaceholders(promptContent, inputArgs);
 
         container.addChild(new Spacer(1));
 
@@ -241,7 +281,7 @@ export const promptCommand = ({
           ),
         );
         if (inputArgs.length > 0) {
-          container.addChild(new Text(`Input: "${inputString}"`, 2, 0));
+          container.addChild(new Text(`Input: "${inputArgs.join(" ")}"`, 2, 0));
         }
 
         const processedPrompt = await processPrompt(promptContent.trim(), {

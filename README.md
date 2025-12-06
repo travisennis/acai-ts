@@ -218,6 +218,54 @@ You can reference files and directories directly in your prompts:
 - `@http://example.com` - Fetch and include web content
 - ``!`command` `` - Execute shell command and include output
 
+### Prompt Arguments
+
+Pass dynamic values to commands using argument placeholders in custom prompts:
+
+#### All arguments with `$ARGUMENTS`
+
+The `$ARGUMENTS` placeholder captures all arguments passed to the command:
+
+```bash
+# Command definition
+echo 'Fix issue #$ARGUMENTS following our coding standards' > .acai/prompts/fix-issue.md
+
+# Usage
+> /fix-issue 123 high-priority
+# $ARGUMENTS becomes: "123 high-priority"
+```
+
+#### Individual arguments with `$1`, `$2`, `$3`, etc.
+
+Access specific arguments individually using positional parameters (similar to shell scripts):
+
+```bash
+# Command definition  
+echo 'Review PR #$1 with priority $2 and assign to $3' > .acai/prompts/review-pr.md
+
+# Usage
+> /review-pr 456 high alice
+# $1 becomes "456", $2 becomes "high", $3 becomes "alice"
+```
+
+Use positional arguments when you need to:
+- Access arguments individually in different parts of your command
+- Provide defaults for missing arguments
+- Build more structured commands with specific parameter roles
+
+#### Backward compatibility with `{{INPUT}}`
+
+The legacy `{{INPUT}}` placeholder is still supported and works the same as `$ARGUMENTS`:
+
+```bash
+# Command definition
+echo 'Analyze the following code: {{INPUT}}' > .acai/prompts/analyze.md
+
+# Usage
+> /analyze src/file.ts
+# {{INPUT}} becomes: "src/file.ts"
+```
+
 **Note:** Using `-p/--prompt` runs in CLI mode (one-shot execution), while running without a prompt starts interactive REPL mode.
 
 For a list of available commands, type `/help` within the REPL.
@@ -230,7 +278,7 @@ For a list of available commands, type `/help` within the REPL.
 - `/exit` or `/bye` - Exits and saves chat history
 - `/init` - Generate or improve `AGENTS.md`
 - `/paste` - Add clipboard contents to the next prompt
-- `/prompt <name>` - Load saved prompts. Project prompts override user prompts.
+- `/prompt <name> [arguments...]` - Load saved prompts with optional arguments. Project prompts override user prompts. Supports argument placeholders (`$ARGUMENTS`, `$1`, `$2`, etc.) in prompt files.
 - `/model [provider:model|category|provider]` - List or switch models
 - `/usage` - Show token usage breakdown
 - `/clear` - Clears the terminal screen for the current session
@@ -492,7 +540,7 @@ Acai supports project-specific configuration through a `.acai/acai.json` file in
 ### Project-Specific Customization
 
 - **Rules/Guidelines**: Add project-specific AI behavior rules in `AGENTS.md`
-- **Custom Prompts**: Store reusable prompts in `.acai/prompts/`
+- **Custom Prompts**: Store reusable prompts in `.acai/prompts/`. Supports argument placeholders (`$ARGUMENTS`, `$1`, `$2`, etc.) for dynamic content.
 - **Context Selections**: Save file/directory selections in `.acai/context/`
 - **Memory/Rules**: Persistent project rules stored in `.acai/rules/`
 
