@@ -33,7 +33,7 @@ async function getCustomSystemPrompt(): Promise<string | null> {
 }
 
 function intro() {
-  return "You are acai, an expert coding assistant.";
+  return "You are acai. You are running as a coding agent in a CLI on the user's computer.";
 }
 
 async function instructions() {
@@ -50,6 +50,8 @@ async function instructions() {
 - **Security-First**: Prioritize secure coding practices in all suggestions.
 - **Completion Focus**: Continue working until the user's query is completely resolved.
 - **Expert Level**: Assume the user is an experienced software engineer.
+- **Be Efficient**: When multiple tool calls can be parallelized, make these tool calls in parallel instead of sequential. Avoid single calls that might not yield a useful result; parallelize instead to ensure you can make progress efficiently.
+
 
 ## Response Format
 
@@ -432,8 +434,7 @@ ${intro()}
 
 ${await minimalInstructions()}
 
-${activeTools ? "## Available Tools:" : ""}
-${activeTools ? activeTools.map((tool) => `- ${tool}`).join("\n") : ""}
+${toolUsage(activeTools)}
 
 ${includeRules ? await getProjectContext() : ""}
 
@@ -464,13 +465,48 @@ ${await environmentInfo()}
 function getInstalledTools() {
   // Check for required bash tools
   const tools = [
-    { name: "git", command: "git --version" },
-    { name: "gh", command: "gh --version" },
-    { name: "rg", command: "rg --version" },
-    { name: "fd", command: "fd --version" },
-    { name: "ast-grep", command: "ast-grep --version" },
-    { name: "jq", command: "jq --version" },
-    { name: "yq", command: "yq --version" },
+    {
+      name: "git",
+      command: "git --version",
+      description:
+        "Version control system - used for cloning repositories, checking out branches, committing changes, viewing history, and managing code versions",
+    },
+    {
+      name: "gh",
+      command: "gh --version",
+      description:
+        "GitHub CLI - used for creating pull requests, managing issues, interacting with GitHub API, and automating GitHub workflows",
+    },
+    {
+      name: "rg",
+      command: "rg --version",
+      description:
+        "ripgrep - fast text search tool for searching code patterns, file contents, and regular expressions across the codebase (use this instead of grep)",
+    },
+    {
+      name: "fd",
+      command: "fd --version",
+      description:
+        "Fast file finder - alternative to find command, used for finding files by name, pattern, or type with intuitive syntax (use this instead of find)",
+    },
+    {
+      name: "ast-grep",
+      command: "ast-grep --version",
+      description:
+        "AST-based code search - used for structural code search, refactoring, finding patterns in abstract syntax trees, and code transformations",
+    },
+    {
+      name: "jq",
+      command: "jq --version",
+      description:
+        "JSON processor - used for parsing, filtering, and manipulating JSON output from APIs, commands, and configuration files",
+    },
+    {
+      name: "yq",
+      command: "yq --version",
+      description:
+        "YAML processor - used for parsing and manipulating YAML files (configs, CI/CD pipelines, Kubernetes manifests) with jq-like syntax",
+    },
   ];
 
   const toolStatus = tools
@@ -482,10 +518,10 @@ function getInstalledTools() {
       } catch (_error) {
         // Ignore error, tool is not installed
       }
-      return [tool.name, status];
+      return { name: tool.name, description: tool.description, status };
     })
-    .filter((tool) => tool[1])
-    .map((tool) => `- ${tool[0]}`)
+    .filter((tool) => tool.status)
+    .map((tool) => `- **${tool.name}**: ${tool.description}`)
     .join("\n");
 
   return toolStatus;
