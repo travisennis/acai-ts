@@ -7,6 +7,7 @@ import { systemPrompt } from "../prompts.ts";
 import { getTerminalSize } from "../terminal/formatting.ts";
 import style from "../terminal/style.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
+import type { CompleteToolNames } from "../tools/index.ts";
 import {
   Container,
   type Editor,
@@ -155,8 +156,16 @@ export const generateRulesCommand = ({
 };
 
 // Modified System Prompt
-const system =
-  async () => `You are an expert analyst reviewing conversations between a coding agent and a software engineer. Your goal is to identify instances where the engineer corrected the agent's approach or understanding in a way that reveals a *generalizable principle* for improving the agent's future behavior across *different* tasks.
+const system = async () => {
+  const projectConfig = await config.readProjectConfig();
+
+  const sys = await systemPrompt({
+    type: projectConfig.systemPromptType,
+    activeTools: projectConfig.tools.activeTools as CompleteToolNames[],
+    includeRules: true,
+  });
+
+  return `You are an expert analyst reviewing conversations between a coding agent and a software engineer. Your goal is to identify instances where the engineer corrected the agent's approach or understanding in a way that reveals a *generalizable principle* for improving the agent's future behavior across *different* tasks.
 
 **Your Task:**
 1. Analyze the conversation provided.
@@ -190,8 +199,9 @@ const system =
 
 This is the original system prompt the agent operated under:
 <systemPrompt>
-${await systemPrompt()}
+${sys}
 </systemPrompt>`;
+};
 
 async function analyzeConversation({
   modelManager,

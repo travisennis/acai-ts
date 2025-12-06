@@ -1,6 +1,6 @@
 import type { ModelMessage } from "ai";
 import { systemPrompt } from "../prompts.ts";
-import { initCliTools } from "../tools/index.ts";
+import { type CompleteToolNames, initCliTools } from "../tools/index.ts";
 import { prepareTools } from "../tools/utils.ts";
 import type { Editor, TUI } from "../tui/index.ts";
 import { Container, Modal, ModalTable, ModalText } from "../tui/index.ts";
@@ -49,6 +49,7 @@ function pct(n: number, d: number): string {
 }
 
 export function contextCommand({
+  config,
   tokenCounter,
   modelManager,
   messageHistory,
@@ -65,9 +66,12 @@ export function contextCommand({
       const meta = modelManager.getModelMetadata("repl");
       const window = meta.contextWindow;
 
+      const projectConfig = await config.readProjectConfig();
+
       // 1) System prompt
       const sys = await systemPrompt({
-        supportsToolCalling: meta.supportsToolCalling,
+        type: projectConfig.systemPromptType,
+        activeTools: projectConfig.tools.activeTools as CompleteToolNames[],
         includeRules: true,
       });
       const systemPromptTokens = tokenCounter.count(sys);
