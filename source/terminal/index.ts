@@ -5,12 +5,5 @@
  * Handles input/output, formatting, and display.
  */
 
-export {
-  box,
-  displayProgressBar,
-  formatMarkdown,
-  header,
-  table,
-} from "./components.ts";
 export { alert, getShell, isInteractive } from "./control.ts";
 export { emphasize, error, hr, info, success, warn } from "./formatting.ts";

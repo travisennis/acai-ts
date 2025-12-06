@@ -2,8 +2,8 @@ import type { Container, Editor, TUI } from "../tui/index.ts";
 import {
   Modal,
   Container as ModalContainer,
-  ModalTable,
   ModalText,
+  TableComponent,
 } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
@@ -37,7 +37,10 @@ export const helpCommand = (
           description,
         ]);
         modalContent.addChild(
-          new ModalTable(tableData, ["Command", "Description"], [30, 70]),
+          new TableComponent(tableData, {
+            headers: ["Command", "Description"],
+            colWidths: [30, 70],
+          }),
         );
       }
 

@@ -1,7 +1,7 @@
 import { execSync } from "node:child_process";
 import { formatMemoryUsage } from "../formatting.ts";
 import type { Editor, TUI } from "../tui/index.ts";
-import { Container, Modal, ModalTable, ModalText } from "../tui/index.ts";
+import { Container, Modal, ModalText, TableComponent } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export function healthCommand(
@@ -99,7 +99,9 @@ export function healthCommand(
         new ModalText("Environment Variables Status:", 0, 1),
       );
       modalContent.addChild(
-        new ModalTable(envStatus, ["Variable", "Status", "Description"]),
+        new TableComponent(envStatus, {
+          headers: ["Variable", "Status", "Description"],
+        }),
       );
 
       const envSummary = `Summary: ${setCount}/${totalCount} environment variables are set`;
@@ -122,7 +124,11 @@ export function healthCommand(
       // Tools section
       modalContent.addChild(new ModalText("", 0, 1)); // Spacer
       modalContent.addChild(new ModalText("Bash Tools Status:", 0, 1));
-      modalContent.addChild(new ModalTable(toolStatus, ["Tool", "Status"]));
+      modalContent.addChild(
+        new TableComponent(toolStatus, {
+          headers: ["Tool", "Status"],
+        }),
+      );
 
       const toolSummary = `Tool Summary: ${installedCount}/${totalTools} tools are installed.`;
       modalContent.addChild(new ModalText(toolSummary, 0, 1));

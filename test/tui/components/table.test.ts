@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ModalTable } from "../../../source/tui/components/modal.ts";
+import { TableComponent } from "../../../source/tui/components/table.ts";
 
-describe("ModalTable", () => {
+describe("TableComponent", () => {
   it("should handle empty data", () => {
-    const table = new ModalTable([]);
+    const table = new TableComponent([], { width: 80 });
     const result = table.render(80);
     assert.deepEqual(result, []);
   });
@@ -15,7 +15,7 @@ describe("ModalTable", () => {
       ["Row 2 Col 1", "Row 2 Col 2"],
     ];
     const headers = ["Header 1", "Header 2"];
-    const table = new ModalTable(data, headers);
+    const table = new TableComponent(data, { headers, width: 80 });
     const result = table.render(80);
 
     assert(Array.isArray(result));
@@ -36,7 +36,7 @@ describe("ModalTable", () => {
       ],
     ];
     const headers = ["Column 1", "Column 2"];
-    const table = new ModalTable(data, headers);
+    const table = new TableComponent(data, { headers, width: 80 });
     const result = table.render(80);
 
     assert(Array.isArray(result));
@@ -60,7 +60,7 @@ describe("ModalTable", () => {
     ];
     const headers = ["Col1", "Col2"];
     const colWidths = [30, 70];
-    const table = new ModalTable(data, headers, colWidths);
+    const table = new TableComponent(data, { headers, colWidths, width: 100 });
     const result = table.render(100);
 
     assert(Array.isArray(result));

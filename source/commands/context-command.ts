@@ -3,7 +3,7 @@ import { systemPrompt } from "../prompts.ts";
 import { type CompleteToolNames, initCliTools } from "../tools/index.ts";
 import { prepareTools } from "../tools/utils.ts";
 import type { Editor, TUI } from "../tui/index.ts";
-import { Container, Modal, ModalTable, ModalText } from "../tui/index.ts";
+import { Container, Modal, ModalText, TableComponent } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 type Breakdown = {
@@ -136,7 +136,9 @@ export function contextCommand({
 
       modalContent.addChild(new ModalText("Context Usage", 0, 1));
       modalContent.addChild(
-        new ModalTable(tableData, ["Section", "Tokens", "Percent"]),
+        new TableComponent(tableData, {
+          headers: ["Section", "Tokens", "Percent"],
+        }),
       );
 
       // Progress bar

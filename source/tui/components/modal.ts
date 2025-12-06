@@ -1,5 +1,4 @@
 import { getTerminalSize } from "../../terminal/formatting.ts";
-import { table } from "../../terminal/index.ts";
 import style from "../../terminal/style.ts";
 import type { Component } from "../tui.ts";
 import { Container } from "../tui.ts";
@@ -330,42 +329,5 @@ export class ModalText extends Container {
     }
 
     return paddedLines;
-  }
-}
-
-/**
- * ModalTable component - displays tabular data in a modal
- * Uses the terminal table function for proper text wrapping and formatting
- */
-export class ModalTable extends Container {
-  private data: (string | number)[][];
-  private headers?: string[];
-  private colWidths?: number[];
-
-  constructor(
-    data: (string | number)[][],
-    headers?: string[],
-    colWidths?: number[],
-  ) {
-    super();
-    this.data = data;
-    this.headers = headers;
-    this.colWidths = colWidths;
-  }
-
-  override render(width: number): string[] {
-    if (this.data.length === 0) {
-      return [];
-    }
-
-    // Use the terminal table function for proper text wrapping and formatting
-    const tableString = table(this.data, {
-      header: this.headers,
-      colWidths: this.colWidths,
-      width: width,
-    });
-
-    // Split the table string into lines and return
-    return tableString.split("\n");
   }
 }

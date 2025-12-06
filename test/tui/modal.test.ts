@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import {
-  Modal,
-  ModalTable,
-  ModalText,
-} from "../../source/tui/components/modal.ts";
+import { Modal, ModalText } from "../../source/tui/components/modal.ts";
 import { Container } from "../../source/tui/index.ts";
 
 describe("Modal Components", () => {
@@ -66,38 +62,6 @@ describe("Modal Components", () => {
     it("should handle empty text", () => {
       const modalText = new ModalText("");
       const result = modalText.render(40);
-
-      assert.strictEqual(Array.isArray(result), true);
-      assert.strictEqual(result.length, 0);
-    });
-  });
-
-  describe("ModalTable", () => {
-    it("should create modal table component", () => {
-      const data = [
-        ["Row 1", "Value 1"],
-        ["Row 2", "Value 2"],
-      ];
-      const modalTable = new ModalTable(data, ["Column 1", "Column 2"]);
-
-      assert.strictEqual(modalTable instanceof Container, true);
-    });
-
-    it("should render table data", () => {
-      const data = [
-        ["Row 1", "Value 1"],
-        ["Row 2", "Value 2"],
-      ];
-      const modalTable = new ModalTable(data, ["Column 1", "Column 2"]);
-      const result = modalTable.render(60);
-
-      assert.strictEqual(Array.isArray(result), true);
-      assert.strictEqual(result.length > 0, true);
-    });
-
-    it("should handle empty data", () => {
-      const modalTable = new ModalTable([], ["Column 1", "Column 2"]);
-      const result = modalTable.render(60);
 
       assert.strictEqual(Array.isArray(result), true);
       assert.strictEqual(result.length, 0);

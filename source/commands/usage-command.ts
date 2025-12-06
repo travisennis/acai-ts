@@ -2,8 +2,8 @@ import type { Container, Editor, TUI } from "../tui/index.ts";
 import {
   Modal,
   Container as ModalContainer,
-  ModalTable,
   ModalText,
+  TableComponent,
 } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
@@ -27,7 +27,11 @@ export function usageCommand({ tokenTracker }: CommandOptions): ReplCommand {
       } else {
         // Convert entries to table format
         const tableData = entries.map(([app, tokens]) => [app, String(tokens)]);
-        modalContent.addChild(new ModalTable(tableData, ["App", "Tokens"]));
+        modalContent.addChild(
+          new TableComponent(tableData, {
+            headers: ["App", "Tokens"],
+          }),
+        );
       }
 
       // Create and show modal
