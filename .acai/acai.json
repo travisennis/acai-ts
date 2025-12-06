@@ -1,5 +1,5 @@
 {
-  "systemPromptType": "minimal",
+  "systemPromptType": "full",
   "logs": {
     "path": "/Users/travisennis/.acai/logs/current.log"
   },
