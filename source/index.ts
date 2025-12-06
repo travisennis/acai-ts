@@ -393,7 +393,12 @@ async function runReplMode(state: AppState): Promise<void> {
 
   // Set interrupt callback
   repl.setInterruptCallback(() => {
-    state.messageHistory.save();
+    try {
+      state.messageHistory.save();
+    } catch (error) {
+      // Log but don't throw - we still want to abort the agent
+      logger.warn({ error }, "Failed to save message history on interrupt");
+    }
     agent.abort();
   });
 
@@ -455,16 +460,8 @@ async function main() {
   try {
     const appConfig = await config.ensureAppConfig("acai");
 
-    // Setup signal handlers for graceful shutdown
-    process.on("SIGINT", () => {
-      logger.info("Received SIGINT, shutting down gracefully...");
-      process.exit(0);
-    });
-
-    process.on("SIGTERM", () => {
-      logger.info("Received SIGTERM, shutting down gracefully...");
-      process.exit(0);
-    });
+    // Note: SIGINT/SIGTERM handlers are set up by CLI and REPL components
+    // as needed. We don't set a global handler here to avoid conflicts.
 
     // Handle early exits
     if (await handleEarlyExits()) return;
