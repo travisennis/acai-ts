@@ -270,8 +270,20 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
         // Ignore cleanup errors
       }
 
-      logger.error(error, `Failed to save message history to ${filePath}:`);
-      throw error;
+      // Check if it's an ENOENT error from rename (temp file doesn't exist)
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "ENOENT"
+      ) {
+        logger.warn(
+          `Temp file missing during save for ${filePath}, write may have been interrupted`,
+        );
+      } else {
+        logger.error(error, `Failed to save message history to ${filePath}:`);
+        // Don't throw - just log. This is called from interrupt handlers
+        // and we don't want to crash the program on save failure.
+      }
     }
   }
 
