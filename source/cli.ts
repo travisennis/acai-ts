@@ -13,7 +13,7 @@ import type { MessageHistory } from "./messages.ts";
 import { AiConfig } from "./models/ai-config.ts";
 import type { ModelManager } from "./models/manager.js";
 import type { PromptManager } from "./prompts/manager.ts";
-import { minSystemPrompt } from "./prompts.ts";
+import { systemPrompt } from "./prompts.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
 import { BashTool } from "./tools/bash.ts";
@@ -76,7 +76,7 @@ export class Cli {
 
     messageHistory.appendUserMessage(userMsg);
 
-    const finalSystemPrompt = await minSystemPrompt();
+    const finalSystemPrompt = await systemPrompt({ type: "cli", activeTools });
 
     const aiConfig = new AiConfig({
       modelMetadata: modelConfig,

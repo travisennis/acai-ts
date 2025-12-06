@@ -24,7 +24,11 @@ import { setTerminalTitle } from "./terminal/formatting.ts";
 import { select } from "./terminal/select-prompt.ts";
 import { TokenCounter } from "./tokens/counter.ts";
 import { TokenTracker } from "./tokens/tracker.ts";
-import { initAgents, initTools } from "./tools/index.ts";
+import {
+  type CompleteToolNames,
+  initAgents,
+  initTools,
+} from "./tools/index.ts";
 import { getPackageVersion } from "./version.ts";
 
 // Workspace context for managing multiple working directories
@@ -421,12 +425,17 @@ async function runReplMode(state: AppState): Promise<void> {
   // Interactive loop
   while (true) {
     const userInput = await repl.getUserInput();
-
+    const projectConfig = await config.readProjectConfig();
+    const activeTools = projectConfig.tools.activeTools as CompleteToolNames[];
     try {
       const results = agent.run({
-        systemPrompt: await systemPrompt(),
+        systemPrompt: await systemPrompt({
+          type: projectConfig.systemPromptType,
+          activeTools,
+        }),
         input: userInput,
         toolDefs: tools.toolDefs,
+        activeTools,
         executors: tools.executors,
         abortSignal: agent.abortSignal,
       });
