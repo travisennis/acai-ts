@@ -659,11 +659,9 @@ function setupProcessCleanup(executionEnv: ExecutionEnvironment): void {
 
   process.on("SIGINT", () => {
     executionEnv.killAllBackgroundProcesses();
-    process.exit(0);
   });
 
   process.on("SIGTERM", () => {
     executionEnv.killAllBackgroundProcesses();
-    process.exit(0);
   });
 }
