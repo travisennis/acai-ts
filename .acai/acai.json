@@ -1,11 +1,17 @@
 {
+  "systemPromptType": "minimal",
   "logs": {
     "path": "/Users/travisennis/.acai/logs/current.log"
   },
-  "agentLoop": "manual",
   "tools": {
+    "activeTools": [
+      "bash",
+      "think",
+      "readFile",
+      "editFile",
+      "saveFile"
+    ],
     "maxTokens": 30000
   },
-  "notify": true,
-  "readOnlyFiles": []
+  "notify": true
 }

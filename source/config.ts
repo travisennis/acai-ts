@@ -6,10 +6,12 @@ import { z } from "zod";
 import { jsonParser } from "./parsing.ts";
 
 const defaultConfig = {
+  systemPromptType: "full",
   loop: {
     maxIterations: 90,
   },
   tools: {
+    activeTools: [] as string[],
     maxTokens: 30000,
     maxResults: 30,
     dynamicTools: {
@@ -23,6 +25,10 @@ const defaultConfig = {
 
 // Type definitions
 const ProjectConfigSchema = z.object({
+  systemPromptType: z
+    .enum(["full", "minimal", "cli"])
+    .optional()
+    .default(defaultConfig.systemPromptType),
   logs: z
     .object({
       path: z.string(),
@@ -36,6 +42,10 @@ const ProjectConfigSchema = z.object({
     .default(defaultConfig.loop),
   tools: z
     .object({
+      activeTools: z
+        .array(z.string())
+        .optional()
+        .default(defaultConfig.tools.activeTools),
       maxTokens: z.number().default(defaultConfig.tools.maxTokens),
       maxResults: z.number().default(defaultConfig.tools.maxResults),
       dynamicTools: z
