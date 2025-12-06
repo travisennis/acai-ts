@@ -21,11 +21,7 @@ import { ThinkTool } from "./tools/think.ts";
 import { WebFetchTool } from "./tools/web-fetch.ts";
 import { WebSearchTool } from "./tools/web-search.ts";
 
-function intro() {
-  return "You are acai, an AI-powered CLI assistant that accelerates software engineering workflows through intelligent command-line assistance.";
-}
-
-async function instructions() {
+async function getCustomSystemPrompt() {
   const systemMdPath = path.join(config.project.getPath(), "system.md");
   try {
     const content = await readFile(systemMdPath, "utf8");
@@ -34,6 +30,19 @@ async function instructions() {
     }
   } catch {
     // system.md doesn't exist or is empty, use default instructions
+    return null;
+  }
+  return null;
+}
+
+function intro() {
+  return "You are acai, an expert coding assistant.";
+}
+
+async function instructions() {
+  const systemMdPath = await getCustomSystemPrompt();
+  if (systemMdPath) {
+    return systemMdPath;
   }
 
   return `## Core Principles
@@ -68,34 +77,189 @@ async function instructions() {
 - Report errors with specific locations and suggested fixes`;
 }
 
-function toolUsage(_activeTools: CompleteToolNames[]) {
-  return `## Tool Usage Guidelines
+async function minimalInstructions() {
+  const systemMdPath = await getCustomSystemPrompt();
+  if (systemMdPath) {
+    return systemMdPath;
+  }
+
+  return `- Be concise and direct
+- Work through problems methodically until resolution
+- Continue working until the user's query is completely resolved.
+- Assume the user is an experienced software engineer.`;
+}
+
+function toolUsage(activeTools: CompleteToolNames[]) {
+  // Helper function to check if a specific tool is active
+  // If activeTools is empty, include everything (backward compatibility)
+  function isToolActive(tool: string): boolean {
+    if (activeTools.length === 0) return true;
+    return activeTools.includes(tool as CompleteToolNames);
+  }
+
+  // Helper function to check if any of the specified tools are active
+  function hasAnyTool(...tools: string[]): boolean {
+    if (activeTools.length === 0) return true;
+    return tools.some((tool) =>
+      activeTools.includes(tool as CompleteToolNames),
+    );
+  }
+
+  const sections: string[] = [];
+
+  // Always include the header
+  sections.push("## Tool Usage Guidelines");
+
+  // Information Gathering - File System
+  const hasFileSystemTools = hasAnyTool(
+    ReadFileTool.name,
+    ReadMultipleFilesTool.name,
+    GrepTool.name,
+    AgentTool.name,
+    DirectoryTreeTool.name,
+  );
+
+  if (hasFileSystemTools) {
+    const fileSystemLines: string[] = [];
+
+    // Build file system instructions dynamically based on active tools
+    if (
+      isToolActive(ReadFileTool.name) ||
+      isToolActive(ReadMultipleFilesTool.name)
+    ) {
+      const readTools: string[] = [];
+      if (isToolActive(ReadFileTool.name))
+        readTools.push(`\`${ReadFileTool.name}\``);
+      if (isToolActive(ReadMultipleFilesTool.name))
+        readTools.push(`\`${ReadMultipleFilesTool.name}\``);
+
+      fileSystemLines.push(
+        `- Use ${readTools.join(" or ")} for file contents if filenames are provided in the prompt. If you do not know the path to a file use one of the following tools to find the files available.`,
+      );
+    }
+
+    if (isToolActive(GrepTool.name)) {
+      fileSystemLines.push(
+        `- Use \`${GrepTool.name}\` for code pattern searches`,
+      );
+    }
+
+    if (isToolActive(AgentTool.name)) {
+      fileSystemLines.push(
+        `- Use \`${AgentTool.name}\` for iterative keyword/file searches. Use this if you need to explore the project to find what you are looking for.`,
+      );
+    }
+
+    if (isToolActive(DirectoryTreeTool.name)) {
+      fileSystemLines.push(
+        `- Use \`${DirectoryTreeTool.name}\` if you need a high-level overview of the project.`,
+      );
+    }
+
+    // Add general guidelines that reference specific tools only if those tools are active
+    if (
+      isToolActive(GrepTool.name) &&
+      isToolActive(ReadMultipleFilesTool.name)
+    ) {
+      fileSystemLines.push(
+        `- Prefer targeted queries: use \`${GrepTool.name}\` for code pattern searches and \`${ReadMultipleFilesTool.name}\` to fetch files. Avoid full directory dumps for large repositories.`,
+      );
+    }
+
+    // Add general guidelines that don't reference specific tools
+    fileSystemLines.push(
+      "- If the contents of files are provided in the prompt, assume the content is up-to-date and use it directly without re-fetching",
+    );
+    fileSystemLines.push(
+      "- Always verify file contents before suggesting changes unless provided in the prompt",
+    );
+
+    sections.push(`
 
 ### Information Gathering
 
 #### File System
-- Use \`${ReadFileTool.name}\` or \`${ReadMultipleFilesTool.name}\` for file contents if filenames are provided in the prompt. If you do not know the path to a file use one of the following tools to find the files available. 
-- Use \`${GrepTool.name}\` for code pattern searches
-- Use \`${AgentTool.name}\` for iterative keyword/file searches. Use this if you need to explore the project to find what you are looking for.
-- Use \`${DirectoryTreeTool.name}\` if you need a high-level overview of the project. 
-- Prefer targeted queries: use \`${GrepTool.name}\` for code pattern searches and \`${ReadMultipleFilesTool.name}\` to fetch files. Avoid full directory dumps for large repositories.
-- If the contents of files are provided in the prompt, assume the content is up-to-date and use it directly without re-fetching
-- Always verify file contents before suggesting changes unless provided in the prompt
+${fileSystemLines.join("\n")}`);
+  }
+
+  // Information Gathering - Web and Internet
+  const hasWebTools = hasAnyTool(WebFetchTool.name, WebSearchTool.name);
+
+  if (hasWebTools) {
+    const webLines: string[] = [];
+
+    if (isToolActive(WebFetchTool.name)) {
+      webLines.push(
+        `- Use \`${WebFetchTool.name}\` for text-based URLs provided in the prompt`,
+      );
+    }
+
+    if (isToolActive(WebSearchTool.name)) {
+      webLines.push(
+        `- Use \`${WebSearchTool.name}\` for external research (e.g., libraries, errors)`,
+      );
+    }
+
+    // Add general guideline
+    webLines.push(
+      "- If the contents of URLs are provided in the prompt, assume the content is up-to-date and use it directly without re-fetching",
+    );
+
+    sections.push(`
 
 #### Web and Internet
 
-- Use \`${WebFetchTool.name}\` for text-based URLs provided in the prompt
-- Use \`${WebSearchTool.name}\` for external research (e.g., libraries, errors)
-- If the contents of URLs are provided in the prompt, assume the content is up-to-date and use it directly without re-fetching
+${webLines.join("\n")}`);
+  }
+
+  // Code Modification
+  const hasCodeModificationTools = hasAnyTool(
+    EditFileTool.name,
+    SaveFileTool.name,
+    DeleteFileTool.name,
+  );
+
+  if (hasCodeModificationTools) {
+    const codeModLines: string[] = [];
+
+    if (isToolActive(EditFileTool.name)) {
+      codeModLines.push(
+        `- Use \`${EditFileTool.name}\` to edit existing files`,
+      );
+    }
+
+    if (isToolActive(SaveFileTool.name)) {
+      codeModLines.push(
+        `- Use \`${SaveFileTool.name}\` to create new files only`,
+      );
+    }
+
+    if (isToolActive(DeleteFileTool.name)) {
+      codeModLines.push(`- Use \`${DeleteFileTool.name}\` to delete files`);
+    }
+
+    sections.push(`
 
 ### Code Modification
-- Use \`${EditFileTool.name}\` to edit existing files
-- Use \`${SaveFileTool.name}\` to create new files only
-- Use \`${DeleteFileTool.name}\` to delete files
+${codeModLines.join("\n")}`);
+  }
+
+  // Planning & Complex Tasks
+  const hasThinkTool = hasAnyTool(ThinkTool.name);
+
+  if (hasThinkTool) {
+    sections.push(`
 
 ### Planning & Complex Tasks
 - Use \`${ThinkTool.name}\` for structured reasoning on complex problems
-- Outline multi-step tasks before execution
+- Outline multi-step tasks before execution`);
+  }
+
+  // Bash Commands
+  const hasBashTool = hasAnyTool(BashTool.name);
+
+  if (hasBashTool) {
+    sections.push(`
 
 ### Bash Commands (\`${BashTool.name}\`)
 - Execute commands with a sandboxed executor that supports pipes (|), conditional chaining (&&, ||, ;), and redirection (> >> < 2> 2>>).
@@ -115,13 +279,25 @@ ${getInstalledTools()}
 
 You can run acai in cli mode and it will receive a prompt and return a result. This version of acai is a separate process, but it has access to the same system prompt and tools as you do.
 
-How to run: \`acai -p <prompt>\`
+How to run: \`acai -p <prompt>\``);
+  }
+
+  // Code Interpreter
+  const hasCodeInterpreterTool = hasAnyTool(CodeInterpreterTool.name);
+
+  if (hasCodeInterpreterTool) {
+    sections.push(`
 
 ### Code Interpreter (\`${CodeInterpreterTool.name}\`)
 - Executes JavaScript code in a separate Node.js process using Node's Permission Model
 - By default, the child process has no permissions except read/write within the current working directory
 - Returns stdout, stderr, and exitCode
-- Use console.log/console.error to produce output
+- Use console.log/console.error to produce output`);
+  }
+
+  // Git Workflow (only if bash tool is active)
+  if (hasBashTool) {
+    sections.push(`
 
 ### Git Workflow
 - Always stage changes before attempting to commit them
@@ -129,13 +305,19 @@ How to run: \`acai -p <prompt>\`
 - Never use \`git add -A\` when preparing for multiple, distinct commits; instead, selectively add files or hunks relevant to each commit
 - Always use \`git checkout -b <branch-name>\` with a branch name that accurately reflects the *type* of changes being made
 - Never stage changes for files that are specified in \`.gitignore\`
-- Always stage changes after running a formatter that modifies files, before attempting to commit
+- Always stage changes after running a formatter that modifies files, before attempting to commit`);
+  }
+
+  // Efficiency Guidelines (always included)
+  sections.push(`
 
 ### Efficiency Guidelines
 - Always use the most efficient workflow to complete tasks
 - Never re-read file content that has already been provided in the current turn or is directly accessible via a tool; instead, reuse the provided content or reference the file path directly
 - Always use direct file paths or established methods to pass content to tools that accept file input, rather than re-creating content in command strings
-- Always run a build after making code changes to verify correctness`;
+- Always run a build after making code changes to verify correctness`);
+
+  return sections.join("");
 }
 
 function escalationProcedures() {
@@ -144,12 +326,12 @@ function escalationProcedures() {
 - If stuck, state the limitation, suggest alternatives, and ask the user for guidance`;
 }
 
-async function getRules() {
+async function getProjectContext() {
   const rules = (await config.readAgentsFile()).trim();
   const learnedRules = (await config.readProjectLearnedRulesFile()).trim();
   let result = "";
   if (rules) {
-    result += `## Project Rules:\n\n${rules}\n`;
+    result += `## Project Context:\n\n### ./AGENTS.md\n\n${rules}\n`;
   }
   if (learnedRules) {
     if (!rules) {
@@ -169,7 +351,7 @@ async function environmentInfo() {
 
   return `## Environment
 
-- **Current working directory**: ${process.cwd()}. [Use this value directly instead of calling the \`${BashTool.name}(pwd)\` tool unless you have a specific reason to verify it].
+- **Current working directory**: ${process.cwd()}
 ${gitSection}
 - **Platform**: ${platform()}
 - **Shell**: ${getShell()}
@@ -177,27 +359,38 @@ ${gitSection}
 - Note: The .tmp directory in the current working directory is deleted each time the agent shuts down.`;
 }
 
-export async function systemPrompt(options?: {
-  supportsToolCalling?: boolean;
+type SystemPromptOptions = {
+  type: "full" | "minimal" | "cli";
   activeTools?: CompleteToolNames[];
   includeRules?: boolean;
-}) {
-  const {
-    supportsToolCalling = true,
-    activeTools = [],
-    includeRules = true,
-  } = options ?? {};
+};
+
+export async function systemPrompt(options?: SystemPromptOptions) {
+  const { type = "full" } = options ?? {};
+  switch (type) {
+    case "full":
+      return fullSystemPrompt(options);
+    case "minimal":
+      return minSystemPrompt(options);
+    case "cli":
+      return cliSystemPrompt(options);
+    default:
+      return fullSystemPrompt(options);
+  }
+}
+async function fullSystemPrompt(options?: SystemPromptOptions) {
+  const { activeTools = [], includeRules = true } = options ?? {};
 
   const prompt = dedent`
 ${intro()}
 
 ${await instructions()}
 
-${supportsToolCalling ? toolUsage(activeTools) : ""}
+${toolUsage(activeTools)}
 
 ${escalationProcedures()}
 
-${includeRules ? await getRules() : ""}
+${includeRules ? await getProjectContext() : ""}
 
 ${await environmentInfo()}
 `;
@@ -205,13 +398,36 @@ ${await environmentInfo()}
   return prompt;
 }
 
-export async function minSystemPrompt() {
+async function minSystemPrompt(options?: SystemPromptOptions) {
+  const { activeTools = [], includeRules = true } = options ?? {};
+
   const prompt = dedent`
 ${intro()}
 
-${await instructions()}
+${await minimalInstructions()}
 
-${await getRules()}
+${activeTools ? "## Available Tools:" : ""}
+${activeTools ? activeTools.map((tool) => `- ${tool}`).join("\n") : ""}
+
+${includeRules ? await getProjectContext() : ""}
+
+${await environmentInfo()}
+`;
+
+  return prompt;
+}
+
+async function cliSystemPrompt(options?: SystemPromptOptions) {
+  const { activeTools } = options ?? {};
+  const prompt = dedent`
+${intro()}
+
+${await minimalInstructions()}
+
+${activeTools ? "Tools:" : ""}
+${activeTools ? activeTools.map((tool) => `- ${tool}`).join("\n") : ""}
+
+${await getProjectContext()}
 
 ${await environmentInfo()}
 `;
