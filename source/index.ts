@@ -437,6 +437,7 @@ async function runReplMode(state: AppState): Promise<void> {
         systemPrompt: await systemPrompt({
           type: projectConfig.systemPromptType,
           activeTools,
+          allowedDirs: workspace.allowedDirs,
         }),
         input: userInput,
         toolDefs: tools.toolDefs,

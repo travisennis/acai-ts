@@ -1,5 +1,6 @@
 import { generateText, type ModelMessage } from "ai";
-import { config } from "../config.ts";
+import { type ConfigManager, config } from "../config.ts";
+import type { WorkspaceContext } from "../index.ts";
 import { logger } from "../logger.ts"; // Import logger
 import { createUserMessage } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
@@ -23,6 +24,7 @@ export const generateRulesCommand = ({
   modelManager,
   tokenTracker,
   config, // This is the config module from CommandOptions
+  workspace,
 }: CommandOptions): ReplCommand => {
   return {
     command: "/generate-rules",
@@ -68,6 +70,8 @@ export const generateRulesCommand = ({
           modelManager,
           messages: messageHistory.get(),
           tokenTracker,
+          config,
+          workspace,
         });
 
         if (!newRules || newRules.length === 0) {
@@ -156,13 +160,17 @@ export const generateRulesCommand = ({
 };
 
 // Modified System Prompt
-const system = async () => {
-  const projectConfig = await config.readProjectConfig();
+const system = async (
+  configManager: ConfigManager,
+  workspace: WorkspaceContext,
+) => {
+  const projectConfig = await configManager.readProjectConfig();
 
   const sys = await systemPrompt({
     type: projectConfig.systemPromptType,
     activeTools: projectConfig.tools.activeTools as CompleteToolNames[],
     includeRules: true,
+    allowedDirs: workspace.allowedDirs,
   });
 
   return `You are an expert analyst reviewing conversations between a coding agent and a software engineer. Your goal is to identify instances where the engineer corrected the agent's approach or understanding in a way that reveals a *generalizable principle* for improving the agent's future behavior across *different* tasks.
@@ -207,12 +215,16 @@ async function analyzeConversation({
   modelManager,
   messages,
   tokenTracker,
+  config: configManager,
+  workspace,
 }: {
   modelManager: ModelManager;
   messages: ModelMessage[];
   tokenTracker: TokenTracker;
+  config: ConfigManager;
+  workspace: WorkspaceContext;
 }): Promise<string[]> {
-  const learnedRules = await config.readCachedLearnedRulesFile();
+  const learnedRules = await configManager.readCachedLearnedRulesFile();
   // Modified User Message within analyzeConversation
   messages.push(
     createUserMessage([
@@ -233,7 +245,7 @@ ${learnedRules}
   const { text, usage } = await generateText({
     model: modelManager.getModel("conversation-analyzer"),
     maxOutputTokens: 8192,
-    system: await system(),
+    system: await system(configManager, workspace),
     messages: messages,
   });
 

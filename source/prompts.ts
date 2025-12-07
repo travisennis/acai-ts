@@ -50,8 +50,7 @@ async function instructions() {
 - **Security-First**: Prioritize secure coding practices in all suggestions.
 - **Completion Focus**: Continue working until the user's query is completely resolved.
 - **Expert Level**: Assume the user is an experienced software engineer.
-- **Be Efficient**: When multiple tool calls can be parallelized, make these tool calls in parallel instead of sequential. Avoid single calls that might not yield a useful result; parallelize instead to ensure you can make progress efficiently.
-
+- **Be Efficient**: When multiple tool calls can be parallelized, make these tool calls in parallel instead of sequential. Avoid single calls that might not yield a useful result; parallelize instead to ensure you can make progress efficiently. Always use the most efficient workflow to complete tasks
 
 ## Response Format
 
@@ -348,12 +347,6 @@ function toolUsage(activeTools: CompleteToolNames[]) {
   return sections.join("");
 }
 
-function escalationProcedures() {
-  return `## Escalation
-
-- If stuck, state the limitation, suggest alternatives, and ask the user for guidance`;
-}
-
 async function getProjectContext() {
   const rules = (await config.readAgentsFile()).trim();
   const learnedRules = (await config.readProjectLearnedRulesFile()).trim();
@@ -370,7 +363,7 @@ async function getProjectContext() {
   return result.trim();
 }
 
-async function environmentInfo() {
+async function environmentInfo(allowedDirs: string[]) {
   const gitDirectory = await inGitDirectory();
   let gitSection = `- **Is directory a git repo**: ${gitDirectory ? "Yes" : "No"}`;
   if (gitDirectory) {
@@ -379,16 +372,23 @@ async function environmentInfo() {
 
   return `## Environment
 
-- **Current working directory**: ${process.cwd()}
+### Allowed directories:
+
+${allowedDirs.map((dir) => `- ${dir}`).join("\n")}
+
+### Information:
+
 ${gitSection}
 - **Platform**: ${platform()}
 - **Shell**: ${getShell()}
 - **Today's date**: ${(new Date()).toISOString()}
+
 - Note: The .tmp directory in the current working directory is deleted each time the agent shuts down.`;
 }
 
 type SystemPromptOptions = {
   type: "full" | "minimal" | "cli";
+  allowedDirs?: string[];
   activeTools?: CompleteToolNames[];
   includeRules?: boolean;
 };
@@ -406,57 +406,73 @@ export async function systemPrompt(options?: SystemPromptOptions) {
       return fullSystemPrompt(options);
   }
 }
+
+const DEFAULT_ALLOWED_DIRS = [process.cwd()];
+
 async function fullSystemPrompt(options?: SystemPromptOptions) {
-  const { activeTools = [], includeRules = true } = options ?? {};
+  const { allowedDirs = DEFAULT_ALLOWED_DIRS, includeRules = true } =
+    options ?? {};
+
+  const instructionsText = await instructions();
+  const projectContextText = includeRules ? await getProjectContext() : "";
+  const environmentInfoText = await environmentInfo(allowedDirs);
 
   const prompt = dedent`
 ${intro()}
 
-${await instructions()}
+${instructionsText}
 
-${toolUsage(activeTools)}
+${projectContextText}
 
-${escalationProcedures()}
-
-${includeRules ? await getProjectContext() : ""}
-
-${await environmentInfo()}
+${environmentInfoText}
 `;
 
   return prompt;
 }
 
 async function minSystemPrompt(options?: SystemPromptOptions) {
-  const { activeTools = [], includeRules = true } = options ?? {};
+  const {
+    allowedDirs = DEFAULT_ALLOWED_DIRS,
+    activeTools = [],
+    includeRules = true,
+  } = options ?? {};
+  const minimalInstructionsText = await minimalInstructions();
+  const projectContextText = includeRules ? await getProjectContext() : "";
+  const environmentInfoText = await environmentInfo(allowedDirs);
 
   const prompt = dedent`
 ${intro()}
 
-${await minimalInstructions()}
+${minimalInstructionsText}
 
 ${toolUsage(activeTools)}
 
-${includeRules ? await getProjectContext() : ""}
+${projectContextText}
 
-${await environmentInfo()}
+${environmentInfoText}
 `;
 
   return prompt;
 }
 
 async function cliSystemPrompt(options?: SystemPromptOptions) {
-  const { activeTools } = options ?? {};
+  const { allowedDirs = DEFAULT_ALLOWED_DIRS, activeTools = [] } =
+    options ?? {};
+  const minimalInstructionsText = await minimalInstructions();
+  const projectContextText = await getProjectContext();
+  const environmentInfoText = await environmentInfo(allowedDirs);
+
   const prompt = dedent`
 ${intro()}
 
-${await minimalInstructions()}
+${minimalInstructionsText}
 
-${activeTools ? "Tools:" : ""}
-${activeTools ? activeTools.map((tool) => `- ${tool}`).join("\n") : ""}
+${activeTools.length > 0 ? "Tools:" : ""}
+${activeTools.length > 0 ? activeTools.map((tool) => `- ${tool}`).join("\n") : ""}
 
-${await getProjectContext()}
+${projectContextText}
 
-${await environmentInfo()}
+${environmentInfoText}
 `;
 
   return prompt;

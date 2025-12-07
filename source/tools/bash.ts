@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
@@ -13,6 +14,13 @@ import type { ToolResult } from "./types.ts";
 export const BashTool = {
   name: "bash" as const,
 };
+
+const installedTools = getInstalledTools();
+
+const toolDescription = `Execute commands in a shell. Commands can execute only within the allowed directories. Always use absolute paths.
+
+Tools available:
+${installedTools}`;
 
 // Command execution timeout in milliseconds
 const DEFAULT_TIMEOUT = 1.5 * 60 * 1000; // 1.5 minutes
@@ -60,8 +68,7 @@ export const createBashTool = async ({
   const allowedDirectories = allowedDirs ?? [baseDir];
   return {
     toolDef: {
-      description:
-        "Execute commands in a shell. Commands execute only within the project directory. Always use absolute paths.",
+      description: toolDescription,
       inputSchema,
     },
     async *execute(
@@ -209,3 +216,68 @@ export const createBashTool = async ({
     },
   };
 };
+
+function getInstalledTools() {
+  // Check for required bash tools
+  const tools = [
+    {
+      name: "git",
+      command: "git --version",
+      description:
+        "Version control system - used for cloning repositories, checking out branches, committing changes, viewing history, and managing code versions",
+    },
+    {
+      name: "gh",
+      command: "gh --version",
+      description:
+        "GitHub CLI - used for creating pull requests, managing issues, interacting with GitHub API, and automating GitHub workflows",
+    },
+    {
+      name: "rg",
+      command: "rg --version",
+      description:
+        "ripgrep - fast text search tool for searching code patterns, file contents, and regular expressions across the codebase (use this instead of grep)",
+    },
+    {
+      name: "fd",
+      command: "fd --version",
+      description:
+        "Fast file finder - alternative to find command, used for finding files by name, pattern, or type with intuitive syntax (use this instead of find)",
+    },
+    {
+      name: "ast-grep",
+      command: "ast-grep --version",
+      description:
+        "AST-based code search - used for structural code search, refactoring, finding patterns in abstract syntax trees, and code transformations",
+    },
+    {
+      name: "jq",
+      command: "jq --version",
+      description:
+        "JSON processor - used for parsing, filtering, and manipulating JSON output from APIs, commands, and configuration files",
+    },
+    {
+      name: "yq",
+      command: "yq --version",
+      description:
+        "YAML processor - used for parsing and manipulating YAML files (configs, CI/CD pipelines, Kubernetes manifests) with jq-like syntax",
+    },
+  ];
+
+  const toolStatus = tools
+    .map((tool) => {
+      let status = false;
+      try {
+        execSync(tool.command, { stdio: "ignore", timeout: 5000 });
+        status = true;
+      } catch (_error) {
+        // Ignore error, tool is not installed
+      }
+      return { name: tool.name, description: tool.description, status };
+    })
+    .filter((tool) => tool.status)
+    .map((tool) => `- **${tool.name}**: ${tool.description}`)
+    .join("\n");
+
+  return toolStatus;
+}

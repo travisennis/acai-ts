@@ -72,6 +72,7 @@ export function contextCommand({
       const sys = await systemPrompt({
         type: projectConfig.systemPromptType,
         activeTools: projectConfig.tools.activeTools as CompleteToolNames[],
+        allowedDirs: workspace.allowedDirs,
         includeRules: true,
       });
       const systemPromptTokens = tokenCounter.count(sys);
