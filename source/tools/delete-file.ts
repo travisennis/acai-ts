@@ -33,7 +33,8 @@ export const createDeleteFileTool = async ({
 
   return {
     toolDef: {
-      description: "Delete a file permanently.",
+      description:
+        "Delete a file permanently. Only deletes files within allowed directories.",
       inputSchema,
     },
     async *execute(

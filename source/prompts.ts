@@ -381,7 +381,7 @@ ${allowedDirs.map((dir) => `- ${dir}`).join("\n")}
 ${gitSection}
 - **Platform**: ${platform()}
 - **Shell**: ${getShell()}
-- **Today's date**: ${(new Date()).toISOString()}
+- **Today's date**: ${new Date().toISOString().split("T")[0]}
 
 - Note: The .tmp directory in the current working directory is deleted each time the agent shuts down.`;
 }

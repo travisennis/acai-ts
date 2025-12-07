@@ -32,7 +32,7 @@ export const createDirectoryTreeTool = async ({
   return {
     toolDef: {
       description:
-        "Get a directory tree structure for a given path. This tool will ignore any directories or files listed in a .gitignore file. Use this tool when you need to see a complete directory tree for a project. This can be used to get an understanding of how a project is organized and what files are available before using other file system tools.",
+        "Get a directory tree structure for a given path. This tool will ignore any directories or files listed in a .gitignore file. Use this tool when you need to see a complete directory tree for a path in the allowed directories. This can be used to get an understanding of how a project is organized and what files are available before using other file system tools.",
       inputSchema,
     },
     async *execute(
