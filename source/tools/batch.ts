@@ -142,6 +142,14 @@ export const createBatchTool = async ({
               status: "success",
               result: toolOutput,
             });
+
+            // Yield update for successful command
+            yield {
+              name: BatchTool.name,
+              event: "tool-update",
+              id: toolCallId,
+              data: `[${callNumber}/${totalCalls}] ${style.green("✓")} ${style.cyan(toolName)} completed`,
+            };
           } catch (error) {
             const errorMessage =
               error instanceof Error ? error.message : String(error);
@@ -155,6 +163,14 @@ export const createBatchTool = async ({
               status: "error",
               error: errorMessage,
             });
+
+            // Yield update for failed command
+            yield {
+              name: BatchTool.name,
+              event: "tool-update",
+              id: toolCallId,
+              data: `[${callNumber}/${totalCalls}] ${style.red("✗")} ${style.cyan(toolName)} failed: ${errorMessage.slice(0, 100)}`,
+            };
           }
         }
 
@@ -168,11 +184,26 @@ export const createBatchTool = async ({
           "Consider reducing the number of calls or using more specific tool calls",
         );
 
+        // Create a more informative completion message
+        const successful = results.filter((r) => r.status === "success").length;
+        const failed = results.filter((r) => r.status === "error").length;
+        let completionMessage = `Batch execution completed: ${successful}/${totalCalls} successful`;
+
+        if (failed > 0) {
+          const failedTools = results
+            .filter((r) => r.status === "error")
+            .map((r) => `${r.tool}${r.id ? ` (${r.id})` : ""}`)
+            .join(", ");
+          completionMessage += `, ${failed} failed: ${failedTools}`;
+        }
+
+        completionMessage += ` (${result.tokenCount} tokens)`;
+
         yield {
           name: BatchTool.name,
           event: "tool-completion",
           id: toolCallId,
-          data: `Batch execution completed: ${results.filter((r) => r.status === "success").length}/${totalCalls} successful (${result.tokenCount} tokens)`,
+          data: completionMessage,
         };
 
         yield result.content;

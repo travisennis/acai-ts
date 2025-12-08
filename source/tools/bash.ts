@@ -138,6 +138,9 @@ export const createBashTool = async ({
             processedCommand = processedCommand.slice(0, -1).trim();
           }
 
+          // Fix rg commands that don't have an explicit path
+          processedCommand = fixRgCommand(processedCommand);
+
           const backgroundProcess = execEnv.executeCommandInBackground(
             processedCommand,
             {
@@ -173,6 +176,10 @@ export const createBashTool = async ({
             );
             processedCommand = processedCommand.slice(0, -1).trim();
           }
+
+          // Fix rg commands that don't have an explicit path
+          // rg hangs when stdin is a socket and no path is given
+          processedCommand = fixRgCommand(processedCommand);
 
           const { output, exitCode } = await execEnv.executeCommand(
             processedCommand,
@@ -280,4 +287,67 @@ function getInstalledTools() {
     .join("\n");
 
   return toolStatus;
+}
+
+/**
+ * Fix rg commands that don't have an explicit path
+ * rg hangs when stdin is a socket and no path is given
+ * See: https://github.com/BurntSushi/ripgrep/discussions/2047
+ */
+function fixRgCommand(command: string): string {
+  const trimmed = command.trim();
+
+  // Check if command starts with rg
+  if (!trimmed.startsWith("rg ") && !trimmed.startsWith("rg\\")) {
+    return command;
+  }
+
+  // Check if command already has stdin redirection or piping
+  // Don't modify commands like: cat file.txt | rg pattern
+  // or rg pattern < input.txt
+  if (trimmed.includes("|") || trimmed.includes("<") || trimmed.includes(">")) {
+    return command;
+  }
+
+  // Simple heuristic: if last token starts with -, add .
+  // This handles cases like: rg -l pattern --type ts --type js
+  const tokens = trimmed.split(/\\s+/);
+  const lastToken = tokens[tokens.length - 1];
+
+  if (lastToken?.startsWith("-")) {
+    // Command ends with an option, need to add path
+    logger.debug(`Adding '.' to rg command: ${command}`);
+    return `${command} .`;
+  }
+
+  // Last token doesn't start with -, could be a path or pattern
+  if (lastToken) {
+    // If it's ., ./, /, or contains /, assume it's a path
+    if (
+      lastToken === "." ||
+      lastToken.startsWith("./") ||
+      lastToken.startsWith("/") ||
+      lastToken.includes("/") ||
+      lastToken === ".."
+    ) {
+      // Already has a path
+      return command;
+    }
+    // Check if it's a simple pattern (no special chars that would make it a path)
+    // If it's just alphanumeric with maybe some regex chars, it's probably a pattern
+    // Common pattern chars: ., *, +, ?, [, ], ^, $, (, ), |, \\
+    // But we want to be conservative - if it looks like a filename without path, add .
+    if (!lastToken.includes("/") && !lastToken.includes("*")) {
+      // Doesn't look like a path with glob or directory, likely a pattern
+      // Need to add path
+      logger.debug(`Adding '.' to rg command: ${command}`);
+      return `${command} .`;
+    }
+    // Complex case with * or other chars, could be a glob pattern
+    // Default to adding . to be safe
+  }
+
+  // No last token or complex case, add . to be safe
+  logger.debug(`Adding '.' to rg command: ${command}`);
+  return `${command} .`;
 }
