@@ -6,6 +6,7 @@
   "tools": {
     "activeTools": [
       "bash",
+      "batch",
       "think",
       "readFile",
       "editFile",
