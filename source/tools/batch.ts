@@ -103,7 +103,7 @@ export const createBatchTool = async ({
             name: BatchTool.name,
             event: "tool-update",
             id: toolCallId,
-            data: `[${callNumber}/${totalCalls}] Executing ${style.cyan(toolName)}${callId ? ` (${callId})` : ""}`,
+            data: `[${callNumber}/${totalCalls}] ${style.cyan(toolName)}${callId ? ` (${callId})` : ""} ${style.dim(JSON.stringify(args).slice(0, 50))}`,
           };
 
           try {
@@ -172,7 +172,7 @@ export const createBatchTool = async ({
           name: BatchTool.name,
           event: "tool-completion",
           id: toolCallId,
-          data: `Batch execution completed: ${results.filter((r) => r.status === "success").length}/${totalCalls} successful`,
+          data: `Batch execution completed: ${results.filter((r) => r.status === "success").length}/${totalCalls} successful (${result.tokenCount} tokens)`,
         };
 
         yield result.content;
