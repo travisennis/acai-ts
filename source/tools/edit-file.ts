@@ -112,7 +112,7 @@ export const createEditFileTool = async ({
           name: EditFileTool.name,
           id: toolCallId,
           event: "tool-completion",
-          data: `Applied ${edits.length} edits`,
+          data: `Applied ${edits.length} edits to ${style.cyan(path)}`,
         };
 
         // Clear project status cache since file operations change git status
@@ -216,7 +216,7 @@ export async function applyFileEdits(
   while (diff.includes("`".repeat(numBackticks))) {
     numBackticks++;
   }
-  const formattedDiff = `${"`".repeat(numBackticks)}diff\n${diff}${"`".repeat(numBackticks)}\n\n`;
+  const formattedDiff = `${"`".repeat(numBackticks)} diff\n${diff}\n${"`".repeat(numBackticks)}`;
 
   if (!dryRun) {
     if (abortSignal?.aborted) {
