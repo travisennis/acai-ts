@@ -64,11 +64,6 @@ export class NewRepl {
   // thinking block tracking
   private thinkingBlockComponent: ThinkingBlockComponent | null = null;
 
-  // Status polling timer
-  private statusPollingInterval: NodeJS.Timeout | null = null;
-  private isPollingActive = false;
-  private cachedStatusLine: string | undefined;
-
   constructor(options: ReplOptions) {
     this.options = options;
     this.tui = new TUI(new ProcessTerminal());
@@ -124,9 +119,6 @@ export class NewRepl {
     this.tui.addChild(this.editorContainer); // Use container that can hold editor or selector
     this.tui.addChild(this.promptStatus);
     this.tui.setFocus(this.editor);
-
-    // Start status polling
-    this.startStatusPolling();
 
     // Set up custom key handlers on the editor
     this.editor.onEscape = () => {
@@ -447,60 +439,7 @@ export class NewRepl {
     }
   }
 
-  private async updateStatus(): Promise<void> {
-    if (!this.isInitialized) return;
-
-    const statusLine = await getProjectStatusLine();
-    if (statusLine !== this.cachedStatusLine) {
-      try {
-        const modelConfig = this.options.modelManager.getModelMetadata("repl");
-        this.promptStatus.setState({
-          projectStatus: await getProjectStatusLine(),
-          currentContextWindow: this.options.messageHistory.getContextWindow(),
-          contextWindow: modelConfig.contextWindow,
-        });
-        this.cachedStatusLine = statusLine;
-        this.tui.requestRender();
-      } catch (error) {
-        // Don't crash on status update errors
-        logger.warn(error, "Error updating status");
-      }
-    }
-  }
-
-  private startStatusPolling(): void {
-    this.isPollingActive = true;
-
-    const poll = async () => {
-      if (!this.isInitialized || !this.isPollingActive) return;
-
-      await this.updateStatus();
-
-      // Schedule next poll after 10 seconds
-      if (this.isInitialized && this.isPollingActive) {
-        // Clear any existing timeout before setting new one
-        if (this.statusPollingInterval)
-          clearTimeout(this.statusPollingInterval);
-        this.statusPollingInterval = setTimeout(poll, 10000);
-      }
-    };
-
-    // Clear any existing timeout before starting
-    if (this.statusPollingInterval) clearTimeout(this.statusPollingInterval);
-    // Start polling with 10 second interval
-    this.statusPollingInterval = setTimeout(poll, 10000);
-  }
-
-  private stopStatusPolling(): void {
-    this.isPollingActive = false;
-    if (this.statusPollingInterval) {
-      clearTimeout(this.statusPollingInterval);
-      this.statusPollingInterval = null;
-    }
-  }
-
   stop(): void {
-    this.stopStatusPolling();
     if (this.loadingAnimation) {
       this.loadingAnimation.stop();
       this.loadingAnimation = null;
