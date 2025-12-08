@@ -14,13 +14,11 @@ Acai-TS is an AI assistant CLI tool built with TypeScript. The project uses a mo
 - **Run Single Test:** `node --no-warnings --test test/path/to/test.ts`
 - **Dev Mode:** `npm run dev`
 - **Find Unused Code/Deps:** `npm run knip`
+- **Full Check:** npm run typecheck && npm run lint:fix && npm run format
 
 ## Running the App
 - **CLI:** `acai -p <prompt>`
 - **Application logs:** `~/.acai/logs/current.log`
-
-## Custom Tools
-- **run-all-checks:** Use this tool to typecheck, lint, and format code after changes
 
 ## Code Style Guidelines
 - **Language:** Strict TypeScript with ESNext target
@@ -48,4 +46,3 @@ Acai-TS is an AI assistant CLI tool built with TypeScript. The project uses a mo
 ## Important Notes
 - Never add comments explaining edits - only comments that explain how code works
 - Always run checks before committing
-- Use custom tools for automated quality checks
