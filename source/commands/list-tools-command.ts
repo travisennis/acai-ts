@@ -1,7 +1,12 @@
 import style from "../terminal/style.ts";
 import { initAgents, initTools } from "../tools/index.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Spacer, Text } from "../tui/index.ts";
+import {
+  Modal,
+  Container as ModalContainer,
+  ModalText,
+  TableComponent,
+} from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export function listToolsCommand(options: CommandOptions): ReplCommand {
@@ -13,11 +18,7 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
     getSubCommands: async () => [],
     async handle(
       _args: string[],
-      {
-        tui,
-        container,
-        editor,
-      }: { tui: TUI; container: Container; editor: Editor },
+      { tui, editor }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
       try {
         const tools = await initTools({
@@ -37,8 +38,6 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
           ...agentTools.toolDefs,
         }).sort();
 
-        container.addChild(new Text("Available tools:", 0, 1));
-
         // Separate static and dynamic tools
         const staticTools = [];
         const dynamicTools = [];
@@ -51,45 +50,69 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
           }
         }
 
-        // Display static tools
-        if (staticTools.length > 0) {
-          container.addChild(new Text("Static tools:", 1, 0));
+        // Build modal content
+        const modalContent = new ModalContainer();
+
+        if (toolNames.length === 0) {
+          modalContent.addChild(new ModalText("No tools available.", 0, 1));
+        } else {
+          // Create table data
+          const tableData = [];
+
+          // Add static tools
           for (const toolName of staticTools) {
-            container.addChild(new Text(`${toolName}`, 2, 0));
+            tableData.push([toolName, "Static"]);
           }
-        }
 
-        // Display dynamic tools
-        if (dynamicTools.length > 0) {
-          container.addChild(new Spacer(1));
-          container.addChild(new Text("Dynamic tools:", 1, 0));
+          // Add dynamic tools
           for (const toolName of dynamicTools) {
-            container.addChild(new Text(`${toolName}`, 2, 0));
+            tableData.push([toolName, "Dynamic"]);
           }
+
+          modalContent.addChild(
+            new TableComponent(tableData, {
+              headers: ["Tool Name", "Type"],
+              colWidths: [70, 30],
+            }),
+          );
+
+          // Add summary
+          modalContent.addChild(new ModalText("", 0, 1)); // Spacer
+          modalContent.addChild(
+            new ModalText(
+              `Total: ${staticTools.length} static, ${dynamicTools.length} dynamic`,
+              0,
+              1,
+            ),
+          );
         }
 
-        // Display summary
-        container.addChild(new Spacer(1));
-        container.addChild(
-          new Text(
-            `Total: ${staticTools.length} static, ${dynamicTools.length} dynamic`,
-            0,
-          ),
-        );
+        // Create and show modal
+        const modal = new Modal("Available Tools", modalContent, true, () => {
+          // Modal closed callback
+          editor.setText("");
+          tui.requestRender();
+        });
 
-        tui.requestRender();
-        editor.setText("");
+        tui.showModal(modal);
         return "continue";
       } catch (error) {
-        container.addChild(
-          new Text(
+        // Show error in modal
+        const errorContent = new ModalContainer();
+        errorContent.addChild(
+          new ModalText(
             style.red(`Error listing tools: ${(error as Error).message}`),
-            1,
             0,
+            1,
           ),
         );
-        tui.requestRender();
-        editor.setText("");
+
+        const errorModal = new Modal("Error", errorContent, true, () => {
+          editor.setText("");
+          tui.requestRender();
+        });
+
+        tui.showModal(errorModal);
         return "continue";
       }
     },
