@@ -1,3 +1,4 @@
+import { generateObject } from "ai";
 import { z } from "zod";
 import { logger } from "../logger.ts";
 import type { ModelManager } from "../models/manager.ts";
@@ -80,9 +81,9 @@ function autoGenerateInstruction(oldString: string, newString: string): string {
 }
 
 /**
- * Generates JSON with timeout and proper error handling
+ * Generates structured JSON with timeout and proper error handling
  */
-async function generateJsonWithTimeout<T>(
+async function generateStructuredEditFix(
   modelManager: ModelManager | undefined,
   params: {
     system: string;
@@ -90,7 +91,7 @@ async function generateJsonWithTimeout<T>(
     abortSignal?: AbortSignal;
   },
   timeoutMs: number,
-): Promise<T | null> {
+): Promise<SearchReplaceEdit | null> {
   try {
     const controller = new AbortController();
     const timeoutSignal = AbortSignal.timeout(timeoutMs);
@@ -106,22 +107,16 @@ async function generateJsonWithTimeout<T>(
       throw new Error("Edit-fix model not available");
     }
 
-    const { text } = await modelManager.getText(
-      "edit-fix",
-      params.system,
-      params.prompt,
-      combinedSignal,
-    );
+    const { object } = await generateObject({
+      model: modelManager.getModel("edit-fix"),
+      schema: SearchReplaceEditSchema,
+      system: params.system,
+      prompt: params.prompt,
+      abortSignal: combinedSignal,
+    });
 
-    // Parse the JSON response
-    try {
-      const parsed = JSON.parse(text) as T;
-      return parsed;
-    } catch (error) {
-      logger.error(error, "Failed to parse LLM response as JSON.");
-      logger.info(`Response preview: ${text.slice(0, 500)}`);
-      return null;
-    }
+    logger.info("LLM edit fix successful.");
+    return object;
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
       logger.warn(`LLM edit fix operation timed out. Timeout: ${timeoutMs}ms`);
@@ -144,7 +139,6 @@ async function generateJsonWithTimeout<T>(
  * @param error The error that occurred during the initial edit
  * @param currentContent The current content of the file
  * @param modelManager The model manager for accessing LLM models
- * @param tokenTracker The token tracker for usage monitoring
  * @param abortSignal An abort signal to cancel the operation
  * @returns A corrected search and replace pair, or null if fixing failed
  */
@@ -172,7 +166,7 @@ export async function fixLlmEditWithInstruction(
     .replace("{error}", error)
     .replace("{current_content}", currentContent);
 
-  const result = await generateJsonWithTimeout<SearchReplaceEdit>(
+  const result = await generateStructuredEditFix(
     modelManager,
     {
       system: EDIT_SYS_PROMPT,
@@ -182,19 +176,5 @@ export async function fixLlmEditWithInstruction(
     GENERATE_JSON_TIMEOUT_MS,
   );
 
-  // Validate the result with Zod schema
-  if (result) {
-    try {
-      const validatedResult = SearchReplaceEditSchema.parse(result);
-      logger.info("LLM edit fix successful.");
-      return validatedResult;
-    } catch (validationError) {
-      logger.error(
-        `LLM edit fix response validation failed. Error: ${validationError instanceof Error ? validationError.message : "Unknown validation error"}`,
-      );
-      console.info("Response:", result);
-    }
-  }
-
-  return null;
+  return result;
 }
