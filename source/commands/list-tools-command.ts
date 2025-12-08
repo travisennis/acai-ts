@@ -21,6 +21,10 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
       { tui, editor }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
       try {
+        // Get active tools from config
+        const projectConfig = await options.config.readProjectConfig();
+        const activeTools = projectConfig.tools.activeTools;
+
         const tools = await initTools({
           tokenCounter: options.tokenCounter,
           workspace: options.workspace,
@@ -61,26 +65,39 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
 
           // Add static tools
           for (const toolName of staticTools) {
-            tableData.push([toolName, "Static"]);
+            const isActive = activeTools.includes(toolName);
+            tableData.push([
+              toolName,
+              "Static",
+              isActive ? "Active" : "Inactive",
+            ]);
           }
 
           // Add dynamic tools
           for (const toolName of dynamicTools) {
-            tableData.push([toolName, "Dynamic"]);
+            const isActive = activeTools.includes(toolName);
+            tableData.push([
+              toolName,
+              "Dynamic",
+              isActive ? "Active" : "Inactive",
+            ]);
           }
 
           modalContent.addChild(
             new TableComponent(tableData, {
-              headers: ["Tool Name", "Type"],
-              colWidths: [70, 30],
+              headers: ["Tool Name", "Type", "Status"],
+              colWidths: [60, 20, 20],
             }),
           );
 
           // Add summary
           modalContent.addChild(new ModalText("", 0, 1)); // Spacer
+          const activeCount = toolNames.filter((tool) =>
+            activeTools.includes(tool),
+          ).length;
           modalContent.addChild(
             new ModalText(
-              `Total: ${staticTools.length} static, ${dynamicTools.length} dynamic`,
+              `Total: ${staticTools.length} static, ${dynamicTools.length} dynamic, ${activeCount} active`,
               0,
               1,
             ),
