@@ -7,7 +7,7 @@
  * Demonstrates various TUI components and rendering capabilities.
  */
 
-import { Editor, type TextEditorConfig } from "./components/editor.ts";
+import { Editor } from "./components/editor.ts";
 import { Input } from "./components/input.ts";
 import { Loader } from "./components/loader.ts";
 import { Markdown } from "./components/markdown.ts";
@@ -282,12 +282,10 @@ The end of this complex example.
   container.addChild(new Text("Editor Component", 1, 1));
   container.addChild(new Spacer(1));
 
-  const editorConfig: TextEditorConfig = {
-    placeholder: "Type your text here...",
-    initialValue: "This is some initial text in the editor.",
-  };
-
-  const editor = new Editor(editorConfig);
+  const editor = new Editor({
+    borderColor: (str: string) => str, // Simple identity function for test
+  });
+  editor.setText("This is some initial text in the editor.");
   container.addChild(editor);
 
   // Add all components to TUI

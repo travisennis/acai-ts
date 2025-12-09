@@ -68,7 +68,9 @@ export class NewRepl {
     this.options = options;
     this.tui = new TUI(new ProcessTerminal());
     this.welcome = new Welcome();
-    this.editor = new Editor();
+    this.editor = new Editor({
+      borderColor: style.gray,
+    });
     this.chatContainer = new Container();
     this.statusContainer = new Container();
     this.editorContainer = new Container(); // Container to hold editor or selector
@@ -188,6 +190,7 @@ export class NewRepl {
           }
         } else {
           promptHistory.push(promptManager.get());
+          this.editor.addToHistory(promptManager.get());
         }
         // flag to see if the user prompt has added context
         const hasAddedContext = promptManager.hasContext();

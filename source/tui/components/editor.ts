@@ -5,7 +5,11 @@ import type {
   CombinedAutocompleteProvider,
 } from "../autocomplete.ts";
 import type { Component } from "../tui.ts";
+import { visibleWidth } from "../utils.ts";
 import { SelectList } from "./select-list.ts";
+
+// Grapheme segmenter for proper Unicode iteration (handles emojis, etc.)
+const segmenter = new Intl.Segmenter();
 
 interface EditorState {
   lines: string[];
@@ -19,7 +23,9 @@ interface LayoutLine {
   cursorPos?: number;
 }
 
-export type TextEditorConfig = Record<PropertyKey, unknown>;
+export interface EditorTheme {
+  borderColor: (str: string) => string;
+}
 
 /**
  * Text editor component with support for multi-line input and autocomplete.
@@ -34,7 +40,11 @@ export type TextEditorConfig = Record<PropertyKey, unknown>;
  * - Backspace/Delete: Delete characters
  * - Ctrl+A: Move to start of line
  * - Ctrl+E: Move to end of line
- * - Ctrl+K: Delete current line
+ * - Ctrl+K: Delete to end of line
+ * - Ctrl+U: Delete to start of line
+ * - Ctrl+W / Option+Backspace: Delete word backwards
+ * - Ctrl+Left/Right / Option+Left/Right: Word navigation
+ * - Up/Down: History navigation when editor is empty
  */
 export class Editor implements Component {
   private state: EditorState = {
@@ -43,7 +53,13 @@ export class Editor implements Component {
     cursorCol: 0,
   };
 
-  private config: TextEditorConfig = {};
+  private theme: EditorTheme;
+
+  // Store last render width for cursor navigation
+  private lastWidth = 80;
+
+  // Border color (can be changed dynamically)
+  public borderColor: (str: string) => string;
 
   // Autocomplete support
   private autocompleteProvider?: AutocompleteProvider;
@@ -60,6 +76,10 @@ export class Editor implements Component {
   private pasteBuffer = "";
   private isInPaste = false;
 
+  // Prompt history for up/down navigation
+  private history: string[] = [];
+  private historyIndex = -1; // -1 = not browsing, 0 = most recent, 1 = older, etc.
+
   public onSubmit?: (text: string) => void;
   public onChange?: (text: string) => void;
   public disableSubmit = false;
@@ -69,22 +89,87 @@ export class Editor implements Component {
   public onCtrlC?: () => void;
   public onRenderRequested?: () => void;
 
-  constructor(config?: TextEditorConfig) {
-    if (config) {
-      this.config = { ...this.config, ...config };
-    }
+  constructor(theme?: EditorTheme) {
+    // Default theme if none provided (backward compatibility)
+    this.theme = theme || {
+      borderColor: style.gray,
+    };
+    this.borderColor = this.theme.borderColor;
   }
 
-  configure(config: Partial<TextEditorConfig>): void {
-    this.config = { ...this.config, ...config };
+  /**
+   * Add a prompt to history for up/down arrow navigation.
+   * Called after successful submission.
+   */
+  addToHistory(text: string): void {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    // Don't add consecutive duplicates
+    if (this.history.length > 0 && this.history[0] === trimmed) return;
+    this.history.unshift(trimmed);
+    // Limit history size
+    if (this.history.length > 100) {
+      this.history.pop();
+    }
   }
 
   setAutocompleteProvider(provider: AutocompleteProvider): void {
     this.autocompleteProvider = provider;
   }
 
+  private isEditorEmpty(): boolean {
+    return this.state.lines.length === 1 && this.state.lines[0] === "";
+  }
+
+  private isOnFirstVisualLine(): boolean {
+    const visualLines = this.buildVisualLineMap(this.lastWidth);
+    const currentVisualLine = this.findCurrentVisualLine(visualLines);
+    return currentVisualLine === 0;
+  }
+
+  private isOnLastVisualLine(): boolean {
+    const visualLines = this.buildVisualLineMap(this.lastWidth);
+    const currentVisualLine = this.findCurrentVisualLine(visualLines);
+    return currentVisualLine === visualLines.length - 1;
+  }
+
+  private navigateHistory(direction: 1 | -1): void {
+    if (this.history.length === 0) return;
+
+    const newIndex = this.historyIndex - direction; // Up(-1) increases index, Down(1) decreases
+    if (newIndex < -1 || newIndex >= this.history.length) return;
+
+    this.historyIndex = newIndex;
+
+    if (this.historyIndex === -1) {
+      // Returned to "current" state - clear editor
+      this.setTextInternal("");
+    } else {
+      this.setTextInternal(this.history[this.historyIndex] || "");
+    }
+  }
+
+  /** Internal setText that doesn't reset history state - used by navigateHistory */
+  private setTextInternal(text: string): void {
+    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+    this.state.lines = lines.length === 0 ? [""] : lines;
+    this.state.cursorLine = this.state.lines.length - 1;
+    this.state.cursorCol = this.state.lines[this.state.cursorLine]?.length || 0;
+
+    if (this.onChange) {
+      this.onChange(this.getText());
+    }
+  }
+
+  invalidate(): void {
+    // No cached state to invalidate currently
+  }
+
   render(width: number): string[] {
-    const horizontal = style.gray("─");
+    // Store width for cursor navigation
+    this.lastWidth = width;
+
+    const horizontal = this.borderColor("─");
 
     // Layout the text - use full width
     const layoutLines = this.layoutText(width);
@@ -97,7 +182,7 @@ export class Editor implements Component {
     // Render each layout line
     for (const layoutLine of layoutLines) {
       let displayText = layoutLine.text;
-      let visibleLength = layoutLine.text.length;
+      let lineVisibleWidth = visibleWidth(layoutLine.text);
 
       // Add cursor if this line has it
       if (layoutLine.hasCursor && layoutLine.cursorPos !== undefined) {
@@ -105,34 +190,44 @@ export class Editor implements Component {
         const after = displayText.slice(layoutLine.cursorPos);
 
         if (after.length > 0) {
-          // Cursor is on a character - replace it with highlighted version
-          const cursor = `\x1b[7m${after[0]}\x1b[0m`;
-          const restAfter = after.slice(1);
+          // Cursor is on a character (grapheme) - replace it with highlighted version
+          // Get the first grapheme from 'after'
+          const afterGraphemes = [...segmenter.segment(after)];
+          const firstGrapheme = afterGraphemes[0]?.segment || "";
+          const restAfter = after.slice(firstGrapheme.length);
+          const cursor = `\x1b[7m${firstGrapheme}\x1b[0m`;
           displayText = before + cursor + restAfter;
-          // visibleLength stays the same - we're replacing, not adding
+          // lineVisibleWidth stays the same - we're replacing, not adding
         } else {
           // Cursor is at the end - check if we have room for the space
-          if (layoutLine.text.length < width) {
+          if (lineVisibleWidth < width) {
             // We have room - add highlighted space
             const cursor = "\x1b[7m \x1b[0m";
             displayText = before + cursor;
-            // visibleLength increases by 1 - we're adding a space
-            visibleLength = layoutLine.text.length + 1;
+            // lineVisibleWidth increases by 1 - we're adding a space
+            lineVisibleWidth = lineVisibleWidth + 1;
           } else {
-            // Line is at full width - use reverse video on last character if possible
+            // Line is at full width - use reverse video on last grapheme if possible
             // or just show cursor at the end without adding space
-            if (before.length > 0) {
-              const lastChar = before[before.length - 1];
-              const cursor = `\x1b[7m${lastChar}\x1b[0m`;
-              displayText = before.slice(0, -1) + cursor;
+            const beforeGraphemes = [...segmenter.segment(before)];
+            if (beforeGraphemes.length > 0) {
+              const lastGrapheme =
+                beforeGraphemes[beforeGraphemes.length - 1]?.segment || "";
+              const cursor = `\x1b[7m${lastGrapheme}\x1b[0m`;
+              // Rebuild 'before' without the last grapheme
+              const beforeWithoutLast = beforeGraphemes
+                .slice(0, -1)
+                .map((g) => g.segment)
+                .join("");
+              displayText = beforeWithoutLast + cursor;
             }
-            // visibleLength stays the same
+            // lineVisibleWidth stays the same
           }
         }
       }
 
-      // Calculate padding based on actual visible length
-      const padding = " ".repeat(Math.max(0, width - visibleLength));
+      // Calculate padding based on actual visible width
+      const padding = " ".repeat(Math.max(0, width - lineVisibleWidth));
 
       // Render the line (no side borders, just horizontal lines above and below)
       result.push(displayText + padding);
@@ -278,9 +373,21 @@ export class Editor implements Component {
     }
 
     // Continue with rest of input handling
-    // Ctrl+K - Delete current line
+    // Ctrl+K - Delete to end of line
     if (data.charCodeAt(0) === 11) {
-      this.deleteCurrentLine();
+      this.deleteToEndOfLine();
+    }
+    // Ctrl+U - Delete to start of line
+    else if (data.charCodeAt(0) === 21) {
+      this.deleteToStartOfLine();
+    }
+    // Ctrl+W - Delete word backwards
+    else if (data.charCodeAt(0) === 23) {
+      this.deleteWordBackwards();
+    }
+    // Option/Alt+Backspace (e.g. Ghostty sends ESC + DEL)
+    else if (data === "\x1b\x7f") {
+      this.deleteWordBackwards();
     }
     // Ctrl+A - Move to start of line
     else if (data.charCodeAt(0) === 1) {
@@ -322,6 +429,7 @@ export class Editor implements Component {
       };
       this.pastes.clear();
       this.pasteCounter = 0;
+      this.historyIndex = -1; // Exit history browsing mode
 
       // Notify that editor is now empty
       if (this.onChange) {
@@ -349,13 +457,39 @@ export class Editor implements Component {
       // Delete key
       this.handleForwardDelete();
     }
+    // Word navigation (Option/Alt + Arrow or Ctrl + Arrow)
+    // Option+Left: \x1b[1;3D or \x1bb
+    // Option+Right: \x1b[1;3C or \x1bf
+    // Ctrl+Left: \x1b[1;5D
+    // Ctrl+Right: \x1b[1;5C
+    else if (data === "\x1b[1;3D" || data === "\x1bb" || data === "\x1b[1;5D") {
+      // Word left
+      this.moveWordBackwards();
+    } else if (
+      data === "\x1b[1;3C" ||
+      data === "\x1bf" ||
+      data === "\x1b[1;5C"
+    ) {
+      // Word right
+      this.moveWordForwards();
+    }
     // Arrow keys
     else if (data === "\x1b[A") {
-      // Up
-      this.moveCursor(-1, 0);
+      // Up - history navigation or cursor movement
+      if (this.isEditorEmpty()) {
+        this.navigateHistory(-1); // Start browsing history
+      } else if (this.historyIndex > -1 && this.isOnFirstVisualLine()) {
+        this.navigateHistory(-1); // Navigate to older history entry
+      } else {
+        this.moveCursor(-1, 0); // Cursor movement (within text or history entry)
+      }
     } else if (data === "\x1b[B") {
-      // Down
-      this.moveCursor(1, 0);
+      // Down - history navigation or cursor movement
+      if (this.historyIndex > -1 && this.isOnLastVisualLine()) {
+        this.navigateHistory(1); // Navigate to newer history entry or clear
+      } else {
+        this.moveCursor(1, 0); // Cursor movement (within text or history entry)
+      }
     } else if (data === "\x1b[C") {
       // Right
       this.moveCursor(0, 1);
@@ -363,8 +497,8 @@ export class Editor implements Component {
       // Left
       this.moveCursor(0, -1);
     }
-    // Regular characters (printable ASCII)
-    else if (data.charCodeAt(0) >= 32 && data.charCodeAt(0) <= 126) {
+    // Regular characters (printable characters and unicode, but not control characters)
+    else if (data.charCodeAt(0) >= 32) {
       this.insertCharacter(data);
     }
   }
@@ -389,9 +523,9 @@ export class Editor implements Component {
     for (let i = 0; i < this.state.lines.length; i++) {
       const line = this.state.lines[i] || "";
       const isCurrentLine = i === this.state.cursorLine;
-      const maxLineLength = contentWidth;
+      const lineVisibleWidth = visibleWidth(line);
 
-      if (line.length <= maxLineLength) {
+      if (lineVisibleWidth <= contentWidth) {
         // Line fits in one layout line
         if (isCurrentLine) {
           layoutLines.push({
@@ -406,31 +540,70 @@ export class Editor implements Component {
           });
         }
       } else {
-        // Line needs wrapping
-        const chunks = [];
-        for (let pos = 0; pos < line.length; pos += maxLineLength) {
-          chunks.push(line.slice(pos, pos + maxLineLength));
+        // Line needs wrapping - use grapheme-aware chunking
+        const chunks: { text: string; startIndex: number; endIndex: number }[] =
+          [];
+        let currentChunk = "";
+        let currentWidth = 0;
+        let chunkStartIndex = 0;
+        let currentIndex = 0;
+
+        for (const seg of segmenter.segment(line)) {
+          const grapheme = seg.segment;
+          const graphemeWidth = visibleWidth(grapheme);
+
+          if (
+            currentWidth + graphemeWidth > contentWidth &&
+            currentChunk !== ""
+          ) {
+            // Start a new chunk
+            chunks.push({
+              text: currentChunk,
+              startIndex: chunkStartIndex,
+              endIndex: currentIndex,
+            });
+            currentChunk = grapheme;
+            currentWidth = graphemeWidth;
+            chunkStartIndex = currentIndex;
+          } else {
+            currentChunk += grapheme;
+            currentWidth += graphemeWidth;
+          }
+          currentIndex += grapheme.length;
+        }
+
+        // Push the last chunk
+        if (currentChunk !== "") {
+          chunks.push({
+            text: currentChunk,
+            startIndex: chunkStartIndex,
+            endIndex: currentIndex,
+          });
         }
 
         for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
           const chunk = chunks[chunkIndex];
           if (!chunk) continue;
 
-          const chunkStart = chunkIndex * maxLineLength;
-          const chunkEnd = chunkStart + chunk.length;
           const cursorPos = this.state.cursorCol;
+          const isLastChunk = chunkIndex === chunks.length - 1;
+          // For non-last chunks, cursor at endIndex belongs to the next chunk
           const hasCursorInChunk =
-            isCurrentLine && cursorPos >= chunkStart && cursorPos <= chunkEnd;
+            isCurrentLine &&
+            cursorPos >= chunk.startIndex &&
+            (isLastChunk
+              ? cursorPos <= chunk.endIndex
+              : cursorPos < chunk.endIndex);
 
           if (hasCursorInChunk) {
             layoutLines.push({
-              text: chunk,
+              text: chunk.text,
               hasCursor: true,
-              cursorPos: cursorPos - chunkStart,
+              cursorPos: cursorPos - chunk.startIndex,
             });
           } else {
             layoutLines.push({
-              text: chunk,
+              text: chunk.text,
               hasCursor: false,
             });
           }
@@ -446,24 +619,14 @@ export class Editor implements Component {
   }
 
   setText(text: string): void {
-    // Split text into lines, handling different line endings
-    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-
-    // Ensure at least one empty line
-    this.state.lines = lines.length === 0 ? [""] : lines;
-
-    // Reset cursor to end of text
-    this.state.cursorLine = this.state.lines.length - 1;
-    this.state.cursorCol = this.state.lines[this.state.cursorLine]?.length || 0;
-
-    // Notify of change
-    if (this.onChange) {
-      this.onChange(this.getText());
-    }
+    this.historyIndex = -1; // Exit history browsing mode
+    this.setTextInternal(text);
   }
 
   // All the editor methods from before...
   private insertCharacter(char: string): void {
+    this.historyIndex = -1; // Exit history browsing mode
+
     const line = this.state.lines[this.state.cursorLine] || "";
 
     const before = line.slice(0, this.state.cursorCol);
@@ -482,15 +645,30 @@ export class Editor implements Component {
       if (char === "/" && this.isAtStartOfMessage()) {
         void this.tryTriggerAutocomplete();
       }
+      // Auto-trigger for "@" file reference (fuzzy search)
+      else if (char === "@") {
+        const currentLine = this.state.lines[this.state.cursorLine] || "";
+        const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
+        // Only trigger if @ is after whitespace or at start of line
+        const charBeforeAt = textBeforeCursor[textBeforeCursor.length - 2];
+        if (
+          textBeforeCursor.length === 1 ||
+          charBeforeAt === " " ||
+          charBeforeAt === "\t"
+        ) {
+          void this.tryTriggerAutocomplete();
+        }
+      }
       // Also auto-trigger when typing letters in a slash command context
       else if (/[a-zA-Z0-9]/.test(char)) {
         const currentLine = this.state.lines[this.state.cursorLine] || "";
         const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
-        // Check if we're in a slash command with a space (i.e., typing arguments)
-        if (
-          textBeforeCursor.startsWith("/") &&
-          textBeforeCursor.includes(" ")
-        ) {
+        // Check if we're in a slash command (with or without space for arguments)
+        if (textBeforeCursor.trimStart().startsWith("/")) {
+          void this.tryTriggerAutocomplete();
+        }
+        // Check if we're in an @ file reference context
+        else if (textBeforeCursor.match(/(?:^|[\s])@[^\s]*$/)) {
           void this.tryTriggerAutocomplete();
         }
       }
@@ -676,24 +854,24 @@ export class Editor implements Component {
     }
   }
 
-  private deleteCurrentLine(): void {
-    if (this.state.lines.length === 1) {
-      // Only one line - just clear it
-      this.state.lines[0] = "";
+  private deleteToStartOfLine(): void {
+    this.historyIndex = -1; // Exit history browsing mode
+
+    const currentLine = this.state.lines[this.state.cursorLine] || "";
+
+    if (this.state.cursorCol > 0) {
+      // Delete from start of line up to cursor
+      this.state.lines[this.state.cursorLine] = currentLine.slice(
+        this.state.cursorCol,
+      );
       this.state.cursorCol = 0;
-    } else {
-      // Multiple lines - remove current line
+    } else if (this.state.cursorLine > 0) {
+      // At start of line - merge with previous line
+      const previousLine = this.state.lines[this.state.cursorLine - 1] || "";
+      this.state.lines[this.state.cursorLine - 1] = previousLine + currentLine;
       this.state.lines.splice(this.state.cursorLine, 1);
-
-      // Adjust cursor position
-      if (this.state.cursorLine >= this.state.lines.length) {
-        // Was on last line, move to new last line
-        this.state.cursorLine = this.state.lines.length - 1;
-      }
-
-      // Clamp cursor column to new line length
-      const newLine = this.state.lines[this.state.cursorLine] || "";
-      this.state.cursorCol = Math.min(this.state.cursorCol, newLine.length);
+      this.state.cursorLine--;
+      this.state.cursorCol = previousLine.length;
     }
 
     if (this.onChange) {
@@ -701,24 +879,304 @@ export class Editor implements Component {
     }
   }
 
+  private deleteToEndOfLine(): void {
+    this.historyIndex = -1; // Exit history browsing mode
+
+    const currentLine = this.state.lines[this.state.cursorLine] || "";
+
+    if (this.state.cursorCol < currentLine.length) {
+      // Delete from cursor to end of line
+      this.state.lines[this.state.cursorLine] = currentLine.slice(
+        0,
+        this.state.cursorCol,
+      );
+    } else if (this.state.cursorLine < this.state.lines.length - 1) {
+      // At end of line - merge with next line
+      const nextLine = this.state.lines[this.state.cursorLine + 1] || "";
+      this.state.lines[this.state.cursorLine] = currentLine + nextLine;
+      this.state.lines.splice(this.state.cursorLine + 1, 1);
+    }
+
+    if (this.onChange) {
+      this.onChange(this.getText());
+    }
+  }
+
+  private deleteWordBackwards(): void {
+    this.historyIndex = -1; // Exit history browsing mode
+
+    const currentLine = this.state.lines[this.state.cursorLine] || "";
+
+    // If at start of line, behave like backspace at column 0 (merge with previous line)
+    if (this.state.cursorCol === 0) {
+      if (this.state.cursorLine > 0) {
+        const previousLine = this.state.lines[this.state.cursorLine - 1] || "";
+        this.state.lines[this.state.cursorLine - 1] =
+          previousLine + currentLine;
+        this.state.lines.splice(this.state.cursorLine, 1);
+        this.state.cursorLine--;
+        this.state.cursorCol = previousLine.length;
+      }
+    } else {
+      const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
+
+      const isWhitespace = (char: string): boolean => /\s/.test(char);
+      const isPunctuation = (char: string): boolean => {
+        // Treat obvious code punctuation as boundaries
+        return /[(){}[\]<>.,;:'"!?+\-=*/\\|&%^$#@~`]/.test(char);
+      };
+
+      let deleteFrom = this.state.cursorCol;
+      const lastChar = textBeforeCursor[deleteFrom - 1] ?? "";
+
+      // If immediately on whitespace or punctuation, delete that single boundary char
+      if (isWhitespace(lastChar) || isPunctuation(lastChar)) {
+        deleteFrom -= 1;
+      } else {
+        // Otherwise, delete a run of non-boundary characters (the "word")
+        while (deleteFrom > 0) {
+          const ch = textBeforeCursor[deleteFrom - 1] ?? "";
+          if (isWhitespace(ch) || isPunctuation(ch)) {
+            break;
+          }
+          deleteFrom -= 1;
+        }
+      }
+
+      this.state.lines[this.state.cursorLine] =
+        currentLine.slice(0, deleteFrom) +
+        currentLine.slice(this.state.cursorCol);
+      this.state.cursorCol = deleteFrom;
+    }
+
+    if (this.onChange) {
+      this.onChange(this.getText());
+    }
+  }
+
+  /**
+   * Build a mapping from visual lines to logical positions.
+   * Returns an array where each element represents a visual line with:
+   * - logicalLine: index into this.state.lines
+   * - startCol: starting column in the logical line
+   * - length: length of this visual line segment
+   */
+  private buildVisualLineMap(
+    width: number,
+  ): Array<{ logicalLine: number; startCol: number; length: number }> {
+    const visualLines: Array<{
+      logicalLine: number;
+      startCol: number;
+      length: number;
+    }> = [];
+
+    for (let i = 0; i < this.state.lines.length; i++) {
+      const line = this.state.lines[i] || "";
+      const lineVisWidth = visibleWidth(line);
+      if (line.length === 0) {
+        // Empty line still takes one visual line
+        visualLines.push({ logicalLine: i, startCol: 0, length: 0 });
+      } else if (lineVisWidth <= width) {
+        visualLines.push({ logicalLine: i, startCol: 0, length: line.length });
+      } else {
+        // Line needs wrapping - use grapheme-aware chunking
+        let currentWidth = 0;
+        let chunkStartIndex = 0;
+        let currentIndex = 0;
+
+        for (const seg of segmenter.segment(line)) {
+          const grapheme = seg.segment;
+          const graphemeWidth = visibleWidth(grapheme);
+
+          if (
+            currentWidth + graphemeWidth > width &&
+            currentIndex > chunkStartIndex
+          ) {
+            // Start a new chunk
+            visualLines.push({
+              logicalLine: i,
+              startCol: chunkStartIndex,
+              length: currentIndex - chunkStartIndex,
+            });
+            chunkStartIndex = currentIndex;
+            currentWidth = graphemeWidth;
+          } else {
+            currentWidth += graphemeWidth;
+          }
+          currentIndex += grapheme.length;
+        }
+
+        // Push the last chunk
+        if (currentIndex > chunkStartIndex) {
+          visualLines.push({
+            logicalLine: i,
+            startCol: chunkStartIndex,
+            length: currentIndex - chunkStartIndex,
+          });
+        }
+      }
+    }
+
+    return visualLines;
+  }
+
+  /**
+   * Find the visual line index for the current cursor position.
+   */
+  private findCurrentVisualLine(
+    visualLines: Array<{
+      logicalLine: number;
+      startCol: number;
+      length: number;
+    }>,
+  ): number {
+    for (let i = 0; i < visualLines.length; i++) {
+      const vl = visualLines[i];
+      if (!vl) continue;
+      if (vl.logicalLine === this.state.cursorLine) {
+        const colInSegment = this.state.cursorCol - vl.startCol;
+        // Cursor is in this segment if it's within range
+        // For the last segment of a logical line, cursor can be at length (end position)
+        const isLastSegmentOfLine =
+          i === visualLines.length - 1 ||
+          visualLines[i + 1]?.logicalLine !== vl.logicalLine;
+        if (
+          colInSegment >= 0 &&
+          (colInSegment < vl.length ||
+            (isLastSegmentOfLine && colInSegment <= vl.length))
+        ) {
+          return i;
+        }
+      }
+    }
+    // Fallback: return last visual line
+    return visualLines.length - 1;
+  }
+
   private moveCursor(deltaLine: number, deltaCol: number): void {
+    const width = this.lastWidth;
+
     if (deltaLine !== 0) {
-      const newLine = this.state.cursorLine + deltaLine;
-      if (newLine >= 0 && newLine < this.state.lines.length) {
-        this.state.cursorLine = newLine;
-        // Clamp cursor column to new line length
-        const line = this.state.lines[this.state.cursorLine] || "";
-        this.state.cursorCol = Math.min(this.state.cursorCol, line.length);
+      // Build visual line map for navigation
+      const visualLines = this.buildVisualLineMap(width);
+      const currentVisualLine = this.findCurrentVisualLine(visualLines);
+
+      // Calculate column position within current visual line
+      const currentVl = visualLines[currentVisualLine];
+      const visualCol = currentVl
+        ? this.state.cursorCol - currentVl.startCol
+        : 0;
+
+      // Move to target visual line
+      const targetVisualLine = currentVisualLine + deltaLine;
+
+      if (targetVisualLine >= 0 && targetVisualLine < visualLines.length) {
+        const targetVl = visualLines[targetVisualLine];
+        if (targetVl) {
+          this.state.cursorLine = targetVl.logicalLine;
+          // Try to maintain visual column position, clamped to line length
+          const targetCol =
+            targetVl.startCol + Math.min(visualCol, targetVl.length);
+          const logicalLine = this.state.lines[targetVl.logicalLine] || "";
+          this.state.cursorCol = Math.min(targetCol, logicalLine.length);
+        }
       }
     }
 
     if (deltaCol !== 0) {
-      // Move column
-      const newCol = this.state.cursorCol + deltaCol;
       const currentLine = this.state.lines[this.state.cursorLine] || "";
-      const maxCol = currentLine.length;
-      this.state.cursorCol = Math.max(0, Math.min(maxCol, newCol));
+
+      if (deltaCol > 0) {
+        // Moving right
+        if (this.state.cursorCol < currentLine.length) {
+          this.state.cursorCol++;
+        } else if (this.state.cursorLine < this.state.lines.length - 1) {
+          // Wrap to start of next logical line
+          this.state.cursorLine++;
+          this.state.cursorCol = 0;
+        }
+      } else {
+        // Moving left
+        if (this.state.cursorCol > 0) {
+          this.state.cursorCol--;
+        } else if (this.state.cursorLine > 0) {
+          // Wrap to end of previous logical line
+          this.state.cursorLine--;
+          const prevLine = this.state.lines[this.state.cursorLine] || "";
+          this.state.cursorCol = prevLine.length;
+        }
+      }
     }
+  }
+
+  private isWordBoundary(char: string): boolean {
+    return /\s/.test(char) || /[(){}[\]<>.,;:'"!?+\-=*/\\|&%^$#@~`]/.test(char);
+  }
+
+  private moveWordBackwards(): void {
+    const currentLine = this.state.lines[this.state.cursorLine] || "";
+
+    // If at start of line, move to end of previous line
+    if (this.state.cursorCol === 0) {
+      if (this.state.cursorLine > 0) {
+        this.state.cursorLine--;
+        const prevLine = this.state.lines[this.state.cursorLine] || "";
+        this.state.cursorCol = prevLine.length;
+      }
+      return;
+    }
+
+    const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
+    let newCol = this.state.cursorCol;
+    const lastChar = textBeforeCursor[newCol - 1] ?? "";
+
+    // If immediately on whitespace or punctuation, skip that single boundary char
+    if (this.isWordBoundary(lastChar)) {
+      newCol -= 1;
+    }
+
+    // Now skip the "word" (non-boundary characters)
+    while (newCol > 0) {
+      const ch = textBeforeCursor[newCol - 1] ?? "";
+      if (this.isWordBoundary(ch)) {
+        break;
+      }
+      newCol -= 1;
+    }
+
+    this.state.cursorCol = newCol;
+  }
+
+  private moveWordForwards(): void {
+    const currentLine = this.state.lines[this.state.cursorLine] || "";
+
+    // If at end of line, move to start of next line
+    if (this.state.cursorCol >= currentLine.length) {
+      if (this.state.cursorLine < this.state.lines.length - 1) {
+        this.state.cursorLine++;
+        this.state.cursorCol = 0;
+      }
+      return;
+    }
+
+    let newCol = this.state.cursorCol;
+    const charAtCursor = currentLine[newCol] ?? "";
+
+    // If on whitespace or punctuation, skip it
+    if (this.isWordBoundary(charAtCursor)) {
+      newCol += 1;
+    }
+
+    // Skip the "word" (non-boundary characters)
+    while (newCol < currentLine.length) {
+      const ch = currentLine[newCol] ?? "";
+      if (this.isWordBoundary(ch)) {
+        break;
+      }
+      newCol += 1;
+    }
+
+    this.state.cursorCol = newCol;
   }
 
   // Helper method to check if cursor is at start of message (for slash command detection)
@@ -933,8 +1391,11 @@ export class Editor implements Component {
       return true;
     }
 
-    // Check for Ctrl+Enter (Ctrl + CR)
-    if (data.charCodeAt(0) === 13 && data.length > 1) {
+    // Check for Ctrl+Enter (Ctrl + CR) or Ctrl+Enter with LF
+    if (
+      (data.charCodeAt(0) === 13 || data.charCodeAt(0) === 10) &&
+      data.length > 1
+    ) {
       return true;
     }
 

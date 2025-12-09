@@ -101,7 +101,8 @@ export class TUI extends Container {
   requestRender(): void {
     if (this.renderRequested) return;
     this.renderRequested = true;
-    process.nextTick(() => {
+    // process.nextTick(() => {
+    setImmediate(() => {
       this.renderRequested = false;
       this.doRender();
     });
