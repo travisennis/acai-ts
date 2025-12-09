@@ -1,4 +1,3 @@
-import { getTerminalSize } from "../../terminal/formatting.ts";
 import style from "../../terminal/style.ts";
 import type { Component } from "../tui.ts";
 
@@ -18,11 +17,10 @@ export class Spacer implements Component {
     this.lines = lines;
   }
 
-  render(_width: number): string[] {
+  render(width: number): string[] {
     const result: string[] = [];
-    const { columns } = getTerminalSize();
     for (let i = 0; i < this.lines; i++) {
-      let line = " ".repeat(columns);
+      let line = " ".repeat(width);
       // Apply background color if specified
       if (this.customBgRgb) {
         line = style.bgRgb(
