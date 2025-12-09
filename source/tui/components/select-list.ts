@@ -1,5 +1,6 @@
 import style from "../../terminal/style.ts";
 import type { Component } from "../tui.ts";
+import { truncateToWidth } from "../utils.ts";
 
 export interface SelectItem {
   value: string;
@@ -7,19 +8,40 @@ export interface SelectItem {
   description?: string;
 }
 
+export interface SelectListTheme {
+  selectedPrefix: (text: string) => string;
+  selectedText: (text: string) => string;
+  description: (text: string) => string;
+  scrollInfo: (text: string) => string;
+  noMatch: (text: string) => string;
+}
+
 export class SelectList implements Component {
   private items: SelectItem[] = [];
   private filteredItems: SelectItem[] = [];
   private selectedIndex = 0;
   private maxVisible = 5;
+  private theme: SelectListTheme;
 
   public onSelect?: (item: SelectItem) => void;
   public onCancel?: () => void;
+  public onSelectionChange?: (item: SelectItem) => void;
 
-  constructor(items: SelectItem[], maxVisible = 5) {
+  constructor(items: SelectItem[], maxVisible = 5, theme?: SelectListTheme) {
     this.items = items;
     this.filteredItems = items;
     this.maxVisible = maxVisible;
+    this.theme = theme || this.createDefaultTheme();
+  }
+
+  private createDefaultTheme(): SelectListTheme {
+    return {
+      selectedPrefix: (text: string) => style.blue(text),
+      selectedText: (text: string) => style.blue(text),
+      description: (text: string) => style.gray(text),
+      scrollInfo: (text: string) => style.gray(text),
+      noMatch: (text: string) => style.gray(text),
+    };
   }
 
   updateItems(items: SelectItem[]) {
@@ -47,7 +69,7 @@ export class SelectList implements Component {
 
     // If no items match filter, show message
     if (this.filteredItems.length === 0) {
-      lines.push(style.gray("  No matching commands"));
+      lines.push(this.theme.noMatch("  No matching commands"));
       return lines;
     }
 
@@ -73,15 +95,18 @@ export class SelectList implements Component {
 
       let line = "";
       if (isSelected) {
-        // Use arrow indicator for selection
-        const prefix = style.blue("→ ");
+        // Use arrow indicator for selection - entire line uses selectedText color
         const prefixWidth = 2; // "→ " is 2 characters visually
         const displayValue = item.label || item.value;
 
         if (item.description && width > 40) {
           // Calculate how much space we have for value + description
-          const maxValueLength = Math.min(displayValue.length, 30);
-          const truncatedValue = displayValue.substring(0, maxValueLength);
+          const maxValueWidth = Math.min(30, width - prefixWidth - 4);
+          const truncatedValue = truncateToWidth(
+            displayValue,
+            maxValueWidth,
+            "",
+          );
           const spacing = " ".repeat(Math.max(1, 32 - truncatedValue.length));
 
           // Calculate remaining space for description using visible widths
@@ -90,20 +115,28 @@ export class SelectList implements Component {
           const remainingWidth = width - descriptionStart - 2; // -2 for safety
 
           if (remainingWidth > 10) {
-            const truncatedDesc = item.description.substring(0, remainingWidth);
-            line =
-              prefix +
-              style.blue(truncatedValue) +
-              style.gray(spacing + truncatedDesc);
+            const truncatedDesc = truncateToWidth(
+              item.description,
+              remainingWidth,
+              "",
+            );
+            // Apply selectedText to entire line content
+            line = this.theme.selectedText(
+              `→ ${truncatedValue}${spacing}${truncatedDesc}`,
+            );
           } else {
             // Not enough space for description
             const maxWidth = width - prefixWidth - 2;
-            line = prefix + style.blue(displayValue.substring(0, maxWidth));
+            line = this.theme.selectedText(
+              `→ ${truncateToWidth(displayValue, maxWidth, "")}`,
+            );
           }
         } else {
           // No description or not enough width
           const maxWidth = width - prefixWidth - 2;
-          line = prefix + style.blue(displayValue.substring(0, maxWidth));
+          line = this.theme.selectedText(
+            `→ ${truncateToWidth(displayValue, maxWidth, "")}`,
+          );
         }
       } else {
         const displayValue = item.label || item.value;
@@ -111,8 +144,12 @@ export class SelectList implements Component {
 
         if (item.description && width > 40) {
           // Calculate how much space we have for value + description
-          const maxValueLength = Math.min(displayValue.length, 30);
-          const truncatedValue = displayValue.substring(0, maxValueLength);
+          const maxValueWidth = Math.min(30, width - prefix.length - 4);
+          const truncatedValue = truncateToWidth(
+            displayValue,
+            maxValueWidth,
+            "",
+          );
           const spacing = " ".repeat(Math.max(1, 32 - truncatedValue.length));
 
           // Calculate remaining space for description
@@ -121,18 +158,22 @@ export class SelectList implements Component {
           const remainingWidth = width - descriptionStart - 2; // -2 for safety
 
           if (remainingWidth > 10) {
-            const truncatedDesc = item.description.substring(0, remainingWidth);
-            line =
-              prefix + truncatedValue + style.gray(spacing + truncatedDesc);
+            const truncatedDesc = truncateToWidth(
+              item.description,
+              remainingWidth,
+              "",
+            );
+            const descText = this.theme.description(spacing + truncatedDesc);
+            line = prefix + truncatedValue + descText;
           } else {
             // Not enough space for description
             const maxWidth = width - prefix.length - 2;
-            line = prefix + displayValue.substring(0, maxWidth);
+            line = prefix + truncateToWidth(displayValue, maxWidth, "");
           }
         } else {
           // No description or not enough width
           const maxWidth = width - prefix.length - 2;
-          line = prefix + displayValue.substring(0, maxWidth);
+          line = prefix + truncateToWidth(displayValue, maxWidth, "");
         }
       }
 
@@ -143,26 +184,38 @@ export class SelectList implements Component {
     if (startIndex > 0 || endIndex < this.filteredItems.length) {
       const scrollText = `  (${this.selectedIndex + 1}/${this.filteredItems.length})`;
       // Truncate if too long for terminal
-      const maxWidth = width - 2;
-      const truncated = scrollText.substring(0, maxWidth);
-      const scrollInfo = style.gray(truncated);
-      lines.push(scrollInfo);
+      lines.push(
+        this.theme.scrollInfo(truncateToWidth(scrollText, width - 2, "")),
+      );
     }
 
     return lines;
   }
 
   handleInput(keyData: string): void {
-    // Up arrow
+    // Up arrow - wrap to bottom when at top
     if (keyData === "\x1b[A") {
-      this.selectedIndex = Math.max(0, this.selectedIndex - 1);
+      this.selectedIndex =
+        this.selectedIndex === 0
+          ? this.filteredItems.length - 1
+          : this.selectedIndex - 1;
+      this.notifySelectionChange();
     }
-    // Down arrow or Tab
-    else if (keyData === "\x1b[B" || keyData === "\t") {
+    // Down arrow - wrap to top when at bottom
+    else if (keyData === "\x1b[B") {
+      this.selectedIndex =
+        this.selectedIndex === this.filteredItems.length - 1
+          ? 0
+          : this.selectedIndex + 1;
+      this.notifySelectionChange();
+    }
+    // Tab - move down without wrapping (preserve existing behavior for compatibility)
+    else if (keyData === "\t") {
       this.selectedIndex = Math.min(
         this.filteredItems.length - 1,
         this.selectedIndex + 1,
       );
+      this.notifySelectionChange();
     }
     // Enter
     else if (keyData === "\r") {
@@ -176,6 +229,13 @@ export class SelectList implements Component {
       if (this.onCancel) {
         this.onCancel();
       }
+    }
+  }
+
+  private notifySelectionChange(): void {
+    const selectedItem = this.filteredItems[this.selectedIndex];
+    if (selectedItem && this.onSelectionChange) {
+      this.onSelectionChange(selectedItem);
     }
   }
 

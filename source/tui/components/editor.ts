@@ -23,8 +23,11 @@ interface LayoutLine {
   cursorPos?: number;
 }
 
+import type { SelectListTheme } from "./select-list.ts";
+
 export interface EditorTheme {
   borderColor: (str: string) => string;
+  selectList?: SelectListTheme;
 }
 
 /**
@@ -1222,7 +1225,11 @@ export class Editor implements Component {
       if (this.autocompleteList) {
         this.autocompleteList.updateItems(suggestions.items);
       } else {
-        this.autocompleteList = new SelectList(suggestions.items, 5);
+        this.autocompleteList = new SelectList(
+          suggestions.items,
+          5,
+          this.theme.selectList,
+        );
       }
       // Request re-render to show autocomplete list
       this.onRenderRequested?.();
@@ -1281,7 +1288,11 @@ export class Editor implements Component {
       if (this.autocompleteList) {
         this.autocompleteList.updateItems(suggestions.items);
       } else {
-        this.autocompleteList = new SelectList(suggestions.items, 5);
+        this.autocompleteList = new SelectList(
+          suggestions.items,
+          5,
+          this.theme.selectList,
+        );
       }
       this.isAutocompleting = true;
       // Request re-render to show autocomplete list
@@ -1346,7 +1357,11 @@ export class Editor implements Component {
           // Update the existing list with new items
           this.autocompleteList.updateItems(suggestions.items);
         } else {
-          this.autocompleteList = new SelectList(suggestions.items, 5);
+          this.autocompleteList = new SelectList(
+            suggestions.items,
+            5,
+            this.theme.selectList,
+          );
         }
         this.isAutocompleting = true;
         // Request re-render to show updated autocomplete list
