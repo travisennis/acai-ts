@@ -37,3 +37,49 @@ await test("validatePath rejects paths outside allowedDirectory", async () => {
   assert.equal(threw, true);
   await fs.rm(allowed, { recursive: true, force: true });
 });
+
+await test("validatePath handles symlinks in ancestor directories", async () => {
+  const tmpDir = path.join(projectRoot, ".acai-ci-tmp-symlink-ancestor");
+  const realSubDir = path.join(tmpDir, "real");
+  const linkDir = path.join(tmpDir, "link");
+  const targetOutside = path.join(projectRoot, "..", "outside-target");
+  const targetInside = path.join(tmpDir, "inside-target");
+
+  // Clean up any previous runs
+  await fs.rm(tmpDir, { recursive: true, force: true });
+  await fs.rm(targetOutside, { recursive: true, force: true });
+
+  await fs.mkdir(realSubDir, { recursive: true });
+  await fs.mkdir(targetInside, { recursive: true });
+  await fs.mkdir(targetOutside, { recursive: true });
+
+  // Create symlink inside tmpDir pointing to targetInside (within allowed)
+  await fs.symlink(targetInside, linkDir);
+
+  // Validate a non-existent file under the symlink (should be allowed)
+  const nonExistentInside = path.join(linkDir, "newfile.txt");
+  const resolvedInside = await validatePath(nonExistentInside, tmpDir, {
+    requireExistence: false,
+  });
+  assert.equal(path.resolve(resolvedInside), path.resolve(nonExistentInside));
+
+  // Create symlink pointing outside allowed directory
+  await fs.rm(linkDir);
+  await fs.symlink(targetOutside, linkDir);
+
+  // Validate a non-existent file under the outside symlink (should be rejected)
+  const nonExistentOutside = path.join(linkDir, "newfile.txt");
+  let threw = false;
+  try {
+    await validatePath(nonExistentOutside, tmpDir, {
+      requireExistence: false,
+    });
+  } catch (_err) {
+    threw = true;
+  }
+  assert.equal(threw, true);
+
+  // Cleanup
+  await fs.rm(tmpDir, { recursive: true, force: true });
+  await fs.rm(targetOutside, { recursive: true, force: true });
+});

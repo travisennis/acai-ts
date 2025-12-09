@@ -1,4 +1,4 @@
-import { realpathSync } from "node:fs";
+import { realpathSync, statSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -7,6 +7,36 @@ import type { ProjectConfig } from "../../config.ts";
 // Normalize all paths consistently
 function normalizePath(p: string): string {
   return path.normalize(p);
+}
+
+// Resolve symlinks for existing ancestors of a path.
+// Walks up the directory tree until an existing directory is found, resolves its real path,
+// and appends the remaining relative path. Permission errors are treated as non-existence.
+function resolveExistingAncestorSync(filePath: string): string {
+  let current = filePath;
+  while (true) {
+    try {
+      const stats = statSync(current);
+      if (stats.isDirectory()) {
+        const realCurrent = realpathSync(current);
+        const remaining = path.relative(current, filePath);
+        return remaining === ""
+          ? realCurrent
+          : path.join(realCurrent, remaining);
+      }
+      // If current exists but is not a directory, move up
+    } catch {
+      // current doesn't exist or we lack permission to stat it
+    }
+    const parent = path.dirname(current);
+    if (parent === current) {
+      // Reached root, cannot resolve further
+      break;
+    }
+    current = parent;
+  }
+  // No existing ancestor found, return original path
+  return filePath;
 }
 
 // Handle path joining with working directory
@@ -42,7 +72,8 @@ function isPathWithinBaseDir(requestedPath: string, baseDir: string): boolean {
   try {
     target = realpathSync(abs);
   } catch {
-    // If target doesn't fully exist, validate against intended path
+    // If target doesn't fully exist, resolve existing ancestors
+    target = resolveExistingAncestorSync(abs);
   }
 
   const rel = path.relative(baseReal, target);
@@ -142,6 +173,7 @@ export async function validatePath(
         }
         const realAncestor = await fs.realpath(current);
         const normalizedAncestor = normalizePath(realAncestor);
+
         if (!isWithinAllowed(normalizedAncestor)) {
           throw new Error(
             "Access denied - ancestor directory resolves outside allowed directories",
@@ -150,7 +182,11 @@ export async function validatePath(
         // Ancestor is within allowed; allow creation below it.
         foundValidAncestor = true;
         break;
-      } catch (_err) {
+      } catch (err) {
+        // If it's a security denial, rethrow
+        if (err instanceof Error && err.message.startsWith("Access denied")) {
+          throw err;
+        }
         // If we reached the filesystem root, break to fallback check
         const parent = path.dirname(current);
         if (parent === current) {
