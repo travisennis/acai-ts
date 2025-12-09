@@ -6,7 +6,7 @@ import type {
 } from "../autocomplete.ts";
 import type { Component } from "../tui.ts";
 import { visibleWidth } from "../utils.ts";
-import { SelectList } from "./select-list.ts";
+import { isNavigationKey, isTab, SelectList } from "./select-list.ts";
 
 // Grapheme segmenter for proper Unicode iteration (handles emojis, etc.)
 const segmenter = new Intl.Segmenter();
@@ -326,43 +326,33 @@ export class Editor implements Component {
         this.cancelAutocomplete();
         return;
       }
-      // Let the autocomplete list handle navigation and selection
-      if (
-        data === "\x1b[A" ||
-        data === "\x1b[B" ||
-        data === "\r" ||
-        data === "\t"
-      ) {
-        // Pass arrow keys and Tab to the list for navigation
-        if (data === "\x1b[A" || data === "\x1b[B" || data === "\t") {
-          this.autocompleteList.handleInput(data);
-        }
+      // Enter - apply selection
+      if (data === "\r") {
+        const selected = this.autocompleteList.getSelectedItem();
+        if (selected && this.autocompleteProvider) {
+          const result = this.autocompleteProvider.applyCompletion(
+            this.state.lines,
+            this.state.cursorLine,
+            this.state.cursorCol,
+            selected,
+            this.autocompletePrefix,
+          );
 
-        // Only Enter applies the selection
-        if (data === "\r") {
-          const selected = this.autocompleteList.getSelectedItem();
-          if (selected && this.autocompleteProvider) {
-            const result = this.autocompleteProvider.applyCompletion(
-              this.state.lines,
-              this.state.cursorLine,
-              this.state.cursorCol,
-              selected,
-              this.autocompletePrefix,
-            );
+          this.state.lines = result.lines;
+          this.state.cursorLine = result.cursorLine;
+          this.state.cursorCol = result.cursorCol;
 
-            this.state.lines = result.lines;
-            this.state.cursorLine = result.cursorLine;
-            this.state.cursorCol = result.cursorCol;
+          this.cancelAutocomplete();
 
-            this.cancelAutocomplete();
-
-            if (this.onChange) {
-              this.onChange(this.getText());
-            }
+          if (this.onChange) {
+            this.onChange(this.getText());
           }
-          return;
         }
-        // For other keys, handle normally within autocomplete
+        return;
+      }
+      // Navigation keys (arrows, Tab, Shift+Tab) - pass to autocomplete list
+      if (isNavigationKey(data)) {
+        this.autocompleteList.handleInput(data);
         return;
       }
       // For other keys (like regular typing), DON'T return here
@@ -370,7 +360,7 @@ export class Editor implements Component {
     }
 
     // Tab key - context-aware completion (but not when already autocompleting)
-    if (data === "\t" && !this.isAutocompleting) {
+    if (isTab(data) && !this.isAutocompleting) {
       void this.handleTabCompletion();
       return;
     }

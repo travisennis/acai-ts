@@ -2,6 +2,35 @@ import style from "../../terminal/style.ts";
 import type { Component } from "../tui.ts";
 import { truncateToWidth } from "../utils.ts";
 
+/**
+ * Check if key data represents Shift+Tab.
+ * Supports multiple terminal escape sequences:
+ * - \x1b[Z (standard)
+ * - \x1b[1;2Z (with modifier)
+ */
+export function isShiftTab(keyData: string): boolean {
+  return keyData === "\x1b[Z" || keyData === "\x1b[1;2Z";
+}
+
+/**
+ * Check if key data represents Tab (without Shift).
+ */
+export function isTab(keyData: string): boolean {
+  return keyData === "\t";
+}
+
+/**
+ * Check if key data represents navigation key (arrows, Tab, Shift+Tab).
+ */
+export function isNavigationKey(keyData: string): boolean {
+  return (
+    keyData === "\x1b[A" ||
+    keyData === "\x1b[B" ||
+    isTab(keyData) ||
+    isShiftTab(keyData)
+  );
+}
+
 export interface SelectItem {
   value: string;
   label: string;
@@ -47,6 +76,9 @@ export class SelectList implements Component {
   updateItems(items: SelectItem[]) {
     this.items = items;
     this.filteredItems = items;
+    // Reset selection to first item when items change
+    this.setSelectedIndex(0);
+    this.notifySelectionChange();
   }
 
   setFilter(filter: string): void {
@@ -209,12 +241,20 @@ export class SelectList implements Component {
           : this.selectedIndex + 1;
       this.notifySelectionChange();
     }
-    // Tab - move down without wrapping (preserve existing behavior for compatibility)
-    else if (keyData === "\t") {
-      this.selectedIndex = Math.min(
-        this.filteredItems.length - 1,
-        this.selectedIndex + 1,
-      );
+    // Tab - move down with wrapping (like down arrow)
+    else if (isTab(keyData)) {
+      this.selectedIndex =
+        this.selectedIndex === this.filteredItems.length - 1
+          ? 0
+          : this.selectedIndex + 1;
+      this.notifySelectionChange();
+    }
+    // Shift+Tab - move up with wrapping (like up arrow)
+    else if (isShiftTab(keyData)) {
+      this.selectedIndex =
+        this.selectedIndex === 0
+          ? this.filteredItems.length - 1
+          : this.selectedIndex - 1;
       this.notifySelectionChange();
     }
     // Enter
