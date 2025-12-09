@@ -73,6 +73,8 @@ export class TUI extends Container {
   private terminal: Terminal;
   private focusedComponent: Component | null = null;
   private renderRequested = false;
+  private isRendering = false;
+  private renderAgain = false;
   private activeModal: Modal | null = null;
 
   constructor(terminal: Terminal) {
@@ -99,9 +101,12 @@ export class TUI extends Container {
   }
 
   requestRender(): void {
+    if (this.isRendering) {
+      this.renderAgain = true;
+      return;
+    }
     if (this.renderRequested) return;
     this.renderRequested = true;
-    // process.nextTick(() => {
     setImmediate(() => {
       this.renderRequested = false;
       this.doRender();
@@ -111,7 +116,7 @@ export class TUI extends Container {
   private handleInput(data: string): void {
     // Handle Ctrl+C globally - exit the application
     if (data.charCodeAt(0) === 3) {
-      console.log("\nCtrl+C pressed - exiting...");
+      console.info("\nCtrl+C pressed - exiting...");
       this.stop();
       process.exit(0);
     }
@@ -133,47 +138,60 @@ export class TUI extends Container {
   }
 
   private doRender(): void {
-    const width = this.terminal.columns;
-
-    // Render all components to get new lines
-    const newLines = this.render(width);
-
-    // Always do full re-render for simplicity and reliability
-    // This ensures that previous content is properly cleared
-    let buffer = "\x1b[?2026h"; // Begin synchronized output
-    buffer += "\x1b[3J\x1b[2J\x1b[H"; // Clear scrollback, screen, and home
-    for (let i = 0; i < newLines.length; i++) {
-      if (i > 0) buffer += "\r\n";
-      buffer += newLines[i];
+    if (this.isRendering) {
+      this.renderAgain = true;
+      return;
     }
+    this.isRendering = true;
+    try {
+      const width = this.terminal.columns;
 
-    // Render modal on top if active
-    if (this.activeModal) {
-      const modalLines = this.activeModal.render(width);
+      // Render all components to get new lines
+      const newLines = this.render(width);
 
-      // Render backdrop first if modal has backdrop
-      if (this.activeModal.backdrop) {
-        const backdropLine = style.bgRgb(0, 0, 0)(" ".repeat(width));
-        const { columns } = getTerminalSize(); // 24
-        for (let i = 0; i < columns; i++) {
-          // Cover entire terminal
-          buffer += `\x1b[${i + 1};1H`;
-          buffer += backdropLine;
+      // Always do full re-render for simplicity and reliability
+      // This ensures that previous content is properly cleared
+      let buffer = "\x1b[?2026h"; // Begin synchronized output
+      buffer += "\x1b[3J\x1b[2J\x1b[H"; // Clear scrollback, screen, and home
+      for (let i = 0; i < newLines.length; i++) {
+        if (i > 0) buffer += "\r\n";
+        buffer += newLines[i];
+      }
+
+      // Render modal on top if active
+      if (this.activeModal) {
+        const modalLines = this.activeModal.render(width);
+
+        // Render backdrop first if modal has backdrop
+        if (this.activeModal.backdrop) {
+          const backdropLine = style.bgRgb(0, 0, 0)(" ".repeat(width));
+          const { columns } = getTerminalSize(); // 24
+          for (let i = 0; i < columns; i++) {
+            // Cover entire terminal
+            buffer += `\x1b[${i + 1};1H`;
+            buffer += backdropLine;
+          }
+        }
+
+        // Render modal content
+        for (let i = 0; i < modalLines.length; i++) {
+          if (modalLines[i]) {
+            // Position cursor and overwrite existing content
+            buffer += `\x1b[${i + 1};1H`;
+            buffer += modalLines[i];
+          }
         }
       }
 
-      // Render modal content
-      for (let i = 0; i < modalLines.length; i++) {
-        if (modalLines[i]) {
-          // Position cursor and overwrite existing content
-          buffer += `\x1b[${i + 1};1H`;
-          buffer += modalLines[i];
-        }
+      buffer += "\x1b[?2026l"; // End synchronized output
+      this.terminal.write(buffer);
+    } finally {
+      this.isRendering = false;
+      if (this.renderAgain) {
+        this.renderAgain = false;
+        this.requestRender();
       }
     }
-
-    buffer += "\x1b[?2026l"; // End synchronized output
-    this.terminal.write(buffer);
   }
 
   // private positionCursor(

@@ -11,6 +11,56 @@ import { isNavigationKey, isTab, SelectList } from "./select-list.ts";
 // Grapheme segmenter for proper Unicode iteration (handles emojis, etc.)
 const segmenter = new Intl.Segmenter();
 
+// Cache for line metrics to avoid repeated segmentation
+const lineMetricsCache = {
+  maxSize: 1000,
+  cache: new Map<
+    string,
+    { graphemes: string[]; widths: number[]; totalWidth: number }
+  >(),
+
+  get(line: string): {
+    graphemes: string[];
+    widths: number[];
+    totalWidth: number;
+  } {
+    let cached = this.cache.get(line);
+    if (!cached) {
+      // Fast path for ASCII-only lines (common case)
+      if (/^[\x20-\x7E\t]*$/.test(line)) {
+        // ASCII characters (including tabs)
+        const graphemes = line.split(""); // Simple split for ASCII
+        const widths = graphemes.map((char) => (char === "\t" ? 3 : 1));
+        const totalWidth = widths.reduce((sum, w) => sum + w, 0);
+        cached = { graphemes, widths, totalWidth };
+      } else {
+        // Complex Unicode line, use full segmentation
+        const graphemes = [...segmenter.segment(line)].map(
+          (seg) => seg.segment,
+        );
+        const widths = graphemes.map((g) => visibleWidth(g));
+        const totalWidth = widths.reduce((sum, w) => sum + w, 0);
+        cached = { graphemes, widths, totalWidth };
+      }
+
+      this.cache.set(line, cached);
+      // Enforce size limit
+      if (this.cache.size > this.maxSize) {
+        // Delete first (oldest) entry - simple but not LRU; okay for our use case
+        const firstKey = this.cache.keys().next().value;
+        if (firstKey !== undefined) {
+          this.cache.delete(firstKey);
+        }
+      }
+    }
+    return cached;
+  },
+
+  clear(): void {
+    this.cache.clear();
+  },
+};
+
 interface EditorState {
   lines: string[];
   cursorLine: number;
@@ -21,6 +71,7 @@ interface LayoutLine {
   text: string;
   hasCursor: boolean;
   cursorPos?: number;
+  width: number;
 }
 
 import type { SelectListTheme } from "./select-list.ts";
@@ -185,7 +236,7 @@ export class Editor implements Component {
     // Render each layout line
     for (const layoutLine of layoutLines) {
       let displayText = layoutLine.text;
-      let lineVisibleWidth = visibleWidth(layoutLine.text);
+      let lineVisibleWidth = layoutLine.width;
 
       // Add cursor if this line has it
       if (layoutLine.hasCursor && layoutLine.cursorPos !== undefined) {
@@ -508,6 +559,7 @@ export class Editor implements Component {
         text: "",
         hasCursor: true,
         cursorPos: 0,
+        width: 0,
       });
       return layoutLines;
     }
@@ -516,7 +568,8 @@ export class Editor implements Component {
     for (let i = 0; i < this.state.lines.length; i++) {
       const line = this.state.lines[i] || "";
       const isCurrentLine = i === this.state.cursorLine;
-      const lineVisibleWidth = visibleWidth(line);
+      const metrics = lineMetricsCache.get(line);
+      const lineVisibleWidth = metrics.totalWidth;
 
       if (lineVisibleWidth <= contentWidth) {
         // Line fits in one layout line
@@ -525,25 +578,31 @@ export class Editor implements Component {
             text: line,
             hasCursor: true,
             cursorPos: this.state.cursorCol,
+            width: lineVisibleWidth,
           });
         } else {
           layoutLines.push({
             text: line,
             hasCursor: false,
+            width: lineVisibleWidth,
           });
         }
       } else {
-        // Line needs wrapping - use grapheme-aware chunking
-        const chunks: { text: string; startIndex: number; endIndex: number }[] =
-          [];
+        // Line needs wrapping - use cached graphemes and widths
+        const chunks: {
+          text: string;
+          startIndex: number;
+          endIndex: number;
+          width: number;
+        }[] = [];
         let currentChunk = "";
         let currentWidth = 0;
         let chunkStartIndex = 0;
         let currentIndex = 0;
 
-        for (const seg of segmenter.segment(line)) {
-          const grapheme = seg.segment;
-          const graphemeWidth = visibleWidth(grapheme);
+        for (let g = 0; g < metrics.graphemes.length; g++) {
+          const grapheme = metrics.graphemes[g];
+          const graphemeWidth = metrics.widths[g];
 
           if (
             currentWidth + graphemeWidth > contentWidth &&
@@ -554,6 +613,7 @@ export class Editor implements Component {
               text: currentChunk,
               startIndex: chunkStartIndex,
               endIndex: currentIndex,
+              width: currentWidth,
             });
             currentChunk = grapheme;
             currentWidth = graphemeWidth;
@@ -571,6 +631,7 @@ export class Editor implements Component {
             text: currentChunk,
             startIndex: chunkStartIndex,
             endIndex: currentIndex,
+            width: currentWidth,
           });
         }
 
@@ -593,11 +654,13 @@ export class Editor implements Component {
               text: chunk.text,
               hasCursor: true,
               cursorPos: cursorPos - chunk.startIndex,
+              width: chunk.width,
             });
           } else {
             layoutLines.push({
               text: chunk.text,
               hasCursor: false,
+              width: chunk.width,
             });
           }
         }
@@ -965,21 +1028,22 @@ export class Editor implements Component {
 
     for (let i = 0; i < this.state.lines.length; i++) {
       const line = this.state.lines[i] || "";
-      const lineVisWidth = visibleWidth(line);
+      const metrics = lineMetricsCache.get(line);
+      const lineVisWidth = metrics.totalWidth;
       if (line.length === 0) {
         // Empty line still takes one visual line
         visualLines.push({ logicalLine: i, startCol: 0, length: 0 });
       } else if (lineVisWidth <= width) {
         visualLines.push({ logicalLine: i, startCol: 0, length: line.length });
       } else {
-        // Line needs wrapping - use grapheme-aware chunking
+        // Line needs wrapping - use cached graphemes and widths
         let currentWidth = 0;
         let chunkStartIndex = 0;
         let currentIndex = 0;
 
-        for (const seg of segmenter.segment(line)) {
-          const grapheme = seg.segment;
-          const graphemeWidth = visibleWidth(grapheme);
+        for (let g = 0; g < metrics.graphemes.length; g++) {
+          const grapheme = metrics.graphemes[g];
+          const graphemeWidth = metrics.widths[g];
 
           if (
             currentWidth + graphemeWidth > width &&
