@@ -163,7 +163,7 @@ export class Agent {
       systemPrompt,
       input,
       toolDefs,
-      activeTools = [],
+      activeTools = undefined,
       executors,
       abortSignal,
     } = args;

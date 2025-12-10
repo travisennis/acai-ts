@@ -181,8 +181,8 @@ type ToolSection = {
   title: string;
   tools: readonly string[];
   content: (
-    activeTools: CompleteToolNames[],
-    allActiveTools: CompleteToolNames[],
+    activeTools: CompleteToolNames[] | undefined,
+    allActiveTools: CompleteToolNames[] | undefined,
   ) => string;
   dependencies?: readonly string[];
   alwaysInclude?: boolean;
@@ -204,7 +204,7 @@ const toolSections: readonly ToolSection[] = [
 
       // Helper to check if tool is active
       const isActive = (tool: string) =>
-        allActiveTools.length === 0 ||
+        allActiveTools === undefined ||
         allActiveTools.includes(tool as CompleteToolNames);
 
       // Read tools
@@ -262,7 +262,7 @@ const toolSections: readonly ToolSection[] = [
       const lines: string[] = [];
 
       const isActive = (tool: string) =>
-        allActiveTools.length === 0 ||
+        allActiveTools === undefined ||
         allActiveTools.includes(tool as CompleteToolNames);
 
       if (isActive(WebFetchTool.name)) {
@@ -293,7 +293,7 @@ const toolSections: readonly ToolSection[] = [
       const lines: string[] = [];
 
       const isActive = (tool: string) =>
-        allActiveTools.length === 0 ||
+        allActiveTools === undefined ||
         allActiveTools.includes(tool as CompleteToolNames);
 
       if (isActive(EditFileTool.name)) {
@@ -317,7 +317,7 @@ const toolSections: readonly ToolSection[] = [
     tools: [ThinkTool.name] as const,
     content: (_activeTools, allActiveTools) => {
       const isActive = (tool: string) =>
-        allActiveTools.length === 0 ||
+        allActiveTools === undefined ||
         allActiveTools.includes(tool as CompleteToolNames);
 
       if (isActive(ThinkTool.name)) {
@@ -332,7 +332,7 @@ const toolSections: readonly ToolSection[] = [
     tools: [BashTool.name] as const,
     content: (_activeTools, allActiveTools) => {
       const isActive = (tool: string) =>
-        allActiveTools.length === 0 ||
+        allActiveTools === undefined ||
         allActiveTools.includes(tool as CompleteToolNames);
 
       if (isActive(BashTool.name)) {
@@ -347,7 +347,7 @@ const toolSections: readonly ToolSection[] = [
     tools: [CodeInterpreterTool.name] as const,
     content: (_activeTools, allActiveTools) => {
       const isActive = (tool: string) =>
-        allActiveTools.length === 0 ||
+        allActiveTools === undefined ||
         allActiveTools.includes(tool as CompleteToolNames);
 
       if (isActive(CodeInterpreterTool.name)) {
@@ -376,7 +376,7 @@ const toolSections: readonly ToolSection[] = [
   },
 ];
 
-function toolUsage(activeTools: CompleteToolNames[]) {
+function toolUsage(activeTools?: CompleteToolNames[]) {
   const sections: string[] = [];
 
   // Always include the header
@@ -384,7 +384,10 @@ function toolUsage(activeTools: CompleteToolNames[]) {
 
   // Helper to check if any of the specified tools are active
   const hasAnyTool = (...tools: string[]): boolean => {
-    if (activeTools.length === 0) return true;
+    // If activeTools is undefined, all tools are active
+    if (activeTools === undefined) return true;
+    // If activeTools is empty array, no tools are active
+    if (activeTools.length === 0) return false;
     return tools.some((tool) =>
       activeTools.includes(tool as CompleteToolNames),
     );
@@ -522,7 +525,7 @@ ${environmentInfoText}
 async function minSystemPrompt(options?: SystemPromptOptions) {
   const {
     allowedDirs = DEFAULT_ALLOWED_DIRS,
-    activeTools = [],
+    activeTools = undefined,
     includeRules = true,
   } = options ?? {};
   const minimalInstructionsText = await minimalInstructions();
@@ -545,7 +548,7 @@ ${environmentInfoText}
 }
 
 async function cliSystemPrompt(options?: SystemPromptOptions) {
-  const { allowedDirs = DEFAULT_ALLOWED_DIRS, activeTools = [] } =
+  const { allowedDirs = DEFAULT_ALLOWED_DIRS, activeTools = undefined } =
     options ?? {};
   const minimalInstructionsText = await minimalInstructions();
   const projectContextText = await getProjectContext();
@@ -556,8 +559,8 @@ ${intro()}
 
 ${minimalInstructionsText}
 
-${activeTools.length > 0 ? "Tools:" : ""}
-${activeTools.length > 0 ? activeTools.map((tool) => `- ${tool}`).join("\n") : ""}
+${activeTools && activeTools.length > 0 ? "Tools:" : ""}
+${activeTools && activeTools.length > 0 ? activeTools.map((tool) => `- ${tool}`).join("\n") : ""}
 
 ${projectContextText}
 

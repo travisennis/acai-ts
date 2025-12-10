@@ -431,7 +431,9 @@ async function runReplMode(state: AppState): Promise<void> {
   while (true) {
     const userInput = await repl.getUserInput();
     const projectConfig = await config.readProjectConfig();
-    const activeTools = projectConfig.tools.activeTools as CompleteToolNames[];
+    const activeTools = projectConfig.tools.activeTools as
+      | CompleteToolNames[]
+      | undefined;
     try {
       const results = agent.run({
         systemPrompt: await systemPrompt({

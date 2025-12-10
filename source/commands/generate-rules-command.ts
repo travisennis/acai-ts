@@ -168,7 +168,9 @@ const system = async (
 
   const sys = await systemPrompt({
     type: projectConfig.systemPromptType,
-    activeTools: projectConfig.tools.activeTools as CompleteToolNames[],
+    activeTools: projectConfig.tools.activeTools as
+      | CompleteToolNames[]
+      | undefined,
     includeRules: true,
     allowedDirs: workspace.allowedDirs,
   });

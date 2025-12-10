@@ -71,7 +71,9 @@ export function contextCommand({
       // 1) System prompt
       const sys = await systemPrompt({
         type: projectConfig.systemPromptType,
-        activeTools: projectConfig.tools.activeTools as CompleteToolNames[],
+        activeTools: projectConfig.tools.activeTools as
+          | CompleteToolNames[]
+          | undefined,
         allowedDirs: workspace.allowedDirs,
         includeRules: true,
       });

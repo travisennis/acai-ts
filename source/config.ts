@@ -11,7 +11,7 @@ const defaultConfig = {
     maxIterations: 90,
   },
   tools: {
-    activeTools: [] as string[],
+    activeTools: undefined as string[] | undefined,
     maxTokens: 30000,
     maxResults: 30,
     dynamicTools: {
@@ -42,10 +42,7 @@ const ProjectConfigSchema = z.object({
     .default(defaultConfig.loop),
   tools: z
     .object({
-      activeTools: z
-        .array(z.string())
-        .optional()
-        .default(defaultConfig.tools.activeTools),
+      activeTools: z.array(z.string()).optional(),
       maxTokens: z.number().default(defaultConfig.tools.maxTokens),
       maxResults: z.number().default(defaultConfig.tools.maxResults),
       dynamicTools: z
@@ -229,10 +226,10 @@ export class ConfigManager {
     const configPath = path.join(this.app.getPath(), `${configName}.json`);
     try {
       const data = await fs.readFile(configPath, "utf8");
-      return JSON.parse(data);
+      return ProjectConfigSchema.parse(JSON.parse(data));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return defaultConfig;
+        return ProjectConfigSchema.parse(defaultConfig);
       }
       throw error;
     }
@@ -249,7 +246,7 @@ export class ConfigManager {
       await this.app.ensurePath();
 
       await fs.writeFile(configPath, JSON.stringify(defaultConfig, null, 2));
-      return defaultConfig;
+      return ProjectConfigSchema.parse(defaultConfig);
     }
   }
 

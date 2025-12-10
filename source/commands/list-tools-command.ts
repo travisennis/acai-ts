@@ -65,7 +65,8 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
 
           // Add static tools
           for (const toolName of staticTools) {
-            const isActive = activeTools.includes(toolName);
+            const isActive =
+              activeTools === undefined || activeTools.includes(toolName);
             tableData.push([
               toolName,
               "Static",
@@ -75,7 +76,8 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
 
           // Add dynamic tools
           for (const toolName of dynamicTools) {
-            const isActive = activeTools.includes(toolName);
+            const isActive =
+              activeTools === undefined || activeTools.includes(toolName);
             tableData.push([
               toolName,
               "Dynamic",
@@ -92,9 +94,10 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
 
           // Add summary
           modalContent.addChild(new ModalText("", 0, 1)); // Spacer
-          const activeCount = toolNames.filter((tool) =>
-            activeTools.includes(tool),
-          ).length;
+          const activeCount =
+            activeTools === undefined
+              ? toolNames.length
+              : toolNames.filter((tool) => activeTools.includes(tool)).length;
           modalContent.addChild(
             new ModalText(
               `Total: ${staticTools.length} static, ${dynamicTools.length} dynamic, ${activeCount} active`,
