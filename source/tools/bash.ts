@@ -1,14 +1,12 @@
 import { execSync } from "node:child_process";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
-import { config } from "../config.ts";
 import { initExecutionEnvironment } from "../execution/index.ts";
 import { logger } from "../logger.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import { manageTokenLimit } from "../tokens/threshold.ts";
 import { isMutatingCommand, resolveCwd, validatePaths } from "../utils/bash.ts";
-import { isPathWithinAllowedDirs } from "../utils/filesystem/security.ts";
 import type { ToolResult } from "./types.ts";
 
 export const BashTool = {
@@ -59,12 +57,6 @@ export const createBashTool = async ({
   tokenCounter: TokenCounter;
 }) => {
   const execEnv = await initExecutionEnvironment();
-  const projectConfig = await config.readProjectConfig();
-  const accessibleLogPath = config.getAccessibleLogPath();
-  const allowedPaths = new Set([
-    ...(projectConfig.logs?.path ? [projectConfig.logs.path] : []),
-    accessibleLogPath,
-  ]);
   const allowedDirectories = allowedDirs ?? [baseDir];
   return {
     toolDef: {
@@ -81,7 +73,7 @@ export const createBashTool = async ({
         }
         // grok doesn't follow my instructions
         const safeCwd = cwd === "null" ? null : cwd;
-        const resolvedCwd = resolveCwd(safeCwd, baseDir);
+        const resolvedCwd = resolveCwd(safeCwd, baseDir, allowedDirectories);
         const safeTimeout = timeout ?? DEFAULT_TIMEOUT;
         // Safety warning for potentially mutating commands
         const isMutating = isMutatingCommand(command);
@@ -92,23 +84,10 @@ export const createBashTool = async ({
           data: `${style.cyan(command)}`,
         };
 
-        if (!isPathWithinAllowedDirs(resolvedCwd, allowedDirectories)) {
-          const errorMsg = `Working directory must be within the allowed directories: ${allowedDirectories.join(", ")}`;
-          yield {
-            name: BashTool.name,
-            event: "tool-error",
-            id: toolCallId,
-            data: errorMsg,
-          };
-          yield errorMsg;
-          return;
-        }
-
         const pathValidation = validatePaths(
           command,
           allowedDirectories,
           resolvedCwd,
-          [...allowedPaths],
         );
         if (!pathValidation.isValid) {
           yield {

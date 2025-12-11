@@ -92,31 +92,6 @@ describe("bash tool allowed paths access", async () => {
     const res = await run("cat /etc/hosts");
     assert.ok(res.includes("resolves outside the allowed directories"));
   });
-
-  it("allows access to multiple allowed paths", async () => {
-    // Test the validatePaths function directly with multiple allowed paths
-    const result = validatePaths(
-      "cat /tmp/test1.txt /tmp/test2.txt",
-      [baseDir],
-      baseDir,
-      ["/tmp/test1.txt", "/tmp/test2.txt"],
-    );
-    assert.strictEqual(result.isValid, true);
-  });
-
-  it("rejects access to paths not in allowed list", async () => {
-    // Test the validatePaths function directly with specific allowed paths
-    const result = validatePaths(
-      "cat /tmp/test1.txt /tmp/test3.txt",
-      [baseDir],
-      baseDir,
-      ["/tmp/test1.txt", "/tmp/test2.txt"],
-    );
-    assert.strictEqual(result.isValid, false);
-    assert.ok(
-      result.error?.includes("resolves outside the allowed directories"),
-    );
-  });
 });
 
 describe("bash tool abort signal handling", async () => {

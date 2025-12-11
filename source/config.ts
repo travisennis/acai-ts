@@ -108,11 +108,6 @@ export class ConfigManager {
     return this.app.getPath("logs");
   }
 
-  // Get the accessible log path
-  getAccessibleLogPath(): string {
-    return path.join(this.getAccessibleLogDir(), "current.log");
-  }
-
   private async _readConfig(
     configPath: string,
   ): Promise<Partial<ProjectConfig>> {

@@ -8,7 +8,6 @@ export function validatePaths(
   command: string,
   allowedDirs: string[],
   cwd: string,
-  allowedPaths?: string[],
 ): { isValid: boolean; error?: string } {
   // Simple tokenization - split on spaces but respect quotes
   const tokens: string[] = [];
@@ -72,14 +71,8 @@ export function validatePaths(
       const resolvedPath = path.resolve(cwd, expandedToken);
 
       // Allow access to explicitly allowed paths
-      const isAllowedPath = allowedPaths?.some(
-        (allowedPath) => resolvedPath === path.resolve(allowedPath),
-      );
 
-      if (
-        !isAllowedPath &&
-        !isPathWithinAllowedDirs(resolvedPath, allowedDirs)
-      ) {
+      if (!isPathWithinAllowedDirs(resolvedPath, allowedDirs)) {
         return {
           isValid: false,
           error: `Path '${cleanToken}' resolves outside the allowed directories (${resolvedPath}). All paths must be within ${allowedDirs.join(", ")}`,
@@ -94,8 +87,15 @@ export function validatePaths(
 export const resolveCwd = (
   cwdInput: string | null | undefined,
   workingDir: string,
+  allowedDirs?: string[],
 ): string => {
-  const projectRootAbs = path.resolve(workingDir);
+  // Determine which directory to use as the base for resolving relative paths
+  // If allowedDirs is provided and non-empty, use the first allowed directory
+  // Otherwise use the workingDir parameter (backward compatibility)
+  const baseDirForResolution =
+    allowedDirs && allowedDirs.length > 0 ? allowedDirs[0] : workingDir;
+
+  const projectRootAbs = path.resolve(baseDirForResolution);
   let projectRoot = projectRootAbs;
   try {
     projectRoot = fs.realpathSync(projectRootAbs);
@@ -117,12 +117,23 @@ export const resolveCwd = (
     // If the path doesn't exist entirely, validate intended path
   }
 
-  const rel = path.relative(projectRoot, target);
-  const inside = rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
-  if (!inside) {
-    throw new Error(
-      `Working directory must be within the project directory: ${projectRoot}. Received: ${cwdInput ?? "<default>"} -> ${target}`,
-    );
+  // Check if within allowed directories if provided, otherwise check project root
+  if (allowedDirs && allowedDirs.length > 0) {
+    if (!isPathWithinAllowedDirs(target, allowedDirs)) {
+      throw new Error(
+        `Working directory must be within the allowed directories: ${allowedDirs.join(", ")}. Received: ${cwdInput ?? "<default>"} -> ${target}`,
+      );
+    }
+  } else {
+    // Fallback to original behavior: check within project root
+    const rel = path.relative(projectRoot, target);
+    const inside =
+      rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+    if (!inside) {
+      throw new Error(
+        `Working directory must be within the project directory: ${projectRoot}. Received: ${cwdInput ?? "<default>"} -> ${target}`,
+      );
+    }
   }
 
   // Check existence and that it's a directory

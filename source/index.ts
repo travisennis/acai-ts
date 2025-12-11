@@ -45,6 +45,7 @@ export function createWorkspaceContext(
   const allowedDirs = [
     primaryDir,
     "/tmp",
+    config.getAccessibleLogDir(),
     path.join(os.homedir(), ".acai"),
     ...addDirArgs,
   ];
