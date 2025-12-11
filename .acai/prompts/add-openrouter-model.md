@@ -1,6 +1,6 @@
 Your task is to add a new model to the ./source/models/openrouter-provider.ts.
 
-I want you to accomplish this by writing a javascript script and executing it with the code-interpreter tool.
+I want you to accomplish this by writing an ESM javascript script and executing it with node.
 
 This script should do the following:
 1. fetch (using the fetch built-in in Node.js) `openrouter.ai/api/v1/models` using https
@@ -10,4 +10,3 @@ This script should do the following:
 
 Take that model information and use it to add a new model to openrouter-provider.ts. Follow the pattern that exists to add a new model. If any information is missing ask the user to provide guidance.
 
-If the model doesn't support tool calling, stop and call that out. Models that do not support tool calling are not appropriate for this project.
