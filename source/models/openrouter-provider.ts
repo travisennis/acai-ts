@@ -37,28 +37,13 @@ const openRouterClient = createOpenRouter({
 // });
 
 const openrouterModels = {
-  "deepseek-v3-1": openRouterClient("deepseek/deepseek-v3.1-terminus:exacto", {
-    usage: { include: true },
-  }) as LanguageModelV2,
   "deepseek-v3-2": openRouterClient("deepseek/deepseek-v3.2", {
-    usage: { include: true },
-  }) as LanguageModelV2,
-  "deepseek-r1": openRouterClient("deepseek/deepseek-r1-0528", {
-    usage: { include: true },
-  }) as LanguageModelV2,
-  "gemini-flash25": openRouterClient("google/gemini-2.5-flash", {
-    usage: { include: true },
-  }) as LanguageModelV2,
-  "gemini-pro25": openRouterClient("google/gemini-2.5-pro", {
     usage: { include: true },
   }) as LanguageModelV2,
   "gemini-3-pro": openRouterClient("google/gemini-3-pro-preview", {
     usage: { include: true },
   }) as LanguageModelV2,
   "sonnet-4.5": openRouterClient("anthropic/claude-sonnet-4.5", {
-    usage: { include: true },
-  }) as LanguageModelV2,
-  "opus-4.1": openRouterClient("anthropic/claude-opus-4.1", {
     usage: { include: true },
   }) as LanguageModelV2,
   "opus-4.5": openRouterClient("anthropic/claude-opus-4.5", {
@@ -91,12 +76,6 @@ const openrouterModels = {
   "glm-4.6": openRouterClient("z-ai/glm-4.6:exacto", {
     usage: { include: true },
   }) as LanguageModelV2,
-  "gpt-5": openRouterClient("openai/gpt-5", {
-    usage: { include: true },
-  }) as LanguageModelV2,
-  "gpt-5-mini": openRouterClient("openai/gpt-5-mini", {
-    usage: { include: true },
-  }) as LanguageModelV2,
   "gpt-oss-120b": openRouterClient("openai/gpt-oss-120b:exacto", {
     usage: { include: true },
   }) as LanguageModelV2,
@@ -104,9 +83,6 @@ const openrouterModels = {
     usage: { include: true },
   }) as LanguageModelV2,
   "grok-4-fast": openRouterClient("x-ai/grok-4-fast", {
-    usage: { include: true },
-  }) as LanguageModelV2,
-  "gpt-5-codex": openRouterClient("openai/gpt-5-codex", {
     usage: { include: true },
   }) as LanguageModelV2,
   "gpt-5.1": openRouterClient("openai/gpt-5.1", {
@@ -139,30 +115,6 @@ export const openrouterProvider = {
 export const openrouterModelRegistry: {
   [K in ModelName]: ModelMetadata<ModelName>;
 } = {
-  "openrouter:deepseek-r1": {
-    id: "openrouter:deepseek-r1",
-    provider: "openrouter",
-    contextWindow: 128000,
-    maxOutputTokens: 32768,
-    defaultTemperature: 0.6,
-    promptFormat: "bracket",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0, // Assuming free tier or unknown cost
-    costPerOutputToken: 0, // Assuming free tier or unknown cost
-  },
-  "openrouter:deepseek-v3-1": {
-    id: "openrouter:deepseek-v3-1",
-    provider: "openrouter",
-    contextWindow: 163840,
-    maxOutputTokens: 8000,
-    defaultTemperature: 0.3,
-    promptFormat: "bracket",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000002,
-    costPerOutputToken: 0.0000008,
-  },
   "openrouter:deepseek-v3-2": {
     id: "openrouter:deepseek-v3-2",
     provider: "openrouter",
@@ -175,31 +127,6 @@ export const openrouterModelRegistry: {
     costPerInputToken: 0.00000027,
     costPerOutputToken: 0.0000004,
   },
-  "openrouter:gemini-flash25": {
-    id: "openrouter:gemini-flash25",
-    provider: "openrouter",
-    contextWindow: 1000000,
-    maxOutputTokens: 66000,
-    defaultTemperature: 0.5,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-  },
-  "openrouter:gemini-pro25": {
-    id: "openrouter:gemini-pro25",
-    provider: "openrouter",
-    contextWindow: 1000000,
-    maxOutputTokens: 64000,
-    defaultTemperature: 0.5,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-  },
-
   "openrouter:gemini-3-pro": {
     id: "openrouter:gemini-3-pro",
     provider: "openrouter",
@@ -212,20 +139,6 @@ export const openrouterModelRegistry: {
     costPerInputToken: 0.000002,
     costPerOutputToken: 0.000012,
   },
-
-  "openrouter:opus-4.1": {
-    id: "openrouter:opus-4.1",
-    provider: "openrouter",
-    contextWindow: 200000,
-    maxOutputTokens: 32000,
-    defaultTemperature: 0.5,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.000015,
-    costPerOutputToken: 0.000075,
-  },
-
   "openrouter:opus-4.5": {
     id: "openrouter:opus-4.5",
     provider: "openrouter",
@@ -238,7 +151,6 @@ export const openrouterModelRegistry: {
     costPerInputToken: 0.000005,
     costPerOutputToken: 0.000025,
   },
-
   "openrouter:sonnet-4.5": {
     id: "openrouter:sonnet-4.5",
     provider: "openrouter",
@@ -335,7 +247,6 @@ export const openrouterModelRegistry: {
     costPerInputToken: 0.0000012,
     costPerOutputToken: 0.000006,
   },
-
   "openrouter:glm-4.6": {
     id: "openrouter:glm-4.6",
     provider: "openrouter",
@@ -347,30 +258,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000006,
     costPerOutputToken: 0.0000022,
-  },
-  "openrouter:gpt-5": {
-    id: "openrouter:gpt-5",
-    provider: "openrouter",
-    contextWindow: 400000,
-    maxOutputTokens: 128000,
-    defaultTemperature: 1.0,
-    promptFormat: "xml",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.00000125,
-    costPerOutputToken: 0.00001,
-  },
-  "openrouter:gpt-5-codex": {
-    id: "openrouter:gpt-5-codex",
-    provider: "openrouter",
-    contextWindow: 400000,
-    maxOutputTokens: 128000,
-    defaultTemperature: -1,
-    promptFormat: "xml",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.00000125,
-    costPerOutputToken: 0.00001,
   },
   "openrouter:gpt-5.1": {
     id: "openrouter:gpt-5.1",
@@ -407,18 +294,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000025,
     costPerOutputToken: 0.000002,
-  },
-  "openrouter:gpt-5-mini": {
-    id: "openrouter:gpt-5-mini",
-    provider: "openrouter",
-    contextWindow: 200000,
-    maxOutputTokens: 64000,
-    defaultTemperature: 1.0,
-    promptFormat: "xml",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.00000015,
-    costPerOutputToken: 0.0000006,
   },
   "openrouter:grok-code-fast-1": {
     id: "openrouter:grok-code-fast-1",
