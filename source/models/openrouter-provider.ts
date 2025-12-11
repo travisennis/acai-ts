@@ -76,6 +76,9 @@ const openrouterModels = {
   "devstral-medium": openRouterClient("mistralai/devstral-medium", {
     usage: { include: true },
   }) as LanguageModelV2,
+  "devstral-2512-free": openRouterClient("mistralai/devstral-2512:free", {
+    usage: { include: true },
+  }) as LanguageModelV2,
   "qwen3-coder": openRouterClient("qwen/qwen3-coder:exacto", {
     usage: { include: true },
   }) as LanguageModelV2,
@@ -295,6 +298,19 @@ export const openrouterModelRegistry: {
     costPerInputToken: 0.0000004,
     costPerOutputToken: 0.000002,
     category: "balanced",
+  },
+  "openrouter:devstral-2512-free": {
+    id: "openrouter:devstral-2512-free",
+    provider: "openrouter",
+    contextWindow: 262144,
+    maxOutputTokens: 32768,
+    defaultTemperature: 0.3,
+    promptFormat: "markdown",
+    supportsReasoning: false,
+    supportsToolCalling: true,
+    costPerInputToken: 0,
+    costPerOutputToken: 0,
+    category: "powerful",
   },
   "openrouter:qwen3-coder": {
     id: "openrouter:qwen3-coder",
