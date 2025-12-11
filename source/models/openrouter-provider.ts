@@ -94,6 +94,12 @@ const openrouterModels = {
   "gpt-5.1-codex-mini": openRouterClient("openai/gpt-5.1-codex-mini", {
     usage: { include: true },
   }) as LanguageModelV2,
+  "gpt-5.1-codex-max": openRouterClient("openai/gpt-5.1-codex-max", {
+    usage: { include: true },
+  }) as LanguageModelV2,
+  "gpt-5.2": openRouterClient("openai/gpt-5.2", {
+    usage: { include: true },
+  }) as LanguageModelV2,
   "minimax-m2": openRouterClient("minimax/minimax-m2", {
     usage: { include: true },
   }) as LanguageModelV2,
@@ -295,6 +301,18 @@ export const openrouterModelRegistry: {
     costPerInputToken: 0.00000025,
     costPerOutputToken: 0.000002,
   },
+  "openrouter:gpt-5.1-codex-max": {
+    id: "openrouter:gpt-5.1-codex-max",
+    provider: "openrouter",
+    contextWindow: 400000,
+    maxOutputTokens: 128000,
+    defaultTemperature: -1,
+    promptFormat: "xml",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000125,
+    costPerOutputToken: 0.00001,
+  },
   "openrouter:grok-code-fast-1": {
     id: "openrouter:grok-code-fast-1",
     provider: "openrouter",
@@ -342,6 +360,18 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000001,
     costPerOutputToken: 0.000005,
+  },
+  "openrouter:gpt-5.2": {
+    id: "openrouter:gpt-5.2",
+    provider: "openrouter",
+    contextWindow: 400000,
+    maxOutputTokens: 128000,
+    defaultTemperature: 1.0,
+    promptFormat: "xml",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000175,
+    costPerOutputToken: 0.000014,
   },
   "openrouter:minimax-m2": {
     id: "openrouter:minimax-m2",
