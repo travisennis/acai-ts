@@ -103,7 +103,7 @@ export const createBatchTool = async ({
             name: BatchTool.name,
             event: "tool-update",
             id: toolCallId,
-            data: `[${callNumber}/${totalCalls}] ${style.cyan(toolName)}${callId ? ` (${callId})` : ""} ${style.dim(JSON.stringify(args).slice(0, 50))}`,
+            data: `[${callNumber}/${totalCalls}] ${style.cyan(toolName)}${callId ? ` (${callId})` : ""} ${style.dim(JSON.stringify(args).slice(0, 60))}...`,
           };
 
           try {
@@ -142,14 +142,6 @@ export const createBatchTool = async ({
               status: "success",
               result: toolOutput,
             });
-
-            // Yield update for successful command
-            yield {
-              name: BatchTool.name,
-              event: "tool-update",
-              id: toolCallId,
-              data: `[${callNumber}/${totalCalls}] ${style.green("✓")} ${style.cyan(toolName)} completed`,
-            };
           } catch (error) {
             const errorMessage =
               error instanceof Error ? error.message : String(error);
