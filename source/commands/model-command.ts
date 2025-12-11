@@ -22,7 +22,7 @@ export function modelCommand(options: CommandOptions): ReplCommand {
   return {
     command: "/model",
     description:
-      "List available models or switch to a different model. Usage: /model [provider:model-name|category|provider]",
+      "List available models or switch to a different model. Usage: /model [provider:model-name|provider]",
 
     getSubCommands: () => Promise.resolve(models as unknown as string[]),
     async handle(
@@ -42,7 +42,7 @@ export function modelCommand(options: CommandOptions): ReplCommand {
       const arg = args.join(" ").trim();
       const modelConfig = modelManager.getModelMetadata("repl");
 
-      // No args - display current model and list available models by category
+      // No args - display model selector
       if (!arg) {
         // Create model selector with current model
         const modelSelector = new ModelSelectorComponent(
@@ -143,54 +143,6 @@ export function modelCommand(options: CommandOptions): ReplCommand {
         }
       }
 
-      // // Display models by category
-      // const categories = ["fast", "balanced", "powerful"];
-      // if (categories.includes(arg)) {
-      //   container.addChild(
-      //     new Text(
-      //       `${arg.charAt(0).toUpperCase() + arg.slice(1)} models:`,
-      //       1,
-      //       0,
-      //     ),
-      //   );
-      //   let lineIndex = 2;
-      //   for (const model of getModelsByCategory(
-      //     arg as "fast" | "balanced" | "powerful",
-      //   )) {
-      //     container.addChild(new Text(formatModelInfo(model), lineIndex, 0));
-      //     lineIndex++;
-      //   }
-      //   tui.requestRender();
-      //   editor.setText("");
-      //   return "continue";
-      // }
-
-      // // Display models by provider
-      // if (providers.includes(arg as ModelProvider)) {
-      //   container.addChild(new Text(`Models from ${arg}:`, 0, 1));
-      //   let lineIndex = 2;
-      //   for (const model of Object.values(modelRegistry).filter(
-      //     (m) => m.provider === arg,
-      //   )) {
-      //     container.addChild(new Text(formatModelInfo(model), lineIndex, 0));
-      //     lineIndex++;
-      //   }
-      //   tui.requestRender();
-      //   editor.setText("");
-      //   return "continue";
-      // }
-
-      // // Invalid model name
-      // container.addChild(
-      //   new Text(style.red(`Invalid model name or category: ${arg}`), 0, 1),
-      // );
-      // container.addChild(
-      //   new Text(
-      //     style.dim("Usage: /model [provider:model-name|category|provider]"),
-      //     2,
-      //     0,
-      //   ),
-      // );
       tui.requestRender();
       editor.setText("");
       return "continue";
