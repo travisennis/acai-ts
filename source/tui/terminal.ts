@@ -25,64 +25,60 @@ export interface Terminal {
   // Clear operations
   clearLine(): void; // Clear current line
   clearFromCursor(): void; // Clear from cursor to end of screen
-  clearScreen(): void; // Clear entire screen and move cursor to (0,0)
+  clearScreen(): void; // Clear entire screen and move cursor to (1,1)
 }
-
-import readline from "node:readline";
 
 /**
  * Real terminal using process.stdin/stdout
  */
 export class ProcessTerminal implements Terminal {
   private wasRaw = false;
+  private sigintHandler?: () => void;
   private inputHandler?: (data: string) => void;
   private resizeHandler?: () => void;
-  private rl?: readline.Interface;
+  private stopped = false;
 
   start(onInput: (data: string) => void, onResize: () => void): void {
     this.inputHandler = onInput;
     this.resizeHandler = onResize;
 
-    // Save previous state
-    this.wasRaw = process.stdin.isRaw || false;
-
-    // Check if we're in a TTY environment
-    const isTty = process.stdin.isTTY && process.stdout.isTTY;
-
-    if (isTty) {
-      // Create readline interface for reliable input handling
-      this.rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        terminal: true,
-      });
-
-      // Enable raw mode for character-by-character input
-      if (process.stdin.setRawMode) {
-        process.stdin.setRawMode(true);
-      }
-      process.stdin.setEncoding("utf8");
-      process.stdin.resume();
-
-      // Enable bracketed paste mode - terminal will wrap pastes in \x1b[200~ ... \x1b[201~
-      process.stdout.write("\x1b[?2004h");
-
-      // Set up input handler
-      process.stdin.on("data", this.inputHandler);
-      process.stdout.on("resize", this.resizeHandler);
-    } else {
-      console.warn("Not running in a TTY environment - input will not work");
-      // In non-TTY environments, we can't use raw mode
-      // But we can still set up basic input handling if needed
-      process.stdin.setEncoding("utf8");
-      if (process.stdin.isPaused()) {
-        process.stdin.resume();
-      }
-      process.stdin.on("data", this.inputHandler);
+    if (!process.stdin.isTTY || !process.stdout.isTTY) {
+      throw new Error("Terminal requires TTY environment");
     }
+
+    // Save previous state and enable raw mode
+    this.wasRaw = process.stdin.isRaw ?? false;
+    if (process.stdin.setRawMode) {
+      process.stdin.setRawMode(true);
+    }
+    process.stdin.setEncoding("utf8");
+    process.stdin.resume();
+
+    // Enable bracketed paste mode - terminal will wrap pastes in \x1b[200~ ... \x1b[201~
+    process.stdout.write("\x1b[?2004h");
+
+    // Set up event handlers with proper binding and type conversion
+    process.stdin.on("data", (data) => {
+      this.inputHandler?.(
+        typeof data === "string" ? data : data.toString("utf8"),
+      );
+    });
+    process.stdout.on("resize", () => {
+      this.resizeHandler?.();
+    });
+
+    this.sigintHandler = () => this.stop();
+    process.on("SIGINT", this.sigintHandler);
   }
 
   stop(): void {
+    if (this.stopped) return;
+    this.stopped = true;
+
+    if (this.sigintHandler) {
+      process.off("SIGINT", this.sigintHandler);
+    }
+
     // Disable bracketed paste mode
     process.stdout.write("\x1b[?2004l");
 
@@ -96,11 +92,7 @@ export class ProcessTerminal implements Terminal {
       this.resizeHandler = undefined;
     }
 
-    // Close readline interface
-    if (this.rl) {
-      this.rl.close();
-      this.rl = undefined;
-    }
+    process.stdin.pause();
 
     // Restore raw mode state
     if (process.stdin.setRawMode) {
