@@ -37,7 +37,6 @@ export const googleModelRegistry: Record<
     supportsToolCalling: true,
     costPerInputToken: 0,
     costPerOutputToken: 0,
-    category: "fast",
   },
   "google:pro25": {
     id: "google:pro25",
@@ -50,7 +49,6 @@ export const googleModelRegistry: Record<
     supportsToolCalling: true,
     costPerInputToken: 0,
     costPerOutputToken: 0,
-    category: "powerful",
   },
   "google:flash25": {
     id: "google:flash25",
@@ -63,6 +61,5 @@ export const googleModelRegistry: Record<
     supportsToolCalling: true,
     costPerInputToken: 0.00000015,
     costPerOutputToken: 0.0000035,
-    category: "balanced",
   },
 };

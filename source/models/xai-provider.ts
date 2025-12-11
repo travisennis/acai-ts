@@ -41,7 +41,6 @@ export const xaiModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000003, // Placeholder, check official pricing
     costPerOutputToken: 0.000015, // Placeholder, check official pricing
-    category: "balanced",
   },
   "xai:grok3-mini": {
     id: "xai:grok3-mini",
@@ -54,6 +53,5 @@ export const xaiModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000003, // Placeholder, check official pricing
     costPerOutputToken: 0.0000005, // Placeholder, check official pricing
-    category: "fast", // Or "fast" depending on performance
   },
 };

@@ -38,6 +38,5 @@ export const groqModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 1 / 1000000,
     costPerOutputToken: 3 / 1000000,
-    category: "fast",
   },
 };

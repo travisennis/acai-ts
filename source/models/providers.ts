@@ -99,8 +99,6 @@ export function languageModel(model: ModelName) {
 export interface ModelMetadata<T = ModelName> {
   id: T;
   provider: ModelProvider;
-  // displayName: string;
-  // description: string;
   contextWindow: number;
   supportsToolCalling: boolean;
   supportsReasoning: boolean;
@@ -109,7 +107,6 @@ export interface ModelMetadata<T = ModelName> {
   maxOutputTokens: number;
   defaultTemperature: number;
   promptFormat: "xml" | "markdown" | "bracket";
-  category: "fast" | "balanced" | "powerful";
 }
 
 // https://openrouter.ai/api/v1/models

@@ -35,7 +35,6 @@ export const deepseekModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000012, // Check official pricing
     costPerOutputToken: 0.0000012, // Check official pricing
-    category: "balanced",
   },
   "deepseek:deepseek-reasoner": {
     id: "deepseek:deepseek-reasoner",
@@ -48,6 +47,5 @@ export const deepseekModelRegistry: {
     supportsToolCalling: true, // Check if this model supports tools
     costPerInputToken: 0.00000055, // Check official pricing
     costPerOutputToken: 0.00000219, // Check official pricing
-    category: "balanced",
   },
 };

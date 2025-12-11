@@ -150,7 +150,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0, // Assuming free tier or unknown cost
     costPerOutputToken: 0, // Assuming free tier or unknown cost
-    category: "balanced",
   },
   "openrouter:deepseek-v3-1": {
     id: "openrouter:deepseek-v3-1",
@@ -163,7 +162,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000002,
     costPerOutputToken: 0.0000008,
-    category: "balanced",
   },
   "openrouter:deepseek-v3-2": {
     id: "openrouter:deepseek-v3-2",
@@ -176,7 +174,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000027,
     costPerOutputToken: 0.0000004,
-    category: "balanced",
   },
   "openrouter:gemini-flash25": {
     id: "openrouter:gemini-flash25",
@@ -189,7 +186,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0,
     costPerOutputToken: 0,
-    category: "fast",
   },
   "openrouter:gemini-pro25": {
     id: "openrouter:gemini-pro25",
@@ -202,7 +198,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0,
     costPerOutputToken: 0,
-    category: "powerful",
   },
 
   "openrouter:gemini-3-pro": {
@@ -216,7 +211,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000002,
     costPerOutputToken: 0.000012,
-    category: "powerful",
   },
 
   "openrouter:opus-4.1": {
@@ -230,7 +224,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000015,
     costPerOutputToken: 0.000075,
-    category: "powerful",
   },
 
   "openrouter:opus-4.5": {
@@ -244,7 +237,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000005,
     costPerOutputToken: 0.000025,
-    category: "powerful",
   },
 
   "openrouter:sonnet-4.5": {
@@ -258,7 +250,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000003,
     costPerOutputToken: 0.000015,
-    category: "powerful",
   },
   "openrouter:kimi-k2": {
     id: "openrouter:kimi-k2",
@@ -271,7 +262,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000006,
     costPerOutputToken: 0.0000025,
-    category: "balanced",
   },
   "openrouter:kimi-k2-thinking": {
     id: "openrouter:kimi-k2-thinking",
@@ -284,7 +274,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000006,
     costPerOutputToken: 0.0000025,
-    category: "powerful",
   },
   "openrouter:devstral-medium": {
     id: "openrouter:devstral-medium",
@@ -297,7 +286,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000004,
     costPerOutputToken: 0.000002,
-    category: "balanced",
   },
   "openrouter:devstral-2512-free": {
     id: "openrouter:devstral-2512-free",
@@ -310,7 +298,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0,
     costPerOutputToken: 0,
-    category: "powerful",
   },
   "openrouter:qwen3-coder": {
     id: "openrouter:qwen3-coder",
@@ -323,7 +310,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000004,
     costPerOutputToken: 0.000002,
-    category: "balanced",
   },
   "openrouter:qwen3-coder-plus": {
     id: "openrouter:qwen3-coder-plus",
@@ -336,7 +322,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000001,
     costPerOutputToken: 0.000005,
-    category: "powerful",
   },
   "openrouter:qwen3-max": {
     id: "openrouter:qwen3-max",
@@ -349,7 +334,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000012,
     costPerOutputToken: 0.000006,
-    category: "powerful",
   },
 
   "openrouter:glm-4.6": {
@@ -363,7 +347,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000006,
     costPerOutputToken: 0.0000022,
-    category: "balanced",
   },
   "openrouter:gpt-5": {
     id: "openrouter:gpt-5",
@@ -376,7 +359,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000125,
     costPerOutputToken: 0.00001,
-    category: "powerful",
   },
   "openrouter:gpt-5-codex": {
     id: "openrouter:gpt-5-codex",
@@ -389,7 +371,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000125,
     costPerOutputToken: 0.00001,
-    category: "powerful",
   },
   "openrouter:gpt-5.1": {
     id: "openrouter:gpt-5.1",
@@ -402,7 +383,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000125,
     costPerOutputToken: 0.00001,
-    category: "powerful",
   },
   "openrouter:gpt-5.1-codex": {
     id: "openrouter:gpt-5.1-codex",
@@ -415,7 +395,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000125,
     costPerOutputToken: 0.00001,
-    category: "powerful",
   },
   "openrouter:gpt-5.1-codex-mini": {
     id: "openrouter:gpt-5.1-codex-mini",
@@ -428,7 +407,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000025,
     costPerOutputToken: 0.000002,
-    category: "balanced",
   },
   "openrouter:gpt-5-mini": {
     id: "openrouter:gpt-5-mini",
@@ -441,7 +419,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000015,
     costPerOutputToken: 0.0000006,
-    category: "balanced",
   },
   "openrouter:grok-code-fast-1": {
     id: "openrouter:grok-code-fast-1",
@@ -454,7 +431,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000002,
     costPerOutputToken: 0.0000015,
-    category: "fast",
   },
   "openrouter:gpt-oss-120b": {
     id: "openrouter:gpt-oss-120b",
@@ -467,7 +443,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000007256312,
     costPerOutputToken: 0.0000002903936,
-    category: "fast",
   },
   "openrouter:grok-4-fast": {
     id: "openrouter:grok-4-fast",
@@ -480,7 +455,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000002,
     costPerOutputToken: 0.0000005,
-    category: "fast",
   },
   "openrouter:haiku-4.5": {
     id: "openrouter:haiku-4.5",
@@ -493,7 +467,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000001,
     costPerOutputToken: 0.000005,
-    category: "fast",
   },
   "openrouter:minimax-m2": {
     id: "openrouter:minimax-m2",
@@ -506,6 +479,5 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000015,
     costPerOutputToken: 0.00000045,
-    category: "balanced",
   },
 };

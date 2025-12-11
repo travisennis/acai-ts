@@ -12,7 +12,6 @@ const mockModel: ModelMetadata = {
   defaultTemperature: 0.7,
   supportsToolCalling: true,
   supportsReasoning: false,
-  category: "balanced",
   costPerInputToken: 0.00003,
   costPerOutputToken: 0.00006,
 };

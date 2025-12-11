@@ -37,7 +37,6 @@ export const openaiModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000002,
     costPerOutputToken: 0.000008,
-    category: "balanced",
   },
   "openai:o3": {
     id: "openai:o3",
@@ -50,7 +49,6 @@ export const openaiModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00001,
     costPerOutputToken: 0.00004,
-    category: "powerful",
   },
   "openai:o4-mini": {
     id: "openai:o4-mini",
@@ -63,7 +61,6 @@ export const openaiModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000011,
     costPerOutputToken: 0.0000044,
-    category: "balanced",
   },
   "openai:codex-mini": {
     id: "openai:codex-mini",
@@ -76,6 +73,5 @@ export const openaiModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000015,
     costPerOutputToken: 0.000006,
-    category: "balanced",
   },
 };

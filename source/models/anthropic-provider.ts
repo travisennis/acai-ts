@@ -58,7 +58,6 @@ export const anthropicModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000015,
     costPerOutputToken: 0.000075,
-    category: "powerful",
   },
   "anthropic:sonnet": {
     id: "anthropic:sonnet",
@@ -71,7 +70,6 @@ export const anthropicModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000003,
     costPerOutputToken: 0.000015,
-    category: "balanced",
   },
   "anthropic:sonnet37": {
     id: "anthropic:sonnet37",
@@ -84,7 +82,6 @@ export const anthropicModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000003,
     costPerOutputToken: 0.000015,
-    category: "balanced",
   },
   "anthropic:sonnet37-token-efficient-tools": {
     id: "anthropic:sonnet37-token-efficient-tools",
@@ -97,7 +94,6 @@ export const anthropicModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000003,
     costPerOutputToken: 0.000015,
-    category: "balanced",
   },
   "anthropic:sonnet37-128k": {
     id: "anthropic:sonnet37-128k",
@@ -110,7 +106,6 @@ export const anthropicModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000003,
     costPerOutputToken: 0.000015,
-    category: "powerful",
   },
   "anthropic:sonnet35": {
     id: "anthropic:sonnet35",
@@ -123,7 +118,6 @@ export const anthropicModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000003,
     costPerOutputToken: 0.000015,
-    category: "balanced",
   },
   "anthropic:haiku": {
     id: "anthropic:haiku",
@@ -136,6 +130,5 @@ export const anthropicModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000008,
     costPerOutputToken: 0.000004,
-    category: "fast",
   },
 };
