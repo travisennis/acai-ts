@@ -243,7 +243,7 @@ export async function loadSkills(): Promise<Skill[]> {
   }
 
   // Pi: recursive, colon-separated path names
-  const globalSkillsDir = join(homedir(), CONFIG_DIR_NAME, "agent", "skills");
+  const globalSkillsDir = join(homedir(), CONFIG_DIR_NAME, "skills");
   for (const skill of await loadSkillsFromDirInternal(
     globalSkillsDir,
     "user",

@@ -573,7 +573,7 @@ Skills are loaded from these locations (later sources override earlier ones):
 1. `~/.codex/skills/**/SKILL.md` (Codex CLI user skills)
 2. `~/.claude/skills/*/SKILL.md` (Claude Code user skills)
 3. `<cwd>/.claude/skills/*/SKILL.md` (Claude Code project skills)
-4. `~/.acai/agent/skills/**/SKILL.md` (Acai user skills)
+4. `~/.acai/skills/**/SKILL.md` (Acai user skills)
 5. `<cwd>/.acai/skills/**/SKILL.md` (Acai project skills)
 
 ### Directory Structure
@@ -581,7 +581,7 @@ Skills are loaded from these locations (later sources override earlier ones):
 Skills can be organized hierarchically with colon-separated names:
 
 ```
-~/.acai/agent/skills/
+~/.acai/skills/
 ├── pdf-extract/
 │   ├── SKILL.md           # Becomes "pdf-extract" skill
 │   └── scripts/           # Optional: supporting files
@@ -597,7 +597,7 @@ Skills can be organized hierarchically with colon-separated names:
 ### Compatibility
 
 Acai's skills system is compatible with:
-- **Pi Native Format**: `~/.acai/agent/skills/**/SKILL.md` (recursive, colon-separated paths)
+- **Pi Native Format**: `~/.acai/skills/**/SKILL.md` (recursive, colon-separated paths)
 - **Claude Code Format**: `~/.claude/skills/*/SKILL.md` (single level only)
 - **Codex CLI Format**: `~/.codex/skills/**/SKILL.md` (recursive, simple names)
 
@@ -621,7 +621,7 @@ Skills are enabled by default. You can disable them via:
 2. **System prompt**: Lists available skills
 3. **User request**: "Extract text from this PDF"
 4. **Agent matches**: Sees "pdf-extract: Extract text and tables from PDF files"
-5. **Skill loading**: Uses `read` tool to load `~/.acai/agent/skills/pdf-extract/SKILL.md`
+5. **Skill loading**: Uses `read` tool to load `~/.acai/skills/pdf-extract/SKILL.md`
 6. **Placeholder substitution**: Replaces `{baseDir}` with skill directory path
 7. **Execution**: Follows instructions in skill file
 
