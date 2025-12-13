@@ -1,6 +1,7 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve, sep } from "node:path";
+import { logger } from "./logger.ts";
 
 // Core skill interfaces
 export interface SkillFrontmatter {
@@ -133,7 +134,9 @@ async function loadSkillsFromDirInternal(
               baseDir: entryPath,
               source,
             });
-          } catch {}
+          } catch (error) {
+            logger.warn(error, `Failed to load skill from ${skillPath}:`);
+          }
         }
       } else if (
         entry.isFile() &&
@@ -175,13 +178,15 @@ async function loadSkillsFromDirInternal(
             baseDir,
             source,
           });
-        } catch {}
+        } catch (error) {
+          logger.warn(error, `Failed to load skill from ${entryPath}:`);
+        }
       }
     }
   } catch (error) {
     // Directory doesn't exist or can't be read
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      console.error(`Error reading skills directory ${fullDir}:`, error);
+      logger.error(error, `Error reading skills directory ${fullDir}:`);
     }
   }
 
