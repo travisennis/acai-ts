@@ -33,6 +33,7 @@ Acai is a powerful **AI-driven command-line interface (CLI) tool** designed to a
 *   **Shell Integration:** Execute shell commands inline using `!`command`` syntax or via `/shell` command.
 *   **Dynamic Tools:** Create and load custom tools from JavaScript files in your project or user directory.
 *   **Multi-workspace Support:** Work across multiple project directories simultaneously.
+*   **Skills System:** Discover and load specialized instruction files for specific tasks (PDF extraction, database migrations, etc.).
 
 ## 🛠️ Technologies Used
 
@@ -189,6 +190,12 @@ acai -p "What files contain the term 'toolCallRepair'?"
 
 # Pipe input
 echo "How many TypeScript files are in this project?" | acai
+
+# Disable skills discovery
+acai --no-skills
+
+# Add additional working directories
+acai --add-dir /path/to/project1 --add-dir /path/to/project2
 ```
 
 Once in the REPL, you can type your prompts or use commands:
@@ -519,6 +526,105 @@ Available tools:
   Total: 14 static, 2 dynamic
 ```
 
+## Skills System
+
+Acai includes a powerful skills system that allows you to create and use specialized instruction files for specific tasks. Skills are markdown files with YAML frontmatter that provide detailed instructions for particular domains (e.g., database migrations, PDF extraction, code review).
+
+### How Skills Work
+
+1. **Discovery**: At startup, Acai scans multiple locations for skills
+2. **Listing**: Available skills are listed in the system prompt
+3. **On-demand loading**: When a task matches a skill's description, the agent uses the `read` tool to load the skill file
+4. **Execution**: The agent follows the instructions in the skill file
+
+### Skill File Format
+
+Skills are markdown files named `SKILL.md` with YAML frontmatter:
+
+```markdown
+---
+description: Extract text and tables from PDF files
+name: pdf-extract          # Optional, defaults to directory name
+---
+
+# PDF Processing Instructions
+
+1. Use `pdftotext` to extract plain text
+2. For tables, use `tabula-py` or similar
+3. Always verify extraction quality
+
+Scripts are in: {baseDir}/scripts/
+Configuration: {baseDir}/config.json
+```
+
+**Required fields:**
+- `description`: Short description shown in system prompt
+
+**Optional fields:**
+- `name`: Override the skill name (defaults to directory name or colon-separated path)
+
+**Placeholder:**
+- `{baseDir}`: Replaced with the skill's base directory path
+
+### Skill Locations
+
+Skills are loaded from these locations (later sources override earlier ones):
+
+1. `~/.codex/skills/**/SKILL.md` (Codex CLI user skills)
+2. `~/.claude/skills/*/SKILL.md` (Claude Code user skills)
+3. `<cwd>/.claude/skills/*/SKILL.md` (Claude Code project skills)
+4. `~/.acai/agent/skills/**/SKILL.md` (Acai user skills)
+5. `<cwd>/.acai/skills/**/SKILL.md` (Acai project skills)
+
+### Directory Structure
+
+Skills can be organized hierarchically with colon-separated names:
+
+```
+~/.acai/agent/skills/
+├── pdf-extract/
+│   ├── SKILL.md           # Becomes "pdf-extract" skill
+│   └── scripts/           # Optional: supporting files
+├── db/
+│   └── migrate/
+│       └── SKILL.md       # Becomes "db:migrate" skill
+└── aws/
+    └── s3/
+        └── upload/
+            └── SKILL.md   # Becomes "aws:s3:upload" skill
+```
+
+### Compatibility
+
+Acai's skills system is compatible with:
+- **Pi Native Format**: `~/.acai/agent/skills/**/SKILL.md` (recursive, colon-separated paths)
+- **Claude Code Format**: `~/.claude/skills/*/SKILL.md` (single level only)
+- **Codex CLI Format**: `~/.codex/skills/**/SKILL.md` (recursive, simple names)
+
+### Configuration
+
+Skills are enabled by default. You can disable them via:
+
+1. **CLI flag**: `acai --no-skills`
+2. **Settings file**: Add to `~/.acai/acai.json` or `.acai/acai.json`:
+   ```json
+   {
+     "skills": {
+       "enabled": false
+     }
+   }
+   ```
+
+### Usage Example
+
+1. **Agent startup**: Scans all skill locations
+2. **System prompt**: Lists available skills
+3. **User request**: "Extract text from this PDF"
+4. **Agent matches**: Sees "pdf-extract: Extract text and tables from PDF files"
+5. **Skill loading**: Uses `read` tool to load `~/.acai/agent/skills/pdf-extract/SKILL.md`
+6. **Placeholder substitution**: Replaces `{baseDir}` with skill directory path
+7. **Execution**: Follows instructions in skill file
+
 ## Configuration
 
 ### Project Configuration
@@ -533,6 +639,9 @@ Acai supports project-specific configuration through a `.acai/acai.json` file in
   "notify": true,  // Optional: Enable system notifications (default: false)
   "tools": {
     "maxTokens": 30000  // Optional: Global max token limit for tools
+  },
+  "skills": {
+    "enabled": true  // Optional: Enable/disable skills discovery (default: true)
   }
 }
 ```

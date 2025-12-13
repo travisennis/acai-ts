@@ -7,6 +7,7 @@ import type { MessageHistory } from "./messages.ts";
 import type { ModelManager } from "./models/manager.ts";
 import type { PromptManager } from "./prompts/manager.ts";
 import { getProjectStatusLine } from "./repl/project-status-line.ts";
+import { loadSkills } from "./skills.ts";
 import style from "./terminal/style.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
@@ -114,6 +115,19 @@ export class NewRepl {
     });
 
     this.tui.addChild(this.welcome);
+
+    // Show loaded skills
+    const skills = await loadSkills();
+    if (skills.length > 0) {
+      const skillList = skills
+        .map((s) => style.dim(`  ${s.filePath}`))
+        .join("\n");
+      this.tui.addChild(
+        new Text(style.gray("Loaded skills:\n") + skillList, 0, 0),
+      );
+      this.tui.addChild(new Spacer(1));
+    }
+
     this.tui.addChild(this.chatContainer);
     this.tui.addChild(this.statusContainer);
     this.tui.addChild(new Spacer(1));

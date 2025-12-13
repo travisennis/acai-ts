@@ -31,6 +31,7 @@ interface CliOptions {
   tokenTracker: TokenTracker;
   tokenCounter: TokenCounter;
   workspace: WorkspaceContext;
+  skillsEnabled?: boolean;
 }
 
 const activeTools = [
@@ -44,8 +45,10 @@ const activeTools = [
 
 export class Cli {
   private options: CliOptions;
+  private skillsEnabled: boolean;
   constructor(options: CliOptions) {
     this.options = options;
+    this.skillsEnabled = options.skillsEnabled ?? true;
   }
 
   async run() {
@@ -80,6 +83,7 @@ export class Cli {
       type: "cli",
       activeTools,
       allowedDirs: this.options.workspace.allowedDirs,
+      skillsEnabled: this.skillsEnabled,
     });
 
     const aiConfig = new AiConfig({
