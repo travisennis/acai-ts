@@ -164,7 +164,7 @@ const system = async (
   configManager: ConfigManager,
   workspace: WorkspaceContext,
 ) => {
-  const projectConfig = await configManager.readProjectConfig();
+  const projectConfig = await configManager.getConfig();
 
   const sys = await systemPrompt({
     type: projectConfig.systemPromptType,

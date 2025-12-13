@@ -134,7 +134,7 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
           }
         }
 
-        const projectConfig = await config.readProjectConfig();
+        const projectConfig = await config.getConfig();
         const configMaxResults = projectConfig.tools.maxResults;
         const effectiveMaxResults = maxResults ?? configMaxResults;
 

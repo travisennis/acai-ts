@@ -111,7 +111,7 @@ export const createAdvancedEditFileTool = async ({
         );
 
         // Check if file is read-only
-        const projectConfig = await config.readProjectConfig();
+        const projectConfig = await config.getConfig();
         validateFileNotReadOnly(validPath, projectConfig, workingDir);
 
         const result = await applyAdvancedFileEdits(

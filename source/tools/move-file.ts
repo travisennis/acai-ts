@@ -62,7 +62,7 @@ export const createMoveFileTool = async ({
         );
 
         // Check if source file is read-only
-        const projectConfig = await config.readProjectConfig();
+        const projectConfig = await config.getConfig();
         validateFileNotReadOnly(validSourcePath, projectConfig, workingDir);
 
         const validDestPath = await validatePath(

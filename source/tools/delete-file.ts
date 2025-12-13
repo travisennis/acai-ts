@@ -59,7 +59,7 @@ export const createDeleteFileTool = async ({
         );
 
         // Check if file is read-only
-        const projectConfig = await config.readProjectConfig();
+        const projectConfig = await config.getConfig();
         validateFileNotReadOnly(filePath, projectConfig, workingDir);
 
         // Check if file exists before attempting delete

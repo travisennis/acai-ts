@@ -23,7 +23,7 @@ async function getMaxTokens(): Promise<number> {
   }
 
   try {
-    const projectConfig = await config.readProjectConfig();
+    const projectConfig = await config.getConfig();
     maxTokensCache = projectConfig.tools.maxTokens;
     cacheExpiry = now + CACHE_DURATION;
     return maxTokensCache;

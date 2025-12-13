@@ -436,7 +436,7 @@ async function runReplMode(state: AppState): Promise<void> {
   // Interactive loop
   while (true) {
     const userInput = await repl.getUserInput();
-    const projectConfig = await config.readProjectConfig();
+    const projectConfig = await config.getConfig();
     const activeTools = projectConfig.tools.activeTools as
       | CompleteToolNames[]
       | undefined;
@@ -470,7 +470,7 @@ async function runReplMode(state: AppState): Promise<void> {
 
 async function main() {
   try {
-    const appConfig = await config.ensureAppConfig("acai");
+    const appConfig = await config.ensureDefaultConfig("acai");
 
     // Note: SIGINT/SIGTERM handlers are set up by CLI and REPL components
     // as needed. We don't set a global handler here to avoid conflicts.

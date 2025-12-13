@@ -131,8 +131,8 @@ export class ConfigManager {
     }
   }
 
-  // Project config helpers
-  async readProjectConfig(): Promise<ProjectConfig> {
+  // Get merged configuration (project overrides app)
+  async getConfig(): Promise<ProjectConfig> {
     const appConfigPath = path.join(this.app.getPath(), "acai.json");
     const projectConfigPath = path.join(this.project.getPath(), "acai.json");
 
@@ -149,7 +149,7 @@ export class ConfigManager {
 
   // Skills settings helpers
   async getSkillsEnabled(): Promise<boolean> {
-    const projectConfig = await this.readProjectConfig();
+    const projectConfig = await this.getConfig();
     return projectConfig.skills?.enabled ?? true;
   }
 
@@ -253,8 +253,8 @@ export class ConfigManager {
     }
   }
 
-  // App config helpers
-  async readAppConfig(configName: string): Promise<ProjectConfig> {
+  // Private helper for reading app config
+  private async _readAppConfig(configName: string): Promise<ProjectConfig> {
     const configPath = path.join(this.app.getPath(), `${configName}.json`);
     try {
       const data = await fs.readFile(configPath, "utf8");
@@ -267,12 +267,13 @@ export class ConfigManager {
     }
   }
 
-  async ensureAppConfig(configName: string): Promise<ProjectConfig> {
+  // Ensure default app configuration exists
+  async ensureDefaultConfig(configName: string): Promise<ProjectConfig> {
     const configPath = path.join(this.app.getPath(), `${configName}.json`);
 
     try {
       await fs.access(configPath);
-      return await this.readAppConfig(configName);
+      return await this._readAppConfig(configName);
     } catch {
       // Create directory and default config if missing
       await this.app.ensurePath();

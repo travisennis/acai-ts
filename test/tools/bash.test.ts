@@ -8,7 +8,7 @@ import { createMockTokenCounter } from "../utils/mocking.ts";
 
 const tokenCounter = createMockTokenCounter((s: string) => s.length);
 
-await config.readProjectConfig();
+await config.getConfig();
 
 const baseDir = process.cwd();
 

@@ -25,7 +25,7 @@ export const applicationLogCommand = (
     ): Promise<"break" | "continue" | "use"> {
       let logFilePath: string | undefined;
       try {
-        const projectConfig = await config.readProjectConfig();
+        const projectConfig = await config.getConfig();
         logFilePath = projectConfig.logs?.path;
 
         if (!logFilePath) {

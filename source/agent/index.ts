@@ -150,7 +150,7 @@ export class Agent {
       modelManager,
       messageHistory,
       tokenTracker,
-      maxIterations = (await config.readProjectConfig()).loop.maxIterations,
+      maxIterations = (await config.getConfig()).loop.maxIterations,
       maxRetries = 2,
       toolCallRepair,
     } = this.opts;

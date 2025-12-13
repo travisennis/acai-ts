@@ -22,7 +22,7 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
     ): Promise<"break" | "continue" | "use"> {
       try {
         // Get active tools from config
-        const projectConfig = await options.config.readProjectConfig();
+        const projectConfig = await options.config.getConfig();
         const activeTools = projectConfig.tools.activeTools;
 
         const tools = await initTools({

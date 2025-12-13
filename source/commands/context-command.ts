@@ -66,7 +66,7 @@ export function contextCommand({
       const meta = modelManager.getModelMetadata("repl");
       const window = meta.contextWindow;
 
-      const projectConfig = await config.readProjectConfig();
+      const projectConfig = await config.getConfig();
 
       // 1) System prompt
       const sys = await systemPrompt({

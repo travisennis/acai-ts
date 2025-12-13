@@ -271,7 +271,7 @@ function createDynamicTool(
 }
 
 export async function loadDynamicTools({ baseDir }: { baseDir: string }) {
-  const projectConfig = await config.readProjectConfig();
+  const projectConfig = await config.getConfig();
   const dynamicConfig = projectConfig.tools.dynamicTools;
 
   if (!dynamicConfig.enabled) {

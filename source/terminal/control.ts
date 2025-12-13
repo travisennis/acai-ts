@@ -25,7 +25,7 @@ export function isInteractive() {
  * Send terminal alert/notification
  */
 export async function alert(): Promise<void> {
-  if (!(await config.readProjectConfig()).notify) {
+  if (!(await config.getConfig()).notify) {
     return;
   }
 

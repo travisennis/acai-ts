@@ -171,7 +171,7 @@ export function createMockConfig(): ConfigManager {
         subdir ? path.join(".acai", subdir) : ".acai",
       ),
     },
-    readProjectConfig: mock.fn(async () => ({
+    getConfig: mock.fn(async () => ({
       tools: {
         maxTokens: 30000,
       },

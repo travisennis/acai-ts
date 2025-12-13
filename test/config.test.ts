@@ -34,14 +34,14 @@ test("DirectoryProvider.ensurePath async and sync create directories", async () 
   });
 });
 
-test("ConfigManager.ensureAppConfig creates default app config in HOME", async () => {
+test("ConfigManager.ensureDefaultConfig creates default app config in HOME", async () => {
   await withTempDir(async (tmpHome) => {
     const oldHome = process.env["HOME"];
     try {
       process.env["HOME"] = tmpHome;
 
       const mgr = new ConfigManager();
-      const cfg = await mgr.ensureAppConfig("acai");
+      const cfg = await mgr.ensureDefaultConfig("acai");
 
       // Defaults expected
       assert.equal((cfg as Record<string, unknown>)["notify"], true);
@@ -111,15 +111,23 @@ test("writeCachedLearnedRulesFile and readCachedLearnedRulesFile in HOME", async
   });
 });
 
-test("readAppConfig returns {} for missing and throws for malformed", async () => {
+test("ensureDefaultConfig creates default config for missing and throws for malformed", async () => {
   await withTempDir(async (tmpHome) => {
     const oldHome = process.env["HOME"];
     try {
       process.env["HOME"] = tmpHome;
       const mgr = new ConfigManager();
 
-      const missing = await mgr.readAppConfig("nonexistent");
-      assert.deepEqual(missing, {});
+      // ensureDefaultConfig should create default config for missing file
+      const config = await mgr.ensureDefaultConfig("nonexistent");
+      assert.equal(config.notify, true);
+      assert.equal(config.tools.maxTokens, 30000);
+
+      // Verify file was created
+      const configPath = path.join(tmpHome, ".acai", "nonexistent.json");
+      const data = JSON.parse(await fs.readFile(configPath, "utf8"));
+      assert.equal(data.notify, true);
+      assert.equal(data.tools.maxTokens, 30000);
 
       // Create malformed JSON
       const cfgDir = path.join(tmpHome, ".acai");
@@ -129,18 +137,22 @@ test("readAppConfig returns {} for missing and throws for malformed", async () =
 
       let threw = false;
       try {
-        await mgr.readAppConfig("bad");
+        await mgr.ensureDefaultConfig("bad");
       } catch (_e) {
         threw = true;
       }
-      assert.equal(threw, true, "readAppConfig should throw on malformed JSON");
+      assert.equal(
+        threw,
+        true,
+        "ensureDefaultConfig should throw on malformed JSON",
+      );
     } finally {
       if (oldHome !== undefined) process.env["HOME"] = oldHome;
     }
   });
 });
 
-test("readProjectConfig merges app and project configs with project precedence", async () => {
+test("getConfig merges app and project configs with project precedence", async () => {
   await withTempDir(async (tmpHome) => {
     const oldHome = process.env["HOME"];
     const oldCwd = process.cwd();
@@ -171,7 +183,7 @@ test("readProjectConfig merges app and project configs with project precedence",
       );
 
       const mgr = new ConfigManager();
-      const merged = await mgr.readProjectConfig();
+      const merged = await mgr.getConfig();
       assert.equal(merged.tools.maxTokens, 50);
       assert.equal(merged.notify, false);
     } finally {

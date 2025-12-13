@@ -71,7 +71,7 @@ export const createSaveFileTool = async ({
         // Check if file is read-only (only if it exists)
         try {
           await fs.stat(filePath);
-          const projectConfig = await config.readProjectConfig();
+          const projectConfig = await config.getConfig();
           validateFileNotReadOnly(filePath, projectConfig, workingDir);
         } catch (error) {
           // File doesn't exist, so it's not read-only

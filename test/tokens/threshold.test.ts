@@ -40,7 +40,7 @@ test("manageTokenLimit returns original content when within token limit", async 
   clearTokenCache();
 
   // Mock the config read
-  mock.method(config, "readProjectConfig", async () => ({
+  mock.method(config, "getConfig", async () => ({
     tools: { maxTokens: 8000 },
   }));
 
@@ -64,7 +64,7 @@ test("manageTokenLimit returns token limit message when exceeding limit", async 
   // Clear cache before test
   clearTokenCache();
 
-  mock.method(config, "readProjectConfig", async () => ({
+  mock.method(config, "getConfig", async () => ({
     tools: { maxTokens: 8000 },
   }));
 
@@ -83,7 +83,7 @@ test("manageTokenLimit handles token counting errors gracefully", async () => {
   // Clear cache before test
   clearTokenCache();
 
-  mock.method(config, "readProjectConfig", async () => ({
+  mock.method(config, "getConfig", async () => ({
     tools: { maxTokens: 8000 },
   }));
 
@@ -124,7 +124,7 @@ test("manageTokenLimit uses different maxTokens from config", async () => {
   // Clear cache before test
   clearTokenCache();
 
-  mock.method(config, "readProjectConfig", async () => ({
+  mock.method(config, "getConfig", async () => ({
     tools: { maxTokens: 4000 },
   }));
 
@@ -145,7 +145,7 @@ test("manageTokenLimit provides tool-specific guidance", async () => {
   // Clear cache before test
   clearTokenCache();
 
-  mock.method(config, "readProjectConfig", async () => ({
+  mock.method(config, "getConfig", async () => ({
     tools: { maxTokens: 8000 },
   }));
 
@@ -167,7 +167,7 @@ test("manageTokenLimit handles empty content", async () => {
   // Clear cache before test
   clearTokenCache();
 
-  mock.method(config, "readProjectConfig", async () => ({
+  mock.method(config, "getConfig", async () => ({
     tools: { maxTokens: 8000 },
   }));
 
@@ -185,7 +185,7 @@ test("manageTokenLimit preserves type of input content", async () => {
   // Clear cache before test
   clearTokenCache();
 
-  mock.method(config, "readProjectConfig", async () => ({
+  mock.method(config, "getConfig", async () => ({
     tools: { maxTokens: 8000 },
   }));
 
@@ -206,7 +206,7 @@ test("manageTokenLimit handles multiple tool types correctly", async () => {
   // Clear cache before test
   clearTokenCache();
 
-  mock.method(config, "readProjectConfig", async () => ({
+  mock.method(config, "getConfig", async () => ({
     tools: { maxTokens: 8000 },
   }));
 
@@ -236,7 +236,7 @@ test("manageTokenLimit handles different token limits", async () => {
     // Clear cache before each test case
     clearTokenCache();
 
-    mock.method(config, "readProjectConfig", async () => ({
+    mock.method(config, "getConfig", async () => ({
       tools: { maxTokens: testCase.maxTokens },
     }));
 
