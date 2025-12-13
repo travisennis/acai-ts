@@ -188,12 +188,14 @@ export class Agent {
 
     let iter = 0;
     let consecutiveErrors = 0;
+    let hasEmittedTerminalEvent = false;
     while (iter < maxIterations) {
       if (abortSignal?.aborted) {
         logger.warn("The agent loop was aborted by the user.");
         yield {
           type: "agent-stop",
         };
+        hasEmittedTerminalEvent = true;
         break;
       }
 
@@ -462,7 +464,7 @@ export class Agent {
           yield {
             type: "agent-stop",
           };
-
+          hasEmittedTerminalEvent = true;
           break;
         }
 
@@ -496,6 +498,7 @@ export class Agent {
         };
 
         if (NoOutputGeneratedError.isInstance(error)) {
+          hasEmittedTerminalEvent = true;
           break;
         }
 
@@ -505,11 +508,18 @@ export class Agent {
             type: "agent-error",
             message: `Exceeded maximum retry attempts (${maxRetries}). Stopping manual loop.`,
           };
+          hasEmittedTerminalEvent = true;
           break;
         }
       } finally {
         this._state.timestamps.stop = performance.now();
       }
+    }
+    // Emit agent-stop if loop ended without emitting a terminal event (maxIterations reached)
+    if (!hasEmittedTerminalEvent) {
+      yield {
+        type: "agent-stop",
+      };
     }
     // Track aggregate usage across all steps when available
     tokenTracker.trackUsage("repl", this._state.totalUsage);
