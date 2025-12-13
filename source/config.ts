@@ -8,7 +8,7 @@ import { jsonParser } from "./parsing.ts";
 const defaultConfig = {
   systemPromptType: "full",
   loop: {
-    maxIterations: 90,
+    maxIterations: 200,
   },
   tools: {
     activeTools: undefined as string[] | undefined,
@@ -21,6 +21,9 @@ const defaultConfig = {
   },
   notify: true,
   readOnlyFiles: [] as string[],
+  skills: {
+    enabled: true,
+  },
 } as const;
 
 // Type definitions
@@ -64,6 +67,12 @@ const ProjectConfigSchema = z.object({
     .array(z.string())
     .optional()
     .default(defaultConfig.readOnlyFiles),
+  skills: z
+    .object({
+      enabled: z.boolean().optional().default(defaultConfig.skills.enabled),
+    })
+    .optional()
+    .default(defaultConfig.skills),
 });
 
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
@@ -136,6 +145,34 @@ export class ConfigManager {
     };
 
     return ProjectConfigSchema.parse(mergedConfig);
+  }
+
+  // Skills settings helpers
+  async getSkillsEnabled(): Promise<boolean> {
+    const projectConfig = await this.readProjectConfig();
+    return projectConfig.skills?.enabled ?? true;
+  }
+
+  async setSkillsEnabled(enabled: boolean): Promise<void> {
+    const configPath = path.join(this.app.getPath(), "acai.json");
+    let configData: Partial<ProjectConfig> = {};
+
+    try {
+      const data = await fs.readFile(configPath, "utf8");
+      configData = jsonParser(ProjectConfigSchema.partial()).parse(data);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw error;
+      }
+    }
+
+    if (!configData.skills) {
+      configData.skills = { enabled: true };
+    }
+    configData.skills.enabled = enabled;
+
+    await this.app.ensurePath();
+    await fs.writeFile(configPath, JSON.stringify(configData, null, 2));
   }
 
   async readAgentsFile(): Promise<string> {

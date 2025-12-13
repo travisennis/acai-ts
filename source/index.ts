@@ -71,6 +71,7 @@ Options
   --continue         Load the most recent conversation
   --resume           Select a recent conversation to resume
   --add-dir          Add additional working directory (can be used multiple times)
+  --no-skills        Disable skills discovery and loading
 
   --help, -h         Show help
   --version, -v      Show version
@@ -89,6 +90,7 @@ const parsed = parseArgs({
     resume: { type: "boolean", default: false },
 
     "add-dir": { type: "string", multiple: true },
+    "no-skills": { type: "boolean", default: false },
 
     help: { type: "boolean", short: "h" },
     version: { type: "boolean", short: "v" },
@@ -352,6 +354,8 @@ async function handleConversationHistory(
 }
 
 async function runCliMode(state: AppState): Promise<void> {
+  const skillsEnabled =
+    !flags["no-skills"] && (await config.getSkillsEnabled());
   const cliProcess = new Cli({
     promptManager: state.promptManager,
     messageHistory: state.messageHistory,
@@ -359,6 +363,7 @@ async function runCliMode(state: AppState): Promise<void> {
     tokenTracker: state.tokenTracker,
     tokenCounter: state.tokenCounter,
     workspace,
+    skillsEnabled,
   });
   (await asyncTry(cliProcess.run())).recover(handleError);
 }
@@ -435,12 +440,15 @@ async function runReplMode(state: AppState): Promise<void> {
     const activeTools = projectConfig.tools.activeTools as
       | CompleteToolNames[]
       | undefined;
+    const skillsEnabled =
+      !flags["no-skills"] && (projectConfig.skills?.enabled ?? true);
     try {
       const results = agent.run({
         systemPrompt: await systemPrompt({
           type: projectConfig.systemPromptType,
           activeTools,
           allowedDirs: workspace.allowedDirs,
+          skillsEnabled,
         }),
         input: userInput,
         toolDefs: tools.toolDefs,

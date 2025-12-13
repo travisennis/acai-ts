@@ -4,6 +4,7 @@ import { platform } from "node:os";
 import path from "node:path";
 import { config } from "./config.ts";
 import { dedent } from "./dedent.ts";
+import { formatSkillsForPrompt, loadSkills } from "./skills.ts";
 import { getShell } from "./terminal/index.ts";
 import { AgentTool } from "./tools/agent.ts";
 import { BashTool } from "./tools/bash.ts";
@@ -483,6 +484,7 @@ type SystemPromptOptions = {
   allowedDirs?: string[];
   activeTools?: CompleteToolNames[];
   includeRules?: boolean;
+  skillsEnabled?: boolean;
 };
 
 export async function systemPrompt(options?: SystemPromptOptions) {
@@ -502,12 +504,21 @@ export async function systemPrompt(options?: SystemPromptOptions) {
 const DEFAULT_ALLOWED_DIRS = [process.cwd()];
 
 async function fullSystemPrompt(options?: SystemPromptOptions) {
-  const { allowedDirs = DEFAULT_ALLOWED_DIRS, includeRules = true } =
-    options ?? {};
+  const {
+    allowedDirs = DEFAULT_ALLOWED_DIRS,
+    includeRules = true,
+    skillsEnabled = true,
+  } = options ?? {};
 
   const instructionsText = await instructions();
   const projectContextText = includeRules ? await getProjectContext() : "";
   const environmentInfoText = await environmentInfo(allowedDirs);
+
+  let skillsText = "";
+  if (skillsEnabled) {
+    const skills = await loadSkills();
+    skillsText = formatSkillsForPrompt(skills);
+  }
 
   const prompt = dedent`
 ${intro()}
@@ -516,7 +527,7 @@ ${instructionsText}
 
 ${projectContextText}
 
-${environmentInfoText}
+${environmentInfoText}${skillsText}
 `;
 
   return prompt;
@@ -527,10 +538,17 @@ async function minSystemPrompt(options?: SystemPromptOptions) {
     allowedDirs = DEFAULT_ALLOWED_DIRS,
     activeTools = undefined,
     includeRules = true,
+    skillsEnabled = true,
   } = options ?? {};
   const minimalInstructionsText = await minimalInstructions();
   const projectContextText = includeRules ? await getProjectContext() : "";
   const environmentInfoText = await environmentInfo(allowedDirs);
+
+  let skillsText = "";
+  if (skillsEnabled) {
+    const skills = await loadSkills();
+    skillsText = formatSkillsForPrompt(skills);
+  }
 
   const prompt = dedent`
 ${intro()}
@@ -541,18 +559,27 @@ ${toolUsage(activeTools)}
 
 ${projectContextText}
 
-${environmentInfoText}
+${environmentInfoText}${skillsText}
 `;
 
   return prompt;
 }
 
 async function cliSystemPrompt(options?: SystemPromptOptions) {
-  const { allowedDirs = DEFAULT_ALLOWED_DIRS, activeTools = undefined } =
-    options ?? {};
+  const {
+    allowedDirs = DEFAULT_ALLOWED_DIRS,
+    activeTools = undefined,
+    skillsEnabled = true,
+  } = options ?? {};
   const minimalInstructionsText = await minimalInstructions();
   const projectContextText = await getProjectContext();
   const environmentInfoText = await environmentInfo(allowedDirs);
+
+  let skillsText = "";
+  if (skillsEnabled) {
+    const skills = await loadSkills();
+    skillsText = formatSkillsForPrompt(skills);
+  }
 
   const prompt = dedent`
 ${intro()}
@@ -564,7 +591,7 @@ ${activeTools && activeTools.length > 0 ? activeTools.map((tool) => `- ${tool}`)
 
 ${projectContextText}
 
-${environmentInfoText}
+${environmentInfoText}${skillsText}
 `;
 
   return prompt;
