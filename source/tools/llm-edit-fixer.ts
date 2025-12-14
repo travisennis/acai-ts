@@ -115,7 +115,7 @@ async function generateStructuredEditFix(
       abortSignal: combinedSignal,
     });
 
-    logger.info("LLM edit fix successful.");
+    logger.info(object, "LLM edit fix successful.");
     return object;
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
