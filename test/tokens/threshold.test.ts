@@ -4,35 +4,33 @@ import { config } from "../../source/config.ts";
 import type { TokenCounter } from "../../source/tokens/counter.ts";
 import {
   clearTokenCache,
-  createTokenLimitResult,
   manageTokenLimit,
+  TokenLimitExceededError,
 } from "../../source/tokens/threshold.ts";
 
-test("createTokenLimitResult generates standardized token limit message", () => {
-  const result = createTokenLimitResult("ReadFile", 10000);
+test("TokenLimitExceededError generates standardized token limit message", () => {
+  const error = new TokenLimitExceededError("ReadFile", 10000, 8000);
 
   assert.ok(
-    result.content.includes(
-      "ReadFile: Content (10000 tokens) exceeds maximum allowed tokens",
+    error.message.includes(
+      "ReadFile: Content (10000 tokens) exceeds maximum allowed tokens (8000)",
     ),
   );
   assert.ok(
-    result.content.includes(
-      "Please adjust your parameters to reduce content size",
-    ),
+    error.message.includes("Please adjust parameters to reduce content size."),
   );
-  assert.equal(result.tokenCount, 10000);
-  assert.equal(result.truncated, true);
+  assert.equal(error.name, "TokenLimitExceededError");
 });
 
-test("createTokenLimitResult uses custom guidance when provided", () => {
-  const result = createTokenLimitResult(
+test("TokenLimitExceededError uses custom guidance when provided", () => {
+  const error = new TokenLimitExceededError(
     "Bash",
     12000,
+    8000,
     "Use more specific commands",
   );
 
-  assert.ok(result.content.includes("Use more specific commands"));
+  assert.ok(error.message.includes("Use more specific commands"));
 });
 
 test("manageTokenLimit returns original content when within token limit", async () => {
@@ -57,10 +55,9 @@ test("manageTokenLimit returns original content when within token limit", async 
 
   assert.equal(result.content, "test content");
   assert.equal(result.tokenCount, 5000);
-  assert.equal(result.truncated, false);
 });
 
-test("manageTokenLimit returns token limit message when exceeding limit", async () => {
+test("manageTokenLimit throws TokenLimitExceededError when exceeding limit", async () => {
   // Clear cache before test
   clearTokenCache();
 
@@ -72,11 +69,11 @@ test("manageTokenLimit returns token limit message when exceeding limit", async 
     count: () => 10000,
   } as unknown as TokenCounter;
 
-  const result = await manageTokenLimit("large content", tokenCounter, "Grep");
-
-  assert.ok(result.content.includes("Grep: Content (10000 tokens) exceeds"));
-  assert.equal(result.tokenCount, 10000);
-  assert.equal(result.truncated, true);
+  await assert.rejects(
+    () => manageTokenLimit("large content", tokenCounter, "Grep"),
+    TokenLimitExceededError,
+    "Should throw TokenLimitExceededError",
+  );
 });
 
 test("manageTokenLimit handles token counting errors gracefully", async () => {
@@ -97,7 +94,6 @@ test("manageTokenLimit handles token counting errors gracefully", async () => {
 
   assert.equal(result.content, "content");
   assert.equal(result.tokenCount, 0);
-  assert.equal(result.truncated, false);
 });
 
 test("manageTokenLimit handles non-text files", async () => {
@@ -117,7 +113,6 @@ test("manageTokenLimit handles non-text files", async () => {
 
   assert.equal(result.content, "binary content");
   assert.equal(result.tokenCount, 0);
-  assert.equal(result.truncated, false);
 });
 
 test("manageTokenLimit uses different maxTokens from config", async () => {
@@ -132,13 +127,11 @@ test("manageTokenLimit uses different maxTokens from config", async () => {
     count: () => 5000,
   } as unknown as TokenCounter;
 
-  const result = await manageTokenLimit(
-    "test content",
-    tokenCounter,
-    "ReadFile",
+  await assert.rejects(
+    () => manageTokenLimit("test content", tokenCounter, "ReadFile"),
+    TokenLimitExceededError,
+    "Should throw TokenLimitExceededError when 5000 > 4000",
   );
-
-  assert.equal(result.truncated, true); // 5000 > 4000
 });
 
 test("manageTokenLimit provides tool-specific guidance", async () => {
@@ -153,14 +146,20 @@ test("manageTokenLimit provides tool-specific guidance", async () => {
     count: () => 10000,
   } as unknown as TokenCounter;
 
-  const result = await manageTokenLimit(
-    "content",
-    tokenCounter,
-    "DirectoryTree",
-    "Use excludeDirPatterns to reduce output",
-  );
-
-  assert.ok(result.content.includes("Use excludeDirPatterns to reduce output"));
+  try {
+    await manageTokenLimit(
+      "content",
+      tokenCounter,
+      "DirectoryTree",
+      "Use excludeDirPatterns to reduce output",
+    );
+    assert.fail("Should have thrown TokenLimitExceededError");
+  } catch (error) {
+    assert.ok(error instanceof TokenLimitExceededError);
+    assert.ok(
+      error.message.includes("Use excludeDirPatterns to reduce output"),
+    );
+  }
 });
 
 test("manageTokenLimit handles empty content", async () => {
@@ -178,7 +177,7 @@ test("manageTokenLimit handles empty content", async () => {
   const result = await manageTokenLimit("", tokenCounter, "ReadFile");
 
   assert.equal(result.content, "");
-  assert.equal(result.truncated, false);
+  assert.equal(result.tokenCount, 0);
 });
 
 test("manageTokenLimit preserves type of input content", async () => {
@@ -200,6 +199,7 @@ test("manageTokenLimit preserves type of input content", async () => {
   );
 
   assert.equal(result.content, "string content");
+  assert.equal(result.tokenCount, 1000);
 });
 
 test("manageTokenLimit handles multiple tool types correctly", async () => {
@@ -216,10 +216,10 @@ test("manageTokenLimit handles multiple tool types correctly", async () => {
   } as unknown as TokenCounter;
 
   for (const toolName of tools) {
-    const result = await manageTokenLimit("content", tokenCounter, toolName);
-
-    assert.ok(
-      result.content.includes(`${toolName}: Content (12000 tokens) exceeds`),
+    await assert.rejects(
+      () => manageTokenLimit("content", tokenCounter, toolName),
+      TokenLimitExceededError,
+      `Should throw TokenLimitExceededError for ${toolName}`,
     );
   }
 });
@@ -244,8 +244,16 @@ test("manageTokenLimit handles different token limits", async () => {
       count: () => testCase.contentTokens,
     } as unknown as TokenCounter;
 
-    const result = await manageTokenLimit("test", tokenCounter, "ReadFile");
-
-    assert.equal(result.truncated, testCase.shouldTruncate);
+    if (testCase.shouldTruncate) {
+      await assert.rejects(
+        () => manageTokenLimit("test", tokenCounter, "ReadFile"),
+        TokenLimitExceededError,
+        `Should throw when ${testCase.contentTokens} > ${testCase.maxTokens}`,
+      );
+    } else {
+      const result = await manageTokenLimit("test", tokenCounter, "ReadFile");
+      assert.equal(result.content, "test");
+      assert.equal(result.tokenCount, testCase.contentTokens);
+    }
   }
 });

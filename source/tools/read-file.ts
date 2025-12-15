@@ -4,7 +4,10 @@ import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
-import { manageTokenLimit } from "../tokens/threshold.ts";
+import {
+  manageTokenLimit,
+  TokenLimitExceededError,
+} from "../tokens/threshold.ts";
 import { joinWorkingDir, validatePath } from "../utils/filesystem/security.ts";
 import type { ToolResult } from "./types.ts";
 import { fileEncodingSchema } from "./types.ts";
@@ -107,29 +110,40 @@ export const createReadFileTool = async ({
           file = lines.slice(startIndex, endIndex).join("\n");
         }
 
-        const result = await manageTokenLimit(
-          file,
-          tokenCounter,
-          "ReadFile",
-          isNumber(startLine) || isNumber(lineCount)
-            ? "Consider adjusting startLine/lineCount or using grepFiles"
-            : "Use startLine and lineCount parameters to read specific portions, or use grepFiles for targeted access",
-          encoding,
-        );
+        try {
+          const result = await manageTokenLimit(
+            file,
+            tokenCounter,
+            "ReadFile",
+            isNumber(startLine) || isNumber(lineCount)
+              ? "Consider adjusting startLine/lineCount or using grepFiles"
+              : "Use startLine and lineCount parameters to read specific portions, or use grepFiles for targeted access",
+            encoding,
+          );
 
-        // Calculate line count for the returned content
-        const linesRead = result.content.split("\n").length;
+          // Calculate line count for the returned content
+          const linesRead = result.content.split("\n").length;
 
-        yield {
-          name: ReadFileTool.name,
-          id: toolCallId,
-          event: "tool-completion",
-          // Include success, line count, and token count
-          data: !result.truncated
-            ? `Read ${linesRead} lines (${result.tokenCount} tokens)`
-            : result.content,
-        };
-        yield result.content;
+          yield {
+            name: ReadFileTool.name,
+            id: toolCallId,
+            event: "tool-completion",
+            data: `Read ${linesRead} lines (${result.tokenCount} tokens)`,
+          };
+          yield result.content;
+        } catch (error) {
+          if (error instanceof TokenLimitExceededError) {
+            yield {
+              name: ReadFileTool.name,
+              event: "tool-error",
+              id: toolCallId,
+              data: error.message,
+            };
+            yield error.message;
+            return;
+          }
+          throw error;
+        }
       } catch (error) {
         const errorMsg = `${(error as Error).message}`;
         yield {

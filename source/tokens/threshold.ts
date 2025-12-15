@@ -35,53 +35,31 @@ async function getMaxTokens(): Promise<number> {
   }
 }
 
-/**
- * Standardized result when token limit is exceeded
- */
-interface TokenLimitResult {
-  content: string;
-  tokenCount: number;
-  truncated: boolean;
+export class TokenLimitExceededError extends Error {
+  constructor(
+    toolName: string,
+    tokenCount: number,
+    maxTokens: number,
+    guidance?: string,
+  ) {
+    super(
+      `${toolName}: Content (${tokenCount} tokens) exceeds maximum allowed tokens (${maxTokens}). ${
+        guidance || "Please adjust parameters to reduce content size."
+      }`,
+    );
+    this.name = "TokenLimitExceededError";
+  }
 }
 
 /**
- * Generates a standardized token limit message for LLM tools
- * @param toolName - Name of the tool (e.g., "ReadFile", "Bash")
- * @param tokenCount - Actual token count of content
- * @param maxTokens - Maximum allowed tokens
- * @param additionalGuidance - Optional specific guidance for this tool
- * @returns TokenLimitResult with message and metadata
- */
-export function createTokenLimitResult(
-  toolName: string,
-  tokenCount: number,
-  additionalGuidance?: string,
-): TokenLimitResult {
-  const truncated = true;
-
-  const baseMessage = `${toolName}: Content (${tokenCount} tokens) exceeds maximum allowed tokens`;
-
-  const guidance =
-    additionalGuidance ??
-    "Please adjust your parameters to reduce content size";
-
-  const content = `${baseMessage}. ${guidance}`;
-
-  return {
-    content,
-    tokenCount,
-    truncated,
-  };
-}
-
-/**
- * Check if content should be truncated and return appropriate result
+ * Check if content exceeds token limit
  * @param content - The content to check
  * @param tokenCounter - Token counter instance
  * @param toolName - Name of the tool for messages
  * @param additionalGuidance - Optional tool-specific guidance
  * @param encoding - Optional encoding type for non-text file handling
- * @returns Either the original content or token limit message
+ * @returns Content with token count if under limit
+ * @throws TokenLimitExceededError if content exceeds token limit
  */
 export async function manageTokenLimit<T extends string>(
   content: T,
@@ -89,10 +67,10 @@ export async function manageTokenLimit<T extends string>(
   toolName: string,
   additionalGuidance?: string,
   encoding?: string,
-): Promise<{ content: T | string; tokenCount: number; truncated: boolean }> {
+): Promise<{ content: T; tokenCount: number }> {
   // For non-text files, return content directly without token management
   if (encoding && !encoding.startsWith("utf")) {
-    return { content, tokenCount: 0, truncated: false };
+    return { content, tokenCount: 0 };
   }
 
   let tokenCount = 0;
@@ -101,23 +79,19 @@ export async function manageTokenLimit<T extends string>(
   } catch (tokenError) {
     console.info("Error calculating token count:", tokenError);
     // Return content if token counting fails
-    return { content, tokenCount: 0, truncated: false };
+    return { content, tokenCount: 0 };
   }
 
   const maxTokens = await getMaxTokens();
 
   if (tokenCount <= maxTokens) {
-    return { content, tokenCount, truncated: false };
+    return { content, tokenCount };
   }
 
-  const limitResult = createTokenLimitResult(
+  throw new TokenLimitExceededError(
     toolName,
     tokenCount,
+    maxTokens,
     additionalGuidance,
   );
-  return {
-    content: limitResult.content as string,
-    tokenCount,
-    truncated: true,
-  };
 }

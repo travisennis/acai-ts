@@ -4,7 +4,10 @@ import { z } from "zod";
 import Exa from "../api/exa/index.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
-import { manageTokenLimit } from "../tokens/threshold.ts";
+import {
+  manageTokenLimit,
+  TokenLimitExceededError,
+} from "../tokens/threshold.ts";
 import type { ToolResult } from "./types.ts";
 
 export const WebSearchTool = {
@@ -54,21 +57,35 @@ export const createWebSearchTool = ({
       );
       const resultText = `# Search Results:\n\n${sources.join("\n\n")}`;
 
-      const searchResult = await manageTokenLimit(
-        resultText,
-        tokenCounter,
-        "WebSearch",
-        "Use more specific search queries or reduce number of results",
-      );
+      try {
+        const searchResult = await manageTokenLimit(
+          resultText,
+          tokenCounter,
+          "WebSearch",
+          "Use more specific search queries or reduce number of results",
+        );
 
-      yield {
-        name: WebSearchTool.name,
-        event: "tool-completion",
-        id: toolCallId,
-        data: `Found ${result.results.length} results (${searchResult.tokenCount} tokens)`,
-      };
+        yield {
+          name: WebSearchTool.name,
+          event: "tool-completion",
+          id: toolCallId,
+          data: `Found ${result.results.length} results (${searchResult.tokenCount} tokens)`,
+        };
 
-      yield searchResult.content;
+        yield searchResult.content;
+      } catch (error) {
+        if (error instanceof TokenLimitExceededError) {
+          yield {
+            name: WebSearchTool.name,
+            event: "tool-error",
+            id: toolCallId,
+            data: error.message,
+          };
+          yield error.message;
+          return;
+        }
+        throw error;
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);

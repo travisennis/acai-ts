@@ -6,7 +6,10 @@ import process from "node:process";
 import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import type { TokenCounter } from "../tokens/counter.ts";
-import { manageTokenLimit } from "../tokens/threshold.ts";
+import {
+  manageTokenLimit,
+  TokenLimitExceededError,
+} from "../tokens/threshold.ts";
 import type { ToolResult } from "./types.ts";
 
 export const CodeInterpreterTool = {
@@ -183,21 +186,35 @@ export const createCodeInterpreterTool = async ({
       };
 
       const resultJson = JSON.stringify(result, null, 2);
-      const managedResult = await manageTokenLimit(
-        resultJson,
-        tokenCounter,
-        "CodeInterpreter",
-        "Reduce script complexity or output size",
-      );
+      try {
+        const managedResult = await manageTokenLimit(
+          resultJson,
+          tokenCounter,
+          "CodeInterpreter",
+          "Reduce script complexity or output size",
+        );
 
-      yield {
-        name: CodeInterpreterTool.name,
-        event: "tool-completion",
-        id: toolCallId,
-        data: `Completed successfully${managedResult.tokenCount > 0 ? ` (${managedResult.tokenCount} tokens)` : ""}`,
-      };
+        yield {
+          name: CodeInterpreterTool.name,
+          event: "tool-completion",
+          id: toolCallId,
+          data: `Completed successfully${managedResult.tokenCount > 0 ? ` (${managedResult.tokenCount} tokens)` : ""}`,
+        };
 
-      yield managedResult.content;
+        yield managedResult.content;
+      } catch (error) {
+        if (error instanceof TokenLimitExceededError) {
+          yield {
+            name: CodeInterpreterTool.name,
+            event: "tool-error",
+            id: toolCallId,
+            data: error.message,
+          };
+          yield error.message;
+          return;
+        }
+        throw error;
+      }
     } catch (err) {
       const errorMessage =
         (err as Error).name === "ETIMEDOUT" ||

@@ -5,7 +5,10 @@ import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
-import { manageTokenLimit } from "../tokens/threshold.ts";
+import {
+  manageTokenLimit,
+  TokenLimitExceededError,
+} from "../tokens/threshold.ts";
 import { glob } from "../utils/glob.ts";
 import type { ToolResult } from "./types.ts";
 
@@ -153,29 +156,37 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
             ? sortedFiles.join("\n")
             : "No files found matching the specified patterns.";
 
-        const result = await manageTokenLimit(
-          resultContent,
-          tokenCounter,
-          "Glob",
-          "Use more specific glob patterns or recursive=false to reduce matches",
-        );
+        try {
+          const result = await manageTokenLimit(
+            resultContent,
+            tokenCounter,
+            "Glob",
+            "Use more specific glob patterns or recursive=false to reduce matches",
+          );
 
-        let completionMessage = `Found ${style.cyan(sortedFiles.length)} files.`;
+          const completionMessage = `Found ${style.cyan(sortedFiles.length)} files (${result.tokenCount} tokens)`;
 
-        if (result.truncated) {
-          completionMessage += ` ${result.content}`;
+          yield {
+            name: GlobTool.name,
+            event: "tool-completion",
+            id: toolCallId,
+            data: completionMessage,
+          };
+
+          yield result.content;
+        } catch (error) {
+          if (error instanceof TokenLimitExceededError) {
+            yield {
+              name: GlobTool.name,
+              event: "tool-error",
+              id: toolCallId,
+              data: error.message,
+            };
+            yield error.message;
+            return;
+          }
+          throw error;
         }
-
-        completionMessage += ` (${result.tokenCount} tokens)`;
-
-        yield {
-          name: GlobTool.name,
-          event: "tool-completion",
-          id: toolCallId,
-          data: completionMessage,
-        };
-
-        yield result.content;
       } catch (error) {
         yield {
           name: GlobTool.name,

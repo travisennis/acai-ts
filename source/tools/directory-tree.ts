@@ -4,7 +4,10 @@ import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
-import { manageTokenLimit } from "../tokens/threshold.ts";
+import {
+  manageTokenLimit,
+  TokenLimitExceededError,
+} from "../tokens/threshold.ts";
 import { joinWorkingDir, validatePath } from "../utils/filesystem/security.ts";
 import ignore, { type Ignore } from "../utils/ignore.ts";
 import type { ToolResult } from "./types.ts";
@@ -65,29 +68,39 @@ export const createDirectoryTreeTool = async ({
         }
 
         const rawTree = await directoryTree(validPath);
-        const result = await manageTokenLimit(
-          rawTree,
-          tokenCounter,
-          "DirectoryTree",
-          "Use excludeDirPatterns or recursive=false to reduce output",
-        );
+        try {
+          const result = await manageTokenLimit(
+            rawTree,
+            tokenCounter,
+            "DirectoryTree",
+            "Use excludeDirPatterns or recursive=false to reduce output",
+          );
 
-        // Count files in the tree output
-        const fileCount = (result.content.match(/\n/g) || []).length + 1;
-        let completionMessage = `Found ${fileCount} files`;
-        if (result.truncated) {
-          completionMessage += ` - ${result.content}`;
+          // Count files in the tree output
+          const fileCount = (result.content.match(/\n/g) || []).length + 1;
+          const completionMessage = `Found ${fileCount} files (${result.tokenCount} tokens)`;
+
+          yield {
+            name: DirectoryTreeTool.name,
+            id: toolCallId,
+            event: "tool-completion",
+            data: completionMessage,
+          };
+
+          yield result.content;
+        } catch (error) {
+          if (error instanceof TokenLimitExceededError) {
+            yield {
+              name: DirectoryTreeTool.name,
+              event: "tool-error",
+              id: toolCallId,
+              data: error.message,
+            };
+            yield error.message;
+            return;
+          }
+          throw error;
         }
-        completionMessage += ` (${result.tokenCount} tokens)`;
-
-        yield {
-          name: DirectoryTreeTool.name,
-          id: toolCallId,
-          event: "tool-completion",
-          data: completionMessage,
-        };
-
-        yield result.content;
       } catch (error) {
         const errorMsg = (error as Error).message;
         yield {

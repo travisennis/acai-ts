@@ -5,7 +5,10 @@ import { initExecutionEnvironment } from "../execution/index.ts";
 import { logger } from "../logger.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
-import { manageTokenLimit } from "../tokens/threshold.ts";
+import {
+  manageTokenLimit,
+  TokenLimitExceededError,
+} from "../tokens/threshold.ts";
 import { isMutatingCommand, resolveCwd, validatePaths } from "../utils/bash.ts";
 import type { ToolResult } from "./types.ts";
 
@@ -172,22 +175,36 @@ export const createBashTool = async ({
             },
           );
 
-          const result = await manageTokenLimit(
-            output,
-            tokenCounter,
-            "Bash",
-            "Adjust command to return more specific results",
-          );
+          try {
+            const result = await manageTokenLimit(
+              output,
+              tokenCounter,
+              "Bash",
+              "Adjust command to return more specific results",
+            );
 
-          const statusText = exitCode === 0 ? "success" : "error";
-          yield {
-            name: BashTool.name,
-            event: "tool-completion",
-            id: toolCallId,
-            data: `${statusText}${isMutating ? " *" : ""} (${result.tokenCount} tokens)`,
-          };
+            const statusText = exitCode === 0 ? "success" : "error";
+            yield {
+              name: BashTool.name,
+              event: "tool-completion",
+              id: toolCallId,
+              data: `${statusText}${isMutating ? " *" : ""} (${result.tokenCount} tokens)`,
+            };
 
-          yield result.content;
+            yield result.content;
+          } catch (error) {
+            if (error instanceof TokenLimitExceededError) {
+              yield {
+                name: BashTool.name,
+                event: "tool-error",
+                id: toolCallId,
+                data: error.message,
+              };
+              yield error.message;
+              return;
+            }
+            throw error;
+          }
         }
       } catch (error) {
         logger.error(error, "Bash Tool Error:");

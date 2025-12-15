@@ -5,7 +5,10 @@ import { z } from "zod";
 import { config } from "../config.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
-import { manageTokenLimit } from "../tokens/threshold.ts";
+import {
+  manageTokenLimit,
+  TokenLimitExceededError,
+} from "../tokens/threshold.ts";
 import type { ToolResult } from "./types.ts";
 
 export const GrepTool = {
@@ -148,46 +151,62 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
           maxResults: effectiveMaxResults,
         });
 
-        const result = await manageTokenLimit(
-          grepResult.rawOutput,
-          tokenCounter,
-          "Grep",
-          "Use maxResults parameter, more specific patterns, or contextLines=0 to reduce output",
-        );
+        try {
+          const result = await manageTokenLimit(
+            grepResult.rawOutput,
+            tokenCounter,
+            "Grep",
+            "Use maxResults parameter, more specific patterns, or contextLines=0 to reduce output",
+          );
 
-        const matchCount = grepResult.matchCount;
+          const matchCount = grepResult.matchCount;
 
-        // Build completion message with preview information
-        let completionMessage = `Found ${style.cyan(matchCount)} match${matchCount === 1 ? "" : "es"}`;
+          // Build completion message with preview information
+          let completionMessage = `Found ${style.cyan(matchCount)} match${matchCount === 1 ? "" : "es"}`;
 
-        if (matchCount === 0) {
-          completionMessage = "Search completed - no matches found";
+          if (matchCount === 0) {
+            completionMessage = "Search completed - no matches found";
+          }
+
+          // Calculate unique files with matches
+          const filesWithMatches = new Set(
+            grepResult.parsedMatches
+              .filter(
+                (match) => match.isMatch && !match.isContext && match.file,
+              )
+              .map((match) => match.file),
+          ).size;
+
+          if (filesWithMatches > 0) {
+            completionMessage += ` across ${style.cyan(filesWithMatches)} file${filesWithMatches === 1 ? "" : "s"}`;
+          }
+
+          if (grepResult.contextCount > 0) {
+            completionMessage += ` with ${style.cyan(grepResult.contextCount)} context line${grepResult.contextCount === 1 ? "" : "s"}`;
+          }
+
+          completionMessage += ` (${result.tokenCount} tokens)`;
+
+          yield {
+            name: GrepTool.name,
+            event: "tool-completion",
+            id: toolCallId,
+            data: completionMessage,
+          };
+          yield result.content;
+        } catch (error) {
+          if (error instanceof TokenLimitExceededError) {
+            yield {
+              name: GrepTool.name,
+              event: "tool-error",
+              id: toolCallId,
+              data: error.message,
+            };
+            yield error.message;
+            return;
+          }
+          throw error;
         }
-
-        // Calculate unique files with matches
-        const filesWithMatches = new Set(
-          grepResult.parsedMatches
-            .filter((match) => match.isMatch && !match.isContext && match.file)
-            .map((match) => match.file),
-        ).size;
-
-        if (filesWithMatches > 0) {
-          completionMessage += ` across ${style.cyan(filesWithMatches)} file${filesWithMatches === 1 ? "" : "s"}`;
-        }
-
-        if (grepResult.contextCount > 0) {
-          completionMessage += ` with ${style.cyan(grepResult.contextCount)} context line${grepResult.contextCount === 1 ? "" : "s"}`;
-        }
-
-        completionMessage += ` (${result.tokenCount} tokens)`;
-
-        yield {
-          name: GrepTool.name,
-          event: "tool-completion",
-          id: toolCallId,
-          data: completionMessage,
-        };
-        yield result.content;
       } catch (error) {
         const errorMessage = (error as Error).message;
         let userFriendlyError = `Error searching for "${pattern}" in ${path}: ${errorMessage}`;

@@ -3,7 +3,10 @@ import { z } from "zod";
 import { logger } from "../logger.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
-import { manageTokenLimit } from "../tokens/threshold.ts";
+import {
+  manageTokenLimit,
+  TokenLimitExceededError,
+} from "../tokens/threshold.ts";
 import type { ToolResult } from "./types.ts";
 
 export const BatchTool = {
@@ -169,36 +172,52 @@ export const createBatchTool = async ({
         // Format results as JSON
         const jsonResults = JSON.stringify(results, null, 2);
 
-        const result = await manageTokenLimit(
-          jsonResults,
-          tokenCounter,
-          "Batch",
-          "Consider reducing the number of calls or using more specific tool calls",
-        );
+        try {
+          const result = await manageTokenLimit(
+            jsonResults,
+            tokenCounter,
+            "Batch",
+            "Consider reducing the number of calls or using more specific tool calls",
+          );
 
-        // Create a more informative completion message
-        const successful = results.filter((r) => r.status === "success").length;
-        const failed = results.filter((r) => r.status === "error").length;
-        let completionMessage = `Batch execution completed: ${successful}/${totalCalls} successful`;
+          // Create a more informative completion message
+          const successful = results.filter(
+            (r) => r.status === "success",
+          ).length;
+          const failed = results.filter((r) => r.status === "error").length;
+          let completionMessage = `Batch execution completed: ${successful}/${totalCalls} successful`;
 
-        if (failed > 0) {
-          const failedTools = results
-            .filter((r) => r.status === "error")
-            .map((r) => `${r.tool}${r.id ? ` (${r.id})` : ""}`)
-            .join(", ");
-          completionMessage += `, ${failed} failed: ${failedTools}`;
+          if (failed > 0) {
+            const failedTools = results
+              .filter((r) => r.status === "error")
+              .map((r) => `${r.tool}${r.id ? ` (${r.id})` : ""}`)
+              .join(", ");
+            completionMessage += `, ${failed} failed: ${failedTools}`;
+          }
+
+          completionMessage += ` (${result.tokenCount} tokens)`;
+
+          yield {
+            name: BatchTool.name,
+            event: "tool-completion",
+            id: toolCallId,
+            data: completionMessage,
+          };
+
+          yield result.content;
+        } catch (error) {
+          if (error instanceof TokenLimitExceededError) {
+            yield {
+              name: BatchTool.name,
+              event: "tool-error",
+              id: toolCallId,
+              data: error.message,
+            };
+            yield error.message;
+            return;
+          }
+          throw error;
         }
-
-        completionMessage += ` (${result.tokenCount} tokens)`;
-
-        yield {
-          name: BatchTool.name,
-          event: "tool-completion",
-          id: toolCallId,
-          data: completionMessage,
-        };
-
-        yield result.content;
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
