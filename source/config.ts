@@ -1,11 +1,11 @@
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import fs from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import { z } from "zod";
 import { jsonParser } from "./parsing.ts";
 
-const defaultConfig = {
+export const defaultConfig = {
   systemPromptType: "full",
   loop: {
     maxIterations: 200,
@@ -100,6 +100,21 @@ export class DirectoryProvider {
     const dirPath = this.getPath(subdir);
     mkdirSync(dirPath, { recursive: true });
     return dirPath;
+  }
+
+  // Check if directory exists without creating it
+  exists(subdir?: string): Promise<boolean> {
+    const dirPath = this.getPath(subdir);
+    return fs
+      .access(dirPath)
+      .then(() => true)
+      .catch(() => false);
+  }
+
+  // Synchronous version of exists check
+  existsSync(subdir?: string): boolean {
+    const dirPath = this.getPath(subdir);
+    return existsSync(dirPath);
   }
 }
 
@@ -215,6 +230,10 @@ export class ConfigManager {
   }
 
   async writeProjectLearnedRulesFile(rules: string): Promise<void> {
+    // Only write project rules if the project directory exists
+    if (!(await this.project.exists())) {
+      return; // Silently return if project directory doesn't exist
+    }
     const rulesDir = await this.project.ensurePath("rules");
     const rulesPath = path.join(rulesDir, "learned-rules.md");
     try {

@@ -28,6 +28,7 @@ import { healthCommand } from "./health-command.ts";
 import { helpCommand } from "./help-command.ts";
 import { historyCommand } from "./history-command.ts";
 import { initCommand } from "./init-command.ts";
+import { initProjectCommand } from "./init-project-command.ts";
 // import { lastLogCommand } from "./last-log-command.ts";
 import { listDirectoriesCommand } from "./list-directories-command.ts";
 import { listToolsCommand } from "./list-tools-command.ts";
@@ -106,6 +107,7 @@ export class CommandManager {
       healthCommand(options),
       historyCommand(options),
       initCommand(options),
+      initProjectCommand(options),
       listDirectoriesCommand(options),
       pasteCommand(options),
       pickupCommand(options),

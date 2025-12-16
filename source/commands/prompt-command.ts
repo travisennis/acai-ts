@@ -164,8 +164,8 @@ export async function loadPrompts(config: ConfigManager) {
     }
   };
 
-  const userPromptDir = config.app.ensurePathSync("prompts"); // User prompts are global (~/.acai/prompts)
-  const projectPromptDir = config.project.ensurePathSync("prompts"); // Project prompts are local (./.acai/prompts)
+  const userPromptDir = config.app.getPath("prompts"); // User prompts are global (~/.acai/prompts)
+  const projectPromptDir = config.project.getPath("prompts"); // Project prompts are local (./.acai/prompts)
 
   const userPrompts = await getPromptsFromDir(userPromptDir, "user");
   const projectPrompts = await getPromptsFromDir(projectPromptDir, "project");
@@ -321,38 +321,38 @@ async function findPrompt(
   config: CommandOptions["config"],
 ): Promise<PromptMetadata | null> {
   // Check project prompts first (they take precedence)
-  const projectPath = path.join(
-    config.project.ensurePathSync("prompts"),
-    `${promptName}.md`,
-  );
+  const projectPromptDir = config.project.getPath("prompts");
+  const projectPath = path.join(projectPromptDir, `${promptName}.md`);
 
-  try {
-    const content = await readFile(projectPath, "utf8");
-    const parsed = parsePromptFile(content);
+  // Only check project prompts if the directory exists
+  if (config.project.existsSync("prompts")) {
+    try {
+      const content = await readFile(projectPath, "utf8");
+      const parsed = parsePromptFile(content);
 
-    if (!parsed.metadata.enabled) {
-      return null; // Prompt is disabled
-    }
+      if (!parsed.metadata.enabled) {
+        return null; // Prompt is disabled
+      }
 
-    return {
-      name: promptName,
-      description: parsed.metadata.description,
-      enabled: parsed.metadata.enabled,
-      path: projectPath,
-      type: "project",
-    };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      throw error; // Re-throw non-file-not-found errors
+      return {
+        name: promptName,
+        description: parsed.metadata.description,
+        enabled: parsed.metadata.enabled,
+        path: projectPath,
+        type: "project",
+      };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw error; // Re-throw non-file-not-found errors
+      }
     }
   }
 
   // Check user prompts if not found in project
-  const userPath = path.join(
-    config.app.ensurePathSync("prompts"),
-    `${promptName}.md`,
-  );
+  const userPromptDir = config.app.getPath("prompts");
+  const userPath = path.join(userPromptDir, `${promptName}.md`);
 
+  // User prompts directory should exist (created on first run), but check anyway
   try {
     const content = await readFile(userPath, "utf8");
     const parsed = parsePromptFile(content);
