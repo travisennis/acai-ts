@@ -300,7 +300,7 @@ For a list of available commands, type `/help` within the REPL.
 - `/handoff` - Hand off conversation to another agent
 - `/shell` - Execute shell commands
 
-**Note**: Some commands mentioned in older documentation (like `/usage`, `/context`) are currently disabled in the codebase.
+**Note**: Some commands mentioned in older documentation may no longer be available. Use `/help` to see current commands.
 
 Clipboard notes:
 - macOS: uses `pbcopy`
