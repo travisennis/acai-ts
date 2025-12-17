@@ -13,14 +13,9 @@ import type {
   TUI,
 } from "../tui/index.ts";
 import { addDirectoryCommand } from "./add-directory-command.ts";
-// import { applicationLogCommand } from "./application-log-command.ts";
 import { clearCommand } from "./clear-command.ts";
-// import { compactCommand } from "./compact-command.ts";
 import { copyCommand } from "./copy-command.ts";
-// import { editCommand } from "./edit-command.ts";
-// import { editPromptCommand } from "./edit-prompt-command.ts";
 import { exitCommand } from "./exit-command.ts";
-// import { filesCommand } from "./files-command.ts";
 import { generateRulesCommand } from "./generate-rules-command.ts";
 import { handoffCommand } from "./handoff-command.ts";
 import { healthCommand } from "./health-command.ts";
@@ -28,7 +23,6 @@ import { helpCommand } from "./help-command.ts";
 import { historyCommand } from "./history-command.ts";
 import { initCommand } from "./init-command.ts";
 import { initProjectCommand } from "./init-project-command.ts";
-// import { lastLogCommand } from "./last-log-command.ts";
 import { listDirectoriesCommand } from "./list-directories-command.ts";
 import { listToolsCommand } from "./list-tools-command.ts";
 import { modelCommand } from "./model-command.ts";
@@ -37,7 +31,6 @@ import { pickupCommand } from "./pickup-command.ts";
 import { loadPrompts, promptCommand } from "./prompt-command.ts";
 import { removeDirectoryCommand } from "./remove-directory-command.ts";
 import { resetCommand } from "./reset-command.ts";
-// import { rulesCommand } from "./rules-command.ts";
 import { saveCommand } from "./save-command.ts";
 import { sessionCommand } from "./session-command.ts";
 import { shellCommand } from "./shell-command.ts";
@@ -97,11 +90,7 @@ export class CommandManager {
     const cmds = [
       addDirectoryCommand(options),
       clearCommand(options),
-      // compactCommand(options),
-      // editCommand(options),
-      // editPromptCommand(options),
       exitCommand(options),
-      // filesCommand(options),
       healthCommand(options),
       historyCommand(options),
       initCommand(options),
@@ -113,13 +102,10 @@ export class CommandManager {
       removeDirectoryCommand(options),
       resetCommand(options),
       saveCommand(options),
-      // rulesCommand(options),
       modelCommand(options),
       sessionCommand(options),
-      // lastLogCommand(options),
       generateRulesCommand(options),
       handoffCommand(options),
-      // applicationLogCommand(options),
       copyCommand(options),
       listToolsCommand(options),
       shellCommand(options),

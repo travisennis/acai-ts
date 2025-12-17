@@ -28,21 +28,15 @@ acai-ts
 │   ├── cli.ts
 │   ├── commands
 │   │   ├── add-directory-command.ts
-│   │   ├── application-log-command.ts
 │   │   ├── clear-command.ts
-│   │   ├── compact-command.ts
 │   │   ├── copy-command.ts
-│   │   ├── edit-command.ts
-│   │   ├── edit-prompt-command.ts
 │   │   ├── exit-command.ts
-│   │   ├── files-command.ts
 │   │   ├── generate-rules-command.ts
 │   │   ├── handoff-command.ts
 │   │   ├── health-command.ts
 │   │   ├── help-command.ts
 │   │   ├── history-command.ts
 │   │   ├── init-command.ts
-│   │   ├── last-log-command.ts
 │   │   ├── list-directories-command.ts
 │   │   ├── list-tools-command.ts
 │   │   ├── manager.ts
@@ -52,7 +46,6 @@ acai-ts
 │   │   ├── prompt-command.ts
 │   │   ├── remove-directory-command.ts
 │   │   ├── reset-command.ts
-│   │   ├── rules-command.ts
 │   │   ├── save-command.ts
 │   │   ├── session-command.ts
 │   │   ├── shell-command.ts
@@ -197,7 +190,6 @@ acai-ts
 │   │   ├── health-command.test.ts
 │   │   ├── history-command.integration.test.ts
 │   │   ├── history-command.test.ts
-│   │   ├── prompt-history.test.ts
 │   │   └── shell-command.test.ts
 │   ├── config.test.ts
 │   ├── execution.test.ts
@@ -270,21 +262,15 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **api/exa/index.ts**: Integration for Exa API, likely for advanced search or data retrieval tools.
 - **cli.ts**: Parses command-line arguments and flags for the application.
 - **commands/add-directory-command.ts**: Command to add additional working directories.
-- **commands/application-log-command.ts**: Command to view or manage application logs.
 - **commands/clear-command.ts**: Command to clear the conversation history or screen.
-- **commands/compact-command.ts**: Command to compact or summarize conversation history.
 - **commands/copy-command.ts**: Command to copy output or selections to clipboard.
-- **commands/edit-command.ts**: Command to edit files or prompts using AI.
-- **commands/edit-prompt-command.ts**: Command to edit saved prompts.
 - **commands/exit-command.ts**: Command to exit the REPL.
-- **commands/files-command.ts**: Command to list or manage project files.
 - **commands/generate-rules-command.ts**: Command to generate or update agent rules.
 - **commands/handoff-command.ts**: Command to hand off conversation to another agent.
 - **commands/health-command.ts**: Command to check application health and status.
 - **commands/help-command.ts**: Command to display help information.
 - **commands/history-command.ts**: Command to view and manage conversation history.
 - **commands/init-command.ts**: Command to initialize the project or configuration.
-- **commands/last-log-command.ts**: Command to show the last log entry.
 - **commands/list-directories-command.ts**: Command to list all working directories.
 - **commands/list-tools-command.ts**: Command to list available tools.
 - **commands/manager.ts**: Manages registration and execution of all commands.
@@ -294,7 +280,6 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **commands/prompt-command.ts**: Command to manage or execute saved prompts.
 - **commands/remove-directory-command.ts**: Command to remove a working directory.
 - **commands/reset-command.ts**: Command to reset conversation or state.
-- **commands/rules-command.ts**: Command to view or edit rules.
 - **commands/save-command.ts**: Command to save conversation or outputs.
 - **commands/session-command.ts**: Command to show comprehensive session information including usage, context, and costs.
 - **commands/shell-command.ts**: Command to execute shell commands interactively.
@@ -426,7 +411,6 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **commands/health-command.test.ts**: Unit tests for health command.
 - **commands/history-command.integration.test.ts**: Integration tests for history command.
 - **commands/history-command.test.ts**: Unit tests for history command.
-- **commands/prompt-history.test.ts**: Unit tests for prompt history.
 - **commands/session-command.test.ts**: Unit tests for session command.
 - **commands/shell-command.test.ts**: Unit tests for shell command.
 - **config.test.ts**: Unit tests for configuration loading.
