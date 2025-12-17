@@ -37,6 +37,9 @@ const openRouterClient = createOpenRouter({
 // });
 
 const openrouterModels = {
+  "claude-3-5-sonnet": openRouterClient("anthropic/claude-3.5-sonnet", {
+    usage: { include: true },
+  }) as LanguageModelV2,
   "deepseek-v3-2": openRouterClient("deepseek/deepseek-v3.2", {
     usage: { include: true },
   }) as LanguageModelV2,
@@ -124,6 +127,18 @@ export const openrouterProvider = {
 export const openrouterModelRegistry: {
   [K in ModelName]: ModelMetadata<ModelName>;
 } = {
+  "openrouter:claude-3-5-sonnet": {
+    id: "openrouter:claude-3-5-sonnet",
+    provider: "openrouter",
+    contextWindow: 200000,
+    maxOutputTokens: 8192,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: false,
+    supportsToolCalling: true,
+    costPerInputToken: 0.000006,
+    costPerOutputToken: 0.00003,
+  },
   "openrouter:deepseek-v3-2": {
     id: "openrouter:deepseek-v3-2",
     provider: "openrouter",
