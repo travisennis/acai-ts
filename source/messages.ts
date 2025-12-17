@@ -120,7 +120,7 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     super();
     this.history = [];
     this.sessionId = randomUUID();
-    this.modelId = "";
+    this.modelId = modelManager.getModel("repl").modelId;
     this.title = "";
     this.createdAt = new Date();
     this.updatedAt = new Date();

@@ -284,3 +284,44 @@ export const formatNumber = (num: number): string => {
   // For values 100+, round to nearest whole number
   return `${Math.round(scaled)}${unit}`;
 };
+
+/**
+ * Formats a date into a human-readable string.
+ *
+ * @param date - The date to format
+ * @returns A formatted date string in the format "MMM DD, YYYY HH:MM:SS AM/PM"
+ *
+ * @example
+ * ```typescript
+ * formatDate(new Date("2023-12-25T14:30:00")) // Returns: "Dec 25, 2023, 02:30:00 PM"
+ * ```
+ */
+export const formatDate = (date: Date): string => {
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+};
+
+/**
+ * Formats a number as a percentage with one decimal place.
+ *
+ * @param n - The numerator
+ * @param d - The denominator
+ * @returns A formatted percentage string (e.g., "12.5%")
+ *
+ * @example
+ * ```typescript
+ * formatPercentage(25, 100) // Returns: "25.0%"
+ * formatPercentage(1, 3) // Returns: "33.3%"
+ * formatPercentage(0, 0) // Returns: "0.0%"
+ * ```
+ */
+export const formatPercentage = (n: number, d: number): string => {
+  if (d <= 0) return "0.0%";
+  return `${((n / d) * 100).toFixed(1)}%`;
+};

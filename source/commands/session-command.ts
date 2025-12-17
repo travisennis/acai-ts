@@ -1,6 +1,13 @@
 import type { ModelMessage } from "ai";
-import { formatDuration, formatNumber } from "../formatting.ts";
+import {
+  formatDate,
+  formatDuration,
+  formatNumber,
+  formatPercentage,
+} from "../formatting.ts";
+import { logger } from "../logger.ts";
 import { systemPrompt } from "../prompts.ts";
+import { getTerminalSize } from "../terminal/control.ts";
 import { type CompleteToolNames, initCliTools } from "../tools/index.ts";
 import { prepareTools } from "../tools/utils.ts";
 import type { Editor, TUI } from "../tui/index.ts";
@@ -30,37 +37,6 @@ function countMessageTokens(
   // Serialize messages to JSON for token counting
   const serializedMessages = JSON.stringify(messages);
   return counter.count(serializedMessages);
-}
-
-/**
- * Format numbers for display (e.g., 1.2k, 5.1m)
- */
-function formatNum(n: number): string {
-  if (n < 1000) return `${n}`;
-  if (n < 1_000_000) return `${(n / 1000).toFixed(1)}k`;
-  return `${(n / 1_000_000).toFixed(1)}m`;
-}
-
-/**
- * Calculate percentage for display
- */
-function pct(n: number, d: number): string {
-  if (d <= 0) return "0.0%";
-  return `${((n / d) * 100).toFixed(1)}%`;
-}
-
-/**
- * Format date for display
- */
-function formatDate(date: Date): string {
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
 }
 
 export function sessionCommand({
@@ -108,7 +84,10 @@ export function sessionCommand({
         const toolNames = JSON.stringify(prepareTools(toolDefs));
         toolsTokens = tokenCounter.count(toolNames);
       } catch (error) {
-        console.error(error);
+        logger.info(
+          { error: error instanceof Error ? error.message : String(error) },
+          "Failed to calculate tools tokens",
+        );
         toolsTokens = 0;
       }
 
@@ -163,24 +142,28 @@ export function sessionCommand({
       // 8) Usage breakdown by app
       const usageBreakdown = tokenTracker.getUsageBreakdown();
 
+      const { columns } = getTerminalSize();
+
       // Build modal content
       const modalContent = new Container();
 
       // Session metadata section
       modalContent.addChild(new ModalText("Session Overview", 0, 1));
-      modalContent.addChild(new ModalText("─".repeat(40), 0, 1));
+      modalContent.addChild(new ModalText("─".repeat(columns - 10), 0, 1));
 
       const metadataTable = [
-        ["Session ID", `${sessionId.slice(0, 8)}...`],
+        ["Session ID", sessionId],
         ["Session File", sessionFile],
         ["Model", modelId],
         ["Title", title],
         ["Duration", duration],
         ["Started", formatDate(createdAt)],
+        ["Last Updated", formatDate(updatedAt)],
       ];
       modalContent.addChild(
         new TableComponent(metadataTable, {
           headers: ["Property", "Value"],
+          colWidths: [25, 75],
         }),
       );
 
@@ -207,26 +190,30 @@ export function sessionCommand({
       const contextTable = [
         [
           "System Prompt",
-          formatNum(breakdown.systemPrompt),
-          pct(breakdown.systemPrompt, window),
+          formatNumber(breakdown.systemPrompt),
+          formatPercentage(breakdown.systemPrompt, window),
         ],
         [
           "System Tools",
-          formatNum(breakdown.tools),
-          pct(breakdown.tools, window),
+          formatNumber(breakdown.tools),
+          formatPercentage(breakdown.tools, window),
         ],
         [
           "Messages",
-          formatNum(breakdown.messages),
-          pct(breakdown.messages, window),
+          formatNumber(breakdown.messages),
+          formatPercentage(breakdown.messages, window),
         ],
-        ["Free Space", formatNum(breakdown.free), pct(breakdown.free, window)],
+        [
+          "Free Space",
+          formatNumber(breakdown.free),
+          formatPercentage(breakdown.free, window),
+        ],
         [
           "Total Used",
-          formatNum(breakdown.totalUsed),
-          pct(breakdown.totalUsed, window),
+          formatNumber(breakdown.totalUsed),
+          formatPercentage(breakdown.totalUsed, window),
         ],
-        ["Context Window", formatNum(window), "100%"],
+        ["Context Window", formatNumber(window), "100%"],
       ];
       modalContent.addChild(
         new TableComponent(contextTable, {
@@ -235,7 +222,7 @@ export function sessionCommand({
       );
 
       // Progress bar
-      const barWidth = 30;
+      const barWidth = Math.max(20, Math.min(50, columns - 40)); // Responsive width
       const filled = Math.floor((usedPercentage / 100) * barWidth);
       const empty = barWidth - filled;
       const progressBar = `[${"█".repeat(filled)}${"░".repeat(empty)}] ${usedPercentage.toFixed(1)}%`;
@@ -246,18 +233,37 @@ export function sessionCommand({
 
       // Token usage and costs
       modalContent.addChild(new ModalText("Token Usage & Costs", 0, 1));
+
+      // Format costs appropriately
+      const formatCost = (cost: number): string => {
+        if (cost === 0) return "$0.00";
+        if (cost < 0.01) return `$${cost.toFixed(6)}`;
+        if (cost < 1) return `$${cost.toFixed(4)}`;
+        return `$${cost.toFixed(2)}`;
+      };
+
       const tokenTable = [
-        ["Input Tokens", formatNumber(inputTokens), `$${inputCost.toFixed(4)}`],
+        [
+          "Input Tokens",
+          formatNumber(inputTokens),
+          formatCost(inputCost),
+          meta.costPerInputToken
+            ? `$${meta.costPerInputToken.toFixed(6)}/token`
+            : "N/A",
+        ],
         [
           "Output Tokens",
           formatNumber(outputTokens),
-          `$${outputCost.toFixed(4)}`,
+          formatCost(outputCost),
+          meta.costPerOutputToken
+            ? `$${meta.costPerOutputToken.toFixed(6)}/token`
+            : "N/A",
         ],
-        ["Total Tokens", formatNumber(totalTokens), `$${totalCost.toFixed(4)}`],
+        ["Total Tokens", formatNumber(totalTokens), formatCost(totalCost), ""],
       ];
       modalContent.addChild(
         new TableComponent(tokenTable, {
-          headers: ["Type", "Tokens", "Cost"],
+          headers: ["Type", "Tokens", "Cost", "Rate"],
         }),
       );
 
