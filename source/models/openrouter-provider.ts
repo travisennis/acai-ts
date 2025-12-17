@@ -103,6 +103,9 @@ const openrouterModels = {
   "minimax-m2": openRouterClient("minimax/minimax-m2", {
     usage: { include: true },
   }) as LanguageModelV2,
+  "gemini-3-flash-preview": openRouterClient("google/gemini-3-flash-preview", {
+    usage: { include: true },
+  }) as LanguageModelV2,
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -384,5 +387,17 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000015,
     costPerOutputToken: 0.00000045,
+  },
+  "openrouter:gemini-3-flash-preview": {
+    id: "openrouter:gemini-3-flash-preview",
+    provider: "openrouter",
+    contextWindow: 1048576,
+    maxOutputTokens: 65535,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.0000005,
+    costPerOutputToken: 0.000003,
   },
 };
