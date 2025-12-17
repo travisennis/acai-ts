@@ -377,6 +377,27 @@ export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
     return null;
   }
 
+  // Getter methods for session information
+  getSessionId(): string {
+    return this.sessionId;
+  }
+
+  getModelId(): string {
+    return this.modelId;
+  }
+
+  getTitle(): string {
+    return this.title;
+  }
+
+  getCreatedAt(): Date {
+    return this.createdAt;
+  }
+
+  getUpdatedAt(): Date {
+    return this.updatedAt;
+  }
+
   static async load(
     stateDir: string,
     count = 10, // Add count parameter with default

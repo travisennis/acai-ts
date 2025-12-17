@@ -145,6 +145,11 @@ export function createMockMessageHistory(
     getLastUserMessage: mock.fn(),
     getLastMessage: mock.fn(),
     restore: mock.fn(),
+    getSessionId: mock.fn(() => "test-session-id"),
+    getModelId: mock.fn(() => "test-model-id"),
+    getTitle: mock.fn(() => "Test Title"),
+    getCreatedAt: mock.fn(() => new Date("2025-12-16T10:30:00Z")),
+    getUpdatedAt: mock.fn(() => new Date("2025-12-16T10:45:00Z")),
   } as unknown as MessageHistory;
 }
 
@@ -190,6 +195,11 @@ export function createMockConfig(): ConfigManager {
 export function createMockTokenTracker(): TokenTracker {
   return {
     getUsageBreakdown: mock.fn(() => ({})),
+    getTotalUsage: mock.fn(() => ({
+      inputTokens: 100,
+      outputTokens: 50,
+      totalTokens: 150,
+    })),
   } as unknown as TokenTracker;
 }
 

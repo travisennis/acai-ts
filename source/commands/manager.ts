@@ -16,7 +16,6 @@ import { addDirectoryCommand } from "./add-directory-command.ts";
 // import { applicationLogCommand } from "./application-log-command.ts";
 import { clearCommand } from "./clear-command.ts";
 // import { compactCommand } from "./compact-command.ts";
-import { contextCommand } from "./context-command.ts";
 import { copyCommand } from "./copy-command.ts";
 // import { editCommand } from "./edit-command.ts";
 // import { editPromptCommand } from "./edit-prompt-command.ts";
@@ -40,9 +39,9 @@ import { removeDirectoryCommand } from "./remove-directory-command.ts";
 import { resetCommand } from "./reset-command.ts";
 // import { rulesCommand } from "./rules-command.ts";
 import { saveCommand } from "./save-command.ts";
+import { sessionCommand } from "./session-command.ts";
 import { shellCommand } from "./shell-command.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
-import { usageCommand } from "./usage-command.ts";
 
 export class CommandManager {
   private commands: Map<string, ReplCommand>;
@@ -99,7 +98,6 @@ export class CommandManager {
       addDirectoryCommand(options),
       clearCommand(options),
       // compactCommand(options),
-      contextCommand(options),
       // editCommand(options),
       // editPromptCommand(options),
       exitCommand(options),
@@ -117,7 +115,7 @@ export class CommandManager {
       saveCommand(options),
       // rulesCommand(options),
       modelCommand(options),
-      usageCommand(options),
+      sessionCommand(options),
       // lastLogCommand(options),
       generateRulesCommand(options),
       handoffCommand(options),

@@ -31,7 +31,6 @@ acai-ts
 │   │   ├── application-log-command.ts
 │   │   ├── clear-command.ts
 │   │   ├── compact-command.ts
-│   │   ├── context-command.ts
 │   │   ├── copy-command.ts
 │   │   ├── edit-command.ts
 │   │   ├── edit-prompt-command.ts
@@ -55,9 +54,9 @@ acai-ts
 │   │   ├── reset-command.ts
 │   │   ├── rules-command.ts
 │   │   ├── save-command.ts
+│   │   ├── session-command.ts
 │   │   ├── shell-command.ts
 │   │   ├── types.ts
-│   │   └── usage-command.ts
 │   ├── config.ts
 │   ├── dedent.ts
 │   ├── execution
@@ -274,7 +273,6 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **commands/application-log-command.ts**: Command to view or manage application logs.
 - **commands/clear-command.ts**: Command to clear the conversation history or screen.
 - **commands/compact-command.ts**: Command to compact or summarize conversation history.
-- **commands/context-command.ts**: Command to manage context selections.
 - **commands/copy-command.ts**: Command to copy output or selections to clipboard.
 - **commands/edit-command.ts**: Command to edit files or prompts using AI.
 - **commands/edit-prompt-command.ts**: Command to edit saved prompts.
@@ -298,9 +296,9 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **commands/reset-command.ts**: Command to reset conversation or state.
 - **commands/rules-command.ts**: Command to view or edit rules.
 - **commands/save-command.ts**: Command to save conversation or outputs.
+- **commands/session-command.ts**: Command to show comprehensive session information including usage, context, and costs.
 - **commands/shell-command.ts**: Command to execute shell commands interactively.
 - **commands/types.ts**: Type definitions for commands.
-- **commands/usage-command.ts**: Command to show usage statistics or token usage.
 - **config.ts**: Loads and validates configuration from env, files, and defaults.
 - **dedent.ts**: Utility function to remove indentation from multi-line strings.
 - **execution/index.ts**: Handles execution of code or commands, possibly wrapping tools.
@@ -422,13 +420,14 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 ### test/ Directory
 - **advanced-edit-file.test.ts**: Unit tests for advanced edit file tool.
 - **agent/**: Directory for agent-related tests (empty currently).
-- **commands/context-command.test.ts**: Unit tests for context command.
+- **commands/context-command.test.ts**: Unit tests for context command (deprecated).
 - **commands/copy-command.test.ts**: Unit tests for copy command.
 - **commands/exit-command.test.ts**: Unit tests for exit command.
 - **commands/health-command.test.ts**: Unit tests for health command.
 - **commands/history-command.integration.test.ts**: Integration tests for history command.
 - **commands/history-command.test.ts**: Unit tests for history command.
 - **commands/prompt-history.test.ts**: Unit tests for prompt history.
+- **commands/session-command.test.ts**: Unit tests for session command.
 - **commands/shell-command.test.ts**: Unit tests for shell command.
 - **config.test.ts**: Unit tests for configuration loading.
 - **execution.test.ts**: Unit tests for execution module.

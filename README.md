@@ -27,8 +27,8 @@ Acai is a powerful **AI-driven command-line interface (CLI) tool** designed to a
 *   **Code Navigation & Analysis:** Advanced file searching and code analysis capabilities.
 *   **Git Workflow Automation:** Streamline commit messages and code reviews.
 *   **Web Integration:** Perform web searches and fetch content from URLs.
-*   **Extensible Commands:** A rich set of built-in commands (`/help`, `/model`, `/usage`, `/list-tools`, etc.).
-*   **Token Usage Tracking:** Monitor AI token consumption.
+*   **Extensible Commands:** A rich set of built-in commands (`/help`, `/model`, `/session`, `/list-tools`, etc.).
+*   **Token Usage Tracking:** Monitor AI token consumption with comprehensive session overview.
 *   **Configurable AI Models:** Easily switch between different LLM providers and models.
 *   **Shell Integration:** Execute shell commands inline using `!`command`` syntax or via `/shell` command.
 *   **Dynamic Tools:** Create and load custom tools from JavaScript files in your project or user directory.
@@ -287,7 +287,7 @@ For a list of available commands, type `/help` within the REPL.
 - `/paste` - Add clipboard contents to the next prompt
 - `/prompt <name> [arguments...]` - Load saved prompts with optional arguments. Project prompts override user prompts. Supports argument placeholders (`$ARGUMENTS`, `$1`, `$2`, etc.) in prompt files.
 - `/model [provider:model|category|provider]` - List or switch models
-- `/usage` - Show token usage breakdown
+- `/session` - Show comprehensive session information including usage, context, and costs
 - `/clear` - Clears the terminal screen for the current session
 - `/generateRules` - Analyze the current conversation and suggest project rules
 - `/copy` - Copy the last assistant response to the system clipboard
@@ -295,14 +295,13 @@ For a list of available commands, type `/help` within the REPL.
 - `/add-dir <path>` - Add additional working directory
 - `/list-dirs` - List all working directories
 - `/remove-dir <path>` - Remove a working directory
-- `/context` - Manage context selections
 - `/health` - Check system health and dependencies
 - `/history` - View and manage conversation history
 - `/pickup` - Resume a previous conversation
 - `/handoff` - Hand off conversation to another agent
 - `/shell` - Execute shell commands
 
-**Note**: Some commands mentioned in older documentation (like `/files`, `/edit`, `/compact`, `/rules`, `/lastLog`, `/appLog`) are currently disabled in the codebase.
+**Note**: Some commands mentioned in older documentation (like `/files`, `/edit`, `/compact`, `/rules`, `/lastLog`, `/appLog`, `/usage`, `/context`) are currently disabled in the codebase.
 
 Clipboard notes:
 - macOS: uses `pbcopy`

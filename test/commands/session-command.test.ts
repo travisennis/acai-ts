@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
-import { contextCommand } from "../../source/commands/context-command.ts";
+import { sessionCommand } from "../../source/commands/session-command.ts";
 import {
   createMockCommandOptions,
   createMockConfig,
@@ -14,7 +14,7 @@ import {
   createMockTui,
 } from "../utils/mocking.ts";
 
-describe("contextCommand", () => {
+describe("sessionCommand", () => {
   let mockTui: ReturnType<typeof createMockTui>;
   let mockContainer: ReturnType<typeof createMockContainer>;
   let mockEditor: ReturnType<typeof createMockEditor>;
@@ -50,13 +50,16 @@ describe("contextCommand", () => {
       promptHistory: mockPromptHistory,
     });
 
-    const command = contextCommand(options);
+    const command = sessionCommand(options);
 
-    assert.equal(command.command, "/context");
-    assert.equal(command.description, "Show context window usage breakdown");
+    assert.equal(command.command, "/session");
+    assert.equal(
+      command.description,
+      "Show comprehensive session information including usage, context, and costs",
+    );
   });
 
-  it("should return subcommands", async () => {
+  it("should return empty subcommands", async () => {
     const options = createMockCommandOptions({
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
@@ -67,10 +70,10 @@ describe("contextCommand", () => {
       promptHistory: mockPromptHistory,
     });
 
-    const command = contextCommand(options);
+    const command = sessionCommand(options);
     const subCommands = await command.getSubCommands();
 
-    assert.deepEqual(subCommands, ["--details", "--json"]);
+    assert.deepEqual(subCommands, []);
   });
 
   it("should handle without throwing", async () => {
@@ -84,7 +87,7 @@ describe("contextCommand", () => {
       promptHistory: mockPromptHistory,
     });
 
-    const command = contextCommand(options);
+    const command = sessionCommand(options);
 
     // Should not throw
     await assert.doesNotReject(() =>
@@ -97,7 +100,7 @@ describe("contextCommand", () => {
     );
   });
 
-  it("should handle json output flag", async () => {
+  it("should call showModal", async () => {
     const options = createMockCommandOptions({
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
@@ -108,9 +111,9 @@ describe("contextCommand", () => {
       promptHistory: mockPromptHistory,
     });
 
-    const command = contextCommand(options);
+    const command = sessionCommand(options);
 
-    await command.handle(["--json"], {
+    await command.handle([], {
       tui: mockTui,
       container: mockContainer,
       inputContainer: mockContainer,
