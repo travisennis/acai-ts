@@ -262,6 +262,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **api/exa/index.ts**: Integration for Exa API, likely for advanced search or data retrieval tools.
 - **cli.ts**: Parses command-line arguments and flags for the application.
 - **commands/add-directory-command.ts**: Command to add additional working directories.
+- **context.ts**: Loads and formats context files for background information on subtasks.
 - **commands/clear-command.ts**: Command to clear the conversation history or screen.
 - **commands/copy-command.ts**: Command to copy output or selections to clipboard.
 - **commands/exit-command.ts**: Command to exit the REPL.
@@ -317,6 +318,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **repl/tool-call-repair.ts**: Repairs or handles errors in tool calls.
 - **repl-new.ts**: New REPL implementation with enhanced features.
 - **repl.ts**: Implements the Read-Eval-Print Loop for interactive sessions.
+- **skills.ts**: Loads and formats skill files for specialized task instructions.
 - **terminal/ansi-styles.ts**: ANSI color and style utilities for terminal output.
 - **terminal/checkbox-prompt.ts**: Interactive prompt for checkbox selections.
 - **terminal/default-theme.ts**: Default color theme for terminal output.

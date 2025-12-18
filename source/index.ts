@@ -72,6 +72,7 @@ Options
   --resume           Select a recent conversation to resume
   --add-dir          Add additional working directory (can be used multiple times)
   --no-skills        Disable skills discovery and loading
+  --no-contexts      Disable context discovery and loading
 
   --help, -h         Show help
   --version, -v      Show version
@@ -91,6 +92,7 @@ const parsed = parseArgs({
 
     "add-dir": { type: "string", multiple: true },
     "no-skills": { type: "boolean", default: false },
+    "no-contexts": { type: "boolean", default: false },
 
     help: { type: "boolean", short: "h" },
     version: { type: "boolean", short: "v" },
@@ -356,6 +358,8 @@ async function handleConversationHistory(
 async function runCliMode(state: AppState): Promise<void> {
   const skillsEnabled =
     !flags["no-skills"] && (await config.getSkillsEnabled());
+  const contextsEnabled =
+    !flags["no-contexts"] && (await config.getContextsEnabled());
   const cliProcess = new Cli({
     promptManager: state.promptManager,
     messageHistory: state.messageHistory,
@@ -364,6 +368,7 @@ async function runCliMode(state: AppState): Promise<void> {
     tokenCounter: state.tokenCounter,
     workspace,
     skillsEnabled,
+    contextsEnabled,
   });
   (await asyncTry(cliProcess.run())).recover(handleError);
 }
@@ -442,6 +447,8 @@ async function runReplMode(state: AppState): Promise<void> {
       | undefined;
     const skillsEnabled =
       !flags["no-skills"] && (projectConfig.skills?.enabled ?? true);
+    const contextsEnabled =
+      !flags["no-contexts"] && (projectConfig.contexts?.enabled ?? true);
     try {
       const results = agent.run({
         systemPrompt: await systemPrompt({
@@ -449,6 +456,7 @@ async function runReplMode(state: AppState): Promise<void> {
           activeTools,
           allowedDirs: workspace.allowedDirs,
           skillsEnabled,
+          contextsEnabled,
         }),
         input: userInput,
         toolDefs: tools.toolDefs,

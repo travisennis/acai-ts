@@ -24,6 +24,9 @@ export const defaultConfig = {
   skills: {
     enabled: true,
   },
+  contexts: {
+    enabled: true,
+  },
 } as const;
 
 // Type definitions
@@ -73,6 +76,12 @@ const ProjectConfigSchema = z.object({
     })
     .optional()
     .default(defaultConfig.skills),
+  contexts: z
+    .object({
+      enabled: z.boolean().optional().default(defaultConfig.contexts.enabled),
+    })
+    .optional()
+    .default(defaultConfig.contexts),
 });
 
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
@@ -185,6 +194,34 @@ export class ConfigManager {
       configData.skills = { enabled: true };
     }
     configData.skills.enabled = enabled;
+
+    await this.app.ensurePath();
+    await fs.writeFile(configPath, JSON.stringify(configData, null, 2));
+  }
+
+  // Contexts settings helpers
+  async getContextsEnabled(): Promise<boolean> {
+    const projectConfig = await this.getConfig();
+    return projectConfig.contexts?.enabled ?? true;
+  }
+
+  async setContextsEnabled(enabled: boolean): Promise<void> {
+    const configPath = path.join(this.app.getPath(), "acai.json");
+    let configData: Partial<ProjectConfig> = {};
+
+    try {
+      const data = await fs.readFile(configPath, "utf8");
+      configData = jsonParser(ProjectConfigSchema.partial()).parse(data);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw error;
+      }
+    }
+
+    if (!configData.contexts) {
+      configData.contexts = { enabled: true };
+    }
+    configData.contexts.enabled = enabled;
 
     await this.app.ensurePath();
     await fs.writeFile(configPath, JSON.stringify(configData, null, 2));
