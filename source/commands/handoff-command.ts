@@ -1,8 +1,9 @@
+import { writeFile } from "node:fs/promises";
 import { generateText } from "ai";
+import { AiConfig } from "../models/ai-config.ts";
 import style from "../terminal/style.ts";
-import { initCliTools } from "../tools/index.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Text } from "../tui/index.ts";
+import { Spacer, Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const handoffCommand = (options: CommandOptions): ReplCommand => {
@@ -38,6 +39,7 @@ export const handoffCommand = (options: CommandOptions): ReplCommand => {
         return "continue";
       }
 
+      container.addChild(new Spacer(1));
       container.addChild(
         new Text(
           `Creating handoff document for purpose: ${style.blue(purpose)}`,
@@ -47,10 +49,17 @@ export const handoffCommand = (options: CommandOptions): ReplCommand => {
       );
       tui.requestRender();
 
-      await createHandoffDocument(options, purpose);
+      const filename = await createHandoffDocument(options, purpose);
 
       container.addChild(
-        new Text(style.green("Handoff document created"), 2, 0),
+        new Text(style.green(`Handoff document created: ${filename}`), 2, 0),
+      );
+      container.addChild(
+        new Text(
+          `Use /pickup ${filename.replace(".md", "")} to continue this work.`,
+          3,
+          0,
+        ),
       );
       tui.requestRender();
       editor.setText("");
@@ -157,86 +166,109 @@ Here's an example of how your output should be structured:
 
 ## Final Step
 
-After providing your analysis and summary, write the handoff summary to a markdown file at \`handoff-[timestamp]-[slug].md\` where [timestamp] is the current date in format YYYY-MM-DD and the slug is what we defined before.
+Provide your complete handoff summary with all the sections above. The system will save it to a file automatically.
 
-Then tell the user about this file and that they can use \`/pickup FILENAME\` to continue.`;
+Make sure to include both the slug and readable summary in your response as described.`;
 };
 
 async function createHandoffDocument(
-  { modelManager, tokenTracker, tokenCounter, workspace }: CommandOptions,
+  { modelManager, tokenTracker, workspace, messageHistory }: CommandOptions,
   purpose: string,
-) {
+): Promise<string> {
   const app = "handoff-agent";
 
-  const { text, usage } = await generateText({
-    model: modelManager.getModel(app),
-    system:
-      "You are a helpful AI assistant tasked with creating detailed handoff summaries for coding agents. Focus on technical accuracy and completeness so that another agent can seamlessly continue the work.",
-    prompt: handoffPrompt(purpose),
-    tools: (await initCliTools({ tokenCounter, workspace })).toolDefs,
+  const model = modelManager.getModel(app);
+  const modelConfig = modelManager.getModelMetadata(app);
+  // Get conversation history
+  const messages = messageHistory.get();
+  const conversationText = messages
+    .map((msg) => {
+      let content = "";
+      if (Array.isArray(msg.content)) {
+        content = msg.content
+          .filter(
+            (part): part is { type: "text"; text: string } =>
+              part.type === "text",
+          )
+          .map((part) => part.text)
+          .join("\n");
+      } else if (typeof msg.content === "string") {
+        content = msg.content;
+      }
+      return `${msg.role}: ${content}`;
+    })
+    .filter((text) => text?.trim())
+    .join("\n\n");
+
+  const fullPrompt = `${handoffPrompt(purpose)}\n\n## Conversation History\n\n${conversationText}`;
+
+  const aiConfig = new AiConfig({
+    modelMetadata: modelConfig,
+    prompt: fullPrompt,
   });
 
+  let result: Awaited<ReturnType<typeof generateText>>;
+
+  try {
+    result = await generateText({
+      model,
+      maxOutputTokens: aiConfig.maxOutputTokens(),
+      system:
+        "You are a helpful AI assistant tasked with creating detailed handoff summaries for coding agents. Focus on technical accuracy and completeness so that another agent can seamlessly continue the work.",
+      prompt: fullPrompt,
+      temperature: aiConfig.temperature(),
+      topP: aiConfig.topP(),
+      providerOptions: aiConfig.providerOptions(),
+    });
+  } catch (error) {
+    console.error(`Error generating handoff text: ${error}`);
+    throw new Error(
+      `Failed to generate handoff summary: ${(error as Error).message}`,
+    );
+  }
+
+  const { text, usage } = result;
   tokenTracker.trackUsage(app, usage);
 
-  console.info(text);
+  if (!text || text.trim().length === 0) {
+    throw new Error("AI returned empty response");
+  }
 
-  //   // Parse the response to extract the readable summary and slug
-  //   const lines = text.split("\n");
-  //   let readableSummary = "";
-  //   let slug = "";
-  //   const planContent = text;
+  // Generate slug from purpose
+  let slug = purpose
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim()
+    .slice(0, 50); // Limit length
 
-  //   // Extract readable summary (first heading after markdown)
-  //   for (let i = 0; i < lines.length; i++) {
-  //     const line = lines[i].trim();
-  //     if (line.startsWith("# ") && !readableSummary) {
-  //       readableSummary = line.substring(2).trim();
-  //       break;
-  //     }
-  //   }
+  // If slug is empty after processing, use a default
+  if (!slug) {
+    slug = "session";
+  }
 
-  //   // Create slug from readable summary
-  //   if (readableSummary) {
-  //     slug = readableSummary
-  //       .toLowerCase()
-  //       .replace(/[^a-z0-9\s-]/g, "")
-  //       .replace(/\s+/g, "-")
-  //       .replace(/-+/g, "-")
-  //       .trim();
-  //   }
+  // Generate filename with timestamp
+  const now = new Date();
+  const timestamp = now.toISOString().split("T")[0]; // YYYY-MM-DD format
+  const filename = `handoff-${timestamp}-${slug}.md`;
+  const filepath = `${workspace.primaryDir}/${filename}`;
 
-  //   // Generate filename with timestamp
-  //   const now = new Date();
-  //   const timestamp = now.toISOString().split("T")[0]; // YYYY-MM-DD format
-  //   const filename = `handoff-${timestamp}-${slug || "session"}.md`;
+  // Create the final handoff document with metadata
+  const handoffDocument = `${text}
 
-  //   // Create the final handoff document
-  //   const handoffDocument = `# ${readableSummary || "Session Handoff"}
+---
+*Generated on ${now.toISOString()} for purpose: ${purpose}*
+*This handoff file can be used to continue the work using the /pickup command*`;
 
-  // ${planContent}
-
-  // ---
-  // *Generated on ${now.toISOString()} for purpose: ${purpose}*
-  // *This handoff file can be used to continue the work using the /pickup command*`;
-
-  //   // Save the handoff document using the saveFile tool
-  //   const saveFileTool = await createSaveFileTool({
-  //     workingDir: workspace.primaryDir,
-  //     allowedDirs: workspace.allowedDirs,
-  //   });
-
-  //   saveFileTool.execute(
-  //     {
-  //       path: `./${filename}`,
-  //       content: handoffDocument,
-  //       encoding: "utf-8",
-  //     },
-  //     {
-  //       toolCallId: `handoff-${Date.now()}`,
-  //       abortSignal: undefined,
-  //       messages: messageHistory.get(),
-  //     },
-  //   );
+  // Save the file
+  try {
+    await writeFile(filepath, handoffDocument, "utf-8");
+    return filename;
+  } catch (error) {
+    console.error(`Failed to save handoff file: ${error}`);
+    throw new Error(`Failed to save handoff file: ${(error as Error).message}`);
+  }
 
   // console.info(`Handoff document created: ${filename}`);
 }
