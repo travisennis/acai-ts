@@ -26,17 +26,23 @@ ${installedTools}`;
 // Command execution timeout in milliseconds
 const DEFAULT_TIMEOUT = 1.5 * 60 * 1000; // 1.5 minutes
 
+// Helper function to convert string "null" to actual null
+const convertNullString = (value: unknown): unknown | null => {
+  if (typeof value === "string" && value.toLowerCase() === "null") {
+    return null;
+  }
+  return value;
+};
+
 const inputSchema = z.object({
   command: z.string().describe("Full CLI command to execute."),
   cwd: z
-    .string()
-    .nullable()
+    .preprocess((val) => convertNullString(val), z.string().nullable())
     .describe(
       "Working directory file path (default: project root). Must be within the project directory. Required but nullable.",
     ),
-  timeout: z.coerce
-    .number()
-    .nullable()
+  timeout: z
+    .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
     .describe(
       `Command execution timeout in milliseconds. Required but nullable. If null, the default value is ${DEFAULT_TIMEOUT}ms`,
     ),

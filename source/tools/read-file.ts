@@ -16,20 +16,26 @@ export const ReadFileTool = {
   name: "readFile" as const,
 };
 
+// Helper function to convert string "null" to actual null
+const convertNullString = (value: unknown): unknown => {
+  if (typeof value === "string" && value.toLowerCase() === "null") {
+    return null;
+  }
+  return value;
+};
+
 const inputSchema = z.object({
   path: z.string().describe("Absolute path to file to read"),
   encoding: fileEncodingSchema.describe(
     'Encoding format for reading the file. Use "utf-8" as default for text files',
   ),
-  startLine: z.coerce
-    .number()
-    .nullable()
+  startLine: z
+    .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
     .describe(
       "1-based line number to start reading from. Required but nullable. Pass null to start at beginning of file",
     ),
-  lineCount: z.coerce
-    .number()
-    .nullable()
+  lineCount: z
+    .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
     .describe(
       "Maximum number of lines to read. Required but nullable. Pass null to get all lines.",
     ),

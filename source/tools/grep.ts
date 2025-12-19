@@ -15,6 +15,14 @@ export const GrepTool = {
   name: "grepFiles" as const,
 };
 
+// Helper function to convert string "null" to actual null
+const convertNullString = (value: unknown): unknown => {
+  if (typeof value === "string" && value.toLowerCase() === "null") {
+    return null;
+  }
+  return value;
+};
+
 const inputSchema = z.object({
   pattern: z
     .string()
@@ -22,39 +30,32 @@ const inputSchema = z.object({
       "The search pattern (regex by default, or fixed-string if literal=true or auto-detected as unbalanced)",
     ),
   path: z.string().describe("The path to search in"),
-  recursive: z.coerce
-    .boolean()
-    .nullable()
+  recursive: z
+    .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
     .describe("Search recursively. (default: true))"),
-  ignoreCase: z.coerce
-    .boolean()
-    .nullable()
+  ignoreCase: z
+    .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
     .describe("Use case-sensitive search. (default: false)"),
-  filePattern: z.coerce
-    .string()
-    .nullable()
+  filePattern: z
+    .preprocess((val) => convertNullString(val), z.coerce.string().nullable())
     .describe(
       "Glob pattern to filter files (e.g., '*.ts', '**/*.test.js'). (Default: no filtering)",
     ),
-  contextLines: z.coerce
-    .number()
-    .nullable()
+  contextLines: z
+    .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
     .describe(
       "The number of context lines needed in search results. (Default: 0)",
     ),
-  searchIgnored: z.coerce
-    .boolean()
-    .nullable()
+  searchIgnored: z
+    .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
     .describe("Search ignored files. (Default: false)"),
-  literal: z.coerce
-    .boolean()
-    .nullable()
+  literal: z
+    .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
     .describe(
       "Pass true for fixed-string search (-F), false for regex, (Default: auto-detects unbalanced patterns like mismatched parentheses/brackets.)",
     ),
-  maxResults: z.coerce
-    .number()
-    .nullable()
+  maxResults: z
+    .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
     .describe(
       "Maximum number of matches to return. Set to 0 for no limit. (Default: configured value)",
     ),
