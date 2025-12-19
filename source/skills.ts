@@ -1,12 +1,17 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join, resolve, sep } from "node:path";
+import { join, resolve } from "node:path";
 import { logger } from "./logger.ts";
+import { parseFrontMatter } from "./utils/yaml.ts";
 
 // Core skill interfaces
 export interface SkillFrontmatter {
-  name?: string;
+  name: string;
   description: string;
+  license?: string;
+  compatibility?: string;
+  metadata?: Record<string, string>;
+  "allowed-tools"?: string;
 }
 
 export interface Skill {
@@ -25,48 +30,89 @@ export interface LoadSkillsFromDirOptions {
 
 const CONFIG_DIR_NAME = ".acai";
 
-function stripQuotes(str: string): string {
-  if (
-    (str.startsWith('"') && str.endsWith('"')) ||
-    (str.startsWith("'") && str.endsWith("'"))
-  ) {
-    return str.slice(1, -1);
+// Validation functions
+function validateSkillName(
+  name: string,
+  directoryName: string,
+): { valid: boolean; error?: string } {
+  // Check required field
+  if (!name) {
+    return { valid: false, error: "Name field is required" };
   }
-  return str;
+
+  // Check length (1-64 characters)
+  if (name.length < 1 || name.length > 64) {
+    return { valid: false, error: "Name must be 1-64 characters long" };
+  }
+
+  // Check allowed characters (lowercase letters, numbers, hyphens)
+  if (!/^[a-z0-9-]+$/.test(name)) {
+    return {
+      valid: false,
+      error: "Name can only contain lowercase letters, numbers, and hyphens",
+    };
+  }
+
+  // Check no leading or trailing hyphens
+  if (name.startsWith("-") || name.endsWith("-")) {
+    return { valid: false, error: "Name cannot start or end with a hyphen" };
+  }
+
+  // Check no consecutive hyphens
+  if (name.includes("--")) {
+    return { valid: false, error: "Name cannot contain consecutive hyphens" };
+  }
+
+  // Check matches directory name
+  if (name !== directoryName) {
+    return {
+      valid: false,
+      error: `Name "${name}" must match directory name "${directoryName}"`,
+    };
+  }
+
+  return { valid: true };
+}
+
+function validateSkillDescription(description: string): {
+  valid: boolean;
+  error?: string;
+} {
+  // Check required field
+  if (!description) {
+    return { valid: false, error: "Description field is required" };
+  }
+
+  // Check length (1-1024 characters)
+  if (description.length < 1 || description.length > 1024) {
+    return {
+      valid: false,
+      error: "Description must be 1-1024 characters long",
+    };
+  }
+
+  return { valid: true };
 }
 
 function parseFrontmatter(content: string): {
   frontmatter: SkillFrontmatter;
   body: string;
 } {
-  const frontmatter: SkillFrontmatter = { description: "" };
+  const { data, content: body } = parseFrontMatter(content);
 
-  const normalizedContent = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  // Type cast and validate required fields
+  const name = data["name"] as string;
+  const description = data["description"] as string;
 
-  if (!normalizedContent.startsWith("---")) {
-    return { frontmatter, body: normalizedContent };
-  }
-
-  const endIndex = normalizedContent.indexOf("\n---", 3);
-  if (endIndex === -1) {
-    return { frontmatter, body: normalizedContent };
-  }
-
-  const frontmatterBlock = normalizedContent.slice(4, endIndex);
-  const body = normalizedContent.slice(endIndex + 4).trim();
-
-  for (const line of frontmatterBlock.split("\n")) {
-    const match = line.match(/^(\w+):\s*(.*)$/);
-    if (match) {
-      const key = match[1];
-      const value = stripQuotes(match[2].trim());
-      if (key === "name") {
-        frontmatter.name = value;
-      } else if (key === "description") {
-        frontmatter.description = value;
-      }
-    }
-  }
+  // Set default empty values for optional fields
+  const frontmatter: SkillFrontmatter = {
+    name: name || "",
+    description: description || "",
+    license: (data["license"] as string) || undefined,
+    compatibility: (data["compatibility"] as string) || undefined,
+    metadata: (data["metadata"] as Record<string, string>) || undefined,
+    "allowed-tools": (data["allowed-tools"] as string) || undefined,
+  };
 
   return { frontmatter, body };
 }
@@ -122,13 +168,30 @@ async function loadSkillsFromDirInternal(
             const content = await readFile(skillPath, "utf8");
             const { frontmatter } = parseFrontmatter(content);
 
-            if (!frontmatter.description) {
+            // Validate required fields
+            const nameValidation = validateSkillName(
+              frontmatter.name,
+              entry.name,
+            );
+            if (!nameValidation.valid) {
+              logger.warn(
+                `Invalid skill name in ${skillPath}: ${nameValidation.error}`,
+              );
               continue;
             }
 
-            const skillName = frontmatter.name || entry.name;
+            const descriptionValidation = validateSkillDescription(
+              frontmatter.description,
+            );
+            if (!descriptionValidation.valid) {
+              logger.warn(
+                `Invalid skill description in ${skillPath}: ${descriptionValidation.error}`,
+              );
+              continue;
+            }
+
             skills.push({
-              name: skillName,
+              name: frontmatter.name,
               description: frontmatter.description,
               filePath: skillPath,
               baseDir: entryPath,
@@ -148,31 +211,33 @@ async function loadSkillsFromDirInternal(
           const content = await readFile(entryPath, "utf8");
           const { frontmatter } = parseFrontmatter(content);
 
-          if (!frontmatter.description) {
+          // Validate required fields
+          const nameValidation = validateSkillName(
+            frontmatter.name,
+            entry.name,
+          );
+          if (!nameValidation.valid) {
+            logger.warn(
+              `Invalid skill name in ${entryPath}: ${nameValidation.error}`,
+            );
             continue;
           }
 
-          // Determine skill name
-          let skillName: string;
-          if (frontmatter.name) {
-            skillName = frontmatter.name;
-          } else if (useColonPath && subdir) {
-            // Use colon-separated path for subdirectories
-            skillName = subdir.split(sep).join(":");
-          } else if (subdir) {
-            // Use the directory name
-            const dirParts = subdir.split(sep);
-            skillName = dirParts[dirParts.length - 1];
-          } else {
-            // Shouldn't happen in practice, but fallback
-            skillName = "unnamed";
+          const descriptionValidation = validateSkillDescription(
+            frontmatter.description,
+          );
+          if (!descriptionValidation.valid) {
+            logger.warn(
+              `Invalid skill description in ${entryPath}: ${descriptionValidation.error}`,
+            );
+            continue;
           }
 
           // Base directory is the directory containing the SKILL.md file
           const baseDir = subdir ? join(dir, subdir) : dir;
 
           skills.push({
-            name: skillName,
+            name: frontmatter.name,
             description: frontmatter.description,
             filePath: entryPath,
             baseDir,
@@ -242,7 +307,7 @@ export async function loadSkills(): Promise<Skill[]> {
     skillMap.set(skill.name, skill);
   }
 
-  // Pi: recursive, colon-separated path names
+  // acai: recursive, colon-separated path names
   const globalSkillsDir = join(homedir(), CONFIG_DIR_NAME, "skills");
   for (const skill of await loadSkillsFromDirInternal(
     globalSkillsDir,
