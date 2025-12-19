@@ -46,6 +46,9 @@ const openrouterModels = {
   "gemini-3-pro": openRouterClient("google/gemini-3-pro-preview", {
     usage: { include: true },
   }) as LanguageModelV2,
+  "kat-coder-pro-free": openRouterClient("kwaipilot/kat-coder-pro:free", {
+    usage: { include: true },
+  }) as LanguageModelV2,
   "sonnet-4.5": openRouterClient("anthropic/claude-sonnet-4.5", {
     usage: { include: true },
   }) as LanguageModelV2,
@@ -162,6 +165,18 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000002,
     costPerOutputToken: 0.000012,
+  },
+  "openrouter:kat-coder-pro-free": {
+    id: "openrouter:kat-coder-pro-free",
+    provider: "openrouter",
+    contextWindow: 256000,
+    maxOutputTokens: 32768,
+    defaultTemperature: -1,
+    promptFormat: "markdown",
+    supportsReasoning: false,
+    supportsToolCalling: true,
+    costPerInputToken: 0,
+    costPerOutputToken: 0,
   },
   "openrouter:opus-4.5": {
     id: "openrouter:opus-4.5",
