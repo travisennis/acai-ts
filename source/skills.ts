@@ -272,16 +272,25 @@ export function formatSkillsForPrompt(skills: Skill[]): string {
   }
 
   const lines = [
-    "\n\n<available_skills>",
-    "The following skills provide specialized instructions for specific tasks.",
+    "\n\nThe following skills provide specialized instructions for specific tasks.",
     "Use the readFile tool to load a skill's file when the task matches its description.",
-    "Skills may contain {baseDir} placeholders - replace them with the skill's base directory path.\n",
+    "Skills may contain {baseDir} placeholders - replace them with the skill's base directory path.",
+    "",
+    "<available_skills>",
   ];
 
   for (const skill of skills) {
-    lines.push(`- ${skill.name}: ${skill.description}`);
-    lines.push(`  File: ${skill.filePath}`);
-    lines.push(`  Base directory: ${skill.baseDir}`);
+    lines.push("<skill>");
+    lines.push("<name>");
+    lines.push(skill.name);
+    lines.push("</name>");
+    lines.push("<description>");
+    lines.push(skill.description);
+    lines.push("</description>");
+    lines.push("<location>");
+    lines.push(skill.filePath);
+    lines.push("</location>");
+    lines.push("</skill>");
   }
 
   lines.push("</available_skills>");
