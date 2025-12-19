@@ -1,6 +1,6 @@
 ---
-name: "Pull Request Workflow"
-description: "Guidelines for creating, managing, and reviewing pull requests with or without templates"
+name: pull-request-workflow
+description: Guidelines for creating, managing, and reviewing pull requests with or without templates
 ---
 # Pull Request Workflow Guidelines
 

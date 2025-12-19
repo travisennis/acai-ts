@@ -1,6 +1,6 @@
 ---
-name: "Project Architecture"
-description: "Overview of acai-ts architecture and key components"
+name: Project Architecture
+description: Overview of acai-ts architecture and key components
 ---
 # acai-ts Architecture
 

@@ -1,6 +1,6 @@
 ---
-name: "PR Review Workflow"
-description: "Guidelines for conducting effective pull request reviews with constructive feedback"
+name: pr-review-workflow
+description: Guidelines for conducting effective pull request reviews with constructive feedback
 ---
 # PR Review Workflow
 

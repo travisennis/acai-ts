@@ -1,6 +1,6 @@
 ---
-name: "Git Commit Workflow"
-description: "Detailed guidelines for committing code with proper Git practices and conventional commits"
+name: git-commit-workflow
+description: Detailed guidelines for committing code with proper Git practices and conventional commits
 ---
 # Git Commit Workflow Guidelines
 

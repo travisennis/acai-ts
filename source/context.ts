@@ -13,6 +13,7 @@ export interface Context {
   name: string;
   description: string;
   filePath: string;
+  baseDir: string;
   source: string; // "user", "project"
 }
 
@@ -110,6 +111,7 @@ async function loadContextsFromDir(
             name: contextName,
             description: frontmatter.description,
             filePath: entryPath,
+            baseDir: dir,
             source,
           });
         } catch (error) {
@@ -156,12 +158,23 @@ export function formatContextsForPrompt(contexts: Context[]): string {
   const lines = [
     "\n\n<available_context>",
     "The following context files provide background information for specific subtasks.",
-    "Use the readFile tool to load a context file when working on relevant tasks.\n",
+    "Use the readFile tool to load a context file when working on relevant tasks.",
+    "Contexts may contain {baseDir} placeholders - replace them with the context's base directory path.",
+    "",
   ];
 
   for (const context of contexts) {
-    lines.push(`- ${context.name}: ${context.description}`);
-    lines.push(`  File: ${context.filePath}`);
+    lines.push("<context>");
+    lines.push("<name>");
+    lines.push(context.name);
+    lines.push("</name>");
+    lines.push("<description>");
+    lines.push(context.description);
+    lines.push("</description>");
+    lines.push("<location>");
+    lines.push(context.filePath);
+    lines.push("</location>");
+    lines.push("</context>");
   }
 
   lines.push("</available_context>");

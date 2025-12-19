@@ -1,6 +1,6 @@
 ---
-name: "Team Conventions"
-description: "Coding standards and team practices for acai-ts"
+name: Team Conventions
+description: Coding standards and team practices for acai-ts
 ---
 # Team Conventions
 

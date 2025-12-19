@@ -1,6 +1,6 @@
 ---
-name: "Context File Specification"
-description: "Guidelines for writing effective context files that work within acai's constraints"
+name: Context File Specification
+description: Guidelines for writing effective context files that work within acai's constraints
 ---
 # Context File Specification
 
