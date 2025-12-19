@@ -1,6 +1,6 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { logger } from "./logger.ts";
 import { parseFrontMatter } from "./utils/yaml.ts";
 
@@ -214,7 +214,7 @@ async function loadSkillsFromDirInternal(
           // Validate required fields
           const nameValidation = validateSkillName(
             frontmatter.name,
-            entry.name,
+            basename(dirname(entryPath)),
           );
           if (!nameValidation.valid) {
             logger.warn(
