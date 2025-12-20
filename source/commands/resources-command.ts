@@ -38,7 +38,10 @@ export function resourcesCommand(options: CommandOptions): ReplCommand {
           lines.push(style.gray(`Project Skills (${projectSkills.length}):`));
           for (const skill of projectSkills) {
             lines.push(
-              `  • ${skill.name}: ${skill.description} ${style.dim(`(${skill.filePath})`)}`,
+              `${style.yellow.bold(skill.name)}
+${skill.description}
+${style.dim(skill.filePath)}
+`,
             );
           }
           lines.push("");
@@ -48,7 +51,10 @@ export function resourcesCommand(options: CommandOptions): ReplCommand {
           lines.push(style.gray(`User Skills (${userSkills.length}):`));
           for (const skill of userSkills) {
             lines.push(
-              `  • ${skill.name}: ${skill.description} ${style.dim(`(${skill.filePath})`)}`,
+              `${style.yellow.bold(skill.name)}
+${skill.description}
+${style.dim(skill.filePath)}
+`,
             );
           }
           lines.push("");
@@ -58,7 +64,10 @@ export function resourcesCommand(options: CommandOptions): ReplCommand {
           lines.push(style.gray(`Other Skills (${otherSkills.length}):`));
           for (const skill of otherSkills) {
             lines.push(
-              `  • ${skill.name}: ${skill.description} ${style.dim(`(${skill.filePath}) [${skill.source}]`)}`,
+              `${style.yellow.bold(skill.name)}
+${skill.description}
+${style.dim(skill.filePath)} ${style.dim(`[${skill.source}]`)}
+`,
             );
           }
           lines.push("");
