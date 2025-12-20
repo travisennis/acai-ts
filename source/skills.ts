@@ -337,9 +337,13 @@ export function formatSkillsForPrompt(skills: Skill[]): string {
   }
 
   const lines = [
-    "\n\nThe following skills provide specialized instructions for specific tasks.",
+    "\n\n## Skills",
+    "",
+    "<skills_instructions>",
+    "When users ask you to perform tasks, check if any of the available skills below can help complete the task more effectively. Skills provide specialized capabilities and domain knowledge.",
     "Use the readFile tool to load a skill's file when the task matches its description.",
     "Skills may contain {baseDir} placeholders - replace them with the skill's base directory path.",
+    "</skills_instructions>",
     "",
     "<available_skills>",
   ];
