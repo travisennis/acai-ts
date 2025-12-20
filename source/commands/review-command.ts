@@ -1,7 +1,16 @@
 import { initExecutionEnvironment } from "../execution/index.ts";
+import { getTerminalSize } from "../terminal/formatting.ts";
 import style from "../terminal/style.ts";
-import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Modal, ModalText } from "../tui/index.ts";
+import type { AutocompleteItem } from "../tui/autocomplete.ts";
+import { Markdown } from "../tui/components/markdown.ts";
+import { Spacer } from "../tui/components/spacer.ts";
+import {
+  Container,
+  type Editor,
+  SelectList,
+  Text,
+  type TUI,
+} from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const reviewCommand = (_options: CommandOptions): ReplCommand => {
@@ -11,7 +20,17 @@ export const reviewCommand = (_options: CommandOptions): ReplCommand => {
     getSubCommands: () => Promise.resolve([]),
     async handle(
       _args: string[],
-      { tui, editor }: { tui: TUI; container: Container; editor: Editor },
+      {
+        tui,
+        container,
+        editor,
+        inputContainer,
+      }: {
+        tui: TUI;
+        container: Container;
+        editor: Editor;
+        inputContainer: Container;
+      },
     ): Promise<"break" | "continue" | "use"> {
       try {
         // Initialize execution environment
@@ -45,108 +64,237 @@ export const reviewCommand = (_options: CommandOptions): ReplCommand => {
           unstagedOutput;
 
         if (!combinedOutput.trim()) {
-          // If there are no changes, show a message
-          const modalContent = new ModalText(
-            "No changes detected in the current directory.",
-            1,
-            1,
+          // If there are no changes, show a message in chat container
+          container.addChild(new Spacer(1));
+          container.addChild(
+            new Markdown("No changes detected in the current directory.", {
+              customBgRgb: {
+                r: 52,
+                g: 53,
+                b: 65,
+              },
+              paddingX: 1,
+              paddingY: 1,
+            }),
           );
-          const modal = new Modal("Review Changes", modalContent, true, () => {
-            editor.setText("");
-            tui.requestRender();
-          });
-          tui.showModal(modal);
+          tui.requestRender();
           return "continue";
         }
 
-        // Format the diff output for display
-        const formattedDiff = formatGitDiff(combinedOutput);
+        // Parse individual file changes
+        const fileChanges = parseGitDiffFiles(combinedOutput);
 
-        // Create modal content
-        const modalContent = new ModalText(formattedDiff, 1, 1);
-
-        // Create and show modal
-        const modal = new Modal("Review Changes", modalContent, true, () => {
-          editor.setText("");
+        if (fileChanges.length === 0) {
+          container.addChild(new Spacer(1));
+          container.addChild(
+            new Markdown("No file changes could be parsed.", {
+              customBgRgb: {
+                r: 52,
+                g: 53,
+                b: 65,
+              },
+              paddingX: 1,
+              paddingY: 1,
+            }),
+          );
           tui.requestRender();
-        });
+          return "continue";
+        }
 
-        tui.showModal(modal);
+        // Create select list for file selection
+        const selectItems: AutocompleteItem[] = fileChanges.map((file) => ({
+          value: file.fileName,
+          label: file.fileName,
+          description: file.stats,
+        }));
+
+        // Create select list component
+        const selectList = new SelectList(selectItems, 10);
+
+        // Create a container to wrap the select list with borders for better visual isolation
+        const selectContainer = new Container();
+        const { columns } = getTerminalSize();
+
+        // Add top border
+        selectContainer.addChild(
+          new Text(style.blue("─".repeat(columns)), 0, 0),
+        );
+        selectContainer.addChild(new Spacer(1));
+
+        // Add the select list
+        selectContainer.addChild(selectList);
+
+        selectContainer.addChild(new Spacer(1));
+
+        // Add bottom border
+        selectContainer.addChild(
+          new Text(style.blue("─".repeat(columns)), 0, 0),
+        );
+
+        // Store the original editor and replace it with the select container
+        const originalEditor = editor;
+        inputContainer.clear();
+        inputContainer.addChild(selectContainer);
+        tui.setFocus(selectList);
+
+        // Handle file selection
+        selectList.onSelect = (selectedItem) => {
+          // Find the selected file change
+          const selectedFile = fileChanges.find(
+            (file) => file.fileName === selectedItem.value,
+          );
+
+          if (selectedFile) {
+            // Show the diff in the chat container
+            container.addChild(new Spacer(1));
+            container.addChild(
+              new Markdown(
+                formatFileDiffForDisplay(
+                  selectedFile.fileName,
+                  selectedFile.diff,
+                ),
+                {
+                  customBgRgb: {
+                    r: 52,
+                    g: 53,
+                    b: 65,
+                  },
+                  paddingX: 1,
+                  paddingY: 1,
+                },
+              ),
+            );
+
+            // Restore the original editor
+            inputContainer.clear();
+            inputContainer.addChild(originalEditor);
+            tui.setFocus(originalEditor);
+            tui.requestRender();
+          }
+        };
+
+        // Handle cancel
+        selectList.onCancel = () => {
+          // Restore the original editor
+          inputContainer.clear();
+          inputContainer.addChild(originalEditor);
+          tui.setFocus(originalEditor);
+          tui.requestRender();
+        };
+
+        tui.requestRender();
         return "continue";
       } catch (error) {
         console.error("Error executing git diff:", error);
-        const modalContent = new ModalText(
-          "Failed to retrieve git changes. Ensure git is installed and initialized.",
-          1,
-          1,
+        container.addChild(new Spacer(1));
+        container.addChild(
+          new Markdown(
+            "Failed to retrieve git changes. Ensure git is installed and initialized.",
+            {
+              customBgRgb: {
+                r: 52,
+                g: 53,
+                b: 65,
+              },
+              paddingX: 1,
+              paddingY: 1,
+            },
+          ),
         );
-        const modal = new Modal("Review Changes", modalContent, true, () => {
-          editor.setText("");
-          tui.requestRender();
-        });
-        tui.showModal(modal);
+        tui.requestRender();
         return "continue";
       }
     },
   };
 };
 
-function formatGitDiff(diffOutput: string): string {
+interface FileChange {
+  fileName: string;
+  diff: string;
+  stats: string;
+}
+
+function parseGitDiffFiles(diffOutput: string): FileChange[] {
   const lines = diffOutput.split("\n");
-  const formattedLines: string[] = [];
-  let currentFile = "";
+  const fileChanges: FileChange[] = [];
+  let currentFile: FileChange | null = null;
   let inDiff = false;
   let isNewFile = false;
-  let fileCount = 0;
 
   for (const line of lines) {
     if (line.startsWith("diff --git")) {
-      // Add spacing between files
-      if (fileCount > 0) {
-        formattedLines.push("");
-        formattedLines.push("");
+      // Start of a new file diff
+      if (currentFile) {
+        // Save previous file
+        fileChanges.push(currentFile);
       }
 
       // Extract file name from diff header
       const fileMatch = line.match(/diff --git a\/(.*) b\/(.*)/);
       if (fileMatch) {
-        currentFile = fileMatch[1];
+        currentFile = {
+          fileName: fileMatch[1],
+          diff: "",
+          stats: "",
+        };
         inDiff = true;
         isNewFile =
-          fileMatch[1] === "/dev/null" || fileMatch[2] === "/dev/null"; // Check if it's a new or deleted file
-        formattedLines.push(
-          style.bold(style.underline.yellow(`${currentFile}`)),
-        );
-        formattedLines.push("");
-        fileCount++;
+          fileMatch[1] === "/dev/null" || fileMatch[2] === "/dev/null";
       }
     } else if (line.startsWith("@@")) {
       // Extract additions and deletions from the @@ line
-      const statsMatch = line.match(/\+(\d+),(\d+)/);
-      if (statsMatch) {
-        const additions = Number.parseInt(statsMatch[2], 10);
-        const deletions = Number.parseInt(statsMatch[1], 10);
-        // For new files, deletions should be 0
+      const statsMatch = line.match(/@@ -(\d+),(\d+) \+(\d+),(\d+) @@/);
+      if (statsMatch && currentFile) {
+        const deletions = Number.parseInt(statsMatch[2], 10);
+        const additions = Number.parseInt(statsMatch[4], 10);
         const actualDeletions = isNewFile ? 0 : deletions;
-        formattedLines.push(
-          style.dim(
-            `Additions: ${style.green(additions.toString())}, Deletions: ${style.red(actualDeletions.toString())}`,
-          ),
-        );
+        currentFile.stats = `Additions: ${additions}, Deletions: ${actualDeletions}`;
+      } else if (currentFile) {
+        // Fallback for files without proper @@ line (like new files)
+        currentFile.stats = "Additions: 1, Deletions: 0";
       }
-    } else if (line.startsWith("+") && !line.startsWith("+++")) {
-      if (inDiff) {
-        formattedLines.push(style.green(`+${line.substring(1)}`));
+    } else if (inDiff && currentFile) {
+      // Collect diff content
+      if (
+        (line.startsWith("+") && !line.startsWith("+++")) ||
+        (line.startsWith("-") && !line.startsWith("---")) ||
+        line.startsWith(" ") ||
+        line.startsWith("index") ||
+        line.startsWith("old mode") ||
+        line.startsWith("new mode") ||
+        line.startsWith("deleted file") ||
+        line.startsWith("new file")
+      ) {
+        currentFile.diff += `${line}\n`;
       }
+    }
+  }
+
+  // Don't forget the last file
+  if (currentFile) {
+    fileChanges.push(currentFile);
+  }
+
+  return fileChanges;
+}
+
+function formatFileDiffForDisplay(fileName: string, diff: string): string {
+  const lines = diff.split("\n");
+  const formattedLines: string[] = [];
+
+  // Add file name header
+  formattedLines.push(`### ${style.bold(style.underline.yellow(fileName))}`);
+  formattedLines.push("");
+
+  for (const line of lines) {
+    if (line.startsWith("+") && !line.startsWith("+++")) {
+      formattedLines.push(style.green(`+${line.substring(1)}`));
     } else if (line.startsWith("-") && !line.startsWith("---")) {
-      if (inDiff && !isNewFile) {
-        // Skip deletions for new files
-        formattedLines.push(style.red(`-${line.substring(1)}`));
-      }
+      formattedLines.push(style.red(`-${line.substring(1)}`));
     } else if (line.startsWith(" ")) {
-      if (inDiff) {
-        formattedLines.push(` ${line.substring(1)}`);
-      }
+      formattedLines.push(` ${line.substring(1)}`);
+    } else if (line.startsWith("@@")) {
+      formattedLines.push(style.dim(line));
     } else if (
       line.startsWith("index") ||
       line.startsWith("old mode") ||
@@ -154,11 +302,10 @@ function formatGitDiff(diffOutput: string): string {
       line.startsWith("deleted file") ||
       line.startsWith("new file")
     ) {
-      // Skip these lines
+      // Skip these lines or add as dim text
+      formattedLines.push(style.dim(line));
     } else if (line.trim() === "") {
-      // Skip empty lines
     } else {
-      // Add other lines as-is
       formattedLines.push(line);
     }
   }
