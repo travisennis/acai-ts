@@ -1,4 +1,3 @@
-import { loadContexts } from "../context.ts";
 import { loadSkills } from "../skills.ts";
 import style from "../terminal/style.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
@@ -8,7 +7,7 @@ import type { CommandOptions, ReplCommand } from "./types.ts";
 export function resourcesCommand(options: CommandOptions): ReplCommand {
   return {
     command: "/resources",
-    description: "List all active skills, context files, and AGENTS.md",
+    description: "List all active skills and AGENTS.md",
     aliases: ["/res"],
 
     getSubCommands: async () => [],
@@ -20,7 +19,7 @@ export function resourcesCommand(options: CommandOptions): ReplCommand {
       try {
         // Load all resources
         const skills = await loadSkills();
-        const contexts = await loadContexts();
+
         const agentsContent = await options.config.readAgentsFile();
         const agentsExists = agentsContent.length > 0;
 
@@ -30,10 +29,6 @@ export function resourcesCommand(options: CommandOptions): ReplCommand {
         const otherSkills = skills.filter(
           (s) => s.source !== "project" && s.source !== "user",
         );
-
-        // Group contexts by source
-        const projectContexts = contexts.filter((c) => c.source === "project");
-        const userContexts = contexts.filter((c) => c.source === "user");
 
         // Build formatted output
         const lines: string[] = [];
@@ -64,29 +59,6 @@ export function resourcesCommand(options: CommandOptions): ReplCommand {
           for (const skill of otherSkills) {
             lines.push(
               `  • ${skill.name}: ${skill.description} ${style.dim(`(${skill.filePath}) [${skill.source}]`)}`,
-            );
-          }
-          lines.push("");
-        }
-
-        // Contexts sections
-        if (projectContexts.length > 0) {
-          lines.push(
-            style.gray(`Project Contexts (${projectContexts.length}):`),
-          );
-          for (const context of projectContexts) {
-            lines.push(
-              `  • ${context.name}: ${context.description} ${style.dim(`(${context.filePath})`)}`,
-            );
-          }
-          lines.push("");
-        }
-
-        if (userContexts.length > 0) {
-          lines.push(style.gray(`User Contexts (${userContexts.length}):`));
-          for (const context of userContexts) {
-            lines.push(
-              `  • ${context.name}: ${context.description} ${style.dim(`(${context.filePath})`)}`,
             );
           }
           lines.push("");

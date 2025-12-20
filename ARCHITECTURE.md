@@ -184,7 +184,7 @@ acai-ts
 │   ├── advanced-edit-file.test.ts
 │   ├── agent
 │   ├── commands
-│   │   ├── context-command.test.ts
+
 │   │   ├── copy-command.test.ts
 │   │   ├── exit-command.test.ts
 │   │   ├── health-command.test.ts
@@ -262,7 +262,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **api/exa/index.ts**: Integration for Exa API, likely for advanced search or data retrieval tools.
 - **cli.ts**: Parses command-line arguments and flags for the application.
 - **commands/add-directory-command.ts**: Command to add additional working directories.
-- **context.ts**: Loads and formats context files for background information on subtasks.
+
 - **commands/clear-command.ts**: Command to clear the conversation history or screen.
 - **commands/copy-command.ts**: Command to copy output or selections to clipboard.
 - **commands/exit-command.ts**: Command to exit the REPL.
@@ -282,7 +282,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **commands/remove-directory-command.ts**: Command to remove a working directory.
 - **commands/reset-command.ts**: Command to reset conversation or state.
 - **commands/save-command.ts**: Command to save conversation or outputs.
-- **commands/session-command.ts**: Command to show comprehensive session information including usage, context, and costs.
+- **commands/session-command.ts**: Command to show comprehensive session information including usage and costs.
 - **commands/shell-command.ts**: Command to execute shell commands interactively.
 - **commands/types.ts**: Type definitions for commands.
 - **config.ts**: Loads and validates configuration from env, files, and defaults.
@@ -407,7 +407,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 ### test/ Directory
 - **advanced-edit-file.test.ts**: Unit tests for advanced edit file tool.
 - **agent/**: Directory for agent-related tests (empty currently).
-- **commands/context-command.test.ts**: Unit tests for context command (deprecated).
+
 - **commands/copy-command.test.ts**: Unit tests for copy command.
 - **commands/exit-command.test.ts**: Unit tests for exit command.
 - **commands/health-command.test.ts**: Unit tests for health command.

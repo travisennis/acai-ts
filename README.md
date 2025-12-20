@@ -34,7 +34,7 @@ Acai is a powerful **AI-driven command-line interface (CLI) tool** designed to a
 *   **Dynamic Tools:** Create and load custom tools from JavaScript files in your project or user directory.
 *   **Multi-workspace Support:** Work across multiple project directories simultaneously.
 *   **Skills System:** Discover and load specialized instruction files for specific tasks (PDF extraction, database migrations, etc.).
-*   **Context System:** Provide background information for subtasks with project-specific context files.
+
 
 ## 🛠️ Technologies Used
 
@@ -195,8 +195,6 @@ echo "How many TypeScript files are in this project?" | acai
 # Disable skills discovery
 acai --no-skills
 
-# Disable context discovery
-acai --no-contexts
 
 # Add additional working directories
 acai --add-dir /path/to/project1 --add-dir /path/to/project2
@@ -290,7 +288,7 @@ For a list of available commands, type `/help` within the REPL.
 - `/paste` - Add clipboard contents to the next prompt
 - `/prompt <name> [arguments...]` - Load saved prompts with optional arguments. Project prompts override user prompts. Supports argument placeholders (`$ARGUMENTS`, `$1`, `$2`, etc.) in prompt files.
 - `/model [provider:model|category|provider]` - List or switch models
-- `/session` - Show comprehensive session information including usage, context, and costs
+- `/session` - Show comprehensive session information including usage and costs
 - `/clear` - Clears the terminal screen for the current session
 - `/generateRules` - Analyze the current conversation and suggest project rules
 - `/copy` - Copy the last assistant response to the system clipboard
@@ -645,96 +643,8 @@ Acai supports project-specific configuration through a `.acai/acai.json` file in
   "skills": {
     "enabled": true  // Optional: Enable/disable skills discovery (default: true)
   },
-  "contexts": {
-    "enabled": true  // Optional: Enable/disable context discovery (default: true)
-  }
-}
 
-## Context System
 
-Acai includes a context system that provides background information for specific subtasks. Context files are markdown files with YAML frontmatter that contain domain knowledge, project architecture, team conventions, or other background information.
-
-### How Contexts Work
-
-1. **Discovery**: At startup, Acai scans `.acai/context/` directories for `.md` files
-2. **Listing**: Available contexts are listed in the system prompt
-3. **On-demand loading**: When working on relevant tasks, the agent uses the `readFile` tool to load context files
-4. **Reference**: The agent uses the background information to better understand the task
-
-### Context File Format
-
-Context files are markdown files with YAML frontmatter:
-
-```markdown
----
-name: "Project Architecture"
-description: "Overview of acai-ts architecture and key components"
----
-# Project Architecture
-
-## Core Components
-
-1. **Agent System**: Main AI agent with tool execution
-2. **Model Providers**: Abstraction for multiple AI APIs
-3. **Tool System**: Modular tools for file operations, bash, web search, etc.
-4. **Skills System**: Extensible skill system for task-specific instructions
-5. **Context System**: Background information for subtasks (this feature!)
-```
-
-**Required fields:**
-- `description`: Short description shown in system prompt
-
-**Optional fields:**
-- `name`: Override the context name (defaults to filename without .md extension)
-
-### Context Locations
-
-Contexts are loaded from these locations (project contexts override user contexts):
-
-1. `~/.acai/context/**/*.md` (User contexts)
-2. `<cwd>/.acai/context/**/*.md` (Project contexts)
-
-### Example Usage
-
-```bash
-# With contexts enabled (default)
-acai -p "Help me understand the project architecture"
-
-# Disable contexts
-acai --no-contexts -p "Do something without background context"
-```
-
-### Configuration
-
-Contexts are enabled by default. You can disable them via:
-
-1. **CLI flag**: `acai --no-contexts`
-2. **Configuration file**:
-   ```json
-   {
-     "contexts": {
-       "enabled": false
-     }
-   }
-   ```
-
-### Context vs Skills
-
-- **Skills**: "How to do X" (procedural instructions)
-- **Context**: "Background about X" (informational content)
-
-Example:
-- **Skill**: "How to add an OpenRouter model"
-- **Context**: "Project architecture overview"
-
-### Workflow Example
-
-1. **Agent startup**: Scans all context locations
-2. **System prompt**: Lists available contexts
-3. **User request**: "Help me understand the project architecture"
-4. **Agent matches**: Sees "Project Architecture: Overview of acai-ts architecture"
-5. **Context loading**: Uses `readFile` tool to load `.acai/context/project-architecture.md`
-6. **Reference**: Uses architecture information to provide better assistance
 
 }
 ```
@@ -743,7 +653,7 @@ Example:
 
 - **Rules/Guidelines**: Add project-specific AI behavior rules in `AGENTS.md`
 - **Custom Prompts**: Store reusable prompts in `.acai/prompts/`. Supports argument placeholders (`$ARGUMENTS`, `$1`, `$2`, etc.) for dynamic content.
-- **Context Files**: Store background information files in `.acai/context/` (markdown files with frontmatter)
+
 - **File Selections**: Save file/directory selections in `.acai/selections/`
 - **Memory/Rules**: Persistent project rules stored in `.acai/rules/`
 
@@ -827,7 +737,7 @@ The project is organized as follows:
 
 ```
 .
-├── .acai/             # Internal configuration, context, and temporary files
+├── .acai/             # Internal configuration and temporary files
 ├── source/            # Main application source code
 │   ├── agent/         # Agent loop and manual execution
 │   ├── api/           # External API integrations (e.g., Exa)
