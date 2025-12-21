@@ -3,7 +3,6 @@ import { z } from "zod";
 import type { WorkspaceContext } from "../index.ts";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
-// import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import { DirectoryTreeTool } from "./directory-tree.ts";
@@ -11,7 +10,6 @@ import { GlobTool } from "./glob.ts";
 import { GrepTool } from "./grep.ts";
 import { initCliTools } from "./index.ts";
 import { ReadFileTool } from "./read-file.ts";
-import { ReadMultipleFilesTool } from "./read-multiple-files.ts";
 import type { ToolResult } from "./types.ts";
 
 export const AgentTool = {
@@ -22,7 +20,7 @@ const TOOLS = [
   GrepTool.name,
   GlobTool.name,
   ReadFileTool.name,
-  ReadMultipleFilesTool.name,
+
   DirectoryTreeTool.name,
 ] as const;
 
@@ -35,7 +33,7 @@ function getToolDescription(): string {
 Use cases:
 - Search for files matching specific patterns (e.g., "*.ts", "**/*.test.ts") using ${GlobTool.name}
 - Find code patterns or text within files using ${GrepTool.name}
-- Read specific files or multiple files using ${ReadFileTool.name} and ${ReadMultipleFilesTool.name}
+- Read specific files using ${ReadFileTool.name}
 
 Important limitations:
 - This agent cannot execute shell commands or run external tools

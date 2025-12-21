@@ -3,7 +3,6 @@ import { readFile } from "node:fs/promises";
 import { platform } from "node:os";
 import path from "node:path";
 import { config } from "./config.ts";
-
 import { dedent } from "./dedent.ts";
 import { formatSkillsForPrompt, loadSkills } from "./skills.ts";
 import { getShell } from "./terminal/index.ts";
@@ -16,10 +15,8 @@ import { EditFileTool } from "./tools/edit-file.ts";
 import { GrepTool } from "./tools/grep.ts";
 import type { CompleteToolNames } from "./tools/index.ts";
 import { ReadFileTool } from "./tools/read-file.ts";
-import { ReadMultipleFilesTool } from "./tools/read-multiple-files.ts";
 import { SaveFileTool } from "./tools/save-file.ts";
 import { ThinkTool } from "./tools/think.ts";
-
 import { getCurrentBranch, inGitDirectory } from "./utils/git.ts";
 
 async function getCustomSystemPrompt(): Promise<string | null> {
@@ -196,7 +193,7 @@ const toolSections: readonly ToolSection[] = [
     title: "#### File System",
     tools: [
       ReadFileTool.name,
-      ReadMultipleFilesTool.name,
+
       GrepTool.name,
       AgentTool.name,
       DirectoryTreeTool.name,
@@ -213,8 +210,6 @@ const toolSections: readonly ToolSection[] = [
       const readTools: string[] = [];
       if (isActive(ReadFileTool.name))
         readTools.push(`\`${ReadFileTool.name}\``);
-      if (isActive(ReadMultipleFilesTool.name))
-        readTools.push(`\`${ReadMultipleFilesTool.name}\``);
 
       if (readTools.length > 0) {
         lines.push(
@@ -239,11 +234,6 @@ const toolSections: readonly ToolSection[] = [
       }
 
       // Add general guidelines that reference specific tools only if those tools are active
-      if (isActive(GrepTool.name) && isActive(ReadMultipleFilesTool.name)) {
-        lines.push(
-          `- Prefer targeted queries: use \`${GrepTool.name}\` for code pattern searches and \`${ReadMultipleFilesTool.name}\` to fetch files. Avoid full directory dumps for large repositories.`,
-        );
-      }
 
       // Add general guidelines that don't reference specific tools
       lines.push(

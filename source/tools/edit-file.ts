@@ -3,7 +3,6 @@ import type { ToolCallOptions } from "ai";
 import { createTwoFilesPatch } from "diff";
 import { z } from "zod";
 import { config } from "../config.ts";
-import { logger } from "../logger.ts";
 import type { ModelManager } from "../models/manager.ts";
 import { clearProjectStatusCache } from "../repl/project-status-line.ts";
 import style from "../terminal/style.ts";
@@ -13,7 +12,7 @@ import {
   validateFileNotReadOnly,
   validatePath,
 } from "../utils/filesystem/security.ts";
-import { fixLlmEditWithInstruction } from "./llm-edit-fixer.ts";
+
 import type { ToolResult } from "./types.ts";
 
 export const EditFileTool = {
@@ -41,15 +40,11 @@ type EditFileInputSchema = z.infer<typeof inputSchema>;
 export const createEditFileTool = async ({
   workingDir,
   allowedDirs,
-  modelManager,
-  tokenTracker,
-  enableLlmFix = true,
 }: {
   workingDir: string;
   allowedDirs?: string[];
   modelManager?: ModelManager;
   tokenTracker?: TokenTracker;
-  enableLlmFix?: boolean;
 }) => {
   const allowedDirectory = allowedDirs ?? [workingDir];
   return {
@@ -94,11 +89,6 @@ export const createEditFileTool = async ({
           edits,
           false,
           abortSignal,
-          {
-            modelManager,
-            tokenTracker,
-            enableLlmFix,
-          },
         );
 
         yield {
@@ -165,12 +155,6 @@ export async function applyFileEdits(
   edits: FileEdit[],
   dryRun = false,
   abortSignal?: AbortSignal,
-  options?: {
-    modelManager?: ModelManager;
-    tokenTracker?: TokenTracker;
-    enableLlmFix?: boolean;
-    instruction?: string;
-  },
 ): Promise<string> {
   if (abortSignal?.aborted) {
     throw new Error("File edit operation aborted");
@@ -194,12 +178,7 @@ export async function applyFileEdits(
       throw new Error("File edit operation aborted during processing");
     }
 
-    const result = await applyEditWithLlmFix(
-      edit,
-      modifiedContent,
-      abortSignal,
-      options,
-    );
+    const result = await applyEditWithLlmFix(edit, modifiedContent);
 
     if (result.success) {
       modifiedContent = result.content;
@@ -238,18 +217,11 @@ interface ApplyEditResult {
 }
 
 /**
- * Applies a single edit with LLM fix fallback
+ * Applies a single edit
  */
 async function applyEditWithLlmFix(
   edit: FileEdit,
   content: string,
-  abortSignal?: AbortSignal,
-  options?: {
-    modelManager?: ModelManager;
-    tokenTracker?: TokenTracker;
-    enableLlmFix?: boolean;
-    instruction?: string;
-  },
 ): Promise<ApplyEditResult> {
   const { oldText, newText } = edit;
 
@@ -257,43 +229,6 @@ async function applyEditWithLlmFix(
   const originalResult = applyLiteralEdit(content, oldText, newText);
   if (originalResult.matchCount > 0) {
     return { success: true, content: originalResult.content };
-  }
-
-  // If LLM fix is enabled and dependencies are available, try to fix the edit
-  if (
-    options?.enableLlmFix !== false &&
-    options?.modelManager &&
-    options?.tokenTracker
-  ) {
-    try {
-      const fixedEdit = await fixLlmEditWithInstruction(
-        options.instruction,
-        oldText,
-        newText,
-        "oldText not found in content",
-        content,
-        options.modelManager ?? undefined,
-        abortSignal,
-      );
-
-      if (fixedEdit && !fixedEdit.noChangesRequired) {
-        // Retry the edit with the corrected search string
-        const correctedResult = applyLiteralEdit(
-          content,
-          fixedEdit.search,
-          fixedEdit.replace,
-        );
-        if (correctedResult.matchCount > 0) {
-          return { success: true, content: correctedResult.content };
-        }
-      } else if (fixedEdit?.noChangesRequired) {
-        // No changes required, skip this edit
-        return { success: true, content };
-      }
-    } catch (llmError) {
-      // If LLM fix fails, fall back to original error
-      logger.warn(llmError, "LLM edit fix failed:");
-    }
   }
 
   return { success: false, content };

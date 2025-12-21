@@ -4,10 +4,6 @@ import type { WorkspaceContext } from "../index.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
-import {
-  AdvancedEditFileTool,
-  createAdvancedEditFileTool,
-} from "./advanced-edit-file.ts";
 import { AgentTool, createAgentTools } from "./agent.ts";
 import { BashTool, createBashTool } from "./bash.ts";
 import { BatchTool, createBatchTool } from "./batch.ts";
@@ -24,12 +20,7 @@ import { loadDynamicTools } from "./dynamic-tool-loader.ts";
 import { createEditFileTool, EditFileTool } from "./edit-file.ts";
 import { createGlobTool, GlobTool } from "./glob.ts";
 import { createGrepTool, GrepTool } from "./grep.ts";
-import { createMoveFileTool, MoveFileTool } from "./move-file.ts";
 import { createReadFileTool, ReadFileTool } from "./read-file.ts";
-import {
-  createReadMultipleFilesTool,
-  ReadMultipleFilesTool,
-} from "./read-multiple-files.ts";
 import { createSaveFileTool, SaveFileTool } from "./save-file.ts";
 import { createThinkTool, ThinkTool } from "./think.ts";
 
@@ -64,12 +55,6 @@ export async function initTools({
     tokenCounter,
   });
 
-  const readMultipleFilesTool = await createReadMultipleFilesTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-    tokenCounter,
-  });
-
   const editFileTool = await createEditFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
@@ -77,17 +62,7 @@ export async function initTools({
     tokenTracker,
   });
 
-  const advancedEditFileTool = await createAdvancedEditFileTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
-
   const saveFileTool = await createSaveFileTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
-
-  const moveFileTool = await createMoveFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
   });
@@ -130,13 +105,13 @@ export async function initTools({
   // Build tools object for AI SDK
   const tools = {
     [EditFileTool.name]: tool(editFileTool.toolDef),
-    [AdvancedEditFileTool.name]: tool(advancedEditFileTool.toolDef),
+
     [BashTool.name]: tool(bashTool.toolDef),
     [SaveFileTool.name]: tool(saveFileTool.toolDef),
     [DeleteFileTool.name]: tool(deleteFileTool.toolDef),
-    [MoveFileTool.name]: tool(moveFileTool.toolDef),
+
     [ReadFileTool.name]: tool(readFileTool.toolDef),
-    [ReadMultipleFilesTool.name]: tool(readMultipleFilesTool.toolDef),
+
     [GlobTool.name]: tool(globTool.toolDef),
     [GrepTool.name]: tool(grepTool.toolDef),
     [DirectoryTreeTool.name]: tool(directoryTreeTool.toolDef),
@@ -161,23 +136,14 @@ export async function initTools({
   // Add editFile tool
   executors.set(EditFileTool.name, editFileTool.execute);
 
-  // Add advancedEditFile tool
-  executors.set(AdvancedEditFileTool.name, advancedEditFileTool.execute);
-
   // Add saveFile tool
   executors.set(SaveFileTool.name, saveFileTool.execute);
 
   // Add deleteFile tool
   executors.set(DeleteFileTool.name, deleteFileTool.execute);
 
-  // Add moveFile tool
-  executors.set(MoveFileTool.name, moveFileTool.execute);
-
   // Add readFile tool
   executors.set(ReadFileTool.name, readFileTool.execute);
-
-  // Add readMultipleFiles tool
-  executors.set(ReadMultipleFilesTool.name, readMultipleFilesTool.execute);
 
   // Add glob tool
   executors.set(GlobTool.name, globTool.execute);
@@ -237,12 +203,6 @@ export async function initCliTools({
     tokenCounter,
   });
 
-  const readMultipleFilesTool = await createReadMultipleFilesTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-    tokenCounter,
-  });
-
   const editFileTool = await createEditFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
@@ -250,17 +210,7 @@ export async function initCliTools({
     tokenTracker,
   });
 
-  const advancedEditFileTool = await createAdvancedEditFileTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
-
   const saveFileTool = await createSaveFileTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
-
-  const moveFileTool = await createMoveFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
   });
@@ -303,13 +253,13 @@ export async function initCliTools({
   // Build executors map for batch tool
   const executors = new Map();
   executors.set(EditFileTool.name, editFileTool.execute);
-  executors.set(AdvancedEditFileTool.name, advancedEditFileTool.execute);
+
   executors.set(BashTool.name, bashTool.execute);
   executors.set(SaveFileTool.name, saveFileTool.execute);
   executors.set(DeleteFileTool.name, deleteFileTool.execute);
-  executors.set(MoveFileTool.name, moveFileTool.execute);
+
   executors.set(ReadFileTool.name, readFileTool.execute);
-  executors.set(ReadMultipleFilesTool.name, readMultipleFilesTool.execute);
+
   executors.set(GlobTool.name, globTool.execute);
   executors.set(GrepTool.name, grepTool.execute);
   executors.set(DirectoryTreeTool.name, directoryTreeTool.execute);
@@ -331,10 +281,7 @@ export async function initCliTools({
       ...editFileTool.toolDef,
       execute: editFileTool.execute,
     }),
-    [AdvancedEditFileTool.name]: tool({
-      ...advancedEditFileTool.toolDef,
-      execute: advancedEditFileTool.execute,
-    }),
+
     [BashTool.name]: tool({
       ...bashTool.toolDef,
       execute: bashTool.execute,
@@ -347,18 +294,12 @@ export async function initCliTools({
       ...deleteFileTool.toolDef,
       execute: deleteFileTool.execute,
     }),
-    [MoveFileTool.name]: tool({
-      ...moveFileTool.toolDef,
-      execute: moveFileTool.execute,
-    }),
+
     [ReadFileTool.name]: tool({
       ...readFileTool.toolDef,
       execute: readFileTool.execute,
     }),
-    [ReadMultipleFilesTool.name]: tool({
-      ...readMultipleFilesTool.toolDef,
-      execute: readMultipleFilesTool.execute,
-    }),
+
     [GlobTool.name]: tool({
       ...globTool.toolDef,
       execute: globTool.execute,
