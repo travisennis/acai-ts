@@ -6,8 +6,16 @@ interface StringWidthOptions {
   countAnsiEscapeCodes?: boolean;
 }
 
-const segmenter = new Intl.Segmenter();
+// Lazily initialize segmenter only when needed
+let segmenter: Intl.Segmenter | null = null;
+function getSegmenter(): Intl.Segmenter {
+  if (!segmenter) {
+    segmenter = new Intl.Segmenter();
+  }
+  return segmenter;
+}
 
+// Precompile regexes (these are already at module level, which is good)
 // Whole-cluster zero-width
 const zeroWidthClusterRegex =
   /^(?:\p{Default_Ignorable_Code_Point}|\p{Control}|\p{Mark}|\p{Surrogate})+$/v;
@@ -19,28 +27,35 @@ const leadingNonPrintingRegex =
 // RGI emoji sequences
 const rgiEmojiRegex = /^\p{RGI_Emoji}$/v;
 
-function baseVisible(segment: string): string {
-  return segment.replace(leadingNonPrintingRegex, "");
-}
-
-function isZeroWidthCluster(segment: string): boolean {
-  return zeroWidthClusterRegex.test(segment);
-}
+// Halfwidth/Fullwidth range constants
+const HALFWIDTH_START = 0xff00;
+const HALFWIDTH_END = 0xffef;
 
 function trailingHalfwidthWidth(
   segment: string,
   eastAsianWidthOptions: { ambiguousAsWide: boolean },
 ): number {
+  const len = segment.length;
+  if (len <= 1) {
+    return 0;
+  }
+
   let extra = 0;
-  if (segment.length > 1) {
-    for (const char of segment.slice(1)) {
-      const codePoint = char.codePointAt(0);
-      if (codePoint !== undefined && char >= "\\uFF00" && char <= "\\uFFEF") {
-        extra += eastAsianWidth(codePoint, eastAsianWidthOptions);
+  // Use for loop with index for better performance
+  for (let i = 1; i < len; i++) {
+    const codePoint = segment.codePointAt(i);
+    if (
+      codePoint !== undefined &&
+      codePoint >= HALFWIDTH_START &&
+      codePoint <= HALFWIDTH_END
+    ) {
+      extra += eastAsianWidth(codePoint, eastAsianWidthOptions);
+      // Skip next char if this was a surrogate pair
+      if (codePoint > 0xffff) {
+        i++;
       }
     }
   }
-
   return extra;
 }
 
@@ -55,21 +70,21 @@ export default function stringWidth(
   const { ambiguousIsNarrow = true, countAnsiEscapeCodes = false } = options;
 
   let string = input;
-
   if (!countAnsiEscapeCodes) {
     string = stripAnsi(string);
-  }
-
-  if (string.length === 0) {
-    return 0;
+    if (string.length === 0) {
+      return 0;
+    }
   }
 
   let width = 0;
   const eastAsianWidthOptions = { ambiguousAsWide: !ambiguousIsNarrow };
 
+  // Use lazy segmenter initialization
+  const segmenter = getSegmenter();
   for (const { segment } of segmenter.segment(string)) {
-    // Zero-width / non-printing clusters
-    if (isZeroWidthCluster(segment)) {
+    // Zero-width clusters - inline test for hot path
+    if (zeroWidthClusterRegex.test(segment)) {
       continue;
     }
 
@@ -79,12 +94,25 @@ export default function stringWidth(
       continue;
     }
 
-    // Everything else: EAW of the cluster’s first visible scalar
-    const codePoint = baseVisible(segment).codePointAt(0);
+    // Get first code point directly, avoiding intermediate string
+    const firstCodePoint = segment.codePointAt(0);
+    if (firstCodePoint === undefined) {
+      continue;
+    }
+
+    // Check if we need to strip leading non-printing characters
+    const hasLeadingNonPrinting = leadingNonPrintingRegex.test(segment);
+    const codePoint = hasLeadingNonPrinting
+      ? segment.replace(leadingNonPrintingRegex, "").codePointAt(0)
+      : firstCodePoint;
+
     if (codePoint !== undefined) {
       width += eastAsianWidth(codePoint, eastAsianWidthOptions);
-      // Add width for trailing Halfwidth and Fullwidth Forms (e.g., ﾞ, ﾟ, ｰ)
-      width += trailingHalfwidthWidth(segment, eastAsianWidthOptions);
+
+      // Only check trailing width if segment has multiple characters
+      if (segment.length > 1) {
+        width += trailingHalfwidthWidth(segment, eastAsianWidthOptions);
+      }
     }
   }
 
