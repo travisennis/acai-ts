@@ -1,4 +1,5 @@
 import { config } from "../config.ts";
+import { logger } from "../logger.ts";
 import type { TokenCounter } from "./counter.ts";
 
 // Cache for maxTokens config to avoid repeated async calls
@@ -77,7 +78,7 @@ export async function manageTokenLimit<T extends string>(
   try {
     tokenCount = tokenCounter.count(content);
   } catch (tokenError) {
-    console.info("Error calculating token count:", tokenError);
+    logger.info(tokenError, "Error calculating token count:");
     // Return content if token counting fails
     return { content, tokenCount: 0 };
   }
