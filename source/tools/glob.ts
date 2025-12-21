@@ -13,7 +13,7 @@ import { glob } from "../utils/glob.ts";
 import type { ToolResult } from "./types.ts";
 
 export const GlobTool = {
-  name: "globFiles" as const,
+  name: "Glob" as const,
 };
 
 export const inputSchema = z.object({

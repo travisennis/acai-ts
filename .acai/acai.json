@@ -5,12 +5,12 @@
   },
   "tools": {
     "activeTools": [
-      "bash",
-      "batch",
-      "think",
-      "readFile",
-      "editFile",
-      "saveFile"
+      "Bash",
+      "Batch",
+      "Think",
+      "Read",
+      "Edit",
+      "Write"
     ],
     "maxTokens": 30000
   },

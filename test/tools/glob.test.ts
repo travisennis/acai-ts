@@ -4,7 +4,7 @@ import test from "node:test";
 import { GlobTool, inputSchema } from "../../source/tools/glob.ts";
 
 test("glob tool has correct name", () => {
-  assert.equal(GlobTool.name, "globFiles");
+  assert.equal(GlobTool.name, "Glob");
 });
 
 test("glob tool input schema validates required fields", () => {

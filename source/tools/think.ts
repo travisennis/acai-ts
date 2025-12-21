@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { ToolResult } from "./types.ts";
 
 export const ThinkTool = {
-  name: "think" as const,
+  name: "Think" as const,
 };
 
 const toolDescription = `Use the tool to think about something. It will not obtain new information or make any changes to the repository, but just log the thought. Use it when complex reasoning or brainstorming is needed.

@@ -13,7 +13,7 @@ import type { ToolResult } from "./types.ts";
 import { fileEncodingSchema } from "./types.ts";
 
 export const ReadFileTool = {
-  name: "readFile" as const,
+  name: "Read" as const,
 };
 
 // Helper function to convert string "null" to actual null

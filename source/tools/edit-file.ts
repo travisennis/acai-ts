@@ -16,7 +16,7 @@ import {
 import type { ToolResult } from "./types.ts";
 
 export const EditFileTool = {
-  name: "editFile" as const,
+  name: "Edit" as const,
 };
 
 const inputSchema = z.object({

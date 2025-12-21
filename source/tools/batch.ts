@@ -10,7 +10,7 @@ import {
 import type { ToolResult } from "./types.ts";
 
 export const BatchTool = {
-  name: "batch" as const,
+  name: "Batch" as const,
 };
 
 const toolCallSchema = z.object({

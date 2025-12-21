@@ -13,7 +13,7 @@ import { isMutatingCommand, resolveCwd, validatePaths } from "../utils/bash.ts";
 import type { ToolResult } from "./types.ts";
 
 export const BashTool = {
-  name: "bash" as const,
+  name: "Bash" as const,
 };
 
 const installedTools = getInstalledTools();

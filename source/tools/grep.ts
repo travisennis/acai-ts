@@ -12,7 +12,7 @@ import {
 import type { ToolResult } from "./types.ts";
 
 export const GrepTool = {
-  name: "grepFiles" as const,
+  name: "Grep" as const,
 };
 
 // Helper function to convert string "null" to actual null

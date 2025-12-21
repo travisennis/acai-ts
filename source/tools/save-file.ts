@@ -13,7 +13,7 @@ import {
 import { fileEncodingSchema, type ToolResult } from "./types.ts";
 
 export const SaveFileTool = {
-  name: "saveFile" as const,
+  name: "Write" as const,
 };
 
 const inputSchema = z.object({
