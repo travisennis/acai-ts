@@ -1,12 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { isString } from "@travisennis/stdlib/typeguards";
+
 import { initExecutionEnvironment } from "./execution/index.ts";
 import type { FormatType } from "./formatting.ts";
-import { formatFile, formatUrl } from "./formatting.ts";
+import { formatFile } from "./formatting.ts";
 import type { ModelMetadata } from "./models/providers.ts";
 import type { ContextItem } from "./prompts/manager.ts";
-import { type ReadUrlResult, readUrl } from "./tools/web-fetch.ts";
 
 class ShellCommandError extends Error {
   public readonly command: string;
@@ -167,29 +166,6 @@ async function processShellCommand(command: string): Promise<string> {
 }
 
 // Returns the formatted string or an error message string
-async function processUrlCommand(
-  context: CommandContext,
-): Promise<ReadUrlResult & { source: string }> {
-  const { match } = context;
-  const urlPath = match;
-  try {
-    return Object.assign(await readUrl(urlPath), { source: urlPath });
-  } catch (error) {
-    if (error instanceof Error) {
-      return {
-        contentType: "text/plain",
-        data: `Url: ${urlPath} Status: Error fetching URL: ${error.message}`,
-        source: urlPath,
-      };
-    }
-    // Fallback for unknown error types
-    return {
-      contentType: "text/plain",
-      data: `Url: ${urlPath} Status: Error fetching URL: An unknown error occurred.`,
-      source: urlPath,
-    };
-  }
-}
 
 export async function processPrompt(
   message: string,
@@ -204,17 +180,14 @@ export async function processPrompt(
   },
 ): Promise<{ message: string; context: ContextItem[] }> {
   const fileRegex = /@([^\s@]+(?:\.[\w\d]+))/g;
-  const urlRegex = /@(https?:\/\/[^\s]+)/g;
+
   const shellRegex = /!`([^`]+)`/g;
 
-  // Collect all matches for files and urls
+  // Collect all matches for files
   const fileMatches = Array.from(message.matchAll(fileRegex));
-  const urlMatches = Array.from(message.matchAll(urlRegex));
   const shellMatches = Array.from(message.matchAll(shellRegex));
 
-  const mentionProcessingPromises: Promise<
-    string | (ReadUrlResult & { source: string })
-  >[] = [];
+  const mentionProcessingPromises: Promise<string>[] = [];
 
   // Process file references - collect promises
   for (const match of fileMatches) {
@@ -226,19 +199,6 @@ export async function processPrompt(
         match: firstMatch,
       };
       mentionProcessingPromises.push(processFileCommand(context));
-    }
-  }
-
-  // Process url references - collect promises
-  for (const match of urlMatches) {
-    const firstMatch = match[1];
-    if (firstMatch) {
-      const context = {
-        model,
-        baseDir, // baseDir is not used by processUrlCommand but kept for consistency
-        match: firstMatch,
-      };
-      mentionProcessingPromises.push(processUrlCommand(context));
     }
   }
 
@@ -293,19 +253,7 @@ export async function processPrompt(
   const context: ContextItem[] = [];
 
   for (const mention of mentionResults) {
-    if (isString(mention)) {
-      context.push(mention);
-    } else if (mention.data.startsWith("data")) {
-      context.push({
-        type: "image",
-        mediaType: mention.contentType,
-        image: mention.data,
-      });
-    } else {
-      context.push(
-        formatUrl(mention.source, mention.data.trim(), model.promptFormat),
-      );
-    }
+    context.push(mention);
   }
 
   return {

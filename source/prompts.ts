@@ -19,8 +19,7 @@ import { ReadFileTool } from "./tools/read-file.ts";
 import { ReadMultipleFilesTool } from "./tools/read-multiple-files.ts";
 import { SaveFileTool } from "./tools/save-file.ts";
 import { ThinkTool } from "./tools/think.ts";
-import { WebFetchTool } from "./tools/web-fetch.ts";
-import { WebSearchTool } from "./tools/web-search.ts";
+
 import { getCurrentBranch, inGitDirectory } from "./utils/git.ts";
 
 async function getCustomSystemPrompt(): Promise<string | null> {
@@ -257,37 +256,7 @@ const toolSections: readonly ToolSection[] = [
       return lines.join("\n");
     },
   },
-  {
-    id: "information-gathering-web",
-    title: "#### Web and Internet",
-    tools: [WebFetchTool.name, WebSearchTool.name] as const,
-    content: (_activeTools, allActiveTools) => {
-      const lines: string[] = [];
 
-      const isActive = (tool: string) =>
-        allActiveTools === undefined ||
-        allActiveTools.includes(tool as CompleteToolNames);
-
-      if (isActive(WebFetchTool.name)) {
-        lines.push(
-          `- Use \`${WebFetchTool.name}\` for text-based URLs provided in the prompt`,
-        );
-      }
-
-      if (isActive(WebSearchTool.name)) {
-        lines.push(
-          `- Use \`${WebSearchTool.name}\` for external research (e.g., libraries, errors)`,
-        );
-      }
-
-      // Add general guideline
-      lines.push(
-        "- If the contents of URLs are provided in the prompt, assume the content is up-to-date and use it directly without re-fetching",
-      );
-
-      return lines.join("\n");
-    },
-  },
   {
     id: "code-modification",
     title: "### Code Modification",

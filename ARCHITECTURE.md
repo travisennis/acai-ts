@@ -138,9 +138,7 @@ acai-ts
 │   │   ├── save-file.ts
 │   │   ├── think.ts
 │   │   ├── types.ts
-│   │   ├── utils.ts
-│   │   ├── web-fetch.ts
-│   │   └── web-search.ts
+│   │   └── utils.ts
 │   ├── tui
 │   │   ├── autocomplete.ts
 │   │   ├── components
@@ -366,8 +364,6 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **tools/think.ts**: Tool for agent to log thoughts without side effects.
 - **tools/types.ts**: Type definitions for tools.
 - **tools/utils.ts**: Utility functions for tools.
-- **tools/web-fetch.ts**: Tool to fetch web content.
-- **tools/web-search.ts**: Tool for web searching.
 - **tui/autocomplete.ts**: Autocomplete functionality for TUI.
 - **tui/components/assistant-message.ts**: Component for displaying AI assistant messages.
 - **tui/components/editor.ts**: Text editor component for TUI.

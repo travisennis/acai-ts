@@ -26,7 +26,6 @@ Acai is a powerful **AI-driven command-line interface (CLI) tool** designed to a
 *   **File & Directory Mentions:** Include file contents and entire directories in prompts using `@filename` and `@dirname` syntax.
 *   **Code Navigation & Analysis:** Advanced file searching and code analysis capabilities.
 *   **Git Workflow Automation:** Streamline commit messages and code reviews.
-*   **Web Integration:** Perform web searches and fetch content from URLs.
 *   **Extensible Commands:** A rich set of built-in commands (`/help`, `/model`, `/session`, `/list-tools`, etc.).
 *   **Token Usage Tracking:** Monitor AI token consumption with comprehensive session overview.
 *   **Configurable AI Models:** Easily switch between different LLM providers and models.
@@ -135,17 +134,6 @@ X_AI_API_KEY=your_xai_api_key_here
 OPENROUTER_API_KEY=your_openrouter_api_key_here
 ```
 
-### Web Service API Keys (Optional)
-
-```bash
-# Exa (for enhanced web search functionality)
-# Optional: Falls back to DuckDuckGo search if not provided
-EXA_API_KEY=your_exa_api_key_here
-
-# Jina Reader (for enhanced web content extraction)
-JINA_READER_API_KEY=your_jina_api_key_here
-```
-
 ### Application Configuration
 
 ```bash
@@ -166,16 +154,12 @@ GOOGLE_GENERATIVE_AI_API_KEY=...
 GROQ_API_KEY=...
 OPENROUTER_API_KEY=sk-or-...
 
-# Optional: Web services (fallbacks available if not provided)
-EXA_API_KEY=...  # Falls back to DuckDuckGo search
-
 # Optional: Application settings
 LOG_LEVEL=info
 ```
 
 **Note:** You need at least one AI provider API key to use Acai. The tool will work with any combination of the supported providers.
 
-**Web Search:** The web search functionality works without any API keys by using DuckDuckGo as a fallback. Providing an EXA_API_KEY enables enhanced search capabilities with more detailed content extraction.
 
 ### Usage
 
@@ -678,6 +662,19 @@ acai
 # Custom log level
 LOG_LEVEL=warn acai
 ```
+
+## Web Skills
+
+Acai's web functionality has been moved to standalone skills that operate independently of the core codebase. These skills provide web-related capabilities while keeping the main acai-ts project lightweight and focused.
+
+### Skill Locations
+
+Web skills are located in:
+- `~/.acai/skills/web-fetch/` - User-level web fetch skill
+- `~/.acai/skills/web-search/` - User-level web search skill
+- `<project>/.acai/skills/web-fetch/` - Project-level web fetch skill
+- `<project>/.acai/skills/web-search/` - Project-level web search skill
+
 
 ## ⚙️ Development
 

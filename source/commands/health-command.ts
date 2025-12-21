@@ -36,13 +36,6 @@ export function healthCommand(
           description: "OpenRouter (multiple models)",
         },
 
-        // Web Service API Keys
-        { name: "EXA_API_KEY", description: "Exa (enhanced web search)" },
-        {
-          name: "JINA_READER_API_KEY",
-          description: "Jina Reader (web content extraction)",
-        },
-
         // Application Configuration
         { name: "LOG_LEVEL", description: "Logging level" },
       ];

@@ -32,8 +32,6 @@ import {
 } from "./read-multiple-files.ts";
 import { createSaveFileTool, SaveFileTool } from "./save-file.ts";
 import { createThinkTool, ThinkTool } from "./think.ts";
-import { createWebFetchTool, WebFetchTool } from "./web-fetch.ts";
-import { createWebSearchTool, WebSearchTool } from "./web-search.ts";
 
 export type CompleteToolSet = {
   -readonly [K in keyof (AsyncReturnType<typeof initTools>["toolDefs"] &
@@ -119,14 +117,6 @@ export async function initTools({
 
   const thinkTool = createThinkTool();
 
-  const webFetchTool = createWebFetchTool({
-    tokenCounter,
-  });
-
-  const webSearchTool = createWebSearchTool({
-    tokenCounter,
-  });
-
   const bashTool = await createBashTool({
     baseDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
@@ -152,8 +142,7 @@ export async function initTools({
     [DirectoryTreeTool.name]: tool(directoryTreeTool.toolDef),
     [CodeInterpreterTool.name]: tool(codeInterpreterTool.toolDef),
     [ThinkTool.name]: tool(thinkTool.toolDef),
-    [WebFetchTool.name]: tool(webFetchTool.toolDef),
-    [WebSearchTool.name]: tool(webSearchTool.toolDef),
+
     // Add dynamic tools - they already have toolDef structure
     ...Object.fromEntries(
       Object.entries(dynamicTools).map(([name, toolObj]) => [
@@ -198,12 +187,6 @@ export async function initTools({
 
   // Add directoryTree tool
   executors.set(DirectoryTreeTool.name, directoryTreeTool.execute);
-
-  // Add webFetch tool
-  executors.set(WebFetchTool.name, webFetchTool.execute);
-
-  // Add webSearch tool
-  executors.set(WebSearchTool.name, webSearchTool.execute);
 
   // Add think tool
   executors.set(ThinkTool.name, thinkTool.execute);
@@ -307,14 +290,6 @@ export async function initCliTools({
 
   const thinkTool = createThinkTool();
 
-  const webFetchTool = createWebFetchTool({
-    tokenCounter,
-  });
-
-  const webSearchTool = createWebSearchTool({
-    tokenCounter,
-  });
-
   const bashTool = await createBashTool({
     baseDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
@@ -340,8 +315,7 @@ export async function initCliTools({
   executors.set(DirectoryTreeTool.name, directoryTreeTool.execute);
   executors.set(CodeInterpreterTool.name, codeInterpreterTool.execute);
   executors.set(ThinkTool.name, thinkTool.execute);
-  executors.set(WebFetchTool.name, webFetchTool.execute);
-  executors.set(WebSearchTool.name, webSearchTool.execute);
+
   for (const [name, toolObj] of Object.entries(dynamicTools)) {
     executors.set(name, toolObj.execute);
   }
@@ -405,14 +379,7 @@ export async function initCliTools({
       ...thinkTool.toolDef,
       execute: thinkTool.execute,
     }),
-    [WebFetchTool.name]: tool({
-      ...webFetchTool.toolDef,
-      execute: webFetchTool.execute,
-    }),
-    [WebSearchTool.name]: tool({
-      ...webSearchTool.toolDef,
-      execute: webSearchTool.execute,
-    }),
+
     [BatchTool.name]: tool({
       ...batchTool.toolDef,
       execute: batchTool.execute,
