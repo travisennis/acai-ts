@@ -9,18 +9,11 @@ import {
   manageTokenLimit,
   TokenLimitExceededError,
 } from "../tokens/threshold.ts";
+import { convertNullString } from "../utils/zod.ts";
 import type { ToolResult } from "./types.ts";
 
 export const GrepTool = {
   name: "Grep" as const,
-};
-
-// Helper function to convert string "null" to actual null
-const convertNullString = (value: unknown): unknown => {
-  if (typeof value === "string" && value.toLowerCase() === "null") {
-    return null;
-  }
-  return value;
 };
 
 const inputSchema = z.object({

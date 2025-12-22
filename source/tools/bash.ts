@@ -10,6 +10,7 @@ import {
   TokenLimitExceededError,
 } from "../tokens/threshold.ts";
 import { isMutatingCommand, resolveCwd, validatePaths } from "../utils/bash.ts";
+import { convertNullString } from "../utils/zod.ts";
 import type { ToolResult } from "./types.ts";
 
 export const BashTool = {
@@ -25,14 +26,6 @@ ${installedTools}`;
 
 // Command execution timeout in milliseconds
 const DEFAULT_TIMEOUT = 1.5 * 60 * 1000; // 1.5 minutes
-
-// Helper function to convert string "null" to actual null
-const convertNullString = (value: unknown): unknown | null => {
-  if (typeof value === "string" && value.toLowerCase() === "null") {
-    return null;
-  }
-  return value;
-};
 
 const inputSchema = z.object({
   command: z.string().describe("Full CLI command to execute."),

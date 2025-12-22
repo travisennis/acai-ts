@@ -9,19 +9,12 @@ import {
   TokenLimitExceededError,
 } from "../tokens/threshold.ts";
 import { joinWorkingDir, validatePath } from "../utils/filesystem/security.ts";
+import { convertNullString } from "../utils/zod.ts";
 import type { ToolResult } from "./types.ts";
 import { fileEncodingSchema } from "./types.ts";
 
 export const ReadFileTool = {
   name: "Read" as const,
-};
-
-// Helper function to convert string "null" to actual null
-const convertNullString = (value: unknown): unknown => {
-  if (typeof value === "string" && value.toLowerCase() === "null") {
-    return null;
-  }
-  return value;
 };
 
 const inputSchema = z.object({

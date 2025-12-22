@@ -10,6 +10,7 @@ import {
   TokenLimitExceededError,
 } from "../tokens/threshold.ts";
 import { glob } from "../utils/glob.ts";
+import { convertNullString } from "../utils/zod.ts";
 import type { ToolResult } from "./types.ts";
 
 export const GlobTool = {
@@ -24,36 +25,20 @@ export const inputSchema = z.object({
     ),
   path: z.string().describe("Base directory to search in"),
   gitignore: z
-    .preprocess(
-      (val) =>
-        typeof val === "string" && val.toLowerCase() === "null" ? null : val,
-      z.coerce.boolean().nullable(),
-    )
+    .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
     .describe("Respect ignore patterns in .gitignore files. (default: true)"),
   recursive: z
-    .preprocess(
-      (val) =>
-        typeof val === "string" && val.toLowerCase() === "null" ? null : val,
-      z.coerce.boolean().nullable(),
-    )
+    .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
     .describe("Search recursively. (default: true)"),
   expandDirectories: z
-    .preprocess(
-      (val) =>
-        typeof val === "string" && val.toLowerCase() === "null" ? null : val,
-      z.coerce.boolean().nullable(),
-    )
+    .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
     .describe("Automatically expand directories to files. (default: true)"),
   ignoreFiles: z
     .union([z.string(), z.array(z.string())])
     .nullable()
     .describe("Glob patterns to look for ignore files. (default: undefined)"),
   cwd: z
-    .preprocess(
-      (val) =>
-        typeof val === "string" && val.toLowerCase() === "null" ? null : val,
-      z.coerce.string().nullable(),
-    )
+    .preprocess((val) => convertNullString(val), z.coerce.string().nullable())
     .describe("Current working directory override. (default: process.cwd())"),
 });
 
