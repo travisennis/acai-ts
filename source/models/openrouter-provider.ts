@@ -46,6 +46,9 @@ const openrouterModels = {
   "gemini-3-pro": openRouterClient("google/gemini-3-pro-preview", {
     usage: { include: true },
   }) as LanguageModelV2,
+  "glm-4-7": openRouterClient("z-ai/glm-4.7", {
+    usage: { include: true },
+  }) as LanguageModelV2,
   "kat-coder-pro-free": openRouterClient("kwaipilot/kat-coder-pro:free", {
     usage: { include: true },
   }) as LanguageModelV2,
@@ -165,6 +168,18 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000002,
     costPerOutputToken: 0.000012,
+  },
+  "openrouter:glm-4-7": {
+    id: "openrouter:glm-4-7",
+    provider: "openrouter",
+    contextWindow: 200000,
+    maxOutputTokens: 131072,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 1.1e-7,
+    costPerOutputToken: 0.0000022,
   },
   "openrouter:kat-coder-pro-free": {
     id: "openrouter:kat-coder-pro-free",
