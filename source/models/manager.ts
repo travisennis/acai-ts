@@ -1,3 +1,4 @@
+import EventEmitter from "node:events";
 import type { LanguageModelV2 } from "@ai-sdk/provider";
 import { generateText, wrapLanguageModel } from "ai";
 import {
@@ -46,11 +47,16 @@ type App =
   | "handoff-agent"
   | "edit-fix";
 
-export class ModelManager {
+interface ModelManagerEvents {
+  "set-model": [app: App, model: ModelName];
+}
+
+export class ModelManager extends EventEmitter<ModelManagerEvents> {
   private modelMap: Map<App, LanguageModelV2>;
   private modelMetadataMap: Map<App, ModelMetadata>;
   private stateDir: string;
   constructor({ stateDir }: { stateDir: string }) {
+    super();
     this.modelMap = new Map();
     this.modelMetadataMap = new Map();
     this.stateDir = stateDir;
@@ -69,6 +75,7 @@ export class ModelManager {
     if (modelMetadata) {
       this.modelMetadataMap.set(app, modelMetadata);
     }
+    this.emit("set-model", app, model);
   }
 
   getModel(app: App) {
