@@ -78,43 +78,63 @@ export class AiConfig {
     const modelConfig = this.modelMetadata;
     const thinkingLevel = calculateThinkingLevel(this.prompt);
 
+    const meta: SharedV2ProviderMetadata = {
+      [modelConfig.provider]: {},
+    };
+
     if (modelConfig.supportsReasoning && thinkingLevel.effort !== "none") {
       switch (modelConfig.provider) {
         case "anthropic":
-          return {
-            anthropic: {
-              thinking: {
-                type: "enabled",
-                budgetTokens: thinkingLevel.tokenBudget,
-              },
+          Object.assign(meta["anthropic"], {
+            thinking: {
+              type: "enabled",
+              budgetTokens: thinkingLevel.tokenBudget,
             },
-          };
+          });
+          break;
         case "openai":
-          return { openai: { reasoningEffort: thinkingLevel.effort } };
-        case "google": {
-          return {
-            google: {
-              thinkingConfig: {
-                thinkingBudget: thinkingLevel.tokenBudget,
-              },
+          Object.assign(meta["openai"], {
+            reasoningEffort: thinkingLevel.effort,
+          });
+          break;
+        case "google":
+          Object.assign(meta["google"], {
+            thinkingConfig: {
+              thinkingBudget: thinkingLevel.tokenBudget,
             },
-          };
-        }
-        case "openrouter": {
-          return {
-            openrouter: {
-              reasoning: {
-                enabled: true,
-                effort: thinkingLevel.effort,
-              },
+          });
+          break;
+        case "openrouter":
+          Object.assign(meta["openrouter"], {
+            reasoning: {
+              enabled: true,
+              effort: thinkingLevel.effort,
             },
-          };
-        }
-        default:
-          return {};
+          });
+          break;
+        case "deepseek":
+          Object.assign(meta["deepseek"], {
+            thinking: {
+              type: "enabled",
+            },
+          });
+          break;
       }
     }
-    // If supportsReasoning is false, or no provider case matched
+
+    switch (modelConfig.provider) {
+      case "openrouter":
+        Object.assign(meta["openrouter"], {
+          usage: {
+            include: true,
+          },
+        });
+        break;
+    }
+
+    if (Object.keys(meta[modelConfig.provider]).length > 0) {
+      return meta;
+    }
     return {};
   }
 }

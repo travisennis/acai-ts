@@ -56,7 +56,6 @@
     "@ai-sdk/openai": "^2.0.88",
     "@ai-sdk/openai-compatible": "^1.0.29",
     "@crosscopy/clipboard": "^0.2.8",
-    "@openrouter/ai-sdk-provider": "^1.5.4",
     "@travisennis/stdlib": "^0.0.14",
     "ai": "^5.0.115",
     "diff": "^8.0.2",
