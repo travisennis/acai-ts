@@ -5,7 +5,7 @@ import { logger } from "../logger.ts"; // Import logger
 import type { ModelManager } from "../models/manager.ts";
 import { systemPrompt } from "../prompts.ts";
 import { createUserMessage } from "../sessions/manager.ts";
-import { getTerminalSize } from "../terminal/formatting.ts";
+import { getTerminalSize } from "../terminal/control.ts";
 import style from "../terminal/style.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import type { CompleteToolNames } from "../tools/index.ts";

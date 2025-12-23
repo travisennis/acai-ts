@@ -6,15 +6,6 @@
 import style from "./style.ts";
 import { supportsHyperlinks } from "./supports-hyperlinks.ts";
 
-export {
-  clearScreen,
-  clearTerminal,
-  getTerminalSize,
-  setTerminalTitle,
-  startProgress,
-  stopProgress,
-} from "./control.ts";
-
 /**
  * Create a horizontal rule
  */

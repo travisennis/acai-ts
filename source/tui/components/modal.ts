@@ -1,4 +1,4 @@
-import { getTerminalSize } from "../../terminal/formatting.ts";
+import { getTerminalSize } from "../../terminal/control.ts";
 import style from "../../terminal/style.ts";
 import type { Component } from "../tui.ts";
 import { Container } from "../tui.ts";

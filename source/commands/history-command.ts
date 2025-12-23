@@ -2,7 +2,7 @@ import { writeFile } from "node:fs/promises";
 import type { ModelMessage, TextPart } from "ai";
 import { generateText } from "ai";
 import { SessionManager } from "../sessions/manager.ts";
-import { getTerminalSize, setTerminalTitle } from "../terminal/formatting.ts";
+import { getTerminalSize, setTerminalTitle } from "../terminal/control.ts";
 import style from "../terminal/style.ts";
 import type { Editor, TUI } from "../tui/index.ts";
 import { Container, Input, Markdown, Spacer, Text } from "../tui/index.ts";

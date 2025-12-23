@@ -1,4 +1,4 @@
-import { setTerminalTitle } from "../terminal/formatting.ts";
+import { setTerminalTitle } from "../terminal/control.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 

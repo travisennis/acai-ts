@@ -20,7 +20,7 @@ import { PromptManager } from "./prompts/manager.ts";
 import { systemPrompt } from "./prompts.ts";
 import { NewRepl } from "./repl-new.ts";
 import { SessionManager } from "./sessions/manager.ts";
-import { setTerminalTitle } from "./terminal/formatting.ts";
+import { setTerminalTitle } from "./terminal/control.ts";
 import { select } from "./terminal/select-prompt.ts";
 import { TokenCounter } from "./tokens/counter.ts";
 import { TokenTracker } from "./tokens/tracker.ts";

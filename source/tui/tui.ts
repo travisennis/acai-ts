@@ -2,7 +2,7 @@
  * Minimal TUI implementation with differential rendering
  */
 
-import { getTerminalSize } from "../terminal/formatting.ts";
+import { getTerminalSize } from "../terminal/control.ts";
 import style from "../terminal/style.ts";
 import type { Modal } from "./components/modal.ts";
 import type { Terminal } from "./terminal.ts";

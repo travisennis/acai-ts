@@ -1,5 +1,5 @@
 import { initExecutionEnvironment } from "../execution/index.ts";
-import { getTerminalSize } from "../terminal/formatting.ts";
+import { getTerminalSize } from "../terminal/control.ts";
 import style from "../terminal/style.ts";
 import type { AutocompleteItem } from "../tui/autocomplete.ts";
 import { Markdown } from "../tui/components/markdown.ts";
