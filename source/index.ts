@@ -293,6 +293,15 @@ async function initializeSessionManager(
     tokenTracker,
   });
   messageHistory.on("update-title", (title) => setTerminalTitle(title));
+
+  // Listen for model changes and update session manager when repl model changes
+  modelManager.on("set-model", (app, _model) => {
+    if (app === "repl") {
+      const modelId = modelManager.getModel("repl").modelId;
+      messageHistory.setModelId(modelId);
+    }
+  });
+
   return messageHistory;
 }
 

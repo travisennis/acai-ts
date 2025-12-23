@@ -139,6 +139,10 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
     this.updatedAt = new Date();
   }
 
+  setModelId(modelId: string) {
+    this.modelId = modelId;
+  }
+
   private validMessage(msg: ModelMessage) {
     // Filter out messages with empty content arrays
     if (Array.isArray(msg.content) && msg.content.length === 0) {
