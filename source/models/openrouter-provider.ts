@@ -52,6 +52,9 @@ const openrouterModels = {
   "kat-coder-pro-free": openRouterClient("kwaipilot/kat-coder-pro:free", {
     usage: { include: true },
   }) as LanguageModelV2,
+  "minimax-m2-1": openRouterClient("minimax/minimax-m2.1", {
+    usage: { include: true },
+  }) as LanguageModelV2,
   "sonnet-4.5": openRouterClient("anthropic/claude-sonnet-4.5", {
     usage: { include: true },
   }) as LanguageModelV2,
@@ -192,6 +195,18 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0,
     costPerOutputToken: 0,
+  },
+  "openrouter:minimax-m2-1": {
+    id: "openrouter:minimax-m2-1",
+    provider: "openrouter",
+    contextWindow: 204800,
+    maxOutputTokens: 131072,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 3e-7,
+    costPerOutputToken: 0.0000012,
   },
   "openrouter:opus-4.5": {
     id: "openrouter:opus-4.5",
