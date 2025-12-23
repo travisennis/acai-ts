@@ -1,6 +1,5 @@
 import { execSync } from "node:child_process";
 import { inspect } from "node:util";
-import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
 import style from "../terminal/style.ts";
@@ -10,7 +9,7 @@ import {
   TokenLimitExceededError,
 } from "../tokens/threshold.ts";
 import { convertNullString } from "../utils/zod.ts";
-import type { ToolResult } from "./types.ts";
+import type { ToolCallOptions, ToolResult } from "./types.ts";
 
 export const GrepTool = {
   name: "Grep" as const,

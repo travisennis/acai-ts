@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import { isNumber } from "@travisennis/stdlib/typeguards";
-import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
@@ -10,7 +9,7 @@ import {
 } from "../tokens/threshold.ts";
 import { joinWorkingDir, validatePath } from "../utils/filesystem/security.ts";
 import { convertNullString } from "../utils/zod.ts";
-import type { ToolResult } from "./types.ts";
+import type { ToolCallOptions, ToolResult } from "./types.ts";
 import { fileEncodingSchema } from "./types.ts";
 
 export const ReadFileTool = {

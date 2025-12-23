@@ -1,4 +1,4 @@
-import { generateText, stepCountIs, type ToolCallOptions } from "ai";
+import { generateText, stepCountIs } from "ai";
 import { z } from "zod";
 import type { WorkspaceContext } from "../index.ts";
 import { AiConfig } from "../models/ai-config.ts";
@@ -10,7 +10,7 @@ import { GlobTool } from "./glob.ts";
 import { GrepTool } from "./grep.ts";
 import { initCliTools } from "./index.ts";
 import { ReadFileTool } from "./read-file.ts";
-import type { ToolResult } from "./types.ts";
+import type { ToolCallOptions, ToolResult } from "./types.ts";
 
 export const AgentTool = {
   name: "agent" as const,

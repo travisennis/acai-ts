@@ -1,5 +1,4 @@
 import { readFile, writeFile } from "node:fs/promises";
-import type { ToolCallOptions } from "ai";
 import { createTwoFilesPatch } from "diff";
 import { z } from "zod";
 import { config } from "../config.ts";
@@ -13,7 +12,7 @@ import {
   validatePath,
 } from "../utils/filesystem/security.ts";
 
-import type { ToolResult } from "./types.ts";
+import type { ToolCallOptions, ToolResult } from "./types.ts";
 
 export const EditFileTool = {
   name: "Edit" as const,

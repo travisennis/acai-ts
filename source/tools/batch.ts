@@ -1,4 +1,3 @@
-import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import { logger } from "../logger.ts";
 import style from "../terminal/style.ts";
@@ -7,7 +6,7 @@ import {
   manageTokenLimit,
   TokenLimitExceededError,
 } from "../tokens/threshold.ts";
-import type { ToolResult } from "./types.ts";
+import type { ToolCallOptions, ToolResult } from "./types.ts";
 
 export const BatchTool = {
   name: "Batch" as const,

@@ -3,14 +3,13 @@ import { randomUUID } from "node:crypto";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import process from "node:process";
-import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import type { TokenCounter } from "../tokens/counter.ts";
 import {
   manageTokenLimit,
   TokenLimitExceededError,
 } from "../tokens/threshold.ts";
-import type { ToolResult } from "./types.ts";
+import type { ToolCallOptions, ToolResult } from "./types.ts";
 
 export const CodeInterpreterTool = {
   name: "codeInterpreter" as const,

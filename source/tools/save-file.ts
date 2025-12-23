@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
 import { clearProjectStatusCache } from "../repl/project-status-line.ts";
@@ -10,7 +9,11 @@ import {
   validateFileNotReadOnly,
   validatePath,
 } from "../utils/filesystem/security.ts";
-import { fileEncodingSchema, type ToolResult } from "./types.ts";
+import {
+  fileEncodingSchema,
+  type ToolCallOptions,
+  type ToolResult,
+} from "./types.ts";
 
 export const SaveFileTool = {
   name: "Write" as const,

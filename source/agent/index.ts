@@ -1,8 +1,4 @@
-import type {
-  LanguageModelUsage,
-  ToolExecuteFunction,
-  ToolModelMessage,
-} from "ai";
+import type { ToolExecuteFunction, ToolModelMessage } from "ai";
 import {
   NoOutputGeneratedError,
   streamText,
@@ -111,6 +107,14 @@ export type AgentEvent =
 // error?: string;
 // }
 
+type ModelUsage = {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  cachedInputTokens: number;
+  reasoningTokens: number;
+};
+
 export type AgentState = {
   modelId: string;
   modelConfig: ModelMetadata;
@@ -118,8 +122,8 @@ export type AgentState = {
     toolResults: Array<{ toolName: string }>;
     toolCalls: Array<{ toolName: string }>;
   }[];
-  usage: { [K in keyof LanguageModelUsage]-?: number };
-  totalUsage: { [K in keyof LanguageModelUsage]-?: number };
+  usage: ModelUsage;
+  totalUsage: ModelUsage;
   timestamps: {
     start: number;
     stop: number;

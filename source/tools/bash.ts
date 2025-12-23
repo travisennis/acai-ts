@@ -1,5 +1,4 @@
 import { execSync } from "node:child_process";
-import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import { initExecutionEnvironment } from "../execution/index.ts";
 import { logger } from "../logger.ts";
@@ -11,7 +10,7 @@ import {
 } from "../tokens/threshold.ts";
 import { isMutatingCommand, resolveCwd, validatePaths } from "../utils/bash.ts";
 import { convertNullString } from "../utils/zod.ts";
-import type { ToolResult } from "./types.ts";
+import type { ToolCallOptions, ToolResult } from "./types.ts";
 
 export const BashTool = {
   name: "Bash" as const,

@@ -1,6 +1,5 @@
-import type { ToolCallOptions } from "ai";
 import { z } from "zod";
-import type { ToolResult } from "./types.ts";
+import type { ToolCallOptions, ToolResult } from "./types.ts";
 
 export const ThinkTool = {
   name: "Think" as const,

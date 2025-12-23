@@ -63,3 +63,10 @@ export function isToolMessage(value: unknown): value is Message {
     ("data" in candidate || "retry" in candidate)
   );
 }
+
+export type ToolCallOptions = {
+  toolCallId: string;
+  // biome-ignore lint/suspicious/noExplicitAny: temporary
+  messages?: any[];
+  abortSignal?: AbortSignal;
+};

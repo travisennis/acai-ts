@@ -1,6 +1,5 @@
 import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
-import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
 import { clearProjectStatusCache } from "../repl/project-status-line.ts";
@@ -10,7 +9,7 @@ import {
   validateFileNotReadOnly,
   validatePath,
 } from "../utils/filesystem/security.ts";
-import type { ToolResult } from "./types.ts";
+import type { ToolCallOptions, ToolResult } from "./types.ts";
 
 export const DeleteFileTool = {
   name: "deleteFile" as const,

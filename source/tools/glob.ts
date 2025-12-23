@@ -1,7 +1,6 @@
 import * as fs from "node:fs";
 import * as nodePath from "node:path";
 import { inspect } from "node:util";
-import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
@@ -11,7 +10,7 @@ import {
 } from "../tokens/threshold.ts";
 import { glob } from "../utils/glob.ts";
 import { convertNullString } from "../utils/zod.ts";
-import type { ToolResult } from "./types.ts";
+import type { ToolCallOptions, ToolResult } from "./types.ts";
 
 export const GlobTool = {
   name: "Glob" as const,

@@ -2,12 +2,11 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { ToolCallOptions } from "ai";
 import { z } from "zod";
 import { config } from "../config.ts";
 import { logger } from "../logger.ts";
 import { parseToolMetadata, type ToolMetadata } from "./dynamic-tool-parser.ts";
-import type { ToolResult } from "./types.ts";
+import type { ToolCallOptions, ToolResult } from "./types.ts";
 
 function generateZodSchema(parameters: ToolMetadata["parameters"]) {
   const fields: Record<string, z.ZodTypeAny> = {};
