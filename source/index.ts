@@ -14,12 +14,12 @@ import {
   type ProjectConfig,
 } from "./config.ts";
 import { logger } from "./logger.ts";
-import { MessageHistory } from "./messages.ts";
 import { ModelManager } from "./models/manager.ts";
 import { isSupportedModel, type ModelName } from "./models/providers.ts";
 import { PromptManager } from "./prompts/manager.ts";
 import { systemPrompt } from "./prompts.ts";
 import { NewRepl } from "./repl-new.ts";
+import { SessionManager } from "./sessions/manager.ts";
 import { setTerminalTitle } from "./terminal/formatting.ts";
 import { select } from "./terminal/select-prompt.ts";
 import { TokenCounter } from "./tokens/counter.ts";
@@ -126,7 +126,7 @@ interface AppState {
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
   tokenCounter: TokenCounter;
-  messageHistory: MessageHistory;
+  sessionManager: SessionManager;
   promptManager: PromptManager;
   promptHistory: string[];
   commands: CommandManager;
@@ -153,7 +153,7 @@ async function initializeAppState(
   const tokenCounter = new TokenCounter();
 
   // Initialize dependent components
-  const messageHistory = await initializeMessageHistory(
+  const sessionManager = await initializeSessionManager(
     messageHistoryDir,
     modelManager,
     tokenTracker,
@@ -161,7 +161,7 @@ async function initializeAppState(
 
   // Handle conversation history loading
   await handleConversationHistory(
-    messageHistory,
+    sessionManager,
     messageHistoryDir,
     hasContinueOrResume,
   );
@@ -181,7 +181,7 @@ async function initializeAppState(
   const commands = new CommandManager({
     promptManager,
     modelManager,
-    messageHistory,
+    sessionManager,
     tokenTracker,
     config,
     tokenCounter,
@@ -196,7 +196,7 @@ async function initializeAppState(
     modelManager,
     tokenTracker,
     tokenCounter,
-    messageHistory,
+    sessionManager,
     promptManager,
     promptHistory,
     commands,
@@ -282,12 +282,12 @@ async function initializeModelManager(
   return modelManager;
 }
 
-async function initializeMessageHistory(
+async function initializeSessionManager(
   messageHistoryDir: string,
   modelManager: ModelManager,
   tokenTracker: TokenTracker,
-): Promise<MessageHistory> {
-  const messageHistory = new MessageHistory({
+): Promise<SessionManager> {
+  const messageHistory = new SessionManager({
     stateDir: messageHistoryDir,
     modelManager,
     tokenTracker,
@@ -297,12 +297,12 @@ async function initializeMessageHistory(
 }
 
 async function handleConversationHistory(
-  messageHistory: MessageHistory,
+  messageHistory: SessionManager,
   messageHistoryDir: string,
   _hasContinueOrResume: boolean,
 ): Promise<void> {
   if (flags.continue === true) {
-    const histories = await MessageHistory.load(
+    const histories = await SessionManager.load(
       messageHistoryDir,
       CONTINUE_HISTORY_LIMIT,
     );
@@ -315,7 +315,7 @@ async function handleConversationHistory(
       logger.info("No previous conversation found to continue.");
     }
   } else if (flags.resume === true) {
-    const histories = await MessageHistory.load(
+    const histories = await SessionManager.load(
       messageHistoryDir,
       DEFAULT_HISTORY_LIMIT,
     );
@@ -360,7 +360,7 @@ async function runCliMode(state: AppState): Promise<void> {
 
   const cliProcess = new Cli({
     promptManager: state.promptManager,
-    messageHistory: state.messageHistory,
+    messageHistory: state.sessionManager,
     modelManager: state.modelManager,
     tokenTracker: state.tokenTracker,
     tokenCounter: state.tokenCounter,
@@ -372,7 +372,7 @@ async function runCliMode(state: AppState): Promise<void> {
 
 async function runReplMode(state: AppState): Promise<void> {
   const agent = new Agent({
-    messageHistory: state.messageHistory,
+    sessionManager: state.sessionManager,
     modelManager: state.modelManager,
     tokenTracker: state.tokenTracker,
   });
@@ -381,7 +381,7 @@ async function runReplMode(state: AppState): Promise<void> {
     agent,
     promptManager: state.promptManager,
     config: state.appConfig,
-    messageHistory: state.messageHistory,
+    messageHistory: state.sessionManager,
     modelManager: state.modelManager,
     tokenTracker: state.tokenTracker,
     commands: state.commands,
@@ -393,7 +393,7 @@ async function runReplMode(state: AppState): Promise<void> {
   // Initialize TUI
   await repl.init();
 
-  state.messageHistory.on("clear-history", () => {
+  state.sessionManager.on("clear-history", () => {
     logger.info("Resetting agent state.");
     agent.resetState();
     repl.rerender();
@@ -402,7 +402,7 @@ async function runReplMode(state: AppState): Promise<void> {
   // Set interrupt callback
   repl.setInterruptCallback(() => {
     try {
-      state.messageHistory.save();
+      state.sessionManager.save();
     } catch (error) {
       // Log but don't throw - we still want to abort the agent
       logger.warn({ error }, "Failed to save message history on interrupt");
@@ -463,7 +463,7 @@ async function runReplMode(state: AppState): Promise<void> {
         repl.handle(result, agent.state);
       }
 
-      state.messageHistory.save();
+      state.sessionManager.save();
     } catch (_error) {
       // Display error in the TUI by adding an error message to the chat
       // repl.showError((error as Error).message || "Unknown error occurred");

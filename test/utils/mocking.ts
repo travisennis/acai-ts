@@ -3,9 +3,9 @@ import { mock } from "node:test";
 import type { ModelMessage } from "ai";
 import type { CommandOptions } from "../../source/commands/types.ts";
 import type { ConfigManager } from "../../source/config.ts";
-import type { MessageHistory } from "../../source/messages.ts";
 import type { ModelManager } from "../../source/models/manager.ts";
 import type { PromptManager } from "../../source/prompts/manager.ts";
+import type { SessionManager } from "../../source/sessions/manager.ts";
 import type { TokenCounter } from "../../source/tokens/counter.ts";
 import type { TokenTracker } from "../../source/tokens/tracker.ts";
 import type { Container, Editor, TUI } from "../../source/tui/index.ts";
@@ -131,7 +131,7 @@ export function createMockMessageHistory(
     { role: "user", content: [{ type: "text", text: "Hello" }] },
     { role: "assistant", content: [{ type: "text", text: "Hi there!" }] },
   ],
-): MessageHistory {
+): SessionManager {
   return {
     get: mock.fn(() => messages),
     isEmpty: mock.fn(() => messages.length === 0),
@@ -150,7 +150,7 @@ export function createMockMessageHistory(
     getTitle: mock.fn(() => "Test Title"),
     getCreatedAt: mock.fn(() => new Date("2025-12-16T10:30:00Z")),
     getUpdatedAt: mock.fn(() => new Date("2025-12-16T10:45:00Z")),
-  } as unknown as MessageHistory;
+  } as unknown as SessionManager;
 }
 
 /**

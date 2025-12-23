@@ -31,7 +31,7 @@ describe("/copy command", () => {
     const mockEditor = createMockEditor();
 
     const options = createMockCommandOptions({
-      messageHistory: createMockMessageHistory([makeUser("hello")]),
+      sessionManager: createMockMessageHistory([makeUser("hello")]),
     });
 
     const cmd = copyCommand(options);
@@ -54,7 +54,7 @@ describe("/copy command", () => {
     const mockEditor = createMockEditor();
 
     const options = createMockCommandOptions({
-      messageHistory: createMockMessageHistory([
+      sessionManager: createMockMessageHistory([
         makeUser("hello"),
         makeAssistant("world"),
       ]),

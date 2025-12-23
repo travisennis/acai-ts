@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { before, describe, it, mock } from "node:test";
 import { historyCommand } from "../../source/commands/history-command.ts";
-import { MessageHistory } from "../../source/messages.ts";
+import { SessionManager } from "../../source/sessions/manager.ts";
 import {
   createMockCommandOptions,
   createMockConfig,
@@ -31,15 +31,15 @@ describe("historyCommand integration", () => {
     const mockMessageHistory = createMockMessageHistory();
 
     const commandOptions = createMockCommandOptions({
-      messageHistory: mockMessageHistory,
+      sessionManager: mockMessageHistory,
       config: mockConfig,
     });
 
     const command = historyCommand(commandOptions);
 
     // Mock MessageHistory.load to return empty array
-    const originalLoad = MessageHistory.load;
-    MessageHistory.load = async () => [];
+    const originalLoad = SessionManager.load;
+    SessionManager.load = async () => [];
 
     try {
       const result = await command.handle([], {
@@ -55,7 +55,7 @@ describe("historyCommand integration", () => {
       assert.equal(mockEditor.setText.mock.calls.length, 1);
     } finally {
       // Restore original method
-      MessageHistory.load = originalLoad;
+      SessionManager.load = originalLoad;
     }
   });
 });

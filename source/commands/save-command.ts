@@ -4,7 +4,7 @@ import { Spacer, Text } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const saveCommand = ({
-  messageHistory,
+  sessionManager: messageHistory,
 }: CommandOptions): ReplCommand => {
   return {
     command: "/save",

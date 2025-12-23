@@ -43,7 +43,7 @@ export function sessionCommand({
   config,
   tokenCounter,
   modelManager,
-  messageHistory,
+  sessionManager: messageHistory,
   workspace,
   tokenTracker,
 }: CommandOptions): ReplCommand {

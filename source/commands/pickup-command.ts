@@ -1,7 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { basename } from "node:path";
 import { logger } from "../logger.ts";
-import { createUserMessage } from "../messages.ts";
+import { createUserMessage } from "../sessions/manager.ts";
 import style from "../terminal/style.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
 import { Text } from "../tui/index.ts";
@@ -45,7 +45,7 @@ export const pickupCommand = (options: CommandOptions): ReplCommand => {
         editor,
       }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
-      const { messageHistory, modelManager } = options;
+      const { sessionManager: messageHistory, modelManager } = options;
 
       // Validate that filename is provided
       const filename = args.join(" ").trim();

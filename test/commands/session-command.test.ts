@@ -43,7 +43,7 @@ describe("sessionCommand", () => {
     const options = createMockCommandOptions({
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
-      messageHistory: mockMessageHistory,
+      sessionManager: mockMessageHistory,
       tokenTracker: mockTokenTracker,
       config: mockConfig,
       promptManager: mockPromptManager,
@@ -63,7 +63,7 @@ describe("sessionCommand", () => {
     const options = createMockCommandOptions({
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
-      messageHistory: mockMessageHistory,
+      sessionManager: mockMessageHistory,
       tokenTracker: mockTokenTracker,
       config: mockConfig,
       promptManager: mockPromptManager,
@@ -80,7 +80,7 @@ describe("sessionCommand", () => {
     const options = createMockCommandOptions({
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
-      messageHistory: mockMessageHistory,
+      sessionManager: mockMessageHistory,
       tokenTracker: mockTokenTracker,
       config: mockConfig,
       promptManager: mockPromptManager,
@@ -104,7 +104,7 @@ describe("sessionCommand", () => {
     const options = createMockCommandOptions({
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
-      messageHistory: mockMessageHistory,
+      sessionManager: mockMessageHistory,
       tokenTracker: mockTokenTracker,
       config: mockConfig,
       promptManager: mockPromptManager,

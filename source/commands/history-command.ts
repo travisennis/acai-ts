@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import type { ModelMessage, TextPart } from "ai";
 import { generateText } from "ai";
-import { MessageHistory } from "../messages.ts";
+import { SessionManager } from "../sessions/manager.ts";
 import { getTerminalSize, setTerminalTitle } from "../terminal/formatting.ts";
 import style from "../terminal/style.ts";
 import type { Editor, TUI } from "../tui/index.ts";
@@ -178,7 +178,7 @@ Keep the summary focused and informative, around 3-5 paragraphs. Use plain text 
 }
 
 export const historyCommand = ({
-  messageHistory,
+  sessionManager: messageHistory,
   config,
   modelManager,
   tokenTracker,
@@ -206,7 +206,7 @@ export const historyCommand = ({
       const messageHistoryDir = await appDir.ensurePath("message-history");
 
       // Load all histories (use a large number to get all)
-      const histories = await MessageHistory.load(messageHistoryDir, 1000);
+      const histories = await SessionManager.load(messageHistoryDir, 1000);
 
       if (histories.length === 0) {
         container.addChild(

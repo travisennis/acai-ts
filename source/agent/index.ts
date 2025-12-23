@@ -6,10 +6,10 @@ import {
 } from "ai";
 import { config } from "../config.ts";
 import { logger } from "../logger.ts";
-import type { MessageHistory } from "../messages.ts";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { ModelMetadata } from "../models/providers.ts";
+import type { SessionManager } from "../sessions/manager.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import type { CompleteToolNames, CompleteToolSet } from "../tools/index.ts";
 import { isToolMessage } from "../tools/types.ts";
@@ -18,7 +18,7 @@ import { isAsyncIterable } from "../utils/iterables.ts";
 type AgentOptions = {
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
-  messageHistory: MessageHistory;
+  sessionManager: SessionManager;
   maxIterations?: number;
   maxRetries?: number;
   toolCallRepair?: ToolCallRepairFunction<CompleteToolSet>;
@@ -152,7 +152,7 @@ export class Agent {
   async *run(args: RunOptions): AsyncGenerator<AgentEvent> {
     const {
       modelManager,
-      messageHistory,
+      sessionManager: messageHistory,
       tokenTracker,
       maxIterations = (await config.getConfig()).loop.maxIterations,
       maxRetries = 2,

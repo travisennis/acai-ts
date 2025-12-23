@@ -49,7 +49,7 @@ describe("exit command", () => {
     const mockMessageHistory = createMockMessageHistory();
 
     const options: ExitCommandOptions = {
-      messageHistory: mockMessageHistory,
+      sessionManager: mockMessageHistory,
       baseDir: testBaseDir,
     };
 
@@ -92,7 +92,7 @@ describe("exit command", () => {
     const mockMessageHistory = createMockMessageHistory([]);
 
     const options: ExitCommandOptions = {
-      messageHistory: mockMessageHistory,
+      sessionManager: mockMessageHistory,
       baseDir: testBaseDir,
     };
 
@@ -141,7 +141,7 @@ describe("exit command", () => {
 
     try {
       const options: ExitCommandOptions = {
-        messageHistory: mockMessageHistory,
+        sessionManager: mockMessageHistory,
         baseDir: testBaseDir,
       };
 

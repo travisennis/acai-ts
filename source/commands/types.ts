@@ -1,8 +1,8 @@
 import type { ConfigManager } from "../config.ts";
 import type { WorkspaceContext } from "../index.ts";
-import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManagerApi } from "../prompts/manager.ts";
+import type { SessionManager } from "../sessions/manager.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
@@ -26,7 +26,7 @@ export interface ReplCommand {
 export interface CommandOptions {
   promptManager: PromptManagerApi;
   modelManager: ModelManager;
-  messageHistory: MessageHistory;
+  sessionManager: SessionManager;
   tokenTracker: TokenTracker;
   config: ConfigManager;
   tokenCounter: TokenCounter;

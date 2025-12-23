@@ -9,11 +9,11 @@ import {
 import type z from "zod";
 import type { WorkspaceContext } from "./index.ts";
 import { logger } from "./logger.ts";
-import type { MessageHistory } from "./messages.ts";
 import { AiConfig } from "./models/ai-config.ts";
 import type { ModelManager } from "./models/manager.js";
 import type { PromptManager } from "./prompts/manager.ts";
 import { systemPrompt } from "./prompts.ts";
+import type { SessionManager } from "./sessions/manager.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
 import { BashTool } from "./tools/bash.ts";
@@ -25,7 +25,7 @@ import { type CompleteCliToolSet, initCliTools } from "./tools/index.ts";
 import { ReadFileTool } from "./tools/read-file.ts";
 
 interface CliOptions {
-  messageHistory: MessageHistory;
+  messageHistory: SessionManager;
   promptManager: PromptManager;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;

@@ -3,10 +3,10 @@ import type { CommandManager } from "./commands/manager.ts";
 import type { WorkspaceContext } from "./index.ts";
 import { logger } from "./logger.ts";
 import { PromptError, processPrompt } from "./mentions.ts";
-import type { MessageHistory } from "./messages.ts";
 import type { ModelManager } from "./models/manager.ts";
 import type { PromptManager } from "./prompts/manager.ts";
 import { getProjectStatusLine } from "./repl/project-status-line.ts";
+import type { SessionManager } from "./sessions/manager.ts";
 import style from "./terminal/style.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
@@ -30,7 +30,7 @@ import {
 
 interface ReplOptions {
   agent: Agent;
-  messageHistory: MessageHistory;
+  messageHistory: SessionManager;
   promptManager: PromptManager;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;

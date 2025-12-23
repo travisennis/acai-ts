@@ -20,9 +20,9 @@ import {
   type ToolModelMessage,
   type UserModelMessage,
 } from "ai";
-import { logger } from "./logger.ts";
-import type { ModelManager } from "./models/manager.ts";
-import type { TokenTracker } from "./tokens/tracker.ts";
+import { logger } from "../logger.ts";
+import type { ModelManager } from "../models/manager.ts";
+import type { TokenTracker } from "../tokens/tracker.ts";
 
 // Define a type for the items that can be passed in the first argument
 export type UserMessageContentItem = string | ImagePart;
@@ -96,7 +96,7 @@ interface MessageHistoryEvents {
   "clear-history": [];
 }
 
-export class MessageHistory extends EventEmitter<MessageHistoryEvents> {
+export class SessionManager extends EventEmitter<MessageHistoryEvents> {
   private history: ModelMessage[];
   private sessionId: string;
   private modelId: string;

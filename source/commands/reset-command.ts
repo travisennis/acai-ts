@@ -4,7 +4,7 @@ import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const resetCommand = ({
   modelManager,
-  messageHistory,
+  sessionManager: messageHistory,
 }: CommandOptions): ReplCommand => {
   return {
     command: "/reset",

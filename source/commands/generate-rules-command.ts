@@ -2,9 +2,9 @@ import { generateText, type ModelMessage } from "ai";
 import { type ConfigManager, config } from "../config.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { logger } from "../logger.ts"; // Import logger
-import { createUserMessage } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
 import { systemPrompt } from "../prompts.ts";
+import { createUserMessage } from "../sessions/manager.ts";
 import { getTerminalSize } from "../terminal/formatting.ts";
 import style from "../terminal/style.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
@@ -20,7 +20,7 @@ import {
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export const generateRulesCommand = ({
-  messageHistory,
+  sessionManager: messageHistory,
   modelManager,
   tokenTracker,
   config, // This is the config module from CommandOptions

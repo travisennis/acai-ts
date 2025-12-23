@@ -6,7 +6,7 @@ import { clearDirectory } from "../utils/filesystem/operations.ts";
 import type { ReplCommand } from "./types.ts";
 
 export interface ExitCommandOptions {
-  messageHistory: {
+  sessionManager: {
     isEmpty: () => boolean;
     save: () => Promise<void>;
   };
@@ -14,7 +14,7 @@ export interface ExitCommandOptions {
 }
 
 export const exitCommand = ({
-  messageHistory,
+  sessionManager,
   baseDir,
 }: ExitCommandOptions): ReplCommand => {
   return {
@@ -30,8 +30,8 @@ export const exitCommand = ({
         editor,
       }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
-      if (!messageHistory.isEmpty()) {
-        await messageHistory.save();
+      if (!sessionManager.isEmpty()) {
+        await sessionManager.save();
       }
 
       // Clear the .tmp directory on exit

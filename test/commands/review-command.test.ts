@@ -21,7 +21,7 @@ describe("reviewCommand", () => {
       getModel: () => "",
       listModels: () => [],
     } as any,
-    messageHistory: {
+    sessionManager: {
       addMessage: () => {},
       getMessages: () => [],
       clear: () => {},

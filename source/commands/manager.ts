@@ -1,8 +1,8 @@
 import type { ConfigManager } from "../config.ts";
 import type { WorkspaceContext } from "../index.ts";
-import type { MessageHistory } from "../messages.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManagerApi } from "../prompts/manager.ts";
+import type { SessionManager } from "../sessions/manager.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import type {
@@ -42,7 +42,7 @@ export class CommandManager {
   private commands: Map<string, ReplCommand>;
   private promptManager: PromptManagerApi;
   private modelManager: ModelManager;
-  private messageHistory: MessageHistory;
+  private sessionManager: SessionManager;
   private tokenTracker: TokenTracker;
   private config: ConfigManager;
   private tokenCounter: TokenCounter;
@@ -53,7 +53,7 @@ export class CommandManager {
   constructor({
     promptManager,
     modelManager,
-    messageHistory,
+    sessionManager: messageHistory,
     tokenTracker,
     config,
     tokenCounter,
@@ -63,7 +63,7 @@ export class CommandManager {
     this.commands = new Map();
     this.promptManager = promptManager;
     this.modelManager = modelManager;
-    this.messageHistory = messageHistory;
+    this.sessionManager = messageHistory;
     this.tokenTracker = tokenTracker;
     this.config = config;
     this.tokenCounter = tokenCounter;
@@ -80,7 +80,7 @@ export class CommandManager {
     const options: CommandOptions = {
       promptManager: this.promptManager,
       modelManager: this.modelManager,
-      messageHistory: this.messageHistory,
+      sessionManager: this.sessionManager,
       tokenTracker: this.tokenTracker,
       config: this.config,
       tokenCounter: this.tokenCounter,

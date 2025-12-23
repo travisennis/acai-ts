@@ -172,7 +172,12 @@ Make sure to include both the slug and readable summary in your response as desc
 };
 
 async function createHandoffDocument(
-  { modelManager, tokenTracker, workspace, messageHistory }: CommandOptions,
+  {
+    modelManager,
+    tokenTracker,
+    workspace,
+    sessionManager: messageHistory,
+  }: CommandOptions,
   purpose: string,
 ): Promise<string> {
   const app = "handoff-agent";

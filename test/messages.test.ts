@@ -1,19 +1,19 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
-import { MessageHistory } from "../source/messages.ts";
 import { ModelManager } from "../source/models/manager.ts";
+import { SessionManager } from "../source/sessions/manager.ts";
 import { TokenTracker } from "../source/tokens/tracker.ts";
 
-describe("MessageHistory", () => {
+describe("SessionManager", () => {
   describe("context window functionality", () => {
-    let messageHistory: MessageHistory;
+    let messageHistory: SessionManager;
     let modelManager: ModelManager;
     let tokenTracker: TokenTracker;
 
     beforeEach(() => {
       modelManager = new ModelManager({ stateDir: "/tmp/test-state" });
       tokenTracker = new TokenTracker();
-      messageHistory = new MessageHistory({
+      messageHistory = new SessionManager({
         stateDir: "/tmp/test-state",
         modelManager,
         tokenTracker,
