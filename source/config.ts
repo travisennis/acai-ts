@@ -6,7 +6,6 @@ import { z } from "zod";
 import { jsonParser } from "./parsing.ts";
 
 export const defaultConfig = {
-  systemPromptType: "full",
   loop: {
     maxIterations: 200,
   },
@@ -28,10 +27,6 @@ export const defaultConfig = {
 
 // Type definitions
 const ProjectConfigSchema = z.object({
-  systemPromptType: z
-    .enum(["full", "minimal", "cli"])
-    .optional()
-    .default(defaultConfig.systemPromptType),
   logs: z
     .object({
       path: z.string(),
@@ -103,12 +98,14 @@ export class DirectoryProvider {
   }
 
   // Check if directory exists without creating it
-  exists(subdir?: string): Promise<boolean> {
+  async exists(subdir?: string): Promise<boolean> {
     const dirPath = this.getPath(subdir);
-    return fs
-      .access(dirPath)
-      .then(() => true)
-      .catch(() => false);
+    try {
+      await fs.access(dirPath);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   // Synchronous version of exists check

@@ -167,7 +167,6 @@ const system = async (
   const projectConfig = await configManager.getConfig();
 
   const sys = await systemPrompt({
-    type: projectConfig.systemPromptType,
     activeTools: projectConfig.tools.activeTools as
       | CompleteToolNames[]
       | undefined,

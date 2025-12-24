@@ -80,7 +80,6 @@ export class Cli {
     messageHistory.appendUserMessage(userMsg);
 
     const finalSystemPrompt = await systemPrompt({
-      type: "cli",
       activeTools,
       allowedDirs: this.options.workspace.allowedDirs,
       skillsEnabled: this.skillsEnabled,

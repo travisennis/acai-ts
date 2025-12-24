@@ -64,7 +64,6 @@ export function sessionCommand({
 
       // 1) System prompt tokens
       const sys = await systemPrompt({
-        type: projectConfig.systemPromptType,
         activeTools: projectConfig.tools.activeTools as
           | CompleteToolNames[]
           | undefined,

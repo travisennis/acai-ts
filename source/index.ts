@@ -457,7 +457,6 @@ async function runReplMode(state: AppState): Promise<void> {
     try {
       const results = agent.run({
         systemPrompt: await systemPrompt({
-          type: projectConfig.systemPromptType,
           activeTools,
           allowedDirs: workspace.allowedDirs,
           skillsEnabled,
