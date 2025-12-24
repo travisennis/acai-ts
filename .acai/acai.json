@@ -1,10 +1,10 @@
 {
-  "systemPromptType": "full",
   "logs": {
     "path": "/Users/travisennis/.acai/logs/current.log"
   },
   "tools": {
     "activeTools": [
+      "Agent",
       "Bash",
       "Batch",
       "Think",
