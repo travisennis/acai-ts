@@ -13,14 +13,13 @@ import { ReadFileTool } from "./read-file.ts";
 import type { ToolCallOptions, ToolResult } from "./types.ts";
 
 export const AgentTool = {
-  name: "agent" as const,
+  name: "Agent" as const,
 };
 
 const TOOLS = [
   GrepTool.name,
   GlobTool.name,
   ReadFileTool.name,
-
   DirectoryTreeTool.name,
 ] as const;
 
