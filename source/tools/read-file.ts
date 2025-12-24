@@ -18,9 +18,12 @@ export const ReadFileTool = {
 
 const inputSchema = z.object({
   path: z.string().describe("Absolute path to file to read"),
-  encoding: fileEncodingSchema.describe(
-    'Encoding format for reading the file. Use "utf-8" as default for text files',
-  ),
+  encoding: fileEncodingSchema
+    .nullable()
+    .default("utf-8")
+    .describe(
+      'Encoding format for reading the file. Use "utf-8" as default for text files',
+    ),
   startLine: z
     .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
     .describe(
@@ -82,7 +85,9 @@ export const createReadFileTool = async ({
           throw new Error("File reading aborted before file read");
         }
 
-        let file = await fs.readFile(filePath, { encoding });
+        let file = await fs.readFile(filePath, {
+          encoding: encoding ?? "utf-8",
+        });
 
         // Apply line-based selection if requested
         if (isNumber(startLine) || isNumber(lineCount)) {
@@ -116,7 +121,7 @@ export const createReadFileTool = async ({
             isNumber(startLine) || isNumber(lineCount)
               ? "Consider adjusting startLine/lineCount or using grepFiles"
               : "Use startLine and lineCount parameters to read specific portions, or use grepFiles for targeted access",
-            encoding,
+            encoding ?? "utf-8",
           );
 
           // Calculate line count for the returned content
