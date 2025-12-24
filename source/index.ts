@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { mkdirSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { text } from "node:stream/consumers";
@@ -42,10 +43,10 @@ export function createWorkspaceContext(
   addDirArgs: string[] = [],
 ): WorkspaceContext {
   const primaryDir = process.cwd();
+  mkdirSync("/tmp/acai", { recursive: true });
   const allowedDirs = [
     primaryDir,
-    "/tmp",
-    config.getAccessibleLogDir(),
+    "/tmp/acai",
     path.join(os.homedir(), ".acai"),
     ...addDirArgs,
   ];

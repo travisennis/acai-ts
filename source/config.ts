@@ -124,11 +124,6 @@ export class ConfigManager {
     this.app = new DirectoryProvider(path.join(homedir(), ".acai"));
   }
 
-  // Get the log directory that's accessible via bash tool
-  getAccessibleLogDir(): string {
-    return this.app.getPath("logs");
-  }
-
   private async _readConfig(
     configPath: string,
   ): Promise<Partial<ProjectConfig>> {
