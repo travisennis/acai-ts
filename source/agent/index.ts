@@ -152,7 +152,7 @@ export class Agent {
   async *run(args: RunOptions): AsyncGenerator<AgentEvent> {
     const {
       modelManager,
-      sessionManager: messageHistory,
+      sessionManager,
       tokenTracker,
       maxIterations = (await config.getConfig()).loop.maxIterations,
       maxRetries = 2,
@@ -219,7 +219,7 @@ export class Agent {
           model: langModel,
           maxOutputTokens: aiConfig.maxOutputTokens(),
           system: systemPrompt,
-          messages: messageHistory.get(),
+          messages: sessionManager.get(),
           temperature: aiConfig.temperature(),
           topP: aiConfig.topP(),
           maxRetries: 2,
@@ -232,7 +232,7 @@ export class Agent {
           onAbort: ({ steps }) => {
             logger.debug(`Aborting and processing ${steps.length} steps`);
             steps.forEach((step) => {
-              messageHistory.appendResponseMessages(step.response.messages);
+              sessionManager.appendResponseMessages(step.response.messages);
             });
           },
         });
@@ -318,7 +318,7 @@ export class Agent {
                 try {
                   const output = await toolExec(call.input, {
                     toolCallId: call.toolCallId,
-                    messages: messageHistory.get(),
+                    messages: sessionManager.get(),
                     abortSignal,
                   });
                   if (isAsyncIterable(output)) {
@@ -442,7 +442,7 @@ export class Agent {
         const response = await result.response;
         const responseMessages = response.messages;
 
-        messageHistory.appendResponseMessages(responseMessages);
+        sessionManager.appendResponseMessages(responseMessages);
 
         const stepUsage = await result.usage;
 
@@ -451,7 +451,7 @@ export class Agent {
         this._state.usage.totalTokens = stepUsage.totalTokens ?? 0;
         this._state.usage.cachedInputTokens = stepUsage.cachedInputTokens ?? 0;
         this._state.usage.reasoningTokens = stepUsage.reasoningTokens ?? 0;
-        messageHistory.setContextWindow(stepUsage.totalTokens ?? 0);
+        sessionManager.setContextWindow(stepUsage.totalTokens ?? 0);
 
         this._state.totalUsage.inputTokens += stepUsage.inputTokens ?? 0;
         this._state.totalUsage.outputTokens += stepUsage.outputTokens ?? 0;
@@ -472,7 +472,7 @@ export class Agent {
           break;
         }
 
-        messageHistory.appendToolMessages(toolMessages);
+        sessionManager.appendToolMessages(toolMessages);
 
         // Consume the rest of the team if necessary
         // await result.consumeStream();
@@ -538,7 +538,7 @@ export class Agent {
   resetState() {
     const {
       modelManager,
-      // messageHistory,
+      // sessionManager,
     } = this.opts;
 
     this._state = {
