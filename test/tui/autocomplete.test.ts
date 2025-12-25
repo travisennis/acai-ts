@@ -16,7 +16,10 @@ describe("CombinedAutocompleteProvider", () => {
   ];
 
   beforeEach(() => {
-    provider = new CombinedAutocompleteProvider(testCommands);
+    provider = new CombinedAutocompleteProvider(testCommands, [
+      process.cwd(),
+      "/Users/trtravisennis/.acai",
+    ]);
   });
 
   describe("slash command autocomplete", () => {
@@ -128,7 +131,7 @@ describe("CombinedAutocompleteProvider", () => {
       );
     });
 
-    it("shouldn't trigger for paths starting with ~/", async () => {
+    it("shouldn't trigger for paths starting with ~/ (not allowed directory)", async () => {
       const result = await provider.getSuggestions(["~/"], 0, 2);
       assert.strictEqual(result, null);
     });
@@ -136,6 +139,16 @@ describe("CombinedAutocompleteProvider", () => {
     it("should trigger for paths ending with /", async () => {
       // Use a path that should exist (current directory)
       const result = await provider.getSuggestions(["./source/"], 0, 9);
+      assert.ok(result);
+    });
+
+    it("should trigger for paths starting with /", async () => {
+      const result = await provider.getSuggestions(
+        ["read /Users/travisennis/Github/acai-ts/source"],
+        0,
+        45,
+      );
+      console.dir(result);
       assert.ok(result);
     });
   });

@@ -35,25 +35,30 @@ class DirectoryCache {
 const directoryCache = new DirectoryCache();
 
 // Helper function to get directory entries with caching and timeout
-async function getDirectoryEntries(dir: string): Promise<Dirent[]> {
-  const cached = await directoryCache.get(dir);
-  if (cached) {
-    return cached;
-  }
+async function getDirectoryEntries(dirs: string[]): Promise<Dirent[]> {
+  const results: Dirent[] = [];
+  for (const dir of dirs) {
+    const cached = await directoryCache.get(dir);
+    if (cached) {
+      results.push(...cached);
+      continue;
+    }
 
-  try {
-    // Add timeout to prevent hanging on slow file systems
-    const entries = await Promise.race([
-      readdir(dir, { withFileTypes: true }),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Directory read timeout")), 2000),
-      ),
-    ]);
-    directoryCache.set(dir, entries);
-    return entries;
-  } catch (_e) {
-    return [];
+    try {
+      // Add timeout to prevent hanging on slow file systems
+      const entries = await Promise.race([
+        readdir(dir, { withFileTypes: true }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Directory read timeout")), 2000),
+        ),
+      ]);
+      directoryCache.set(dir, entries);
+      results.push(...entries);
+    } catch (_e) {
+      // ignore
+    }
   }
+  return results;
 }
 
 function isAttachableFile(filePath: string): boolean {
@@ -335,7 +340,7 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
     // - Optional ./ or ../ or ~/ prefix
     // - The path itself (must contain at least one / or start with ./ or ../ or ~/)
     const matches = text.match(
-      /(?:^|\s)((?:\.{1,2}\/|~\/)?(?:[^\s]*\/)*[^\s/]*)$/,
+      /(?:^|\s)((?:\/{1,2}|\.{1,2}\/|~\/)?(?:[^\s]*\/)*[^\s/]*)$/,
     );
     if (!matches) {
       // If forced extraction and no matches, return empty string to trigger from current dir
@@ -424,7 +429,7 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
     prefix: string,
   ): Promise<AutocompleteItem[]> {
     try {
-      let searchDir: string;
+      let searchDirs: string[];
       let searchPrefix: string;
       let expandedPrefix = prefix;
       let isAtPrefix = false;
@@ -435,56 +440,67 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
         expandedPrefix = prefix.slice(1); // Remove the @
       }
 
-      // Remove home directory expansion - not allowed
-      if (expandedPrefix.startsWith("~")) {
-        // Home directory access not allowed - return empty suggestions
-        return [];
-      }
-
-      // Check if we're trying to access root - not allowed
-      if (expandedPrefix.startsWith("/")) {
-        // Root access not allowed - return empty suggestions
-        return [];
-      }
-
       if (
         expandedPrefix === "" ||
         expandedPrefix === "./" ||
         expandedPrefix === "../" ||
         prefix === "@"
       ) {
-        // Start from primary directory
-        searchDir = this.allowedDirs[0];
+        searchDirs = this.allowedDirs;
         searchPrefix = "";
-      } else if (expandedPrefix.endsWith("/")) {
-        // If prefix ends with /, show contents of that directory
-        // Try to find which allowed directory this path belongs to
-        const resolvedPath = join(this.allowedDirs[0], expandedPrefix);
+      } else if (isAbsolute(expandedPrefix)) {
+        // Handle absolute paths
         const isWithinAllowed =
-          await this.isPathWithinAllowedDirs(resolvedPath);
+          await this.isPathWithinAllowedDirs(expandedPrefix);
         if (!isWithinAllowed) {
           return [];
         }
-        searchDir = resolvedPath;
+        if (expandedPrefix.endsWith("/")) {
+          searchDirs = [expandedPrefix];
+          searchPrefix = "";
+        } else {
+          searchDirs = [dirname(expandedPrefix)];
+          searchPrefix = basename(expandedPrefix);
+        }
+      } else if (expandedPrefix.endsWith("/")) {
+        // If prefix ends with /, show contents of that directory
+        // Try to find which allowed directory this path belongs to
+        const allowedDirs: string[] = [];
+        for (const allowedDir of this.allowedDirs) {
+          const resolvedPath = join(allowedDir, expandedPrefix);
+          const isWithinAllowed =
+            await this.isPathWithinAllowedDirs(resolvedPath);
+          if (isWithinAllowed) {
+            allowedDirs.push(resolvedPath);
+          }
+        }
+        if (allowedDirs.length === 0) {
+          return [];
+        }
+        searchDirs = allowedDirs;
         searchPrefix = "";
       } else {
         // Split into directory and file prefix
         const dir = dirname(expandedPrefix);
         const file = basename(expandedPrefix);
-        const resolvedPath = join(this.allowedDirs[0], dir);
-
-        // Check if the resolved path is within allowed directories
-        const isWithinAllowed =
-          await this.isPathWithinAllowedDirs(resolvedPath);
-        if (!isWithinAllowed) {
+        const allowedDirs: string[] = [];
+        for (const allowedDir of this.allowedDirs) {
+          const resolvedPath = join(allowedDir, dir);
+          const isWithinAllowed =
+            await this.isPathWithinAllowedDirs(resolvedPath);
+          if (isWithinAllowed) {
+            allowedDirs.push(resolvedPath);
+          }
+        }
+        if (allowedDirs.length === 0) {
           return [];
         }
 
-        searchDir = resolvedPath;
+        searchDirs = allowedDirs;
         searchPrefix = file;
       }
 
-      const entries = await getDirectoryEntries(searchDir);
+      const entries = await getDirectoryEntries(searchDirs);
       const suggestions: AutocompleteItem[] = [];
 
       for (const entry of entries) {
@@ -493,7 +509,7 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
           continue;
         }
 
-        const fullPath = join(searchDir, entryName);
+        const fullPath = join(entry.parentPath, entryName);
         let isDirectory = false;
         try {
           // Add timeout to prevent hanging on slow file systems
@@ -519,31 +535,33 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
           continue;
         }
 
-        let relativePath: string;
+        // let relativePath: string;
 
         // Handle @ prefix path construction
-        if (isAtPrefix) {
-          const pathWithoutAt = expandedPrefix;
-          if (pathWithoutAt.endsWith("/")) {
-            relativePath = `@${pathWithoutAt}${entryName}`;
-          } else if (pathWithoutAt.includes("/")) {
-            relativePath = `@${join(dirname(pathWithoutAt), entryName)}`;
-          } else {
-            relativePath = `@${entryName}`;
-          }
-        } else if (prefix.endsWith("/")) {
-          // If prefix ends with /, append entry to the prefix
-          relativePath = prefix + entryName;
-        } else if (prefix.includes("/")) {
-          relativePath = join(dirname(prefix), entryName);
-        } else {
-          relativePath = entryName;
-        }
+        // if (isAtPrefix) {
+        //   const pathWithoutAt = expandedPrefix;
+        //   if (pathWithoutAt.endsWith("/")) {
+        //     relativePath = `@${pathWithoutAt}${entryName}`;
+        //   } else if (pathWithoutAt.includes("/")) {
+        //     relativePath = `@${join(dirname(pathWithoutAt), entryName)}`;
+        //   } else {
+        //     relativePath = `@${entryName}`;
+        //   }
+        // } else if (prefix.endsWith("/")) {
+        //   // If prefix ends with /, append entry to the prefix
+        //   relativePath = prefix + entryName;
+        // } else if (prefix.includes("/")) {
+        //   relativePath = join(dirname(prefix), entryName);
+        // } else {
+        //   relativePath = entryName;
+        // }
 
         suggestions.push({
-          value: isDirectory ? `${relativePath}/` : relativePath,
+          value: isDirectory ? `${fullPath}/` : fullPath,
           label: entryName,
-          description: isDirectory ? "directory" : "file",
+          description: isDirectory
+            ? `directory ${entry.parentPath}`
+            : `file ${entry.parentPath}`,
         });
       }
 
