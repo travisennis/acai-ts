@@ -1,8 +1,8 @@
 import style from "../../terminal/style.ts";
+import type { CombinedProvider as CombinedAutocompleteProvider } from "../autocomplete/combined-provider.ts";
 import type {
   AutocompleteItem,
   AutocompleteProvider,
-  CombinedAutocompleteProvider,
 } from "../autocomplete.ts";
 import type { Component } from "../tui.ts";
 import { visibleWidth } from "../utils.ts";
@@ -1379,13 +1379,13 @@ export class Editor implements Component {
     const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
 
     // If we're no longer in the context that triggered autocomplete, cancel it
-    // For slash commands, check if we're still in slash command context
-    // For file paths, check if we're still in the same path context
-    if (textBeforeCursor.startsWith("/")) {
-      // For slash commands, we should continue autocomplete as long as we're in slash command context
+    // For slash commands and @ file attachments, allow progressive typing
+    // For other file paths, check if we're still in the same path context
+    if (textBeforeCursor.startsWith("/") || textBeforeCursor.includes("@")) {
+      // For slash commands and @ file attachments, continue autocomplete as long as we're in the right context
       // Don't cancel based on prefix matching for progressive typing
     } else {
-      // For file paths, check if we're still in the same path context
+      // For other file paths, check if we're still in the same path context
       if (!textBeforeCursor.endsWith(this.autocompletePrefix)) {
         this.cancelAutocomplete();
         return;

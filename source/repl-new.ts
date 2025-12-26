@@ -17,7 +17,6 @@ import { ThinkingBlockComponent } from "./tui/components/thinking-block.ts";
 import { ToolExecutionComponent } from "./tui/components/tool-execution.ts";
 import { Welcome } from "./tui/components/welcome.ts";
 import {
-  CombinedAutocompleteProvider,
   Container,
   Editor,
   Loader,
@@ -92,7 +91,8 @@ export class NewRepl {
       return;
     }
     // Setup autocomplete for file paths and slash commands
-    const autocompleteProvider = new CombinedAutocompleteProvider(
+    const { createDefaultProvider } = await import("./tui/autocomplete.ts");
+    const autocompleteProvider = createDefaultProvider(
       [...(await this.options.commands.getCompletions())],
       this.options.workspace.allowedDirs,
     );

@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import {
-  CombinedAutocompleteProvider,
+  type CombinedProvider,
+  createDefaultProvider,
+  extractPathPrefix,
   type SlashCommand,
 } from "../../source/tui/autocomplete.ts";
 
 describe("CombinedAutocompleteProvider", () => {
-  let provider: CombinedAutocompleteProvider;
+  let provider: CombinedProvider;
 
   const testCommands: SlashCommand[] = [
     { name: "help", description: "Show help" },
@@ -16,7 +18,7 @@ describe("CombinedAutocompleteProvider", () => {
   ];
 
   beforeEach(() => {
-    provider = new CombinedAutocompleteProvider(testCommands, [
+    provider = createDefaultProvider(testCommands, [
       process.cwd(),
       "/Users/trtravisennis/.acai",
     ]);
@@ -29,7 +31,7 @@ describe("CombinedAutocompleteProvider", () => {
       assert.strictEqual(result.prefix, "");
       assert.strictEqual(result.items.length, 4);
       assert.deepStrictEqual(
-        result.items.map((i) => i.value).sort(),
+        result.items.map((item) => item.value).sort(),
         ["help", "history", "add-directory", "hello"].sort(),
       );
     });
@@ -40,7 +42,7 @@ describe("CombinedAutocompleteProvider", () => {
       assert.strictEqual(result.prefix, "h");
       assert.strictEqual(result.items.length, 3);
       assert.deepStrictEqual(
-        result.items.map((i) => i.value).sort(),
+        result.items.map((item) => item.value).sort(),
         ["help", "history", "hello"].sort(),
       );
     });
@@ -59,7 +61,7 @@ describe("CombinedAutocompleteProvider", () => {
       assert.strictEqual(result.prefix, "H");
       assert.strictEqual(result.items.length, 3);
       assert.deepStrictEqual(
-        result.items.map((i) => i.value).sort(),
+        result.items.map((item) => item.value).sort(),
         ["help", "history", "hello"].sort(),
       );
     });
@@ -79,9 +81,10 @@ describe("CombinedAutocompleteProvider", () => {
         ],
       };
 
-      const providerWithArgs = new CombinedAutocompleteProvider([
-        commandWithArgs,
-      ]);
+      const providerWithArgs = createDefaultProvider(
+        [commandWithArgs],
+        ["/tmp"],
+      );
       const result = await providerWithArgs.getSuggestions(["/test a"], 0, 7);
       assert.ok(result);
       assert.strictEqual(result.prefix, "a");
@@ -95,7 +98,7 @@ describe("CombinedAutocompleteProvider", () => {
       assert.ok(result);
       assert.strictEqual(result.prefix, "@");
       assert.equal(
-        !!result.items.find((value) => value.label === "source"),
+        !!result.items.find((item) => item.label === "source"),
         true,
       );
       // Should return file suggestions (even if empty)
@@ -106,7 +109,7 @@ describe("CombinedAutocompleteProvider", () => {
       assert.ok(result);
       assert.strictEqual(result.prefix, "@source");
       assert.equal(
-        !!result.items.find((value) => value.label === "source"),
+        !!result.items.find((item) => item.label === "source"),
         true,
       );
     });
@@ -115,10 +118,7 @@ describe("CombinedAutocompleteProvider", () => {
       const result = await provider.getSuggestions(["@source/to"], 0, 10);
       assert.ok(result);
       assert.strictEqual(result.prefix, "@source/to");
-      assert.equal(
-        !!result.items.find((value) => value.label === "tools"),
-        true,
-      );
+      assert.equal(!!result.items.find((item) => item.label === "tools"), true);
     });
 
     it("should trigger for paths starting with ./", async () => {
@@ -126,7 +126,7 @@ describe("CombinedAutocompleteProvider", () => {
       assert.ok(result);
       assert.strictEqual(result.prefix, "./");
       assert.equal(
-        !!result.items.find((value) => value.label === "source"),
+        !!result.items.find((item) => item.label === "source"),
         true,
       );
     });
@@ -148,7 +148,6 @@ describe("CombinedAutocompleteProvider", () => {
         0,
         45,
       );
-      console.dir(result);
       assert.ok(result);
     });
   });
@@ -162,10 +161,7 @@ describe("CombinedAutocompleteProvider", () => {
       );
       assert.ok(result);
       assert.strictEqual(result.prefix, "@source/to");
-      assert.equal(
-        !!result.items.find((value) => value.label === "tools"),
-        true,
-      );
+      assert.equal(!!result.items.find((item) => item.label === "tools"), true);
     });
 
     it("should trigger for partial paths with Tab", async () => {
@@ -173,7 +169,7 @@ describe("CombinedAutocompleteProvider", () => {
       assert.ok(result);
       assert.strictEqual(result.prefix, "source");
       assert.equal(
-        !!result.items.find((value) => value.label === "source"),
+        !!result.items.find((item) => item.label === "source"),
         true,
       );
     });
@@ -254,44 +250,44 @@ describe("CombinedAutocompleteProvider", () => {
 
   describe("extractPathPrefix", () => {
     it("should extract @ prefixes", () => {
-      // @ts-expect-error - accessing private method for testing
-      const result = provider.extractPathPrefix("@source/to", false);
+      // Accessing private method for testing
+      const result = extractPathPrefix("@source/to", false);
       assert.strictEqual(result, "@source/to");
     });
 
     it("should extract @ prefixes with force extraction", () => {
-      // @ts-expect-error - accessing private method for testing
-      const result = provider.extractPathPrefix("@source/to", true);
+      // Accessing private method for testing
+      const result = extractPathPrefix("@source/to", true);
       assert.strictEqual(result, "@source/to");
     });
 
     it("should extract regular paths", () => {
-      // @ts-expect-error - accessing private method for testing
-      const result = provider.extractPathPrefix("source/to", false);
+      // Accessing private method for testing
+      const result = extractPathPrefix("source/to", false);
       assert.strictEqual(result, "source/to");
     });
 
     it("should extract paths with ./ prefix", () => {
-      // @ts-expect-error - accessing private method for testing
-      const result = provider.extractPathPrefix("./source", false);
+      // Accessing private method for testing
+      const result = extractPathPrefix("./source", false);
       assert.strictEqual(result, "./source");
     });
 
     it("should extract paths with ~/ prefix", () => {
-      // @ts-expect-error - accessing private method for testing
-      const result = provider.extractPathPrefix("~/Documents", false);
+      // Accessing private method for testing
+      const result = extractPathPrefix("~/Documents", false);
       assert.strictEqual(result, "~/Documents");
     });
 
     it("should return null for non-path text", () => {
-      // @ts-expect-error - accessing private method for testing
-      const result = provider.extractPathPrefix("some random text", false);
+      // Accessing private method for testing
+      const result = extractPathPrefix("some random text", false);
       assert.strictEqual(result, null);
     });
 
     it("should return the last word for force extraction with no clear path context", () => {
-      // @ts-expect-error - accessing private method for testing
-      const result = provider.extractPathPrefix("some text", true);
+      // Accessing private method for testing
+      const result = extractPathPrefix("some text", true);
       // When we have "some text" and press Tab, we should complete files starting with "text"
       assert.strictEqual(result, "text");
     });

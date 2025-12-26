@@ -1,10 +1,10 @@
 // Core TUI interfaces and classes
 
+export { CombinedProvider as CombinedAutocompleteProvider } from "./autocomplete/combined-provider.ts";
 // Autocomplete support
-export {
-  type AutocompleteItem,
-  CombinedAutocompleteProvider,
-  type SlashCommand,
+export type {
+  AutocompleteItem,
+  SlashCommand,
 } from "./autocomplete.ts";
 // Components
 export { BoxComponent } from "./components/box.ts";
