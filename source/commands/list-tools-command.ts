@@ -28,8 +28,6 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
         const tools = await initTools({
           tokenCounter: options.tokenCounter,
           workspace: options.workspace,
-          modelManager: options.modelManager,
-          tokenTracker: options.tokenTracker,
         });
         const agentTools = await initAgents({
           modelManager: options.modelManager,
