@@ -47,4 +47,6 @@ Acai-TS is an AI assistant CLI tool built with TypeScript. The project uses a mo
 - Run the full check command when you complete a task to make sure the code is correct.
 - The version of node acai supports can run typescript directly.
 - Never add comments explaining edits - only comments that explain how code works
-- Always run checks before committing
+- Always run `Full Check` before committing
+- Whenever adding or removing files from the project, always update ./ARCHITECTURE.md
+- Whenever adding or removing files from the project or adding or removing features from the project, check to see if ./README.md should be updated
