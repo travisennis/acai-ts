@@ -355,6 +355,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **tools/glob.ts**: Tool for glob-based file searching.
 - **tools/grep.ts**: Tool for searching files using ripgrep.
 - **tools/index.ts**: Registry and exports for all tools.
+- **tools/ls.ts**: Tool for listing directory contents.
 - **tools/llm-edit-fixer.ts**: Tool for fixing LLM-generated edits.
 - **tools/move-file.ts**: Tool to move or rename files.
 - **tools/read-file.ts**: Tool to read file contents.
@@ -432,6 +433,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **tools/grep-match-counting.test.ts**: Unit tests for grep match counting.
 - **tools/grep-max-results.test.ts**: Unit tests for grep max results.
 - **tools/grep.test.ts**: Unit tests for grep tool.
+- **tools/ls.test.ts**: Unit tests for LS tool.
 - **tools/llm-edit-fixer.test.ts**: Unit tests for LLM edit fixer.
 - **tui/autocomplete.test.ts**: Unit tests for TUI autocomplete.
 - **tui/components/modal-table.test.ts**: Unit tests for modal table component.

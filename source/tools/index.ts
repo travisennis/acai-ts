@@ -20,6 +20,7 @@ import { loadDynamicTools } from "./dynamic-tool-loader.ts";
 import { createEditFileTool, EditFileTool } from "./edit-file.ts";
 import { createGlobTool, GlobTool } from "./glob.ts";
 import { createGrepTool, GrepTool } from "./grep.ts";
+import { createLsTool, LsTool } from "./ls.ts";
 import { createReadFileTool, ReadFileTool } from "./read-file.ts";
 import { createSaveFileTool, SaveFileTool } from "./save-file.ts";
 import { createThinkTool, ThinkTool } from "./think.ts";
@@ -81,6 +82,12 @@ export async function initTools({
 
   const thinkTool = createThinkTool();
 
+  const lsTool = await createLsTool({
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
+    tokenCounter,
+  });
+
   const bashTool = await createBashTool({
     baseDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
@@ -105,6 +112,7 @@ export async function initTools({
     [DirectoryTreeTool.name]: tool(directoryTreeTool.toolDef),
     [CodeInterpreterTool.name]: tool(codeInterpreterTool.toolDef),
     [ThinkTool.name]: tool(thinkTool.toolDef),
+    [LsTool.name]: tool(lsTool.toolDef),
 
     // Add dynamic tools - they already have toolDef structure
     ...Object.fromEntries(
@@ -141,6 +149,7 @@ export async function initTools({
 
   // Add think tool
   executors.set(ThinkTool.name, thinkTool.execute);
+  executors.set(LsTool.name, lsTool.execute);
 
   // Add codeInterpreter tool
   executors.set(CodeInterpreterTool.name, codeInterpreterTool.execute);
@@ -214,6 +223,12 @@ export async function initCliTools({
 
   const thinkTool = createThinkTool();
 
+  const lsTool = await createLsTool({
+    workingDir: workspace.primaryDir,
+    allowedDirs: workspace.allowedDirs,
+    tokenCounter,
+  });
+
   const bashTool = await createBashTool({
     baseDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
@@ -238,6 +253,7 @@ export async function initCliTools({
   executors.set(DirectoryTreeTool.name, directoryTreeTool.execute);
   executors.set(CodeInterpreterTool.name, codeInterpreterTool.execute);
   executors.set(ThinkTool.name, thinkTool.execute);
+  executors.set(LsTool.name, lsTool.execute);
 
   for (const [name, toolObj] of Object.entries(dynamicTools)) {
     executors.set(name, toolObj.execute);
@@ -288,6 +304,10 @@ export async function initCliTools({
     [ThinkTool.name]: tool({
       ...thinkTool.toolDef,
       execute: thinkTool.execute,
+    }),
+    [LsTool.name]: tool({
+      ...lsTool.toolDef,
+      execute: lsTool.execute,
     }),
 
     [BatchTool.name]: tool({
