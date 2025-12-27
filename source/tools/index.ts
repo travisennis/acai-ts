@@ -11,7 +11,7 @@ import {
   CodeInterpreterTool,
   createCodeInterpreterTool,
 } from "./code-interpreter.ts";
-import { createDeleteFileTool, DeleteFileTool } from "./delete-file.ts";
+
 import {
   createDirectoryTreeTool,
   DirectoryTreeTool,
@@ -67,11 +67,6 @@ export async function initTools({
     tokenCounter,
   });
 
-  const deleteFileTool = await createDeleteFileTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
-
   const codeInterpreterTool = await createCodeInterpreterTool({
     tokenCounter,
   });
@@ -102,7 +97,6 @@ export async function initTools({
 
     [BashTool.name]: tool(bashTool.toolDef),
     [SaveFileTool.name]: tool(saveFileTool.toolDef),
-    [DeleteFileTool.name]: tool(deleteFileTool.toolDef),
 
     [ReadFileTool.name]: tool(readFileTool.toolDef),
 
@@ -132,9 +126,6 @@ export async function initTools({
 
   // Add saveFile tool
   executors.set(SaveFileTool.name, saveFileTool.execute);
-
-  // Add deleteFile tool
-  executors.set(DeleteFileTool.name, deleteFileTool.execute);
 
   // Add readFile tool
   executors.set(ReadFileTool.name, readFileTool.execute);
@@ -209,11 +200,6 @@ export async function initCliTools({
     tokenCounter,
   });
 
-  const deleteFileTool = await createDeleteFileTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
-
   const codeInterpreterTool = await createCodeInterpreterTool({
     tokenCounter,
   });
@@ -244,7 +230,6 @@ export async function initCliTools({
 
   executors.set(BashTool.name, bashTool.execute);
   executors.set(SaveFileTool.name, saveFileTool.execute);
-  executors.set(DeleteFileTool.name, deleteFileTool.execute);
 
   executors.set(ReadFileTool.name, readFileTool.execute);
 
@@ -277,10 +262,6 @@ export async function initCliTools({
     [SaveFileTool.name]: tool({
       ...saveFileTool.toolDef,
       execute: saveFileTool.execute,
-    }),
-    [DeleteFileTool.name]: tool({
-      ...deleteFileTool.toolDef,
-      execute: deleteFileTool.execute,
     }),
 
     [ReadFileTool.name]: tool({
