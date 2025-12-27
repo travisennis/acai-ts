@@ -9,6 +9,7 @@ import { DirectoryTreeTool } from "./directory-tree.ts";
 import { GlobTool } from "./glob.ts";
 import { GrepTool } from "./grep.ts";
 import { initCliTools } from "./index.ts";
+import { LsTool } from "./ls.ts";
 import { ReadFileTool } from "./read-file.ts";
 import type { ToolCallOptions, ToolResult } from "./types.ts";
 
@@ -20,19 +21,19 @@ const TOOLS = [
   GrepTool.name,
   GlobTool.name,
   ReadFileTool.name,
+  LsTool.name,
   DirectoryTreeTool.name,
 ] as const;
 
 type ToolName = (typeof TOOLS)[number];
 
 function getToolDescription(): string {
-  const toolNames = TOOLS.join(", ");
-  return `Launch a new agent that has access to the following tools: ${toolNames}. This agent is specifically designed for file discovery and code search tasks. Use the ${AgentTool.name} tool when you need to search for files or code patterns across the codebase.
+  return `Launch a new agent that is specifically designed for file discovery and code search tasks. Use the ${AgentTool.name} tool when you need to search for files or code patterns across the codebase.
 
 Use cases:
-- Search for files matching specific patterns (e.g., "*.ts", "**/*.test.ts") using ${GlobTool.name}
-- Find code patterns or text within files using ${GrepTool.name}
-- Read specific files using ${ReadFileTool.name}
+- Search for files matching specific patterns (e.g., "*.ts", "**/*.test.ts")
+- Find code patterns or text within files
+- Read specific files using
 
 Important limitations:
 - This agent cannot execute shell commands or run external tools

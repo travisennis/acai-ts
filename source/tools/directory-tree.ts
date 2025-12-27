@@ -12,7 +12,7 @@ import ignore, { type Ignore } from "../utils/ignore.ts";
 import type { ToolCallOptions, ToolResult } from "./types.ts";
 
 export const DirectoryTreeTool = {
-  name: "directoryTree" as const,
+  name: "DirectoryTree" as const,
 };
 
 const inputSchema = z.object({
