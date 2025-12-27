@@ -11,7 +11,7 @@ import { GrepTool } from "./grep.ts";
 import { initCliTools } from "./index.ts";
 import { LsTool } from "./ls.ts";
 import { ReadFileTool } from "./read-file.ts";
-import type { ToolCallOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions, ToolResult } from "./types.ts";
 
 export const AgentTool = {
   name: "Agent" as const,
@@ -66,7 +66,7 @@ export const createAgentTools = (options: {
 
   async function* execute(
     { prompt }: z.infer<typeof inputSchema>,
-    { toolCallId, abortSignal }: ToolCallOptions,
+    { toolCallId, abortSignal }: ToolExecutionOptions,
   ): AsyncGenerator<ToolResult> {
     if (abortSignal?.aborted) {
       throw new Error("Agent execution aborted");

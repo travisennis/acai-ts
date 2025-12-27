@@ -9,7 +9,7 @@ import {
   manageTokenLimit,
   TokenLimitExceededError,
 } from "../tokens/threshold.ts";
-import type { ToolCallOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions, ToolResult } from "./types.ts";
 
 export const CodeInterpreterTool = {
   name: "codeInterpreter" as const,
@@ -55,7 +55,7 @@ export const createCodeInterpreterTool = async ({
 
   async function* execute(
     { code, timeoutSeconds }: z.infer<typeof inputSchema>,
-    { toolCallId, abortSignal }: ToolCallOptions,
+    { toolCallId, abortSignal }: ToolExecutionOptions,
   ): AsyncGenerator<ToolResult> {
     // Check if execution has been aborted
     if (abortSignal?.aborted) {

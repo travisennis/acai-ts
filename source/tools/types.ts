@@ -64,7 +64,7 @@ export function isToolMessage(value: unknown): value is Message {
   );
 }
 
-export type ToolCallOptions = {
+export type ToolExecutionOptions = {
   toolCallId: string;
   // biome-ignore lint/suspicious/noExplicitAny: temporary
   messages?: any[];

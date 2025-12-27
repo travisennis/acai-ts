@@ -11,7 +11,7 @@ import {
 } from "../utils/filesystem/security.ts";
 import {
   fileEncodingSchema,
-  type ToolCallOptions,
+  type ToolExecutionOptions,
   type ToolResult,
 } from "./types.ts";
 
@@ -51,7 +51,7 @@ export const createSaveFileTool = async ({
     },
     async *execute(
       { path: userPath, content, encoding }: SaveFileInputSchema,
-      { toolCallId, abortSignal }: ToolCallOptions,
+      { toolCallId, abortSignal }: ToolExecutionOptions,
     ): AsyncGenerator<ToolResult> {
       try {
         if (abortSignal?.aborted) {

@@ -10,7 +10,7 @@ import {
 } from "../tokens/threshold.ts";
 import { isMutatingCommand, resolveCwd, validatePaths } from "../utils/bash.ts";
 import { convertNullString } from "../utils/zod.ts";
-import type { ToolCallOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions, ToolResult } from "./types.ts";
 
 export const BashTool = {
   name: "Bash" as const,
@@ -66,7 +66,7 @@ export const createBashTool = async ({
     },
     async *execute(
       { command, cwd, timeout, background }: BashInputSchema,
-      { toolCallId, abortSignal }: ToolCallOptions,
+      { toolCallId, abortSignal }: ToolExecutionOptions,
     ): AsyncGenerator<ToolResult> {
       try {
         if (abortSignal?.aborted) {

@@ -5,7 +5,7 @@ import path from "node:path";
 import { z } from "zod";
 import { config } from "../config.ts";
 import { logger } from "../logger.ts";
-import type { ToolCallOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions, ToolResult } from "./types.ts";
 
 // Tool Metadata Schema and Parser
 const toolMetadataSchema = z.object({
@@ -229,11 +229,11 @@ interface DynamicToolObject {
   };
   execute: (
     input: Record<string, unknown>,
-    options: ToolCallOptions,
+    options: ToolExecutionOptions,
   ) => AsyncGenerator<ToolResult>;
   ask?: (
     input: Record<string, unknown>,
-    options: ToolCallOptions,
+    options: ToolExecutionOptions,
   ) => Promise<{ approve: boolean; reason?: string }>;
 }
 
@@ -252,7 +252,7 @@ function createDynamicTool(
       },
       async *execute(
         input: Record<string, unknown>,
-        { toolCallId, abortSignal }: ToolCallOptions,
+        { toolCallId, abortSignal }: ToolExecutionOptions,
       ): AsyncGenerator<ToolResult> {
         try {
           if (abortSignal?.aborted) {

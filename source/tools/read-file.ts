@@ -9,7 +9,7 @@ import {
 } from "../tokens/threshold.ts";
 import { joinWorkingDir, validatePath } from "../utils/filesystem/security.ts";
 import { convertNullString } from "../utils/zod.ts";
-import type { ToolCallOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions, ToolResult } from "./types.ts";
 import { fileEncodingSchema } from "./types.ts";
 
 export const ReadFileTool = {
@@ -61,7 +61,7 @@ export const createReadFileTool = async ({
         startLine,
         lineCount,
       }: ReadFileInputSchema,
-      { toolCallId, abortSignal }: ToolCallOptions,
+      { toolCallId, abortSignal }: ToolExecutionOptions,
     ): AsyncGenerator<ToolResult> {
       try {
         // Check if execution has been aborted

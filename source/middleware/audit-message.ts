@@ -1,17 +1,17 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type {
-  LanguageModelV2Middleware,
-  LanguageModelV2Prompt,
-  LanguageModelV2StreamPart,
-  LanguageModelV2TextPart,
+  LanguageModelV3Middleware,
+  LanguageModelV3Prompt,
+  LanguageModelV3StreamPart,
+  LanguageModelV3TextPart,
 } from "@ai-sdk/provider";
 import type { LanguageModelUsage } from "ai";
 
 interface AuditRecord {
   model: string;
   app: string;
-  messages: LanguageModelV2Prompt;
+  messages: LanguageModelV3Prompt;
   usage: LanguageModelUsage;
   timestamp: number;
 }
@@ -47,7 +47,8 @@ export const auditMessage = ({
   filePath: string;
   app: string;
 }) => {
-  const middleware: LanguageModelV2Middleware = {
+  const middleware: LanguageModelV3Middleware = {
+    specificationVersion: "v3",
     wrapGenerate: async ({ doGenerate, params, model }) => {
       const result = await doGenerate();
 
@@ -61,10 +62,25 @@ export const auditMessage = ({
               type: "text",
               // biome-ignore lint/suspicious/noExplicitAny: work-around on type issue
               text: (result as any).text,
-            } as LanguageModelV2TextPart,
+            } as LanguageModelV3TextPart,
           ],
         }),
-        usage: result.usage,
+        usage: {
+          inputTokens: result.usage.inputTokens.total,
+          outputTokens: result.usage.outputTokens.total,
+          totalTokens:
+            (result.usage.inputTokens.total ?? 0) +
+            (result.usage.outputTokens.total ?? 0),
+          inputTokenDetails: {
+            noCacheTokens: result.usage.inputTokens.noCache,
+            cacheReadTokens: result.usage.inputTokens.cacheRead,
+            cacheWriteTokens: result.usage.inputTokens.cacheWrite,
+          },
+          outputTokenDetails: {
+            textTokens: result.usage.outputTokens.text,
+            reasoningTokens: result.usage.outputTokens.reasoning,
+          },
+        },
         timestamp: Date.now(),
       };
 
@@ -81,18 +97,42 @@ export const auditMessage = ({
         inputTokens: 0,
         outputTokens: 0,
         totalTokens: 0,
+        inputTokenDetails: {
+          noCacheTokens: 0,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+        outputTokenDetails: {
+          textTokens: 0,
+          reasoningTokens: 0,
+        },
       };
 
       const transformStream = new TransformStream<
-        LanguageModelV2StreamPart,
-        LanguageModelV2StreamPart
+        LanguageModelV3StreamPart,
+        LanguageModelV3StreamPart
       >({
         transform(chunk, controller) {
           if (chunk.type === "text-delta") {
             generatedText += chunk.delta;
           }
           if (chunk.type === "finish") {
-            usage = chunk.usage;
+            usage = {
+              inputTokens: chunk.usage.inputTokens.total,
+              outputTokens: chunk.usage.outputTokens.total,
+              totalTokens:
+                (chunk.usage.inputTokens.total ?? 0) +
+                (chunk.usage.outputTokens.total ?? 0),
+              inputTokenDetails: {
+                noCacheTokens: chunk.usage.inputTokens.noCache,
+                cacheReadTokens: chunk.usage.inputTokens.cacheRead,
+                cacheWriteTokens: chunk.usage.inputTokens.cacheWrite,
+              },
+              outputTokenDetails: {
+                textTokens: chunk.usage.outputTokens.text,
+                reasoningTokens: chunk.usage.outputTokens.reasoning,
+              },
+            };
           }
           controller.enqueue(chunk);
         },

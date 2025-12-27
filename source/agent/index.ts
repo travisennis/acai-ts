@@ -113,6 +113,15 @@ type ModelUsage = {
   totalTokens: number;
   cachedInputTokens: number;
   reasoningTokens: number;
+  inputTokenDetails: {
+    noCacheTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+  };
+  outputTokenDetails: {
+    textTokens: number;
+    reasoningTokens: number;
+  };
 };
 
 export type AgentState = {
@@ -550,6 +559,15 @@ export class Agent {
         totalTokens: 0,
         reasoningTokens: 0,
         cachedInputTokens: 0,
+        inputTokenDetails: {
+          noCacheTokens: 0,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+        outputTokenDetails: {
+          textTokens: 0,
+          reasoningTokens: 0,
+        },
       },
       totalUsage: {
         inputTokens: 0,
@@ -557,6 +575,15 @@ export class Agent {
         totalTokens: 0,
         reasoningTokens: 0,
         cachedInputTokens: 0,
+        inputTokenDetails: {
+          noCacheTokens: 0,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+        outputTokenDetails: {
+          textTokens: 0,
+          reasoningTokens: 0,
+        },
       },
       steps: [],
       timestamps: {

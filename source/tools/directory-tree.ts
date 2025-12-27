@@ -9,7 +9,7 @@ import {
 } from "../tokens/threshold.ts";
 import { joinWorkingDir, validatePath } from "../utils/filesystem/security.ts";
 import ignore, { type Ignore } from "../utils/ignore.ts";
-import type { ToolCallOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions, ToolResult } from "./types.ts";
 
 export const DirectoryTreeTool = {
   name: "DirectoryTree" as const,
@@ -39,7 +39,7 @@ export const createDirectoryTreeTool = async ({
     },
     async *execute(
       { path }: DirectoryTreeInputSchema,
-      { toolCallId, abortSignal }: ToolCallOptions,
+      { toolCallId, abortSignal }: ToolExecutionOptions,
     ): AsyncGenerator<ToolResult> {
       try {
         // Check if execution has been aborted

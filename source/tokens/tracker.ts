@@ -25,14 +25,42 @@ export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
   getTotalUsage(): LanguageModelUsage {
     return this.usages.reduce(
       (acc, { usage }) => {
-        acc.inputTokens += isNumber(usage.inputTokens) ? usage.inputTokens : 0;
-        acc.outputTokens += isNumber(usage.outputTokens)
-          ? usage.outputTokens
-          : 0;
-        acc.totalTokens += isNumber(usage.totalTokens) ? usage.totalTokens : 0;
+        // After AI SDK v6 upgrade, all usage is in the unified format
+        const inputTokens = usage.inputTokens ?? 0;
+        const outputTokens = usage.outputTokens ?? 0;
+        const totalTokens = usage.totalTokens ?? inputTokens + outputTokens;
+
+        acc.inputTokens += isNumber(inputTokens) ? inputTokens : 0;
+        acc.outputTokens += isNumber(outputTokens) ? outputTokens : 0;
+        acc.totalTokens += isNumber(totalTokens) ? totalTokens : 0;
+
+        // Input token details
+        acc.inputTokenDetails.noCacheTokens +=
+          usage.inputTokenDetails?.noCacheTokens ?? 0;
+        acc.inputTokenDetails.cacheReadTokens +=
+          usage.inputTokenDetails?.cacheReadTokens ?? 0;
+        acc.inputTokenDetails.cacheWriteTokens +=
+          usage.inputTokenDetails?.cacheWriteTokens ?? 0;
+
+        // Output token details
+        const v3OutputDetails = usage.outputTokenDetails;
+        acc.outputTokenDetails.textTokens += v3OutputDetails?.textTokens ?? 0;
+        acc.outputTokenDetails.reasoningTokens +=
+          v3OutputDetails?.reasoningTokens ?? 0;
+
         return acc;
       },
-      { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+      {
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        inputTokenDetails: {
+          noCacheTokens: 0,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+        outputTokenDetails: { textTokens: 0, reasoningTokens: 0 },
+      },
     );
   }
 
@@ -41,18 +69,40 @@ export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
       .filter(({ tool }) => tool === app)
       .reduce(
         (acc, { usage }) => {
-          acc.inputTokens += isNumber(usage.inputTokens)
-            ? usage.inputTokens
-            : 0;
-          acc.outputTokens += isNumber(usage.outputTokens)
-            ? usage.outputTokens
-            : 0;
-          acc.totalTokens += isNumber(usage.totalTokens)
-            ? usage.totalTokens
-            : 0;
+          const inputTokens = usage.inputTokens ?? 0;
+          const outputTokens = usage.outputTokens ?? 0;
+          const totalTokens = usage.totalTokens ?? inputTokens + outputTokens;
+
+          acc.inputTokens += isNumber(inputTokens) ? inputTokens : 0;
+          acc.outputTokens += isNumber(outputTokens) ? outputTokens : 0;
+          acc.totalTokens += isNumber(totalTokens) ? totalTokens : 0;
+
+          const v3InputDetails = usage.inputTokenDetails;
+          acc.inputTokenDetails.cacheReadTokens +=
+            v3InputDetails?.cacheReadTokens ?? 0;
+          acc.inputTokenDetails.noCacheTokens +=
+            v3InputDetails?.noCacheTokens ?? 0;
+          acc.inputTokenDetails.cacheWriteTokens +=
+            v3InputDetails?.cacheWriteTokens ?? 0;
+
+          const v3OutputDetails = usage.outputTokenDetails;
+          acc.outputTokenDetails.textTokens += v3OutputDetails?.textTokens ?? 0;
+          acc.outputTokenDetails.reasoningTokens +=
+            v3OutputDetails?.reasoningTokens ?? 0;
+
           return acc;
         },
-        { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+        {
+          inputTokens: 0,
+          outputTokens: 0,
+          totalTokens: 0,
+          inputTokenDetails: {
+            noCacheTokens: 0,
+            cacheReadTokens: 0,
+            cacheWriteTokens: 0,
+          },
+          outputTokenDetails: { textTokens: 0, reasoningTokens: 0 },
+        },
       );
   }
 

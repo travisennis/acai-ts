@@ -10,7 +10,7 @@ import {
 import { isDirectory } from "../utils/filesystem/operations.ts";
 import { validatePath } from "../utils/filesystem/security.ts";
 import { convertNullString } from "../utils/zod.ts";
-import type { ToolCallOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions, ToolResult } from "./types.ts";
 
 export const LsTool = {
   name: "LS" as const,
@@ -45,7 +45,7 @@ export const createLsTool = async (options: {
     },
     async *execute(
       { path: providedPath, limit }: LsInputSchema,
-      { toolCallId, abortSignal }: ToolCallOptions,
+      { toolCallId, abortSignal }: ToolExecutionOptions,
     ): AsyncGenerator<ToolResult> {
       try {
         // Check if execution has been aborted

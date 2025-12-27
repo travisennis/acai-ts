@@ -1,7 +1,7 @@
 import {
-  generateObject,
   generateText,
   NoSuchToolError,
+  Output,
   stepCountIs,
   type ToolCallRepairFunction,
   type ToolSet,
@@ -178,9 +178,11 @@ const toolCallRepair = <T extends ToolSet>(modelManager: ModelManager) => {
     const tool = tools[toolCall.toolName as keyof typeof tools];
 
     try {
-      const { object: repairedArgs } = await generateObject({
+      const { output: repairedArgs } = await generateText({
         model: modelManager.getModel("tool-repair"),
-        schema: tool.inputSchema as z.ZodSchema<unknown>,
+        output: Output.object({
+          schema: tool.inputSchema as z.ZodSchema<unknown>,
+        }),
         prompt: [
           `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
           JSON.stringify(toolCall.input),

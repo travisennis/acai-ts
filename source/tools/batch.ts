@@ -6,7 +6,7 @@ import {
   manageTokenLimit,
   TokenLimitExceededError,
 } from "../tokens/threshold.ts";
-import type { ToolCallOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions, ToolResult } from "./types.ts";
 
 export const BatchTool = {
   name: "Batch" as const,
@@ -34,7 +34,7 @@ const inputSchema = z.object({
 type BatchInputSchema = z.infer<typeof inputSchema>;
 type ToolExecutor = (
   args: Record<string, unknown>,
-  options: ToolCallOptions,
+  options: ToolExecutionOptions,
 ) => AsyncGenerator<ToolResult> | Promise<string>;
 
 export const createBatchTool = async ({
@@ -52,7 +52,7 @@ export const createBatchTool = async ({
     },
     async *execute(
       { calls }: BatchInputSchema,
-      { toolCallId, messages, abortSignal }: ToolCallOptions,
+      { toolCallId, messages, abortSignal }: ToolExecutionOptions,
     ): AsyncGenerator<ToolResult> {
       try {
         if (abortSignal?.aborted) {

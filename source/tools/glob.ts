@@ -10,7 +10,7 @@ import {
 } from "../tokens/threshold.ts";
 import { glob } from "../utils/glob.ts";
 import { convertNullString } from "../utils/zod.ts";
-import type { ToolCallOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions, ToolResult } from "./types.ts";
 
 export const GlobTool = {
   name: "Glob" as const,
@@ -62,7 +62,7 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
         ignoreFiles,
         cwd,
       }: GlobInputSchema,
-      { toolCallId, abortSignal }: ToolCallOptions,
+      { toolCallId, abortSignal }: ToolExecutionOptions,
     ): AsyncGenerator<ToolResult> {
       // Check if execution has been aborted
       if (abortSignal?.aborted) {

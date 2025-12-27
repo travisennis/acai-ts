@@ -9,7 +9,7 @@ import {
   TokenLimitExceededError,
 } from "../tokens/threshold.ts";
 import { convertNullString } from "../utils/zod.ts";
-import type { ToolCallOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions, ToolResult } from "./types.ts";
 
 export const GrepTool = {
   name: "Grep" as const,
@@ -75,7 +75,7 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
         literal,
         maxResults,
       }: GrepInputSchema,
-      { toolCallId, abortSignal }: ToolCallOptions,
+      { toolCallId, abortSignal }: ToolExecutionOptions,
     ): AsyncGenerator<ToolResult> {
       // Check if execution has been aborted
       if (abortSignal?.aborted) {

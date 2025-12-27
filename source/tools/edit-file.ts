@@ -10,7 +10,7 @@ import {
   validatePath,
 } from "../utils/filesystem/security.ts";
 
-import type { ToolCallOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions, ToolResult } from "./types.ts";
 
 export const EditFileTool = {
   name: "Edit" as const,
@@ -55,7 +55,7 @@ export const createEditFileTool = async ({
     },
     async *execute(
       { path, edits }: EditFileInputSchema,
-      { toolCallId, abortSignal }: ToolCallOptions,
+      { toolCallId, abortSignal }: ToolExecutionOptions,
     ): AsyncGenerator<ToolResult> {
       try {
         if (abortSignal?.aborted) {

@@ -1,12 +1,11 @@
 import EventEmitter from "node:events";
-import type { LanguageModelV2 } from "@ai-sdk/provider";
-import { generateText, wrapLanguageModel } from "ai";
+import type { LanguageModelV3 } from "@ai-sdk/provider";
+import { wrapLanguageModel } from "ai";
 import {
   auditMessage,
   cacheMiddleware,
   createRateLimitMiddleware,
 } from "../middleware/index.ts";
-import { AiConfig } from "./ai-config.ts";
 import {
   languageModel,
   type ModelMetadata,
@@ -52,7 +51,7 @@ interface ModelManagerEvents {
 }
 
 export class ModelManager extends EventEmitter<ModelManagerEvents> {
-  private modelMap: Map<App, LanguageModelV2>;
+  private modelMap: Map<App, LanguageModelV3>;
   private modelMetadataMap: Map<App, ModelMetadata>;
   private stateDir: string;
   constructor({ stateDir }: { stateDir: string }) {
@@ -92,32 +91,5 @@ export class ModelManager extends EventEmitter<ModelManagerEvents> {
       throw new Error("Model not initialized.");
     }
     return metadata;
-  }
-
-  async getText(app: App, system: string, prompt: string, signal: AbortSignal) {
-    const model = this.getModel(app);
-    const modelConfig = this.getModelMetadata(app);
-
-    if (!model || !modelConfig) {
-      throw new Error(`${app} model not available`);
-    }
-
-    const aiConfig = new AiConfig({
-      modelMetadata: modelConfig,
-      prompt: prompt,
-    });
-
-    const result = await generateText({
-      model,
-      maxOutputTokens: aiConfig.maxOutputTokens(),
-      system: system,
-      prompt: prompt,
-      temperature: aiConfig.temperature(),
-      topP: aiConfig.topP(),
-      providerOptions: aiConfig.providerOptions(),
-      abortSignal: signal,
-    });
-
-    return result;
   }
 }

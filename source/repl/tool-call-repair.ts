@@ -1,7 +1,8 @@
-import type { JSONSchema7, LanguageModelV2ToolCall } from "@ai-sdk/provider";
+import type { JSONSchema7, LanguageModelV3ToolCall } from "@ai-sdk/provider";
 import {
-  generateObject,
+  generateText,
   NoSuchToolError,
+  Output,
   type Tool,
   type ToolCallRepairFunction,
   type ToolSet,
@@ -16,13 +17,15 @@ type InputSchemaFn = (options: { toolName: string }) => JSONSchema7;
 
 async function remoteToolCallRepair(
   modelManager: ModelManager,
-  toolCall: LanguageModelV2ToolCall,
+  toolCall: LanguageModelV3ToolCall,
   tool: Tool,
   inputSchema: InputSchemaFn,
 ) {
-  const { object: repairedArgs } = await generateObject({
+  const { output: repairedArgs } = await generateText({
     model: modelManager.getModel("tool-repair"),
-    schema: tool.inputSchema as z.ZodSchema<unknown>,
+    output: Output.object({
+      schema: tool.inputSchema as z.ZodSchema<unknown>,
+    }),
     prompt: [
       `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
       JSON.stringify(toolCall.input),
@@ -36,7 +39,7 @@ async function remoteToolCallRepair(
 }
 
 const localToolCallRepair = async (
-  toolCall: LanguageModelV2ToolCall,
+  toolCall: LanguageModelV3ToolCall,
   tool: Tool,
 ) => {
   const schema = tool.inputSchema as z.ZodSchema<unknown>;

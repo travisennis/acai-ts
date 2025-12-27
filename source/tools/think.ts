@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ToolCallOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions, ToolResult } from "./types.ts";
 
 export const ThinkTool = {
   name: "Think" as const,
@@ -27,7 +27,7 @@ export const createThinkTool = () => {
     },
     async *execute(
       { thought }: z.infer<typeof inputSchema>,
-      { toolCallId, abortSignal }: ToolCallOptions,
+      { toolCallId, abortSignal }: ToolExecutionOptions,
     ): AsyncGenerator<ToolResult> {
       try {
         // Check if execution has been aborted
