@@ -349,8 +349,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **tools/code-interpreter.ts**: Tool for running JavaScript code in a sandbox.
 - **tools/delete-file.ts**: Tool to delete files with validation.
 - **tools/directory-tree.ts**: Tool to generate project directory tree.
-- **tools/dynamic-tool-loader.ts**: Dynamically loads tool definitions.
-- **tools/dynamic-tool-parser.ts**: Parses dynamic tool specifications.
+- **tools/dynamic-tool-loader.ts**: Dynamically loads tool definitions and parses dynamic tool specifications.
 - **tools/edit-file.ts**: Tool to edit files with diff support.
 - **tools/git.ts**: Utilities for Git operations.
 - **tools/glob.ts**: Tool for glob-based file searching.
@@ -424,7 +423,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **tools/bash.test.ts**: Unit tests for bash tool.
 - **tools/code-interpreter.test.ts**: Unit tests for code interpreter tool.
 - **tools/dynamic-tool-integration.test.ts**: Integration tests for dynamic tools.
-- **tools/dynamic-tool-parser.test.ts**: Unit tests for dynamic tool parser.
+- **tools/dynamic-tool-loader.test.ts**: Unit tests for dynamic tool loader and parser.
 - **tools/edit-file.test.ts**: Unit tests for edit file tool.
 - **tools/glob.test.ts**: Unit tests for glob tool.
 - **tools/grep-enhanced-ux.test.ts**: Unit tests for grep enhanced UX.
@@ -527,8 +526,7 @@ sequenceDiagram
 graph TD
   A[Model requests unknown tool] --> B[Agent checks registry source/tools/index.ts]
   B --> C{Dynamic?}
-  C -->|Yes| D[Load via dynamic-tool-loader.ts]
-  D --> E[Parse spec with dynamic-tool-parser.ts]
+  C -->|Yes| D[Load and parse via dynamic-tool-loader.ts]
   E --> F[Register temp tool]
   F --> G[Execute as normal]
   C -->|No| H[Error: Unknown tool]

@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert/strict";
 import { describe, it } from "node:test";
-import { parseToolMetadata } from "../../source/tools/dynamic-tool-parser.ts";
+import { parseToolMetadata } from "../../source/tools/dynamic-tool-loader.ts";
 
 describe("Dynamic Tool Parser", () => {
   const sampleOutput = JSON.stringify(
