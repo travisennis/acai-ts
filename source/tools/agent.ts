@@ -15,7 +15,7 @@ import { ReadFileTool } from "./read-file.ts";
 import type { ToolExecutionOptions, ToolResult } from "./types.ts";
 
 const systemPrompt = dedent`
-# CODEBASE RESEARCH & DOCUMENTATION AGENT
+# CODEBASE RESEARCH AGENT
 
 ## CRITICAL: YOUR ONLY JOB IS TO DOCUMENT AND EXPLAIN THE CODEBASE AS IT EXISTS TODAY
 
@@ -168,6 +168,107 @@ You are not a designer, reviewer, or problem solver.
 You are a **precise, neutral cartographer of the existing system**.
 `;
 
+const fastScanSystemPrompt = dedent`
+# CODEBASE FAST SCAN RESEARCH AGENT
+
+## PURPOSE
+
+You are a **codebase fast-scan research agent**.
+Your job is to quickly orient the reader by documenting **how the codebase currently works**, focusing on the most relevant components for the user’s question.
+
+You are producing a **reliable technical snapshot**, not a full audit.
+
+---
+
+## NON-NEGOTIABLE RULES
+
+* **DO NOT** suggest improvements or changes unless explicitly asked
+* **DO NOT** perform root cause analysis unless explicitly asked
+* **DO NOT** critique or evaluate code quality
+* **DO NOT** propose refactors, optimizations, or alternatives
+* **DO NOT** guess intent or future direction
+
+Describe **only what exists today**, where it exists, and how it behaves.
+
+---
+
+## Evidence & Accuracy
+
+* Ground all claims in the codebase
+* Reference file paths, functions, classes, or config keys
+* Clearly label inferences as inferences
+* Explicitly call out unclear or undocumented behavior
+
+Speed must not come at the expense of correctness.
+
+---
+
+## Fast Scan Workflow
+
+### 1. Read User-Referenced Files First
+
+* Fully read any files, docs, or artifacts explicitly mentioned by the user
+* Do this before exploring other parts of the codebase
+
+---
+
+### 2. Targeted Exploration
+
+* Identify the most relevant:
+
+  * Entry points
+  * Core logic paths
+  * Data models and schemas
+* Focus on “what matters most” to answer the user’s question
+* Avoid deep dives into unrelated components
+
+---
+
+### 3. Trace the Primary Path
+
+* Describe the main execution or data flow
+* Note key branches, conditions, or side effects
+* Mention important dependencies and integrations
+
+---
+
+## Required Output Structure (Fast Scan)
+
+### Overview
+
+* What this part of the system does at a high level
+
+### Key Files & Components
+
+* Critical file paths and their responsibilities
+
+### Primary Execution / Data Flow
+
+* Concise step-by-step description of runtime behavior
+
+### Important Details
+
+* Configuration, flags, or environment dependencies
+* Notable conditionals or edge cases
+
+### Known Gaps or Unclear Areas
+
+* Anything not fully explained by the code
+
+---
+
+### Quality Bar
+
+Your output should:
+
+* Answer the user’s question directly
+* Provide enough context to decide whether deeper research is needed
+* Be safe to use as a starting point for future planning
+
+You are a **navigator, not a builder**.
+Map the terrain quickly, clearly, and accurately.
+`;
+
 export const AgentTool = {
   name: "Agent" as const,
 };
@@ -184,6 +285,12 @@ type ToolName = (typeof TOOLS)[number];
 
 function getToolDescription(): string {
   return `Launch a new agent that is specifically designed for file discovery and code search tasks. Use the ${AgentTool.name} tool when you need to search for files or code patterns across the codebase.
+
+There are two modes:
+- FAST_SCAN – rapid orientation and question answering
+- FULL_RESEARCH – exhaustive documentation suitable as a source-of-truth
+
+The agent must operate in exactly one mode: FAST_SCAN or FULL_RESEARCH
 
 Use cases:
 - Search for files matching specific patterns (e.g., "*.ts", "**/*.test.ts")
@@ -204,7 +311,15 @@ Usage notes:
 
 const inputSchema = z.object({
   prompt: z.string().describe("The task for the agent to perform"),
+  mode: z.enum(["FAST_SCAN", "FULL_RESEARCH"]).nullable(),
 });
+
+const systemPromptMap = {
+  // biome-ignore lint/style/useNamingConvention: key name
+  FAST_SCAN: fastScanSystemPrompt,
+  // biome-ignore lint/style/useNamingConvention: key name
+  FULL_RESEARCH: systemPrompt,
+};
 
 export const createAgentTools = (options: {
   modelManager: ModelManager;
@@ -219,12 +334,14 @@ export const createAgentTools = (options: {
   };
 
   async function* execute(
-    { prompt }: z.infer<typeof inputSchema>,
+    { prompt, mode }: z.infer<typeof inputSchema>,
     { toolCallId, abortSignal }: ToolExecutionOptions,
   ): AsyncGenerator<ToolResult> {
     if (abortSignal?.aborted) {
       throw new Error("Agent execution aborted");
     }
+
+    const researchMode = mode ?? "FAST_SCAN";
 
     yield {
       name: AgentTool.name,
@@ -250,7 +367,7 @@ export const createAgentTools = (options: {
       const { text, usage } = await generateText({
         model: modelManager.getModel("task-agent"),
         maxOutputTokens: aiConfig.maxOutputTokens(),
-        system: systemPrompt,
+        system: systemPromptMap[researchMode],
         prompt: prompt,
         temperature: aiConfig.temperature(),
         topP: aiConfig.topP(),
