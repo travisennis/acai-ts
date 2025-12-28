@@ -28,7 +28,6 @@ Platform: ${platform()}`;
 
 export const initCommand = ({
   modelManager,
-  tokenCounter,
   workspace,
 }: CommandOptions): ReplCommand => {
   return {
@@ -55,7 +54,7 @@ export const initCommand = ({
         temperature: 0.5,
         prompt: initPrompt,
         stopWhen: stepCountIs(40),
-        tools: (await initCliTools({ tokenCounter, workspace })).toolDefs,
+        tools: (await initCliTools({ workspace })).toolDefs,
       });
 
       container.addChild(new Spacer(1));

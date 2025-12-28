@@ -3,11 +3,7 @@ import { z } from "zod";
 import { initExecutionEnvironment } from "../execution/index.ts";
 import { logger } from "../logger.ts";
 import style from "../terminal/style.ts";
-import type { TokenCounter } from "../tokens/counter.ts";
-import {
-  manageTokenLimit,
-  TokenLimitExceededError,
-} from "../tokens/threshold.ts";
+
 import { isMutatingCommand, resolveCwd, validatePaths } from "../utils/bash.ts";
 import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions, ToolResult } from "./types.ts";
@@ -51,11 +47,9 @@ type BashInputSchema = z.infer<typeof inputSchema>;
 export const createBashTool = async ({
   baseDir,
   allowedDirs,
-  tokenCounter,
 }: {
   baseDir: string;
   allowedDirs?: string[];
-  tokenCounter: TokenCounter;
 }) => {
   const execEnv = await initExecutionEnvironment();
   const allowedDirectories = allowedDirs ?? [baseDir];
@@ -173,36 +167,15 @@ export const createBashTool = async ({
             },
           );
 
-          try {
-            const result = await manageTokenLimit(
-              output,
-              tokenCounter,
-              "Bash",
-              "Adjust command to return more specific results",
-            );
+          const statusText = exitCode === 0 ? "success" : "error";
+          yield {
+            name: BashTool.name,
+            event: "tool-completion",
+            id: toolCallId,
+            data: `${statusText}${isMutating ? " *" : ""}`,
+          };
 
-            const statusText = exitCode === 0 ? "success" : "error";
-            yield {
-              name: BashTool.name,
-              event: "tool-completion",
-              id: toolCallId,
-              data: `${statusText}${isMutating ? " *" : ""} (${result.tokenCount} tokens)`,
-            };
-
-            yield result.content;
-          } catch (error) {
-            if (error instanceof TokenLimitExceededError) {
-              yield {
-                name: BashTool.name,
-                event: "tool-error",
-                id: toolCallId,
-                data: error.message,
-              };
-              yield error.message;
-              return;
-            }
-            throw error;
-          }
+          yield output;
         }
       } catch (error) {
         logger.error(error, "Bash Tool Error:");

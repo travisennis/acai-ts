@@ -4,15 +4,11 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import process from "node:process";
 import { z } from "zod";
-import type { TokenCounter } from "../tokens/counter.ts";
-import {
-  manageTokenLimit,
-  TokenLimitExceededError,
-} from "../tokens/threshold.ts";
+
 import type { ToolExecutionOptions, ToolResult } from "./types.ts";
 
 export const CodeInterpreterTool = {
-  name: "codeInterpreter" as const,
+  name: "CodeInterpreter" as const,
 };
 
 const toolDescription = `Executes Typescript code in a separate Node.js process using Node's Permission Model. 
@@ -43,11 +39,7 @@ const inputSchema = z.object({
     .describe("Execution timeout in seconds (1-60). Default 5."),
 });
 
-export const createCodeInterpreterTool = async ({
-  tokenCounter,
-}: {
-  tokenCounter: TokenCounter;
-}) => {
+export const createCodeInterpreterTool = async () => {
   const toolDef = {
     description: toolDescription,
     inputSchema,
@@ -185,35 +177,15 @@ export const createCodeInterpreterTool = async ({
       };
 
       const resultJson = JSON.stringify(result, null, 2);
-      try {
-        const managedResult = await manageTokenLimit(
-          resultJson,
-          tokenCounter,
-          "CodeInterpreter",
-          "Reduce script complexity or output size",
-        );
 
-        yield {
-          name: CodeInterpreterTool.name,
-          event: "tool-completion",
-          id: toolCallId,
-          data: `Completed successfully${managedResult.tokenCount > 0 ? ` (${managedResult.tokenCount} tokens)` : ""}`,
-        };
+      yield {
+        name: CodeInterpreterTool.name,
+        event: "tool-completion",
+        id: toolCallId,
+        data: "Completed successfully",
+      };
 
-        yield managedResult.content;
-      } catch (error) {
-        if (error instanceof TokenLimitExceededError) {
-          yield {
-            name: CodeInterpreterTool.name,
-            event: "tool-error",
-            id: toolCallId,
-            data: error.message,
-          };
-          yield error.message;
-          return;
-        }
-        throw error;
-      }
+      yield resultJson;
     } catch (err) {
       const errorMessage =
         (err as Error).name === "ETIMEDOUT" ||

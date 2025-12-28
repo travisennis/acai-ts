@@ -2,15 +2,14 @@ import fs from "node:fs/promises";
 import { isNumber } from "@travisennis/stdlib/typeguards";
 import { z } from "zod";
 import style from "../terminal/style.ts";
-import type { TokenCounter } from "../tokens/counter.ts";
-import {
-  manageTokenLimit,
-  TokenLimitExceededError,
-} from "../tokens/threshold.ts";
+
 import { joinWorkingDir, validatePath } from "../utils/filesystem/security.ts";
 import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions, ToolResult } from "./types.ts";
 import { fileEncodingSchema } from "./types.ts";
+
+// default limit in bytes
+const DEFAULT_BYTE_LIMIT = 80 * 1024;
 
 export const ReadFileTool = {
   name: "Read" as const,
@@ -34,6 +33,11 @@ const inputSchema = z.object({
     .describe(
       "Maximum number of lines to read. Required but nullable. Pass null to get all lines.",
     ),
+  maxBytes: z
+    .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
+    .describe(
+      "Maximum number of bytes to read. Set to 0 for no limit. (Default: 80KB)",
+    ),
 });
 
 type ReadFileInputSchema = z.infer<typeof inputSchema>;
@@ -41,17 +45,14 @@ type ReadFileInputSchema = z.infer<typeof inputSchema>;
 export const createReadFileTool = async ({
   workingDir,
   allowedDirs,
-  tokenCounter,
 }: {
   workingDir: string;
   allowedDirs?: string[];
-  tokenCounter: TokenCounter;
 }) => {
   const allowedDirectory = allowedDirs ?? [workingDir];
   return {
     toolDef: {
-      description:
-        "Read the complete contents of a file from the file system unless startLine and lineCount are given to read a file selection. Handles various text encodings and provides detailed error messages if the file cannot be read. Use this tool when you need to examine the contents of a single file. Only works within allowed directories.",
+      description: `Read the complete contents of a file from the file system unless startLine and lineCount are given to read a file selection. Handles various text encodings and provides detailed error messages if the file cannot be read. Use this tool when you need to examine the contents of a single file. Only works within allowed directories. Automatically limits file size to prevent overwhelming output. Default limit is ${DEFAULT_BYTE_LIMIT} bytes (${DEFAULT_BYTE_LIMIT / 1024}KB). Use maxBytes parameter to override this limit.`,
       inputSchema,
     },
     async *execute(
@@ -60,6 +61,7 @@ export const createReadFileTool = async ({
         encoding,
         startLine,
         lineCount,
+        maxBytes,
       }: ReadFileInputSchema,
       { toolCallId, abortSignal }: ToolExecutionOptions,
     ): AsyncGenerator<ToolResult> {
@@ -113,40 +115,39 @@ export const createReadFileTool = async ({
           file = lines.slice(startIndex, endIndex).join("\n");
         }
 
-        try {
-          const result = await manageTokenLimit(
-            file,
-            tokenCounter,
-            "ReadFile",
-            isNumber(startLine) || isNumber(lineCount)
-              ? "Consider adjusting startLine/lineCount or using grepFiles"
-              : "Use startLine and lineCount parameters to read specific portions, or use grepFiles for targeted access",
-            encoding ?? "utf-8",
-          );
+        const effectiveMaxBytes = maxBytes ?? DEFAULT_BYTE_LIMIT;
 
-          // Calculate line count for the returned content
-          const linesRead = result.content.split("\n").length;
-
-          yield {
-            name: ReadFileTool.name,
-            id: toolCallId,
-            event: "tool-completion",
-            data: `Read ${linesRead} lines (${result.tokenCount} tokens)`,
-          };
-          yield result.content;
-        } catch (error) {
-          if (error instanceof TokenLimitExceededError) {
-            yield {
-              name: ReadFileTool.name,
-              event: "tool-error",
-              id: toolCallId,
-              data: error.message,
-            };
-            yield error.message;
-            return;
+        // Apply byte-based limiting
+        let wasTruncated = false;
+        if (
+          effectiveMaxBytes !== null &&
+          effectiveMaxBytes !== undefined &&
+          effectiveMaxBytes > 0
+        ) {
+          const buffer = Buffer.from(file, encoding ?? "utf-8");
+          if (buffer.byteLength > effectiveMaxBytes) {
+            const truncatedBuffer = buffer.subarray(0, effectiveMaxBytes);
+            file = truncatedBuffer.toString(encoding ?? "utf-8");
+            wasTruncated = true;
           }
-          throw error;
         }
+
+        // Calculate line count for the returned content
+        const linesRead = file.split("\n").length;
+        let completionMessage = `Read ${linesRead} lines`;
+
+        // Add warning if content was truncated due to maxBytes
+        if (wasTruncated) {
+          completionMessage += ` (truncated to ${effectiveMaxBytes} bytes)`;
+        }
+
+        yield {
+          name: ReadFileTool.name,
+          id: toolCallId,
+          event: "tool-completion",
+          data: completionMessage,
+        };
+        yield file;
       } catch (error) {
         const errorMsg = `${(error as Error).message}`;
         yield {

@@ -4,9 +4,6 @@ import { after, describe, it } from "node:test";
 import { config } from "../../source/config.ts";
 import { createBashTool } from "../../source/tools/bash.ts";
 import { validatePaths } from "../../source/utils/bash.ts";
-import { createMockTokenCounter } from "../utils/mocking.ts";
-
-const tokenCounter = createMockTokenCounter((s: string) => s.length);
 
 await config.getConfig();
 
@@ -15,7 +12,6 @@ const baseDir = process.cwd();
 describe("bash tool path validation for git message flags", async () => {
   const tool = await createBashTool({
     baseDir,
-    tokenCounter,
   });
 
   async function run(command: string) {
@@ -63,7 +59,6 @@ describe("bash tool allowed paths access", async () => {
   const tool = await createBashTool({
     baseDir,
     allowedDirs: [baseDir, "/tmp"],
-    tokenCounter,
   });
 
   async function run(command: string) {
@@ -99,7 +94,6 @@ describe("bash tool abort signal handling", async () => {
     const ac = new AbortController();
     const tool = await createBashTool({
       baseDir,
-      tokenCounter,
     });
     ac.abort();
     const { execute } = tool;
@@ -156,7 +150,6 @@ describe("bash tool home directory (~) validation", () => {
 describe("bash tool mutating command warnings", async () => {
   const tool = await createBashTool({
     baseDir,
-    tokenCounter,
   });
 
   after(() => {

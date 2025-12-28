@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { TokenCounter } from "../../source/tokens/counter.ts";
+
 import { createLsTool, LsTool } from "../../source/tools/ls.ts";
 import type { ToolResult } from "../../source/tools/types.ts";
 
@@ -12,7 +12,6 @@ describe("LS tool", () => {
   it("should have correct description", async () => {
     const tool = await createLsTool({
       workingDir: "/tmp",
-      tokenCounter: new TokenCounter(),
     });
     assert.ok(tool.toolDef.description.includes("List directory contents"));
   });
@@ -20,7 +19,6 @@ describe("LS tool", () => {
   it("should list current directory contents", async () => {
     const tool = await createLsTool({
       workingDir: process.cwd(),
-      tokenCounter: new TokenCounter(),
     });
 
     const results: ToolResult[] = [];
@@ -44,7 +42,6 @@ describe("LS tool", () => {
   it("should handle non-existent directory", async () => {
     const tool = await createLsTool({
       workingDir: process.cwd(),
-      tokenCounter: new TokenCounter(),
     });
 
     const results: ToolResult[] = [];
@@ -76,7 +73,6 @@ describe("LS tool", () => {
   it("should handle non-directory path", async () => {
     const tool = await createLsTool({
       workingDir: process.cwd(),
-      tokenCounter: new TokenCounter(),
     });
 
     // Create a test file first
@@ -116,7 +112,6 @@ describe("LS tool", () => {
   it("should respect limit parameter", async () => {
     const tool = await createLsTool({
       workingDir: process.cwd(),
-      tokenCounter: new TokenCounter(),
     });
 
     const results: ToolResult[] = [];

@@ -115,7 +115,6 @@ acai-ts
 │   ├── terminal-output.test.ts
 │   ├── tokens
 │   │   ├── counter.ts
-│   │   ├── threshold.ts
 │   │   └── tracker.ts
 │   ├── tools
 │   │   ├── advanced-edit-file.ts
@@ -341,7 +340,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **terminal/wrap-ansi.ts**: Wraps text with ANSI escape codes.
 - **terminal-output.test.ts**: Unit tests for terminal output rendering.
 - **tokens/counter.ts**: Utilities for counting tokens in text.
-- **tokens/threshold.ts**: Manages token usage thresholds and limits.
+
 - **tokens/tracker.ts**: Tracks token usage across sessions.
 - **tools/advanced-edit-file.ts**: Advanced file editing tool with multiple modes.
 - **tools/agent.ts**: AI agent logic for coordinating tool usage.
@@ -420,7 +419,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **terminal/markdown-utils.test.ts**: Unit tests for Markdown utilities.
 - **terminal/markdown.test.ts**: Unit tests for Markdown rendering.
 - **terminal/search-prompt.test.ts**: Unit tests for search prompt.
-- **tokens/threshold.test.ts**: Unit tests for token threshold management.
+
 - **tools/bash.test.ts**: Unit tests for bash tool.
 - **tools/code-interpreter.test.ts**: Unit tests for code interpreter tool.
 - **tools/dynamic-tool-integration.test.ts**: Integration tests for dynamic tools.

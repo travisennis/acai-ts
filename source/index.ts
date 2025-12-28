@@ -422,14 +422,12 @@ async function runReplMode(state: AppState): Promise<void> {
 
   // Initialize tools
   const coreTools = await initTools({
-    tokenCounter: state.tokenCounter,
     workspace,
   });
 
   const agentTools = await initAgents({
     modelManager: state.modelManager,
     tokenTracker: state.tokenTracker,
-    tokenCounter: state.tokenCounter,
     workspace,
   });
 

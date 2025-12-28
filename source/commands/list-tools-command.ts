@@ -26,13 +26,11 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
         const activeTools = projectConfig.tools.activeTools;
 
         const tools = await initTools({
-          tokenCounter: options.tokenCounter,
           workspace: options.workspace,
         });
         const agentTools = await initAgents({
           modelManager: options.modelManager,
           tokenTracker: options.tokenTracker,
-          tokenCounter: options.tokenCounter,
           workspace: options.workspace,
         });
         const toolNames = Object.keys({

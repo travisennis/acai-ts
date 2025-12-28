@@ -3,14 +3,12 @@ import * as nodePath from "node:path";
 import { inspect } from "node:util";
 import { z } from "zod";
 import style from "../terminal/style.ts";
-import type { TokenCounter } from "../tokens/counter.ts";
-import {
-  manageTokenLimit,
-  TokenLimitExceededError,
-} from "../tokens/threshold.ts";
+
 import { glob } from "../utils/glob.ts";
 import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions, ToolResult } from "./types.ts";
+
+const DEFAULT_MAX_RESULTS = 100;
 
 export const GlobTool = {
   name: "Glob" as const,
@@ -39,17 +37,19 @@ export const inputSchema = z.object({
   cwd: z
     .preprocess((val) => convertNullString(val), z.coerce.string().nullable())
     .describe("Current working directory override. (default: process.cwd())"),
+  maxResults: z
+    .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
+    .describe(
+      "Maximum number of files to return. Set to 0 for no limit. (Default: 100)",
+    ),
 });
 
 type GlobInputSchema = z.infer<typeof inputSchema>;
 
-export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
-  const { tokenCounter } = options;
-
+export const createGlobTool = () => {
   return {
     toolDef: {
-      description:
-        "Search for files using glob patterns (e.g., `*.ts`, `**/*.test.ts`, `src/**/*.js`). Uses the fast-glob library with support for gitignore, recursive searching, and directory expansion.",
+      description: `Search for files using glob patterns (e.g., [1m*.ts[0m, [1m**/*.test.ts[0m, [1msrc/**/*.js[0m). Uses the fast-glob library with support for .gitignore, recursive searching, directory expansion, and automatic result limiting to prevent overwhelming output. Default limit is ${DEFAULT_MAX_RESULTS} files. Use maxResults parameter to override this limit.`,
       inputSchema,
     },
     async *execute(
@@ -61,6 +61,7 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
         expandDirectories,
         ignoreFiles,
         cwd,
+        maxResults,
       }: GlobInputSchema,
       { toolCallId, abortSignal }: ToolExecutionOptions,
     ): AsyncGenerator<ToolResult> {
@@ -146,43 +147,38 @@ export const createGlobTool = (options: { tokenCounter: TokenCounter }) => {
           })
           .map((file) => file.path);
 
+        // Set default limits
+        const effectiveMaxResults = maxResults ?? DEFAULT_MAX_RESULTS;
+
+        // Apply maxResults limit
+        const limitedFiles =
+          effectiveMaxResults && effectiveMaxResults > 0
+            ? sortedFiles.slice(0, effectiveMaxResults)
+            : sortedFiles;
+
         // Format results
         const resultContent =
-          sortedFiles.length > 0
-            ? sortedFiles.join("\n")
+          limitedFiles.length > 0
+            ? limitedFiles.join("\n")
             : "No files found matching the specified patterns.";
 
-        try {
-          const result = await manageTokenLimit(
-            resultContent,
-            tokenCounter,
-            "Glob",
-            "Use more specific glob patterns or recursive=false to reduce matches",
-          );
+        // Build completion message with warning if results were truncated
+        const fileCount = sortedFiles.length;
+        const returnedCount = limitedFiles.length;
+        let completionMessage = `Found ${style.cyan(fileCount)} files`;
 
-          const completionMessage = `Found ${style.cyan(sortedFiles.length)} files (${result.tokenCount} tokens)`;
-
-          yield {
-            name: GlobTool.name,
-            event: "tool-completion",
-            id: toolCallId,
-            data: completionMessage,
-          };
-
-          yield result.content;
-        } catch (error) {
-          if (error instanceof TokenLimitExceededError) {
-            yield {
-              name: GlobTool.name,
-              event: "tool-error",
-              id: toolCallId,
-              data: error.message,
-            };
-            yield error.message;
-            return;
-          }
-          throw error;
+        if (returnedCount < fileCount) {
+          completionMessage += ` (showing ${style.cyan(returnedCount)} due to maxResults limit)`;
         }
+
+        yield {
+          name: GlobTool.name,
+          event: "tool-completion",
+          id: toolCallId,
+          data: completionMessage,
+        };
+
+        yield resultContent;
       } catch (error) {
         yield {
           name: GlobTool.name,

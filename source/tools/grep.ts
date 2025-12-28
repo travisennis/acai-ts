@@ -1,15 +1,13 @@
 import { execSync } from "node:child_process";
 import { inspect } from "node:util";
 import { z } from "zod";
-import { config } from "../config.ts";
 import style from "../terminal/style.ts";
-import type { TokenCounter } from "../tokens/counter.ts";
-import {
-  manageTokenLimit,
-  TokenLimitExceededError,
-} from "../tokens/threshold.ts";
+
 import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions, ToolResult } from "./types.ts";
+
+// default limit
+const DEFAULT_MAX_RESULTS = 100;
 
 export const GrepTool = {
   name: "Grep" as const,
@@ -49,18 +47,16 @@ const inputSchema = z.object({
   maxResults: z
     .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
     .describe(
-      "Maximum number of matches to return. Set to 0 for no limit. (Default: configured value)",
+      "Maximum number of matches to return. Set to 0 for no limit. (Default: 100)",
     ),
 });
 
 type GrepInputSchema = z.infer<typeof inputSchema>;
 
-export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
-  const { tokenCounter } = options;
-
+export const createGrepTool = () => {
   return {
     toolDef: {
-      description: `Search files for patterns using ripgrep (rg). Uses glob patterns for file filtering (e.g., "*.ts", "**/*.test.ts"). Auto-detects unbalanced regex patterns and falls back to fixed-string search for safety. Results are limited to prevent overwhelming output; configure via maxResults parameter.`,
+      description: `Search files for patterns using ripgrep (rg). Uses glob patterns for file filtering (e.g., "*.ts", "**/*.test.ts"). Auto-detects unbalanced regex patterns and falls back to fixed-string search for safety. Results are automatically limited to prevent overwhelming output using a hybrid approach: ripgrep's --max-count flag limits matches per file for efficiency, and post-processing ensures reasonable result counts. Default limit is ${DEFAULT_MAX_RESULTS} matches. Use maxResults parameter to override this limit.`,
       inputSchema,
     },
     async *execute(
@@ -130,9 +126,7 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
           }
         }
 
-        const projectConfig = await config.getConfig();
-        const configMaxResults = projectConfig.tools.maxResults;
-        const effectiveMaxResults = maxResults ?? configMaxResults;
+        const effectiveMaxResults = maxResults ?? DEFAULT_MAX_RESULTS;
 
         const grepResult = grepFilesStructured(pattern, path, {
           recursive,
@@ -144,62 +138,37 @@ export const createGrepTool = (options: { tokenCounter: TokenCounter }) => {
           maxResults: effectiveMaxResults,
         });
 
-        try {
-          const result = await manageTokenLimit(
-            grepResult.rawOutput,
-            tokenCounter,
-            "Grep",
-            "Use maxResults parameter, more specific patterns, or contextLines=0 to reduce output",
-          );
+        const matchCount = grepResult.matchCount;
 
-          const matchCount = grepResult.matchCount;
+        // Build completion message with preview information
+        let completionMessage = `Found ${style.cyan(matchCount)} match${matchCount === 1 ? "" : "es"}`;
 
-          // Build completion message with preview information
-          let completionMessage = `Found ${style.cyan(matchCount)} match${matchCount === 1 ? "" : "es"}`;
-
-          if (matchCount === 0) {
-            completionMessage = "Search completed - no matches found";
-          }
-
-          // Calculate unique files with matches
-          const filesWithMatches = new Set(
-            grepResult.parsedMatches
-              .filter(
-                (match) => match.isMatch && !match.isContext && match.file,
-              )
-              .map((match) => match.file),
-          ).size;
-
-          if (filesWithMatches > 0) {
-            completionMessage += ` across ${style.cyan(filesWithMatches)} file${filesWithMatches === 1 ? "" : "s"}`;
-          }
-
-          if (grepResult.contextCount > 0) {
-            completionMessage += ` with ${style.cyan(grepResult.contextCount)} context line${grepResult.contextCount === 1 ? "" : "s"}`;
-          }
-
-          completionMessage += ` (${result.tokenCount} tokens)`;
-
-          yield {
-            name: GrepTool.name,
-            event: "tool-completion",
-            id: toolCallId,
-            data: completionMessage,
-          };
-          yield result.content;
-        } catch (error) {
-          if (error instanceof TokenLimitExceededError) {
-            yield {
-              name: GrepTool.name,
-              event: "tool-error",
-              id: toolCallId,
-              data: error.message,
-            };
-            yield error.message;
-            return;
-          }
-          throw error;
+        if (matchCount === 0) {
+          completionMessage = "Search completed - no matches found";
         }
+
+        // Calculate unique files with matches
+        const filesWithMatches = new Set(
+          grepResult.parsedMatches
+            .filter((match) => match.isMatch && !match.isContext && match.file)
+            .map((match) => match.file),
+        ).size;
+
+        if (filesWithMatches > 0) {
+          completionMessage += ` across ${style.cyan(filesWithMatches)} file${filesWithMatches === 1 ? "" : "s"}`;
+        }
+
+        if (grepResult.contextCount > 0) {
+          completionMessage += ` with ${style.cyan(grepResult.contextCount)} context line${grepResult.contextCount === 1 ? "" : "s"}`;
+        }
+
+        yield {
+          name: GrepTool.name,
+          event: "tool-completion",
+          id: toolCallId,
+          data: completionMessage,
+        };
+        yield grepResult.rawOutput;
       } catch (error) {
         const errorMessage = (error as Error).message;
         let userFriendlyError = `Error searching for "${pattern}" in ${path}: ${errorMessage}`;
@@ -435,6 +404,18 @@ export function buildGrepCommand(
     command += " -F";
   }
 
+  // Use ripgrep's --max-count flag to limit matches per file for efficiency
+  // This helps prevent any single file from dominating results
+  if (
+    options.maxResults !== null &&
+    options.maxResults !== undefined &&
+    options.maxResults > 0
+  ) {
+    // Use a reasonable per-file limit (max 100 per file) to balance efficiency and completeness
+    const perFileLimit = Math.min(options.maxResults, 100);
+    command += ` --max-count=${perFileLimit}`;
+  }
+
   command += ` ${JSON.stringify(pattern)}`;
   command += ` ${JSON.stringify(path)}`;
 
@@ -631,9 +612,12 @@ export function grepFilesStructured(
     const parsedMatches = parseRipgrepOutput(rawOutput);
     const matchCount = countActualMatches(parsedMatches);
 
+    // Use the maxResults from options (which will be set by the execute function)
+    const maxResults = options.maxResults;
+
     const { truncated, isTruncated } = truncateMatches(
       parsedMatches,
-      options.maxResults,
+      maxResults,
     );
     const displayedCount = countActualMatches(truncated);
     const displayedContextCount = countContextLines(truncated);

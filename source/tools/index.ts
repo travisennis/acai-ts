@@ -2,7 +2,6 @@ import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import { tool } from "ai";
 import type { WorkspaceContext } from "../index.ts";
 import type { ModelManager } from "../models/manager.ts";
-import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import { AgentTool, createAgentTools } from "./agent.ts";
 import { BashTool, createBashTool } from "./bash.ts";
@@ -40,16 +39,13 @@ export type CompleteCliToolSet = AsyncReturnType<
 >["toolDefs"];
 
 export async function initTools({
-  tokenCounter,
   workspace,
 }: {
-  tokenCounter: TokenCounter;
   workspace: WorkspaceContext;
 }) {
   const readFileTool = await createReadFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    tokenCounter,
   });
 
   const editFileTool = await createEditFileTool({
@@ -65,33 +61,24 @@ export async function initTools({
   const directoryTreeTool = await createDirectoryTreeTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    tokenCounter,
   });
 
-  const codeInterpreterTool = await createCodeInterpreterTool({
-    tokenCounter,
-  });
+  const codeInterpreterTool = await createCodeInterpreterTool();
 
-  const globTool = createGlobTool({
-    tokenCounter,
-  });
+  const globTool = createGlobTool();
 
-  const grepTool = createGrepTool({
-    tokenCounter,
-  });
+  const grepTool = createGrepTool();
 
   const thinkTool = createThinkTool();
 
   const lsTool = await createLsTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    tokenCounter,
   });
 
   const bashTool = await createBashTool({
     baseDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    tokenCounter,
   });
 
   const dynamicTools = await loadDynamicTools({
@@ -161,7 +148,6 @@ export async function initTools({
 
   // Create batch tool with access to all executors
   const batchTool = await createBatchTool({
-    tokenCounter,
     executors,
   });
 
@@ -181,16 +167,13 @@ export async function initTools({
 }
 
 export async function initCliTools({
-  tokenCounter,
   workspace,
 }: {
-  tokenCounter: TokenCounter;
   workspace: WorkspaceContext;
 }) {
   const readFileTool = await createReadFileTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    tokenCounter,
   });
 
   const editFileTool = await createEditFileTool({
@@ -206,33 +189,24 @@ export async function initCliTools({
   const directoryTreeTool = await createDirectoryTreeTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    tokenCounter,
   });
 
-  const codeInterpreterTool = await createCodeInterpreterTool({
-    tokenCounter,
-  });
+  const codeInterpreterTool = await createCodeInterpreterTool();
 
-  const globTool = createGlobTool({
-    tokenCounter,
-  });
+  const globTool = createGlobTool();
 
-  const grepTool = createGrepTool({
-    tokenCounter,
-  });
+  const grepTool = createGrepTool();
 
   const thinkTool = createThinkTool();
 
   const lsTool = await createLsTool({
     workingDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    tokenCounter,
   });
 
   const bashTool = await createBashTool({
     baseDir: workspace.primaryDir,
     allowedDirs: workspace.allowedDirs,
-    tokenCounter,
   });
 
   const dynamicTools = await loadDynamicTools({
@@ -261,7 +235,6 @@ export async function initCliTools({
 
   // Create batch tool with access to all executors
   const batchTool = await createBatchTool({
-    tokenCounter,
     executors,
   });
 
@@ -334,18 +307,15 @@ export async function initCliTools({
 export async function initAgents({
   modelManager,
   tokenTracker,
-  tokenCounter,
   workspace,
 }: {
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
-  tokenCounter: TokenCounter;
   workspace: WorkspaceContext;
 }) {
   const agentTools = createAgentTools({
     modelManager,
     tokenTracker,
-    tokenCounter,
     workspace,
   });
 
@@ -366,18 +336,15 @@ export async function initAgents({
 export async function initCliAgents({
   modelManager,
   tokenTracker,
-  tokenCounter,
   workspace,
 }: {
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
-  tokenCounter: TokenCounter;
   workspace: WorkspaceContext;
 }) {
   const agentTools = createAgentTools({
     modelManager,
     tokenTracker,
-    tokenCounter,
     workspace,
   });
 

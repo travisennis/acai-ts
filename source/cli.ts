@@ -52,13 +52,8 @@ export class Cli {
   }
 
   async run() {
-    const {
-      promptManager,
-      modelManager,
-      tokenTracker,
-      messageHistory,
-      tokenCounter,
-    } = this.options;
+    const { promptManager, modelManager, tokenTracker, messageHistory } =
+      this.options;
 
     const abortController = new AbortController();
     const { signal } = abortController;
@@ -91,7 +86,6 @@ export class Cli {
     });
 
     const tools = await initCliTools({
-      tokenCounter,
       workspace: this.options.workspace,
     });
 

@@ -76,7 +76,6 @@ export function sessionCommand({
       let toolsTokens = 0;
       try {
         const tools = await initCliTools({
-          tokenCounter,
           workspace,
         });
         const toolDefs = tools.toolDefs;

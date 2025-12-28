@@ -4,7 +4,7 @@ import { dedent } from "../dedent.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
-import type { TokenCounter } from "../tokens/counter.ts";
+
 import type { TokenTracker } from "../tokens/tracker.ts";
 import { DirectoryTreeTool } from "./directory-tree.ts";
 import { GlobTool } from "./glob.ts";
@@ -209,10 +209,9 @@ const inputSchema = z.object({
 export const createAgentTools = (options: {
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
-  tokenCounter: TokenCounter;
   workspace: WorkspaceContext;
 }) => {
-  const { modelManager, tokenTracker, tokenCounter } = options;
+  const { modelManager, tokenTracker } = options;
 
   const toolDef = {
     description: getToolDescription(),
@@ -255,11 +254,10 @@ export const createAgentTools = (options: {
         prompt: prompt,
         temperature: aiConfig.temperature(),
         topP: aiConfig.topP(),
-        stopWhen: stepCountIs(30),
+        stopWhen: stepCountIs(100),
         providerOptions: aiConfig.providerOptions(),
         tools: (
           await initCliTools({
-            tokenCounter,
             workspace: options.workspace,
           })
         ).toolDefs,
@@ -281,7 +279,7 @@ export const createAgentTools = (options: {
         name: AgentTool.name,
         event: "tool-completion",
         id: toolCallId,
-        data: `Finished (${usage.totalTokens} tokens)`,
+        data: `Finished (${usage.outputTokens} tokens)`,
       };
 
       yield text;

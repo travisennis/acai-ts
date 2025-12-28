@@ -2,11 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import style from "../terminal/style.ts";
-import type { TokenCounter } from "../tokens/counter.ts";
-import {
-  manageTokenLimit,
-  TokenLimitExceededError,
-} from "../tokens/threshold.ts";
+
 import { isDirectory } from "../utils/filesystem/operations.ts";
 import { validatePath } from "../utils/filesystem/security.ts";
 import { convertNullString } from "../utils/zod.ts";
@@ -28,19 +24,18 @@ const inputSchema = z.object({
 
 type LsInputSchema = z.infer<typeof inputSchema>;
 
-const DEFAULT_LIMIT = 500;
+const DEFAULT_ENTRY_LIMIT = 500;
 
 export const createLsTool = async (options: {
   workingDir: string;
   allowedDirs?: string[];
-  tokenCounter: TokenCounter;
 }) => {
-  const { workingDir, allowedDirs, tokenCounter } = options;
+  const { workingDir, allowedDirs } = options;
   const allowedDirectory = allowedDirs ?? [workingDir];
 
   return {
     toolDef: {
-      description: `List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is limited to ${DEFAULT_LIMIT} entries by default. Use the limit parameter to adjust.`,
+      description: `List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is limited to ${DEFAULT_ENTRY_LIMIT} entries by default. Use the limit parameter to adjust.`,
       inputSchema,
     },
     async *execute(
@@ -54,7 +49,7 @@ export const createLsTool = async (options: {
         }
 
         const dirPath = providedPath ?? ".";
-        const effectiveLimit = limit ?? DEFAULT_LIMIT;
+        const effectiveLimit = limit ?? DEFAULT_ENTRY_LIMIT;
 
         yield {
           name: LsTool.name,
@@ -147,45 +142,21 @@ export const createLsTool = async (options: {
         // Prepare output
         const rawOutput = results.join("\n");
 
-        try {
-          const result = await manageTokenLimit(
-            rawOutput,
-            tokenCounter,
-            "LS",
-            "Use limit parameter to reduce entries or be more specific with path",
-            "utf-8",
-          );
+        // Build completion message
+        const entryCount = results.length;
+        let completionMessage = `Listed ${style.cyan(entryCount)} entr${entryCount === 1 ? "y" : "ies"}`;
 
-          // Build completion message
-          const entryCount = results.length;
-          let completionMessage = `Listed ${style.cyan(entryCount)} entr${entryCount === 1 ? "y" : "ies"}`;
-
-          if (entryLimitReached) {
-            completionMessage += ` (${effectiveLimit} limit reached)`;
-          }
-
-          completionMessage += ` (${result.tokenCount} tokens)`;
-
-          yield {
-            name: LsTool.name,
-            event: "tool-completion",
-            id: toolCallId,
-            data: completionMessage,
-          };
-          yield result.content;
-        } catch (error) {
-          if (error instanceof TokenLimitExceededError) {
-            yield {
-              name: LsTool.name,
-              event: "tool-error",
-              id: toolCallId,
-              data: error.message,
-            };
-            yield error.message;
-            return;
-          }
-          throw error;
+        if (entryLimitReached) {
+          completionMessage += ` (${effectiveLimit} limit reached)`;
         }
+
+        yield {
+          name: LsTool.name,
+          event: "tool-completion",
+          id: toolCallId,
+          data: completionMessage,
+        };
+        yield rawOutput;
       } catch (error) {
         const errorMsg = (error as Error).message;
         let userFriendlyError = errorMsg;
