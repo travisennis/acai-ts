@@ -8,6 +8,7 @@ import { Text } from "./text.ts";
 export class Loader extends Text {
   private frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
   private currentFrame = 0;
+  private topPadding: boolean;
   private intervalId: NodeJS.Timeout | null = null;
   private ui: TUI | null = null;
   private message: string;
@@ -15,16 +16,21 @@ export class Loader extends Text {
   constructor(
     ui: TUI,
     message?: string,
+    topPadding?: boolean,
     customBgRgb?: { r: number; g: number; b: number },
   ) {
     super("", 1, 0, customBgRgb);
     this.message = message ?? "Loading...";
+    this.topPadding = topPadding ?? true;
     this.ui = ui;
     this.start();
   }
 
   override render(width: number): string[] {
-    return ["", ...super.render(width)];
+    if (this.topPadding) {
+      return ["", ...super.render(width)];
+    }
+    return super.render(width);
   }
 
   start() {

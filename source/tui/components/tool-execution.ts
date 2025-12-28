@@ -131,6 +131,7 @@ export class ToolExecutionComponent extends Container {
           this.loaderComponent = new Loader(
             this.tui,
             this.handleToolStartMessage(event),
+            false,
             bgColor,
           );
           this.contentContainer.addChild(this.loaderComponent);
