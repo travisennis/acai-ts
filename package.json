@@ -41,7 +41,7 @@
     "pretest": "npm run typecheck",
     "format": "biome check --formatter-enabled=true --linter-enabled=false --write ./ && biome format --write",
     "dev": "node --no-warnings --env-file=.env ./source/index.ts",
-    "oxlint": "npx oxlint@latest --ignore-path .gitignore --deny correctness --deny suspicous --deny pedantic --deny style --node-plugin",
+    "oxlint": "oxlint --type-aware --ignore-path .gitignore --deny correctness --deny suspicous --deny pedantic --deny style --node-plugin ./source",
     "knip": "npx knip",
     "check": "npx npm-check-updates --interactive --format group",
     "cpd": "npx jscpd ./source",
@@ -81,6 +81,8 @@
     "commitlint": "^20.2.0",
     "domhandler": "^5.0.3",
     "husky": "^9.1.7",
+    "oxlint": "^1.35.0",
+    "oxlint-tsgolint": "^0.10.0",
     "typescript": "^5.9.3"
   },
   "engines": {
