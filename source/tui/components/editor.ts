@@ -134,7 +134,7 @@ export class Editor implements Component {
   private history: string[] = [];
   private historyIndex = -1; // -1 = not browsing, 0 = most recent, 1 = older, etc.
 
-  public onSubmit?: (text: string) => void;
+  public onSubmit?: (text: string) => void | Promise<void>;
   public onChange?: (text: string) => void;
   public disableSubmit = false;
 

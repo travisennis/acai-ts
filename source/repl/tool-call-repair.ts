@@ -24,7 +24,7 @@ async function remoteToolCallRepair(
   const { output: repairedArgs } = await generateText({
     model: modelManager.getModel("tool-repair"),
     output: Output.object({
-      schema: tool.inputSchema as z.ZodSchema<unknown>,
+      schema: tool.inputSchema as z.ZodType<unknown>,
     }),
     prompt: [
       `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
@@ -42,7 +42,7 @@ const localToolCallRepair = async (
   toolCall: LanguageModelV3ToolCall,
   tool: Tool,
 ) => {
-  const schema = tool.inputSchema as z.ZodSchema<unknown>;
+  const schema = tool.inputSchema as z.ZodType<unknown>;
   const repairedArgs = jsonrepair(toolCall.input);
   const validatedArgs = schema.parse(JSON.parse(repairedArgs));
   return { ...toolCall, input: JSON.stringify(validatedArgs) };

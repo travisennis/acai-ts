@@ -120,7 +120,7 @@ export class Cli {
       // this tracks the usage of every step in the call to streamText. it's a cumulative usage.
       tokenTracker.trackUsage("cli", result.usage);
 
-      messageHistory.save();
+      await messageHistory.save();
 
       process.stdout.end(
         result.text.endsWith("\n") ? result.text : `${result.text}\n`,
@@ -175,7 +175,7 @@ const toolCallRepair = <T extends ToolSet>(modelManager: ModelManager) => {
       const { output: repairedArgs } = await generateText({
         model: modelManager.getModel("tool-repair"),
         output: Output.object({
-          schema: tool.inputSchema as z.ZodSchema<unknown>,
+          schema: tool.inputSchema as z.ZodType<unknown>,
         }),
         prompt: [
           `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,

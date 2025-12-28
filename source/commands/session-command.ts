@@ -128,13 +128,13 @@ export function sessionCommand({
 
       // 7) Token usage and costs
       const totalUsage = tokenTracker.getTotalUsage();
-      const inputTokens = totalUsage.inputTokens || 0;
-      const outputTokens = totalUsage.outputTokens || 0;
+      const inputTokens = totalUsage.inputTokens ?? 0;
+      const outputTokens = totalUsage.outputTokens ?? 0;
       const totalTokens = inputTokens + outputTokens;
 
       // Calculate costs using model metadata
-      const inputCost = (meta.costPerInputToken || 0) * inputTokens;
-      const outputCost = (meta.costPerOutputToken || 0) * outputTokens;
+      const inputCost = (meta.costPerInputToken ?? 0) * inputTokens;
+      const outputCost = (meta.costPerOutputToken ?? 0) * outputTokens;
       const totalCost = inputCost + outputCost;
 
       // 8) Usage breakdown by app
