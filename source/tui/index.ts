@@ -22,6 +22,6 @@ export { Text } from "./components/text.ts";
 export { UserMessageComponent } from "./components/user-message.ts";
 // Terminal interface and implementations
 export { ProcessTerminal } from "./terminal.ts";
-export { type Component, Container, TUI } from "./tui.ts";
+export { Container, TUI } from "./tui.ts";
 // Utilities
 export { visibleWidth } from "./utils.ts";

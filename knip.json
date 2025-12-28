@@ -1,4 +1,5 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "project": ["source/**/*.{js,ts}"]
+  "project": ["source/**/*.{js,ts}"],
+  "ignoreDependencies": ["pino-roll", "pino-pretty", "@commitlint/config-conventional"]
 }

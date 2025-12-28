@@ -5,7 +5,7 @@ import { logger } from "./logger.ts";
 import { parseFrontMatter } from "./utils/yaml.ts";
 
 // Core skill interfaces
-export interface SkillFrontmatter {
+interface SkillFrontmatter {
   name: string;
   description: string;
   license?: string;
