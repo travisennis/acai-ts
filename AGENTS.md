@@ -1,7 +1,7 @@
-# Agent Guidelines for Acai-ts
+# Agent Guidelines for acai-ts
 
 ## Project Overview
-Acai-TS is an AI assistant CLI tool built with TypeScript. The project uses a modular architecture with source code in `./source`, organized into commands, tools, models, and UI components. Tests are in `/test`. Tech stack: Node.js ≥20, TypeScript (ESNext), Biome for linting/formatting, and AI SDK providers.
+This app, acai-ts, is an AI-assistant CLI tool built with TypeScript. It is an agent hardness similar to Claude Code, opencode, and Codex. The project uses a modular architecture with source code in `./source`, organized into commands, tool (agent/llm callable), models, and UI components. Tests are in `/test`. Tech stack: Node.js ≥20, TypeScript (ESNext), Biome for linting/formatting, and AI SDK providers.
 
 ## Build & Development Commands
 - **Build:** `npm run build`
@@ -49,4 +49,4 @@ Acai-TS is an AI assistant CLI tool built with TypeScript. The project uses a mo
 - Never add comments explaining edits - only comments that explain how code works
 - Always run `Full Check` before committing
 - Whenever adding or removing files from the project, always update ./ARCHITECTURE.md
-- Whenever adding or removing files from the project or adding or removing features from the project, check to see if ./README.md should be updated
+- Whenever adding or removing files from the project or adding or removing features from the project, update ./README.md if needed
