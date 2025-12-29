@@ -1,3 +1,2 @@
-- The tool execution tui component does not display the progress component properly. when it is being displayed there is a blank line right above it that does not share the background color of this component. it appears to be a spacer or a padding issue that needs to be fixed.
 - the footer component should show the token count and cost for the entire session and not just the most recent step/prompt 
 - Use macos seatbelts and linux bubbelewrap sandboxing as seen in openai codex
