@@ -14,7 +14,7 @@ This app, acai-ts, is an AI-assistant CLI tool built with TypeScript. It is an a
 - **Run Single Test:** `node --no-warnings --test test/path/to/test.ts`
 - **Dev Mode:** `npm run dev`
 - **Find Unused Code/Deps:** `npm run knip`
-- **Full Check:** npm run typecheck && npm run lint:fix && npm run format
+- **Full Check (typecheck, lint, format):** `npm run check` 
 
 ## Running the App
 - **CLI:** `acai -p <prompt>`

@@ -43,10 +43,11 @@
     "dev": "node --no-warnings --env-file=.env ./source/index.ts",
     "oxlint": "oxlint --type-aware --ignore-path .gitignore --deny correctness --deny suspicous --deny pedantic --deny style --node-plugin ./source",
     "knip": "npx knip",
-    "check": "npx npm-check-updates --interactive --format group",
+    "update": "npx npm-check-updates --interactive --format group",
     "cpd": "npx jscpd ./source",
     "typecheck": "tsc --noEmit --pretty -p tsconfig.json",
-    "typecheck:staged": "npm run typecheck"
+    "typecheck:staged": "npm run typecheck",
+    "check": "npm run typecheck && npm run lint:fix && npm run format"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.1",
