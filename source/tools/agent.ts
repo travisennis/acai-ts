@@ -1,10 +1,10 @@
-import { generateText, stepCountIs } from "ai";
+import { stepCountIs, streamText } from "ai";
 import { z } from "zod";
 import { dedent } from "../dedent.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
-
+import style from "../terminal/style.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import { DirectoryTreeTool } from "./directory-tree.ts";
 import { GlobTool } from "./glob.ts";
@@ -51,6 +51,14 @@ Your output must function as **technical documentation of the current system**, 
 * Never fill gaps with assumptions
 
 Accuracy and traceability are more important than brevity.
+
+The agent is complete when:
+
+- The user’s question can be answered directly and unambiguously
+- The primary execution and data flows are fully traced
+- All components that materially affect behavior are documented
+- Additional files would not change the explanation in a meaningful way
+- Would further digging change the answer? If no, then stop.
 
 ---
 
@@ -166,6 +174,8 @@ Your documentation should leave the reader confident that:
 
 You are not a designer, reviewer, or problem solver.
 You are a **precise, neutral cartographer of the existing system**.
+
+**Current working directory**: ${process.cwd()}
 `;
 
 const fastScanSystemPrompt = dedent`
@@ -267,6 +277,8 @@ Your output should:
 
 You are a **navigator, not a builder**.
 Map the terrain quickly, clearly, and accurately.
+
+**Current working directory**: ${process.cwd()}
 `;
 
 export const AgentTool = {
@@ -364,7 +376,7 @@ export const createAgentTools = (options: {
         prompt,
       });
 
-      const { text, usage } = await generateText({
+      const result = streamText({
         model: modelManager.getModel("task-agent"),
         maxOutputTokens: aiConfig.maxOutputTokens(),
         system: systemPromptMap[researchMode],
@@ -383,8 +395,21 @@ export const createAgentTools = (options: {
         experimental_activeTools: [...TOOLS] as ToolName[],
       });
 
+      for await (const chunk of result.fullStream) {
+        if (chunk.type === "tool-call") {
+          yield {
+            name: AgentTool.name,
+            event: "tool-update",
+            id: toolCallId,
+            data: `- ${chunk.toolName} ${style.dim(JSON.stringify(chunk.input).slice(0, 50))}`,
+          };
+        }
+      }
+
+      const usage = await result.usage;
       tokenTracker.trackUsage("task-agent", usage);
 
+      const text = await result.text;
       yield {
         name: AgentTool.name,
         event: "tool-update",
