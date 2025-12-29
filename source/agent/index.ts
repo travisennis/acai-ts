@@ -244,6 +244,17 @@ export class Agent {
               sessionManager.appendResponseMessages(step.response.messages);
             });
           },
+          onError({ error }) {
+            if (
+              typeof error === "object" &&
+              error != null &&
+              "message" in error
+            ) {
+              logger.error(error.message);
+            } else {
+              logger.error(error);
+            }
+          },
         });
 
         let accumulatedText = "";
@@ -458,17 +469,19 @@ export class Agent {
         this._state.usage.inputTokens = stepUsage.inputTokens ?? 0;
         this._state.usage.outputTokens = stepUsage.outputTokens ?? 0;
         this._state.usage.totalTokens = stepUsage.totalTokens ?? 0;
-        this._state.usage.cachedInputTokens = stepUsage.cachedInputTokens ?? 0;
-        this._state.usage.reasoningTokens = stepUsage.reasoningTokens ?? 0;
+        this._state.usage.cachedInputTokens =
+          stepUsage.inputTokenDetails.cacheReadTokens ?? 0;
+        this._state.usage.reasoningTokens =
+          stepUsage.outputTokenDetails.reasoningTokens ?? 0;
         sessionManager.setContextWindow(stepUsage.totalTokens ?? 0);
 
         this._state.totalUsage.inputTokens += stepUsage.inputTokens ?? 0;
         this._state.totalUsage.outputTokens += stepUsage.outputTokens ?? 0;
         this._state.totalUsage.totalTokens += stepUsage.totalTokens ?? 0;
         this._state.totalUsage.cachedInputTokens +=
-          stepUsage.cachedInputTokens ?? 0;
+          stepUsage.inputTokenDetails.cacheReadTokens ?? 0;
         this._state.totalUsage.reasoningTokens +=
-          stepUsage.reasoningTokens ?? 0;
+          stepUsage.outputTokenDetails.reasoningTokens ?? 0;
 
         // If finishReason is not tool-calls, break
         const finishReason = await result.finishReason;
