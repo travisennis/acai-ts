@@ -202,8 +202,6 @@ export class NewRepl {
             new Text(
               style.green(
                 `Context will be added to prompt. (${contextTokenCount} tokens)`,
-                1,
-                1,
               ),
             ),
           );
