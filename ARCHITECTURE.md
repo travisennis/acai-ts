@@ -72,6 +72,7 @@ acai-ts
 │   │   ├── groq-provider.ts
 │   │   ├── manager.ts
 │   │   ├── openai-provider.ts
+│   │   ├── opencode-zen-provider.ts
 │   │   ├── openrouter-provider.ts
 │   │   ├── providers.ts
 │   │   └── xai-provider.ts
@@ -301,6 +302,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **models/groq-provider.ts**: Adapter for Groq AI provider.
 - **models/manager.ts**: Manages selection and invocation of AI providers and models.
 - **models/openai-provider.ts**: Adapter for OpenAI provider.
+- **models/opencode-zen-provider.ts**: Adapter for OpenCode Zen provider.
 - **models/openrouter-provider.ts**: Adapter for OpenRouter provider.
 - **models/providers.ts**: Base types and utilities for all providers.
 - **models/xai-provider.ts**: Adapter for xAI provider.

@@ -7,15 +7,15 @@ import type { ModelMetadata } from "./providers.ts";
 
 const completionsClient = createOpenAICompatible({
   name: "opencode",
-  apiKey: process.env["OPENCODe_ZEN_API_KEY"] ?? "",
+  apiKey: process.env["OPENCODE_ZEN_API_TOKEN"] ?? "",
   // biome-ignore lint/style/useNamingConvention: third-party controlled
-  baseURL: "https://opencode.ai/zen/v1/chat/completions",
+  baseURL: "https://opencode.ai/zen/v1", ///chat/completions",
 });
 
 const messagesClient = createAnthropic({
   // biome-ignore lint/style/useNamingConvention: third-party controlled
-  baseURL: "https://opencode.ai/zen/v1/messages",
-  apiKey: process.env["OPENCODe_ZEN_API_KEY"] ?? "",
+  baseURL: "https://opencode.ai/zen/v1", // /messages",
+  apiKey: process.env["OPENCODE_ZEN_API_TOKEN"] ?? "",
 });
 
 // const openRouterClient = createOpenAI({

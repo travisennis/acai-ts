@@ -35,6 +35,7 @@ export function healthCommand(
           name: "OPENROUTER_API_KEY",
           description: "OpenRouter (multiple models)",
         },
+        { name: "OPENCODE_ZEN_API_TOKEN", description: "OpenCode Zen" },
 
         // Application Configuration
         { name: "LOG_LEVEL", description: "Logging level" },

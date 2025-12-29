@@ -132,6 +132,9 @@ X_AI_API_KEY=your_xai_api_key_here
 
 # OpenRouter (Access to multiple models)
 OPENROUTER_API_KEY=your_openrouter_api_key_here
+
+# OpenCode Zen
+OPENCODE_ZEN_API_TOKEN=your_opencode_zen_api_token_here
 ```
 
 ### Application Configuration
