@@ -347,7 +347,7 @@ export const createAgentTools = (options: {
       name: AgentTool.name,
       event: "tool-init",
       id: toolCallId,
-      data: "Invoking agent...",
+      data: `Invoking agent in ${researchMode} mode...`,
     };
 
     yield {
