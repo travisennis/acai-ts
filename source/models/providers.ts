@@ -26,6 +26,11 @@ import {
   openaiProvider,
 } from "./openai-provider.ts";
 import {
+  opencodeZenModelNames,
+  opencodeZenModelRegistry,
+  opencodeZenProvider,
+} from "./opencode-zen-provider.ts";
+import {
   openrouterModelNames,
   openrouterModelRegistry,
   openrouterProvider,
@@ -44,6 +49,7 @@ const providers = [
   "deepseek",
   "openrouter",
   "xai",
+  "opencode",
 ] as const;
 
 type ModelProvider = (typeof providers)[number];
@@ -56,6 +62,7 @@ const registry = createProviderRegistry({
   ...openaiProvider,
   ...openrouterProvider,
   ...xaiProvider,
+  ...opencodeZenProvider,
 });
 
 export const models = [
@@ -66,6 +73,7 @@ export const models = [
   ...deepseekModelNames,
   ...openrouterModelNames,
   ...xaiModelNames,
+  ...opencodeZenModelNames,
 ] as const;
 
 export type ModelName =
@@ -76,7 +84,8 @@ export type ModelName =
   | (`google:${string}` & {})
   | (`groq:${string}` & {})
   | (`deepseek:${string}` & {})
-  | (`openrouter:${string}` & {});
+  | (`openrouter:${string}` & {})
+  | (`opencode:${string}` & {});
 
 export function isSupportedModel(model: unknown): model is ModelName {
   return (
@@ -88,7 +97,8 @@ export function isSupportedModel(model: unknown): model is ModelName {
         model.startsWith("google:") ||
         model.startsWith("groq:") ||
         model.startsWith("xai:") ||
-        model.startsWith("deepseek:")))
+        model.startsWith("deepseek:") ||
+        model.startsWith("opencode:")))
   );
 }
 
@@ -118,6 +128,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   ...deepseekModelRegistry,
   ...openrouterModelRegistry,
   ...xaiModelRegistry,
+  ...opencodeZenModelRegistry,
 };
 
 // Check if a model name is valid
