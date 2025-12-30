@@ -1,1 +1,0 @@
-- Always replace usages console.log with usages of console.info.
