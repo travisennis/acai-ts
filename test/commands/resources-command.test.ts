@@ -17,9 +17,11 @@ describe("/resources command", () => {
     // Mock the dependencies directly on the options
     const options = createMockCommandOptions();
 
-    // Mock config.readAgentsFile
-    const mockReadAgentsFile = mock.fn(async () => "# AGENTS.md content");
-    options.config.readAgentsFile = mockReadAgentsFile;
+    // Mock config.readAgentsFiles
+    const mockReadAgentsFiles = mock.fn(async () => [
+      { path: "./AGENTS.md", content: "# AGENTS.md content" },
+    ]);
+    options.config.readAgentsFiles = mockReadAgentsFiles;
 
     // We can't easily mock loadSkills and loadContexts without dependency injection
     // For now, we'll test that the command runs without throwing
@@ -37,7 +39,7 @@ describe("/resources command", () => {
     // Should have called showModal
     assert.equal(mockTui.showModal.mock.calls.length, 1);
     // Should have called readAgentsFile
-    assert.equal(mockReadAgentsFile.mock.calls.length, 1);
+    assert.equal(mockReadAgentsFiles.mock.calls.length, 1);
   });
 
   it("handles AGENTS.md not found", async () => {
@@ -47,9 +49,9 @@ describe("/resources command", () => {
 
     const options = createMockCommandOptions();
 
-    // Mock config.readAgentsFile to return empty string (not found)
-    const mockReadAgentsFile = mock.fn(async () => "");
-    options.config.readAgentsFile = mockReadAgentsFile;
+    // Mock config.readAgentsFiles to return empty array (not found)
+    const mockReadAgentsFiles = mock.fn(async () => []);
+    options.config.readAgentsFiles = mockReadAgentsFiles;
 
     const cmd = resourcesCommand(options);
     await cmd.handle([], {
@@ -60,7 +62,7 @@ describe("/resources command", () => {
     });
 
     assert.equal(mockTui.showModal.mock.calls.length, 1);
-    assert.equal(mockReadAgentsFile.mock.calls.length, 1);
+    assert.equal(mockReadAgentsFiles.mock.calls.length, 1);
   });
 
   it("handles errors gracefully", async () => {
@@ -70,11 +72,11 @@ describe("/resources command", () => {
 
     const options = createMockCommandOptions();
 
-    // Mock config.readAgentsFile to throw an error
-    const mockReadAgentsFile = mock.fn(async () => {
+    // Mock config.readAgentsFiles to throw an error
+    const mockReadAgentsFiles = mock.fn(async () => {
       throw new Error("Failed to read AGENTS.md");
     });
-    options.config.readAgentsFile = mockReadAgentsFile;
+    options.config.readAgentsFiles = mockReadAgentsFiles;
 
     const cmd = resourcesCommand(options);
     await cmd.handle([], {
@@ -86,6 +88,6 @@ describe("/resources command", () => {
 
     // Should still show modal with error
     assert.equal(mockTui.showModal.mock.calls.length, 1);
-    assert.equal(mockReadAgentsFile.mock.calls.length, 1);
+    assert.equal(mockReadAgentsFiles.mock.calls.length, 1);
   });
 });

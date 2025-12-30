@@ -7,14 +7,28 @@ import type { CompleteToolNames } from "./tools/index.ts";
 import { getCurrentBranch, inGitDirectory } from "./utils/git.ts";
 
 async function getProjectContext() {
-  const rules = (await config.readAgentsFile()).trim();
+  const agentsFiles = await config.readAgentsFiles();
+  const userAgentsFile = agentsFiles.find(
+    (f) => f.path === "~/.acai/AGENTS.md",
+  );
+  const cwdAgentsFile = agentsFiles.find((f) => f.path === "./AGENTS.md");
+  const userRules = (userAgentsFile?.content ?? "").trim();
+  const cwdRules = (cwdAgentsFile?.content ?? "").trim();
   const learnedRules = (await config.readProjectLearnedRulesFile()).trim();
   let result = "";
-  if (rules) {
-    result += `## Project Context:\n\n### AGENTS.md for ./\n\n<instructions>\n${rules}\n</instructions>\n\n`;
+
+  if (userRules || cwdRules) {
+    result += "## Project Context:\n\n";
+    if (userRules) {
+      result += `### ~/.acai/AGENTS.md\n\n<instructions>\n${userRules}\n</instructions>\n\n`;
+    }
+    if (cwdRules) {
+      result += `### ./AGENTS.md\n\n<instructions>\n${cwdRules}\n</instructions>\n\n`;
+    }
   }
+
   if (learnedRules) {
-    if (!rules) {
+    if (!userRules && !cwdRules) {
       result += "## Project Rules:\n\n";
     }
     result += `### Important rules to follow\n\n${learnedRules}`;

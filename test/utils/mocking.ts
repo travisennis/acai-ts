@@ -183,7 +183,6 @@ export function createMockConfig(): ConfigManager {
       notify: true,
       readOnlyFiles: [],
     })),
-    readAgentsFile: mock.fn(async () => ""),
     readProjectLearnedRulesFile: mock.fn(async () => ""),
     readCachedLearnedRulesFile: mock.fn(async () => ""),
   } as unknown as ConfigManager;

@@ -182,16 +182,32 @@ export class ConfigManager {
     await fs.writeFile(configPath, JSON.stringify(configData, null, 2));
   }
 
-  async readAgentsFile(): Promise<string> {
-    const agentsPath = path.join(process.cwd(), "AGENTS.md");
-    try {
-      return await fs.readFile(agentsPath, "utf8");
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return "";
+  async readAgentsFiles(): Promise<{ path: string; content: string }[]> {
+    const files: { path: string; content: string }[] = [];
+
+    const agentsPaths = [
+      {
+        absolute: path.join(this.app.getPath(), "AGENTS.md"),
+        relative: "~/.acai/AGENTS.md",
+      },
+      {
+        absolute: path.join(process.cwd(), "AGENTS.md"),
+        relative: "./AGENTS.md",
+      },
+    ];
+    for (const { absolute, relative } of agentsPaths) {
+      try {
+        const content = await fs.readFile(absolute, "utf8");
+        files.push({
+          path: relative,
+          content,
+        });
+      } catch (_error) {
+        // ignore
       }
-      throw error;
     }
+
+    return files;
   }
 
   async writeAgentsFile(rules: string): Promise<void> {

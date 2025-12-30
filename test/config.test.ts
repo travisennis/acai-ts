@@ -193,19 +193,20 @@ test("getConfig merges app and project configs with project precedence", async (
   });
 });
 
-test("readAgentsFile and writeAgentsFile operate in CWD", async () => {
+test("readAgentsFiles and writeAgentsFile operate in CWD", async () => {
   await withTempDir(async (tmpCwd) => {
     const oldCwd = process.cwd();
     try {
       process.chdir(tmpCwd);
       const mgr = new ConfigManager();
 
-      const initial = await mgr.readAgentsFile();
-      assert.equal(initial, "");
+      const initial = await mgr.readAgentsFiles();
+      assert.equal(initial.length, 0);
 
       await mgr.writeAgentsFile("# Agents\nagent1");
-      const content = await mgr.readAgentsFile();
-      assert(content.includes("agent1"));
+      const files = await mgr.readAgentsFiles();
+      assert.equal(files.length, 1);
+      assert(files[0].content.includes("agent1"));
     } finally {
       process.chdir(oldCwd);
     }

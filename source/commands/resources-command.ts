@@ -20,8 +20,7 @@ export function resourcesCommand(options: CommandOptions): ReplCommand {
         // Load all resources
         const skills = await loadSkills();
 
-        const agentsContent = await options.config.readAgentsFile();
-        const agentsExists = agentsContent.length > 0;
+        const agentsFiles = await options.config.readAgentsFiles();
 
         // Group skills by source
         const projectSkills = skills.filter((s) => s.source === "project");
@@ -75,11 +74,12 @@ ${style.dim(skill.filePath)} ${style.dim(`[${skill.source}]`)}
 
         // AGENTS.md section
         lines.push(style.gray("AGENTS.md:"));
-        const agentsPath = "./AGENTS.md";
-        if (agentsExists) {
-          lines.push(`  • ${agentsPath} ${style.green("(Exists)")}`);
-        } else {
-          lines.push(`  • ${agentsPath} ${style.dim("(Not found)")}`);
+        for (const agentsFile of agentsFiles) {
+          if (agentsFile.content.length > 0) {
+            lines.push(`  • ${agentsFile.path} ${style.green("(Exists)")}`);
+          } else {
+            lines.push(`  • ${agentsFile.path} ${style.dim("(Not found)")}`);
+          }
         }
 
         // Create modal content
