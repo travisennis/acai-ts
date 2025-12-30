@@ -60,7 +60,7 @@ export class AiConfig {
       modelConfig.provider === "anthropic" && modelConfig.supportsReasoning
         ? modelConfig.maxOutputTokens - thinkingLevel.tokenBudget
         : modelConfig.maxOutputTokens;
-    return maxTokens;
+    return modelConfig.provider === "opencode" ? 8000 : maxTokens;
   }
 
   temperature() {
