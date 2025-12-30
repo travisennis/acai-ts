@@ -7,6 +7,7 @@ import type { ModelManager } from "./models/manager.ts";
 import type { PromptManager } from "./prompts/manager.ts";
 import { getProjectStatusLine } from "./repl/project-status-line.ts";
 import type { SessionManager } from "./sessions/manager.ts";
+import { alert, startProgress, stopProgress } from "./terminal/control.ts";
 import style from "./terminal/style.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
@@ -242,13 +243,16 @@ export class NewRepl {
     const eventType = event.type;
     switch (eventType) {
       case "agent-start":
-        // Show loading animation
+        // start the terminal progress display
+        startProgress();
+        // disable the submit functionality of the editor
         this.editor.disableSubmit = true;
         // Stop old loader before clearing
         if (this.loadingAnimation) {
           this.loadingAnimation.stop();
         }
         this.statusContainer.clear();
+        // Show loading animation
         this.loadingAnimation = new Loader(
           this.tui,
           "Working... (esc to interrupt)",
@@ -321,6 +325,10 @@ export class NewRepl {
       }
 
       case "agent-stop":
+        // stop the terminal progress display
+        stopProgress();
+        // send a terminal alert to indicate the agent is done
+        alert();
         // Stop loading animation
         if (this.loadingAnimation) {
           this.loadingAnimation.stop();
