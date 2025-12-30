@@ -210,6 +210,7 @@ export class ToolExecutionComponent extends Container {
       (event) =>
         event.type === "tool-call-start" && event.toolCallId === toolCallId,
     );
+
     if (!hasStartEvent && events.length > 0) {
       // Create synthetic start event using the first event's name
       const firstEvent = events[0];
