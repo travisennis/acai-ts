@@ -588,7 +588,7 @@ export class Editor implements Component {
           });
         }
       } else {
-        // Line needs wrapping - use cached graphemes and widths
+        // Line needs wrapping - wrap at word boundaries only
         const chunks: {
           text: string;
           startIndex: number;
@@ -600,29 +600,71 @@ export class Editor implements Component {
         let chunkStartIndex = 0;
         let currentIndex = 0;
 
-        for (let g = 0; g < metrics.graphemes.length; g++) {
-          const grapheme = metrics.graphemes[g];
-          const graphemeWidth = metrics.widths[g];
+        // Split into words (separated by whitespace) while preserving separators
+        // This regex captures: (word characters) or (whitespace) or (non-word, non-whitespace)
+        const wordPattern = /(\s+)|(\S+\s*)|(\S)/g;
+        const parts: Array<{ text: string; isWord: boolean; width: number }> =
+          [];
+        const tempLine = line;
+        let match: RegExpExecArray | null = wordPattern.exec(tempLine);
+        let pos = 0;
 
-          if (
-            currentWidth + graphemeWidth > contentWidth &&
-            currentChunk !== ""
-          ) {
-            // Start a new chunk
+        while (match !== null) {
+          const matchedText = match[0];
+          const isWhitespace = /^\s*$/.test(matchedText);
+          const width = matchedText
+            .split("")
+            .reduce((sum, c) => sum + (c === "\t" ? 3 : 1), 0);
+
+          parts.push({ text: matchedText, isWord: !isWhitespace, width });
+          pos = match.index + matchedText.length;
+          match = wordPattern.exec(tempLine);
+        }
+
+        // Handle remaining text after last match
+        if (pos < line.length) {
+          const remaining = line.slice(pos);
+          const width = remaining
+            .split("")
+            .reduce((sum, c) => sum + (c === "\t" ? 3 : 1), 0);
+          parts.push({ text: remaining, isWord: true, width });
+        }
+
+        for (const part of parts) {
+          const wouldExceed = currentWidth + part.width > contentWidth;
+          const isWordPart =
+            part.isWord &&
+            currentChunk.length > 0 &&
+            !currentChunk.endsWith(" ");
+
+          if (wouldExceed && isWordPart && currentChunk.trimEnd().length > 0) {
+            // Current word would overflow - break before this word
             chunks.push({
               text: currentChunk,
               startIndex: chunkStartIndex,
               endIndex: currentIndex,
               width: currentWidth,
             });
-            currentChunk = grapheme;
-            currentWidth = graphemeWidth;
+            currentChunk = part.text;
+            currentWidth = part.width;
+            chunkStartIndex = currentIndex;
+          } else if (wouldExceed && currentChunk !== "") {
+            // Non-word or start of line overflow - break here
+            chunks.push({
+              text: currentChunk,
+              startIndex: chunkStartIndex,
+              endIndex: currentIndex,
+              width: currentWidth,
+            });
+            currentChunk = part.text;
+            currentWidth = part.width;
             chunkStartIndex = currentIndex;
           } else {
-            currentChunk += grapheme;
-            currentWidth += graphemeWidth;
+            // Add to current chunk
+            currentChunk += part.text;
+            currentWidth += part.width;
           }
-          currentIndex += grapheme.length;
+          currentIndex += part.text.length;
         }
 
         // Push the last chunk
@@ -1036,31 +1078,86 @@ export class Editor implements Component {
       } else if (lineVisWidth <= width) {
         visualLines.push({ logicalLine: i, startCol: 0, length: line.length });
       } else {
-        // Line needs wrapping - use cached graphemes and widths
+        // Line needs wrapping - wrap at word boundaries only
+        const parts: Array<{
+          text: string;
+          isWord: boolean;
+          width: number;
+          charLength: number;
+        }> = [];
+        const wordPattern = /(\s+)|(\S+\s*)|(\S)/g;
+        const tempLine = line;
+        let match: RegExpExecArray | null = wordPattern.exec(tempLine);
+        let pos = 0;
+
+        while (match !== null) {
+          const matchedText = match[0];
+          const isWhitespace = /^\s*$/.test(matchedText);
+          const width = matchedText
+            .split("")
+            .reduce((sum, c) => sum + (c === "\t" ? 3 : 1), 0);
+
+          parts.push({
+            text: matchedText,
+            isWord: !isWhitespace,
+            width,
+            charLength: matchedText.length,
+          });
+          pos = match.index + matchedText.length;
+          match = wordPattern.exec(tempLine);
+        }
+
+        if (pos < line.length) {
+          const remaining = line.slice(pos);
+          const width = remaining
+            .split("")
+            .reduce((sum, c) => sum + (c === "\t" ? 3 : 1), 0);
+          parts.push({
+            text: remaining,
+            isWord: true,
+            width,
+            charLength: remaining.length,
+          });
+        }
+
         let currentWidth = 0;
         let chunkStartIndex = 0;
         let currentIndex = 0;
 
-        for (let g = 0; g < metrics.graphemes.length; g++) {
-          const grapheme = metrics.graphemes[g];
-          const graphemeWidth = metrics.widths[g];
+        for (const part of parts) {
+          const wouldExceed = currentWidth + part.width > width;
+          const isWordPart =
+            part.isWord &&
+            currentIndex > chunkStartIndex &&
+            !line.slice(chunkStartIndex, currentIndex).endsWith(" ");
 
           if (
-            currentWidth + graphemeWidth > width &&
-            currentIndex > chunkStartIndex
+            wouldExceed &&
+            isWordPart &&
+            currentIndex > chunkStartIndex &&
+            line.slice(chunkStartIndex, currentIndex).trimEnd().length > 0
           ) {
-            // Start a new chunk
+            // Break before this word
             visualLines.push({
               logicalLine: i,
               startCol: chunkStartIndex,
               length: currentIndex - chunkStartIndex,
             });
             chunkStartIndex = currentIndex;
-            currentWidth = graphemeWidth;
+            currentWidth = part.width;
+          } else if (wouldExceed && currentIndex > chunkStartIndex) {
+            // Break here
+            visualLines.push({
+              logicalLine: i,
+              startCol: chunkStartIndex,
+              length: currentIndex - chunkStartIndex,
+            });
+            chunkStartIndex = currentIndex;
+            currentWidth = part.width;
           } else {
-            currentWidth += graphemeWidth;
+            currentWidth += part.width;
           }
-          currentIndex += grapheme.length;
+          currentIndex += part.charLength;
         }
 
         // Push the last chunk
