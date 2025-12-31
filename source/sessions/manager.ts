@@ -300,7 +300,8 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
     const app = "title-conversation";
 
     const systemPrompt =
-      "You are an assistant who task is to analyze messages to generate a conversation topic that can be used as a conversation title. For each message, generate a 4-7 word title that captures the topic. Return only the title with no other text.\n\nExamples:\nMessage:\nHow do I implement authentication in my Express app?\nTitle: Express Authentication Implementation\n\nMessage:\nCan you help me debug this React component that isn't rendering correctly?\nTitle:React Component Rendering Debug";
+      "You are an assistant who task is to analyze messages to generate a conversation topic that can be used as a conversation title. For each message, generate a short title that captures the topic. Return only the title with no other text.\n\nExamples:\nMessage:\nHow do I implement authentication in my Express app?\nTitle: Express Authentication Implementation\n\nMessage:\nCan you help me debug this React component that isn't rendering correctly?\nTitle:React Component Rendering Debug";
+    let title = "";
     try {
       const { text, usage } = await generateText({
         model: this.modelManager.getModel(app),
@@ -311,15 +312,17 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
 
       this.tokenTracker.trackUsage(app, usage);
 
-      if (text && text.split(" ").length < 10) {
-        this.title = text;
-        this.emit("update-title", this.title);
+      if (text && text.length > 0) {
+        title = text;
       }
     } catch (error) {
       logger.error(error, "Failed to generate conversation title:");
+    }
+    if (title.length === 0) {
       this.title =
         message.slice(0, 50).trim() + (message.length > 50 ? "..." : "");
     }
+    this.emit("update-title", this.title);
   }
 
   getFirstUserMessage(): UserModelMessage | undefined {
