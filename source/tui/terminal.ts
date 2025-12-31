@@ -34,14 +34,11 @@ export interface Terminal {
 export class ProcessTerminal implements Terminal {
   private wasRaw = false;
   private sigintHandler?: () => void;
-  private inputHandler?: (data: string) => void;
-  private resizeHandler?: () => void;
+  private boundInputListener?: (data: Buffer | string) => void;
+  private boundResizeListener?: () => void;
   private stopped = false;
 
   start(onInput: (data: string) => void, onResize: () => void): void {
-    this.inputHandler = onInput;
-    this.resizeHandler = onResize;
-
     if (!process.stdin.isTTY || !process.stdout.isTTY) {
       throw new Error("Terminal requires TTY environment");
     }
@@ -57,15 +54,16 @@ export class ProcessTerminal implements Terminal {
     // Enable bracketed paste mode - terminal will wrap pastes in \x1b[200~ ... \x1b[201~
     process.stdout.write("\x1b[?2004h");
 
-    // Set up event handlers with proper binding and type conversion
-    process.stdin.on("data", (data) => {
-      this.inputHandler?.(
-        typeof data === "string" ? data : data.toString("utf8"),
-      );
-    });
-    process.stdout.on("resize", () => {
-      this.resizeHandler?.();
-    });
+    // Create bound listeners so we can properly remove them later
+    this.boundInputListener = (data: Buffer | string) => {
+      onInput(typeof data === "string" ? data : data.toString("utf8"));
+    };
+    this.boundResizeListener = () => {
+      onResize();
+    };
+
+    process.stdin.on("data", this.boundInputListener);
+    process.stdout.on("resize", this.boundResizeListener);
 
     this.sigintHandler = () => this.stop();
     process.on("SIGINT", this.sigintHandler);
@@ -77,19 +75,20 @@ export class ProcessTerminal implements Terminal {
 
     if (this.sigintHandler) {
       process.off("SIGINT", this.sigintHandler);
+      this.sigintHandler = undefined;
     }
 
     // Disable bracketed paste mode
     process.stdout.write("\x1b[?2004l");
 
-    // Remove event handlers
-    if (this.inputHandler) {
-      process.stdin.removeListener("data", this.inputHandler);
-      this.inputHandler = undefined;
+    // Remove event handlers using the exact references that were added
+    if (this.boundInputListener) {
+      process.stdin.removeListener("data", this.boundInputListener);
+      this.boundInputListener = undefined;
     }
-    if (this.resizeHandler) {
-      process.stdout.removeListener("resize", this.resizeHandler);
-      this.resizeHandler = undefined;
+    if (this.boundResizeListener) {
+      process.stdout.removeListener("resize", this.boundResizeListener);
+      this.boundResizeListener = undefined;
     }
 
     process.stdin.pause();
