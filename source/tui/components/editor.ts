@@ -1425,11 +1425,15 @@ export class Editor implements Component {
     const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
 
     // If we're no longer in the context that triggered autocomplete, cancel it
-    // For slash commands and @ file attachments, allow progressive typing
+    // For slash commands, @ file attachments, and # file search, allow progressive typing
     // For other file paths, check if we're still in the same path context
-    if (textBeforeCursor.startsWith("/") || textBeforeCursor.includes("@")) {
-      // For slash commands and @ file attachments, continue autocomplete as long as we're in the right context
-      // Don't cancel based on prefix matching for progressive typing
+    if (
+      textBeforeCursor.startsWith("/") ||
+      textBeforeCursor.match(/(?:^|[\s])@[^\s]*$/) ||
+      textBeforeCursor.match(/(?:^|[\s])#[^\s]*$/)
+    ) {
+      // For slash commands, @ file attachments, and # file search,
+      // continue autocomplete as long as we're in the right context
     } else {
       // For other file paths, check if we're still in the same path context
       if (!textBeforeCursor.endsWith(this.autocompletePrefix)) {
