@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import path from "node:path";
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
 import {
   type ExitCommandOptions,
@@ -12,33 +11,27 @@ import {
   createMockMessageHistory,
   createMockTui,
 } from "../utils/mocking.ts";
+import { createTestFixtures } from "../utils/test-fixtures.ts";
 
 describe("exit command", () => {
-  const testBaseDir = path.join(process.cwd(), ".test-temp");
-  const tmpDir = path.join(testBaseDir, ".tmp");
+  let fixtures: Awaited<ReturnType<typeof createTestFixtures>>;
+  let testBaseDir: string;
+  let tmpDir: string;
 
   beforeEach(async () => {
-    // Ensure test base directory and .tmp directory exist with some test content
-    try {
-      await fs.mkdir(tmpDir, { recursive: true });
-      await fs.writeFile(path.join(tmpDir, "test-file.txt"), "test content");
-      await fs.mkdir(path.join(tmpDir, "test-subdir"));
-      await fs.writeFile(
-        path.join(tmpDir, "test-subdir", "nested.txt"),
-        "nested content",
-      );
-    } catch {
-      // Ignore errors
-    }
+    fixtures = await createTestFixtures("exit-command");
+    testBaseDir = await fixtures.createDir("base");
+    tmpDir = await fixtures.createDir("base/.tmp");
+    // Add some test content
+    await fixtures.writeFile("base/.tmp/test-file.txt", "test content");
+    await fixtures.writeFile(
+      "base/.tmp/test-subdir/nested.txt",
+      "nested content",
+    );
   });
 
   afterEach(async () => {
-    // Clean up test base directory after tests
-    try {
-      await fs.rm(testBaseDir, { recursive: true, force: true });
-    } catch {
-      // Ignore cleanup errors
-    }
+    await fixtures.cleanup();
   });
 
   it("should clear .tmp directory on exit with custom baseDir", async () => {

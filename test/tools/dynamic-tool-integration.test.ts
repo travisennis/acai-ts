@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { loadDynamicTools } from "../../source/tools/dynamic-tool-loader.ts";
+import { createTempDir } from "../utils/test-fixtures.ts";
 
 // Helper function to consume tool async iterable and return final value
 async function consumeToolAsyncIterable<T>(
@@ -76,12 +77,13 @@ if (process.env.TOOL_ACTION === 'execute') {
 }
 `;
 
-  // Create temporary tools directory
-  const tempToolsDir = path.join(process.cwd(), ".acai", "tools");
-  if (!fs.existsSync(tempToolsDir)) {
-    fs.mkdirSync(tempToolsDir, { recursive: true });
-  }
-
+  // Create temporary base directory with .acai/tools structure
+  const { path: tempBaseDir, cleanup: cleanupTools } = await createTempDir(
+    "dynamic-tool-integration",
+    "base",
+  );
+  const tempToolsDir = path.join(tempBaseDir, ".acai", "tools");
+  await fs.promises.mkdir(tempToolsDir, { recursive: true });
   const testToolPath = path.join(tempToolsDir, "test-integration.js");
   fs.writeFileSync(testToolPath, testToolContent);
   fs.chmodSync(testToolPath, "755");
@@ -89,7 +91,7 @@ if (process.env.TOOL_ACTION === 'execute') {
   try {
     // Test dynamic tool loading
     const tools = await loadDynamicTools({
-      baseDir: process.cwd(),
+      baseDir: tempBaseDir,
     });
 
     // Verify tool was loaded
@@ -140,9 +142,7 @@ if (process.env.TOOL_ACTION === 'execute') {
     );
   } finally {
     // Clean up
-    if (fs.existsSync(testToolPath)) {
-      fs.unlinkSync(testToolPath);
-    }
+    await cleanupTools();
   }
 });
 
@@ -187,12 +187,13 @@ if (process.env.TOOL_ACTION === 'execute') {
 }
 `;
 
-  // Create temporary tools directory
-  const tempToolsDir = path.join(process.cwd(), ".acai", "tools");
-  if (!fs.existsSync(tempToolsDir)) {
-    fs.mkdirSync(tempToolsDir, { recursive: true });
-  }
-
+  // Create temporary base directory with .acai/tools structure
+  const { path: tempBaseDir, cleanup: cleanupTools } = await createTempDir(
+    "dynamic-tool-integration",
+    "base2",
+  );
+  const tempToolsDir = path.join(tempBaseDir, ".acai", "tools");
+  await fs.promises.mkdir(tempToolsDir, { recursive: true });
   const testToolPath = path.join(tempToolsDir, "test-no-approval.js");
   fs.writeFileSync(testToolPath, testToolContent);
   fs.chmodSync(testToolPath, "755");
@@ -200,7 +201,7 @@ if (process.env.TOOL_ACTION === 'execute') {
   try {
     // Test dynamic tool loading
     const tools = await loadDynamicTools({
-      baseDir: process.cwd(),
+      baseDir: tempBaseDir,
     });
 
     // Verify tool was loaded
@@ -225,9 +226,7 @@ if (process.env.TOOL_ACTION === 'execute') {
     assert.equal(result.finalValue, "Auto-approved", "Should execute normally");
   } finally {
     // Clean up
-    if (fs.existsSync(testToolPath)) {
-      fs.unlinkSync(testToolPath);
-    }
+    await cleanupTools();
   }
 });
 

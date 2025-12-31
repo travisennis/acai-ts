@@ -1,15 +1,15 @@
 import { strict as assert } from "node:assert";
-import { readFile, unlink, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 import { applyFileEdits } from "../../source/tools/edit-file.ts";
+import { createTestFixtures } from "../utils/test-fixtures.ts";
 
 describe("editFile tool", () => {
   describe("applyFileEdits", () => {
     it("should apply single edit successfully", async () => {
+      const fixtures = await createTestFixtures("edit-file");
       const testContent = "Hello world! This is a test.";
-      const tempFile = "./test/temp-single-edit.txt";
-
-      await writeFile(tempFile, testContent, "utf-8");
+      const tempFile = await fixtures.createFile("test.txt", testContent);
 
       try {
         const result = await applyFileEdits(
@@ -21,15 +21,14 @@ describe("editFile tool", () => {
         assert(result.includes("Hello universe! This is a test."));
         assert(result.includes("@@")); // Should contain diff markers
       } finally {
-        await unlink(tempFile);
+        await fixtures.cleanup();
       }
     });
 
     it("should apply multiple matches of the same edit", async () => {
+      const fixtures = await createTestFixtures("edit-file");
       const testContent = "Hello world! Hello world! Hello world!";
-      const tempFile = "./test/temp-multiple-matches.txt";
-
-      await writeFile(tempFile, testContent, "utf-8");
+      const tempFile = await fixtures.createFile("test.txt", testContent);
 
       try {
         const result = await applyFileEdits(
@@ -52,15 +51,14 @@ describe("editFile tool", () => {
         const finalContent = await readFile(tempFile, "utf-8");
         assert.strictEqual(finalContent, "Hi world! Hi world! Hi world!");
       } finally {
-        await unlink(tempFile);
+        await fixtures.cleanup();
       }
     });
 
     it("should handle multiple different edits", async () => {
+      const fixtures = await createTestFixtures("edit-file");
       const testContent = "Hello world! This is a test. Hello again!";
-      const tempFile = "./test/temp-multiple-edits.txt";
-
-      await writeFile(tempFile, testContent, "utf-8");
+      const tempFile = await fixtures.createFile("test.txt", testContent);
 
       try {
         const result = await applyFileEdits(
@@ -76,15 +74,14 @@ describe("editFile tool", () => {
         assert(result.includes("This is a example."));
         assert(result.includes("@@")); // Should contain diff markers
       } finally {
-        await unlink(tempFile);
+        await fixtures.cleanup();
       }
     });
 
     it("should throw error when oldText not found", async () => {
+      const fixtures = await createTestFixtures("edit-file");
       const testContent = "Hello world!";
-      const tempFile = "./test/temp-not-found.txt";
-
-      await writeFile(tempFile, testContent, "utf-8");
+      const tempFile = await fixtures.createFile("test.txt", testContent);
 
       try {
         await assert.rejects(
@@ -100,15 +97,14 @@ describe("editFile tool", () => {
           },
         );
       } finally {
-        await unlink(tempFile);
+        await fixtures.cleanup();
       }
     });
 
     it("should handle empty oldText validation", async () => {
+      const fixtures = await createTestFixtures("edit-file");
       const testContent = "Hello world!";
-      const tempFile = "./test/temp-empty-oldtext.txt";
-
-      await writeFile(tempFile, testContent, "utf-8");
+      const tempFile = await fixtures.createFile("test.txt", testContent);
 
       try {
         await assert.rejects(
@@ -125,15 +121,14 @@ describe("editFile tool", () => {
           },
         );
       } finally {
-        await unlink(tempFile);
+        await fixtures.cleanup();
       }
     });
 
     it("should handle overlapping matches correctly", async () => {
+      const fixtures = await createTestFixtures("edit-file");
       const testContent = "aaa";
-      const tempFile = "./test/temp-overlapping.txt";
-
-      await writeFile(tempFile, testContent, "utf-8");
+      const tempFile = await fixtures.createFile("test.txt", testContent);
 
       try {
         await applyFileEdits(
@@ -146,7 +141,7 @@ describe("editFile tool", () => {
         // Should replace "aa" with "b", leaving "a" from the third character
         assert.strictEqual(finalContent, "ba");
       } finally {
-        await unlink(tempFile);
+        await fixtures.cleanup();
       }
     });
   });

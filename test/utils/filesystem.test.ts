@@ -3,24 +3,19 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { clearDirectory } from "../../source/utils/filesystem/operations.ts";
+import { createTestFixtures } from "../utils/test-fixtures.ts";
 
 describe("filesystem utilities", () => {
-  const testDir = path.join(process.cwd(), ".test-temp");
+  let fixtures: Awaited<ReturnType<typeof createTestFixtures>>;
+  let testDir: string;
 
   beforeEach(async () => {
-    try {
-      await fs.mkdir(testDir, { recursive: true });
-    } catch {
-      // Directory might already exist
-    }
+    fixtures = await createTestFixtures("filesystem");
+    testDir = await fixtures.createDir("test-root");
   });
 
   afterEach(async () => {
-    try {
-      await fs.rm(testDir, { recursive: true, force: true });
-    } catch {
-      // Ignore cleanup errors
-    }
+    await fixtures.cleanup();
   });
 
   describe("clearDirectory", () => {
@@ -43,12 +38,11 @@ describe("filesystem utilities", () => {
     });
 
     it("should clear a directory with files", async () => {
-      const dirWithFiles = path.join(testDir, "with-files");
-      await fs.mkdir(dirWithFiles);
+      const dirWithFiles = await fixtures.createDir("with-files");
 
       // Create some test files
-      await fs.writeFile(path.join(dirWithFiles, "file1.txt"), "content1");
-      await fs.writeFile(path.join(dirWithFiles, "file2.txt"), "content2");
+      await fixtures.writeFile("with-files/file1.txt", "content1");
+      await fixtures.writeFile("with-files/file2.txt", "content2");
 
       await clearDirectory(dirWithFiles);
 
@@ -65,17 +59,14 @@ describe("filesystem utilities", () => {
     });
 
     it("should clear a directory with subdirectories", async () => {
-      const dirWithSubdirs = path.join(testDir, "with-subdirs");
-      await fs.mkdir(dirWithSubdirs);
+      const dirWithSubdirs = await fixtures.createDir("with-subdirs");
 
       // Create subdirectories with files
-      const subdir1 = path.join(dirWithSubdirs, "subdir1");
-      await fs.mkdir(subdir1);
-      await fs.writeFile(path.join(subdir1, "file1.txt"), "content1");
+      await fixtures.createDir("with-subdirs/subdir1");
+      await fixtures.writeFile("with-subdirs/subdir1/file1.txt", "content1");
 
-      const subdir2 = path.join(dirWithSubdirs, "subdir2");
-      await fs.mkdir(subdir2);
-      await fs.writeFile(path.join(subdir2, "file2.txt"), "content2");
+      await fixtures.createDir("with-subdirs/subdir2");
+      await fixtures.writeFile("with-subdirs/subdir2/file2.txt", "content2");
 
       await clearDirectory(dirWithSubdirs);
 
@@ -98,27 +89,19 @@ describe("filesystem utilities", () => {
     });
 
     it("should throw error for non-directory paths", async () => {
-      const filePath = path.join(testDir, "file.txt");
-      await fs.writeFile(filePath, "content");
+      const filePath = await fixtures.createFile("file.txt", "content");
 
       await assert.rejects(clearDirectory(filePath), /Path is not a directory/);
     });
 
     it("should handle special characters in file names", async () => {
-      const specialDir = path.join(testDir, "special-chars");
-      await fs.mkdir(specialDir);
+      const specialDir = await fixtures.createDir("special-chars");
 
       // Create files with special characters
-      await fs.writeFile(
-        path.join(specialDir, "file with spaces.txt"),
-        "content",
-      );
-      await fs.writeFile(
-        path.join(specialDir, "file-with-dashes.txt"),
-        "content",
-      );
-      await fs.writeFile(
-        path.join(specialDir, "file_with_underscores.txt"),
+      await fixtures.writeFile("special-chars/file with spaces.txt", "content");
+      await fixtures.writeFile("special-chars/file-with-dashes.txt", "content");
+      await fixtures.writeFile(
+        "special-chars/file_with_underscores.txt",
         "content",
       );
 

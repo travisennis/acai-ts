@@ -4,6 +4,7 @@ import path from "node:path";
 import { test } from "node:test";
 
 import { validatePath } from "../../../source/utils/filesystem/security.ts";
+import { createTempDir } from "../../utils/test-fixtures.ts";
 
 const projectRoot = process.cwd();
 
@@ -14,8 +15,11 @@ await test("validatePath allows the allowedDirectory itself", async () => {
 });
 
 await test("validatePath allows descendants of allowedDirectory", async () => {
+  // Use projectRoot as the allowed directory
   const allowed = projectRoot;
-  const dir = path.join(allowed, ".acai-ci-tmp-validatePath");
+  // Create test directory inside project root
+  const testDirName = `.acai-ci-tmp-validatePath-${Date.now()}`;
+  const dir = path.join(allowed, testDirName);
   const file = path.join(dir, "child.txt");
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(file, "ok");
@@ -25,8 +29,10 @@ await test("validatePath allows descendants of allowedDirectory", async () => {
 });
 
 await test("validatePath rejects paths outside allowedDirectory", async () => {
-  const allowed = path.join(projectRoot, "sub-allowed");
-  await fs.mkdir(allowed, { recursive: true });
+  const { path: allowed, cleanup: cleanupAllowed } = await createTempDir(
+    "validatePath-rejects",
+    "sub-allowed",
+  );
   const outside = path.join(projectRoot, "..", "outside.txt");
   let threw = false;
   try {
@@ -35,23 +41,19 @@ await test("validatePath rejects paths outside allowedDirectory", async () => {
     threw = true;
   }
   assert.equal(threw, true);
-  await fs.rm(allowed, { recursive: true, force: true });
+  await cleanupAllowed();
 });
 
 await test("validatePath handles symlinks in ancestor directories", async () => {
-  const tmpDir = path.join(projectRoot, ".acai-ci-tmp-symlink-ancestor");
+  // Create test directory inside project root
+  const testDirName = `.acai-ci-tmp-symlink-ancestor-${Date.now()}`;
+  const tmpDir = path.join(projectRoot, testDirName);
   const realSubDir = path.join(tmpDir, "real");
   const linkDir = path.join(tmpDir, "link");
-  const targetOutside = path.join(projectRoot, "..", "outside-target");
   const targetInside = path.join(tmpDir, "inside-target");
-
-  // Clean up any previous runs
-  await fs.rm(tmpDir, { recursive: true, force: true });
-  await fs.rm(targetOutside, { recursive: true, force: true });
 
   await fs.mkdir(realSubDir, { recursive: true });
   await fs.mkdir(targetInside, { recursive: true });
-  await fs.mkdir(targetOutside, { recursive: true });
 
   // Create symlink inside tmpDir pointing to targetInside (within allowed)
   await fs.symlink(targetInside, linkDir);
@@ -65,6 +67,8 @@ await test("validatePath handles symlinks in ancestor directories", async () => 
 
   // Create symlink pointing outside allowed directory
   await fs.rm(linkDir);
+  const targetOutside = path.join(projectRoot, "..", "outside-target");
+  await fs.mkdir(targetOutside, { recursive: true });
   await fs.symlink(targetOutside, linkDir);
 
   // Validate a non-existent file under the outside symlink (should be rejected)

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
 import { describe, it } from "node:test";
 
 import { createLsTool, LsTool } from "../../source/tools/ls.ts";
@@ -75,14 +76,14 @@ describe("LS tool", () => {
       workingDir: process.cwd(),
     });
 
-    // Create a test file first
-    const testFilePath = `${process.cwd()}/test-file-12345.txt`;
-    const fs = await import("node:fs/promises");
+    // Create a test file in the project directory (within allowed dirs)
+    const testFileName = `test-file-${Date.now()}.txt`;
+    const testFilePath = `${process.cwd()}/${testFileName}`;
     await fs.writeFile(testFilePath, "test content");
 
     const results: ToolResult[] = [];
     for await (const result of tool.execute(
-      { path: "test-file-12345.txt", limit: null },
+      { path: testFileName, limit: null },
       { toolCallId: "test-123", abortSignal: new AbortController().signal },
     )) {
       results.push(result);
@@ -97,13 +98,18 @@ describe("LS tool", () => {
     });
     assert.ok(hasError);
 
-    const hasDirError = results.some((r) => {
-      if (typeof r === "string") {
-        return r.includes("Not a directory");
-      }
-      return false;
+    const errorResults = results.filter((r) => typeof r === "string");
+    const hasDirError = errorResults.some((r) => {
+      return (
+        String(r).includes("Not a directory") ||
+        String(r).includes("not a directory") ||
+        String(r).includes("is not a directory")
+      );
     });
-    assert.ok(hasDirError);
+    assert.ok(
+      hasDirError,
+      `Expected "not a directory" error, got: ${JSON.stringify(errorResults)}`,
+    );
 
     // Clean up
     await fs.rm(testFilePath);
