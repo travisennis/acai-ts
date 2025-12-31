@@ -69,8 +69,8 @@ Usage
 Options
   --model, -m        Sets the model to use
   --prompt, -p       Sets the prompt (runs in CLI mode)
-  --continue         Load the most recent conversation
-  --resume           Select a recent conversation to resume
+  --continue         Select a conversation to resume from a list
+  --resume           Resume a specific session by ID, or most recent if no ID given
   --add-dir          Add additional working directory (can be used multiple times)
   --no-skills        Disable skills discovery and loading
 
@@ -79,9 +79,12 @@ Options
   --version, -v      Show version
 
 Examples
-  $ acai --model anthopric:sonnet
+  $ acai --model anthropic:sonnet
   $ acai -p "initial prompt"
   $ acai --add-dir /path/to/project1 --add-dir /path/to/project2
+  $ acai --continue
+  $ acai --resume
+  $ acai --resume a1b2c3d4-e5f6-7890-1234-567890abcdef
 `;
 
 const parsed = parseArgs({
@@ -140,6 +143,7 @@ async function initializeAppState(
   initialPromptInput: string | undefined,
   stdInPrompt: string | undefined,
   hasContinueOrResume: boolean,
+  resumeSessionId: string | undefined,
 ): Promise<AppState> {
   const appDir = config.app;
 
@@ -165,6 +169,7 @@ async function initializeAppState(
     sessionManager,
     messageHistoryDir,
     hasContinueOrResume,
+    resumeSessionId,
   );
 
   // Setup prompt manager
@@ -218,10 +223,27 @@ async function handleEarlyExits(): Promise<boolean> {
   return false;
 }
 
+function validateSessionId(id: string): boolean {
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return id.length === 36 && uuidRegex.test(id);
+}
+
 function validateCliArguments(): void {
   if (flags.continue === true && flags.resume === true) {
     console.error("Cannot use --continue and --resume flags together.");
     process.exit(1);
+  }
+
+  if (flags.resume === true && input.length > 0) {
+    const sessionId = input[0];
+    if (!validateSessionId(sessionId)) {
+      console.error(`Invalid session ID: ${sessionId}`);
+      console.error(
+        "Session ID must be a valid UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)",
+      );
+      process.exit(1);
+    }
   }
 }
 
@@ -229,6 +251,7 @@ async function determineInitialPrompt(): Promise<{
   initialPromptInput: string | undefined;
   stdInPrompt: string | undefined;
   hasContinueOrResume: boolean;
+  resumeSessionId: string | undefined;
 }> {
   const hasContinueOrResume = flags.continue === true || flags.resume === true;
   const positionalPrompt = input.at(0);
@@ -243,10 +266,14 @@ async function determineInitialPrompt(): Promise<{
     }
   }
 
+  // Check for session ID with --resume
+  const resumeSessionId =
+    flags.resume === true && input.length > 0 ? input[0] : undefined;
+
   const initialPromptInput =
     typeof flags.prompt === "string" && flags.prompt.length > 0
       ? flags.prompt
-      : positionalPrompt && positionalPrompt.length > 0
+      : positionalPrompt && positionalPrompt.length > 0 && !resumeSessionId
         ? positionalPrompt
         : undefined;
 
@@ -255,7 +282,12 @@ async function determineInitialPrompt(): Promise<{
     process.exit(1);
   }
 
-  return { initialPromptInput, stdInPrompt, hasContinueOrResume };
+  return {
+    initialPromptInput,
+    stdInPrompt,
+    hasContinueOrResume,
+    resumeSessionId,
+  };
 }
 
 async function initializeModelManager(
@@ -310,21 +342,9 @@ async function handleConversationHistory(
   messageHistory: SessionManager,
   messageHistoryDir: string,
   _hasContinueOrResume: boolean,
+  resumeSessionId: string | undefined,
 ): Promise<void> {
   if (flags.continue === true) {
-    const histories = await SessionManager.load(
-      messageHistoryDir,
-      CONTINUE_HISTORY_LIMIT,
-    );
-    const latestHistory = histories.at(0);
-    if (latestHistory) {
-      messageHistory.restore(latestHistory);
-      console.info(`Resuming conversation: ${latestHistory.title}`);
-      setTerminalTitle(latestHistory.title || `acai: ${process.cwd()}`);
-    } else {
-      logger.info("No previous conversation found to continue.");
-    }
-  } else if (flags.resume === true) {
     const histories = await SessionManager.load(
       messageHistoryDir,
       DEFAULT_HISTORY_LIMIT,
@@ -334,7 +354,7 @@ async function handleConversationHistory(
         const choice = await select({
           message: "Select a conversation to resume:",
           choices: histories.map((h, index) => ({
-            name: `${index + 1}: ${h.title} (${h.updatedAt.toLocaleString()})`,
+            name: `${index + 1}: ${h.title} [${h.sessionId}] (${h.updatedAt.toLocaleString()})`,
             value: index,
             description: `${h.messages.length} messages`,
           })),
@@ -359,7 +379,38 @@ async function handleConversationHistory(
         }
       }
     } else {
-      logger.info("No previous conversations found to resume.");
+      logger.info("No previous conversations found to continue.");
+    }
+  } else if (flags.resume === true) {
+    if (resumeSessionId) {
+      const histories = await SessionManager.load(
+        messageHistoryDir,
+        DEFAULT_HISTORY_LIMIT,
+      );
+      const targetHistory = histories.find(
+        (h) => h.sessionId === resumeSessionId,
+      );
+      if (targetHistory) {
+        messageHistory.restore(targetHistory);
+        logger.info(`Resuming conversation: ${targetHistory.title}`);
+        setTerminalTitle(targetHistory.title || `acai: ${process.cwd()}`);
+      } else {
+        console.error(`Session not found: ${resumeSessionId}`);
+        process.exit(1);
+      }
+    } else {
+      const histories = await SessionManager.load(
+        messageHistoryDir,
+        CONTINUE_HISTORY_LIMIT,
+      );
+      const latestHistory = histories.at(0);
+      if (latestHistory) {
+        messageHistory.restore(latestHistory);
+        console.info(`Resuming conversation: ${latestHistory.title}`);
+        setTerminalTitle(latestHistory.title || `acai: ${process.cwd()}`);
+      } else {
+        logger.info("No previous conversation found to resume.");
+      }
     }
   }
 }
@@ -418,6 +469,13 @@ async function runReplMode(state: AppState): Promise<void> {
       logger.warn({ error }, "Failed to save message history on interrupt");
     }
     agent.abort();
+  });
+
+  // Set exit callback
+  repl.setExitCallback((sessionId: string) => {
+    if (!state.sessionManager.isEmpty()) {
+      console.info(`\nTo resume this session call acai --resume ${sessionId}`);
+    }
   });
 
   // Initialize tools
@@ -490,8 +548,12 @@ async function main() {
     validateCliArguments();
 
     // Determine initial prompt
-    const { initialPromptInput, stdInPrompt, hasContinueOrResume } =
-      await determineInitialPrompt();
+    const {
+      initialPromptInput,
+      stdInPrompt,
+      hasContinueOrResume,
+      resumeSessionId,
+    } = await determineInitialPrompt();
 
     // Initialize application state
     const state = await initializeAppState(
@@ -499,6 +561,7 @@ async function main() {
       initialPromptInput,
       stdInPrompt,
       hasContinueOrResume,
+      resumeSessionId,
     );
 
     // Set terminal title after all validation is complete

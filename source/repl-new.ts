@@ -55,6 +55,7 @@ export class NewRepl {
   private onInputCallback?: (text: string) => void;
   private loadingAnimation: Loader | null = null;
   private onInterruptCallback?: () => void;
+  private onExitCallback?: (sessionId: string) => void;
   private lastSigintTime = 0;
   private pendingTools: Map<string, ToolExecutionComponent>;
 
@@ -150,7 +151,7 @@ export class NewRepl {
           },
         );
         if (commandResult.break) {
-          this.stop();
+          this.stop(true);
           process.exit(0);
         }
         if (commandResult.continue) {
@@ -420,6 +421,10 @@ export class NewRepl {
     this.onInterruptCallback = callback;
   }
 
+  setExitCallback(callback: (sessionId: string) => void): void {
+    this.onExitCallback = callback;
+  }
+
   async rerender() {
     this.footer.updateState(this.options.agent.state);
     this.promptStatus.setState({
@@ -440,7 +445,7 @@ export class NewRepl {
     if (timeSinceLastCtrlC < 500) {
       // Second Ctrl+C within 500ms - exit
       this.options.messageHistory.save();
-      this.stop();
+      this.stop(true);
       process.exit(0);
     } else {
       // First Ctrl+C - clear the editor
@@ -449,7 +454,7 @@ export class NewRepl {
     }
   }
 
-  stop(): void {
+  stop(showExitMessage = false): void {
     if (this.loadingAnimation) {
       this.loadingAnimation.stop();
       this.loadingAnimation = null;
@@ -457,6 +462,9 @@ export class NewRepl {
     if (this.isInitialized) {
       this.tui.stop();
       this.isInitialized = false;
+    }
+    if (showExitMessage && this.onExitCallback) {
+      this.onExitCallback(this.options.messageHistory.getSessionId());
     }
   }
 }

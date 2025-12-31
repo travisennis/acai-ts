@@ -613,18 +613,22 @@ graph TD
 graph TD
   A[NewRepl initialized] --> B[SessionManager loads recent histories]
   B --> C[Check --continue or --resume flags]
-  C --> D[--continue: Load most recent]
-  C --> E[--resume: Show selection prompt]
-  D --> F[Restore session state]
-  E --> G[User selects from list]
-  G --> F
-  F --> H[Update terminal title]
-  H --> I[Normal operation]
-  I --> J{User exits or interrupt}
-  J -->|Exit| K[SessionManager.save]
-  J -->|Interrupt| L[Try save on SIGINT]
-  K --> M[Persist to message-history dir]
-  L --> M
+  C --> D[--continue: Show selection list with session IDs]
+  C --> E[--resume: Load specific session or most recent]
+  D --> F[User selects from list]
+  F --> G[Restore session state]
+  E -->|With session ID| H[Load specific session]
+  E -->|No session ID| I[Load most recent]
+  H --> G
+  I --> G
+  G --> J[Update terminal title]
+  J --> K[Normal operation]
+  K --> L{User exits or interrupt}
+  L -->|Exit| M[SessionManager.save]
+  L -->|Interrupt| N[Try save on SIGINT]
+  M --> O[Persist to message-history dir]
+  N --> O
+  O --> P[Print resume message with session ID]
 ```
 
 ### Command Registration and Execution

@@ -182,9 +182,22 @@ echo "How many TypeScript files are in this project?" | acai
 # Disable skills discovery
 acai --no-skills
 
-
 # Add additional working directories
 acai --add-dir /path/to/project1 --add-dir /path/to/project2
+
+# Resume a previous session by selecting from a list
+acai --continue
+
+# Resume the most recent session
+acai --resume
+
+# Resume a specific session by ID
+acai --resume a1b2c3d4-e5f6-7890-1234-567890abcdef
+```
+
+**Note:** When exiting a session with messages, Acai will display a resume command with the session ID:
+```
+To resume this session call acai --resume <session-id>
 ```
 
 Once in the REPL, you can type your prompts or use commands:
