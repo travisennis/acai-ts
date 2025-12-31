@@ -15,8 +15,9 @@ export const pickupCommand = (options: CommandOptions): ReplCommand => {
 
     getSubCommands: async (): Promise<string[]> => {
       const getHandoffFileNames = async (): Promise<string[]> => {
+        const handoffsDir = ".acai/handoffs";
         try {
-          const dirents = await readdir(options.workspace.primaryDir, {
+          const dirents = await readdir(handoffsDir, {
             withFileTypes: true,
           });
           return dirents
@@ -79,7 +80,8 @@ export const pickupCommand = (options: CommandOptions): ReplCommand => {
       const filenameWithExt = filename.endsWith(".md")
         ? filename
         : `${filename}.md`;
-      const filepath = `${options.workspace.primaryDir}/${filenameWithExt}`;
+      const handoffsDir = ".acai/handoffs";
+      const filepath = `${handoffsDir}/${filenameWithExt}`;
 
       try {
         // Read the handoff file
@@ -145,10 +147,11 @@ export const pickupCommand = (options: CommandOptions): ReplCommand => {
 };
 
 async function getAvailableHandoffFiles(
-  options: CommandOptions,
+  _options: CommandOptions,
 ): Promise<string[]> {
+  const handoffsDir = ".acai/handoffs";
   try {
-    const dirents = await readdir(options.workspace.primaryDir, {
+    const dirents = await readdir(handoffsDir, {
       withFileTypes: true,
     });
     return dirents

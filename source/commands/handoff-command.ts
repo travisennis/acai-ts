@@ -1,4 +1,4 @@
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { generateText } from "ai";
 import { AiConfig } from "../models/ai-config.ts";
 import style from "../terminal/style.ts";
@@ -175,7 +175,6 @@ async function createHandoffDocument(
   {
     modelManager,
     tokenTracker,
-    workspace,
     sessionManager: messageHistory,
   }: CommandOptions,
   purpose: string,
@@ -257,7 +256,8 @@ async function createHandoffDocument(
   const now = new Date();
   const timestamp = now.toISOString().split("T")[0]; // YYYY-MM-DD format
   const filename = `handoff-${timestamp}-${slug}.md`;
-  const filepath = `${workspace.primaryDir}/${filename}`;
+  const handoffsDir = ".acai/handoffs";
+  const filepath = `${handoffsDir}/${filename}`;
 
   // Create the final handoff document with metadata
   const handoffDocument = `${text}
@@ -266,8 +266,9 @@ async function createHandoffDocument(
 *Generated on ${now.toISOString()} for purpose: ${purpose}*
 *This handoff file can be used to continue the work using the /pickup command*`;
 
-  // Save the file
+  // Ensure handoffs directory exists and save the file
   try {
+    await mkdir(handoffsDir, { recursive: true });
     await writeFile(filepath, handoffDocument, "utf-8");
     return filename;
   } catch (error) {
