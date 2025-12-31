@@ -149,14 +149,12 @@ export class TUI extends Container {
       // Render all components to get new lines
       const newLines = this.render(width);
 
-      // Always do full re-render for simplicity and reliability
-      // This ensures that previous content is properly cleared
-      let buffer = "\x1b[?2026h"; // Begin synchronized output
-      buffer += "\x1b[3J\x1b[2J\x1b[H"; // Clear scrollback, screen, and home
-      for (let i = 0; i < newLines.length; i++) {
-        if (i > 0) buffer += "\r\n";
-        buffer += newLines[i];
-      }
+      // Build output buffer using array join (more efficient than string concat)
+      const bufferParts: string[] = [
+        "\x1b[?2026h", // Begin synchronized output
+        "\x1b[3J\x1b[2J\x1b[H", // Clear scrollback, screen, and home
+        newLines.join("\r\n"),
+      ];
 
       // Render modal on top if active
       if (this.activeModal) {
@@ -165,26 +163,22 @@ export class TUI extends Container {
         // Render backdrop first if modal has backdrop
         if (this.activeModal.backdrop) {
           const backdropLine = style.bgRgb(0, 0, 0)(" ".repeat(width));
-          const { columns } = getTerminalSize(); // 24
-          for (let i = 0; i < columns; i++) {
-            // Cover entire terminal
-            buffer += `\x1b[${i + 1};1H`;
-            buffer += backdropLine;
+          const { rows } = getTerminalSize();
+          for (let i = 0; i < rows; i++) {
+            bufferParts.push(`\x1b[${i + 1};1H`, backdropLine);
           }
         }
 
         // Render modal content
         for (let i = 0; i < modalLines.length; i++) {
           if (modalLines[i]) {
-            // Position cursor and overwrite existing content
-            buffer += `\x1b[${i + 1};1H`;
-            buffer += modalLines[i];
+            bufferParts.push(`\x1b[${i + 1};1H`, modalLines[i]);
           }
         }
       }
 
-      buffer += "\x1b[?2026l"; // End synchronized output
-      this.terminal.write(buffer);
+      bufferParts.push("\x1b[?2026l"); // End synchronized output
+      this.terminal.write(bufferParts.join(""));
     } finally {
       this.isRendering = false;
       if (this.renderAgain) {
