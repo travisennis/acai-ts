@@ -757,6 +757,20 @@ export class Editor implements Component {
           void this.tryTriggerAutocomplete();
         }
       }
+      // Auto-trigger for "#" file search
+      else if (char === "#") {
+        const currentLine = this.state.lines[this.state.cursorLine] || "";
+        const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
+        // Only trigger if # is after whitespace or at start of line
+        const charBeforeHash = textBeforeCursor[textBeforeCursor.length - 2];
+        if (
+          textBeforeCursor.length === 1 ||
+          charBeforeHash === " " ||
+          charBeforeHash === "\t"
+        ) {
+          void this.tryTriggerAutocomplete();
+        }
+      }
       // Also auto-trigger when typing letters in a slash command context
       else if (/[a-zA-Z0-9]/.test(char)) {
         const currentLine = this.state.lines[this.state.cursorLine] || "";
@@ -767,6 +781,10 @@ export class Editor implements Component {
         }
         // Check if we're in an @ file reference context
         else if (textBeforeCursor.match(/(?:^|[\s])@[^\s]*$/)) {
+          void this.tryTriggerAutocomplete();
+        }
+        // Check if we're in a # file search context
+        else if (textBeforeCursor.match(/(?:^|[\s])#[^\s]*$/)) {
           void this.tryTriggerAutocomplete();
         }
       }

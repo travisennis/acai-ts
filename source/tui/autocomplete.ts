@@ -7,6 +7,7 @@ import {
   CommandProvider,
   type SlashCommand,
 } from "./autocomplete/command-provider.ts";
+import { FileSearchProvider } from "./autocomplete/file-search-provider.ts";
 import { PathProvider } from "./autocomplete/path-provider.ts";
 
 export { AttachmentProvider } from "./autocomplete/attachment-provider.ts";
@@ -17,6 +18,7 @@ export type {
 export { CombinedProvider } from "./autocomplete/combined-provider.ts";
 export type { SlashCommand } from "./autocomplete/command-provider.ts";
 export { CommandProvider } from "./autocomplete/command-provider.ts";
+export { FileSearchProvider } from "./autocomplete/file-search-provider.ts";
 export { PathProvider } from "./autocomplete/path-provider.ts";
 export {
   DirectoryCache,
@@ -32,6 +34,7 @@ export function createDefaultProvider<
 >(commands: T[] = [], allowedDirs: string[] = [process.cwd()]) {
   return new CombinedProvider([
     new CommandProvider<T>(commands),
+    new FileSearchProvider(),
     new AttachmentProvider(allowedDirs),
     new PathProvider(allowedDirs),
   ]);
