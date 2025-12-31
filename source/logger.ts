@@ -15,7 +15,9 @@ function createLogger(): pino.Logger {
     (typeof process.permission !== "undefined" &&
       process.permission.has !== undefined);
 
-  if (isCodeInterpreter) {
+  const isTest = process.env["NODE_ENV"] === "test";
+
+  if (isTest || isCodeInterpreter) {
     // In code interpreter context, use a no-op logger to avoid noise in script output
     return pino({
       level: "silent", // Completely disable logging
