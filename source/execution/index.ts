@@ -4,7 +4,7 @@
  * Provides functionality for executing shell commands and scripts
  * in a controlled environment with proper error handling.
  */
-import { exec, spawn } from "node:child_process";
+import { type ExecException, exec, spawn } from "node:child_process";
 import { logger } from "../logger.ts";
 
 /**
@@ -92,6 +92,7 @@ const DEFAULT_MAX_BUFFER = 5 * 1024 * 1024;
  * Execution environment manager
  */
 interface ExecutionConfig {
+  /** Value for NODE_ENV environment variable (defaults to "production") */
   env?: string;
   execution?: {
     cwd?: string;
@@ -138,9 +139,14 @@ export class ExecutionEnvironment {
     this.config = config;
     this.workingDirectory = config.execution?.cwd || process.cwd();
 
-    // Set up environment variables
+    // Set up environment variables - filter out undefined values from process.env
+    const filteredEnv = Object.fromEntries(
+      Object.entries(process.env).filter(
+        (entry): entry is [string, string] => entry[1] !== undefined,
+      ),
+    );
     this.environmentVariables = {
-      ...(process.env as Record<string, string>),
+      ...filteredEnv,
       // biome-ignore lint/style/useNamingConvention: environment variable.
       NODE_ENV: config.env || "production",
       ...(config.execution?.env || {}),
@@ -232,6 +238,29 @@ export class ExecutionEnvironment {
         return;
       }
 
+      let settled = false;
+      let abortHandler: (() => void) | undefined;
+
+      const settle = (
+        result: ExecutionResult,
+        shouldReject: boolean,
+        error?: Error,
+      ) => {
+        if (settled) return;
+        settled = true;
+
+        // Clean up abort listener
+        if (abortHandler) {
+          options.abortSignal?.removeEventListener("abort", abortHandler);
+        }
+
+        if (shouldReject && error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      };
+
       const childProcess = exec(
         command,
         {
@@ -243,7 +272,7 @@ export class ExecutionEnvironment {
           windowsHide: true,
           encoding: "utf8",
         },
-        (error: Error | null, stdout: string, stderr: string) => {
+        (error: ExecException | null, stdout: string, stderr: string) => {
           const duration = Date.now() - startTime;
 
           // Combine stdout and stderr if requested
@@ -252,28 +281,27 @@ export class ExecutionEnvironment {
             : stdout;
 
           if (error) {
+            const exitCode = error.code ?? 1;
             logger.error(
               {
                 error: error.message,
-                exitCode: (error as Error & { code: number }).code,
+                exitCode,
                 duration,
               },
               `Command execution failed: ${command}`,
             );
 
-            const result = {
-              output: preserveOutputOnError ? output : "",
-              exitCode: (error as Error & { code: number }).code || 1,
+            settle(
+              {
+                output: preserveOutputOnError ? output : "",
+                exitCode,
+                error,
+                command,
+                duration,
+              },
+              throwOnError,
               error,
-              command,
-              duration,
-            };
-
-            if (throwOnError) {
-              reject(error);
-            } else {
-              resolve(result);
-            }
+            );
           } else {
             logger.debug(
               {
@@ -283,47 +311,44 @@ export class ExecutionEnvironment {
               `Command executed successfully: ${command}`,
             );
 
-            resolve({
-              output,
-              exitCode: 0,
-              command,
-              duration,
-            });
+            settle(
+              {
+                output,
+                exitCode: 0,
+                command,
+                duration,
+              },
+              false,
+            );
           }
         },
       );
 
       // Handle abort signal
       if (options.abortSignal) {
-        const abortHandler = () => {
+        abortHandler = () => {
           logger.warn(
             { command, pid: childProcess.pid },
             "Command execution aborted",
           );
           childProcess.kill("SIGTERM");
           const error = new Error("Command execution aborted");
-          const result = {
-            output: preserveOutputOnError ? "" : "",
-            exitCode: 1,
-            error,
-            command,
-            duration: Date.now() - startTime,
-          };
 
-          if (throwOnError) {
-            reject(error);
-          } else {
-            resolve(result);
-          }
+          settle(
+            {
+              output: "",
+              exitCode: 1,
+              error,
+              command,
+              duration: Date.now() - startTime,
+            },
+            throwOnError,
+            error,
+          );
         };
 
         options.abortSignal.addEventListener("abort", abortHandler, {
           once: true,
-        });
-
-        // Clean up abort listener when process completes
-        childProcess.on("exit", () => {
-          options.abortSignal?.removeEventListener("abort", abortHandler);
         });
       }
     });
@@ -354,11 +379,7 @@ export class ExecutionEnvironment {
       ...ttySizeEnv(),
       ...(options.env || {}),
     };
-    const shell =
-      options.shell ||
-      this.config.execution?.shell ||
-      process.env["SHELL"] ||
-      "bash";
+    const shell = options.shell || this.config.execution?.shell || getShell();
 
     logger.debug(
       {
@@ -370,13 +391,19 @@ export class ExecutionEnvironment {
       "Executing command in background",
     );
 
-    // Check if already aborted
+    // Check if already aborted - return a dead process handle for consistency
     if (options.abortSignal?.aborted) {
       logger.warn(
         { command },
         "Background command execution aborted before starting",
       );
-      throw new Error("Background command execution aborted");
+      return {
+        pid: -1,
+        kill: () => false,
+        get isRunning() {
+          return false;
+        },
+      };
     }
 
     // Spawn the process
@@ -391,8 +418,12 @@ export class ExecutionEnvironment {
     const pid = childProcess.pid ?? -1;
     let isRunning = true;
 
-    // Update tracked process with actual PID and kill function
+    // Update tracked process with actual PID, isRunning getter, and kill function
     trackedProcess.pid = pid;
+    Object.defineProperty(trackedProcess, "isRunning", {
+      get: () => isRunning,
+      enumerable: true,
+    });
     trackedProcess.kill = () => {
       if (isRunning) {
         childProcess.kill();
@@ -467,11 +498,13 @@ export class ExecutionEnvironment {
       });
     }
 
-    // Create the public process handle
+    // Create the public process handle with getter for live isRunning state
     const backgroundProcess: BackgroundProcess = {
       pid,
       kill: trackedProcess.kill,
-      isRunning: true,
+      get isRunning() {
+        return isRunning;
+      },
     };
 
     // Track the process
@@ -630,38 +663,21 @@ export async function initExecutionEnvironment(
   }
 }
 
-// const platformName = process.platform;
-// let cmd: string;
-// let args: string[] = [];
-// const useShellOption = false;
-
-// if (platformName === "win32") {
-//   const { execSync } = await import("node:child_process");
-//   try {
-//     execSync("where wsl", { stdio: "ignore" });
-//     cmd = "wsl.exe";
-//     args = ["--", command];
-//   } catch {
-//     cmd = "powershell.exe";
-//     args = ["-NoProfile", "-NonInteractive", "-Command", command];
-//   }
-// } else {
-//   const shell = process.env["SHELL"] || "/bin/bash";
-//   cmd = shell;
-//   args = ["-c", command];
-// }
+// Track registered execution environments for cleanup
+const registeredForCleanup = new WeakSet<ExecutionEnvironment>();
 
 // Set up cleanup on process exit
 function setupProcessCleanup(executionEnv: ExecutionEnvironment): void {
-  process.on("exit", () => {
-    executionEnv.killAllBackgroundProcesses();
-  });
+  if (registeredForCleanup.has(executionEnv)) {
+    return;
+  }
+  registeredForCleanup.add(executionEnv);
 
-  process.on("SIGINT", () => {
+  const cleanup = () => {
     executionEnv.killAllBackgroundProcesses();
-  });
+  };
 
-  process.on("SIGTERM", () => {
-    executionEnv.killAllBackgroundProcesses();
-  });
+  process.on("exit", cleanup);
+  process.on("SIGINT", cleanup);
+  process.on("SIGTERM", cleanup);
 }
