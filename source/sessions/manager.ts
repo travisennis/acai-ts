@@ -316,7 +316,9 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
         this.emit("update-title", this.title);
       }
     } catch (error) {
-      console.error(error);
+      logger.error(error, "Failed to generate conversation title:");
+      this.title =
+        message.slice(0, 50).trim() + (message.length > 50 ? "..." : "");
     }
   }
 
