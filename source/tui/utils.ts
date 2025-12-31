@@ -1,7 +1,5 @@
+import { getSegmenter } from "../terminal/segmenter.ts";
 import stringWidth from "../terminal/string-width.ts";
-
-// Grapheme segmenter for proper Unicode iteration (handles emojis, etc.)
-const segmenter = new Intl.Segmenter();
 
 /**
  * Calculate the visible width of a string in terminal columns.
@@ -84,7 +82,7 @@ export function truncateToWidth(
       }
       // Segment this non-ANSI portion into graphemes
       const textPortion = text.slice(i, end);
-      for (const seg of segmenter.segment(textPortion)) {
+      for (const seg of getSegmenter().segment(textPortion)) {
         segments.push({ type: "grapheme", value: seg.segment });
       }
       i = end;

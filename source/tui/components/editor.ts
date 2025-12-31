@@ -1,3 +1,4 @@
+import { getSegmenter } from "../../terminal/segmenter.ts";
 import style from "../../terminal/style.ts";
 import type { CombinedProvider as CombinedAutocompleteProvider } from "../autocomplete/combined-provider.ts";
 import type {
@@ -8,10 +9,7 @@ import type { Component } from "../tui.ts";
 import { visibleWidth } from "../utils.ts";
 import { isNavigationKey, isTab, SelectList } from "./select-list.ts";
 
-// Grapheme segmenter for proper Unicode iteration (handles emojis, etc.)
-const segmenter = new Intl.Segmenter();
-
-// Cache for line metrics to avoid repeated segmentation
+// Cache for line metrics to avoid repeated segmentation (LRU-style)
 const lineMetricsCache = {
   maxSize: 1000,
   cache: new Map<
@@ -24,36 +22,43 @@ const lineMetricsCache = {
     widths: number[];
     totalWidth: number;
   } {
-    let cached = this.cache.get(line);
-    if (!cached) {
-      // Fast path for ASCII-only lines (common case)
-      if (/^[\x20-\x7E\t]*$/.test(line)) {
-        // ASCII characters (including tabs)
-        const graphemes = line.split(""); // Simple split for ASCII
-        const widths = graphemes.map((char) => (char === "\t" ? 3 : 1));
-        const totalWidth = widths.reduce((sum, w) => sum + w, 0);
-        cached = { graphemes, widths, totalWidth };
-      } else {
-        // Complex Unicode line, use full segmentation
-        const graphemes = [...segmenter.segment(line)].map(
-          (seg) => seg.segment,
-        );
-        const widths = graphemes.map((g) => visibleWidth(g));
-        const totalWidth = widths.reduce((sum, w) => sum + w, 0);
-        cached = { graphemes, widths, totalWidth };
-      }
-
+    const cached = this.cache.get(line);
+    if (cached) {
+      // Move to end for LRU behavior (most recently used)
+      this.cache.delete(line);
       this.cache.set(line, cached);
-      // Enforce size limit
-      if (this.cache.size > this.maxSize) {
-        // Delete first (oldest) entry - simple but not LRU; okay for our use case
-        const firstKey = this.cache.keys().next().value;
-        if (firstKey !== undefined) {
-          this.cache.delete(firstKey);
-        }
+      return cached;
+    }
+
+    // Compute metrics
+    let result: { graphemes: string[]; widths: number[]; totalWidth: number };
+
+    // Fast path for ASCII-only lines (common case)
+    if (/^[\x20-\x7E\t]*$/.test(line)) {
+      const graphemes = line.split("");
+      const widths = graphemes.map((char) => (char === "\t" ? 3 : 1));
+      const totalWidth = widths.reduce((sum, w) => sum + w, 0);
+      result = { graphemes, widths, totalWidth };
+    } else {
+      // Complex Unicode line, use shared segmenter
+      const graphemes = [...getSegmenter().segment(line)].map(
+        (seg) => seg.segment,
+      );
+      const widths = graphemes.map((g) => visibleWidth(g));
+      const totalWidth = widths.reduce((sum, w) => sum + w, 0);
+      result = { graphemes, widths, totalWidth };
+    }
+
+    // Enforce size limit before adding (evict oldest = first entry)
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey !== undefined) {
+        this.cache.delete(firstKey);
       }
     }
-    return cached;
+
+    this.cache.set(line, result);
+    return result;
   },
 
   clear(): void {
@@ -339,7 +344,7 @@ export class Editor implements Component {
         if (after.length > 0) {
           // Cursor is on a character (grapheme) - replace it with highlighted version
           // Get the first grapheme from 'after'
-          const afterGraphemes = [...segmenter.segment(after)];
+          const afterGraphemes = [...getSegmenter().segment(after)];
           const firstGrapheme = afterGraphemes[0]?.segment || "";
           const restAfter = after.slice(firstGrapheme.length);
           const cursor = `\x1b[7m${firstGrapheme}\x1b[0m`;
@@ -356,7 +361,7 @@ export class Editor implements Component {
           } else {
             // Line is at full width - use reverse video on last grapheme if possible
             // or just show cursor at the end without adding space
-            const beforeGraphemes = [...segmenter.segment(before)];
+            const beforeGraphemes = [...getSegmenter().segment(before)];
             if (beforeGraphemes.length > 0) {
               const lastGrapheme =
                 beforeGraphemes[beforeGraphemes.length - 1]?.segment || "";

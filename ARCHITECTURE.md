@@ -111,6 +111,7 @@ acai-ts
 │   │   ├── index.ts
 │   │   ├── markdown-utils.ts
 │   │   ├── markdown.ts
+│   │   ├── segmenter.ts
 │   │   ├── select-prompt.ts
 │   │   ├── string-width.ts
 │   │   ├── strip-ansi.ts
@@ -362,6 +363,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/terminal/index.ts**: Main exports for terminal utilities module.
 - **source/terminal/markdown-utils.ts**: Utilities for rendering Markdown in terminal.
 - **source/terminal/markdown.ts**: Markdown parser and renderer for terminal output.
+- **source/terminal/segmenter.ts**: Shared Intl.Segmenter singleton for grapheme segmentation.
 - **source/terminal/select-prompt.ts**: Interactive prompt for single selections from a list.
 - **source/terminal/string-width.ts**: Calculates display width of strings accounting for ANSI codes.
 - **source/terminal/strip-ansi.ts**: Strips ANSI escape codes from strings.

@@ -56,11 +56,7 @@ export class Container implements Component {
   }
 
   render(width: number): string[] {
-    const lines: string[] = [];
-    for (const child of this.children) {
-      lines.push(...child.render(width));
-    }
-    return lines;
+    return this.children.flatMap((child) => child.render(width));
   }
 }
 

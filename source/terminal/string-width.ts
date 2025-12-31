@@ -1,18 +1,10 @@
 import { eastAsianWidth } from "./east-asian-width.ts";
+import { getSegmenter } from "./segmenter.ts";
 import stripAnsi from "./strip-ansi.ts";
 
 interface StringWidthOptions {
   ambiguousIsNarrow?: boolean;
   countAnsiEscapeCodes?: boolean;
-}
-
-// Lazily initialize segmenter only when needed
-let segmenter: Intl.Segmenter | null = null;
-function getSegmenter(): Intl.Segmenter {
-  if (!segmenter) {
-    segmenter = new Intl.Segmenter();
-  }
-  return segmenter;
 }
 
 // Precompile regexes (these are already at module level, which is good)
