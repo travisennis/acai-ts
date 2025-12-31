@@ -108,6 +108,12 @@ export class NewRepl {
       promptHistory,
     } = this.options;
 
+    // Listen for session title updates
+    messageHistory.on("update-title", (title: string) => {
+      this.footer.setTitle(title);
+      this.tui.requestRender();
+    });
+
     const modelConfig = modelManager.getModelMetadata("repl");
     this.promptStatus.setState({
       projectStatus: await getProjectStatusLine(),
@@ -116,6 +122,9 @@ export class NewRepl {
     });
 
     this.tui.addChild(this.welcome);
+
+    // Initialize footer with current title if one exists
+    this.footer.setTitle(messageHistory.getTitle());
 
     this.tui.addChild(this.chatContainer);
     this.tui.addChild(this.statusContainer);

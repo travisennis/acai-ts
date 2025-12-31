@@ -9,14 +9,20 @@ import { Container } from "../tui.ts";
  */
 export class FooterComponent extends Container {
   private state: AgentState;
+  private sessionTitle: string;
 
   constructor(state: AgentState) {
     super();
     this.state = state;
+    this.sessionTitle = "";
   }
 
   updateState(state: AgentState): void {
     this.state = state;
+  }
+
+  setTitle(title: string): void {
+    this.sessionTitle = title;
   }
 
   override render(width: number): string[] {
@@ -27,6 +33,11 @@ export class FooterComponent extends Container {
     }
 
     results.push(hr(width));
+
+    if (this.sessionTitle) {
+      const titleDisplay = `Title: ${this.sessionTitle}`;
+      results.push(style.dim(titleDisplay));
+    }
 
     // Create a more visual representation of steps/tool usage
     results.push(...displayToolUse(this.state));

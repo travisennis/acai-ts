@@ -20,6 +20,7 @@ import {
   type ToolModelMessage,
   type UserModelMessage,
 } from "ai";
+import { dedent } from "../dedent.ts";
 import { logger } from "../logger.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
@@ -299,25 +300,52 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
 
     const app = "title-conversation";
 
-    const systemPrompt =
-      "You are an assistant who task is to analyze messages to generate a conversation topic that can be used as a conversation title. For each message, generate a short title that captures the topic. Return only the title with no other text.\n\nExamples:\nMessage:\nHow do I implement authentication in my Express app?\nTitle: Express Authentication Implementation\n\nMessage:\nCan you help me debug this React component that isn't rendering correctly?\nTitle:React Component Rendering Debug";
+    const systemPrompt = dedent`
+You are an assistant who is tasked to analyze messages to generate a conversation topic that can be used as a conversation title. For each message, generate a short title that captures the topic. Return only the title with no other text.
+
+## Examples:
+
+<example>
+Message:
+How do I implement authentication in my Express app?
+
+Title:
+Express Authentication Implementation
+</example>
+
+<example>
+Message:
+Can you help me debug this React component that isn't rendering correctly?
+
+Title:
+React Component Rendering Debug";
+</example>
+`;
+
     let title = "";
+
     try {
-      const { text, usage } = await generateText({
-        model: this.modelManager.getModel(app),
+      const model = this.modelManager.getModel(app);
+
+      const result = await generateText({
+        model,
         system: systemPrompt,
-        maxOutputTokens: 100,
-        prompt: `Request:\n${message}\nTitle:`,
+        prompt: `Message:\n${message}\n\nTitle:`,
       });
 
-      this.tokenTracker.trackUsage(app, usage);
+      this.tokenTracker.trackUsage(app, result.usage);
 
-      if (text && text.length > 0) {
-        title = text;
+      if (result.text && result.text.length > 0) {
+        title = result.text;
+        this.title = title;
       }
     } catch (error) {
-      logger.error(error, "Failed to generate conversation title:");
+      logger.error(
+        error,
+        "[generateTitle] Failed to generate conversation title:",
+      );
     }
+
     if (title.length === 0) {
       this.title =
         message.slice(0, 50).trim() + (message.length > 50 ? "..." : "");
