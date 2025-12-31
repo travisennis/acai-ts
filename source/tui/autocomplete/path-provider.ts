@@ -1,10 +1,10 @@
-import { stat } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join } from "node:path";
 import type {
   AutocompleteItem,
   AutocompleteProvider,
 } from "./base-provider.ts";
 import {
+  type DirentWithPath,
   extractPathPrefix,
   getDirectoryEntries,
   isPathWithinAllowedDirs,
@@ -177,36 +177,28 @@ export class PathProvider implements AutocompleteProvider {
       const entries = await getDirectoryEntries(searchDirs);
       const suggestions: AutocompleteItem[] = [];
 
-      for (const entry of entries) {
-        const entryName = entry.name;
-        if (!entryName.toLowerCase().startsWith(searchPrefix.toLowerCase())) {
-          continue;
-        }
+      // Filter entries by prefix first (fast string operation)
+      const matchingEntries = entries.filter((entry) =>
+        entry.name.toLowerCase().startsWith(searchPrefix.toLowerCase()),
+      );
 
-        const fullPath = join(entry.parentPath, entryName);
-        let isDirectory = false;
-        try {
-          // Add timeout to prevent hanging on slow file systems
-          const stats = await Promise.race([
-            stat(fullPath),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error("File stat timeout")), 1000),
-            ),
-          ]);
-          isDirectory = stats.isDirectory();
-        } catch {
-          // If stat fails or times out, skip this entry
-          continue;
+      // Batch check allowed paths (reduces repeated realpath calls)
+      const validEntries: Array<{ entry: DirentWithPath; fullPath: string }> =
+        [];
+      for (const entry of matchingEntries) {
+        const fullPath = join(entry.parentPath, entry.name);
+        if (await isPathWithinAllowedDirs(fullPath, this.allowedDirs)) {
+          validEntries.push({ entry, fullPath });
         }
+      }
 
-        // Check if the resulting path is within allowed directories
-        if (!(await isPathWithinAllowedDirs(fullPath, this.allowedDirs))) {
-          continue;
-        }
+      for (const { entry, fullPath } of validEntries) {
+        // Use Dirent.isDirectory() - no extra stat() call needed
+        const isDirectory = entry.isDirectory();
 
         suggestions.push({
           value: isDirectory ? `${fullPath}/` : fullPath,
-          label: entryName,
+          label: entry.name,
           description: isDirectory
             ? `directory ${entry.parentPath}`
             : `file ${entry.parentPath}`,

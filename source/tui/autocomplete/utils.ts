@@ -26,13 +26,22 @@ export class DirectoryCache {
 
 export const directoryCache = new DirectoryCache();
 
+// Extended Dirent with parent path for easier processing
+export interface DirentWithPath extends Dirent {
+  parentPath: string;
+}
+
 // Helper function to get directory entries with caching and timeout
-export async function getDirectoryEntries(dirs: string[]): Promise<Dirent[]> {
-  const results: Dirent[] = [];
+export async function getDirectoryEntries(
+  dirs: string[],
+): Promise<DirentWithPath[]> {
+  const results: DirentWithPath[] = [];
   for (const dir of dirs) {
     const cached = await directoryCache.get(dir);
     if (cached) {
-      results.push(...cached);
+      for (const entry of cached) {
+        results.push(Object.assign(entry, { parentPath: dir }));
+      }
       continue;
     }
 
@@ -45,7 +54,9 @@ export async function getDirectoryEntries(dirs: string[]): Promise<Dirent[]> {
         ),
       ]);
       directoryCache.set(dir, entries);
-      results.push(...entries);
+      for (const entry of entries) {
+        results.push(Object.assign(entry, { parentPath: dir }));
+      }
     } catch (_e) {
       // ignore
     }
@@ -53,23 +64,42 @@ export async function getDirectoryEntries(dirs: string[]): Promise<Dirent[]> {
   return results;
 }
 
+// Cache for resolved allowed directories to avoid repeated realpath calls
+const resolvedAllowedDirsCache = new Map<string, string>();
+
+async function getResolvedPath(path: string): Promise<string> {
+  const cached = resolvedAllowedDirsCache.get(path);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const absPath = resolve(path);
+  let resolved = absPath;
+  try {
+    resolved = await realpath(absPath);
+  } catch {
+    // If path doesn't exist, use the resolved absolute path
+  }
+
+  // Cache with a size limit
+  if (resolvedAllowedDirsCache.size > 500) {
+    const firstKey = resolvedAllowedDirsCache.keys().next().value;
+    if (firstKey !== undefined) {
+      resolvedAllowedDirsCache.delete(firstKey);
+    }
+  }
+  resolvedAllowedDirsCache.set(path, resolved);
+  return resolved;
+}
+
 export async function isPathWithinAllowedDirs(
   requestedPath: string,
   allowedDirs: string[],
 ): Promise<boolean> {
+  const target = await getResolvedPath(requestedPath);
+
   for (const allowedDir of allowedDirs) {
-    // Resolve both paths to handle relative paths and symlinks
-    const absRequested = resolve(requestedPath);
-    const absAllowed = resolve(allowedDir);
-
-    let target = absRequested;
-    try {
-      // Try to resolve symlinks for the target path
-      target = await realpath(absRequested);
-    } catch {
-      // If target doesn't exist, use the intended path
-    }
-
+    const absAllowed = await getResolvedPath(allowedDir);
     const rel = relative(absAllowed, target);
     if (rel === "" || (!rel.startsWith("..") && !isAbsolute(rel))) {
       return true;
