@@ -10,7 +10,7 @@ export class Welcome implements Component {
     const result: string[] = [];
     result.push(style.magenta(this.getLogo()));
     result.push("");
-    result.push(style.magenta("Greetings! I am acai."));
+    result.push(style.magenta("  Welcome to acai"));
     result.push(style.gray(`  Version ${version}`));
     result.push("");
 
