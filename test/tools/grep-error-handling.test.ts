@@ -1,14 +1,23 @@
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 
 import { buildGrepCommand, grepFiles } from "../../source/tools/grep.ts";
 
-test("grepFiles handles exit code 1 (no matches) gracefully", () => {
-  // Use a pattern that definitely won't match anything
-  const result = grepFiles("nonexistentpattern12345xyzabc", "/tmp", {
-    literal: true,
-  });
-  assert.strictEqual(result, "No matches found.");
+test("grepFiles handles exit code 1 (no matches) gracefully", async () => {
+  // Use a unique temp directory to avoid matching test file contents
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "acai-grep-test-"));
+  try {
+    // Use a pattern that definitely won't match anything
+    const result = grepFiles("nonexistentpattern12345xyzabc", tmpDir, {
+      literal: true,
+    });
+    assert.strictEqual(result, "No matches found.");
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
 });
 
 test("grepFiles handles problematic patterns with fixed-string mode", () => {
