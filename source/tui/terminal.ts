@@ -65,7 +65,10 @@ export class ProcessTerminal implements Terminal {
     process.stdin.on("data", this.boundInputListener);
     process.stdout.on("resize", this.boundResizeListener);
 
-    this.sigintHandler = () => this.stop();
+    this.sigintHandler = () => {
+      // Let the custom editor.onCtrlC handler in NewRepl handle Ctrl+C
+      // This prevents a race condition where stop() gets called without the exit message
+    };
     process.on("SIGINT", this.sigintHandler);
   }
 
