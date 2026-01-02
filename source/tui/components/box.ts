@@ -1,5 +1,6 @@
 import { getTerminalSize } from "../../terminal/control.ts";
 import stripAnsi from "../../terminal/strip-ansi.ts";
+import style from "../../terminal/style.ts";
 import type { Component } from "../tui.ts";
 import { Markdown } from "./markdown.ts";
 
@@ -74,7 +75,15 @@ export class BoxComponent implements Component {
       0,
       renderWidth - leftDashes - headerVisibleLen,
     );
-    const topBorder = `┌${"─".repeat(leftDashes)}${paddedHeader}${"─".repeat(rightDashes - 2)}┐`;
+
+    const dash = style.gray("─");
+    const verticalBar = style.gray("│");
+    const topLeft = style.gray("┌");
+    const topRight = style.gray("┐");
+    const bottomLeft = style.gray("└");
+    const bottomRight = style.gray("┘");
+
+    const topBorder = `${topLeft}${dash.repeat(leftDashes)}${paddedHeader}${dash.repeat(rightDashes - 2)}${topRight}`;
 
     // Prepare inner content: format markdown wrapped to inner width
     const innerWidth = Math.max(1, renderWidth - 4);
@@ -84,11 +93,11 @@ export class BoxComponent implements Component {
     const contentLines = formatted.map((line) => {
       const visibleLen = stripAnsi(line).length;
       const padCount = Math.max(0, innerWidth - visibleLen);
-      return `│ ${line}${" ".repeat(padCount)} │`;
+      return `${verticalBar} ${line}${" ".repeat(padCount)} ${verticalBar}`;
     });
 
     // Bottom border
-    const bottomBorder = `└${"─".repeat(renderWidth - 2)}┘`;
+    const bottomBorder = `${bottomLeft}${dash.repeat(renderWidth - 2)}${bottomRight}`;
 
     const result = [topBorder, ...contentLines, bottomBorder];
 
