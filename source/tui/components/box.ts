@@ -1,8 +1,7 @@
 import { getTerminalSize } from "../../terminal/control.ts";
-import { applyMarkdown } from "../../terminal/markdown.ts";
 import stripAnsi from "../../terminal/strip-ansi.ts";
-import wrapAnsi from "../../terminal/wrap-ansi.ts";
 import type { Component } from "../tui.ts";
+import { Markdown } from "./markdown.ts";
 
 /**
  * Box component - displays content in a bordered box with header
@@ -75,21 +74,21 @@ export class BoxComponent implements Component {
       0,
       renderWidth - leftDashes - headerVisibleLen,
     );
-    const topBorder = `┌${"─".repeat(leftDashes)}${paddedHeader}${"─".repeat(rightDashes)}┐`;
+    const topBorder = `┌${"─".repeat(leftDashes)}${paddedHeader}${"─".repeat(rightDashes - 2)}┐`;
 
-    // Prepare inner content: format markdown first, then wrap to inner width
-    const innerWidth = Math.max(1, renderWidth - 2);
-    const formatted = applyMarkdown(this.content);
-    const wrapped = wrapAnsi(formatted, innerWidth, { trim: false });
+    // Prepare inner content: format markdown wrapped to inner width
+    const innerWidth = Math.max(1, renderWidth - 4);
+    const md = new Markdown(this.content);
+    const formatted = md.render(innerWidth);
 
-    const contentLines = wrapped.split("\n").map((line) => {
+    const contentLines = formatted.map((line) => {
       const visibleLen = stripAnsi(line).length;
       const padCount = Math.max(0, innerWidth - visibleLen);
       return `│ ${line}${" ".repeat(padCount)} │`;
     });
 
     // Bottom border
-    const bottomBorder = `└${"─".repeat(renderWidth)}┘`;
+    const bottomBorder = `└${"─".repeat(renderWidth - 2)}┘`;
 
     const result = [topBorder, ...contentLines, bottomBorder];
 
