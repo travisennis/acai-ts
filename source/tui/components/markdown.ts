@@ -1,5 +1,6 @@
 import { marked, type Token } from "marked";
 import { DEFAULT_HIGHLIGHT_THEME } from "../../terminal/default-theme.ts";
+import { link as terminalLink } from "../../terminal/formatting.ts";
 import { highlight, supportsLanguage } from "../../terminal/highlight/index.ts";
 import type { Theme } from "../../terminal/highlight/theme.ts";
 import { getListNumber } from "../../terminal/markdown-utils.ts";
@@ -408,12 +409,13 @@ export class Markdown implements Component {
 
         case "link": {
           const linkText = this.renderInlineTokens(token.tokens || []);
+          const terminalLinkText = terminalLink(linkText, token.href);
           // If link text matches href, only show the link once
           if (linkText === token.href) {
-            result += this.theme.link(linkText);
+            result += this.theme.link(terminalLinkText ?? linkText);
           } else {
             result +=
-              this.theme.link(linkText) +
+              this.theme.link(terminalLinkText ?? linkText) +
               this.theme.linkUrl(` (${token.href})`);
           }
           break;
@@ -472,6 +474,45 @@ export class Markdown implements Component {
   }
 
   /**
+   * Map a position in clean text to the corresponding position in styled text
+   * This accounts for ANSI escape codes that are inserted between characters
+   */
+  private cleanToStyledIndex(
+    cleanText: string,
+    styledText: string,
+    cleanIndex: number,
+  ): number {
+    let cleanPos = 0;
+    let styledPos = 0;
+
+    while (cleanPos < cleanIndex && styledPos < styledText.length) {
+      const char = cleanText[cleanPos];
+
+      // Check if we're at an ANSI escape sequence in the styled text
+      const escapeChar = String.fromCharCode(27);
+      if (styledText[styledPos] === escapeChar) {
+        // Skip the entire ANSI escape sequence
+        while (styledPos < styledText.length && styledText[styledPos] !== "m") {
+          styledPos++;
+        }
+        // Skip the 'm' character too
+        styledPos++;
+        // Don't increment cleanPos - ANSI codes are inserted between characters
+      } else if (styledText[styledPos] === char) {
+        // Characters match, advance both
+        cleanPos++;
+        styledPos++;
+      } else {
+        // Characters don't match - this shouldn't happen if cleanText is derived from styledText
+        // But to be safe, just advance styledPos
+        styledPos++;
+      }
+    }
+
+    return styledPos;
+  }
+
+  /**
    * Protect inline code spans by replacing them with placeholders
    * This prevents wrapAnsi from breaking code spans across lines
    */
@@ -509,44 +550,33 @@ export class Markdown implements Component {
       }
 
       if (closingIndex !== -1) {
-        // Extract the actual code span from the original styled text
-        // We need to map the positions from clean text to styled text
-        const cleanCodeSpan = cleanText.slice(backtickIndex, closingIndex + 1);
-
-        // Find the corresponding span in the styled text
-        // This is complex due to ANSI codes, so we use a simpler approach:
-        // Just use the regex on the original text and validate with clean text
-        const regex = new RegExp(
-          cleanCodeSpan.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-          "g",
+        // Map the positions to the styled text
+        const styledStart = this.cleanToStyledIndex(
+          cleanText,
+          text,
+          backtickIndex,
         );
-        const match = regex.exec(text);
+        const styledEnd = this.cleanToStyledIndex(
+          cleanText,
+          text,
+          closingIndex + 1,
+        );
 
-        if (match) {
-          const styledCodeSpan = match[0];
+        // Extract the styled code span
+        const styledCodeSpan = text.slice(styledStart, styledEnd);
 
-          // Check if this is an actual code span
-          if (
-            this.isActualCodeSpan(
-              text,
-              match.index,
-              match.index + styledCodeSpan.length,
-            )
-          ) {
-            const placeholder = `__CODE_SPAN_${placeholderIndex}__`;
+        const placeholder = `__CODE_SPAN_${placeholderIndex}__`;
 
-            // Store the full styled code span for restoration
-            codeSpans.push(styledCodeSpan);
+        // Store the full styled code span for restoration
+        codeSpans.push(styledCodeSpan);
 
-            // Replace with placeholder
-            protectedText = protectedText.replace(styledCodeSpan, placeholder);
-            placeholderIndex++;
+        // Replace with placeholder
+        protectedText = protectedText.replace(styledCodeSpan, placeholder);
+        placeholderIndex++;
 
-            // Move past this code span
-            i = closingIndex + 1;
-            continue;
-          }
-        }
+        // Move past this code span
+        i = closingIndex + 1;
+        continue;
       }
 
       // Move to next character
@@ -554,27 +584,6 @@ export class Markdown implements Component {
     }
 
     return { protectedText, codeSpans };
-  }
-
-  /**
-   * Check if a potential code span is an actual code span (not escaped backticks)
-   */
-  private isActualCodeSpan(
-    text: string,
-    startIndex: number,
-    endIndex: number,
-  ): boolean {
-    // If the text around the code span contains ANSI escape sequences,
-    // it's likely an actual code span that was processed by renderInlineTokens
-    // Look for ANSI escape sequences in the surrounding context
-    const contextStart = Math.max(0, startIndex - 10);
-    const contextEnd = Math.min(text.length, endIndex + 10);
-    const context = text.slice(contextStart, contextEnd);
-
-    // Check for ANSI escape sequences that would indicate styled code
-    // Use String.fromCharCode(27) to avoid control characters in regex
-    const escapeChar = String.fromCharCode(27);
-    return context.includes(`${escapeChar}[`);
   }
 
   /**
