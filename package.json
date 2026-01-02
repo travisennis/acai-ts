@@ -6,8 +6,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "acai": "bin/acai-wrapper.js",
-    "@travisennis/acai": "bin/acai-wrapper.js"
+    "acai": "dist/index.js",
+    "@travisennis/acai": "dist/index.js"
   },
   "files": [
     "dist",
