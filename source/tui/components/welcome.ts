@@ -16,8 +16,8 @@ export class Welcome implements Component {
 
     const boxContent = dedent`
       Type \`/help\` to see available commands.
-      You can ask acai to explain code, fix issues, or perform tasks.
-      Example: "_Please analyze this codebase and explain its structure._"
+      You can ask ${style.magenta("acai")} to explain code, fix issues, or perform tasks.
+      ${style.yellow("Example:")} "_Please analyze this codebase and explain its structure._"
       Use \`Ctrl+C\` to interrupt acai and exit.
     `;
 
