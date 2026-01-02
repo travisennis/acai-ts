@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { text } from "node:stream/consumers";
 import { parseArgs } from "node:util";
-import { asyncTry } from "@travisennis/stdlib/try";
+import { asyncTry, isFailure, syncTry } from "@travisennis/stdlib/try";
 import { isDefined } from "@travisennis/stdlib/typeguards";
 import { Agent } from "./agent/index.ts";
 import { Cli } from "./cli.ts";
@@ -87,24 +87,32 @@ Examples
   $ acai --resume a1b2c3d4-e5f6-7890-1234-567890abcdef
 `;
 
-const parsed = parseArgs({
-  options: {
-    model: { type: "string", short: "m" },
-    prompt: { type: "string", short: "p" },
-    continue: { type: "boolean", default: false },
-    resume: { type: "boolean", default: false },
+const parsed = syncTry(() =>
+  parseArgs({
+    options: {
+      model: { type: "string", short: "m" },
+      prompt: { type: "string", short: "p" },
+      continue: { type: "boolean", default: false },
+      resume: { type: "boolean", default: false },
 
-    "add-dir": { type: "string", multiple: true },
-    "no-skills": { type: "boolean", default: false },
+      "add-dir": { type: "string", multiple: true },
+      "no-skills": { type: "boolean", default: false },
 
-    help: { type: "boolean", short: "h" },
-    version: { type: "boolean", short: "v" },
-  },
-  allowPositionals: true,
-});
+      help: { type: "boolean", short: "h" },
+      version: { type: "boolean", short: "v" },
+    },
+    allowPositionals: true,
+  }),
+);
 
-const flags = parsed.values;
-const input = parsed.positionals;
+if (isFailure(parsed)) {
+  console.error(parsed.error.message);
+  console.info(helpText);
+  process.exit(0);
+}
+
+const flags = parsed.unwrap().values;
+const input = parsed.unwrap().positionals;
 
 // Create workspace context from CLI arguments
 const workspace = createWorkspaceContext(flags["add-dir"]);
