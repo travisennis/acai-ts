@@ -9,14 +9,13 @@ export const dedent: Dedent = (
   // Perform interpolation
   let result = "";
   for (let i = 0; i < strings.raw.length; i++) {
-    const next =
-      strings.raw[i] ??
-      ""
-        // handle escaped newlines, backticks, and interpolation characters
-        .replace(/\\\n[ \t]*/g, "")
-        .replace(/\\`/g, "`")
-        .replace(/\\\$/g, "$")
-        .replace(/\\\{/g, "{");
+    const raw = strings.raw[i] ?? "";
+    // handle escaped newlines, backticks, and interpolation characters
+    const next = raw
+      .replace(/\\\n[ \t]*/g, "")
+      .replace(/\\`/g, "`")
+      .replace(/\\\$/g, "$")
+      .replace(/\\\{/g, "{");
 
     result += next;
 
