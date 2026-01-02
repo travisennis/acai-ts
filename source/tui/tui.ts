@@ -73,6 +73,8 @@ export class TUI extends Container {
   private renderAgain = false;
   private activeModal: Modal | null = null;
 
+  public onCtrlC?: () => void;
+
   constructor(terminal: Terminal) {
     super();
     this.terminal = terminal;
@@ -113,8 +115,12 @@ export class TUI extends Container {
     // Handle Ctrl+C globally - exit the application
     if (data.charCodeAt(0) === 3) {
       console.info("\nCtrl+C pressed - exiting...");
-      this.stop();
-      process.exit(0);
+      if (this.onCtrlC) {
+        this.onCtrlC();
+      } else {
+        this.stop();
+        process.exit(0);
+      }
     }
 
     // Handle Escape key to close modal if one is active

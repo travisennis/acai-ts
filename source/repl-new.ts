@@ -121,6 +121,10 @@ export class NewRepl {
       contextWindow: modelConfig.contextWindow,
     });
 
+    this.tui.onCtrlC = () => {
+      this.handleCtrlC();
+    };
+
     this.tui.addChild(this.welcome);
 
     // Initialize footer with current title if one exists
@@ -140,10 +144,6 @@ export class NewRepl {
       if (this.loadingAnimation && this.onInterruptCallback) {
         this.onInterruptCallback();
       }
-    };
-
-    this.editor.onCtrlC = () => {
-      this.handleCtrlC();
     };
 
     // Create editor for input
@@ -464,6 +464,9 @@ export class NewRepl {
   }
 
   stop(showExitMessage = false): void {
+    if (showExitMessage && this.onExitCallback) {
+      this.onExitCallback(this.options.messageHistory.getSessionId());
+    }
     if (this.loadingAnimation) {
       this.loadingAnimation.stop();
       this.loadingAnimation = null;
@@ -471,9 +474,6 @@ export class NewRepl {
     if (this.isInitialized) {
       this.tui.stop();
       this.isInitialized = false;
-    }
-    if (showExitMessage && this.onExitCallback) {
-      this.onExitCallback(this.options.messageHistory.getSessionId());
     }
   }
 }

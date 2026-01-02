@@ -238,7 +238,6 @@ export class Editor implements Component {
 
   // Custom key handlers for coding-agent
   public onEscape?: () => void;
-  public onCtrlC?: () => void;
   public onRenderRequested?: () => void;
 
   constructor(theme?: EditorTheme) {
@@ -451,8 +450,7 @@ export class Editor implements Component {
     }
 
     // Intercept Ctrl+C
-    if (data === "\x03" && this.onCtrlC) {
-      this.onCtrlC();
+    if (data === "\x03") {
       return;
     }
 
