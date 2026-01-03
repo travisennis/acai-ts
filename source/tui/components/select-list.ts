@@ -1,35 +1,12 @@
+import {
+  isArrowDown,
+  isArrowUp,
+  isShiftTab,
+  isTab,
+} from "../../terminal/keys.ts";
 import style from "../../terminal/style.ts";
 import type { Component } from "../tui.ts";
 import { truncateToWidth } from "../utils.ts";
-
-/**
- * Check if key data represents Shift+Tab.
- * Supports multiple terminal escape sequences:
- * - \x1b[Z (standard)
- * - \x1b[1;2Z (with modifier)
- */
-export function isShiftTab(keyData: string): boolean {
-  return keyData === "\x1b[Z" || keyData === "\x1b[1;2Z";
-}
-
-/**
- * Check if key data represents Tab (without Shift).
- */
-export function isTab(keyData: string): boolean {
-  return keyData === "\t";
-}
-
-/**
- * Check if key data represents navigation key (arrows, Tab, Shift+Tab).
- */
-export function isNavigationKey(keyData: string): boolean {
-  return (
-    keyData === "\x1b[A" ||
-    keyData === "\x1b[B" ||
-    isTab(keyData) ||
-    isShiftTab(keyData)
-  );
-}
 
 export interface SelectItem {
   value: string;
@@ -226,7 +203,7 @@ export class SelectList implements Component {
 
   handleInput(keyData: string): void {
     // Up arrow - wrap to bottom when at top
-    if (keyData === "\x1b[A") {
+    if (isArrowUp(keyData)) {
       this.selectedIndex =
         this.selectedIndex === 0
           ? this.filteredItems.length - 1
@@ -234,7 +211,7 @@ export class SelectList implements Component {
       this.notifySelectionChange();
     }
     // Down arrow - wrap to top when at bottom
-    else if (keyData === "\x1b[B") {
+    else if (isArrowDown(keyData)) {
       this.selectedIndex =
         this.selectedIndex === this.filteredItems.length - 1
           ? 0

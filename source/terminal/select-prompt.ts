@@ -4,19 +4,15 @@
  * - TypeScript version
  */
 
-const Keys = {
-  up: "\x1b[A",
-  down: "\x1b[B",
-  home: "\x1b[H",
-  homeAlt: "\x1b[1~",
-  end: "\x1b[F",
-  endAlt: "\x1b[4~",
-  ctrlC: "\u0003",
-  enter: "\r",
-  newline: "\n",
-  backspace: "\x7f",
-  backspaceAlt: "\b",
-} as const;
+import {
+  isArrowDown,
+  isArrowUp,
+  isBackspace,
+  isCtrlC,
+  isEnd,
+  isEnter,
+  isHome,
+} from "./keys.ts";
 
 const ANSI = {
   hideCursor: "\x1b[?25l",
@@ -284,7 +280,7 @@ export async function select<T = unknown>({
     }
 
     function onData(key: string) {
-      if (key === Keys.ctrlC) {
+      if (isCtrlC(key)) {
         cleanup();
         stdout.write("\n");
         const err = new Error("Cancelled") as Error & { isCanceled?: boolean };
@@ -293,7 +289,7 @@ export async function select<T = unknown>({
         return;
       }
 
-      if (key === Keys.enter || key === Keys.newline) {
+      if (isEnter(key)) {
         cleanup();
         const chosen = filteredChoices[pointer];
         stdout.write("\n");
@@ -301,29 +297,29 @@ export async function select<T = unknown>({
         return;
       }
 
-      if (key === Keys.up) {
+      if (isArrowUp(key)) {
         move(-1);
         return;
       }
-      if (key === Keys.down) {
+      if (isArrowDown(key)) {
         move(1);
         return;
       }
 
-      if (key === Keys.home || key === Keys.homeAlt) {
+      if (isHome(key)) {
         pointer = findFirstEnabledIndex(filteredChoices);
         pageStart = updatePageStart(pointer, pageSize, filteredChoices.length);
         renderToScreen();
         return;
       }
-      if (key === Keys.end || key === Keys.endAlt) {
+      if (isEnd(key)) {
         pointer = findLastEnabledIndex(filteredChoices);
         pageStart = updatePageStart(pointer, pageSize, filteredChoices.length);
         renderToScreen();
         return;
       }
 
-      if (key === Keys.backspace || key === Keys.backspaceAlt) {
+      if (isBackspace(key)) {
         if (searchBuffer.length > 0) {
           searchBuffer = searchBuffer.slice(0, -1);
           if (searchBuffer.length === 0) {

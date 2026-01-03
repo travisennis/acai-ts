@@ -1,3 +1,12 @@
+import {
+  isArrowLeft,
+  isArrowRight,
+  isBackspace,
+  isCtrlA,
+  isCtrlE,
+  isDelete,
+  isEnter,
+} from "../../terminal/keys.ts";
 import type { Component } from "../tui.ts";
 import { visibleWidth } from "../utils.ts";
 
@@ -20,7 +29,7 @@ export class Input implements Component {
 
   handleInput(data: string): void {
     // Handle special keys
-    if (data === "\r" || data === "\n") {
+    if (isEnter(data)) {
       // Enter - submit
       if (this.onSubmit) {
         this.onSubmit(this.value);
@@ -28,7 +37,7 @@ export class Input implements Component {
       return;
     }
 
-    if (data === "\x7f" || data === "\x08") {
+    if (isBackspace(data)) {
       // Backspace
       if (this.cursor > 0) {
         this.value =
@@ -38,7 +47,7 @@ export class Input implements Component {
       return;
     }
 
-    if (data === "\x1b[D") {
+    if (isArrowLeft(data)) {
       // Left arrow
       if (this.cursor > 0) {
         this.cursor--;
@@ -46,7 +55,7 @@ export class Input implements Component {
       return;
     }
 
-    if (data === "\x1b[C") {
+    if (isArrowRight(data)) {
       // Right arrow
       if (this.cursor < this.value.length) {
         this.cursor++;
@@ -54,7 +63,7 @@ export class Input implements Component {
       return;
     }
 
-    if (data === "\x1b[3~") {
+    if (isDelete(data)) {
       // Delete
       if (this.cursor < this.value.length) {
         this.value =
@@ -63,13 +72,13 @@ export class Input implements Component {
       return;
     }
 
-    if (data === "\x01") {
+    if (isCtrlA(data)) {
       // Ctrl+A - beginning of line
       this.cursor = 0;
       return;
     }
 
-    if (data === "\x05") {
+    if (isCtrlE(data)) {
       // Ctrl+E - end of line
       this.cursor = this.value.length;
       return;

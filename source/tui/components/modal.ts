@@ -1,4 +1,13 @@
 import { getTerminalSize } from "../../terminal/control.ts";
+import {
+  isArrowDown,
+  isArrowUp,
+  isEnd,
+  isEscape,
+  isHome,
+  isPageDown,
+  isPageUp,
+} from "../../terminal/keys.ts";
 import style from "../../terminal/style.ts";
 import type { Component } from "../tui.ts";
 import { Container } from "../tui.ts";
@@ -35,38 +44,38 @@ export class Modal extends Container implements Component {
 
   handleInput(data: string): void {
     // Handle Escape key to close modal
-    if (data === "\x1b") {
+    if (isEscape(data)) {
       this.close();
       return;
     }
 
     // Handle scrolling
-    if (data === "\x1b[A") {
+    if (isArrowUp(data)) {
       // Up arrow
       this.scrollPosition = Math.max(0, this.scrollPosition - 1);
       return;
     }
-    if (data === "\x1b[B") {
+    if (isArrowDown(data)) {
       // Down arrow
       this.scrollPosition += 1;
       return;
     }
-    if (data === "\x1b[5~") {
+    if (isPageUp(data)) {
       // Page up
       this.scrollPosition = Math.max(0, this.scrollPosition - 10);
       return;
     }
-    if (data === "\x1b[6~") {
+    if (isPageDown(data)) {
       // Page down
       this.scrollPosition += 10;
       return;
     }
-    if (data === "\x1b[H" || data === "g") {
+    if (isHome(data) || data === "g") {
       // Home key or 'g' for top
       this.scrollPosition = 0;
       return;
     }
-    if (data === "\x1b[F" || data === "G") {
+    if (isEnd(data) || data === "G") {
       // End key or 'G' for bottom
       this.scrollPosition = Number.POSITIVE_INFINITY; // Will be clamped in render
       return;

@@ -1,3 +1,4 @@
+import { isNavigationKey, isTab } from "../../terminal/keys.ts";
 import { getSegmenter } from "../../terminal/segmenter.ts";
 import style from "../../terminal/style.ts";
 import type { CombinedProvider as CombinedAutocompleteProvider } from "../autocomplete/combined-provider.ts";
@@ -7,7 +8,7 @@ import type {
 } from "../autocomplete.ts";
 import type { Component } from "../tui.ts";
 import { visibleWidth } from "../utils.ts";
-import { isNavigationKey, isTab, SelectList } from "./select-list.ts";
+import { SelectList } from "./select-list.ts";
 
 // Cache for line metrics to avoid repeated segmentation (LRU-style)
 const lineMetricsCache = {
