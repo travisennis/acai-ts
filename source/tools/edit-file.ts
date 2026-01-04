@@ -2,7 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { createTwoFilesPatch } from "diff";
 import { z } from "zod";
 import { config } from "../config.ts";
-import { clearProjectStatusCache } from "../repl/project-status-line.ts";
+import { clearProjectStatusCache } from "../repl/project-status.ts";
 import style from "../terminal/style.ts";
 import {
   joinWorkingDir,

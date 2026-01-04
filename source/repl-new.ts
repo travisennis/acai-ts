@@ -5,7 +5,10 @@ import { logger } from "./logger.ts";
 import { PromptError, processPrompt } from "./mentions.ts";
 import type { ModelManager } from "./models/manager.ts";
 import type { PromptManager } from "./prompts/manager.ts";
-import { getProjectStatusLine } from "./repl/project-status-line.ts";
+import {
+  getProjectStatus,
+  type ProjectStatusData,
+} from "./repl/project-status.ts";
 import type { SessionManager } from "./sessions/manager.ts";
 import { alert, startProgress, stopProgress } from "./terminal/control.ts";
 import style from "./terminal/style.ts";
@@ -13,7 +16,6 @@ import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
 import { AssistantMessageComponent } from "./tui/components/assistant-message.ts";
 import { FooterComponent } from "./tui/components/footer.ts";
-import { PromptStatusComponent } from "./tui/components/prompt-status.ts";
 import { ThinkingBlockComponent } from "./tui/components/thinking-block.ts";
 import { ToolExecutionComponent } from "./tui/components/tool-execution.ts";
 import { Welcome } from "./tui/components/welcome.ts";
@@ -48,7 +50,6 @@ export class NewRepl {
   private editor: Editor;
   private chatContainer: Container;
   private statusContainer: Container;
-  private promptStatus: PromptStatusComponent;
   private footer: FooterComponent;
   private editorContainer: Container; // Container to swap between editor and selector
   private isInitialized: boolean;
@@ -75,12 +76,18 @@ export class NewRepl {
     this.chatContainer = new Container();
     this.statusContainer = new Container();
     this.editorContainer = new Container(); // Container to hold editor or selector
-    this.footer = new FooterComponent(options.agent.state);
-    this.promptStatus = new PromptStatusComponent(options.modelManager, {
-      projectStatus: "",
+    this.footer = new FooterComponent(options.modelManager, {
+      projectStatus: {
+        path: "",
+        isGitRepository: false,
+        fileChanges: { added: 0, modified: 0, deleted: 0, untracked: 0 },
+        diffStats: { insertions: 0, deletions: 0 },
+        hasChanges: false,
+      } as ProjectStatusData,
       currentContextWindow: 0,
       contextWindow:
         options.modelManager.getModelMetadata("repl").contextWindow,
+      usage: this.options.tokenTracker.getUsageByApp("repl"),
     });
     this.editorContainer.addChild(this.editor); // Start with editor
     this.editor.onRenderRequested = () => this.tui.requestRender();
@@ -109,16 +116,17 @@ export class NewRepl {
     } = this.options;
 
     // Listen for session title updates
-    messageHistory.on("update-title", (title: string) => {
-      this.footer.setTitle(title);
-      this.tui.requestRender();
-    });
+    // messageHistory.on("update-title", (title: string) => {
+    //   this.footer.setTitle(title);
+    //   this.tui.requestRender();
+    // });
 
     const modelConfig = modelManager.getModelMetadata("repl");
-    this.promptStatus.setState({
-      projectStatus: await getProjectStatusLine(),
+    this.footer.setState({
+      projectStatus: await getProjectStatus(),
       currentContextWindow: 0,
       contextWindow: modelConfig.contextWindow,
+      usage: this.options.tokenTracker.getUsageByApp("repl"),
     });
 
     this.tui.onCtrlC = () => {
@@ -128,14 +136,13 @@ export class NewRepl {
     this.tui.addChild(this.welcome);
 
     // Initialize footer with current title if one exists
-    this.footer.setTitle(messageHistory.getTitle());
+    // this.footer.setTitle(messageHistory.getTitle());
 
     this.tui.addChild(this.chatContainer);
     this.tui.addChild(this.statusContainer);
     this.tui.addChild(new Spacer(1));
-    this.tui.addChild(this.footer);
     this.tui.addChild(this.editorContainer); // Use container that can hold editor or selector
-    this.tui.addChild(this.promptStatus);
+    this.tui.addChild(this.footer);
     this.tui.setFocus(this.editor);
 
     // Set up custom key handlers on the editor
@@ -241,13 +248,15 @@ export class NewRepl {
     }
 
     // Update footer with current stats
-    this.footer.updateState(state);
+    // this.footer.updateState(state);
 
-    this.promptStatus.setState({
-      projectStatus: await getProjectStatusLine(),
+    this.footer.setState({
+      projectStatus: await getProjectStatus(),
       currentContextWindow: this.options.messageHistory.getContextWindow(),
       contextWindow:
         this.options.modelManager.getModelMetadata("repl").contextWindow,
+      agentState: state,
+      usage: this.options.tokenTracker.getUsageByApp("repl"),
     });
 
     const eventType = event.type;
@@ -435,12 +444,12 @@ export class NewRepl {
   }
 
   async rerender() {
-    this.footer.updateState(this.options.agent.state);
-    this.promptStatus.setState({
-      projectStatus: await getProjectStatusLine(),
+    this.footer.setState({
+      projectStatus: await getProjectStatus(),
       currentContextWindow: this.options.messageHistory.getContextWindow(),
       contextWindow:
         this.options.modelManager.getModelMetadata("repl").contextWindow,
+      usage: this.options.tokenTracker.getUsageByApp("repl"),
     });
 
     this.tui.requestRender();

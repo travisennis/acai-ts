@@ -1,265 +1,147 @@
+import type { LanguageModelUsage } from "ai";
 import type { AgentState } from "../../agent/index.ts";
 import { formatDuration, formatNumber } from "../../formatting.ts";
-import { hr } from "../../terminal/index.ts";
-import style, { type StyleInstance } from "../../terminal/style.ts";
-import { Container } from "../tui.ts";
+import type { ModelManager } from "../../models/manager.ts";
+import type { ProjectStatusData } from "../../repl/project-status.ts";
+import { getTerminalSize } from "../../terminal/control.ts";
+import stripAnsi from "../../terminal/strip-ansi.ts";
+import style from "../../terminal/style.ts";
+import type { Component } from "../tui.ts";
+import { ProgressBarComponent } from "./progress-bar.ts";
 
-/**
- * Footer component that shows pwd, token stats, and context usage
- */
-export class FooterComponent extends Container {
-  private state: AgentState;
-  private sessionTitle: string;
+type State = {
+  projectStatus: ProjectStatusData;
+  currentContextWindow: number;
+  contextWindow: number;
+  usage?: LanguageModelUsage;
+  agentState?: AgentState;
+};
 
-  constructor(state: AgentState) {
-    super();
+function formatProjectStatus(status: ProjectStatusData): string {
+  const { columns: width } = getTerminalSize();
+  const maxPathLength = Math.max(20, width - 10);
+  let path = status.path;
+  if (path.length > maxPathLength) {
+    const start = path.slice(0, Math.floor(maxPathLength / 2) - 2);
+    const end = path.slice(-(Math.floor(maxPathLength / 2) - 1));
+    path = `${start}...${end}`;
+  }
+
+  let result = style.blue(path);
+
+  if (status.isGitRepository && status.branch) {
+    const asterisk = status.hasChanges ? "*" : "";
+    result += ` ${style.gray(status.branch + asterisk)}`;
+
+    let fileStatus = "";
+    if (status.fileChanges.added) fileStatus += ` +${status.fileChanges.added}`;
+    if (status.fileChanges.modified)
+      fileStatus += ` ~${status.fileChanges.modified}`;
+    if (status.fileChanges.deleted)
+      fileStatus += ` -${status.fileChanges.deleted}`;
+    if (status.fileChanges.untracked)
+      fileStatus += ` ?${status.fileChanges.untracked}`;
+
+    result +=
+      " " +
+      `${style.dim("[")}${style.yellow(fileStatus.trim())} ` +
+      `${style.green(`+${status.diffStats.insertions}`)} ` +
+      `${style.red(`-${status.diffStats.deletions}`)}${style.dim("]")}`;
+  }
+
+  return result;
+}
+
+export class FooterComponent implements Component {
+  private modelManager: ModelManager;
+  private state: State;
+  private progressBar: ProgressBarComponent;
+  private usage?: LanguageModelUsage;
+  private agentState?: AgentState;
+  constructor(modelManager: ModelManager, state: State) {
+    this.modelManager = modelManager;
+    this.agentState = state.agentState;
     this.state = state;
-    this.sessionTitle = "";
-  }
-
-  updateState(state: AgentState): void {
-    this.state = state;
-  }
-
-  setTitle(title: string): void {
-    this.sessionTitle = title;
-  }
-
-  override render(width: number): string[] {
-    const results: string[] = [];
-
-    if (this.state.steps.length === 0) {
-      return results;
-    }
-
-    results.push(hr(width));
-
-    if (this.sessionTitle) {
-      const titleDisplay = `Title: ${this.sessionTitle}`;
-      results.push(style.dim(titleDisplay));
-    }
-
-    // Create a more visual representation of steps/tool usage
-    results.push(...displayToolUse(this.state));
-
-    let status = `Steps: ${this.state.steps.length} - `;
-
-    // Calculate total tool calls across all steps
-    const totalToolCalls = this.state.steps.reduce(
-      (total, step) => total + step.toolCalls.length,
+    this.progressBar = new ProgressBarComponent(
+      state.currentContextWindow,
+      state.contextWindow,
       0,
     );
-    status += `Tools call: ${totalToolCalls} - `;
+  }
 
-    // Show time spend on this prompt
-    status += `Time: ${formatDuration(this.state.timestamps.stop - this.state.timestamps.start)} - `;
+  setState(state: State) {
+    if (state.agentState) {
+      this.agentState = state.agentState;
+    }
+    if (state.usage) {
+      this.usage = state.usage;
+    }
+    this.state = state;
+    this.progressBar.setCurrent(state.currentContextWindow);
+    this.progressBar.setTotal(state.contextWindow);
+  }
 
-    const total = this.state.totalUsage;
-    const inputTokens = total.inputTokens;
-    const outputTokens = total.outputTokens;
-    const cachedInputTokens = total.cachedInputTokens;
-    const tokenSummary = `Tokens: ↑ ${formatNumber(inputTokens)} (${formatNumber(cachedInputTokens)}) ↓ ${formatNumber(outputTokens)} - `;
-    status += tokenSummary;
+  render(width: number): string[] {
+    const results: string[] = [];
 
-    const inputCost = this.state.modelConfig.costPerInputToken * inputTokens;
-    const outputCost = this.state.modelConfig.costPerOutputToken * outputTokens;
-    status += `Cost: $${(inputCost + outputCost).toFixed(2)}`;
+    const modelInfo = `${this.modelManager.getModelMetadata("repl").id} [${this.modelManager.getModel("repl").modelId}]`;
+    const projectStatusString = formatProjectStatus(this.state.projectStatus);
+    const padding = Math.max(
+      0,
+      width - stripAnsi(projectStatusString).length - modelInfo.length,
+    );
+    results.push(
+      projectStatusString + " ".repeat(padding) + style.dim(modelInfo),
+    );
 
-    results.push(style.dim(status));
+    if (this.usage && this.agentState) {
+      const inputTokens = this.usage.inputTokens ?? 0;
+      const outputTokens = this.usage.outputTokens ?? 0;
+      const cachedInputTokens =
+        this.usage.inputTokenDetails.cacheReadTokens ?? 0;
+      const tokenSummary = `↑ ${formatNumber(inputTokens)} (${formatNumber(cachedInputTokens)}) ↓ ${formatNumber(outputTokens)} - `;
+      let status = tokenSummary;
 
+      const inputCost =
+        this.agentState.modelConfig.costPerInputToken * inputTokens;
+      const outputCost =
+        this.agentState.modelConfig.costPerOutputToken * outputTokens;
+      status += `$${(inputCost + outputCost).toFixed(2)}`;
+
+      results.push(style.dim(status));
+    }
+
+    if (this.agentState) {
+      let status = `Steps: ${this.agentState.steps.length} - `;
+
+      // Calculate total tool calls across all steps
+      const totalToolCalls = this.agentState.steps.reduce(
+        (total, step) => total + step.toolCalls.length,
+        0,
+      );
+      status += `Tool calls: ${totalToolCalls} - `;
+
+      // Show time spend on this prompt
+      status += `${formatDuration(this.agentState.timestamps.stop - this.agentState.timestamps.start)} - `;
+
+      const total = this.agentState.totalUsage;
+      const inputTokens = total.inputTokens;
+      const outputTokens = total.outputTokens;
+      const cachedInputTokens = total.cachedInputTokens;
+      const tokenSummary = `↑ ${formatNumber(inputTokens)} (${formatNumber(cachedInputTokens)}) ↓ ${formatNumber(outputTokens)} - `;
+      status += tokenSummary;
+
+      const inputCost =
+        this.agentState.modelConfig.costPerInputToken * inputTokens;
+      const outputCost =
+        this.agentState.modelConfig.costPerOutputToken * outputTokens;
+      status += `$${(inputCost + outputCost).toFixed(2)}`;
+
+      results.push(style.dim(status));
+    }
+
+    // Add progress bar output
+    results.push(...this.progressBar.render(width));
     return results;
-    //   // Calculate cumulative usage from all assistant messages
-    //   let totalInput = 0;
-    //   let totalOutput = 0;
-    //   let totalCacheRead = 0;
-    //   let totalCacheWrite = 0;
-    //   let totalCost = 0;
-
-    //   for (const message of this.state.messages) {
-    //     if (message.role === "assistant") {
-    //       const assistantMsg = message as AssistantMessage;
-    //       totalInput += assistantMsg.usage.input;
-    //       totalOutput += assistantMsg.usage.output;
-    //       totalCacheRead += assistantMsg.usage.cacheRead;
-    //       totalCacheWrite += assistantMsg.usage.cacheWrite;
-    //       totalCost += assistantMsg.usage.cost.total;
-    //     }
-    //   }
-
-    //   // Get last assistant message for context percentage calculation (skip aborted messages)
-    //   const lastAssistantMessage = this.state.messages
-    //     .slice()
-    //     .reverse()
-    //     .find((m) => m.role === "assistant" && m.stopReason !== "aborted") as
-    //     | AssistantMessage
-    //     | undefined;
-
-    //   // Calculate context percentage from last message (input + output + cacheRead + cacheWrite)
-    //   const contextTokens = lastAssistantMessage
-    //     ? lastAssistantMessage.usage.input +
-    //       lastAssistantMessage.usage.output +
-    //       lastAssistantMessage.usage.cacheRead +
-    //       lastAssistantMessage.usage.cacheWrite
-    //     : 0;
-    //   const contextWindow = this.state.model.contextWindow;
-    //   const contextPercent =
-    //     contextWindow > 0
-    //       ? ((contextTokens / contextWindow) * 100).toFixed(1)
-    //       : "0.0";
-
-    //   // Format token counts (similar to web-ui)
-    //   const formatTokens = (count: number): string => {
-    //     if (count < 1000) return count.toString();
-    //     if (count < 10000) return (count / 1000).toFixed(1) + "k";
-    //     return Math.round(count / 1000) + "k";
-    //   };
-
-    //   // Replace home directory with ~
-    //   let pwd = process.cwd();
-    //   const home = process.env.HOME || process.env.USERPROFILE;
-    //   if (home && pwd.startsWith(home)) {
-    //     pwd = "~" + pwd.slice(home.length);
-    //   }
-
-    //   // Truncate path if too long to fit width
-    //   const maxPathLength = Math.max(20, width - 10); // Leave some margin
-    //   if (pwd.length > maxPathLength) {
-    //     const start = pwd.slice(0, Math.floor(maxPathLength / 2) - 2);
-    //     const end = pwd.slice(-(Math.floor(maxPathLength / 2) - 1));
-    //     pwd = `${start}...${end}`;
-    //   }
-
-    //   // Build stats line
-    //   const statsParts = [];
-    //   if (totalInput) statsParts.push(`↑${formatTokens(totalInput)}`);
-    //   if (totalOutput) statsParts.push(`↓${formatTokens(totalOutput)}`);
-    //   if (totalCacheRead) statsParts.push(`R${formatTokens(totalCacheRead)}`);
-    //   if (totalCacheWrite) statsParts.push(`W${formatTokens(totalCacheWrite)}`);
-    //   if (totalCost) statsParts.push(`$${totalCost.toFixed(3)}`);
-    //   statsParts.push(`${contextPercent}%`);
-
-    //   const statsLeft = statsParts.join(" ");
-
-    //   // Add model name on the right side
-    //   let modelName = this.state.model.id;
-    //   const statsLeftWidth = visibleWidth(statsLeft);
-    //   const modelWidth = visibleWidth(modelName);
-
-    //   // Calculate available space for padding (minimum 2 spaces between stats and model)
-    //   const minPadding = 2;
-    //   const totalNeeded = statsLeftWidth + minPadding + modelWidth;
-
-    //   let statsLine: string;
-    //   if (totalNeeded <= width) {
-    //     // Both fit - add padding to right-align model
-    //     const padding = " ".repeat(width - statsLeftWidth - modelWidth);
-    //     statsLine = statsLeft + padding + modelName;
-    //   } else {
-    //     // Need to truncate model name
-    //     const availableForModel = width - statsLeftWidth - minPadding;
-    //     if (availableForModel > 3) {
-    //       // Truncate model name to fit
-    //       modelName = modelName.substring(0, availableForModel);
-    //       const padding = " ".repeat(
-    //         width - statsLeftWidth - visibleWidth(modelName),
-    //       );
-    //       statsLine = statsLeft + padding + modelName;
-    //     } else {
-    //       // Not enough space for model name at all
-    //       statsLine = statsLeft;
-    //     }
-    //   }
-
-    //   // Return two lines: pwd and stats
-    //   return [chalk.gray(pwd), chalk.gray(statsLine)];
   }
-}
-
-// Minimal shape needed from the onFinish result to render tool usage
-interface MinimalStep {
-  toolResults: Array<{ toolName: string }>;
-  toolCalls: Array<{ toolName: string }>;
-}
-
-// Simple hash function to convert tool names to consistent numbers
-function hashString(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return Math.abs(hash);
-}
-
-function displayToolUse(result: { steps: MinimalStep[] }) {
-  const toolsCalled: string[] = [];
-  const toolColors = new Map<string, StyleInstance>();
-
-  const styleColors = [
-    "red",
-    "green",
-    "yellow",
-    "blue",
-    "magenta",
-    "cyan",
-    "white",
-    "gray",
-    "redBright",
-    "greenBright",
-    "yellowBright",
-    "blueBright",
-    "magentaBright",
-    "cyanBright",
-    "whiteBright",
-    "blackBright",
-  ] as const;
-
-  const results: string[] = [];
-
-  for (const step of result.steps) {
-    let currentToolCalls: Array<{ toolName: string }> = [];
-
-    if (step.toolResults.length > 0) {
-      currentToolCalls = step.toolResults;
-    } else if (step.toolCalls.length > 0) {
-      currentToolCalls = step.toolCalls;
-    }
-
-    for (const toolCallOrResult of currentToolCalls) {
-      const toolName = toolCallOrResult.toolName;
-      if (!toolColors.has(toolName)) {
-        const hash = hashString(toolName);
-        const colorIndex = hash % styleColors.length;
-        const color = styleColors[colorIndex];
-        toolColors.set(toolName, style[color]);
-      }
-      toolsCalled.push(toolName);
-    }
-  }
-
-  if (toolsCalled.length > 0) {
-    results.push(style.dim("Tools:"));
-    let toolBlocks = "";
-    for (const toolCalled of toolsCalled) {
-      const colorFn = toolColors.get(toolCalled) ?? style.white;
-      toolBlocks += `${colorFn("██")} `;
-    }
-    results.push(toolBlocks);
-    results.push("");
-
-    let toolLegend = "";
-    const uniqueTools = new Set(toolsCalled);
-    for (const [index, toolCalled] of Array.from(uniqueTools).entries()) {
-      const colorFn = toolColors.get(toolCalled) ?? style.white;
-      toolLegend += colorFn(toolCalled);
-      if (index < new Set(toolsCalled).size - 1) {
-        toolLegend += " - ";
-      }
-    }
-    results.push(toolLegend);
-    results.push("");
-  }
-
-  return results;
 }

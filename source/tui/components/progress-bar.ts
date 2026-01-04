@@ -53,14 +53,14 @@ export class ProgressBarComponent implements Component {
       return this.cachedOutput;
     }
 
+    const percentage = this.total === 0 ? 1 : this.current / this.total;
     const currentFormatted = formatNumber(this.current);
     const totalFormatted = formatNumber(this.total);
-    const progressText = `${currentFormatted}/${totalFormatted}`;
+    const progressText = `${currentFormatted}/${totalFormatted} [${(percentage).toFixed(1)}%]`;
     const progressTextLength = progressText.length + 1; // Add 1 for space
 
     const progressBarMaxWidth = Math.max(1, renderWidth - progressTextLength);
 
-    const percentage = this.total === 0 ? 1 : this.current / this.total;
     const filledWidth = Math.max(
       0,
       Math.min(
