@@ -4,9 +4,8 @@ import { formatDuration, formatNumber } from "../../formatting.ts";
 import type { ModelManager } from "../../models/manager.ts";
 import type { ProjectStatusData } from "../../repl/project-status.ts";
 import { getTerminalSize } from "../../terminal/control.ts";
-import stripAnsi from "../../terminal/strip-ansi.ts";
 import style from "../../terminal/style.ts";
-import type { Component } from "../tui.ts";
+import { type Component, visibleWidth } from "../tui.ts";
 import { ProgressBarComponent } from "./progress-bar.ts";
 
 type State = {
@@ -88,7 +87,7 @@ export class FooterComponent implements Component {
     const projectStatusString = formatProjectStatus(this.state.projectStatus);
     const padding = Math.max(
       0,
-      width - stripAnsi(projectStatusString).length - modelInfo.length,
+      width - visibleWidth(projectStatusString) - modelInfo.length,
     );
     results.push(
       projectStatusString + " ".repeat(padding) + style.dim(modelInfo),
