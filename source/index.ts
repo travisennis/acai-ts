@@ -15,6 +15,7 @@ import {
   type ProjectConfig,
 } from "./config.ts";
 import { logger } from "./logger.ts";
+import { PromptError, processPrompt } from "./mentions.ts";
 import { ModelManager } from "./models/manager.ts";
 import { isSupportedModel, type ModelName } from "./models/providers.ts";
 import { PromptManager } from "./prompts/manager.ts";
@@ -179,7 +180,24 @@ async function initializeAppState(
   // Setup prompt manager
   const promptManager = new PromptManager(tokenCounter);
   if (!hasContinueOrResume && isDefined(initialPromptInput)) {
-    promptManager.set(initialPromptInput);
+    try {
+      const modelConfig = modelManager.getModelMetadata("repl");
+      const processedPrompt = await processPrompt(initialPromptInput, {
+        baseDir: process.cwd(),
+        model: modelConfig,
+      });
+      for (const context of processedPrompt.context) {
+        promptManager.addContext(context);
+      }
+      promptManager.set(processedPrompt.message);
+    } catch (error) {
+      if (error instanceof PromptError) {
+        logger.error(`Prompt mention error: ${error.message}`);
+        promptManager.set(initialPromptInput);
+      } else {
+        throw new Error("Failed to process prompt.", { cause: error });
+      }
+    }
   }
 
   if (stdInPrompt) {
