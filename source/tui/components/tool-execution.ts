@@ -166,7 +166,6 @@ export class ToolExecutionComponent extends Container {
 
     let result = `${style.bold(capitalize(this.toolName))} `;
     result += message.trim() ? `${style.bold(message)} ` : "";
-    result += style.dim(JSON.stringify(event.args).slice(0, 50));
 
     return result;
   }
