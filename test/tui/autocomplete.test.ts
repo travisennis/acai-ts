@@ -143,10 +143,12 @@ describe("CombinedAutocompleteProvider", () => {
     });
 
     it("should trigger for paths starting with /", async () => {
+      // Use the cwd from test setup which is one of the allowed directories
+      const cwd = process.cwd();
       const result = await provider.getSuggestions(
-        ["read /Users/travisennis/Github/acai-ts/source"],
+        [`read ${cwd}/source`],
         0,
-        45,
+        5 + cwd.length,
       );
       assert.ok(result);
     });
