@@ -48,7 +48,7 @@ test("processEventsInOrder should create synthetic start event when missing", ()
 test("processEventsInOrder should create synthetic start for init-only events", () => {
   const eventsWithInitOnly: ToolEvent[] = [
     {
-      type: "tool-call-init",
+      type: "tool-call-update",
       name: "test-tool",
       toolCallId: "test-123",
       msg: "Initializing tool with parameters",
@@ -132,13 +132,11 @@ test("event ordering should be correct", () => {
     switch (eventType) {
       case "tool-call-start":
         return 0;
-      case "tool-call-init":
-        return 1;
       case "tool-call-update":
-        return 2;
+        return 1;
       case "tool-call-end":
       case "tool-call-error":
-        return 3;
+        return 2;
       default:
         return -1;
     }
@@ -156,7 +154,7 @@ test("event ordering should be correct", () => {
   );
   strictEqual(
     getEventIndex({
-      type: "tool-call-init",
+      type: "tool-call-update",
       name: "test",
       toolCallId: "test",
       msg: "",
@@ -172,7 +170,7 @@ test("event ordering should be correct", () => {
       msg: "",
       args: {},
     }),
-    2,
+    1,
   );
   strictEqual(
     getEventIndex({
@@ -182,7 +180,7 @@ test("event ordering should be correct", () => {
       msg: "",
       args: {},
     }),
-    3,
+    2,
   );
   strictEqual(
     getEventIndex({
@@ -192,6 +190,6 @@ test("event ordering should be correct", () => {
       msg: "",
       args: {},
     }),
-    3,
+    2,
   );
 });

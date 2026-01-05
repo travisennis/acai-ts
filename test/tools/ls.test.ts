@@ -30,14 +30,12 @@ describe("LS tool", () => {
       results.push(result);
     }
 
-    // Should have init, completion, and content results
-    assert.equal(results.length, 3);
-    const initResult = results[0] as { event: string };
-    const completionResult = results[1] as { event: string };
-    assert.ok(initResult.event === "tool-init");
+    // Should have completion and content results
+    assert.equal(results.length, 2);
+    const completionResult = results[0] as { event: string };
     assert.ok(completionResult.event === "tool-completion");
-    assert.ok(typeof results[2] === "string");
-    assert.ok(results[2].length > 0); // Should have some content
+    assert.ok(typeof results[1] === "string");
+    assert.ok(results[1].length > 0); // Should have some content
   });
 
   it("should handle non-existent directory", async () => {
@@ -128,9 +126,9 @@ describe("LS tool", () => {
       results.push(result);
     }
 
-    // Should have init, completion, and content results
-    assert.equal(results.length, 3);
-    const content = results[2] as string;
+    // Should have completion and content results
+    assert.equal(results.length, 2);
+    const content = results[1] as string;
     const lines = content.split("\n");
 
     // Should have at most 5 entries (plus potential completion message)
