@@ -250,6 +250,9 @@ function createDynamicTool(
         description: metadata.description,
         inputSchema,
       },
+      display() {
+        return "running";
+      },
       async *execute(
         input: Record<string, unknown>,
         { toolCallId, abortSignal }: ToolExecutionOptions,
@@ -258,13 +261,6 @@ function createDynamicTool(
           if (abortSignal?.aborted) {
             throw new Error("Execution aborted");
           }
-
-          yield {
-            name: metadata.name,
-            event: "tool-init",
-            id: toolCallId,
-            data: "Running",
-          };
 
           // Validate params again for safety
           try {

@@ -25,11 +25,7 @@ import { setTerminalTitle } from "./terminal/control.ts";
 import { select } from "./terminal/select-prompt.ts";
 import { TokenCounter } from "./tokens/counter.ts";
 import { TokenTracker } from "./tokens/tracker.ts";
-import {
-  type CompleteToolNames,
-  initAgents,
-  initTools,
-} from "./tools/index.ts";
+import { type CompleteToolNames, initTools } from "./tools/index.ts";
 import { getPackageVersion } from "./version.ts";
 
 // Workspace context for managing multiple working directories
@@ -487,25 +483,9 @@ async function runReplMode(state: AppState): Promise<void> {
   });
 
   // Initialize tools
-  const coreTools = await initTools({
+  const tools = await initTools({
     workspace,
   });
-
-  const agentTools = await initAgents({
-    modelManager: state.modelManager,
-    tokenTracker: state.tokenTracker,
-    workspace,
-  });
-
-  const completeToolDefs = {
-    ...coreTools.toolDefs,
-    ...agentTools.toolDefs,
-  };
-
-  const tools = {
-    toolDefs: completeToolDefs,
-    executors: new Map([...coreTools.executors, ...agentTools.executors]),
-  } as const;
 
   // Interactive loop
   while (true) {
@@ -525,9 +505,8 @@ async function runReplMode(state: AppState): Promise<void> {
           skillsEnabled,
         }),
         input: userInput,
-        toolDefs: tools.toolDefs,
+        tools,
         activeTools,
-        executors: tools.executors,
         abortSignal: agent.abortSignal,
       });
       for await (const result of results) {

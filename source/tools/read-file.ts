@@ -55,6 +55,9 @@ export const createReadFileTool = async ({
       description: `Read the complete contents of a file from the file system unless startLine and lineCount are given to read a file selection. Handles various text encodings and provides detailed error messages if the file cannot be read. Use this tool when you need to examine the contents of a single file. Only works within allowed directories. Automatically limits file size to prevent overwhelming output. Default limit is ${DEFAULT_BYTE_LIMIT} bytes (${DEFAULT_BYTE_LIMIT / 1024}KB). Use maxBytes parameter to override this limit.`,
       inputSchema,
     },
+    display({ path: providedPath, startLine, lineCount }: ReadFileInputSchema) {
+      return `\n> ${style.cyan(providedPath)}${startLine ? style.cyan(`:${startLine}`) : ""}${lineCount ? style.cyan(`:${lineCount}`) : ""}`;
+    },
     async *execute(
       {
         path: providedPath,
@@ -70,12 +73,6 @@ export const createReadFileTool = async ({
         if (abortSignal?.aborted) {
           throw new Error("File reading aborted");
         }
-        yield {
-          name: ReadFileTool.name,
-          id: toolCallId,
-          event: "tool-init",
-          data: `${style.cyan(providedPath)}${startLine ? style.cyan(`:${startLine}`) : ""}${lineCount ? style.cyan(`:${lineCount}`) : ""}`,
-        };
 
         const filePath = await validatePath(
           joinWorkingDir(providedPath, workingDir),

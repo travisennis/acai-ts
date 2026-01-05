@@ -4,7 +4,9 @@ import {
   Output,
   stepCountIs,
   type ToolCallRepairFunction,
+  type ToolExecuteFunction,
   type ToolSet,
+  tool,
 } from "ai";
 import type z from "zod";
 import type { WorkspaceContext } from "./index.ts";
@@ -17,11 +19,10 @@ import type { SessionManager } from "./sessions/manager.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
 import { BashTool } from "./tools/bash.ts";
-import { CodeInterpreterTool } from "./tools/code-interpreter.ts";
 import { EditFileTool } from "./tools/edit-file.ts";
 import { GlobTool } from "./tools/glob.ts";
 import { GrepTool } from "./tools/grep.ts";
-import { type CompleteCliToolSet, initCliTools } from "./tools/index.ts";
+import { type CompleteTools, initTools } from "./tools/index.ts";
 import { ReadFileTool } from "./tools/read-file.ts";
 
 interface CliOptions {
@@ -40,7 +41,6 @@ const activeTools = [
   BashTool.name,
   GrepTool.name,
   GlobTool.name,
-  CodeInterpreterTool.name,
 ];
 
 export class Cli {
@@ -85,7 +85,7 @@ export class Cli {
       prompt: userPrompt,
     });
 
-    const tools = await initCliTools({
+    const tools = await initTools({
       workspace: this.options.workspace,
     });
 
@@ -105,11 +105,22 @@ export class Cli {
         stopWhen: stepCountIs(60),
         maxRetries: 2,
         providerOptions: aiConfig.providerOptions(),
-        tools: tools.toolDefs,
+        tools: Object.fromEntries(
+          Object.entries(tools).map((t) => [
+            t[0],
+            tool({
+              ...t[1]["toolDef"],
+              execute: t[1]["execute"] as unknown as ToolExecuteFunction<
+                unknown,
+                string
+              >,
+            }),
+          ]),
+        ) as CompleteTools,
         activeTools,
         // biome-ignore lint/style/useNamingConvention: third-party controlled
         experimental_repairToolCall:
-          toolCallRepair<CompleteCliToolSet>(modelManager),
+          toolCallRepair<CompleteTools>(modelManager),
         abortSignal: signal,
       });
 

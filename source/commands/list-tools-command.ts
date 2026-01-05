@@ -1,5 +1,5 @@
 import style from "../terminal/style.ts";
-import { initAgents, initTools } from "../tools/index.ts";
+import { initTools } from "../tools/index.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
 import {
   Modal,
@@ -28,15 +28,7 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
         const tools = await initTools({
           workspace: options.workspace,
         });
-        const agentTools = await initAgents({
-          modelManager: options.modelManager,
-          tokenTracker: options.tokenTracker,
-          workspace: options.workspace,
-        });
-        const toolNames = Object.keys({
-          ...tools.toolDefs,
-          ...agentTools.toolDefs,
-        }).sort();
+        const toolNames = Object.keys(tools).sort();
 
         // Separate static and dynamic tools
         const staticTools = [];

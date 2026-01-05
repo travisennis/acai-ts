@@ -53,6 +53,9 @@ export const createEditFileTool = async ({
         "Multi-line strings require exact character-by-character matching including whitespace.",
       inputSchema,
     },
+    display({ path, edits }: EditFileInputSchema) {
+      return `\n> ${style.cyan(path)} (${edits.length} edit${edits.length === 1 ? "" : "s"})`;
+    },
     async *execute(
       { path, edits }: EditFileInputSchema,
       { toolCallId, abortSignal }: ToolExecutionOptions,
@@ -61,13 +64,6 @@ export const createEditFileTool = async ({
         if (abortSignal?.aborted) {
           throw new Error("File editing aborted");
         }
-
-        yield {
-          name: EditFileTool.name,
-          id: toolCallId,
-          event: "tool-init",
-          data: `${style.cyan(path)}`,
-        };
 
         const validPath = await validatePath(
           joinWorkingDir(path, workingDir),

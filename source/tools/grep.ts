@@ -59,6 +59,37 @@ export const createGrepTool = () => {
       description: `Search files for patterns using ripgrep (rg). Uses glob patterns for file filtering (e.g., "*.ts", "**/*.test.ts"). Auto-detects unbalanced regex patterns and falls back to fixed-string search for safety. Results are automatically limited to prevent overwhelming output using a hybrid approach: ripgrep's --max-count flag limits matches per file for efficiency, and post-processing ensures reasonable result counts. Default limit is ${DEFAULT_MAX_RESULTS} matches. Use maxResults parameter to override this limit.`,
       inputSchema,
     },
+    display({
+      pattern,
+      path,
+      filePattern,
+      recursive,
+      ignoreCase,
+      contextLines,
+    }: GrepInputSchema) {
+      // grok doesn't follow my instructions
+      const safeFilePattern =
+        filePattern === "null" || filePattern === "undefined"
+          ? null
+          : filePattern;
+
+      // Enhanced tool-init with detailed search parameters
+      let initMessage = `${style.cyan(inspect(pattern))} in ${style.cyan(path)}`;
+      if (safeFilePattern) {
+        initMessage += ` ${style.dim(`(filter: ${safeFilePattern})`)}`;
+      }
+      if (recursive === false) {
+        initMessage += ` ${style.dim("(non-recursive)")}`;
+      }
+      if (ignoreCase) {
+        initMessage += ` ${style.dim("(case-insensitive)")}`;
+      }
+      if (contextLines && contextLines > 0) {
+        initMessage += ` ${style.dim(`(with ${contextLines} context line${contextLines === 1 ? "" : "s"})`)}`;
+      }
+
+      return initMessage;
+    },
     async *execute(
       {
         pattern,
@@ -79,34 +110,6 @@ export const createGrepTool = () => {
       }
 
       try {
-        // grok doesn't follow my instructions
-        const safeFilePattern =
-          filePattern === "null" || filePattern === "undefined"
-            ? null
-            : filePattern;
-
-        // Enhanced tool-init with detailed search parameters
-        let initMessage = `${style.cyan(inspect(pattern))} in ${style.cyan(path)}`;
-        if (safeFilePattern) {
-          initMessage += ` ${style.dim(`(filter: ${safeFilePattern})`)}`;
-        }
-        if (recursive === false) {
-          initMessage += ` ${style.dim("(non-recursive)")}`;
-        }
-        if (ignoreCase) {
-          initMessage += ` ${style.dim("(case-insensitive)")}`;
-        }
-        if (contextLines && contextLines > 0) {
-          initMessage += ` ${style.dim(`(with ${contextLines} context line${contextLines === 1 ? "" : "s"})`)}`;
-        }
-
-        yield {
-          name: GrepTool.name,
-          event: "tool-init",
-          id: toolCallId,
-          data: initMessage,
-        };
-
         // Normalize literal option: if null => auto-detect using heuristic
         let effectiveLiteral: boolean | null = null;
         if (literal === true) {
@@ -127,6 +130,12 @@ export const createGrepTool = () => {
         }
 
         const effectiveMaxResults = maxResults ?? DEFAULT_MAX_RESULTS;
+
+        // grok doesn't follow my instructions
+        const safeFilePattern =
+          filePattern === "null" || filePattern === "undefined"
+            ? null
+            : filePattern;
 
         const grepResult = grepFilesStructured(pattern, path, {
           recursive,

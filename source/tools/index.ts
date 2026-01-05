@@ -1,16 +1,7 @@
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
-import { tool } from "ai";
+import type { Tool } from "ai";
 import type { WorkspaceContext } from "../index.ts";
-import type { ModelManager } from "../models/manager.ts";
-import type { TokenTracker } from "../tokens/tracker.ts";
-import { AgentTool, createAgentTools } from "./agent.ts";
 import { BashTool, createBashTool } from "./bash.ts";
-import { BatchTool, createBatchTool } from "./batch.ts";
-import {
-  CodeInterpreterTool,
-  createCodeInterpreterTool,
-} from "./code-interpreter.ts";
-
 import {
   createDirectoryTreeTool,
   DirectoryTreeTool,
@@ -25,18 +16,19 @@ import { createSaveFileTool, SaveFileTool } from "./save-file.ts";
 import { createThinkTool, ThinkTool } from "./think.ts";
 
 export type CompleteToolSet = {
-  -readonly [K in keyof (AsyncReturnType<typeof initTools>["toolDefs"] &
-    AsyncReturnType<typeof initAgents>["toolDefs"])]: (AsyncReturnType<
+  -readonly [K in keyof AsyncReturnType<typeof initTools>]: AsyncReturnType<
     typeof initTools
-  >["toolDefs"] &
-    AsyncReturnType<typeof initAgents>["toolDefs"])[K];
+  >[K];
+};
+
+export type CompleteTools = {
+  -readonly [K in keyof AsyncReturnType<typeof initTools>]: Tool<
+    unknown,
+    string
+  >;
 };
 
 export type CompleteToolNames = keyof CompleteToolSet;
-
-export type CompleteCliToolSet = AsyncReturnType<
-  typeof initCliTools
->["toolDefs"];
 
 export async function initTools({
   workspace,
@@ -63,8 +55,6 @@ export async function initTools({
     allowedDirs: workspace.allowedDirs,
   });
 
-  const codeInterpreterTool = await createCodeInterpreterTool();
-
   const globTool = createGlobTool();
 
   const grepTool = createGrepTool();
@@ -87,273 +77,21 @@ export async function initTools({
 
   // Build tools object for AI SDK
   const tools = {
-    [EditFileTool.name]: tool(editFileTool.toolDef),
-
-    [BashTool.name]: tool(bashTool.toolDef),
-    [SaveFileTool.name]: tool(saveFileTool.toolDef),
-
-    [ReadFileTool.name]: tool(readFileTool.toolDef),
-
-    [GlobTool.name]: tool(globTool.toolDef),
-    [GrepTool.name]: tool(grepTool.toolDef),
-    [DirectoryTreeTool.name]: tool(directoryTreeTool.toolDef),
-    [CodeInterpreterTool.name]: tool(codeInterpreterTool.toolDef),
-    [ThinkTool.name]: tool(thinkTool.toolDef),
-    [LsTool.name]: tool(lsTool.toolDef),
+    [EditFileTool.name]: editFileTool,
+    [BashTool.name]: bashTool,
+    [SaveFileTool.name]: saveFileTool,
+    [ReadFileTool.name]: readFileTool,
+    [GlobTool.name]: globTool,
+    [GrepTool.name]: grepTool,
+    [DirectoryTreeTool.name]: directoryTreeTool,
+    [ThinkTool.name]: thinkTool,
+    [LsTool.name]: lsTool,
 
     // Add dynamic tools - they already have toolDef structure
     ...Object.fromEntries(
-      Object.entries(dynamicTools).map(([name, toolObj]) => [
-        name,
-        tool(toolObj.toolDef),
-      ]),
+      Object.entries(dynamicTools).map(([name, toolObj]) => [name, toolObj]),
     ),
   } as const;
 
-  // Build executors map for manual loop
-  const executors = new Map();
-
-  // Add bash tool
-  executors.set(BashTool.name, bashTool.execute);
-
-  // Add editFile tool
-  executors.set(EditFileTool.name, editFileTool.execute);
-
-  // Add saveFile tool
-  executors.set(SaveFileTool.name, saveFileTool.execute);
-
-  // Add readFile tool
-  executors.set(ReadFileTool.name, readFileTool.execute);
-
-  // Add glob tool
-  executors.set(GlobTool.name, globTool.execute);
-
-  // Add grep tool
-  executors.set(GrepTool.name, grepTool.execute);
-
-  // Add directoryTree tool
-  executors.set(DirectoryTreeTool.name, directoryTreeTool.execute);
-
-  // Add think tool
-  executors.set(ThinkTool.name, thinkTool.execute);
-  executors.set(LsTool.name, lsTool.execute);
-
-  // Add codeInterpreter tool
-  executors.set(CodeInterpreterTool.name, codeInterpreterTool.execute);
-
-  // Add dynamic tools to executors
-  for (const [name, toolObj] of Object.entries(dynamicTools)) {
-    executors.set(name, toolObj.execute);
-  }
-
-  // Create batch tool with access to all executors
-  const batchTool = await createBatchTool({
-    executors,
-  });
-
-  // Add batch tool to tools
-  const toolsWithBatch = {
-    ...tools,
-    [BatchTool.name]: tool(batchTool.toolDef),
-  } as const;
-
-  // Add batch tool to executors
-  executors.set(BatchTool.name, batchTool.execute);
-
-  return {
-    toolDefs: toolsWithBatch,
-    executors,
-  };
-}
-
-export async function initCliTools({
-  workspace,
-}: {
-  workspace: WorkspaceContext;
-}) {
-  const readFileTool = await createReadFileTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
-
-  const editFileTool = await createEditFileTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
-
-  const saveFileTool = await createSaveFileTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
-
-  const directoryTreeTool = await createDirectoryTreeTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
-
-  const codeInterpreterTool = await createCodeInterpreterTool();
-
-  const globTool = createGlobTool();
-
-  const grepTool = createGrepTool();
-
-  const thinkTool = createThinkTool();
-
-  const lsTool = await createLsTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
-
-  const bashTool = await createBashTool({
-    baseDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
-
-  const dynamicTools = await loadDynamicTools({
-    baseDir: workspace.primaryDir,
-  });
-
-  // Build executors map for batch tool
-  const executors = new Map();
-  executors.set(EditFileTool.name, editFileTool.execute);
-
-  executors.set(BashTool.name, bashTool.execute);
-  executors.set(SaveFileTool.name, saveFileTool.execute);
-
-  executors.set(ReadFileTool.name, readFileTool.execute);
-
-  executors.set(GlobTool.name, globTool.execute);
-  executors.set(GrepTool.name, grepTool.execute);
-  executors.set(DirectoryTreeTool.name, directoryTreeTool.execute);
-  executors.set(CodeInterpreterTool.name, codeInterpreterTool.execute);
-  executors.set(ThinkTool.name, thinkTool.execute);
-  executors.set(LsTool.name, lsTool.execute);
-
-  for (const [name, toolObj] of Object.entries(dynamicTools)) {
-    executors.set(name, toolObj.execute);
-  }
-
-  // Create batch tool with access to all executors
-  const batchTool = await createBatchTool({
-    executors,
-  });
-
-  const tools = {
-    [EditFileTool.name]: tool({
-      ...editFileTool.toolDef,
-      execute: editFileTool.execute,
-    }),
-
-    [BashTool.name]: tool({
-      ...bashTool.toolDef,
-      execute: bashTool.execute,
-    }),
-    [SaveFileTool.name]: tool({
-      ...saveFileTool.toolDef,
-      execute: saveFileTool.execute,
-    }),
-
-    [ReadFileTool.name]: tool({
-      ...readFileTool.toolDef,
-      execute: readFileTool.execute,
-    }),
-
-    [GlobTool.name]: tool({
-      ...globTool.toolDef,
-      execute: globTool.execute,
-    }),
-    [GrepTool.name]: tool({
-      ...grepTool.toolDef,
-      execute: grepTool.execute,
-    }),
-    [DirectoryTreeTool.name]: tool({
-      ...directoryTreeTool.toolDef,
-      execute: directoryTreeTool.execute,
-    }),
-    [CodeInterpreterTool.name]: tool({
-      ...codeInterpreterTool.toolDef,
-      execute: codeInterpreterTool.execute,
-    }),
-    [ThinkTool.name]: tool({
-      ...thinkTool.toolDef,
-      execute: thinkTool.execute,
-    }),
-    [LsTool.name]: tool({
-      ...lsTool.toolDef,
-      execute: lsTool.execute,
-    }),
-
-    [BatchTool.name]: tool({
-      ...batchTool.toolDef,
-      execute: batchTool.execute,
-    }),
-    // Add dynamic tools with execute functions
-    ...Object.fromEntries(
-      Object.entries(dynamicTools).map(([name, toolObj]) => [
-        name,
-        tool({
-          ...toolObj.toolDef,
-          execute: toolObj.execute,
-        }),
-      ]),
-    ),
-  } as const;
-
-  return {
-    toolDefs: tools,
-  };
-}
-
-export async function initAgents({
-  modelManager,
-  tokenTracker,
-  workspace,
-}: {
-  modelManager: ModelManager;
-  tokenTracker: TokenTracker;
-  workspace: WorkspaceContext;
-}) {
-  const agentTools = createAgentTools({
-    modelManager,
-    tokenTracker,
-    workspace,
-  });
-
-  const tools = {
-    [AgentTool.name]: tool(agentTools.toolDef),
-  } as const;
-
-  // Build executors map for manual loop
-  const executors = new Map();
-  executors.set(AgentTool.name, agentTools.execute);
-
-  return {
-    toolDefs: tools,
-    executors,
-  };
-}
-
-export async function initCliAgents({
-  modelManager,
-  tokenTracker,
-  workspace,
-}: {
-  modelManager: ModelManager;
-  tokenTracker: TokenTracker;
-  workspace: WorkspaceContext;
-}) {
-  const agentTools = createAgentTools({
-    modelManager,
-    tokenTracker,
-    workspace,
-  });
-
-  const tools = {
-    [AgentTool.name]: tool({
-      ...agentTools.toolDef,
-      execute: agentTools.execute,
-    }),
-  } as const;
-
-  return { toolDefs: tools };
+  return tools;
 }

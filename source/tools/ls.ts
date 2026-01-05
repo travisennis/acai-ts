@@ -38,6 +38,11 @@ export const createLsTool = async (options: {
       description: `List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is limited to ${DEFAULT_ENTRY_LIMIT} entries by default. Use the limit parameter to adjust.`,
       inputSchema,
     },
+    display({ path: providedPath, limit }: LsInputSchema) {
+      const dirPath = providedPath ?? ".";
+      const effectiveLimit = limit ?? 500;
+      return `\n> Listing ${style.cyan(dirPath)} (limit: ${effectiveLimit})`;
+    },
     async *execute(
       { path: providedPath, limit }: LsInputSchema,
       { toolCallId, abortSignal }: ToolExecutionOptions,
@@ -50,13 +55,6 @@ export const createLsTool = async (options: {
 
         const dirPath = providedPath ?? ".";
         const effectiveLimit = limit ?? DEFAULT_ENTRY_LIMIT;
-
-        yield {
-          name: LsTool.name,
-          id: toolCallId,
-          event: "tool-init",
-          data: `Listing ${style.cyan(dirPath)} (limit: ${effectiveLimit})`,
-        };
 
         // Validate and resolve the path
         const resolvedPath = await validatePath(

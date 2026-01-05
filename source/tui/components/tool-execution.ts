@@ -65,16 +65,6 @@ export class ToolExecutionComponent extends Container {
         case "tool-call-start":
           this.getToolCallStartComponent(event, currentStatus);
           break;
-        case "tool-call-init":
-          this.contentContainer.addChild(
-            new Text(
-              `→ ${this.handleToolInitMessage(event.msg)}`,
-              1,
-              0,
-              bgColor,
-            ),
-          );
-          break;
         case "tool-call-update":
           this.contentContainer.addChild(
             new Markdown(this.handleToolUpdateMessage(event.msg), {
@@ -125,7 +115,6 @@ export class ToolExecutionComponent extends Container {
           ),
         );
         break;
-      case "tool-call-init":
       case "tool-call-update":
         if (!this.loaderComponent) {
           this.loaderComponent = new Loader(
@@ -182,10 +171,6 @@ export class ToolExecutionComponent extends Container {
     return result;
   }
 
-  private handleToolInitMessage(message: string) {
-    return style.bold(message);
-  }
-
   private handleToolUpdateMessage(message: string) {
     return message;
   }
@@ -235,13 +220,11 @@ export class ToolExecutionComponent extends Container {
     switch (eventType) {
       case "tool-call-start":
         return 0;
-      case "tool-call-init":
-        return 1;
       case "tool-call-update":
-        return 2;
+        return 1;
       case "tool-call-end":
       case "tool-call-error":
-        return 3;
+        return 2;
       default: {
         eventType satisfies never;
         return -1;

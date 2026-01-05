@@ -1,4 +1,4 @@
-import type { ModelMessage } from "ai";
+import { type ModelMessage, tool } from "ai";
 import {
   formatDate,
   formatDuration,
@@ -8,7 +8,11 @@ import {
 import { logger } from "../logger.ts";
 import { systemPrompt } from "../prompts.ts";
 import { getTerminalSize } from "../terminal/control.ts";
-import { type CompleteToolNames, initCliTools } from "../tools/index.ts";
+import {
+  type CompleteToolNames,
+  type CompleteTools,
+  initTools,
+} from "../tools/index.ts";
 import { prepareTools } from "../tools/utils.ts";
 import type { Editor, TUI } from "../tui/index.ts";
 import { Container, Modal, ModalText, TableComponent } from "../tui/index.ts";
@@ -75,10 +79,16 @@ export function sessionCommand({
       // 2) Tools tokens
       let toolsTokens = 0;
       try {
-        const tools = await initCliTools({
+        const tools = await initTools({
           workspace,
         });
-        const toolDefs = tools.toolDefs;
+        const toolDefs = Object.fromEntries(
+          Object.entries(tools).map((t) => [
+            t[0],
+            // biome-ignore lint/suspicious/noExplicitAny: temporary
+            tool(t[1].toolDef as any),
+          ]),
+        ) as CompleteTools;
         const toolNames = JSON.stringify(prepareTools(toolDefs));
         toolsTokens = tokenCounter.count(toolNames);
       } catch (error) {

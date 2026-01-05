@@ -58,6 +58,9 @@ export const createBashTool = async ({
       description: toolDescription,
       inputSchema,
     },
+    display({ command }: BashInputSchema) {
+      return `\n> ${style.cyan(command)}`;
+    },
     async *execute(
       { command, cwd, timeout, background }: BashInputSchema,
       { toolCallId, abortSignal }: ToolExecutionOptions,
@@ -72,12 +75,6 @@ export const createBashTool = async ({
         const safeTimeout = timeout ?? DEFAULT_TIMEOUT;
         // Safety warning for potentially mutating commands
         const isMutating = isMutatingCommand(command);
-        yield {
-          name: BashTool.name,
-          event: "tool-init",
-          id: toolCallId,
-          data: `${style.cyan(command)}`,
-        };
 
         const pathValidation = validatePaths(
           command,

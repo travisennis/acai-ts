@@ -25,6 +25,9 @@ export const createThinkTool = () => {
       description: toolDescription,
       inputSchema,
     },
+    display() {
+      return "\n> Logging thought";
+    },
     async *execute(
       { thought }: z.infer<typeof inputSchema>,
       { toolCallId, abortSignal }: ToolExecutionOptions,
@@ -37,13 +40,6 @@ export const createThinkTool = () => {
 
         // Replace literal '\\n' with actual newline characters
         const formattedThought = thought.replace(/\\n/g, "\n");
-
-        yield {
-          name: ThinkTool.name,
-          event: "tool-init",
-          id: toolCallId,
-          data: "Logging thought",
-        };
 
         yield {
           name: ThinkTool.name,

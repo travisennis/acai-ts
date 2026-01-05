@@ -49,6 +49,9 @@ export const createSaveFileTool = async ({
         "Handles text content with proper encoding. Only works within allowed directories.",
       inputSchema,
     },
+    display({ path }: SaveFileInputSchema) {
+      return `\n> ${style.cyan(path)}`;
+    },
     async *execute(
       { path: userPath, content, encoding }: SaveFileInputSchema,
       { toolCallId, abortSignal }: ToolExecutionOptions,
@@ -57,13 +60,6 @@ export const createSaveFileTool = async ({
         if (abortSignal?.aborted) {
           throw new Error("File saving aborted");
         }
-
-        yield {
-          name: SaveFileTool.name,
-          event: "tool-init",
-          id: toolCallId,
-          data: `${style.cyan(userPath)}`,
-        };
 
         const filePath = await validatePath(
           joinWorkingDir(userPath, workingDir),

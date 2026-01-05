@@ -1,9 +1,5 @@
 import type { ToolExecuteFunction, ToolModelMessage } from "ai";
-import {
-  NoOutputGeneratedError,
-  streamText,
-  type ToolCallRepairFunction,
-} from "ai";
+import { NoOutputGeneratedError, streamText, tool } from "ai";
 import { config } from "../config.ts";
 import { logger } from "../logger.ts";
 import { AiConfig } from "../models/ai-config.ts";
@@ -11,7 +7,11 @@ import type { ModelManager } from "../models/manager.ts";
 import type { ModelMetadata } from "../models/providers.ts";
 import type { SessionManager } from "../sessions/manager.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
-import type { CompleteToolNames, CompleteToolSet } from "../tools/index.ts";
+import type {
+  CompleteToolNames,
+  CompleteToolSet,
+  CompleteTools,
+} from "../tools/index.ts";
 import { isToolMessage } from "../tools/types.ts";
 import { isAsyncIterable } from "../utils/iterables.ts";
 
@@ -21,28 +21,19 @@ type AgentOptions = {
   sessionManager: SessionManager;
   maxIterations?: number;
   maxRetries?: number;
-  toolCallRepair?: ToolCallRepairFunction<CompleteToolSet>;
 };
 
 type RunOptions = {
   systemPrompt: string;
   input: string;
-  toolDefs: CompleteToolSet;
+  tools: CompleteToolSet;
   activeTools?: CompleteToolNames[];
-  executors: Map<keyof CompleteToolSet, ToolExecuteFunction<unknown, string>>;
   abortSignal?: AbortSignal;
 };
 
 export type ToolEvent =
   | {
       type: "tool-call-start";
-      name: string;
-      toolCallId: string;
-      msg: string;
-      args: unknown;
-    }
-  | {
-      type: "tool-call-init";
       name: string;
       toolCallId: string;
       msg: string;
@@ -165,21 +156,13 @@ export class Agent {
       tokenTracker,
       maxIterations = (await config.getConfig()).loop.maxIterations,
       maxRetries = 2,
-      toolCallRepair,
     } = this.opts;
 
     this.resetState();
 
     this._state.timestamps.start = performance.now();
 
-    const {
-      systemPrompt,
-      input,
-      toolDefs,
-      activeTools = undefined,
-      executors,
-      abortSignal,
-    } = args;
+    const { systemPrompt, input, tools, activeTools, abortSignal } = args;
 
     const langModel = modelManager.getModel("repl");
     const modelConfig = modelManager.getModelMetadata("repl");
@@ -233,10 +216,11 @@ export class Agent {
           topP: aiConfig.topP(),
           maxRetries: 2,
           providerOptions: aiConfig.providerOptions(),
-          tools: toolDefs,
+          tools: Object.fromEntries(
+            // biome-ignore lint/suspicious/noExplicitAny: temporary
+            Object.entries(tools).map((t) => [t[0], tool(t[1].toolDef as any)]),
+          ) as CompleteTools,
           activeTools,
-          // biome-ignore lint/style/useNamingConvention: third-party code
-          experimental_repairToolCall: toolCallRepair,
           abortSignal,
           onAbort: ({ steps }) => {
             logger.debug(`Aborting and processing ${steps.length} steps`);
@@ -308,11 +292,13 @@ export class Agent {
           } else if (chunk.type === "tool-call") {
             const call = chunk;
             const toolName = call.toolName as keyof CompleteToolSet;
+            const iTool = tools[toolName];
             yield this.processToolEvent(toolsCalled, {
               type: "tool-call-start",
               name: toolName,
               toolCallId: call.toolCallId,
-              msg: "",
+              // biome-ignore lint/suspicious/noExplicitAny: unknown
+              msg: iTool ? iTool.display(call.input as any) : "",
               args: call.input,
             });
 
@@ -331,10 +317,14 @@ export class Agent {
               thisStepToolCalls.push({ toolName });
               thisStepToolResults.push({ toolName });
 
-              const toolExec = executors.get(toolName);
-              if (!toolExec) {
+              const iTool = tools[toolName];
+              if (!iTool) {
                 resultOutput = `No executor for tool ${toolName}`;
               } else {
+                const toolExec = iTool.execute as ToolExecuteFunction<
+                  unknown,
+                  string
+                >;
                 try {
                   const output = await toolExec(call.input, {
                     toolCallId: call.toolCallId,
@@ -373,15 +363,6 @@ export class Agent {
                           case "tool-update":
                             yield this.processToolEvent(toolsCalled, {
                               type: "tool-call-update",
-                              name: value.name,
-                              toolCallId: call.toolCallId,
-                              msg: value.data,
-                              args: call.input,
-                            });
-                            break;
-                          case "tool-init":
-                            yield this.processToolEvent(toolsCalled, {
-                              type: "tool-call-init",
                               name: value.name,
                               toolCallId: call.toolCallId,
                               msg: value.data,

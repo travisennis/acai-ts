@@ -20,11 +20,6 @@ interface BaseMessage {
   retry?: number;
 }
 
-interface ToolInitMessage extends BaseMessage {
-  event: "tool-init";
-  data: string;
-}
-
 interface ToolUpdateMessage extends BaseMessage {
   event: "tool-update";
   data: string;
@@ -40,11 +35,7 @@ interface ToolCompletionMessage extends BaseMessage {
   data: string;
 }
 
-type Message =
-  | ToolInitMessage
-  | ToolUpdateMessage
-  | ToolErrorMessage
-  | ToolCompletionMessage;
+type Message = ToolUpdateMessage | ToolErrorMessage | ToolCompletionMessage;
 
 export type ToolResult = Message | string;
 

@@ -1,6 +1,5 @@
 import * as fs from "node:fs";
 import * as nodePath from "node:path";
-import { inspect } from "node:util";
 import { z } from "zod";
 import style from "../terminal/style.ts";
 
@@ -52,6 +51,14 @@ export const createGlobTool = () => {
       description: `Search for files using glob patterns (e.g., [1m*.ts[0m, [1m**/*.test.ts[0m, [1msrc/**/*.js[0m). Uses the fast-glob library with support for .gitignore, recursive searching, directory expansion, and automatic result limiting to prevent overwhelming output. Default limit is ${DEFAULT_MAX_RESULTS} files. Use maxResults parameter to override this limit.`,
       inputSchema,
     },
+    display({ patterns, path }: GlobInputSchema) {
+      const patternArray = Array.isArray(patterns) ? patterns : [patterns];
+      const patternStr =
+        patternArray.length === 1
+          ? patternArray[0]
+          : JSON.stringify(patternArray);
+      return `\n> ${style.cyan(patternStr)} in ${style.cyan(path)}`;
+    },
     async *execute(
       {
         patterns,
@@ -72,13 +79,6 @@ export const createGlobTool = () => {
 
       try {
         const patternArray = Array.isArray(patterns) ? patterns : [patterns];
-
-        yield {
-          name: GlobTool.name,
-          event: "tool-init",
-          id: toolCallId,
-          data: `${style.cyan(inspect(patternArray))} in ${style.cyan(path)}`,
-        };
 
         // Build glob options
         const globOptions: Record<string, unknown> = {

@@ -44,6 +44,16 @@ export const createDirectoryTreeTool = async ({
       description: `Get a directory tree structure for a given path. This tool will ignore any directories or files listed in a .gitignore file. Use this tool when you need to see a complete directory tree for a path in the allowed directories. This can be used to get an understanding of how a project is organized and what files are available before using other file system tools. Results are automatically limited to prevent overwhelming output. Default limits are ${DEFAULT_ITEM_LIMIT} items and ${DEFAULT_DEPTH_LIMIT} depth. Use maxResults and maxDepth parameters for better control over output size.`,
       inputSchema,
     },
+    display({ path, maxDepth, maxResults }: DirectoryTreeInputSchema) {
+      let display = `\n> ${style.cyan(path)}`;
+      if (maxDepth || maxResults) {
+        const parts = [];
+        if (maxDepth) parts.push(`depth: ${maxDepth}`);
+        if (maxResults) parts.push(`max: ${maxResults}`);
+        display += ` (${parts.join(", ")})`;
+      }
+      return display;
+    },
     async *execute(
       { path, maxResults, maxDepth }: DirectoryTreeInputSchema,
       { toolCallId, abortSignal }: ToolExecutionOptions,
@@ -53,13 +63,6 @@ export const createDirectoryTreeTool = async ({
         if (abortSignal?.aborted) {
           throw new Error("Directory tree listing aborted");
         }
-
-        yield {
-          name: DirectoryTreeTool.name,
-          id: toolCallId,
-          event: "tool-init",
-          data: `${style.cyan(path)}`,
-        };
 
         const validPath = await validatePath(
           joinWorkingDir(path, workingDir),
