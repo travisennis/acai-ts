@@ -80,6 +80,11 @@ export class FooterComponent implements Component {
     this.progressBar.setTotal(state.contextWindow);
   }
 
+  resetState() {
+    this.usage = undefined;
+    this.agentState = undefined;
+  }
+
   render(width: number): string[] {
     const results: string[] = [];
 

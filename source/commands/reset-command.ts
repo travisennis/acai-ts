@@ -1,4 +1,5 @@
 import { setTerminalTitle } from "../terminal/control.ts";
+import type { FooterComponent } from "../tui/components/footer.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
@@ -29,6 +30,16 @@ export const resetCommand = ({
 
       container.clear();
       editor.setText("");
+
+      // Reset footer state to clear usage/cost/steps/tools/time
+      const footer = tui.children.find(
+        (child): child is FooterComponent =>
+          child.constructor.name === "FooterComponent",
+      );
+      if (footer) {
+        footer.resetState();
+      }
+
       tui.requestRender();
       return "continue";
     },
