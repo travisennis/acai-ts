@@ -1,5 +1,19 @@
-import type { ToolExecuteFunction, ToolModelMessage } from "ai";
-import { NoOutputGeneratedError, streamText, tool } from "ai";
+import type {
+  ToolCallRepairFunction,
+  ToolExecuteFunction,
+  ToolModelMessage,
+  ToolSet,
+} from "ai";
+import {
+  generateText,
+  InvalidToolInputError,
+  NoOutputGeneratedError,
+  NoSuchToolError,
+  Output,
+  streamText,
+  tool,
+} from "ai";
+import type z from "zod";
 import { config } from "../config.ts";
 import { logger } from "../logger.ts";
 import { AiConfig } from "../models/ai-config.ts";
@@ -221,6 +235,9 @@ export class Agent {
             Object.entries(tools).map((t) => [t[0], tool(t[1].toolDef as any)]),
           ) as CompleteTools,
           activeTools,
+          // biome-ignore lint/style/useNamingConvention: third-party controlled
+          experimental_repairToolCall:
+            toolCallRepair<CompleteTools>(modelManager),
           abortSignal,
           onAbort: ({ steps }) => {
             logger.debug(`Aborting and processing ${steps.length} steps`);
@@ -489,24 +506,37 @@ export class Agent {
       } catch (error) {
         consecutiveErrors += 1;
 
-        logger.error(
-          error, // Log the full error object
-          `Error on manual agent loop streamText (attempt ${consecutiveErrors}/${maxRetries + 1})`,
-        );
+        // Handle AI SDK invalid tool input errors gracefully
+        if (InvalidToolInputError.isInstance(error)) {
+          logger.warn(
+            error,
+            `Invalid tool input detected - returning error to allow recovery (attempt ${consecutiveErrors}/${maxRetries + 1})`,
+          );
+          yield {
+            type: "agent-error",
+            message: `Tool input validation failed: ${(error as Error).message}. Try again with valid arguments.`,
+          };
+          // Continue loop to allow user to provide corrected input
+        } else {
+          logger.error(
+            error, // Log the full error object
+            `Error on manual agent loop streamText (attempt ${consecutiveErrors}/${maxRetries + 1})`,
+          );
 
-        const errorMsg =
-          (error as Error).message.length > 100
-            ? `${(error as Error).message.slice(0, 100)}...`
-            : (error as Error).message;
+          const errorMsg =
+            (error as Error).message.length > 100
+              ? `${(error as Error).message.slice(0, 100)}...`
+              : (error as Error).message;
 
-        yield {
-          type: "agent-error",
-          message: errorMsg,
-        };
+          yield {
+            type: "agent-error",
+            message: errorMsg,
+          };
 
-        if (NoOutputGeneratedError.isInstance(error)) {
-          hasEmittedTerminalEvent = true;
-          break;
+          if (NoOutputGeneratedError.isInstance(error)) {
+            hasEmittedTerminalEvent = true;
+            break;
+          }
         }
 
         // Break loop if we exceed max retries
@@ -644,3 +674,39 @@ function formatToolResult(value: unknown): string {
 
   return String(value);
 }
+
+const toolCallRepair = <T extends ToolSet>(modelManager: ModelManager) => {
+  const fn: ToolCallRepairFunction<T> = async ({
+    toolCall,
+    tools,
+    inputSchema,
+    error,
+  }) => {
+    if (NoSuchToolError.isInstance(error)) {
+      return null; // do not attempt to fix invalid tool names
+    }
+    const tool = tools[toolCall.toolName as keyof typeof tools];
+
+    try {
+      const { output: repairedArgs } = await generateText({
+        model: modelManager.getModel("tool-repair"),
+        output: Output.object({
+          schema: tool.inputSchema as z.ZodType<unknown>,
+        }),
+        prompt: [
+          `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
+          JSON.stringify(toolCall.input),
+          "The tool accepts the following schema:",
+          JSON.stringify(inputSchema(toolCall)),
+          "Please fix the arguments.",
+        ].join("\n"),
+      });
+
+      return { ...toolCall, args: JSON.stringify(repairedArgs) };
+    } catch (err) {
+      logger.error(err, `Failed to repair tool call: ${toolCall.toolName}.`);
+      return null;
+    }
+  };
+  return fn;
+};
