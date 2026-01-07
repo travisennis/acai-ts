@@ -4,9 +4,9 @@ import { initExecutionEnvironment } from "../execution/index.ts";
 import { logger } from "../logger.ts";
 import style from "../terminal/style.ts";
 
-import { isMutatingCommand, resolveCwd, validatePaths } from "../utils/bash.ts";
+import { resolveCwd, validatePaths } from "../utils/bash.ts";
 import { convertNullString } from "../utils/zod.ts";
-import type { ToolExecutionOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions } from "./types.ts";
 
 export const BashTool = {
   name: "Bash" as const,
@@ -61,129 +61,97 @@ export const createBashTool = async ({
     display({ command }: BashInputSchema) {
       return `\n> ${style.cyan(command)}`;
     },
-    async *execute(
+    async execute(
       { command, cwd, timeout, background }: BashInputSchema,
-      { toolCallId, abortSignal }: ToolExecutionOptions,
-    ): AsyncGenerator<ToolResult> {
-      try {
-        if (abortSignal?.aborted) {
-          throw new Error("Command execution aborted");
-        }
-        // grok doesn't follow my instructions
-        const safeCwd = cwd === "null" ? null : cwd;
-        const resolvedCwd = resolveCwd(safeCwd, baseDir, allowedDirectories);
-        const safeTimeout = timeout ?? DEFAULT_TIMEOUT;
-        // Safety warning for potentially mutating commands
-        const isMutating = isMutatingCommand(command);
-
-        const pathValidation = validatePaths(
-          command,
-          allowedDirectories,
-          resolvedCwd,
-        );
-        if (!pathValidation.isValid) {
-          yield {
-            name: BashTool.name,
-            event: "tool-error",
-            id: toolCallId,
-            data: pathValidation.error ?? "Unknown error.",
-          };
-          yield pathValidation.error ?? "Unknown error.";
-          return;
-        }
-
-        if (abortSignal?.aborted) {
-          throw new Error(
-            "Command execution aborted before running the command",
-          );
-        }
-
-        // Handle background execution
-        if (background) {
-          // Strip any existing & from command to avoid double backgrounding
-          let processedCommand = command.trim();
-          if (processedCommand.endsWith("&")) {
-            logger.warn(
-              `Stripping '&' from command since background=true: ${command}`,
-            );
-            processedCommand = processedCommand.slice(0, -1).trim();
-          }
-
-          // Fix rg commands that don't have an explicit path
-          processedCommand = fixRgCommand(processedCommand);
-
-          const backgroundProcess = execEnv.executeCommandInBackground(
-            processedCommand,
-            {
-              cwd: resolvedCwd,
-              abortSignal,
-              onOutput: (output) => {
-                logger.debug({ output }, "Background command output:");
-              },
-              onError: (error) => {
-                logger.debug({ error }, "Background command error:");
-              },
-              onExit: (code) => {
-                logger.debug(`Background command exited with code ${code}`);
-              },
-            },
-          );
-
-          yield {
-            name: BashTool.name,
-            event: "tool-completion",
-            id: toolCallId,
-            data: `Background process started with PID: ${backgroundProcess.pid}`,
-          };
-
-          yield `Background process started with PID: ${backgroundProcess.pid}`;
-        } else {
-          // Handle regular synchronous execution
-          // Strip & if present to ensure synchronous behavior
-          let processedCommand = command.trim();
-          if (processedCommand.endsWith("&")) {
-            logger.warn(
-              `Stripping '&' from command since background=false: ${command}`,
-            );
-            processedCommand = processedCommand.slice(0, -1).trim();
-          }
-
-          // Fix rg commands that don't have an explicit path
-          // rg hangs when stdin is a socket and no path is given
-          processedCommand = fixRgCommand(processedCommand);
-
-          const { output, exitCode } = await execEnv.executeCommand(
-            processedCommand,
-            {
-              cwd: resolvedCwd,
-              timeout: safeTimeout,
-              abortSignal,
-              preserveOutputOnError: true,
-              captureStderr: true,
-              throwOnError: false,
-            },
-          );
-
-          const statusText = exitCode === 0 ? "success" : "error";
-          yield {
-            name: BashTool.name,
-            event: "tool-completion",
-            id: toolCallId,
-            data: `${statusText}${isMutating ? " *" : ""}`,
-          };
-
-          yield output;
-        }
-      } catch (error) {
-        logger.error(error, "Bash Tool Error:");
-        yield {
-          name: BashTool.name,
-          event: "tool-error",
-          id: toolCallId,
-          data: (error as Error).message,
-        };
-        yield (error as Error).message;
+      { abortSignal }: ToolExecutionOptions,
+    ): Promise<string> {
+      if (abortSignal?.aborted) {
+        throw new Error("Command execution aborted");
       }
+
+      // grok doesn't follow my instructions
+      const safeCwd = cwd === "null" ? null : cwd;
+      const resolvedCwd = resolveCwd(safeCwd, baseDir, allowedDirectories);
+      const safeTimeout = timeout ?? DEFAULT_TIMEOUT;
+
+      const pathValidation = validatePaths(
+        command,
+        allowedDirectories,
+        resolvedCwd,
+      );
+      if (!pathValidation.isValid) {
+        throw new Error(pathValidation.error ?? "Unknown error.");
+      }
+
+      if (abortSignal?.aborted) {
+        throw new Error("Command execution aborted before running the command");
+      }
+
+      // Handle background execution
+      if (background) {
+        // Strip any existing & from command to avoid double backgrounding
+        let processedCommand = command.trim();
+        if (processedCommand.endsWith("&")) {
+          logger.warn(
+            `Stripping '&' from command since background=true: ${command}`,
+          );
+          processedCommand = processedCommand.slice(0, -1).trim();
+        }
+
+        // Fix rg commands that don't have an explicit path
+        processedCommand = fixRgCommand(processedCommand);
+
+        const backgroundProcess = execEnv.executeCommandInBackground(
+          processedCommand,
+          {
+            cwd: resolvedCwd,
+            abortSignal,
+            onOutput: (output) => {
+              logger.debug({ output }, "Background command output:");
+            },
+            onError: (error) => {
+              logger.debug({ error }, "Background command error:");
+            },
+            onExit: (code) => {
+              logger.debug(`Background command exited with code ${code}`);
+            },
+          },
+        );
+
+        return `Background process started with PID: ${backgroundProcess.pid}`;
+      }
+
+      // Handle regular synchronous execution
+      // Strip & if present to ensure synchronous behavior
+      let processedCommand = command.trim();
+      if (processedCommand.endsWith("&")) {
+        logger.warn(
+          `Stripping '&' from command since background=false: ${command}`,
+        );
+        processedCommand = processedCommand.slice(0, -1).trim();
+      }
+
+      // Fix rg commands that don't have an explicit path
+      // rg hangs when stdin is a socket and no path is given
+      processedCommand = fixRgCommand(processedCommand);
+
+      const { output, exitCode } = await execEnv.executeCommand(
+        processedCommand,
+        {
+          cwd: resolvedCwd,
+          timeout: safeTimeout,
+          abortSignal,
+          preserveOutputOnError: true,
+          captureStderr: true,
+          throwOnError: false,
+        },
+      );
+
+      if (exitCode !== 0) {
+        throw new Error(output);
+      }
+
+      return output;
     },
   };
 };

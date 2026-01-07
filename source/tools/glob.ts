@@ -5,7 +5,7 @@ import style from "../terminal/style.ts";
 
 import { glob } from "../utils/glob.ts";
 import { convertNullString } from "../utils/zod.ts";
-import type { ToolExecutionOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions } from "./types.ts";
 
 const DEFAULT_MAX_RESULTS = 100;
 
@@ -59,7 +59,7 @@ export const createGlobTool = () => {
           : JSON.stringify(patternArray);
       return `\n> ${style.cyan(patternStr)} in ${style.cyan(path)}`;
     },
-    async *execute(
+    async execute(
       {
         patterns,
         path,
@@ -70,124 +70,81 @@ export const createGlobTool = () => {
         cwd,
         maxResults,
       }: GlobInputSchema,
-      { toolCallId, abortSignal }: ToolExecutionOptions,
-    ): AsyncGenerator<ToolResult> {
-      // Check if execution has been aborted
+      { abortSignal }: ToolExecutionOptions,
+    ): Promise<string> {
       if (abortSignal?.aborted) {
         throw new Error("Glob search aborted");
       }
 
-      try {
-        const patternArray = Array.isArray(patterns) ? patterns : [patterns];
+      const patternArray = Array.isArray(patterns) ? patterns : [patterns];
 
-        // Build glob options
-        const globOptions: Record<string, unknown> = {
-          cwd: cwd || process.cwd(),
-        };
+      const globOptions: Record<string, unknown> = {
+        cwd: cwd || process.cwd(),
+      };
 
-        if (gitignore !== null) {
-          globOptions["gitignore"] = gitignore;
-        }
-
-        if (recursive !== null) {
-          globOptions["recursive"] = recursive;
-        }
-
-        if (expandDirectories !== null) {
-          globOptions["expandDirectories"] = expandDirectories;
-        }
-
-        if (ignoreFiles !== null) {
-          globOptions["ignoreFiles"] = ignoreFiles;
-        }
-
-        // Execute glob search
-        const matchingFiles = await glob(patternArray, {
-          ...globOptions,
-          cwd: path,
-        });
-
-        // Get file stats and sort by recency then alphabetically
-        const filesWithStats = await Promise.all(
-          matchingFiles.map(async (filePath) => {
-            const fullPath = nodePath.join(path, filePath);
-            try {
-              const stats = await fs.promises.stat(fullPath);
-              return {
-                path: filePath,
-                mtime: stats.mtime,
-                isRecent:
-                  Date.now() - stats.mtime.getTime() < 7 * 24 * 60 * 60 * 1000, // 7 days
-              };
-            } catch {
-              // If stat fails, treat as old file
-              return {
-                path: filePath,
-                mtime: new Date(0),
-                isRecent: false,
-              };
-            }
-          }),
-        );
-
-        // Sort files: recent files first (newest to oldest), then older files alphabetically
-        const sortedFiles = filesWithStats
-          .sort((a, b) => {
-            // Recent files come first
-            if (a.isRecent && !b.isRecent) return -1;
-            if (!a.isRecent && b.isRecent) return 1;
-
-            // Both recent: sort by modification time (newest first)
-            if (a.isRecent && b.isRecent) {
-              return b.mtime.getTime() - a.mtime.getTime();
-            }
-
-            // Both old: sort alphabetically by path
-            return a.path.localeCompare(b.path);
-          })
-          .map((file) => file.path);
-
-        // Set default limits
-        const effectiveMaxResults = maxResults ?? DEFAULT_MAX_RESULTS;
-
-        // Apply maxResults limit
-        const limitedFiles =
-          effectiveMaxResults && effectiveMaxResults > 0
-            ? sortedFiles.slice(0, effectiveMaxResults)
-            : sortedFiles;
-
-        // Format results
-        const resultContent =
-          limitedFiles.length > 0
-            ? limitedFiles.join("\n")
-            : "No files found matching the specified patterns.";
-
-        // Build completion message with warning if results were truncated
-        const fileCount = sortedFiles.length;
-        const returnedCount = limitedFiles.length;
-        let completionMessage = `Found ${style.cyan(fileCount)} files`;
-
-        if (returnedCount < fileCount) {
-          completionMessage += ` (showing ${style.cyan(returnedCount)} due to maxResults limit)`;
-        }
-
-        yield {
-          name: GlobTool.name,
-          event: "tool-completion",
-          id: toolCallId,
-          data: completionMessage,
-        };
-
-        yield resultContent;
-      } catch (error) {
-        yield {
-          name: GlobTool.name,
-          event: "tool-error",
-          id: toolCallId,
-          data: (error as Error).message,
-        };
-        yield (error as Error).message;
+      if (gitignore !== null) {
+        globOptions["gitignore"] = gitignore;
       }
+
+      if (recursive !== null) {
+        globOptions["recursive"] = recursive;
+      }
+
+      if (expandDirectories !== null) {
+        globOptions["expandDirectories"] = expandDirectories;
+      }
+
+      if (ignoreFiles !== null) {
+        globOptions["ignoreFiles"] = ignoreFiles;
+      }
+
+      const matchingFiles = await glob(patternArray, {
+        ...globOptions,
+        cwd: path,
+      });
+
+      const filesWithStats = await Promise.all(
+        matchingFiles.map(async (filePath) => {
+          const fullPath = nodePath.join(path, filePath);
+          try {
+            const stats = await fs.promises.stat(fullPath);
+            return {
+              path: filePath,
+              mtime: stats.mtime,
+              isRecent:
+                Date.now() - stats.mtime.getTime() < 7 * 24 * 60 * 60 * 1000,
+            };
+          } catch {
+            return {
+              path: filePath,
+              mtime: new Date(0),
+              isRecent: false,
+            };
+          }
+        }),
+      );
+
+      const sortedFiles = filesWithStats
+        .sort((a, b) => {
+          if (a.isRecent && !b.isRecent) return -1;
+          if (!a.isRecent && b.isRecent) return 1;
+          if (a.isRecent && b.isRecent) {
+            return b.mtime.getTime() - a.mtime.getTime();
+          }
+          return a.path.localeCompare(b.path);
+        })
+        .map((file) => file.path);
+
+      const effectiveMaxResults = maxResults ?? DEFAULT_MAX_RESULTS;
+
+      const limitedFiles =
+        effectiveMaxResults && effectiveMaxResults > 0
+          ? sortedFiles.slice(0, effectiveMaxResults)
+          : sortedFiles;
+
+      return limitedFiles.length > 0
+        ? limitedFiles.join("\n")
+        : "No files found matching the specified patterns.";
     },
   };
 };

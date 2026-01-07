@@ -5,24 +5,6 @@ import test from "node:test";
 import { loadDynamicTools } from "../../source/tools/dynamic-tool-loader.ts";
 import { createTempDir } from "../utils/test-fixtures.ts";
 
-// Helper function to consume tool async iterable and return final value
-async function consumeToolAsyncIterable<T>(
-  iterable: AsyncGenerator<unknown, T>,
-): Promise<{ finalValue: T; yields: unknown[] }> {
-  const yields: unknown[] = [];
-  let finalValue: T | undefined;
-
-  for await (const value of iterable) {
-    yields.push(value);
-    // The last yielded value is the final result
-    if (typeof value === "string") {
-      finalValue = value as T;
-    }
-  }
-
-  return { finalValue: finalValue as T, yields };
-}
-
 test("Dynamic tool integration - end-to-end functionality", async () => {
   // Create a temporary test tool
   const testToolContent = `#!/usr/bin/env node
@@ -103,42 +85,34 @@ if (process.env.TOOL_ACTION === 'execute') {
       execute: (
         args: { message: string; count?: number },
         meta: { toolCallId: string; abortSignal?: AbortSignal },
-      ) => AsyncGenerator<unknown, string>;
+      ) => Promise<string>;
     };
 
     // Test with required parameters
-    const result1 = await consumeToolAsyncIterable(
-      toolImpl.execute({ message: "Hello World" }, { toolCallId: "test-1" }),
+    const result1 = await toolImpl.execute(
+      { message: "Hello World" },
+      { toolCallId: "test-1" },
     );
-    assert.equal(
-      result1.finalValue,
-      "Hello World",
-      "Should return the message",
-    );
+    assert.equal(result1, "Hello World", "Should return the message");
 
     // Test with optional parameters
-    const result2 = await consumeToolAsyncIterable(
-      toolImpl.execute(
-        { message: "Repeat", count: 3 },
-        { toolCallId: "test-2" },
-      ),
+    const result2 = await toolImpl.execute(
+      { message: "Repeat", count: 3 },
+      { toolCallId: "test-2" },
     );
     assert.equal(
-      result2.finalValue,
+      result2,
       "Repeat\nRepeat\nRepeat",
       "Should repeat message 3 times",
     );
 
     // Test error handling - missing required parameter
-    const errorResult = await consumeToolAsyncIterable(
-      toolImpl.execute({} as { message: string; count?: number }, {
-        toolCallId: "test-3",
-      }),
-    );
-    assert.ok(
-      typeof errorResult.finalValue === "string" &&
-        errorResult.finalValue.includes("Invalid parameters"),
-      "Should return validation error message",
+    await assert.rejects(
+      async () =>
+        await toolImpl.execute({} as { message: string; count?: number }, {
+          toolCallId: "test-3",
+        }),
+      /Invalid parameters/,
     );
   } finally {
     // Clean up
@@ -213,17 +187,15 @@ if (process.env.TOOL_ACTION === 'execute') {
       execute: (
         args: { message: string },
         meta: { toolCallId: string; abortSignal?: AbortSignal },
-      ) => AsyncGenerator<unknown, string>;
+      ) => Promise<string>;
     };
 
     // Test tool execution works
-    const result = await consumeToolAsyncIterable(
-      toolImpl.execute(
-        { message: "Auto-approved" },
-        { toolCallId: "test-execution" },
-      ),
+    const result = await toolImpl.execute(
+      { message: "Auto-approved" },
+      { toolCallId: "test-execution" },
     );
-    assert.equal(result.finalValue, "Auto-approved", "Should execute normally");
+    assert.equal(result, "Auto-approved", "Should execute normally");
   } finally {
     // Clean up
     await cleanupTools();
@@ -248,17 +220,18 @@ test("Dynamic tool integration - run-all-checks tool", async () => {
     execute: (
       args: { dir?: string },
       meta: { toolCallId: string; abortSignal?: AbortSignal },
-    ) => AsyncGenerator<unknown, string>;
+    ) => Promise<string>;
   };
 
   // This will run npm test in the current directory
-  const result = await consumeToolAsyncIterable(
-    toolImpl.execute({ dir: "." }, { toolCallId: "test-run-tests" }),
+  const result = await toolImpl.execute(
+    { dir: "." },
+    { toolCallId: "test-run-tests" },
   );
 
   // The result should contain test output (we don't care about the exact content)
   assert.ok(
-    typeof result.finalValue === "string" && result.finalValue.length > 0,
+    typeof result === "string" && result.length > 0,
     "Should return test output",
   );
 });

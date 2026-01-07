@@ -10,7 +10,7 @@ import {
   validatePath,
 } from "../utils/filesystem/security.ts";
 
-import type { ToolExecutionOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions } from "./types.ts";
 
 export const EditFileTool = {
   name: "Edit" as const,
@@ -56,59 +56,28 @@ export const createEditFileTool = async ({
     display({ path, edits }: EditFileInputSchema) {
       return `\n> ${style.cyan(path)} (${edits.length} edit${edits.length === 1 ? "" : "s"})`;
     },
-    async *execute(
+    async execute(
       { path, edits }: EditFileInputSchema,
-      { toolCallId, abortSignal }: ToolExecutionOptions,
-    ): AsyncGenerator<ToolResult> {
-      try {
-        if (abortSignal?.aborted) {
-          throw new Error("File editing aborted");
-        }
-
-        const validPath = await validatePath(
-          joinWorkingDir(path, workingDir),
-          allowedDirectory,
-          { abortSignal },
-        );
-
-        // Check if file is read-only
-        const projectConfig = await config.getConfig();
-        validateFileNotReadOnly(validPath, projectConfig, workingDir);
-
-        const result = await applyFileEdits(
-          validPath,
-          edits,
-          false,
-          abortSignal,
-        );
-
-        yield {
-          name: EditFileTool.name,
-          id: toolCallId,
-          event: "tool-update",
-          data: result.trim(),
-        };
-
-        yield {
-          name: EditFileTool.name,
-          id: toolCallId,
-          event: "tool-completion",
-          data: `Applied ${edits.length} edits to ${style.cyan(path)}`,
-        };
-
-        // Clear project status cache since file operations change git status
-        clearProjectStatusCache();
-
-        yield result;
-      } catch (error) {
-        yield {
-          name: EditFileTool.name,
-          event: "tool-error",
-          id: toolCallId,
-          data: (error as Error).message,
-        };
-        yield `Failed to edit file: ${(error as Error).message}`;
+      { abortSignal }: ToolExecutionOptions,
+    ): Promise<string> {
+      if (abortSignal?.aborted) {
+        throw new Error("File editing aborted");
       }
+
+      const validPath = await validatePath(
+        joinWorkingDir(path, workingDir),
+        allowedDirectory,
+        { abortSignal },
+      );
+
+      const projectConfig = await config.getConfig();
+      validateFileNotReadOnly(validPath, projectConfig, workingDir);
+
+      const result = await applyFileEdits(validPath, edits, false, abortSignal);
+
+      clearProjectStatusCache();
+
+      return result;
     },
   };
 };

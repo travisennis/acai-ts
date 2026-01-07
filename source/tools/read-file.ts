@@ -5,7 +5,7 @@ import style from "../terminal/style.ts";
 
 import { joinWorkingDir, validatePath } from "../utils/filesystem/security.ts";
 import { convertNullString } from "../utils/zod.ts";
-import type { ToolExecutionOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions } from "./types.ts";
 import { fileEncodingSchema } from "./types.ts";
 
 // default limit in bytes
@@ -58,7 +58,7 @@ export const createReadFileTool = async ({
     display({ path: providedPath, startLine, lineCount }: ReadFileInputSchema) {
       return `\n> ${style.cyan(providedPath)}${startLine ? style.cyan(`:${startLine}`) : ""}${lineCount ? style.cyan(`:${lineCount}`) : ""}`;
     },
-    async *execute(
+    async execute(
       {
         path: providedPath,
         encoding,
@@ -66,95 +66,58 @@ export const createReadFileTool = async ({
         lineCount,
         maxBytes,
       }: ReadFileInputSchema,
-      { toolCallId, abortSignal }: ToolExecutionOptions,
-    ): AsyncGenerator<ToolResult> {
-      try {
-        // Check if execution has been aborted
-        if (abortSignal?.aborted) {
-          throw new Error("File reading aborted");
-        }
-
-        const filePath = await validatePath(
-          joinWorkingDir(providedPath, workingDir),
-          allowedDirectory,
-          { abortSignal },
-        );
-
-        if (abortSignal?.aborted) {
-          throw new Error("File reading aborted before file read");
-        }
-
-        let file = await fs.readFile(filePath, {
-          encoding: encoding ?? "utf-8",
-        });
-
-        // Apply line-based selection if requested
-        if (isNumber(startLine) || isNumber(lineCount)) {
-          const lines = file.split("\n");
-          const totalLines = lines.length;
-
-          const startIndex = (startLine ?? 1) - 1; // Default to start of file if only lineCount is given
-          const count = lineCount ?? totalLines - startIndex; // Default to read all lines from start if only startLine is given
-
-          if (startIndex < 0 || startIndex >= totalLines) {
-            const errorMsg = `startLine ${startLine} is out of bounds for file with ${totalLines} lines.`;
-            yield {
-              name: ReadFileTool.name,
-              event: "tool-error",
-              id: toolCallId,
-              data: errorMsg,
-            };
-            yield errorMsg;
-            return;
-          }
-
-          const endIndex = Math.min(startIndex + count, totalLines);
-          file = lines.slice(startIndex, endIndex).join("\n");
-        }
-
-        const effectiveMaxBytes = maxBytes ?? DEFAULT_BYTE_LIMIT;
-
-        // Apply byte-based limiting
-        let wasTruncated = false;
-        if (
-          effectiveMaxBytes !== null &&
-          effectiveMaxBytes !== undefined &&
-          effectiveMaxBytes > 0
-        ) {
-          const buffer = Buffer.from(file, encoding ?? "utf-8");
-          if (buffer.byteLength > effectiveMaxBytes) {
-            const truncatedBuffer = buffer.subarray(0, effectiveMaxBytes);
-            file = truncatedBuffer.toString(encoding ?? "utf-8");
-            wasTruncated = true;
-          }
-        }
-
-        // Calculate line count for the returned content
-        const linesRead = file.split("\n").length;
-        let completionMessage = `Read ${linesRead} lines`;
-
-        // Add warning if content was truncated due to maxBytes
-        if (wasTruncated) {
-          completionMessage += ` (truncated to ${effectiveMaxBytes} bytes)`;
-        }
-
-        yield {
-          name: ReadFileTool.name,
-          id: toolCallId,
-          event: "tool-completion",
-          data: completionMessage,
-        };
-        yield file;
-      } catch (error) {
-        const errorMsg = `${(error as Error).message}`;
-        yield {
-          name: ReadFileTool.name,
-          event: "tool-error",
-          id: toolCallId,
-          data: errorMsg,
-        };
-        yield errorMsg;
+      { abortSignal }: ToolExecutionOptions,
+    ): Promise<string> {
+      if (abortSignal?.aborted) {
+        throw new Error("File reading aborted");
       }
+
+      const filePath = await validatePath(
+        joinWorkingDir(providedPath, workingDir),
+        allowedDirectory,
+        { abortSignal },
+      );
+
+      if (abortSignal?.aborted) {
+        throw new Error("File reading aborted before file read");
+      }
+
+      let file = await fs.readFile(filePath, {
+        encoding: encoding ?? "utf-8",
+      });
+
+      if (isNumber(startLine) || isNumber(lineCount)) {
+        const lines = file.split("\n");
+        const totalLines = lines.length;
+
+        const startIndex = (startLine ?? 1) - 1;
+        const count = lineCount ?? totalLines - startIndex;
+
+        if (startIndex < 0 || startIndex >= totalLines) {
+          throw new Error(
+            `startLine ${startLine} is out of bounds for file with ${totalLines} lines.`,
+          );
+        }
+
+        const endIndex = Math.min(startIndex + count, totalLines);
+        file = lines.slice(startIndex, endIndex).join("\n");
+      }
+
+      const effectiveMaxBytes = maxBytes ?? DEFAULT_BYTE_LIMIT;
+
+      if (
+        effectiveMaxBytes !== null &&
+        effectiveMaxBytes !== undefined &&
+        effectiveMaxBytes > 0
+      ) {
+        const buffer = Buffer.from(file, encoding ?? "utf-8");
+        if (buffer.byteLength > effectiveMaxBytes) {
+          const truncatedBuffer = buffer.subarray(0, effectiveMaxBytes);
+          file = truncatedBuffer.toString(encoding ?? "utf-8");
+        }
+      }
+
+      return file;
     },
   };
 };

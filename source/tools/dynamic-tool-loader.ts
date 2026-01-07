@@ -5,7 +5,7 @@ import path from "node:path";
 import { z } from "zod";
 import { config } from "../config.ts";
 import { logger } from "../logger.ts";
-import type { ToolExecutionOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions } from "./types.ts";
 
 // Tool Metadata Schema and Parser
 const toolMetadataSchema = z.object({
@@ -230,7 +230,7 @@ interface DynamicToolObject {
   execute: (
     input: Record<string, unknown>,
     options: ToolExecutionOptions,
-  ) => AsyncGenerator<ToolResult>;
+  ) => Promise<string>;
   ask?: (
     input: Record<string, unknown>,
     options: ToolExecutionOptions,
@@ -253,55 +253,25 @@ function createDynamicTool(
       display() {
         return "running";
       },
-      async *execute(
+      async execute(
         input: Record<string, unknown>,
-        { toolCallId, abortSignal }: ToolExecutionOptions,
-      ): AsyncGenerator<ToolResult> {
-        try {
-          if (abortSignal?.aborted) {
-            throw new Error("Execution aborted");
-          }
-
-          // Validate params again for safety
-          try {
-            inputSchema.parse(input);
-          } catch (e) {
-            const errMsg = `Invalid parameters for tool ${metadata.name}: ${(e as Error).message}`;
-            yield {
-              name: metadata.name,
-              event: "tool-error",
-              id: toolCallId,
-              data: errMsg,
-            };
-            yield errMsg;
-            return;
-          }
-
-          const result = await spawnChildProcess(
-            scriptPath,
-            input,
-            abortSignal,
-          );
-
-          yield {
-            name: metadata.name,
-            event: "tool-completion",
-            id: toolCallId,
-            data: "Completed",
-          };
-
-          yield result;
-        } catch (error) {
-          yield {
-            name: metadata.name,
-            event: "tool-error",
-            id: toolCallId,
-            data: `${metadata.name}: ${(error as Error).message}`,
-          };
-          yield (error as Error).message;
+        { abortSignal }: ToolExecutionOptions,
+      ): Promise<string> {
+        if (abortSignal?.aborted) {
+          throw new Error("Execution aborted");
         }
+
+        try {
+          inputSchema.parse(input);
+        } catch (e) {
+          throw new Error(
+            `Invalid parameters for tool ${metadata.name}: ${(e as Error).message}`,
+          );
+        }
+
+        return spawnChildProcess(scriptPath, input, abortSignal);
       },
-    } as DynamicToolObject,
+    } as unknown as DynamicToolObject,
   };
 }
 

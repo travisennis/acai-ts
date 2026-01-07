@@ -6,7 +6,7 @@ import style from "../terminal/style.ts";
 import { joinWorkingDir, validatePath } from "../utils/filesystem/security.ts";
 import ignore, { type Ignore } from "../utils/ignore.ts";
 import { convertNullString } from "../utils/zod.ts";
-import type { ToolExecutionOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions } from "./types.ts";
 
 const DEFAULT_ITEM_LIMIT = 500;
 const DEFAULT_DEPTH_LIMIT = 10;
@@ -54,60 +54,32 @@ export const createDirectoryTreeTool = async ({
       }
       return display;
     },
-    async *execute(
+    async execute(
       { path, maxResults, maxDepth }: DirectoryTreeInputSchema,
-      { toolCallId, abortSignal }: ToolExecutionOptions,
-    ): AsyncGenerator<ToolResult> {
-      try {
-        // Check if execution has been aborted
-        if (abortSignal?.aborted) {
-          throw new Error("Directory tree listing aborted");
-        }
-
-        const validPath = await validatePath(
-          joinWorkingDir(path, workingDir),
-          allowedDirectory,
-          { abortSignal },
-        );
-
-        if (abortSignal?.aborted) {
-          throw new Error(
-            "Directory tree listing aborted before tree generation",
-          );
-        }
-
-        const treeResult = await directoryTree(validPath, {
-          maxResults: maxResults ?? DEFAULT_ITEM_LIMIT,
-          maxDepth: maxDepth ?? DEFAULT_DEPTH_LIMIT,
-        });
-
-        // Build completion message with accurate counts
-        let completionMessage = `Found ${treeResult.fileCount} files and ${treeResult.directoryCount} directories`;
-
-        if (treeResult.isTruncated) {
-          completionMessage += ` (truncated to ${maxResults} items)`;
-        }
-
-        yield {
-          name: DirectoryTreeTool.name,
-          id: toolCallId,
-          event: "tool-completion",
-          data: completionMessage,
-        };
-
-        yield treeResult.tree;
-      } catch (error) {
-        console.error(error);
-        const errorMsg = (error as Error).message;
-        yield {
-          name: DirectoryTreeTool.name,
-          id: toolCallId,
-          event: "tool-error",
-          data: errorMsg,
-        };
-
-        yield errorMsg;
+      { abortSignal }: ToolExecutionOptions,
+    ): Promise<string> {
+      if (abortSignal?.aborted) {
+        throw new Error("Directory tree listing aborted");
       }
+
+      const validPath = await validatePath(
+        joinWorkingDir(path, workingDir),
+        allowedDirectory,
+        { abortSignal },
+      );
+
+      if (abortSignal?.aborted) {
+        throw new Error(
+          "Directory tree listing aborted before tree generation",
+        );
+      }
+
+      const treeResult = await directoryTree(validPath, {
+        maxResults: maxResults ?? DEFAULT_ITEM_LIMIT,
+        maxDepth: maxDepth ?? DEFAULT_DEPTH_LIMIT,
+      });
+
+      return treeResult.tree;
     },
   };
 };

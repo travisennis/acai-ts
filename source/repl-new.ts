@@ -1,4 +1,9 @@
-import type { Agent, AgentEvent, AgentState } from "./agent/index.ts";
+import type {
+  Agent,
+  AgentEvent,
+  AgentState,
+  ToolEvent,
+} from "./agent/index.ts";
 import type { CommandManager } from "./commands/manager.ts";
 import type { WorkspaceContext } from "./index.ts";
 import { logger } from "./logger.ts";
@@ -14,6 +19,7 @@ import { alert, startProgress, stopProgress } from "./terminal/control.ts";
 import style from "./terminal/style.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
+import type { CompleteToolSet } from "./tools/index.ts";
 import { AssistantMessageComponent } from "./tui/components/assistant-message.ts";
 import { FooterComponent } from "./tui/components/footer.ts";
 import { ThinkingBlockComponent } from "./tui/components/thinking-block.ts";
@@ -41,6 +47,7 @@ interface ReplOptions {
   tokenCounter: TokenCounter;
   promptHistory: string[];
   workspace: WorkspaceContext;
+  tools?: CompleteToolSet;
 }
 
 export class NewRepl {
@@ -59,6 +66,7 @@ export class NewRepl {
   private onExitCallback?: (sessionId: string) => void;
   private lastSigintTime = 0;
   private pendingTools: Map<string, ToolExecutionComponent>;
+  private tools?: CompleteToolSet;
 
   // Streaming message tracking
   private streamingComponent: AssistantMessageComponent | null = null;
@@ -93,6 +101,7 @@ export class NewRepl {
     this.editor.onRenderRequested = () => this.tui.requestRender();
     this.isInitialized = false;
     this.pendingTools = new Map();
+    this.tools = options.tools;
   }
 
   async init() {
@@ -452,7 +461,240 @@ export class NewRepl {
       usage: this.options.tokenTracker.getUsageByApp("repl"),
     });
 
+    // Reconstruct entire session display from messages
+    this.reconstructSession();
+
     this.tui.requestRender();
+  }
+
+  private reconstructSession() {
+    // Clear existing display
+    this.pendingTools.clear();
+    this.chatContainer.clear();
+
+    // Get session messages
+    const messages = this.options.messageHistory.get();
+
+    // First pass: collect all tool results
+    const toolResults = new Map<
+      string,
+      {
+        toolName: string;
+        outputValue: string;
+        isError: boolean;
+      }
+    >();
+
+    for (const message of messages) {
+      if (message.role !== "tool") continue;
+
+      const content = message.content;
+      if (!Array.isArray(content)) continue;
+
+      for (const part of content) {
+        if (part.type === "tool-result") {
+          const output = part.output;
+          const outputValue =
+            output && typeof output === "object" && "value" in output
+              ? String(output.value)
+              : "";
+
+          toolResults.set(part.toolCallId, {
+            toolName: part.toolName,
+            outputValue,
+            isError: false,
+          });
+        }
+      }
+    }
+
+    // Second pass: render all messages in order
+    for (let i = 0; i < messages.length; i++) {
+      const message = messages[i];
+
+      if (message.role === "user") {
+        // Render user message
+        const textContent = this.extractUserMessageText(message);
+        if (textContent) {
+          const userComponent = new UserMessageComponent(textContent);
+          this.chatContainer.addChild(userComponent);
+        }
+      } else if (message.role === "assistant") {
+        // Render assistant message text parts
+        this.renderAssistantMessage(message);
+
+        // Collect and render tool calls for this assistant message
+        const toolCallsForThisAssistant = this.extractToolCallsFromAssistant(
+          message,
+          toolResults,
+        );
+
+        for (const toolCallContent of toolCallsForThisAssistant) {
+          const toolCallId = toolCallContent.toolCallId;
+          const events = this.createToolEvents(toolCallContent);
+
+          if (events.length > 0) {
+            const component = new ToolExecutionComponent(this.tui, events);
+            this.pendingTools.set(toolCallId, component);
+            this.chatContainer.addChild(component);
+          }
+        }
+      }
+      // Tool messages are handled through their associated assistant message
+    }
+  }
+
+  private extractUserMessageText(message: {
+    role: string;
+    content: string | Array<{ type: string; text?: string }>;
+  }): string | null {
+    if (typeof message.content === "string") {
+      return message.content;
+    }
+
+    if (Array.isArray(message.content)) {
+      const textParts = message.content
+        .filter(
+          (part): part is { type: "text"; text: string } =>
+            part.type === "text" && part.text?.trim() !== undefined,
+        )
+        .map((part) => part.text);
+
+      return textParts.join("\n");
+    }
+
+    return null;
+  }
+
+  private renderAssistantMessage(message: {
+    role: string;
+    content: string | Array<{ type: string; text?: string }>;
+  }) {
+    if (typeof message.content === "string") {
+      if (message.content.trim()) {
+        const assistantComponent = new AssistantMessageComponent();
+        assistantComponent.updateContent({
+          type: "message",
+          role: "assistant",
+          content: message.content,
+        });
+        this.chatContainer.addChild(assistantComponent);
+      }
+    } else if (Array.isArray(message.content)) {
+      const textParts = message.content
+        .filter(
+          (part): part is { type: "text"; text: string } =>
+            part.type === "text" && part.text?.trim() !== undefined,
+        )
+        .map((part) => part.text)
+        .join("\n");
+
+      if (textParts.trim()) {
+        const assistantComponent = new AssistantMessageComponent();
+        assistantComponent.updateContent({
+          type: "message",
+          role: "assistant",
+          content: textParts,
+        });
+        this.chatContainer.addChild(assistantComponent);
+      }
+    }
+  }
+
+  private extractToolCallsFromAssistant(
+    message: {
+      role: string;
+      content:
+        | string
+        | Array<{
+            type: string;
+            toolName?: string;
+            toolCallId?: string;
+            input?: unknown;
+          }>;
+    },
+    toolResults: Map<
+      string,
+      {
+        toolName: string;
+        outputValue: string;
+        isError: boolean;
+      }
+    >,
+  ) {
+    const toolCallContents: Array<{
+      toolName: string;
+      toolCallId: string;
+      input: unknown;
+      outputValue: string;
+      isError: boolean;
+    }> = [];
+
+    if (typeof message.content === "string") {
+      return toolCallContents;
+    }
+
+    if (!Array.isArray(message.content)) {
+      return toolCallContents;
+    }
+
+    for (const part of message.content) {
+      if (part.type === "tool-call" && part.toolName && part.toolCallId) {
+        const result = toolResults.get(part.toolCallId);
+
+        if (result) {
+          toolCallContents.push({
+            toolName: part.toolName,
+            toolCallId: part.toolCallId,
+            input: part.input,
+            outputValue: result.outputValue,
+            isError: result.isError,
+          });
+        }
+      }
+    }
+
+    return toolCallContents;
+  }
+
+  private createToolEvents(toolCallContent: {
+    toolName: string;
+    toolCallId: string;
+    input: unknown;
+    outputValue: string;
+    isError: boolean;
+  }): ToolEvent[] {
+    const events: ToolEvent[] = [];
+
+    // tool-call-start: use the tool's display function
+    let startMsg = toolCallContent.toolName;
+    if (this.tools && toolCallContent.toolName in this.tools) {
+      const tool =
+        this.tools[toolCallContent.toolName as keyof typeof this.tools];
+      if ("display" in tool && typeof tool.display === "function") {
+        // biome-ignore lint/suspicious/noExplicitAny: tool display expects tool-specific input
+        startMsg = tool.display(toolCallContent.input as any);
+      }
+    }
+
+    events.push({
+      type: "tool-call-start",
+      name: toolCallContent.toolName,
+      toolCallId: toolCallContent.toolCallId,
+      msg: startMsg,
+      args: toolCallContent.input,
+    });
+
+    // tool-call-end or tool-call-error
+    events.push({
+      type: toolCallContent.isError ? "tool-call-error" : "tool-call-end",
+      name: toolCallContent.toolName,
+      toolCallId: toolCallContent.toolCallId,
+      msg: toolCallContent.outputValue,
+      args: toolCallContent.input,
+    });
+
+    return events;
   }
 
   private handleCtrlC(): void {

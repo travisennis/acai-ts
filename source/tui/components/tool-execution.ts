@@ -9,6 +9,7 @@ import {
   Text,
   type TUI,
 } from "../index.ts";
+import type { Component } from "../tui.ts";
 
 type Status = ToolEvent["type"];
 
@@ -74,14 +75,10 @@ export class ToolExecutionComponent extends Container {
           );
           break;
         case "tool-call-end":
-          this.contentContainer.addChild(
-            new Text(
-              `└ ${this.handleToolCompletionMessage(event.msg)}`,
-              1,
-              0,
-              bgColor,
-            ),
-          );
+          // Render the actual tool output with truncation
+          if (event.msg) {
+            this.contentContainer.addChild(this.renderOutputDisplay(event.msg));
+          }
           break;
         case "tool-call-error":
           this.contentContainer.addChild(
@@ -174,8 +171,33 @@ export class ToolExecutionComponent extends Container {
     return message;
   }
 
-  private handleToolCompletionMessage(message: string) {
-    return style.bold(message);
+  private renderOutputDisplay(msg: string): Component {
+    const lines = msg.split("\n");
+    const MaxVisible = 20;
+    const MidPoint = 10;
+
+    if (lines.length <= MaxVisible || lines.length <= 0) {
+      return new Markdown(msg, { paddingX: 3, customBgRgb: bgColor });
+    }
+
+    const firstFive = lines.slice(0, MidPoint);
+    const lastFive = lines.slice(-MidPoint);
+    const indicator = `... (${lines.length - MaxVisible} more lines) ...`;
+
+    const truncatedOutput = [
+      firstFive.join("\n"),
+      indicator,
+      lastFive.join("\n"),
+    ].join("\n");
+
+    const container = new Container();
+    const markdown = new Markdown(truncatedOutput, {
+      paddingX: 3,
+      customBgRgb: bgColor,
+    });
+    container.addChild(markdown);
+
+    return container;
   }
 
   private handleToolErrorMessage(message: string) {

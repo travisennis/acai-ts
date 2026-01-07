@@ -454,6 +454,11 @@ async function runCliMode(state: AppState): Promise<void> {
 }
 
 async function runReplMode(state: AppState): Promise<void> {
+  // Initialize tools before creating REPL (needed for session reload reconstruction)
+  const tools = await initTools({
+    workspace,
+  });
+
   const agent = new Agent({
     sessionManager: state.sessionManager,
     modelManager: state.modelManager,
@@ -471,10 +476,16 @@ async function runReplMode(state: AppState): Promise<void> {
     tokenCounter: state.tokenCounter,
     promptHistory: state.promptHistory,
     workspace,
+    tools,
   });
 
   // Initialize TUI
   await repl.init();
+
+  // Reconstruct session display if there are existing messages
+  if (!state.sessionManager.isEmpty()) {
+    repl.rerender();
+  }
 
   state.sessionManager.on("clear-history", () => {
     logger.info("Resetting agent state.");
@@ -498,11 +509,6 @@ async function runReplMode(state: AppState): Promise<void> {
     if (!state.sessionManager.isEmpty()) {
       console.info(`\nTo resume this session call acai --resume ${sessionId}`);
     }
-  });
-
-  // Initialize tools
-  const tools = await initTools({
-    workspace,
   });
 
   // Interactive loop

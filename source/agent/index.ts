@@ -26,8 +26,6 @@ import type {
   CompleteToolSet,
   CompleteTools,
 } from "../tools/index.ts";
-import { isToolMessage } from "../tools/types.ts";
-import { isAsyncIterable } from "../utils/iterables.ts";
 
 type AgentOptions = {
   modelManager: ModelManager;
@@ -348,72 +346,14 @@ export class Agent {
                     messages: sessionManager.get(),
                     abortSignal,
                   });
-                  if (isAsyncIterable(output)) {
-                    const toolResultValues: unknown[] = [];
-                    for await (const value of output) {
-                      if (isToolMessage(value)) {
-                        if (call.toolCallId !== value.id) {
-                          logger.debug(
-                            `Tool ${call.toolName} ids don't match: ${call.toolCallId} != ${value.id}`,
-                          );
-                        }
-                        const event = value.event;
-                        switch (event) {
-                          case "tool-completion":
-                            yield this.processToolEvent(toolsCalled, {
-                              type: "tool-call-end",
-                              name: value.name,
-                              toolCallId: call.toolCallId,
-                              msg: value.data,
-                              args: call.input,
-                            });
-                            break;
-                          case "tool-error":
-                            yield this.processToolEvent(toolsCalled, {
-                              type: "tool-call-error",
-                              name: value.name,
-                              toolCallId: call.toolCallId,
-                              msg: value.data,
-                              args: call.input,
-                            });
-                            break;
-                          case "tool-update":
-                            yield this.processToolEvent(toolsCalled, {
-                              type: "tool-call-update",
-                              name: value.name,
-                              toolCallId: call.toolCallId,
-                              msg: value.data,
-                              args: call.input,
-                            });
-                            break;
-                          default:
-                            event satisfies never;
-                            logger.debug(
-                              `Unhandled tool message event: ${event}`,
-                            );
-                            break;
-                        }
-                      } else {
-                        toolResultValues.push(value);
-                      }
-                    }
-
-                    const finalValue =
-                      toolResultValues.length > 0
-                        ? toolResultValues.at(-1)
-                        : undefined;
-
-                    resultOutput = formatToolResult(finalValue);
-                  } else {
-                    resultOutput = formatToolResult(output);
-                    yield this.processToolEvent(toolsCalled, {
-                      type: "tool-call-end",
-                      name: call.toolName,
-                      toolCallId: call.toolCallId,
-                      msg: "success",
-                      args: null,
-                    });
-                  }
+                  resultOutput = formatToolResult(output);
+                  yield this.processToolEvent(toolsCalled, {
+                    type: "tool-call-end",
+                    name: call.toolName,
+                    toolCallId: call.toolCallId,
+                    msg: resultOutput,
+                    args: call.input,
+                  });
                 } catch (err) {
                   resultOutput = `Tool error: ${
                     err instanceof Error ? err.message : String(err)

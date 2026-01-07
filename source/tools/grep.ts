@@ -4,7 +4,7 @@ import { z } from "zod";
 import style from "../terminal/style.ts";
 
 import { convertNullString } from "../utils/zod.ts";
-import type { ToolExecutionOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions } from "./types.ts";
 
 // default limit
 const DEFAULT_MAX_RESULTS = 100;
@@ -90,7 +90,7 @@ export const createGrepTool = () => {
 
       return initMessage;
     },
-    async *execute(
+    async execute(
       {
         pattern,
         path,
@@ -102,22 +102,19 @@ export const createGrepTool = () => {
         literal,
         maxResults,
       }: GrepInputSchema,
-      { toolCallId, abortSignal }: ToolExecutionOptions,
-    ): AsyncGenerator<ToolResult> {
-      // Check if execution has been aborted
+      { abortSignal }: ToolExecutionOptions,
+    ): Promise<string> {
       if (abortSignal?.aborted) {
         throw new Error("Grep search aborted");
       }
 
       try {
-        // Normalize literal option: if null => auto-detect using heuristic
         let effectiveLiteral: boolean | null = null;
         if (literal === true) {
           effectiveLiteral = true;
         } else if (literal === false) {
           effectiveLiteral = false;
         } else {
-          // auto-detect
           try {
             if (likelyUnbalancedRegex(pattern)) {
               effectiveLiteral = true;
@@ -131,7 +128,6 @@ export const createGrepTool = () => {
 
         const effectiveMaxResults = maxResults ?? DEFAULT_MAX_RESULTS;
 
-        // grok doesn't follow my instructions
         const safeFilePattern =
           filePattern === "null" || filePattern === "undefined"
             ? null
@@ -147,42 +143,11 @@ export const createGrepTool = () => {
           maxResults: effectiveMaxResults,
         });
 
-        const matchCount = grepResult.matchCount;
-
-        // Build completion message with preview information
-        let completionMessage = `Found ${style.cyan(matchCount)} match${matchCount === 1 ? "" : "es"}`;
-
-        if (matchCount === 0) {
-          completionMessage = "Search completed - no matches found";
-        }
-
-        // Calculate unique files with matches
-        const filesWithMatches = new Set(
-          grepResult.parsedMatches
-            .filter((match) => match.isMatch && !match.isContext && match.file)
-            .map((match) => match.file),
-        ).size;
-
-        if (filesWithMatches > 0) {
-          completionMessage += ` across ${style.cyan(filesWithMatches)} file${filesWithMatches === 1 ? "" : "s"}`;
-        }
-
-        if (grepResult.contextCount > 0) {
-          completionMessage += ` with ${style.cyan(grepResult.contextCount)} context line${grepResult.contextCount === 1 ? "" : "s"}`;
-        }
-
-        yield {
-          name: GrepTool.name,
-          event: "tool-completion",
-          id: toolCallId,
-          data: completionMessage,
-        };
-        yield grepResult.rawOutput;
+        return grepResult.rawOutput;
       } catch (error) {
         const errorMessage = (error as Error).message;
         let userFriendlyError = `Error searching for "${pattern}" in ${path}: ${errorMessage}`;
 
-        // Provide more helpful error messages for common cases
         if (errorMessage.includes("No such file or directory")) {
           userFriendlyError = `Path not found: "${path}"`;
           if (filePattern) {
@@ -195,13 +160,7 @@ export const createGrepTool = () => {
           userFriendlyError = `Invalid search pattern "${pattern}" - try using literal=true for fixed-string search`;
         }
 
-        yield {
-          name: GrepTool.name,
-          event: "tool-error",
-          id: toolCallId,
-          data: userFriendlyError,
-        };
-        yield errorMessage;
+        throw new Error(userFriendlyError);
       }
     },
   };

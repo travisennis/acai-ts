@@ -1,137 +1,74 @@
 import assert from "node:assert/strict";
-import fs from "node:fs/promises";
-import { describe, it } from "node:test";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { after, before, describe, it } from "node:test";
+import { createLsTool } from "../../source/tools/ls.ts";
 
-import { createLsTool, LsTool } from "../../source/tools/ls.ts";
-import type { ToolResult } from "../../source/tools/types.ts";
+const baseDir = process.cwd();
+const testDir = `${baseDir}/test-ls-fixture`;
 
-describe("LS tool", () => {
-  it("should have correct name", () => {
-    assert.equal(LsTool.name, "LS");
+describe("ls tool", async () => {
+  const tool = await createLsTool({
+    workingDir: baseDir,
+    allowedDirs: [baseDir],
   });
 
-  it("should have correct description", async () => {
-    const tool = await createLsTool({
-      workingDir: "/tmp",
-    });
-    assert.ok(tool.toolDef.description.includes("List directory contents"));
+  before(async () => {
+    try {
+      mkdirSync(testDir, { recursive: true });
+    } catch {
+      // Directory may already exist
+    }
   });
 
-  it("should list current directory contents", async () => {
-    const tool = await createLsTool({
-      workingDir: process.cwd(),
-    });
+  after(() => {
+    try {
+      rmSync(testDir, { recursive: true });
+    } catch {
+      // Ignore if directory doesn't exist
+    }
+  });
 
-    const results: ToolResult[] = [];
-    for await (const result of tool.execute(
+  it("lists directory contents", async () => {
+    const result = await tool.execute(
       { path: ".", limit: null },
       { toolCallId: "test-123", abortSignal: new AbortController().signal },
-    )) {
-      results.push(result);
-    }
-
-    // Should have completion and content results
-    assert.equal(results.length, 2);
-    const completionResult = results[0] as { event: string };
-    assert.ok(completionResult.event === "tool-completion");
-    assert.ok(typeof results[1] === "string");
-    assert.ok(results[1].length > 0); // Should have some content
+    );
+    assert.ok(result.includes("test-ls-fixture"));
   });
 
-  it("should handle non-existent directory", async () => {
-    const tool = await createLsTool({
-      workingDir: process.cwd(),
-    });
-
-    const results: ToolResult[] = [];
-    for await (const result of tool.execute(
+  it("rejects listing non-existent directory", async () => {
+    const result = tool.execute(
       { path: "./non-existent-directory-12345", limit: null },
       { toolCallId: "test-123", abortSignal: new AbortController().signal },
-    )) {
-      results.push(result);
-    }
-
-    // Should have init and error results
-    const hasError = results.some((r) => {
-      if (typeof r === "object" && r && "event" in r) {
-        return r.event === "tool-error";
-      }
-      return false;
-    });
-    assert.ok(hasError);
-
-    const hasPathError = results.some((r) => {
-      if (typeof r === "string") {
-        return r.includes("does not exist");
-      }
-      return false;
-    });
-    assert.ok(hasPathError);
+    );
+    await assert.rejects(result, /The specified path does not exist/);
   });
 
-  it("should handle non-directory path", async () => {
-    const tool = await createLsTool({
-      workingDir: process.cwd(),
-    });
+  it("creates files with correct format", async () => {
+    const testFileName = `${testDir}/test-file-${Date.now()}.txt`;
+    writeFileSync(testFileName, "test content");
 
-    // Create a test file in the project directory (within allowed dirs)
-    const testFileName = `test-file-${Date.now()}.txt`;
-    const testFilePath = `${process.cwd()}/${testFileName}`;
-    await fs.writeFile(testFilePath, "test content");
-
-    const results: ToolResult[] = [];
-    for await (const result of tool.execute(
-      { path: testFileName, limit: null },
-      { toolCallId: "test-123", abortSignal: new AbortController().signal },
-    )) {
-      results.push(result);
-    }
-
-    // Should have error about not being a directory
-    const hasError = results.some((r) => {
-      if (typeof r === "object" && r && "event" in r) {
-        return r.event === "tool-error";
-      }
-      return false;
-    });
-    assert.ok(hasError);
-
-    const errorResults = results.filter((r) => typeof r === "string");
-    const hasDirError = errorResults.some((r) => {
-      return (
-        String(r).includes("Not a directory") ||
-        String(r).includes("not a directory") ||
-        String(r).includes("is not a directory")
-      );
-    });
-    assert.ok(
-      hasDirError,
-      `Expected "not a directory" error, got: ${JSON.stringify(errorResults)}`,
+    // For a file path, it should reject since it's not a directory
+    await assert.rejects(
+      async () =>
+        await tool.execute(
+          { path: testFileName, limit: null },
+          { toolCallId: "test-123", abortSignal: new AbortController().signal },
+        ),
+      /Not a directory/,
     );
 
     // Clean up
-    await fs.rm(testFilePath);
+    rmSync(testFileName);
   });
 
-  it("should respect limit parameter", async () => {
-    const tool = await createLsTool({
-      workingDir: process.cwd(),
-    });
-
-    const results: ToolResult[] = [];
-    for await (const result of tool.execute(
+  it("respects limit parameter", async () => {
+    const result = await tool.execute(
       { path: ".", limit: 5 },
       { toolCallId: "test-123", abortSignal: new AbortController().signal },
-    )) {
-      results.push(result);
-    }
+    );
 
-    // Should have completion and content results
-    assert.equal(results.length, 2);
-    const content = results[1] as string;
-    const lines = content.split("\n");
-
-    // Should have at most 5 entries (plus potential completion message)
-    assert.ok(lines.length <= 6); // 5 entries + 1 potential message
+    const lines = result.split("\n");
+    assert.ok(lines.length <= 5);
   });
 });

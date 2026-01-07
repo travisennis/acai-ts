@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ToolExecutionOptions, ToolResult } from "./types.ts";
+import type { ToolExecutionOptions } from "./types.ts";
 
 export const ThinkTool = {
   name: "Think" as const,
@@ -28,44 +28,17 @@ export const createThinkTool = () => {
     display() {
       return "\n> Logging thought";
     },
-    async *execute(
+    async execute(
       { thought }: z.infer<typeof inputSchema>,
-      { toolCallId, abortSignal }: ToolExecutionOptions,
-    ): AsyncGenerator<ToolResult> {
-      try {
-        // Check if execution has been aborted
-        if (abortSignal?.aborted) {
-          throw new Error("Thinking process aborted");
-        }
-
-        // Replace literal '\\n' with actual newline characters
-        const formattedThought = thought.replace(/\\n/g, "\n");
-
-        yield {
-          name: ThinkTool.name,
-          event: "tool-update",
-          id: toolCallId,
-          data: `${formattedThought}`,
-        };
-
-        yield {
-          name: ThinkTool.name,
-          event: "tool-completion",
-          id: toolCallId,
-          data: "Thought logged",
-        };
-        yield "Your thought has been logged.";
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        yield {
-          name: ThinkTool.name,
-          event: "tool-error",
-          id: toolCallId,
-          data: errorMessage,
-        };
-        yield errorMessage;
+      { abortSignal }: ToolExecutionOptions,
+    ): Promise<string> {
+      if (abortSignal?.aborted) {
+        throw new Error("Thinking process aborted");
       }
+
+      const formattedThought = thought.replace(/\\n/g, "\n");
+
+      return `Thought: ${formattedThought}`;
     },
   };
 };
