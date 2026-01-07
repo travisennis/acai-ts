@@ -341,10 +341,7 @@ export class NewRepl {
           component.update(event.events);
         } else {
           // Create tool component for new tool call
-          const newComponent = new ToolExecutionComponent(
-            this.tui,
-            event.events,
-          );
+          const newComponent = new ToolExecutionComponent(event.events);
           this.pendingTools.set(event.toolCallId, newComponent);
           this.chatContainer.addChild(newComponent);
         }
@@ -534,7 +531,7 @@ export class NewRepl {
           const events = this.createToolEvents(toolCallContent);
 
           if (events.length > 0) {
-            const component = new ToolExecutionComponent(this.tui, events);
+            const component = new ToolExecutionComponent(events);
             this.pendingTools.set(toolCallId, component);
             this.chatContainer.addChild(component);
           }

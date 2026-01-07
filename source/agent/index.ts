@@ -52,13 +52,6 @@ export type ToolEvent =
       args: unknown;
     }
   | {
-      type: "tool-call-update";
-      name: string;
-      toolCallId: string;
-      msg: string;
-      args: unknown;
-    }
-  | {
       type: "tool-call-end";
       name: string;
       toolCallId: string;

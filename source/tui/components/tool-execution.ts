@@ -1,14 +1,7 @@
 import type { ToolEvent } from "../../agent/index.ts";
 import { capitalize } from "../../formatting.ts";
 import style from "../../terminal/style.ts";
-import {
-  Container,
-  Loader,
-  Markdown,
-  Spacer,
-  Text,
-  type TUI,
-} from "../index.ts";
+import { Container, type Loader, Spacer, Text } from "../index.ts";
 import type { Component } from "../tui.ts";
 
 type Status = ToolEvent["type"];
@@ -20,15 +13,13 @@ const bgColor = {
 };
 
 export class ToolExecutionComponent extends Container {
-  private tui: TUI;
   private contentContainer: Container;
   private loaderComponent: Loader | null;
   private toolName: string;
   private events: ToolEvent[];
 
-  constructor(tui: TUI, events: ToolEvent[]) {
+  constructor(events: ToolEvent[]) {
     super();
-    this.tui = tui;
     this.loaderComponent = null;
     this.toolName = events[0].name;
     this.events = events;
@@ -65,14 +56,6 @@ export class ToolExecutionComponent extends Container {
       switch (eventType) {
         case "tool-call-start":
           this.getToolCallStartComponent(event, currentStatus);
-          break;
-        case "tool-call-update":
-          this.contentContainer.addChild(
-            new Markdown(this.handleToolUpdateMessage(event.msg), {
-              paddingX: 3,
-              customBgRgb: bgColor,
-            }),
-          );
           break;
         case "tool-call-end":
           // Render the actual tool output with truncation
@@ -111,19 +94,6 @@ export class ToolExecutionComponent extends Container {
             bgColor,
           ),
         );
-        break;
-      case "tool-call-update":
-        if (!this.loaderComponent) {
-          this.loaderComponent = new Loader(
-            this.tui,
-            this.handleToolStartMessage(event),
-            false,
-            bgColor,
-          );
-          this.contentContainer.addChild(this.loaderComponent);
-        } else {
-          this.loaderComponent.setMessage(this.handleToolStartMessage(event));
-        }
         break;
       case "tool-call-end":
         if (this.loaderComponent) {
@@ -167,17 +137,13 @@ export class ToolExecutionComponent extends Container {
     return result;
   }
 
-  private handleToolUpdateMessage(message: string) {
-    return message;
-  }
-
   private renderOutputDisplay(msg: string): Component {
     const lines = msg.split("\n");
-    const MaxVisible = 20;
-    const MidPoint = 10;
+    const MaxVisible = 10;
+    const MidPoint = 5;
 
     if (lines.length <= MaxVisible || lines.length <= 0) {
-      return new Markdown(msg, { paddingX: 3, customBgRgb: bgColor });
+      return new Text(style.dim(msg), 3, 1, bgColor);
     }
 
     const firstFive = lines.slice(0, MidPoint);
@@ -185,17 +151,14 @@ export class ToolExecutionComponent extends Container {
     const indicator = `... (${lines.length - MaxVisible} more lines) ...`;
 
     const truncatedOutput = [
-      firstFive.join("\n"),
-      indicator,
-      lastFive.join("\n"),
+      style.dim(firstFive.join("\n")),
+      style.gray(indicator),
+      style.dim(lastFive.join("\n")),
     ].join("\n");
 
     const container = new Container();
-    const markdown = new Markdown(truncatedOutput, {
-      paddingX: 3,
-      customBgRgb: bgColor,
-    });
-    container.addChild(markdown);
+    const text = new Text(truncatedOutput, 3, 1, bgColor);
+    container.addChild(text);
 
     return container;
   }
@@ -241,11 +204,9 @@ export class ToolExecutionComponent extends Container {
     switch (eventType) {
       case "tool-call-start":
         return 0;
-      case "tool-call-update":
-        return 1;
       case "tool-call-end":
       case "tool-call-error":
-        return 2;
+        return 1;
       default: {
         eventType satisfies never;
         return -1;

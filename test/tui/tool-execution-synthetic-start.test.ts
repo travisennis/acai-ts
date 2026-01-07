@@ -7,7 +7,7 @@ test("processEventsInOrder should create synthetic start event when missing", ()
   // Simulate the processEventsInOrder logic for a single tool call
   const eventsWithoutStart: ToolEvent[] = [
     {
-      type: "tool-call-update",
+      type: "tool-call-end",
       name: "test-tool",
       toolCallId: "test-123",
       msg: "Processing data...",
@@ -48,7 +48,7 @@ test("processEventsInOrder should create synthetic start event when missing", ()
 test("processEventsInOrder should create synthetic start for init-only events", () => {
   const eventsWithInitOnly: ToolEvent[] = [
     {
-      type: "tool-call-update",
+      type: "tool-call-end",
       name: "test-tool",
       toolCallId: "test-123",
       msg: "Initializing tool with parameters",
@@ -92,7 +92,7 @@ test("processEventsInOrder should not create synthetic start when already presen
       args: { input: "test" },
     },
     {
-      type: "tool-call-update",
+      type: "tool-call-end",
       name: "test-tool",
       toolCallId: "test-123",
       msg: "Processing data...",
@@ -132,11 +132,9 @@ test("event ordering should be correct", () => {
     switch (eventType) {
       case "tool-call-start":
         return 0;
-      case "tool-call-update":
-        return 1;
       case "tool-call-end":
       case "tool-call-error":
-        return 2;
+        return 1;
       default:
         return -1;
     }
@@ -154,33 +152,13 @@ test("event ordering should be correct", () => {
   );
   strictEqual(
     getEventIndex({
-      type: "tool-call-update",
-      name: "test",
-      toolCallId: "test",
-      msg: "",
-      args: {},
-    }),
-    1,
-  );
-  strictEqual(
-    getEventIndex({
-      type: "tool-call-update",
-      name: "test",
-      toolCallId: "test",
-      msg: "",
-      args: {},
-    }),
-    1,
-  );
-  strictEqual(
-    getEventIndex({
       type: "tool-call-end",
       name: "test",
       toolCallId: "test",
       msg: "",
       args: {},
     }),
-    2,
+    1,
   );
   strictEqual(
     getEventIndex({
@@ -190,6 +168,6 @@ test("event ordering should be correct", () => {
       msg: "",
       args: {},
     }),
-    2,
+    1,
   );
 });

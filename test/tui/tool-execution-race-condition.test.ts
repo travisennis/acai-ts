@@ -7,7 +7,7 @@ test("processEventsInOrder should handle update-before-start race condition", ()
   // Simulate the exact scenario: update event arrives first
   const eventsOutOfOrder: ToolEvent[] = [
     {
-      type: "tool-call-update",
+      type: "tool-call-end",
       name: "test-tool",
       toolCallId: "test-123",
       msg: "Processing data...",
@@ -47,7 +47,7 @@ test("processEventsInOrder should handle update-before-start race condition", ()
 
   // Verify that no synthetic start was created (since real start exists)
   strictEqual(processed.length, 2);
-  strictEqual(processed[0].type, "tool-call-update"); // Original first event
+  strictEqual(processed[0].type, "tool-call-end"); // Original first event
   strictEqual(processed[1].type, "tool-call-start"); // Original second event
 });
 
@@ -83,7 +83,7 @@ test("processEventsInOrder should handle undefined toolCallId", () => {
   // This shouldn't happen in practice, but let's test edge case
   const eventsWithUndefinedId: ToolEvent[] = [
     {
-      type: "tool-call-update",
+      type: "tool-call-end",
       name: "test-tool",
       toolCallId: "undefined", // This is the edge case
       msg: "Processing data...",
@@ -121,7 +121,7 @@ test("processEventsInOrder should handle events with different toolCallIds", () 
   // This tests if the filtering by toolCallId works correctly
   const mixedEvents: ToolEvent[] = [
     {
-      type: "tool-call-update",
+      type: "tool-call-end",
       name: "test-tool",
       toolCallId: "test-123",
       msg: "Processing data...",
