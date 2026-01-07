@@ -1,170 +1,301 @@
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import { basename } from "node:path";
-import { logger } from "../logger.ts";
 import { createUserMessage } from "../sessions/manager.ts";
+import { getTerminalSize } from "../terminal/control.ts";
 import style from "../terminal/style.ts";
 import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Text } from "../tui/index.ts";
+import {
+  Input,
+  Spacer,
+  Text,
+  Container as TuiContainer,
+} from "../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
+
+interface HandoffFile {
+  name: string;
+  filename: string;
+  createdAt: Date;
+}
 
 export const pickupCommand = (options: CommandOptions): ReplCommand => {
   return {
     command: "/pickup",
     description:
-      "Loads a handoff file into a new session to continue previous work. Usage: /pickup <filename>",
+      "Loads a handoff file into a new session to continue previous work. Usage: /pickup",
 
-    getSubCommands: async (): Promise<string[]> => {
-      const getHandoffFileNames = async (): Promise<string[]> => {
-        const handoffsDir = ".acai/handoffs";
-        try {
-          const dirents = await readdir(handoffsDir, {
-            withFileTypes: true,
-          });
-          return dirents
-            .filter(
-              (dirent) =>
-                dirent.isFile() && dirent.name.match(/^handoff-.*\.md$/),
-            )
-            .map((dirent) => basename(dirent.name, ".md"));
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-            return []; // Directory doesn't exist, return empty array
-          }
-          logger.error(`Error reading handoff files: ${error}`);
-          return []; // Return empty on other errors too, but log them
-        }
-      };
-
-      return await getHandoffFileNames();
-    },
+    getSubCommands: () => Promise.resolve([]),
 
     async handle(
-      args: string[],
+      _args: string[],
       {
         tui,
         container,
+        inputContainer,
         editor,
-      }: { tui: TUI; container: Container; editor: Editor },
+      }: {
+        tui: TUI;
+        container: Container;
+        inputContainer: Container;
+        editor: Editor;
+      },
     ): Promise<"break" | "continue" | "use"> {
-      const { sessionManager: messageHistory, modelManager } = options;
+      const handoffs = await getAvailableHandoffFiles();
 
-      // Validate that filename is provided
-      const filename = args.join(" ").trim();
-      if (!filename) {
-        const availableFiles = await getAvailableHandoffFiles(options);
-        if (availableFiles.length === 0) {
-          container.addChild(
-            new Text(
-              style.red(
-                "No handoff files found. Create a handoff file first using /handoff <purpose>",
-              ),
-              1,
-              0,
-            ),
-          );
-        } else {
-          container.addChild(
-            new Text(style.red("Please specify a handoff file to load."), 0, 1),
-          );
-          container.addChild(new Text("Available handoff files:", 2, 0));
-          availableFiles.forEach((file, index) => {
-            container.addChild(new Text(`  • ${file}.md`, 3 + index, 0));
-          });
-        }
-        tui.requestRender();
-        editor.setText("");
-        return "continue";
-      }
-
-      // Ensure filename has .md extension for file operations
-      const filenameWithExt = filename.endsWith(".md")
-        ? filename
-        : `${filename}.md`;
-      const handoffsDir = ".acai/handoffs";
-      const filepath = `${handoffsDir}/${filenameWithExt}`;
-
-      try {
-        // Read the handoff file
-        const handoffContent = await readFile(filepath, "utf8");
-
+      if (handoffs.length === 0) {
+        container.addChild(
+          new Text(style.yellow("No handoff files found."), 0, 1),
+        );
         container.addChild(
           new Text(
-            `Loading handoff file: ${style.blue(filenameWithExt)}`,
+            "Create a handoff file first using /handoff <purpose>",
             1,
             0,
           ),
         );
-
-        // Create new session (like compact-command does)
-        messageHistory.create(modelManager.getModel("repl").modelId);
-
-        // Append handoff content as user message
-        messageHistory.appendUserMessage(createUserMessage([], handoffContent));
-
-        container.addChild(
-          new Text(
-            style.green("Handoff file loaded successfully into new session."),
-            2,
-            0,
-          ),
-        );
-        container.addChild(
-          new Text("You can now continue with your previous work.", 3, 0),
-        );
-
-        tui.requestRender();
-        editor.setText("");
-        return "use";
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-          container.addChild(
-            new Text(
-              style.red(`Handoff file not found: ${filenameWithExt}`),
-              1,
-              0,
-            ),
-          );
-
-          // Show available files as helpful suggestion
-          const availableFiles = await getAvailableHandoffFiles(options);
-          if (availableFiles.length > 0) {
-            container.addChild(new Text("Available handoff files:", 2, 0));
-            availableFiles.forEach((file, index) => {
-              container.addChild(new Text(`  • ${file}.md`, 3 + index, 0));
-            });
-          }
-        } else {
-          container.addChild(
-            new Text(style.red(`Error reading handoff file: ${error}`), 0, 1),
-          );
-        }
         tui.requestRender();
         editor.setText("");
         return "continue";
       }
+
+      const handoffSelector = new HandoffSelectorComponent(
+        handoffs,
+        async (handoff) => {
+          await loadHandoff(handoff, options, container, tui, editor);
+          hidePickupSelector(inputContainer, editor, tui);
+        },
+        () => {
+          hidePickupSelector(inputContainer, editor, tui);
+        },
+      );
+
+      inputContainer.clear();
+      inputContainer.addChild(handoffSelector);
+      tui.setFocus(handoffSelector);
+      tui.requestRender();
+      return "continue";
     },
   };
 };
 
-async function getAvailableHandoffFiles(
-  _options: CommandOptions,
-): Promise<string[]> {
+async function loadHandoff(
+  handoff: HandoffFile,
+  options: CommandOptions,
+  container: Container,
+  tui: TUI,
+  editor: Editor,
+): Promise<void> {
+  const { sessionManager: messageHistory, modelManager } = options;
+  const filepath = `.acai/handoffs/${handoff.filename}`;
+
+  try {
+    const handoffContent = await readFile(filepath, "utf8");
+
+    container.addChild(
+      new Text(`Loading handoff: ${style.blue(handoff.name)}`, 0, 1),
+    );
+
+    messageHistory.create(modelManager.getModel("repl").modelId);
+    messageHistory.appendUserMessage(createUserMessage([], handoffContent));
+
+    container.addChild(
+      new Text(style.green("Handoff loaded successfully."), 1, 0),
+    );
+    container.addChild(
+      new Text("You can now continue with your previous work.", 2, 0),
+    );
+
+    tui.requestRender();
+    editor.setText("");
+  } catch (error) {
+    container.addChild(
+      new Text(style.red(`Error loading handoff: ${error}`), 0, 1),
+    );
+    tui.requestRender();
+    editor.setText("");
+  }
+}
+
+function hidePickupSelector(
+  editorContainer: Container,
+  editor: Editor,
+  tui: TUI,
+): void {
+  editorContainer.clear();
+  editorContainer.addChild(editor);
+  tui.setFocus(editor);
+}
+
+async function getAvailableHandoffFiles(): Promise<HandoffFile[]> {
   const handoffsDir = ".acai/handoffs";
   try {
     const dirents = await readdir(handoffsDir, {
       withFileTypes: true,
     });
-    return dirents
-      .filter(
-        (dirent) => dirent.isFile() && dirent.name.match(/^handoff-.*\.md$/),
-      )
-      .map((dirent) => basename(dirent.name, ".md"))
-      .sort();
+    const files: HandoffFile[] = [];
+    for (const dirent of dirents) {
+      if (dirent.isFile() && dirent.name.match(/^handoff-.*\.md$/)) {
+        const filepath = `${handoffsDir}/${dirent.name}`;
+        const stats = await stat(filepath);
+        files.push({
+          name: basename(dirent.name, ".md"),
+          filename: dirent.name,
+          createdAt: stats.mtime,
+        });
+      }
+    }
+    files.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    return files;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return [];
     }
-    logger.error(`Error reading handoff files: ${error}`);
     return [];
+  }
+}
+
+class HandoffSelectorComponent extends TuiContainer {
+  private searchInput: Input;
+  private listContainer: TuiContainer;
+  private allHandoffs: HandoffFile[] = [];
+  private filteredHandoffs: HandoffFile[] = [];
+  private selectedIndex = 0;
+  private onSelectCallback: (handoff: HandoffFile) => void;
+  private onCancelCallback: () => void;
+
+  constructor(
+    handoffs: HandoffFile[],
+    onSelect: (handoff: HandoffFile) => void,
+    onCancel: () => void,
+  ) {
+    super();
+
+    this.onSelectCallback = onSelect;
+    this.onCancelCallback = onCancel;
+
+    this.allHandoffs = handoffs;
+    this.filteredHandoffs = handoffs;
+
+    const { columns } = getTerminalSize();
+
+    this.addChild(new Text(style.blue("─".repeat(columns)), 0, 0));
+    this.addChild(new Spacer(1));
+
+    this.searchInput = new Input();
+    this.searchInput.onSubmit = () => {
+      if (this.filteredHandoffs[this.selectedIndex]) {
+        this.handleSelect(this.filteredHandoffs[this.selectedIndex]);
+      }
+    };
+    this.addChild(this.searchInput);
+
+    this.addChild(new Spacer(1));
+
+    this.listContainer = new TuiContainer();
+    this.addChild(this.listContainer);
+
+    this.addChild(new Spacer(1));
+
+    this.addChild(new Text(style.blue("─".repeat(columns)), 0, 0));
+
+    this.updateList();
+  }
+
+  private filterHandoffs(query: string): void {
+    if (!query.trim()) {
+      this.filteredHandoffs = this.allHandoffs;
+    } else {
+      const searchTokens = query
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((t) => t);
+      this.filteredHandoffs = this.allHandoffs.filter((handoff) => {
+        const searchText = handoff.name.toLowerCase();
+        return searchTokens.every((token) => searchText.includes(token));
+      });
+    }
+
+    this.selectedIndex = Math.min(
+      this.selectedIndex,
+      Math.max(0, this.filteredHandoffs.length - 1),
+    );
+    this.updateList();
+  }
+
+  private updateList(): void {
+    this.listContainer.clear();
+
+    const maxVisible = 10;
+    const startIndex = Math.max(
+      0,
+      Math.min(
+        this.selectedIndex - Math.floor(maxVisible / 2),
+        this.filteredHandoffs.length - maxVisible,
+      ),
+    );
+    const endIndex = Math.min(
+      startIndex + maxVisible,
+      this.filteredHandoffs.length,
+    );
+
+    for (let i = startIndex; i < endIndex; i++) {
+      const handoff = this.filteredHandoffs[i];
+      if (!handoff) continue;
+
+      const isSelected = i === this.selectedIndex;
+
+      let line = "";
+      if (isSelected) {
+        const prefix = style.blue("→ ");
+        const date = handoff.createdAt.toLocaleString();
+        line = `${prefix + style.blue(handoff.name)} ${style.gray(`(${date})`)}`;
+      } else {
+        const date = handoff.createdAt.toLocaleString();
+        line = `  ${handoff.name} ${style.gray(`(${date})`)}`;
+      }
+
+      this.listContainer.addChild(new Text(line, 0, 0));
+    }
+
+    if (startIndex > 0 || endIndex < this.filteredHandoffs.length) {
+      const scrollInfo = style.gray(
+        `  (${this.selectedIndex + 1}/${this.filteredHandoffs.length})`,
+      );
+      this.listContainer.addChild(new Text(scrollInfo, 0, 0));
+    }
+
+    if (this.filteredHandoffs.length === 0) {
+      this.listContainer.addChild(
+        new Text(style.gray("  No matching handoffs"), 0, 0),
+      );
+    }
+  }
+
+  handleInput(keyData: string): void {
+    if (keyData === "\x1b[A") {
+      this.selectedIndex = Math.max(0, this.selectedIndex - 1);
+      this.updateList();
+    } else if (keyData === "\x1b[B") {
+      this.selectedIndex = Math.min(
+        this.filteredHandoffs.length - 1,
+        this.selectedIndex + 1,
+      );
+      this.updateList();
+    } else if (keyData === "\r") {
+      const selectedHandoff = this.filteredHandoffs[this.selectedIndex];
+      if (selectedHandoff) {
+        this.handleSelect(selectedHandoff);
+      }
+    } else if (keyData === "\x1b") {
+      this.onCancelCallback();
+    } else {
+      this.searchInput.handleInput(keyData);
+      this.filterHandoffs(this.searchInput.getValue());
+    }
+  }
+
+  private handleSelect(handoff: HandoffFile): void {
+    this.onSelectCallback(handoff);
   }
 }

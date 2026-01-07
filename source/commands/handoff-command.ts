@@ -238,14 +238,14 @@ async function createHandoffDocument(
     throw new Error("AI returned empty response");
   }
 
-  // Generate slug from purpose
+  // Generate slug from purpose (shortened for compact filenames)
   let slug = purpose
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .trim()
-    .slice(0, 50); // Limit length
+    .slice(0, 20); // Shorter limit for compact filenames
 
   // If slug is empty after processing, use a default
   if (!slug) {
@@ -255,7 +255,7 @@ async function createHandoffDocument(
   // Generate filename with timestamp
   const now = new Date();
   const timestamp = now.toISOString().split("T")[0]; // YYYY-MM-DD format
-  const filename = `handoff-${timestamp}-${slug}.md`;
+  const filename = `${timestamp}-${slug}.md`;
   const handoffsDir = ".acai/handoffs";
   const filepath = `${handoffsDir}/${filename}`;
 
