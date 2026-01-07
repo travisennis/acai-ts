@@ -3,15 +3,6 @@
     "path": "/Users/travisennis/.acai/logs/current.log"
   },
   "tools": {
-    "activeTools": [
-      "Agent",
-      "Bash",
-      "Batch",
-      "Think",
-      "Read",
-      "Edit",
-      "Write"
-    ],
     "maxTokens": 30000
   },
   "notify": true
