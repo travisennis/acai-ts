@@ -6,22 +6,12 @@ import { config } from "./config.ts";
 let loggerInstance: pino.Logger | null = null;
 
 function createLogger(): pino.Logger {
-  // Check if we're running in code interpreter context
-  // Try multiple detection methods:
-  // 1. Environment variable (primary method)
-  // 2. Check if we're running with Node.js permissions (fallback)
-  const isCodeInterpreter =
-    process.env["ACAI_CODE_INTERPRETER"] === "true" ||
-    (typeof process.permission !== "undefined" &&
-      process.permission.has !== undefined);
-
   const isTest = process.env["NODE_ENV"] === "test";
 
-  if (isTest || isCodeInterpreter) {
-    // In code interpreter context, use a no-op logger to avoid noise in script output
+  if (isTest) {
     return pino({
-      level: "silent", // Completely disable logging
-      enabled: false, // Disable the logger entirely
+      level: "silent",
+      enabled: false,
     });
   }
   // Normal file-based logging
