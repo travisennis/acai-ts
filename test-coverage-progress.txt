@@ -1,0 +1,1 @@
+- 2026-01-08: Tested history-command.ts exportConversation & generateMarkdown functions (15→31% coverage). Tests: export with sanitized filenames, tool calls/results/errors in markdown export, empty messages. User behavior: exporting conversations to markdown files.

@@ -214,7 +214,7 @@ interface FileChange {
   stats: string;
 }
 
-function parseGitDiffFiles(diffOutput: string): FileChange[] {
+export function parseGitDiffFiles(diffOutput: string): FileChange[] {
   const lines = diffOutput.split("\n");
   const fileChanges: FileChange[] = [];
   let currentFile: FileChange | null = null;
@@ -278,7 +278,10 @@ function parseGitDiffFiles(diffOutput: string): FileChange[] {
   return fileChanges;
 }
 
-function formatFileDiffForDisplay(fileName: string, diff: string): string {
+export function formatFileDiffForDisplay(
+  fileName: string,
+  diff: string,
+): string {
   const lines = diff.split("\n");
   const formattedLines: string[] = [];
 
