@@ -18,7 +18,7 @@ interface ConversationHistory {
   project: string;
 }
 
-async function exportConversation(
+export async function exportConversation(
   history: ConversationHistory,
 ): Promise<string> {
   const sanitizedTitle = history.title
@@ -34,7 +34,7 @@ async function exportConversation(
   return filename;
 }
 
-function generateMarkdown(history: ConversationHistory): string {
+export function generateMarkdown(history: ConversationHistory): string {
   const lines: string[] = [];
 
   // Header
