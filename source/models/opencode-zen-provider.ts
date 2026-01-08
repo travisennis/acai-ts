@@ -32,6 +32,7 @@ const messagesClient = createAnthropic({
 const opencodeZenModels = {
   "glm-4-7": completionsClient("glm-4.7-free"),
   "minimax-m2-1": messagesClient("minimax-m2.1-free"),
+  "opus-4-5": messagesClient("claude-opus-4.5"),
 } as const;
 
 type ModelName = `opencode:${keyof typeof opencodeZenModels}`;
@@ -73,5 +74,17 @@ export const opencodeZenModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 3e-7,
     costPerOutputToken: 0.0000012,
+  },
+  "opencode:opus-4-5": {
+    id: "opencode:opus-4-5",
+    provider: "opencode",
+    contextWindow: 200000,
+    maxOutputTokens: 32000,
+    defaultTemperature: 1.0,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.000005,
+    costPerOutputToken: 0.000025,
   },
 };
