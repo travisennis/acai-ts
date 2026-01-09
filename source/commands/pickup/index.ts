@@ -13,7 +13,7 @@ import {
   getAvailableHandoffFiles,
   hidePickupSelector,
   loadHandoff,
-} from "./utils";
+} from "./utils.ts";
 
 export const pickupCommand = (options: CommandOptions): ReplCommand => {
   return {

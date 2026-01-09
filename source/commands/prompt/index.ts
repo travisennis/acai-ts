@@ -11,7 +11,7 @@ import {
   findPrompt,
   parsePromptFile,
   replaceArgumentPlaceholders,
-} from "./utils";
+} from "./utils.ts";
 
 export async function loadPrompts(config: CommandOptions["config"]) {
   const getPromptsFromDir = async (

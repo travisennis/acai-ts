@@ -9,7 +9,7 @@ import {
   detectImageFormatFromBase64,
   extractMimeTypeFromDataUrl,
   isValidBase64,
-} from "./utils";
+} from "./utils.ts";
 
 export const pasteCommand = ({
   modelManager,
