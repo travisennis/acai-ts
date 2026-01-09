@@ -37,3 +37,22 @@
   - Created minimal types.ts for WorkspaceContext re-export
   - Added comprehensive test file with 8 tests
   - All tests pass
+- completed: add-directory/ (was incomplete)
+  - Added validateDirectory and resolveDirectoryPath utilities to utils.ts
+  - Created minimal types.ts for WorkspaceContext re-export
+  - Added comprehensive test file with 8 tests
+  - All tests pass
+- completed: generate-rules/ (was incomplete)
+  - Fixed missing analyzeConversation function
+  - Fixed utils.ts import paths and type issues
+  - Added comprehensive test file with 11 tests
+  - All tests pass
+- completed: list-directories/ (was incomplete)
+  - Added comprehensive test file with 5 tests
+  - All tests pass
+- completed: list-tools/ (was incomplete)
+  - Added comprehensive test file with 4 tests
+  - All tests pass
+- completed: remove-directory/ (was incomplete)
+  - Added comprehensive test file with 6 tests
+  - All tests pass
