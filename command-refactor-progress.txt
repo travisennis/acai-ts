@@ -78,3 +78,9 @@
   - Extracted isDevelopmentDirectory utility to utils.ts
   - Added comprehensive test file with 7 tests
   - All tests pass, typecheck passes
+- refactored: model-command.ts → model/
+  - Extracted hideModelSelector utility to utils.ts
+  - UI component ModelSelectorComponent stays in index.ts (internal)
+  - Updated import paths to use "../../" for sibling modules
+  - Added comprehensive test file with 2 tests
+  - All tests pass, typecheck passes

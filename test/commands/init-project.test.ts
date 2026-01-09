@@ -1,10 +1,19 @@
 import { strict as assert } from "node:assert";
+import { rmSync } from "node:fs";
 import { describe, it } from "node:test";
 import {
   ensureConfigFile,
   ensureProjectDirectory,
   isDevelopmentDirectory,
 } from "../../source/commands/init-project/utils.ts";
+
+function cleanupTestDir(testDir: string): void {
+  try {
+    rmSync(testDir, { recursive: true, force: true });
+  } catch {
+    // Ignore cleanup errors
+  }
+}
 
 describe("init-project/utils.ts", () => {
   describe("isDevelopmentDirectory", () => {
@@ -31,6 +40,8 @@ describe("init-project/utils.ts", () => {
   describe("ensureProjectDirectory", () => {
     it("creates directory and subdirectories when they do not exist", () => {
       const testDir = "/tmp/acai-test-init-project-1";
+      cleanupTestDir(testDir);
+
       const result = ensureProjectDirectory(testDir);
 
       assert.ok(result.created.length > 0);
@@ -39,10 +50,13 @@ describe("init-project/utils.ts", () => {
       assert.ok(result.created.includes(".acai/prompts/"));
       assert.ok(result.created.includes(".acai/rules/"));
       assert.ok(result.created.includes(".acai/skills/"));
+
+      cleanupTestDir(testDir);
     });
 
     it("marks existing directories as existing", () => {
       const testDir = "/tmp/acai-test-init-project-2";
+      cleanupTestDir(testDir);
       ensureProjectDirectory(testDir);
 
       const result = ensureProjectDirectory(testDir);
@@ -53,12 +67,15 @@ describe("init-project/utils.ts", () => {
       assert.ok(result.existing.includes(".acai/prompts/"));
       assert.ok(result.existing.includes(".acai/rules/"));
       assert.ok(result.existing.includes(".acai/skills/"));
+
+      cleanupTestDir(testDir);
     });
   });
 
   describe("ensureConfigFile", () => {
     it("creates config file when it does not exist", () => {
       const testDir = "/tmp/acai-test-init-project-3";
+      cleanupTestDir(testDir);
       ensureProjectDirectory(testDir);
 
       const result = ensureConfigFile(testDir);
@@ -66,10 +83,13 @@ describe("init-project/utils.ts", () => {
       assert.strictEqual(result.created.length, 1);
       assert.strictEqual(result.existing.length, 0);
       assert.ok(result.created.includes(".acai/acai.json"));
+
+      cleanupTestDir(testDir);
     });
 
     it("marks existing config file as existing", () => {
       const testDir = "/tmp/acai-test-init-project-4";
+      cleanupTestDir(testDir);
       ensureProjectDirectory(testDir);
       ensureConfigFile(testDir);
 
@@ -78,6 +98,8 @@ describe("init-project/utils.ts", () => {
       assert.strictEqual(result.created.length, 0);
       assert.strictEqual(result.existing.length, 1);
       assert.ok(result.existing.includes(".acai/acai.json"));
+
+      cleanupTestDir(testDir);
     });
   });
 });

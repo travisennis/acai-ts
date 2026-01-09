@@ -80,7 +80,9 @@ acai-ts
 │   │   ├── list-directories-command.ts
 │   │   ├── list-tools-command.ts
 │   │   ├── manager.ts
-│   │   ├── model-command.ts
+│   │   ├── model/
+│   │   │   ├── index.ts
+│   │   │   └── utils.ts
 │   │   ├── paste-command.ts
 │   │   ├── pickup-command.ts
 │   │   ├── prompt-command.ts
@@ -355,7 +357,8 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/init-project/index.ts**: Main init-project command implementation.
 - **source/commands/init-project/utils.ts**: Utility functions for project initialization.
 - **source/commands/manager.ts**: Central command registry and executor; manages command registration and execution.
-- **source/commands/model-command.ts**: Command to switch or configure AI models.
+- **source/commands/model/index.ts**: Main model command implementation with model selector component.
+- **source/commands/model/utils.ts**: Utility functions for hiding model selector.
 - **source/commands/paste-command.ts**: Command to paste input from clipboard.
 - **source/commands/pickup-command.ts**: Command to resume a previous conversation.
 - **source/commands/prompt-command.ts**: Command to manage or execute saved prompts.

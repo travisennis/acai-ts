@@ -25,7 +25,7 @@ import { initCommand } from "./init/index.ts";
 import { initProjectCommand } from "./init-project/index.ts";
 import { listDirectoriesCommand } from "./list-directories/index.ts";
 import { listToolsCommand } from "./list-tools/index.ts";
-import { modelCommand } from "./model-command.ts";
+import { modelCommand } from "./model/index.ts";
 import { pasteCommand } from "./paste-command.ts";
 import { pickupCommand } from "./pickup-command.ts";
 import { loadPrompts, promptCommand } from "./prompt-command.ts";

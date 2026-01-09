@@ -3,9 +3,9 @@ import {
   type ModelName,
   modelRegistry,
   models,
-} from "../models/providers.ts";
-import { getTerminalSize } from "../terminal/control.ts";
-import style from "../terminal/style.ts";
+} from "../../models/providers.ts";
+import { getTerminalSize } from "../../terminal/control.ts";
+import style from "../../terminal/style.ts";
 import {
   Container,
   type Editor,
@@ -13,8 +13,9 @@ import {
   Spacer,
   Text,
   type TUI,
-} from "../tui/index.ts";
-import type { CommandOptions, ReplCommand } from "./types.ts";
+} from "../../tui/index.ts";
+import type { CommandOptions, ReplCommand } from "../types.ts";
+import { hideModelSelector } from "./utils.ts";
 
 export function modelCommand(options: CommandOptions): ReplCommand {
   const { modelManager } = options;
@@ -42,27 +43,20 @@ export function modelCommand(options: CommandOptions): ReplCommand {
       const arg = args.join(" ").trim();
       const modelConfig = modelManager.getModelMetadata("repl");
 
-      // No args - display model selector
       if (!arg) {
-        // Create model selector with current model
         const modelSelector = new ModelSelectorComponent(
           modelConfig.id,
           (model) => {
-            // Apply the selected model
             modelManager.setModel("repl", model);
-
-            // Hide selector and show editor again
             hideModelSelector(inputContainer, editor, tui);
             tui.requestRender();
           },
           () => {
-            // Just hide the selector
             hideModelSelector(inputContainer, editor, tui);
             tui.requestRender();
           },
         );
 
-        // Replace editor with selector
         inputContainer.clear();
         inputContainer.addChild(modelSelector);
         tui.setFocus(modelSelector);
@@ -70,10 +64,8 @@ export function modelCommand(options: CommandOptions): ReplCommand {
         return "continue";
       }
 
-      // Switch to a specific model
       if (isValidModel(arg)) {
         try {
-          // Get current and new model configs
           const currentModelConfig = modelManager.getModelMetadata("repl");
           const newModelConfig = modelRegistry[arg as ModelName];
 
@@ -90,7 +82,6 @@ export function modelCommand(options: CommandOptions): ReplCommand {
             return "continue";
           }
 
-          // Check for capability differences
           if (
             currentModelConfig.supportsToolCalling &&
             !newModelConfig.supportsToolCalling
@@ -120,12 +111,7 @@ export function modelCommand(options: CommandOptions): ReplCommand {
             );
           }
 
-          // Update model in ModelManager
           modelManager.setModel("repl", arg as ModelName);
-
-          // container.addChild(
-          //   new Text(style.green(`Model set to ${arg}.`), 3, 0),
-          // );
           tui.requestRender();
           editor.setText("");
           return "continue";
@@ -150,20 +136,6 @@ export function modelCommand(options: CommandOptions): ReplCommand {
   };
 }
 
-function hideModelSelector(
-  editorContainer: Container,
-  editor: Editor,
-  tui: TUI,
-): void {
-  // Replace selector with editor in the container
-  editorContainer.clear();
-  editorContainer.addChild(editor);
-  tui.setFocus(editor);
-}
-
-/**
- * Component that renders a model selector with search
- */
 class ModelSelectorComponent extends Container {
   private searchInput: Input;
   private listContainer: Container;
@@ -185,19 +157,15 @@ class ModelSelectorComponent extends Container {
     this.onSelectCallback = onSelect;
     this.onCancelCallback = onCancel;
 
-    // Load all models
     this.loadModels();
 
     const { columns } = getTerminalSize();
 
-    // Add top border
     this.addChild(new Text(style.blue("─".repeat(columns)), 0, 0));
     this.addChild(new Spacer(1));
 
-    // Create search input
     this.searchInput = new Input();
     this.searchInput.onSubmit = () => {
-      // Enter on search input selects the first filtered item
       if (this.filteredModels[this.selectedIndex]) {
         this.handleSelect(this.filteredModels[this.selectedIndex]);
       }
@@ -206,16 +174,13 @@ class ModelSelectorComponent extends Container {
 
     this.addChild(new Spacer(1));
 
-    // Create list container
     this.listContainer = new Container();
     this.addChild(this.listContainer);
 
     this.addChild(new Spacer(1));
 
-    // Add bottom border
     this.addChild(new Text(style.blue("─".repeat(columns)), 0, 0));
 
-    // Initial render
     this.updateList();
   }
 
@@ -261,7 +226,6 @@ class ModelSelectorComponent extends Container {
       this.filteredModels.length,
     );
 
-    // Show visible slice of filtered models
     for (let i = startIndex; i < endIndex; i++) {
       const item = this.filteredModels[i];
       if (!item) continue;
@@ -273,12 +237,10 @@ class ModelSelectorComponent extends Container {
       if (isSelected) {
         const prefix = style.blue("→ ");
         const modelText = `${item}`;
-        // const providerBadge = style.gray(`[${item.provider}]`);
         const checkmark = isCurrent ? style.green(" ✓") : "";
         line = `${prefix + style.blue(modelText)} ${checkmark}`;
       } else {
         const modelText = `  ${item}`;
-        // const providerBadge = style.gray(`[${item.provider}]`);
         const checkmark = isCurrent ? style.green(" ✓") : "";
         line = `${modelText} ${checkmark}`;
       }
@@ -286,7 +248,6 @@ class ModelSelectorComponent extends Container {
       this.listContainer.addChild(new Text(line, 0, 0));
     }
 
-    // Add scroll indicator if needed
     if (startIndex > 0 || endIndex < this.filteredModels.length) {
       const scrollInfo = style.gray(
         `  (${this.selectedIndex + 1}/${this.filteredModels.length})`,
@@ -294,7 +255,6 @@ class ModelSelectorComponent extends Container {
       this.listContainer.addChild(new Text(scrollInfo, 0, 0));
     }
 
-    // Show "no results" if empty
     if (this.filteredModels.length === 0) {
       this.listContainer.addChild(
         new Text(style.gray("  No matching models"), 0, 0),
@@ -303,32 +263,23 @@ class ModelSelectorComponent extends Container {
   }
 
   handleInput(keyData: string): void {
-    // Up arrow
     if (keyData === "\x1b[A") {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateList();
-    }
-    // Down arrow
-    else if (keyData === "\x1b[B") {
+    } else if (keyData === "\x1b[B") {
       this.selectedIndex = Math.min(
         this.filteredModels.length - 1,
         this.selectedIndex + 1,
       );
       this.updateList();
-    }
-    // Enter
-    else if (keyData === "\r") {
+    } else if (keyData === "\r") {
       const selectedModel = this.filteredModels[this.selectedIndex];
       if (selectedModel) {
         this.handleSelect(selectedModel);
       }
-    }
-    // Escape
-    else if (keyData === "\x1b") {
+    } else if (keyData === "\x1b") {
       this.onCancelCallback();
-    }
-    // Pass everything else to search input
-    else {
+    } else {
       this.searchInput.handleInput(keyData);
       this.filterModels(this.searchInput.getValue());
     }
