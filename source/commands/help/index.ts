@@ -1,11 +1,11 @@
-import type { Container, Editor, TUI } from "../tui/index.ts";
+import type { Container, Editor, TUI } from "../../tui/index.ts";
 import {
   Modal,
   Container as ModalContainer,
   ModalText,
   TableComponent,
-} from "../tui/index.ts";
-import type { CommandOptions, ReplCommand } from "./types.ts";
+} from "../../tui/index.ts";
+import type { CommandOptions, ReplCommand } from "../types.ts";
 
 export const helpCommand = (
   _options: CommandOptions,

@@ -51,7 +51,10 @@ acai-ts
 │   │   ├── generate-rules-command.ts
 │   │   ├── handoff-command.ts
 │   │   ├── health-command.ts
-│   │   ├── help-command.ts
+│   │   ├── help/
+│   │   │   ├── index.ts
+│   │   │   ├── types.ts
+│   │   │   └── utils.ts
 │   │   ├── history/
 │   │   │   ├── index.ts
 │   │   │   ├── types.ts
@@ -66,7 +69,10 @@ acai-ts
 │   │   ├── pickup-command.ts
 │   │   ├── prompt-command.ts
 │   │   ├── remove-directory-command.ts
-│   │   ├── reset-command.ts
+│   │   ├── reset/
+│   │   │   ├── index.ts
+│   │   │   ├── types.ts
+│   │   │   └── utils.ts
 │   │   ├── resources-command.ts
 │   │   ├── review/
 │   │   │   ├── index.ts
@@ -312,7 +318,9 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/generate-rules-command.ts**: Command to generate or update agent rules based on project context.
 - **source/commands/handoff-command.ts**: Command to hand off conversation to a specialized agent.
 - **source/commands/health-command.ts**: Command to check application health, dependencies, and status.
-- **source/commands/help-command.ts**: Command to display help information and available commands.
+- **source/commands/help/index.ts**: Main help command implementation.
+- **source/commands/help/types.ts**: Type definitions for help command.
+- **source/commands/help/utils.ts**: Utility functions for help command.
 - **source/commands/history/index.ts**: Main history command implementation with conversation selector and action handlers.
 - **source/commands/history/types.ts**: Type definitions for conversation history structures.
 - **source/commands/history/utils.ts**: Utility functions for conversation export and markdown generation.
@@ -326,7 +334,9 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/pickup-command.ts**: Command to resume a previous conversation.
 - **source/commands/prompt-command.ts**: Command to manage or execute saved prompts.
 - **source/commands/remove-directory-command.ts**: Command to remove a working directory from workspace.
-- **source/commands/reset-command.ts**: Command to reset conversation, state, or configuration.
+- **source/commands/reset/index.ts**: Main reset command implementation.
+- **source/commands/reset/types.ts**: Type definitions for reset command.
+- **source/commands/reset/utils.ts**: Utility functions for reset command.
 - **source/commands/resources-command.ts**: Command to manage external resources and API configurations.
 - **source/commands/review/index.ts**: Main review command implementation with git diff display.
 - **source/commands/review/types.ts**: Type definitions for file changes and diff parsing.

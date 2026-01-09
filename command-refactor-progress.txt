@@ -4,3 +4,8 @@
   - Added comprehensive test file
   - Import paths adjusted: "../" → "../../" in index.ts
   - All tests pass, typecheck and checks pass
+- refactored: exit-command.ts → exit/
+  - Extracted ExitCommandOptions interface to types.ts
+  - Extracted clearTmpDirectory utility to utils.ts (handles .tmp cleanup)
+  - Main command imports types and utility from sibling modules
+  - All tests pass, typecheck and checks pass

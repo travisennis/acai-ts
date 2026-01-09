@@ -1,7 +1,7 @@
-import { setTerminalTitle } from "../terminal/control.ts";
-import type { FooterComponent } from "../tui/components/footer.ts";
-import type { Container, Editor, TUI } from "../tui/index.ts";
-import type { CommandOptions, ReplCommand } from "./types.ts";
+import { setTerminalTitle } from "../../terminal/control.ts";
+import type { FooterComponent } from "../../tui/components/footer.ts";
+import type { Container, Editor, TUI } from "../../tui/index.ts";
+import type { CommandOptions, ReplCommand } from "../types.ts";
 
 export const resetCommand = ({
   modelManager,
