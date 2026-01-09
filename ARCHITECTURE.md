@@ -39,7 +39,10 @@ acai-ts
 │   ├── cli.ts
 │   ├── commands
 │   │   ├── add-directory-command.ts
-│   │   ├── clear-command.ts
+│   │   ├── clear/
+│   │   │   ├── index.ts
+│   │   │   ├── types.ts
+│   │   │   └── utils.ts
 │   │   ├── copy-command.ts
 │   │   ├── exit-command.ts
 │   │   ├── generate-rules-command.ts
@@ -296,7 +299,9 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 **CLI and Commands**
 - **source/cli.ts**: Handles single-prompt CLI mode execution with the AI model.
 - **source/commands/add-directory-command.ts**: Command to add additional working directories to the workspace.
-- **source/commands/clear-command.ts**: Command to clear the conversation history or screen.
+- **source/commands/clear/index.ts**: Main clear command implementation.
+- **source/commands/clear/types.ts**: Type definitions for clear command.
+- **source/commands/clear/utils.ts**: Utility functions for clear command.
 - **source/commands/copy-command.ts**: Command to copy output or selections to clipboard.
 - **source/commands/exit-command.ts**: Command to exit the REPL gracefully.
 - **source/commands/generate-rules-command.ts**: Command to generate or update agent rules based on project context.
@@ -463,6 +468,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 ### test/ Directory (Tests)
 
 **Command Tests**
+- **test/commands/clear-command.test.ts**: Unit tests for clear command.
 - **test/commands/copy-command.test.ts**: Unit tests for copy command functionality.
 - **test/commands/exit-command.test.ts**: Unit tests for exit command.
 - **test/commands/health-command.test.ts**: Unit tests for health command.
