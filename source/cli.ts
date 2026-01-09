@@ -102,7 +102,7 @@ export class Cli {
         messages: messageHistory.get(),
         temperature: aiConfig.temperature(),
         topP: aiConfig.topP(),
-        stopWhen: stepCountIs(60),
+        stopWhen: stepCountIs(200),
         maxRetries: 2,
         providerOptions: aiConfig.providerOptions(),
         tools: Object.fromEntries(
