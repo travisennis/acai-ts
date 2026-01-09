@@ -99,7 +99,8 @@ acai-ts
 │   │   │   ├── index.ts
 │   │   │   ├── types.ts
 │   │   │   └── utils.ts
-│   │   ├── resources-command.ts
+│   │   ├── resources/
+│   │   │   └── index.ts
 │   │   ├── review/
 │   │   │   ├── index.ts
 │   │   │   ├── types.ts
@@ -378,7 +379,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/reset/index.ts**: Main reset command implementation.
 - **source/commands/reset/types.ts**: Type definitions for reset command.
 - **source/commands/reset/utils.ts**: Utility functions for reset command.
-- **source/commands/resources-command.ts**: Command to manage external resources and API configurations.
+- **source/commands/resources/index.ts**: Main resources command implementation for listing skills and AGENTS.md.
 - **source/commands/save/index.ts**: Main save command implementation.
 - **source/commands/save/types.ts**: Type definitions for save command.
 - **source/commands/save/utils.ts**: Utility functions for save command.

@@ -100,3 +100,7 @@
   - loadPrompts function stays in index.ts (uses async imports)
   - Updated existing test file import path
   - All tests pass, typecheck passes
+- refactored: resources-command.ts → resources/
+  - Simple command, no utilities or types needed
+  - Updated existing test file import path
+  - All tests pass, typecheck passes

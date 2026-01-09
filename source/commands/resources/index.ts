@@ -1,8 +1,12 @@
-import { loadSkills } from "../skills.ts";
-import style from "../terminal/style.ts";
-import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Modal, Container as ModalContainer, ModalText } from "../tui/index.ts";
-import type { CommandOptions, ReplCommand } from "./types.ts";
+import { loadSkills } from "../../skills.ts";
+import style from "../../terminal/style.ts";
+import type { Container, Editor, TUI } from "../../tui/index.ts";
+import {
+  Modal,
+  Container as ModalContainer,
+  ModalText,
+} from "../../tui/index.ts";
+import type { CommandOptions, ReplCommand } from "../types.ts";
 
 export function resourcesCommand(options: CommandOptions): ReplCommand {
   return {
@@ -17,22 +21,18 @@ export function resourcesCommand(options: CommandOptions): ReplCommand {
       { tui, editor }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
       try {
-        // Load all resources
         const skills = await loadSkills();
 
         const agentsFiles = await options.config.readAgentsFiles();
 
-        // Group skills by source
         const projectSkills = skills.filter((s) => s.source === "project");
         const userSkills = skills.filter((s) => s.source === "user");
         const otherSkills = skills.filter(
           (s) => s.source !== "project" && s.source !== "user",
         );
 
-        // Build formatted output
         const lines: string[] = [];
 
-        // Skills sections
         if (projectSkills.length > 0) {
           lines.push(style.gray(`Project Skills (${projectSkills.length}):`));
           for (const skill of projectSkills) {
@@ -72,7 +72,6 @@ ${style.dim(skill.filePath)} ${style.dim(`[${skill.source}]`)}
           lines.push("");
         }
 
-        // AGENTS.md section
         lines.push(style.gray("AGENTS.md:"));
         for (const agentsFile of agentsFiles) {
           if (agentsFile.content.length > 0) {
@@ -82,7 +81,6 @@ ${style.dim(skill.filePath)} ${style.dim(`[${skill.source}]`)}
           }
         }
 
-        // Create modal content
         const modalContent = new ModalContainer();
         const formattedText = lines.join("\n");
 
@@ -92,9 +90,7 @@ ${style.dim(skill.filePath)} ${style.dim(`[${skill.source}]`)}
           modalContent.addChild(new ModalText("No resources found.", 0, 1));
         }
 
-        // Create and show modal
         const modal = new Modal("Active Resources", modalContent, true, () => {
-          // Modal closed callback
           editor.setText("");
           tui.requestRender();
         });
@@ -102,7 +98,6 @@ ${style.dim(skill.filePath)} ${style.dim(`[${skill.source}]`)}
         tui.showModal(modal);
         return "continue";
       } catch (error) {
-        // Show error in modal
         const errorContent = new ModalContainer();
         errorContent.addChild(
           new ModalText(

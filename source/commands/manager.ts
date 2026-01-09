@@ -31,7 +31,7 @@ import { pickupCommand } from "./pickup/index.ts";
 import { loadPrompts, promptCommand } from "./prompt/index.ts";
 import { removeDirectoryCommand } from "./remove-directory/index.ts";
 import { resetCommand } from "./reset/index.ts";
-import { resourcesCommand } from "./resources-command.ts";
+import { resourcesCommand } from "./resources/index.ts";
 import { reviewCommand } from "./review/index.ts";
 import { saveCommand } from "./save/index.ts";
 import { sessionCommand } from "./session-command.ts";
