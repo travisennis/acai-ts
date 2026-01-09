@@ -62,3 +62,9 @@
   - Dynamic import for formatMemoryUsage (avoiding circular deps)
   - Added comprehensive test file with 17 tests
   - All tests pass, typecheck and checks pass
+- refactored: handoff-command.ts → handoff/
+  - Extracted handoffPrompt, generateHandoffSlug, generateHandoffFilename to utils.ts
+  - Fixed slug generation to properly trim leading/trailing hyphens
+  - Updated message type handling for AI SDK compatibility
+  - Added comprehensive test file with 20 tests
+  - All tests pass, typecheck and checks pass

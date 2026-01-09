@@ -21,7 +21,7 @@ import { handoffCommand } from "./handoff/index.ts";
 import { healthCommand } from "./health/index.ts";
 import { helpCommand } from "./help/index.ts";
 import { historyCommand } from "./history/index.ts";
-import { initCommand } from "./init-command.ts";
+import { initCommand } from "./init/index.ts";
 import { initProjectCommand } from "./init-project-command.ts";
 import { listDirectoriesCommand } from "./list-directories/index.ts";
 import { listToolsCommand } from "./list-tools/index.ts";

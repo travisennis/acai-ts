@@ -1,11 +1,11 @@
 import { platform } from "node:os";
 import { stepCountIs, streamText, type ToolExecuteFunction, tool } from "ai";
-import style from "../terminal/style.ts";
-import { type CompleteTools, initTools } from "../tools/index.ts";
-import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Markdown, Spacer, Text } from "../tui/index.ts";
-import { inGitDirectory } from "../utils/git.ts";
-import type { CommandOptions, ReplCommand } from "./types.ts";
+import style from "../../terminal/style.ts";
+import { type CompleteTools, initTools } from "../../tools/index.ts";
+import type { Container, Editor, TUI } from "../../tui/index.ts";
+import { Markdown, Spacer, Text } from "../../tui/index.ts";
+import { inGitDirectory } from "../../utils/git.ts";
+import type { CommandOptions, ReplCommand } from "../types.ts";
 
 const initPrompt = `Please analyze this codebase and create a AGENTS.md file containing:
 1. An overview of the project including how the project is structured and the tech stack used.

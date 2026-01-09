@@ -72,7 +72,8 @@ acai-ts
 │   │   │   ├── index.ts
 │   │   │   ├── types.ts
 │   │   │   └── utils.ts
-│   │   ├── init-command.ts
+│   │   ├── init/
+│   │   │   └── index.ts
 │   │   ├── init-project-command.ts
 │   │   ├── list-directories-command.ts
 │   │   ├── list-tools-command.ts
@@ -348,7 +349,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/history/index.ts**: Main history command implementation with conversation selector and action handlers.
 - **source/commands/history/types.ts**: Type definitions for conversation history structures.
 - **source/commands/history/utils.ts**: Utility functions for conversation export and markdown generation.
-- **source/commands/init-command.ts**: Command to initialize acai configuration for the project.
+- **source/commands/init/index.ts**: Main init command implementation.
 - **source/commands/init-project-command.ts**: Command to initialize a new project with AI assistance.
 - **source/commands/manager.ts**: Central command registry and executor; manages command registration and execution.
 - **source/commands/model-command.ts**: Command to switch or configure AI models.
