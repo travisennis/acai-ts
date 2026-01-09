@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import { describe, it } from "node:test";
-import { parsePromptFile } from "../../source/commands/prompt-command.ts";
+import { parsePromptFile } from "../../source/commands/prompt/utils.ts";
 
 describe("parsePromptFile", () => {
   it("should parse YAML front matter with description and enabled fields", () => {

@@ -90,7 +90,10 @@ acai-ts
 │   │   │   ├── index.ts
 │   │   │   ├── types.ts
 │   │   │   └── utils.ts
-│   │   ├── prompt-command.ts
+│   │   ├── prompt/
+│   │   │   ├── index.ts
+│   │   │   ├── types.ts
+│   │   │   └── utils.ts
 │   │   ├── remove-directory-command.ts
 │   │   ├── reset/
 │   │   │   ├── index.ts
@@ -369,7 +372,9 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/pickup/index.ts**: Main pickup command implementation with handoff selector component.
 - **source/commands/pickup/types.ts**: Type definitions for handoff files.
 - **source/commands/pickup/utils.ts**: Utility functions for loading handoffs and hiding selector.
-- **source/commands/prompt-command.ts**: Command to manage or execute saved prompts.
+- **source/commands/prompt/index.ts**: Main prompt command implementation and loadPrompts function.
+- **source/commands/prompt/types.ts**: Type definitions for prompts and metadata.
+- **source/commands/prompt/utils.ts**: Utility functions for parsing prompts and replacing arguments.
 - **source/commands/reset/index.ts**: Main reset command implementation.
 - **source/commands/reset/types.ts**: Type definitions for reset command.
 - **source/commands/reset/utils.ts**: Utility functions for reset command.

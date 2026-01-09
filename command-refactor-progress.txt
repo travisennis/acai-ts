@@ -94,3 +94,9 @@
   - UI component HandoffSelectorComponent stays in index.ts (internal)
   - Added comprehensive test file with 5 tests
   - All tests pass, typecheck passes
+- refactored: prompt-command.ts → prompt/
+  - Extracted PromptMetadata and ParsedPrompt interfaces to types.ts
+  - Extracted replaceArgumentPlaceholders, parsePromptFile, findPrompt to utils.ts
+  - loadPrompts function stays in index.ts (uses async imports)
+  - Updated existing test file import path
+  - All tests pass, typecheck passes
