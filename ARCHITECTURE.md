@@ -78,9 +78,15 @@ acai-ts
 │   │   │   ├── index.ts
 │   │   │   ├── types.ts
 │   │   │   └── utils.ts
-│   │   ├── save-command.ts
+│   │   ├── save/
+│   │   │   ├── index.ts
+│   │   │   ├── types.ts
+│   │   │   └── utils.ts
 │   │   ├── session-command.ts
-│   │   ├── shell-command.ts
+│   │   ├── shell/
+│   │   │   ├── index.ts
+│   │   │   ├── types.ts
+│   │   │   └── utils.ts
 │   │   └── types.ts
 │   ├── config.ts
 │   ├── dedent.ts
@@ -338,12 +344,16 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/reset/types.ts**: Type definitions for reset command.
 - **source/commands/reset/utils.ts**: Utility functions for reset command.
 - **source/commands/resources-command.ts**: Command to manage external resources and API configurations.
+- **source/commands/save/index.ts**: Main save command implementation.
+- **source/commands/save/types.ts**: Type definitions for save command.
+- **source/commands/save/utils.ts**: Utility functions for save command.
 - **source/commands/review/index.ts**: Main review command implementation with git diff display.
 - **source/commands/review/types.ts**: Type definitions for file changes and diff parsing.
 - **source/commands/review/utils.ts**: Utility functions for parsing git diffs and formatting output.
-- **source/commands/save-command.ts**: Command to save conversation, outputs, or artifacts.
 - **source/commands/session-command.ts**: Command to show comprehensive session information including usage and costs.
-- **source/commands/shell-command.ts**: Command to execute shell commands interactively with output capture.
+- **source/commands/shell/index.ts**: Main shell command implementation.
+- **source/commands/shell/types.ts**: Type definitions for shell command.
+- **source/commands/shell/utils.ts**: Utility functions for shell command.
 - **source/commands/types.ts**: Type definitions for commands, arguments, and options.
 
 **Configuration and Utilities**

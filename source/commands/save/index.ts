@@ -1,7 +1,7 @@
-import style from "../terminal/style.ts";
-import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Spacer, Text } from "../tui/index.ts";
-import type { CommandOptions, ReplCommand } from "./types.ts";
+import style from "../../terminal/style.ts";
+import type { Container, Editor, TUI } from "../../tui/index.ts";
+import { Spacer, Text } from "../../tui/index.ts";
+import type { CommandOptions, ReplCommand } from "../types.ts";
 
 export const saveCommand = ({
   sessionManager: messageHistory,

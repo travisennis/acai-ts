@@ -1,8 +1,8 @@
-import { initExecutionEnvironment } from "../execution/index.ts";
-import style from "../terminal/style.ts";
-import type { Container, Editor, TUI } from "../tui/index.ts";
-import { SelectList, Text } from "../tui/index.ts";
-import type { CommandOptions, ReplCommand } from "./types.ts";
+import { initExecutionEnvironment } from "../../execution/index.ts";
+import style from "../../terminal/style.ts";
+import type { Container, Editor, TUI } from "../../tui/index.ts";
+import { SelectList, Text } from "../../tui/index.ts";
+import type { CommandOptions, ReplCommand } from "../types.ts";
 
 // Command execution timeout in milliseconds
 const DEFAULT_TIMEOUT = 1.5 * 60 * 1000; // 1.5 minutes

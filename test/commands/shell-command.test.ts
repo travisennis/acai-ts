@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { shellCommand } from "../../source/commands/shell-command.ts";
+import { shellCommand } from "../../source/commands/shell/index.ts";
 import {
   createMockCommandOptions,
   createMockContainer,

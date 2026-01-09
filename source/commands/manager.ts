@@ -33,9 +33,9 @@ import { removeDirectoryCommand } from "./remove-directory-command.ts";
 import { resetCommand } from "./reset/index.ts";
 import { resourcesCommand } from "./resources-command.ts";
 import { reviewCommand } from "./review/index.ts";
-import { saveCommand } from "./save-command.ts";
+import { saveCommand } from "./save/index.ts";
 import { sessionCommand } from "./session-command.ts";
-import { shellCommand } from "./shell-command.ts";
+import { shellCommand } from "./shell/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export class CommandManager {

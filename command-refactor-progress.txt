@@ -9,3 +9,12 @@
   - Extracted clearTmpDirectory utility to utils.ts (handles .tmp cleanup)
   - Main command imports types and utility from sibling modules
   - All tests pass, typecheck and checks pass
+- refactored: reset-command.ts → reset/
+  - Simple command, no utilities or types
+  - Created minimal types.ts and utils.ts for consistency
+  - Added comprehensive test file
+  - All tests pass, typecheck and checks pass
+- refactored: help-command.ts → help/
+  - Simple command, no utilities or types
+  - Created minimal types.ts and utils.ts for consistency
+  - All tests pass, typecheck and checks pass
