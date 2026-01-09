@@ -43,9 +43,7 @@ acai-ts
 │   │   │   ├── types.ts
 │   │   │   └── utils.ts
 │   │   ├── clear/
-│   │   │   ├── index.ts
-│   │   │   ├── types.ts
-│   │   │   └── utils.ts
+│   │   │   └── index.ts
 │   │   ├── copy/
 │   │   │   ├── index.ts
 │   │   │   ├── types.ts
@@ -56,7 +54,6 @@ acai-ts
 │   │   │   └── utils.ts
 │   │   ├── generate-rules/
 │   │   │   ├── index.ts
-│   │   │   ├── types.ts
 │   │   │   └── utils.ts
 │   │   ├── handoff/
 │   │   │   ├── index.ts
@@ -65,9 +62,7 @@ acai-ts
 │   │   │   ├── index.ts
 │   │   │   └── utils.ts
 │   │   ├── help/
-│   │   │   ├── index.ts
-│   │   │   ├── types.ts
-│   │   │   └── utils.ts
+│   │   │   └── index.ts
 │   │   ├── history/
 │   │   │   ├── index.ts
 │   │   │   ├── types.ts
@@ -77,8 +72,10 @@ acai-ts
 │   │   ├── init-project/
 │   │   │   ├── index.ts
 │   │   │   └── utils.ts
-│   │   ├── list-directories-command.ts
-│   │   ├── list-tools-command.ts
+│   │   ├── list-directories/
+│   │   │   └── index.ts
+│   │   ├── list-tools/
+│   │   │   └── index.ts
 │   │   ├── manager.ts
 │   │   ├── model/
 │   │   │   ├── index.ts
@@ -94,11 +91,10 @@ acai-ts
 │   │   │   ├── index.ts
 │   │   │   ├── types.ts
 │   │   │   └── utils.ts
-│   │   ├── remove-directory-command.ts
+│   │   ├── remove-directory/
+│   │   │   └── index.ts
 │   │   ├── reset/
-│   │   │   ├── index.ts
-│   │   │   ├── types.ts
-│   │   │   └── utils.ts
+│   │   │   └── index.ts
 │   │   ├── resources/
 │   │   │   └── index.ts
 │   │   ├── review/
@@ -106,16 +102,12 @@ acai-ts
 │   │   │   ├── types.ts
 │   │   │   └── utils.ts
 │   │   ├── save/
-│   │   │   ├── index.ts
-│   │   │   ├── types.ts
-│   │   │   └── utils.ts
+│   │   │   └── index.ts
 │   │   ├── session/
 │   │   │   ├── index.ts
 │   │   │   └── types.ts
 │   │   ├── shell/
-│   │   │   ├── index.ts
-│   │   │   ├── types.ts
-│   │   │   └── utils.ts
+│   │   │   └── index.ts
 │   │   └── types.ts
 │   ├── config.ts
 │   ├── dedent.ts
