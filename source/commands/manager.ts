@@ -12,9 +12,9 @@ import type {
   SlashCommand,
   TUI,
 } from "../tui/index.ts";
-import { addDirectoryCommand } from "./add-directory-command.ts";
+import { addDirectoryCommand } from "./add-directory/index.ts";
 import { clearCommand } from "./clear/index.ts";
-import { copyCommand } from "./copy-command.ts";
+import { copyCommand } from "./copy/index.ts";
 import { exitCommand } from "./exit/index.ts";
 import { generateRulesCommand } from "./generate-rules-command.ts";
 import { handoffCommand } from "./handoff-command.ts";
@@ -23,13 +23,13 @@ import { helpCommand } from "./help/index.ts";
 import { historyCommand } from "./history/index.ts";
 import { initCommand } from "./init-command.ts";
 import { initProjectCommand } from "./init-project-command.ts";
-import { listDirectoriesCommand } from "./list-directories-command.ts";
-import { listToolsCommand } from "./list-tools-command.ts";
+import { listDirectoriesCommand } from "./list-directories/index.ts";
+import { listToolsCommand } from "./list-tools/index.ts";
 import { modelCommand } from "./model-command.ts";
 import { pasteCommand } from "./paste-command.ts";
 import { pickupCommand } from "./pickup-command.ts";
 import { loadPrompts, promptCommand } from "./prompt-command.ts";
-import { removeDirectoryCommand } from "./remove-directory-command.ts";
+import { removeDirectoryCommand } from "./remove-directory/index.ts";
 import { resetCommand } from "./reset/index.ts";
 import { resourcesCommand } from "./resources-command.ts";
 import { reviewCommand } from "./review/index.ts";

@@ -38,12 +38,18 @@ acai-ts
 │   │   └── index.ts
 │   ├── cli.ts
 │   ├── commands
-│   │   ├── add-directory-command.ts
+│   │   ├── add-directory/
+│   │   │   ├── index.ts
+│   │   │   ├── types.ts
+│   │   │   └── utils.ts
 │   │   ├── clear/
 │   │   │   ├── index.ts
 │   │   │   ├── types.ts
 │   │   │   └── utils.ts
-│   │   ├── copy-command.ts
+│   │   ├── copy/
+│   │   │   ├── index.ts
+│   │   │   ├── types.ts
+│   │   │   └── utils.ts
 │   │   ├── exit/
 │   │   │   ├── index.ts
 │   │   │   ├── types.ts
@@ -313,11 +319,12 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 
 **CLI and Commands**
 - **source/cli.ts**: Handles single-prompt CLI mode execution with the AI model.
-- **source/commands/add-directory-command.ts**: Command to add additional working directories to the workspace.
 - **source/commands/clear/index.ts**: Main clear command implementation.
 - **source/commands/clear/types.ts**: Type definitions for clear command.
 - **source/commands/clear/utils.ts**: Utility functions for clear command.
-- **source/commands/copy-command.ts**: Command to copy output or selections to clipboard.
+- **source/commands/copy/index.ts**: Main copy command implementation.
+- **source/commands/copy/types.ts**: Type definitions for copy command.
+- **source/commands/copy/utils.ts**: Utility functions for copy command.
 - **source/commands/exit/index.ts**: Main exit command implementation.
 - **source/commands/exit/types.ts**: Type definitions for exit command.
 - **source/commands/exit/utils.ts**: Utility functions for exit command.
@@ -332,14 +339,11 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/history/utils.ts**: Utility functions for conversation export and markdown generation.
 - **source/commands/init-command.ts**: Command to initialize acai configuration for the project.
 - **source/commands/init-project-command.ts**: Command to initialize a new project with AI assistance.
-- **source/commands/list-directories-command.ts**: Command to list all allowed working directories.
-- **source/commands/list-tools-command.ts**: Command to list all available tools with descriptions.
 - **source/commands/manager.ts**: Central command registry and executor; manages command registration and execution.
 - **source/commands/model-command.ts**: Command to switch or configure AI models.
 - **source/commands/paste-command.ts**: Command to paste input from clipboard.
 - **source/commands/pickup-command.ts**: Command to resume a previous conversation.
 - **source/commands/prompt-command.ts**: Command to manage or execute saved prompts.
-- **source/commands/remove-directory-command.ts**: Command to remove a working directory from workspace.
 - **source/commands/reset/index.ts**: Main reset command implementation.
 - **source/commands/reset/types.ts**: Type definitions for reset command.
 - **source/commands/reset/utils.ts**: Utility functions for reset command.

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ModelMessage, TextPart } from "ai";
-import { copyCommand } from "../../source/commands/copy-command.ts";
+import { copyCommand } from "../../source/commands/copy/index.ts";
 import {
   createMockCommandOptions,
   createMockContainer,
