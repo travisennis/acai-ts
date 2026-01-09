@@ -86,7 +86,10 @@ acai-ts
 │   │   ├── paste/
 │   │   │   ├── index.ts
 │   │   │   └── utils.ts
-│   │   ├── pickup-command.ts
+│   │   ├── pickup/
+│   │   │   ├── index.ts
+│   │   │   ├── types.ts
+│   │   │   └── utils.ts
 │   │   ├── prompt-command.ts
 │   │   ├── remove-directory-command.ts
 │   │   ├── reset/
@@ -363,7 +366,9 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/model/utils.ts**: Utility functions for hiding model selector.
 - **source/commands/paste/index.ts**: Main paste command implementation for clipboard content.
 - **source/commands/paste/utils.ts**: Utility functions for base64 validation and image format detection.
-- **source/commands/pickup-command.ts**: Command to resume a previous conversation.
+- **source/commands/pickup/index.ts**: Main pickup command implementation with handoff selector component.
+- **source/commands/pickup/types.ts**: Type definitions for handoff files.
+- **source/commands/pickup/utils.ts**: Utility functions for loading handoffs and hiding selector.
 - **source/commands/prompt-command.ts**: Command to manage or execute saved prompts.
 - **source/commands/reset/index.ts**: Main reset command implementation.
 - **source/commands/reset/types.ts**: Type definitions for reset command.

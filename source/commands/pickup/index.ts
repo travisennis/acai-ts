@@ -1,22 +1,19 @@
-import { readdir, readFile, stat } from "node:fs/promises";
-import { basename } from "node:path";
-import { createUserMessage } from "../sessions/manager.ts";
-import { getTerminalSize } from "../terminal/control.ts";
-import style from "../terminal/style.ts";
-import type { Container, Editor, TUI } from "../tui/index.ts";
+import { getTerminalSize } from "../../terminal/control.ts";
+import style from "../../terminal/style.ts";
+import type { Container, Editor, TUI } from "../../tui/index.ts";
 import {
   Input,
   Spacer,
   Text,
   Container as TuiContainer,
-} from "../tui/index.ts";
-import type { CommandOptions, ReplCommand } from "./types.ts";
-
-interface HandoffFile {
-  name: string;
-  filename: string;
-  createdAt: Date;
-}
+} from "../../tui/index.ts";
+import type { CommandOptions, ReplCommand } from "../types.ts";
+import type { HandoffFile } from "./types.ts";
+import {
+  getAvailableHandoffFiles,
+  hidePickupSelector,
+  loadHandoff,
+} from "./utils";
 
 export const pickupCommand = (options: CommandOptions): ReplCommand => {
   return {
@@ -77,83 +74,6 @@ export const pickupCommand = (options: CommandOptions): ReplCommand => {
     },
   };
 };
-
-async function loadHandoff(
-  handoff: HandoffFile,
-  options: CommandOptions,
-  container: Container,
-  tui: TUI,
-  editor: Editor,
-): Promise<void> {
-  const { sessionManager: messageHistory, modelManager } = options;
-  const filepath = `.acai/handoffs/${handoff.filename}`;
-
-  try {
-    const handoffContent = await readFile(filepath, "utf8");
-
-    container.addChild(
-      new Text(`Loading handoff: ${style.blue(handoff.name)}`, 0, 1),
-    );
-
-    messageHistory.create(modelManager.getModel("repl").modelId);
-    messageHistory.appendUserMessage(createUserMessage([], handoffContent));
-
-    container.addChild(
-      new Text(style.green("Handoff loaded successfully."), 1, 0),
-    );
-    container.addChild(
-      new Text("You can now continue with your previous work.", 2, 0),
-    );
-
-    tui.requestRender();
-    editor.setText("");
-  } catch (error) {
-    container.addChild(
-      new Text(style.red(`Error loading handoff: ${error}`), 0, 1),
-    );
-    tui.requestRender();
-    editor.setText("");
-  }
-}
-
-function hidePickupSelector(
-  editorContainer: Container,
-  editor: Editor,
-  tui: TUI,
-): void {
-  editorContainer.clear();
-  editorContainer.addChild(editor);
-  tui.setFocus(editor);
-}
-
-async function getAvailableHandoffFiles(): Promise<HandoffFile[]> {
-  const handoffsDir = ".acai/handoffs";
-  try {
-    const dirents = await readdir(handoffsDir, {
-      withFileTypes: true,
-    });
-    const files: HandoffFile[] = [];
-    for (const dirent of dirents) {
-      if (dirent.isFile() && dirent.name.match(/^handoff-.*\.md$/)) {
-        const filepath = `${handoffsDir}/${dirent.name}`;
-        const stats = await stat(filepath);
-        files.push({
-          name: basename(dirent.name, ".md"),
-          filename: dirent.name,
-          createdAt: stats.mtime,
-        });
-      }
-    }
-    files.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-    return files;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return [];
-    }
-    return [];
-  }
-}
 
 class HandoffSelectorComponent extends TuiContainer {
   private searchInput: Input;

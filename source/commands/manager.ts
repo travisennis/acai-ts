@@ -27,7 +27,7 @@ import { listDirectoriesCommand } from "./list-directories/index.ts";
 import { listToolsCommand } from "./list-tools/index.ts";
 import { modelCommand } from "./model/index.ts";
 import { pasteCommand } from "./paste/index.ts";
-import { pickupCommand } from "./pickup-command.ts";
+import { pickupCommand } from "./pickup/index.ts";
 import { loadPrompts, promptCommand } from "./prompt-command.ts";
 import { removeDirectoryCommand } from "./remove-directory/index.ts";
 import { resetCommand } from "./reset/index.ts";
