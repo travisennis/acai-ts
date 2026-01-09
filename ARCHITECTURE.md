@@ -59,7 +59,9 @@ acai-ts
 │   │   │   ├── types.ts
 │   │   │   └── utils.ts
 │   │   ├── handoff-command.ts
-│   │   ├── health-command.ts
+│   │   ├── health/
+│   │   │   ├── index.ts
+│   │   │   └── utils.ts
 │   │   ├── help/
 │   │   │   ├── index.ts
 │   │   │   ├── types.ts
@@ -335,7 +337,8 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/generate-rules/types.ts**: Type definitions for generate-rules command.
 - **source/commands/generate-rules/utils.ts**: Utility functions for generate-rules command.
 - **source/commands/handoff-command.ts**: Command to hand off conversation to a specialized agent.
-- **source/commands/health-command.ts**: Command to check application health, dependencies, and status.
+- **source/commands/health/index.ts**: Main health command implementation.
+- **source/commands/health/utils.ts**: Utility functions for checking environment variables and bash tools.
 - **source/commands/help/index.ts**: Main help command implementation.
 - **source/commands/help/types.ts**: Type definitions for help command.
 - **source/commands/help/utils.ts**: Utility functions for help command.
@@ -504,7 +507,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 **Command Tests**
 - **test/commands/clear-command.test.ts**: Unit tests for clear command.
 - **test/commands/copy-command.test.ts**: Unit tests for copy command functionality.
-- **test/commands/health-command.test.ts**: Unit tests for health command.
+- **test/commands/health.test.ts**: Unit tests for health command utilities.
 - **test/commands/history-command.integration.test.ts**: Integration tests for history command.
 - **test/commands/history-command.test.ts**: Unit tests for history command.
 - **test/commands/prompt-command.test.ts**: Unit tests for prompt command.
