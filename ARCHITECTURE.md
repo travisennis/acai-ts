@@ -74,7 +74,9 @@ acai-ts
 │   │   │   └── utils.ts
 │   │   ├── init/
 │   │   │   └── index.ts
-│   │   ├── init-project-command.ts
+│   │   ├── init-project/
+│   │   │   ├── index.ts
+│   │   │   └── utils.ts
 │   │   ├── list-directories-command.ts
 │   │   ├── list-tools-command.ts
 │   │   ├── manager.ts
@@ -350,7 +352,8 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/history/types.ts**: Type definitions for conversation history structures.
 - **source/commands/history/utils.ts**: Utility functions for conversation export and markdown generation.
 - **source/commands/init/index.ts**: Main init command implementation.
-- **source/commands/init-project-command.ts**: Command to initialize a new project with AI assistance.
+- **source/commands/init-project/index.ts**: Main init-project command implementation.
+- **source/commands/init-project/utils.ts**: Utility functions for project initialization.
 - **source/commands/manager.ts**: Central command registry and executor; manages command registration and execution.
 - **source/commands/model-command.ts**: Command to switch or configure AI models.
 - **source/commands/paste-command.ts**: Command to paste input from clipboard.

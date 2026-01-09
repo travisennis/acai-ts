@@ -68,3 +68,13 @@
   - Updated message type handling for AI SDK compatibility
   - Added comprehensive test file with 20 tests
   - All tests pass, typecheck and checks pass
+- refactored: init-command.ts → init/
+  - Simple command, no utilities or types needed
+  - Updated import paths for one-level-deeper structure
+  - All tests pass, typecheck passes
+- refactored: init-project-command.ts → init-project/
+  - Extracted DEVELOPMENT_DIRECTORY constant to utils.ts
+  - Extracted ensureProjectDirectory and ensureConfigFile utilities to utils.ts
+  - Extracted isDevelopmentDirectory utility to utils.ts
+  - Added comprehensive test file with 7 tests
+  - All tests pass, typecheck passes
