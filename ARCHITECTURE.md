@@ -62,7 +62,10 @@ acai-ts
 │   │   ├── remove-directory-command.ts
 │   │   ├── reset-command.ts
 │   │   ├── resources-command.ts
-│   │   ├── review-command.ts
+│   │   ├── review/
+│   │   │   ├── index.ts
+│   │   │   ├── types.ts
+│   │   │   └── utils.ts
 │   │   ├── save-command.ts
 │   │   ├── session-command.ts
 │   │   ├── shell-command.ts
@@ -315,7 +318,9 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/remove-directory-command.ts**: Command to remove a working directory from workspace.
 - **source/commands/reset-command.ts**: Command to reset conversation, state, or configuration.
 - **source/commands/resources-command.ts**: Command to manage external resources and API configurations.
-- **source/commands/review-command.ts**: Command to initiate code review of changes or files.
+- **source/commands/review/index.ts**: Main review command implementation with git diff display.
+- **source/commands/review/types.ts**: Type definitions for file changes and diff parsing.
+- **source/commands/review/utils.ts**: Utility functions for parsing git diffs and formatting output.
 - **source/commands/save-command.ts**: Command to save conversation, outputs, or artifacts.
 - **source/commands/session-command.ts**: Command to show comprehensive session information including usage and costs.
 - **source/commands/shell-command.ts**: Command to execute shell commands interactively with output capture.

@@ -1,12 +1,12 @@
-/** biome-ignore-all lint/suspicious/noExplicitAny: test file */
+/** biome-ignore-all lint/suspicious/noExplicitAny: test file uses test utilities for internal functions */
 
 import { strict as assertStrict } from "node:assert";
 import { describe, it } from "node:test";
+import { reviewCommand } from "../../source/commands/review/index.ts";
 import {
   formatFileDiffForDisplay,
   parseGitDiffFiles,
-  reviewCommand,
-} from "../../source/commands/review-command.ts";
+} from "../../source/commands/review/utils.ts";
 import type { CommandOptions } from "../../source/commands/types.ts";
 
 describe("reviewCommand", () => {

@@ -32,7 +32,7 @@ import { loadPrompts, promptCommand } from "./prompt-command.ts";
 import { removeDirectoryCommand } from "./remove-directory-command.ts";
 import { resetCommand } from "./reset-command.ts";
 import { resourcesCommand } from "./resources-command.ts";
-import { reviewCommand } from "./review-command.ts";
+import { reviewCommand } from "./review/index.ts";
 import { saveCommand } from "./save-command.ts";
 import { sessionCommand } from "./session-command.ts";
 import { shellCommand } from "./shell-command.ts";
