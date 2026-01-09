@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { before, describe, it, mock } from "node:test";
-import { historyCommand } from "../../source/commands/history-command.ts";
+import { historyCommand } from "../../source/commands/history/index.ts";
 import { SessionManager } from "../../source/sessions/manager.ts";
 import {
   createMockCommandOptions,

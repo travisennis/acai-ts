@@ -7,7 +7,7 @@ import type { ModelMessage } from "ai";
 import {
   exportConversation,
   generateMarkdown,
-} from "../../source/commands/history-command.ts";
+} from "../../source/commands/history/utils.ts";
 import { createTempDir } from "../utils/test-fixtures.ts";
 
 describe("history-command", () => {

@@ -20,7 +20,7 @@ import { generateRulesCommand } from "./generate-rules-command.ts";
 import { handoffCommand } from "./handoff-command.ts";
 import { healthCommand } from "./health-command.ts";
 import { helpCommand } from "./help-command.ts";
-import { historyCommand } from "./history-command.ts";
+import { historyCommand } from "./history/index.ts";
 import { initCommand } from "./init-command.ts";
 import { initProjectCommand } from "./init-project-command.ts";
 import { listDirectoriesCommand } from "./list-directories-command.ts";

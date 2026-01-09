@@ -46,7 +46,10 @@ acai-ts
 │   │   ├── handoff-command.ts
 │   │   ├── health-command.ts
 │   │   ├── help-command.ts
-│   │   ├── history-command.ts
+│   │   ├── history/
+│   │   │   ├── index.ts
+│   │   │   ├── types.ts
+│   │   │   └── utils.ts
 │   │   ├── init-command.ts
 │   │   ├── init-project-command.ts
 │   │   ├── list-directories-command.ts
@@ -297,7 +300,9 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/handoff-command.ts**: Command to hand off conversation to a specialized agent.
 - **source/commands/health-command.ts**: Command to check application health, dependencies, and status.
 - **source/commands/help-command.ts**: Command to display help information and available commands.
-- **source/commands/history-command.ts**: Command to view and manage conversation history.
+- **source/commands/history/index.ts**: Main history command implementation with conversation selector and action handlers.
+- **source/commands/history/types.ts**: Type definitions for conversation history structures.
+- **source/commands/history/utils.ts**: Utility functions for conversation export and markdown generation.
 - **source/commands/init-command.ts**: Command to initialize acai configuration for the project.
 - **source/commands/init-project-command.ts**: Command to initialize a new project with AI assistance.
 - **source/commands/list-directories-command.ts**: Command to list all allowed working directories.
