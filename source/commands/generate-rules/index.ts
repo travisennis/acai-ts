@@ -1,14 +1,14 @@
 import { generateText, type ModelMessage } from "ai";
-import { type ConfigManager, config } from "../config.ts";
-import type { WorkspaceContext } from "../index.ts";
-import { logger } from "../logger.ts"; // Import logger
-import type { ModelManager } from "../models/manager.ts";
-import { systemPrompt } from "../prompts.ts";
-import { createUserMessage } from "../sessions/manager.ts";
-import { getTerminalSize } from "../terminal/control.ts";
-import style from "../terminal/style.ts";
-import type { TokenTracker } from "../tokens/tracker.ts";
-import type { CompleteToolNames } from "../tools/index.ts";
+import type { ConfigManager } from "../../config.ts";
+import type { WorkspaceContext } from "../../index.ts";
+import { logger } from "../../logger.ts";
+import type { ModelManager } from "../../models/manager.ts";
+import { systemPrompt } from "../../prompts.ts";
+import { createUserMessage } from "../../sessions/manager.ts";
+import { getTerminalSize } from "../../terminal/control.ts";
+import style from "../../terminal/style.ts";
+import type { TokenTracker } from "../../tokens/tracker.ts";
+import type { CompleteToolNames } from "../../tools/index.ts";
 import {
   Container,
   type Editor,
@@ -16,14 +16,15 @@ import {
   Spacer,
   Text,
   type TUI,
-} from "../tui/index.ts";
-import type { CommandOptions, ReplCommand } from "./types.ts";
+} from "../../tui/index.ts";
+import type { CommandOptions, ReplCommand } from "../types.ts";
+import { hideRuleSelector } from "./utils.ts";
 
 export const generateRulesCommand = ({
   sessionManager: messageHistory,
   modelManager,
   tokenTracker,
-  config, // This is the config module from CommandOptions
+  config,
   workspace,
 }: CommandOptions): ReplCommand => {
   return {
@@ -87,11 +88,9 @@ export const generateRulesCommand = ({
           return "continue";
         }
 
-        // Create rule selector for TUI mode
         const ruleSelector = new RuleSelectorComponent(
           newRules,
           async (selectedRules) => {
-            // Handle rule selection
             if (selectedRules.length === 0) {
               container.addChild(
                 new Text(style.yellow("No rules selected to save."), 2, 0),
@@ -127,18 +126,15 @@ export const generateRulesCommand = ({
               }
             }
 
-            // Hide selector and show editor again
             hideRuleSelector(inputContainer, editor, tui);
             tui.requestRender();
           },
           () => {
-            // Cancel selection - just hide selector
             hideRuleSelector(inputContainer, editor, tui);
             tui.requestRender();
           },
         );
 
-        // Replace editor with rule selector
         inputContainer.clear();
         inputContainer.addChild(ruleSelector);
         tui.setFocus(ruleSelector);
@@ -159,11 +155,76 @@ export const generateRulesCommand = ({
   };
 };
 
-// Modified System Prompt
-const system = async (
+async function analyzeConversation({
+  modelManager,
+  messages,
+  tokenTracker,
+  config: configManager,
+  workspace,
+}: {
+  modelManager: ModelManager;
+  messages: ModelMessage[];
+  tokenTracker: TokenTracker;
+  config: ConfigManager;
+  workspace: WorkspaceContext;
+}): Promise<string[]> {
+  const learnedRules = await configManager.readCachedLearnedRulesFile();
+  messages.push(
+    createUserMessage([
+      `Analyze this conversation based on the system instructions. Identify points where the user made significant corrections revealing general principles for agent improvement. Infer concise, broadly applicable rules (Always/Never) based *only* on these corrections.
+
+**Key Requirements:**
+- Focus on *generalizable* rules applicable to future, different tasks.
+- Avoid rules tied to the specifics of *this* conversation.
+- Ensure rules don't already exist in <existing-rules>.
+- If no *new, general* rules can be inferred, return an empty list or response.
+- Return *only* the Markdown list of rules, with no preamble or explanation.
+
+<existing-rules>
+${learnedRules}
+</existing-rules>`,
+    ]),
+  );
+
+  const systemPromptText = await createSystemPrompt(configManager, workspace);
+  const { text, usage } = await generateText({
+    model: modelManager.getModel("conversation-analyzer"),
+    maxOutputTokens: 8192,
+    system: systemPromptText,
+    messages: messages,
+  });
+
+  tokenTracker.trackUsage("conversation-analyzer", usage);
+
+  const potentialRulesText = text.trim();
+
+  if (!potentialRulesText || potentialRulesText.length === 0) {
+    return [];
+  }
+
+  const potentialRulesList = potentialRulesText
+    .split("\n")
+    .map((rule) => rule.trim())
+    .filter((rule) => rule.length > 0);
+
+  if (potentialRulesList.length === 0) {
+    return [];
+  }
+
+  const updatedRules =
+    learnedRules.endsWith("\n") || learnedRules.length === 0
+      ? `${learnedRules}${potentialRulesList.join("\n")}`
+      : `${learnedRules}\n${potentialRulesList.join("\n")}`;
+
+  await configManager.writeCachedLearnedRulesFile(updatedRules);
+
+  return potentialRulesList;
+}
+
+async function createSystemPrompt(
   configManager: ConfigManager,
   workspace: WorkspaceContext,
-) => {
+): Promise<string> {
   const projectConfig = await configManager.getConfig();
 
   const sys = await systemPrompt({
@@ -210,94 +271,8 @@ This is the original system prompt the agent operated under:
 <systemPrompt>
 ${sys}
 </systemPrompt>`;
-};
-
-async function analyzeConversation({
-  modelManager,
-  messages,
-  tokenTracker,
-  config: configManager,
-  workspace,
-}: {
-  modelManager: ModelManager;
-  messages: ModelMessage[];
-  tokenTracker: TokenTracker;
-  config: ConfigManager;
-  workspace: WorkspaceContext;
-}): Promise<string[]> {
-  const learnedRules = await configManager.readCachedLearnedRulesFile();
-  // Modified User Message within analyzeConversation
-  messages.push(
-    createUserMessage([
-      `Analyze this conversation based on the system instructions. Identify points where the user made significant corrections revealing general principles for agent improvement. Infer concise, broadly applicable rules (Always/Never) based *only* on these corrections.
-
-**Key Requirements:**
-- Focus on *generalizable* rules applicable to future, different tasks.
-- Avoid rules tied to the specifics of *this* conversation.
-- Ensure rules don't already exist in <existing-rules>.
-- If no *new, general* rules can be inferred, return an empty list or response.
-- Return *only* the Markdown list of rules, with no preamble or explanation.
-
-<existing-rules>
-${learnedRules}
-</existing-rules>`,
-    ]),
-  );
-  const { text, usage } = await generateText({
-    model: modelManager.getModel("conversation-analyzer"),
-    maxOutputTokens: 8192,
-    system: await system(configManager, workspace),
-    messages: messages,
-  });
-
-  tokenTracker.trackUsage("conversation-analyzer", usage);
-
-  // Trim whitespace and check if the response is effectively empty or just whitespace
-  const potentialRulesText = text.trim();
-
-  // Basic check to prevent adding empty lines or just formatting
-  if (!potentialRulesText || potentialRulesText.length === 0) {
-    return []; // Return empty array if no valid rules generated
-  }
-
-  // Split into individual rules, filter out empty lines
-  const potentialRulesList = potentialRulesText
-    .split("\n")
-    .map((rule) => rule.trim())
-    .filter((rule) => rule.length > 0);
-
-  if (potentialRulesList.length === 0) {
-    return []; // Return empty array if splitting results in no rules
-  }
-
-  // Further validation could be added here (e.g., check if it starts with '- ', etc.)
-  // before writing to the file.
-
-  // Append only if there are non-empty potential rules
-  const updatedRules =
-    learnedRules.endsWith("\n") || learnedRules.length === 0
-      ? `${learnedRules}${potentialRulesList.join("\n")}`
-      : `${learnedRules}\n${potentialRulesList.join("\n")}`;
-
-  await config.writeCachedLearnedRulesFile(updatedRules);
-
-  return potentialRulesList; // Return the list of rules that were added
 }
 
-function hideRuleSelector(
-  editorContainer: Container,
-  editor: Editor,
-  tui: TUI,
-): void {
-  // Replace selector with editor in the container
-  editorContainer.clear();
-  editorContainer.addChild(editor);
-  tui.setFocus(editor);
-}
-
-/**
- * Component that renders a rule selector with search and multi-selection
- */
 class RuleSelectorComponent extends Container {
   private searchInput: Input;
   private listContainer: Container;
@@ -318,33 +293,27 @@ class RuleSelectorComponent extends Container {
     this.onSelectCallback = onSelect;
     this.onCancelCallback = onCancel;
 
-    // Load all rules
     this.allRules = rules;
     this.filteredRules = rules;
 
     const { columns } = getTerminalSize();
 
-    // Add top border
     this.addChild(new Text(style.blue("─".repeat(columns)), 0, 0));
     this.addChild(new Spacer(1));
 
-    // Create search input
     this.searchInput = new Input();
     this.searchInput.onSubmit = () => {
-      // Enter on search input toggles selection of current item
       this.toggleSelection(this.selectedIndex);
     };
     this.addChild(this.searchInput);
 
     this.addChild(new Spacer(1));
 
-    // Create list container
     this.listContainer = new Container();
     this.addChild(this.listContainer);
 
     this.addChild(new Spacer(1));
 
-    // Add instructions
     this.addChild(
       new Text(
         style.dim("Space: toggle selection, Enter: confirm, Escape: cancel"),
@@ -354,10 +323,8 @@ class RuleSelectorComponent extends Container {
     );
     this.addChild(new Spacer(1));
 
-    // Add bottom border
     this.addChild(new Text(style.blue("─".repeat(columns)), 0, 0));
 
-    // Initial render
     this.updateList();
   }
 
@@ -398,7 +365,6 @@ class RuleSelectorComponent extends Container {
       this.filteredRules.length,
     );
 
-    // Show visible slice of filtered rules
     for (let i = startIndex; i < endIndex; i++) {
       const rule = this.filteredRules[i];
       if (!rule) continue;
@@ -421,7 +387,6 @@ class RuleSelectorComponent extends Container {
       this.listContainer.addChild(new Text(line, 0, 0));
     }
 
-    // Add scroll indicator if needed
     if (startIndex > 0 || endIndex < this.filteredRules.length) {
       const scrollInfo = style.gray(
         `  (${this.selectedIndex + 1}/${this.filteredRules.length})`,
@@ -429,7 +394,6 @@ class RuleSelectorComponent extends Container {
       this.listContainer.addChild(new Text(scrollInfo, 0, 0));
     }
 
-    // Show "no results" if empty
     if (this.filteredRules.length === 0) {
       this.listContainer.addChild(
         new Text(style.gray("  No matching rules"), 0, 0),
@@ -438,33 +402,22 @@ class RuleSelectorComponent extends Container {
   }
 
   handleInput(keyData: string): void {
-    // Up arrow
     if (keyData === "\x1b[A") {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateList();
-    }
-    // Down arrow
-    else if (keyData === "\x1b[B") {
+    } else if (keyData === "\x1b[B") {
       this.selectedIndex = Math.min(
         this.filteredRules.length - 1,
         this.selectedIndex + 1,
       );
       this.updateList();
-    }
-    // Space - toggle selection
-    else if (keyData === " ") {
+    } else if (keyData === " ") {
       this.toggleSelection(this.selectedIndex);
-    }
-    // Enter - confirm selection
-    else if (keyData === "\r") {
+    } else if (keyData === "\r") {
       this.handleConfirm();
-    }
-    // Escape
-    else if (keyData === "\x1b") {
+    } else if (keyData === "\x1b") {
       this.onCancelCallback();
-    }
-    // Pass everything else to search input
-    else {
+    } else {
       this.searchInput.handleInput(keyData);
       this.filterRules(this.searchInput.getValue());
     }

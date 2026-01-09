@@ -16,7 +16,7 @@ import { addDirectoryCommand } from "./add-directory/index.ts";
 import { clearCommand } from "./clear/index.ts";
 import { copyCommand } from "./copy/index.ts";
 import { exitCommand } from "./exit/index.ts";
-import { generateRulesCommand } from "./generate-rules-command.ts";
+import { generateRulesCommand } from "./generate-rules/index.ts";
 import { handoffCommand } from "./handoff-command.ts";
 import { healthCommand } from "./health-command.ts";
 import { helpCommand } from "./help/index.ts";

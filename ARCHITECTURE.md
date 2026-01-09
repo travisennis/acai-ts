@@ -54,7 +54,10 @@ acai-ts
 │   │   │   ├── index.ts
 │   │   │   ├── types.ts
 │   │   │   └── utils.ts
-│   │   ├── generate-rules-command.ts
+│   │   ├── generate-rules/
+│   │   │   ├── index.ts
+│   │   │   ├── types.ts
+│   │   │   └── utils.ts
 │   │   ├── handoff-command.ts
 │   │   ├── health-command.ts
 │   │   ├── help/
@@ -328,7 +331,9 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/exit/index.ts**: Main exit command implementation.
 - **source/commands/exit/types.ts**: Type definitions for exit command.
 - **source/commands/exit/utils.ts**: Utility functions for exit command.
-- **source/commands/generate-rules-command.ts**: Command to generate or update agent rules based on project context.
+- **source/commands/generate-rules/index.ts**: Main generate-rules command implementation.
+- **source/commands/generate-rules/types.ts**: Type definitions for generate-rules command.
+- **source/commands/generate-rules/utils.ts**: Utility functions for generate-rules command.
 - **source/commands/handoff-command.ts**: Command to hand off conversation to a specialized agent.
 - **source/commands/health-command.ts**: Command to check application health, dependencies, and status.
 - **source/commands/help/index.ts**: Main help command implementation.

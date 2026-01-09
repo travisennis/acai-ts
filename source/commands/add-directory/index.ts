@@ -1,22 +1,19 @@
-import path from "node:path";
-import style from "../terminal/style.ts";
-import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Text } from "../tui/index.ts";
-import type { CommandOptions, ReplCommand } from "./types.ts";
+import style from "../../terminal/style.ts";
+import type { Container, Editor, TUI } from "../../tui/index.ts";
+import { Text } from "../../tui/index.ts";
+import type { CommandOptions, ReplCommand } from "../types.ts";
+import { resolveDirectoryPath, validateDirectory } from "./utils.ts";
 
-export const removeDirectoryCommand = ({
+export const addDirectoryCommand = ({
   workspace,
 }: CommandOptions): ReplCommand => {
   return {
-    command: "/remove-directory",
-    description:
-      "Remove a directory from the list of allowed working directories",
+    command: "/add-directory",
+    description: "Add a directory to the list of allowed working directories",
     getSubCommands: async (): Promise<string[]> => {
-      // Return only non-primary directories for tab completion
-      return workspace.allowedDirs.filter(
-        (dir) => dir !== workspace.primaryDir,
-      );
+      return [];
     },
+
     async handle(
       args: string[],
       {
@@ -28,7 +25,7 @@ export const removeDirectoryCommand = ({
       const directoryPath = args?.[0];
       if (!directoryPath) {
         container.addChild(
-          new Text(style.red("Usage: /remove-directory <path>"), 0, 1),
+          new Text(style.red("Usage: /add-directory <path>"), 0, 1),
         );
         tui.requestRender();
         editor.setText("");
@@ -36,14 +33,13 @@ export const removeDirectoryCommand = ({
       }
 
       try {
-        // Resolve the directory path
-        const resolvedPath = path.resolve(directoryPath);
+        const resolvedPath = resolveDirectoryPath(directoryPath);
+        const isValid = await validateDirectory(resolvedPath);
 
-        // Check if it's the primary directory
-        if (resolvedPath === workspace.primaryDir) {
+        if (!isValid) {
           container.addChild(
             new Text(
-              style.red("Cannot remove the primary working directory"),
+              style.red(`Path is not a directory: ${resolvedPath}`),
               1,
               0,
             ),
@@ -53,12 +49,12 @@ export const removeDirectoryCommand = ({
           return "continue";
         }
 
-        // Find the directory in the list
-        const index = workspace.allowedDirs.indexOf(resolvedPath);
-        if (index === -1) {
+        if (workspace.allowedDirs.includes(resolvedPath)) {
           container.addChild(
             new Text(
-              style.red(`Directory not found in allowed list: ${resolvedPath}`),
+              style.yellow(
+                `Directory already in allowed list: ${resolvedPath}`,
+              ),
               1,
               0,
             ),
@@ -68,11 +64,10 @@ export const removeDirectoryCommand = ({
           return "continue";
         }
 
-        // Remove the directory
-        workspace.allowedDirs.splice(index, 1);
+        workspace.allowedDirs.push(resolvedPath);
         container.addChild(
           new Text(
-            `Removed directory from allowed list: ${style.blue(resolvedPath)}`,
+            `Added directory to allowed list: ${style.blue(resolvedPath)}`,
             1,
             0,
           ),
@@ -84,7 +79,6 @@ export const removeDirectoryCommand = ({
             0,
           ),
         );
-
         tui.requestRender();
         editor.setText("");
         return "continue";
@@ -92,11 +86,7 @@ export const removeDirectoryCommand = ({
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         container.addChild(
-          new Text(
-            style.red(`Failed to remove directory: ${errorMessage}`),
-            1,
-            0,
-          ),
+          new Text(style.red(`Failed to add directory: ${errorMessage}`), 0, 1),
         );
         tui.requestRender();
         editor.setText("");

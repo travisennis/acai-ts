@@ -1,20 +1,22 @@
-import fs from "node:fs/promises";
 import path from "node:path";
-import style from "../terminal/style.ts";
-import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Text } from "../tui/index.ts";
-import type { CommandOptions, ReplCommand } from "./types.ts";
+import style from "../../terminal/style.ts";
+import type { Container, Editor, TUI } from "../../tui/index.ts";
+import { Text } from "../../tui/index.ts";
+import type { CommandOptions, ReplCommand } from "../types.ts";
 
-export const addDirectoryCommand = ({
+export const removeDirectoryCommand = ({
   workspace,
 }: CommandOptions): ReplCommand => {
   return {
-    command: "/add-directory",
-    description: "Add a directory to the list of allowed working directories",
+    command: "/remove-directory",
+    description:
+      "Remove a directory from the list of allowed working directories",
     getSubCommands: async (): Promise<string[]> => {
-      return [];
+      // Return only non-primary directories for tab completion
+      return workspace.allowedDirs.filter(
+        (dir) => dir !== workspace.primaryDir,
+      );
     },
-
     async handle(
       args: string[],
       {
@@ -26,7 +28,7 @@ export const addDirectoryCommand = ({
       const directoryPath = args?.[0];
       if (!directoryPath) {
         container.addChild(
-          new Text(style.red("Usage: /add-directory <path>"), 0, 1),
+          new Text(style.red("Usage: /remove-directory <path>"), 0, 1),
         );
         tui.requestRender();
         editor.setText("");
@@ -34,14 +36,14 @@ export const addDirectoryCommand = ({
       }
 
       try {
-        // Resolve and validate the directory
+        // Resolve the directory path
         const resolvedPath = path.resolve(directoryPath);
-        const stats = await fs.stat(resolvedPath);
 
-        if (!stats.isDirectory()) {
+        // Check if it's the primary directory
+        if (resolvedPath === workspace.primaryDir) {
           container.addChild(
             new Text(
-              style.red(`Path is not a directory: ${resolvedPath}`),
+              style.red("Cannot remove the primary working directory"),
               1,
               0,
             ),
@@ -51,13 +53,12 @@ export const addDirectoryCommand = ({
           return "continue";
         }
 
-        // Check if directory is already in the list
-        if (workspace.allowedDirs.includes(resolvedPath)) {
+        // Find the directory in the list
+        const index = workspace.allowedDirs.indexOf(resolvedPath);
+        if (index === -1) {
           container.addChild(
             new Text(
-              style.yellow(
-                `Directory already in allowed list: ${resolvedPath}`,
-              ),
+              style.red(`Directory not found in allowed list: ${resolvedPath}`),
               1,
               0,
             ),
@@ -67,11 +68,11 @@ export const addDirectoryCommand = ({
           return "continue";
         }
 
-        // Add the directory to the workspace
-        workspace.allowedDirs.push(resolvedPath);
+        // Remove the directory
+        workspace.allowedDirs.splice(index, 1);
         container.addChild(
           new Text(
-            `Added directory to allowed list: ${style.blue(resolvedPath)}`,
+            `Removed directory from allowed list: ${style.blue(resolvedPath)}`,
             1,
             0,
           ),
@@ -83,6 +84,7 @@ export const addDirectoryCommand = ({
             0,
           ),
         );
+
         tui.requestRender();
         editor.setText("");
         return "continue";
@@ -90,7 +92,11 @@ export const addDirectoryCommand = ({
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         container.addChild(
-          new Text(style.red(`Failed to add directory: ${errorMessage}`), 0, 1),
+          new Text(
+            style.red(`Failed to remove directory: ${errorMessage}`),
+            1,
+            0,
+          ),
         );
         tui.requestRender();
         editor.setText("");

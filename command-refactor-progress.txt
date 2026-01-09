@@ -18,3 +18,22 @@
   - Simple command, no utilities or types
   - Created minimal types.ts and utils.ts for consistency
   - All tests pass, typecheck and checks pass
+- refactored: shell-command.ts → shell/
+  - Simple command, no utilities or types
+  - Created minimal types.ts and utils.ts for consistency
+  - Updated existing test import path
+  - All tests pass, typecheck and checks pass
+- refactored: save-command.ts → save/
+  - Simple command, no utilities or types
+  - Created minimal types.ts and utils.ts for consistency
+  - Added comprehensive test file
+  - All tests pass, typecheck and checks pass
+- refactored: copy-command.ts → copy/
+  - Extracted extractLastAssistantText utility to utils.ts
+  - Minimal types.ts (re-exports ai types)
+  - All tests pass, typecheck and checks pass
+- completed: add-directory/ (was incomplete)
+  - Added validateDirectory and resolveDirectoryPath utilities to utils.ts
+  - Created minimal types.ts for WorkspaceContext re-export
+  - Added comprehensive test file with 8 tests
+  - All tests pass

@@ -1,6 +1,10 @@
-import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Modal, Container as ModalContainer, ModalText } from "../tui/index.ts";
-import type { CommandOptions, ReplCommand } from "./types.ts";
+import type { Container, Editor, TUI } from "../../tui/index.ts";
+import {
+  Modal,
+  Container as ModalContainer,
+  ModalText,
+} from "../../tui/index.ts";
+import type { CommandOptions, ReplCommand } from "../types.ts";
 
 export const listDirectoriesCommand = ({
   workspace,
