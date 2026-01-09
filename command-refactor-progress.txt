@@ -56,3 +56,9 @@
 - completed: remove-directory/ (was incomplete)
   - Added comprehensive test file with 6 tests
   - All tests pass
+- refactored: health-command.ts → health/
+  - Extracted ENVIRONMENT_VARIABLES and BASH_TOOLS arrays to utils.ts
+  - Extracted checkEnvironmentVariables and checkTools functions to utils.ts
+  - Dynamic import for formatMemoryUsage (avoiding circular deps)
+  - Added comprehensive test file with 17 tests
+  - All tests pass, typecheck and checks pass

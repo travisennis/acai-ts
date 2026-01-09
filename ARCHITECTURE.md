@@ -58,7 +58,9 @@ acai-ts
 │   │   │   ├── index.ts
 │   │   │   ├── types.ts
 │   │   │   └── utils.ts
-│   │   ├── handoff-command.ts
+│   │   ├── handoff/
+│   │   │   ├── index.ts
+│   │   │   └── utils.ts
 │   │   ├── health/
 │   │   │   ├── index.ts
 │   │   │   └── utils.ts
@@ -336,7 +338,8 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/generate-rules/index.ts**: Main generate-rules command implementation.
 - **source/commands/generate-rules/types.ts**: Type definitions for generate-rules command.
 - **source/commands/generate-rules/utils.ts**: Utility functions for generate-rules command.
-- **source/commands/handoff-command.ts**: Command to hand off conversation to a specialized agent.
+- **source/commands/handoff/index.ts**: Main handoff command implementation.
+- **source/commands/handoff/utils.ts**: Utility functions for handoff prompt generation and filename utilities.
 - **source/commands/health/index.ts**: Main health command implementation.
 - **source/commands/health/utils.ts**: Utility functions for checking environment variables and bash tools.
 - **source/commands/help/index.ts**: Main help command implementation.

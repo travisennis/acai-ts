@@ -17,7 +17,7 @@ import { clearCommand } from "./clear/index.ts";
 import { copyCommand } from "./copy/index.ts";
 import { exitCommand } from "./exit/index.ts";
 import { generateRulesCommand } from "./generate-rules/index.ts";
-import { handoffCommand } from "./handoff-command.ts";
+import { handoffCommand } from "./handoff/index.ts";
 import { healthCommand } from "./health/index.ts";
 import { helpCommand } from "./help/index.ts";
 import { historyCommand } from "./history/index.ts";
