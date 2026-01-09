@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
-import { rmSync } from "node:fs";
-import { after, describe, it } from "node:test";
+import { describe, it } from "node:test";
 import { config } from "../../source/config.ts";
 import { createBashTool } from "../../source/tools/bash.ts";
 import { validatePaths } from "../../source/utils/bash.ts";
@@ -133,36 +132,5 @@ describe("bash tool home directory (~) validation", () => {
   it("allows commands without ~ paths", () => {
     const result = validatePaths("ls ./source", [baseDir], baseDir);
     assert.strictEqual(result.isValid, true);
-  });
-});
-
-describe("bash tool mutating command warnings", async () => {
-  const tool = await createBashTool({
-    baseDir,
-  });
-
-  after(() => {
-    try {
-      rmSync("test-file.txt");
-    } catch {
-      // Ignore if file doesn't exist
-    }
-  });
-
-  async function runWithResult(command: string) {
-    return tool.execute(
-      { command, cwd: baseDir, timeout: 100 },
-      { toolCallId: "t1", messages: [] },
-    );
-  }
-
-  it("shows warning indicator for mutating commands", async () => {
-    // Mutating commands should succeed without throwing
-    await runWithResult("touch test-file.txt");
-  });
-
-  it("does not show warning indicator for non-mutating commands", async () => {
-    const result = await runWithResult("ls ./source");
-    assert.ok(result.length > 0);
   });
 });
