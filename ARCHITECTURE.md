@@ -109,7 +109,9 @@ acai-ts
 │   │   │   ├── index.ts
 │   │   │   ├── types.ts
 │   │   │   └── utils.ts
-│   │   ├── session-command.ts
+│   │   ├── session/
+│   │   │   ├── index.ts
+│   │   │   └── types.ts
 │   │   ├── shell/
 │   │   │   ├── index.ts
 │   │   │   ├── types.ts
@@ -386,7 +388,8 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/review/index.ts**: Main review command implementation with git diff display.
 - **source/commands/review/types.ts**: Type definitions for file changes and diff parsing.
 - **source/commands/review/utils.ts**: Utility functions for parsing git diffs and formatting output.
-- **source/commands/session-command.ts**: Command to show comprehensive session information including usage and costs.
+- **source/commands/session/index.ts**: Main session command implementation for displaying session information.
+- **source/commands/session/types.ts**: Type definitions for session breakdown and token counting utility.
 - **source/commands/shell/index.ts**: Main shell command implementation.
 - **source/commands/shell/types.ts**: Type definitions for shell command.
 - **source/commands/shell/utils.ts**: Utility functions for shell command.

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
-import { sessionCommand } from "../../source/commands/session-command.ts";
+import { sessionCommand } from "../../source/commands/session/index.ts";
 import {
   createMockCommandOptions,
   createMockConfig,

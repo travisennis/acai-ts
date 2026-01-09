@@ -1,47 +1,29 @@
-import { type ModelMessage, tool } from "ai";
+import { tool } from "ai";
 import {
   formatDate,
   formatDuration,
   formatNumber,
   formatPercentage,
-} from "../formatting.ts";
-import { logger } from "../logger.ts";
-import { systemPrompt } from "../prompts.ts";
-import { getTerminalSize } from "../terminal/control.ts";
+} from "../../formatting.ts";
+import { logger } from "../../logger.ts";
+import { systemPrompt } from "../../prompts.ts";
+import { getTerminalSize } from "../../terminal/control.ts";
 import {
   type CompleteToolNames,
   type CompleteTools,
   initTools,
-} from "../tools/index.ts";
-import { prepareTools } from "../tools/utils.ts";
-import type { Editor, TUI } from "../tui/index.ts";
-import { Container, Modal, ModalText, TableComponent } from "../tui/index.ts";
-import type { CommandOptions, ReplCommand } from "./types.ts";
-
-type Breakdown = {
-  systemPrompt: number;
-  tools: number;
-  messages: number;
-  totalUsed: number;
-  window: number;
-  free: number;
-};
-
-/**
- * Count tokens from message history
- */
-function countMessageTokens(
-  messages: ModelMessage[],
-  counter: { count: (s: string) => number },
-): number {
-  if (messages.length === 0) {
-    return 0;
-  }
-
-  // Serialize messages to JSON for token counting
-  const serializedMessages = JSON.stringify(messages);
-  return counter.count(serializedMessages);
-}
+} from "../../tools/index.ts";
+import { prepareTools } from "../../tools/utils.ts";
+import type { Editor, TUI } from "../../tui/index.ts";
+import {
+  Container,
+  Modal,
+  ModalText,
+  TableComponent,
+} from "../../tui/index.ts";
+import type { CommandOptions, ReplCommand } from "../types.ts";
+import type { Breakdown } from "./types.ts";
+import { countMessageTokens } from "./types.ts";
 
 export function sessionCommand({
   config,
@@ -60,13 +42,11 @@ export function sessionCommand({
       _args: string[],
       { tui, editor }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
-      // Get model metadata for context window and costs
       const meta = modelManager.getModelMetadata("repl");
       const window = meta.contextWindow;
 
       const projectConfig = await config.getConfig();
 
-      // 1) System prompt tokens
       const sys = await systemPrompt({
         activeTools: projectConfig.tools.activeTools as
           | CompleteToolNames[]
@@ -76,7 +56,6 @@ export function sessionCommand({
       });
       const systemPromptTokens = tokenCounter.count(sys);
 
-      // 2) Tools tokens
       let toolsTokens = 0;
       try {
         const tools = await initTools({
@@ -99,11 +78,9 @@ export function sessionCommand({
         toolsTokens = 0;
       }
 
-      // 3) Messages tokens
       const messages = messageHistory.get();
       const messagesTokens = countMessageTokens(messages, tokenCounter);
 
-      // 4) Context totals
       const used = systemPromptTokens + toolsTokens + messagesTokens;
       const free = Math.max(0, window - used);
       const usedPercentage = window > 0 ? (used / window) * 100 : 0;
@@ -117,7 +94,6 @@ export function sessionCommand({
         free,
       };
 
-      // 5) Session metadata
       const sessionId = messageHistory.getSessionId();
       const sessionFile = `message-history-${sessionId}.json`;
       const modelId = messageHistory.getModelId() || "Not set";
@@ -128,7 +104,6 @@ export function sessionCommand({
         updatedAt.getTime() - createdAt.getTime(),
       );
 
-      // 6) Message statistics
       const messageCount = messages.length;
       const userMessages = messages.filter((m) => m.role === "user").length;
       const assistantMessages = messages.filter(
@@ -136,26 +111,21 @@ export function sessionCommand({
       ).length;
       const toolMessages = messages.filter((m) => m.role === "tool").length;
 
-      // 7) Token usage and costs
       const totalUsage = tokenTracker.getTotalUsage();
       const inputTokens = totalUsage.inputTokens ?? 0;
       const outputTokens = totalUsage.outputTokens ?? 0;
       const totalTokens = inputTokens + outputTokens;
 
-      // Calculate costs using model metadata
       const inputCost = (meta.costPerInputToken ?? 0) * inputTokens;
       const outputCost = (meta.costPerOutputToken ?? 0) * outputTokens;
       const totalCost = inputCost + outputCost;
 
-      // 8) Usage breakdown by app
       const usageBreakdown = tokenTracker.getUsageBreakdown();
 
       const { columns } = getTerminalSize();
 
-      // Build modal content
       const modalContent = new Container();
 
-      // Session metadata section
       modalContent.addChild(new ModalText("Session Overview", 0, 1));
       modalContent.addChild(new ModalText("─".repeat(columns - 10), 0, 1));
 
@@ -175,9 +145,8 @@ export function sessionCommand({
         }),
       );
 
-      modalContent.addChild(new ModalText("", 0, 1)); // Spacer
+      modalContent.addChild(new ModalText("", 0, 1));
 
-      // Message statistics
       modalContent.addChild(new ModalText("Message Statistics", 0, 1));
       const messageStatsTable = [
         ["Total Messages", String(messageCount)],
@@ -191,9 +160,8 @@ export function sessionCommand({
         }),
       );
 
-      modalContent.addChild(new ModalText("", 0, 1)); // Spacer
+      modalContent.addChild(new ModalText("", 0, 1));
 
-      // Context usage with progress bar
       modalContent.addChild(new ModalText("Context Usage", 0, 1));
       const contextTable = [
         [
@@ -229,20 +197,17 @@ export function sessionCommand({
         }),
       );
 
-      // Progress bar
-      const barWidth = Math.max(20, Math.min(50, columns - 40)); // Responsive width
+      const barWidth = Math.max(20, Math.min(50, columns - 40));
       const filled = Math.floor((usedPercentage / 100) * barWidth);
       const empty = barWidth - filled;
       const progressBar = `[${"█".repeat(filled)}${"░".repeat(empty)}] ${usedPercentage.toFixed(1)}%`;
-      modalContent.addChild(new ModalText("", 0, 1)); // Spacer
+      modalContent.addChild(new ModalText("", 0, 1));
       modalContent.addChild(new ModalText(progressBar, 0, 1));
 
-      modalContent.addChild(new ModalText("", 0, 1)); // Spacer
+      modalContent.addChild(new ModalText("", 0, 1));
 
-      // Token usage and costs
       modalContent.addChild(new ModalText("Token Usage & Costs", 0, 1));
 
-      // Format costs appropriately
       const formatCost = (cost: number): string => {
         if (cost === 0) return "$0.00";
         if (cost < 0.01) return `$${cost.toFixed(6)}`;
@@ -275,9 +240,8 @@ export function sessionCommand({
         }),
       );
 
-      modalContent.addChild(new ModalText("", 0, 1)); // Spacer
+      modalContent.addChild(new ModalText("", 0, 1));
 
-      // Usage breakdown by app
       if (Object.keys(usageBreakdown).length > 0) {
         modalContent.addChild(new ModalText("Usage by Application", 0, 1));
         const usageEntries = Object.entries(usageBreakdown);
@@ -294,9 +258,7 @@ export function sessionCommand({
         modalContent.addChild(new ModalText("No usage data available", 0, 1));
       }
 
-      // Create and show modal
       const modal = new Modal("Session Information", modalContent, true, () => {
-        // Modal closed callback
         editor.setText("");
         tui.requestRender();
       });
