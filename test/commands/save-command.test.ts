@@ -2,10 +2,11 @@ import { strict as assert } from "node:assert";
 import { describe, it } from "node:test";
 import { saveCommand } from "../../source/commands/save/index.ts";
 import type { CommandOptions } from "../../source/commands/types.ts";
+import { fromAny } from "../utils/mocking.ts";
 
 describe("saveCommand", () => {
   const mockOptions: CommandOptions = {
-    promptManager: {
+    promptManager: fromAny({
       set: () => {},
       get: () => "",
       addContext: () => {},
@@ -13,38 +14,38 @@ describe("saveCommand", () => {
       getContext: () => "",
       setSystemPrompt: () => {},
       getSystemPrompt: () => "",
-    } as any,
-    modelManager: {
+    }),
+    modelManager: fromAny({
       setModel: () => {},
       getModel: () => "",
       listModels: () => [],
-    } as any,
-    sessionManager: {
+    }),
+    sessionManager: fromAny({
       addMessage: () => {},
       getMessages: () => [],
       clear: () => {},
       save: () => Promise.resolve(),
       restore: () => {},
       isEmpty: () => false,
-    } as any,
-    tokenTracker: {
+    }),
+    tokenTracker: fromAny({
       track: () => {},
       getTotal: () => 0,
       reset: () => {},
-    } as any,
-    config: {
+    }),
+    config: fromAny({
       get: () => ({}),
       set: () => {},
       save: () => {},
-    } as any,
-    tokenCounter: {
+    }),
+    tokenCounter: fromAny({
       count: () => 0,
-    } as any,
+    }),
     promptHistory: [],
-    workspace: {
+    workspace: fromAny({
       primaryDir: "/tmp",
       allowedDirs: ["/tmp"],
-    } as any,
+    }),
   };
 
   it("should be defined", () => {
@@ -67,16 +68,16 @@ describe("saveCommand", () => {
   it("should return continue when handle is called", async () => {
     const command = saveCommand(mockOptions);
 
-    const mockTui = {
+    const mockTui = fromAny({
       requestRender: () => {},
-    } as any;
-    const mockContainer = {
+    });
+    const mockContainer = fromAny({
       addChild: () => {},
       clear: () => {},
-    } as any;
-    const mockEditor = {
+    });
+    const mockEditor = fromAny({
       setText: () => {},
-    } as any;
+    });
 
     const result = await command.handle([], {
       tui: mockTui,

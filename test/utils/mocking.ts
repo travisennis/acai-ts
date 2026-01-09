@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: using mocks */
 import path from "node:path";
 import { mock } from "node:test";
 import type { ModelMessage } from "ai";
@@ -9,6 +10,56 @@ import type { SessionManager } from "../../source/sessions/manager.ts";
 import type { TokenCounter } from "../../source/tokens/counter.ts";
 import type { TokenTracker } from "../../source/tokens/tracker.ts";
 import type { Container, Editor, TUI } from "../../source/tui/index.ts";
+
+export type NoInfer<T> = [T][T extends any ? 0 : never];
+
+/**
+ * Adapted from type-fest's PartialDeep
+ */
+export type PartialDeep<T> = T extends (...args: any[]) => any
+  ? PartialDeepObject<T> | undefined
+  : T extends object
+    ? T extends ReadonlyArray<infer ItemType> // Test for arrays/tuples, per https://github.com/microsoft/TypeScript/issues/35156
+      ? ItemType[] extends T // Test for arrays (non-tuples) specifically
+        ? readonly ItemType[] extends T // Differentiate readonly and mutable arrays
+          ? ReadonlyArray<PartialDeep<ItemType | undefined>>
+          : Array<PartialDeep<ItemType | undefined>>
+        : PartialDeepObject<T> // Tuples behave properly
+      : PartialDeepObject<T>
+    : T;
+
+export type PartialDeepObject<ObjectType extends object> = {
+  [KeyType in keyof ObjectType]?: PartialDeep<ObjectType[KeyType]>;
+};
+
+/**
+ * Lets you pass a deep partial to a slot expecting a type.
+ *
+ * @returns whatever you pass in
+ */
+export const fromPartial = <T>(mock: PartialDeep<NoInfer<T>>): T => {
+  return mock as T;
+};
+
+/**
+ * Lets you pass anything to a mock function, while also retaining
+ * autocomplete for when you _do_ want to pass the exact thing.
+ *
+ * @returns whatever you pass in, typed as `any`
+ */
+export const fromAny = <T>(mock: T | NoInfer<T>): any => {
+  // T => {
+  return mock;
+};
+
+/**
+ * Forces you to pass the exact type of the thing the slot requires
+ *
+ * @returns whatever you pass in
+ */
+export const fromExact = <T>(mock: T): T => {
+  return mock;
+};
 
 /**
  * Creates a mock TUI component for testing
@@ -114,7 +165,6 @@ export function createMockModelManager(
   } as unknown as ModelManager;
 
   // Add mock property for easier access in tests
-  // biome-ignore lint/suspicious/noExplicitAny: for testing, fix later
   (mockManager as any).mock = {
     getModel: getModelMock,
     getModelMetadata: getModelMetadataMock,

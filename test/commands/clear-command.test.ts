@@ -2,10 +2,11 @@ import { strict as assert } from "node:assert";
 import { describe, it } from "node:test";
 import { clearCommand } from "../../source/commands/clear/index.ts";
 import type { CommandOptions } from "../../source/commands/types.ts";
+import { fromAny } from "../utils/mocking.ts";
 
 describe("clearCommand", () => {
   const mockOptions: CommandOptions = {
-    promptManager: {
+    promptManager: fromAny({
       set: () => {},
       get: () => "",
       addContext: () => {},
@@ -13,37 +14,37 @@ describe("clearCommand", () => {
       getContext: () => "",
       setSystemPrompt: () => {},
       getSystemPrompt: () => "",
-    } as any,
-    modelManager: {
+    }),
+    modelManager: fromAny({
       setModel: () => {},
       getModel: () => "",
       listModels: () => [],
-    } as any,
-    sessionManager: {
+    }),
+    sessionManager: fromAny({
       addMessage: () => {},
       getMessages: () => [],
       clear: () => {},
       save: () => {},
       restore: () => {},
-    } as any,
-    tokenTracker: {
+    }),
+    tokenTracker: fromAny({
       track: () => {},
       getTotal: () => 0,
       reset: () => {},
-    } as any,
-    config: {
+    }),
+    config: fromAny({
       get: () => ({}),
       set: () => {},
       save: () => {},
-    } as any,
-    tokenCounter: {
+    }),
+    tokenCounter: fromAny({
       count: () => 0,
-    } as any,
+    }),
     promptHistory: [],
-    workspace: {
+    workspace: fromAny({
       primaryDir: "/tmp",
       allowedDirs: ["/tmp"],
-    } as any,
+    }),
   };
 
   it("should be defined", () => {
@@ -68,15 +69,15 @@ describe("clearCommand", () => {
 
     // We can't fully test the handle method without a full TUI setup,
     // but we can verify it exists and returns a promise
-    const mockTui = {
+    const mockTui = fromAny({
       requestRender: () => {},
-    } as any;
-    const mockContainer = {
+    });
+    const mockContainer = fromAny({
       clear: () => {},
-    } as any;
-    const mockEditor = {
+    });
+    const mockEditor = fromAny({
       setText: () => {},
-    } as any;
+    });
 
     const result = await command.handle([], {
       tui: mockTui,
