@@ -83,7 +83,9 @@ acai-ts
 │   │   ├── model/
 │   │   │   ├── index.ts
 │   │   │   └── utils.ts
-│   │   ├── paste-command.ts
+│   │   ├── paste/
+│   │   │   ├── index.ts
+│   │   │   └── utils.ts
 │   │   ├── pickup-command.ts
 │   │   ├── prompt-command.ts
 │   │   ├── remove-directory-command.ts
@@ -359,7 +361,8 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/manager.ts**: Central command registry and executor; manages command registration and execution.
 - **source/commands/model/index.ts**: Main model command implementation with model selector component.
 - **source/commands/model/utils.ts**: Utility functions for hiding model selector.
-- **source/commands/paste-command.ts**: Command to paste input from clipboard.
+- **source/commands/paste/index.ts**: Main paste command implementation for clipboard content.
+- **source/commands/paste/utils.ts**: Utility functions for base64 validation and image format detection.
 - **source/commands/pickup-command.ts**: Command to resume a previous conversation.
 - **source/commands/prompt-command.ts**: Command to manage or execute saved prompts.
 - **source/commands/reset/index.ts**: Main reset command implementation.

@@ -84,3 +84,7 @@
   - Updated import paths to use "../../" for sibling modules
   - Added comprehensive test file with 2 tests
   - All tests pass, typecheck passes
+- refactored: paste-command.ts → paste/
+  - Extracted 4 utilities to utils.ts: extractBase64Content, isValidBase64, detectImageFormatFromBase64, extractMimeTypeFromDataUrl
+  - Added comprehensive test file with 20 tests
+  - All tests pass, typecheck passes
