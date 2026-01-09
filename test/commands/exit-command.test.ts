@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
-import {
-  type ExitCommandOptions,
-  exitCommand,
-} from "../../source/commands/exit-command.ts";
+import { exitCommand } from "../../source/commands/exit/index.ts";
+import type { ExitCommandOptions } from "../../source/commands/exit/types.ts";
 import {
   createMockContainer,
   createMockEditor,

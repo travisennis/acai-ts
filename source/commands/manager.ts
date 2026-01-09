@@ -15,7 +15,7 @@ import type {
 import { addDirectoryCommand } from "./add-directory-command.ts";
 import { clearCommand } from "./clear/index.ts";
 import { copyCommand } from "./copy-command.ts";
-import { exitCommand } from "./exit-command.ts";
+import { exitCommand } from "./exit/index.ts";
 import { generateRulesCommand } from "./generate-rules-command.ts";
 import { handoffCommand } from "./handoff-command.ts";
 import { healthCommand } from "./health-command.ts";

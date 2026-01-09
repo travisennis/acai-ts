@@ -1,1 +1,2 @@
 - 2026-01-08: Tested history-command.ts exportConversation & generateMarkdown functions (15→31% coverage). Tests: export with sanitized filenames, tool calls/results/errors in markdown export, empty messages. User behavior: exporting conversations to markdown files.
+- 2026-01-08: Tested review-command.ts parseGitDiffFiles & formatFileDiffForDisplay functions (10→41% coverage). Tests: single/multiple files, new/deleted files, empty input, non-diff input, files without @@ hunk headers, diff formatting. User behavior: viewing git diff changes in /review command.

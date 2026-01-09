@@ -44,7 +44,10 @@ acai-ts
 │   │   │   ├── types.ts
 │   │   │   └── utils.ts
 │   │   ├── copy-command.ts
-│   │   ├── exit-command.ts
+│   │   ├── exit/
+│   │   │   ├── index.ts
+│   │   │   ├── types.ts
+│   │   │   └── utils.ts
 │   │   ├── generate-rules-command.ts
 │   │   ├── handoff-command.ts
 │   │   ├── health-command.ts
@@ -303,7 +306,9 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/clear/types.ts**: Type definitions for clear command.
 - **source/commands/clear/utils.ts**: Utility functions for clear command.
 - **source/commands/copy-command.ts**: Command to copy output or selections to clipboard.
-- **source/commands/exit-command.ts**: Command to exit the REPL gracefully.
+- **source/commands/exit/index.ts**: Main exit command implementation.
+- **source/commands/exit/types.ts**: Type definitions for exit command.
+- **source/commands/exit/utils.ts**: Utility functions for exit command.
 - **source/commands/generate-rules-command.ts**: Command to generate or update agent rules based on project context.
 - **source/commands/handoff-command.ts**: Command to hand off conversation to a specialized agent.
 - **source/commands/health-command.ts**: Command to check application health, dependencies, and status.
@@ -470,7 +475,6 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 **Command Tests**
 - **test/commands/clear-command.test.ts**: Unit tests for clear command.
 - **test/commands/copy-command.test.ts**: Unit tests for copy command functionality.
-- **test/commands/exit-command.test.ts**: Unit tests for exit command.
 - **test/commands/health-command.test.ts**: Unit tests for health command.
 - **test/commands/history-command.integration.test.ts**: Integration tests for history command.
 - **test/commands/history-command.test.ts**: Unit tests for history command.

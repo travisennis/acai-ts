@@ -1,0 +1,6 @@
+- refactored: clear-command.ts → clear/
+  - Simple command, no utilities or types
+  - Created minimal types.ts and utils.ts for consistency
+  - Added comprehensive test file
+  - Import paths adjusted: "../" → "../../" in index.ts
+  - All tests pass, typecheck and checks pass

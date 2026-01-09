@@ -1,9 +1,7 @@
-import path from "node:path";
-import { logger } from "../logger.ts";
-import type { Container, Editor, TUI } from "../tui/index.ts";
-import { Text } from "../tui/index.ts";
-import { clearDirectory } from "../utils/filesystem/operations.ts";
-import type { ReplCommand } from "./types.ts";
+import type { Container, Editor, TUI } from "../../tui/index.ts";
+import { Text } from "../../tui/index.ts";
+import type { ReplCommand } from "../types.ts";
+import { clearTmpDirectory } from "./utils.ts";
 
 export interface ExitCommandOptions {
   sessionManager: {
@@ -35,13 +33,7 @@ export const exitCommand = ({
       }
 
       // Clear the .tmp directory on exit
-      try {
-        const tmpDirPath = path.join(baseDir ?? process.cwd(), ".tmp");
-        await clearDirectory(tmpDirPath);
-      } catch (error) {
-        // Log error but don't block exit
-        logger.error(error, "Failed to clear .tmp directory:");
-      }
+      await clearTmpDirectory(baseDir);
 
       container.addChild(new Text("Exiting...", 0, 1));
       tui.requestRender();
