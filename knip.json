@@ -2,5 +2,9 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "project": ["source/**/*.{js,ts}!"],
   "entry": ["source/index.ts!"],
-  "ignoreDependencies": ["pino-roll", "pino-pretty", "@commitlint/config-conventional"]
+  "ignoreDependencies": [
+    "pino-roll",
+    "pino-pretty",
+    "@commitlint/config-conventional"
+  ]
 }
