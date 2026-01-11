@@ -29,6 +29,7 @@ import {
   Container,
   Editor,
   Loader,
+  NotificationComponent,
   ProcessTerminal,
   Spacer,
   Text,
@@ -59,12 +60,14 @@ export class NewRepl {
   private statusContainer: Container;
   private footer: FooterComponent;
   private editorContainer: Container; // Container to swap between editor and selector
+  private notification: NotificationComponent;
   private isInitialized: boolean;
   private onInputCallback?: (text: string) => void;
   private loadingAnimation: Loader | null = null;
   private onInterruptCallback?: () => void;
   private onExitCallback?: (sessionId: string) => void;
   private lastSigintTime = 0;
+  private exitNotificationTimer?: NodeJS.Timeout;
   private pendingTools: Map<string, ToolExecutionComponent>;
   private tools?: CompleteToolSet;
 
@@ -102,6 +105,12 @@ export class NewRepl {
     this.isInitialized = false;
     this.pendingTools = new Map();
     this.tools = options.tools;
+    this.notification = new NotificationComponent(
+      "",
+      { r: 64, g: 64, b: 64 },
+      style.yellow,
+      1,
+    );
   }
 
   async init() {
@@ -152,6 +161,7 @@ export class NewRepl {
     this.tui.addChild(new Spacer(1));
     this.tui.addChild(this.editorContainer); // Use container that can hold editor or selector
     this.tui.addChild(this.footer);
+    this.tui.addChild(this.notification);
     this.tui.setFocus(this.editor);
 
     // Set up custom key handlers on the editor
@@ -698,20 +708,49 @@ export class NewRepl {
     // Handle Ctrl+C double-press logic
     const now = Date.now();
     const timeSinceLastCtrlC = now - this.lastSigintTime;
+    const DoublePressThreshold = 1000; // 1 second
 
-    if (timeSinceLastCtrlC < 500) {
-      // Second Ctrl+C within 500ms - exit
+    if (timeSinceLastCtrlC < DoublePressThreshold) {
+      // Second Ctrl+C within threshold - exit
+      // Clear notification before exiting
+      if (this.exitNotificationTimer) {
+        clearTimeout(this.exitNotificationTimer);
+        this.exitNotificationTimer = undefined;
+      }
+      this.notification.setMessage("");
+      this.tui.requestRender();
+
       void this.options.messageHistory.save();
       this.stop(true);
       process.exit(0);
     } else {
-      // First Ctrl+C - clear the editor
+      // First Ctrl+C - clear the editor and show notification
       this.clearEditor();
+      this.notification.setMessage("Press Ctrl+C again to exit");
+      this.tui.requestRender();
       this.lastSigintTime = now;
+
+      // Clear notification after threshold if no second Ctrl+C
+      if (this.exitNotificationTimer) {
+        clearTimeout(this.exitNotificationTimer);
+      }
+      this.exitNotificationTimer = setTimeout(() => {
+        if (this.isInitialized) {
+          this.notification.setMessage("");
+          this.exitNotificationTimer = undefined;
+          this.tui.requestRender();
+        }
+      }, DoublePressThreshold);
     }
   }
 
   stop(showExitMessage = false): void {
+    // Clear any pending notification timer
+    if (this.exitNotificationTimer) {
+      clearTimeout(this.exitNotificationTimer);
+      this.exitNotificationTimer = undefined;
+    }
+
     if (showExitMessage && this.onExitCallback) {
       this.onExitCallback(this.options.messageHistory.getSessionId());
     }

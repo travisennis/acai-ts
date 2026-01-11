@@ -488,6 +488,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/tui/components/loader.ts**: Loading indicator component with animations.
 - **source/tui/components/markdown.ts**: Markdown rendering component for rich text.
 - **source/tui/components/modal.ts**: Modal dialog component for overlays.
+- **source/tui/components/notification.ts**: Notification component for displaying temporary messages.
 - **source/tui/components/progress-bar.ts**: Progress bar component for operations.
 - **source/tui/components/prompt-status.ts**: Status display for prompt state.
 - **source/tui/components/select-list.ts**: Selectable list component for choices.

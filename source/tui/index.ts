@@ -14,6 +14,7 @@ export { Input } from "./components/input.ts";
 export { Loader } from "./components/loader.ts";
 export { Markdown } from "./components/markdown.ts";
 export { Modal, ModalText } from "./components/modal.ts";
+export { NotificationComponent } from "./components/notification.ts";
 export { ProgressBarComponent } from "./components/progress-bar.ts";
 export { SelectList } from "./components/select-list.ts";
 export { Spacer } from "./components/spacer.ts";
