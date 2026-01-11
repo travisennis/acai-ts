@@ -490,13 +490,13 @@ async function runReplMode(state: AppState): Promise<void> {
   state.sessionManager.on("clear-history", () => {
     logger.info("Resetting agent state.");
     agent.resetState();
-    repl.rerender();
+    void repl.rerender();
   });
 
   // Set interrupt callback
-  repl.setInterruptCallback(() => {
+  repl.setInterruptCallback(async () => {
     try {
-      state.sessionManager.save();
+      await state.sessionManager.save();
     } catch (error) {
       // Log but don't throw - we still want to abort the agent
       logger.warn({ error }, "Failed to save message history on interrupt");
@@ -537,7 +537,7 @@ async function runReplMode(state: AppState): Promise<void> {
         await repl.handle(result, agent.state);
       }
 
-      state.sessionManager.save();
+      await state.sessionManager.save();
     } catch (_error) {
       // Display error in the TUI by adding an error message to the chat
       // repl.showError((error as Error).message || "Unknown error occurred");
