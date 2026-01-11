@@ -353,7 +353,7 @@ export class NewRepl {
         // stop the terminal progress display
         stopProgress();
         // send a terminal alert to indicate the agent is done
-        alert();
+        await alert();
         // Stop loading animation
         if (this.loadingAnimation) {
           this.loadingAnimation.stop();

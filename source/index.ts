@@ -484,7 +484,7 @@ async function runReplMode(state: AppState): Promise<void> {
 
   // Reconstruct session display if there are existing messages
   if (!state.sessionManager.isEmpty()) {
-    repl.rerender();
+    await repl.rerender();
   }
 
   state.sessionManager.on("clear-history", () => {
@@ -534,7 +534,7 @@ async function runReplMode(state: AppState): Promise<void> {
         abortSignal: agent.abortSignal,
       });
       for await (const result of results) {
-        repl.handle(result, agent.state);
+        await repl.handle(result, agent.state);
       }
 
       state.sessionManager.save();
