@@ -5,7 +5,13 @@ import { logger } from "../../logger.ts";
 import type { ModelManager } from "../../models/manager.ts";
 import { systemPrompt } from "../../prompts.ts";
 import { createUserMessage } from "../../sessions/manager.ts";
-import { getTerminalSize } from "../../terminal/control.ts";
+import {
+  getTerminalSize,
+  isArrowDown,
+  isArrowUp,
+  isEnter,
+  isEscape,
+} from "../../terminal/control.ts";
 import style from "../../terminal/style.ts";
 import type { TokenTracker } from "../../tokens/tracker.ts";
 import type { CompleteToolNames } from "../../tools/index.ts";
@@ -402,10 +408,10 @@ class RuleSelectorComponent extends Container {
   }
 
   handleInput(keyData: string): void {
-    if (keyData === "\x1b[A") {
+    if (isArrowUp(keyData)) {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateList();
-    } else if (keyData === "\x1b[B") {
+    } else if (isArrowDown(keyData)) {
       this.selectedIndex = Math.min(
         this.filteredRules.length - 1,
         this.selectedIndex + 1,
@@ -413,9 +419,9 @@ class RuleSelectorComponent extends Container {
       this.updateList();
     } else if (keyData === " ") {
       this.toggleSelection(this.selectedIndex);
-    } else if (keyData === "\r") {
+    } else if (isEnter(keyData)) {
       this.handleConfirm();
-    } else if (keyData === "\x1b") {
+    } else if (isEscape(keyData)) {
       this.onCancelCallback();
     } else {
       this.searchInput.handleInput(keyData);

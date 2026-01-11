@@ -1,4 +1,10 @@
-import { isNavigationKey, isTab } from "../../terminal/keys.ts";
+import {
+  isCtrlC,
+  isEnter,
+  isEscape,
+  isNavigationKey,
+  isTab,
+} from "../../terminal/keys.ts";
 import { getSegmenter } from "../../terminal/segmenter.ts";
 import style from "../../terminal/style.ts";
 import type { CombinedProvider as CombinedAutocompleteProvider } from "../autocomplete/combined-provider.ts";
@@ -445,13 +451,13 @@ export class Editor implements Component {
 
     // Intercept Escape key - but only if autocomplete is NOT active
     // (let parent handle escape for autocomplete cancellation)
-    if (data === "\x1b" && this.onEscape && !this.isShowingAutocomplete()) {
+    if (isEscape(data) && this.onEscape && !this.isShowingAutocomplete()) {
       this.onEscape();
       return;
     }
 
     // Intercept Ctrl+C
-    if (data === "\x03") {
+    if (isCtrlC(data)) {
       return;
     }
 
@@ -470,12 +476,12 @@ export class Editor implements Component {
     // Handle autocomplete special keys first (but don't block other input)
     if (this.isAutocompleting && this.autocompleteList) {
       // Escape - cancel autocomplete
-      if (data === "\x1b") {
+      if (isEscape(data)) {
         this.cancelAutocomplete();
         return;
       }
       // Enter - apply selection
-      if (data === "\r") {
+      if (isEnter(data)) {
         const selected = this.autocompleteList.getSelectedItem();
         if (selected && this.autocompleteProvider) {
           const result = this.autocompleteProvider.applyCompletion(

@@ -4,7 +4,13 @@ import {
   modelRegistry,
   models,
 } from "../../models/providers.ts";
-import { getTerminalSize } from "../../terminal/control.ts";
+import {
+  getTerminalSize,
+  isArrowDown,
+  isArrowUp,
+  isEnter,
+  isEscape,
+} from "../../terminal/control.ts";
 import style from "../../terminal/style.ts";
 import {
   Container,
@@ -263,21 +269,21 @@ class ModelSelectorComponent extends Container {
   }
 
   handleInput(keyData: string): void {
-    if (keyData === "\x1b[A") {
+    if (isArrowUp(keyData)) {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateList();
-    } else if (keyData === "\x1b[B") {
+    } else if (isArrowDown(keyData)) {
       this.selectedIndex = Math.min(
         this.filteredModels.length - 1,
         this.selectedIndex + 1,
       );
       this.updateList();
-    } else if (keyData === "\r") {
+    } else if (isEnter(keyData)) {
       const selectedModel = this.filteredModels[this.selectedIndex];
       if (selectedModel) {
         this.handleSelect(selectedModel);
       }
-    } else if (keyData === "\x1b") {
+    } else if (isEscape(keyData)) {
       this.onCancelCallback();
     } else {
       this.searchInput.handleInput(keyData);

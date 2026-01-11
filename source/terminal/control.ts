@@ -7,6 +7,45 @@
 import { config } from "../config.ts";
 import { logger } from "../logger.ts";
 
+// Re-export key functions from keys.ts for convenient imports
+export {
+  isAltBackspace,
+  isAltEnter,
+  isAltLeft,
+  isAltRight,
+  isArrowDown,
+  isArrowLeft,
+  isArrowRight,
+  isArrowUp,
+  isBackspace,
+  isCtrlA,
+  isCtrlC,
+  isCtrlD,
+  isCtrlE,
+  isCtrlK,
+  isCtrlL,
+  isCtrlP,
+  isCtrlT,
+  isCtrlU,
+  isCtrlW,
+  isDelete,
+  isEnd,
+  isEnter,
+  isEscape,
+  isHome,
+  isKittyCtrl,
+  isKittyKey,
+  isNavigationKey,
+  isPageDown,
+  isPageUp,
+  isShiftCtrlD,
+  isShiftCtrlO,
+  isShiftCtrlP,
+  isShiftEnter,
+  isShiftTab,
+  isTab,
+} from "./keys.ts";
+
 /**
  * Get the current shell
  */

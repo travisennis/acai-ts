@@ -2,7 +2,7 @@
  * Minimal TUI implementation with differential rendering
  */
 
-import { getTerminalSize } from "../terminal/control.ts";
+import { getTerminalSize, isCtrlC, isEscape } from "../terminal/control.ts";
 import style from "../terminal/style.ts";
 import type { Modal } from "./components/modal.ts";
 import type { Terminal } from "./terminal.ts";
@@ -113,7 +113,7 @@ export class TUI extends Container {
 
   private handleInput(data: string): void {
     // Handle Ctrl+C globally - exit the application
-    if (data.charCodeAt(0) === 3) {
+    if (isCtrlC(data)) {
       console.info("\nCtrl+C pressed - exiting...");
       if (this.onCtrlC) {
         this.onCtrlC();
@@ -124,7 +124,7 @@ export class TUI extends Container {
     }
 
     // Handle Escape key to close modal if one is active
-    if (data === "\x1b" && this.activeModal) {
+    if (isEscape(data) && this.activeModal) {
       this.hideModal();
       return;
     }

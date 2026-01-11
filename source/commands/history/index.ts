@@ -1,7 +1,14 @@
 /* biome-ignore-all lint/suspicious/noExplicitAny: internal function uses simplified types */
 import { generateText, type TextPart } from "ai";
 import { SessionManager } from "../../sessions/manager.ts";
-import { getTerminalSize, setTerminalTitle } from "../../terminal/control.ts";
+import {
+  getTerminalSize,
+  isArrowDown,
+  isArrowUp,
+  isEnter,
+  isEscape,
+  setTerminalTitle,
+} from "../../terminal/control.ts";
 import style from "../../terminal/style.ts";
 import type { Editor, TUI } from "../../tui/index.ts";
 import { Container, Input, Markdown, Spacer, Text } from "../../tui/index.ts";
@@ -365,12 +372,12 @@ class ConversationSelectorComponent extends Container {
 
   handleInput(keyData: string): void {
     // Up arrow
-    if (keyData === "\x1b[A") {
+    if (isArrowUp(keyData)) {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateList();
     }
     // Down arrow
-    else if (keyData === "\x1b[B") {
+    else if (isArrowDown(keyData)) {
       this.selectedIndex = Math.min(
         this.filteredConversations.length - 1,
         this.selectedIndex + 1,
@@ -378,7 +385,7 @@ class ConversationSelectorComponent extends Container {
       this.updateList();
     }
     // Enter
-    else if (keyData === "\r") {
+    else if (isEnter(keyData)) {
       const selectedConversation =
         this.filteredConversations[this.selectedIndex];
       if (selectedConversation) {
@@ -386,7 +393,7 @@ class ConversationSelectorComponent extends Container {
       }
     }
     // Escape
-    else if (keyData === "\x1b") {
+    else if (isEscape(keyData)) {
       this.onCancelCallback();
     }
     // Pass everything else to search input
@@ -467,17 +474,17 @@ class ActionSelectorComponent extends Container {
 
   handleInput(keyData: string): void {
     // Up arrow
-    if (keyData === "\x1b[A") {
+    if (isArrowUp(keyData)) {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateList();
     }
     // Down arrow
-    else if (keyData === "\x1b[B") {
+    else if (isArrowDown(keyData)) {
       this.selectedIndex = Math.min(2, this.selectedIndex + 1);
       this.updateList();
     }
     // Enter
-    else if (keyData === "\r") {
+    else if (isEnter(keyData)) {
       const actions = ["resume", "export", "summarize"] as const;
       const selectedAction = actions[this.selectedIndex];
       if (selectedAction) {
@@ -485,7 +492,7 @@ class ActionSelectorComponent extends Container {
       }
     }
     // Escape
-    else if (keyData === "\x1b") {
+    else if (isEscape(keyData)) {
       this.onCancelCallback();
     }
   }

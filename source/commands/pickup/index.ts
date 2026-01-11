@@ -1,4 +1,10 @@
-import { getTerminalSize } from "../../terminal/control.ts";
+import {
+  getTerminalSize,
+  isArrowDown,
+  isArrowUp,
+  isEnter,
+  isEscape,
+} from "../../terminal/control.ts";
 import style from "../../terminal/style.ts";
 import type { Container, Editor, TUI } from "../../tui/index.ts";
 import {
@@ -193,21 +199,21 @@ class HandoffSelectorComponent extends TuiContainer {
   }
 
   handleInput(keyData: string): void {
-    if (keyData === "\x1b[A") {
+    if (isArrowUp(keyData)) {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateList();
-    } else if (keyData === "\x1b[B") {
+    } else if (isArrowDown(keyData)) {
       this.selectedIndex = Math.min(
         this.filteredHandoffs.length - 1,
         this.selectedIndex + 1,
       );
       this.updateList();
-    } else if (keyData === "\r") {
+    } else if (isEnter(keyData)) {
       const selectedHandoff = this.filteredHandoffs[this.selectedIndex];
       if (selectedHandoff) {
         this.handleSelect(selectedHandoff);
       }
-    } else if (keyData === "\x1b") {
+    } else if (isEscape(keyData)) {
       this.onCancelCallback();
     } else {
       this.searchInput.handleInput(keyData);

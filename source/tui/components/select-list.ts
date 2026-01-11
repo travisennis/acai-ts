@@ -1,6 +1,9 @@
 import {
   isArrowDown,
   isArrowUp,
+  isCtrlC,
+  isEnter,
+  isEscape,
   isShiftTab,
   isTab,
 } from "../../terminal/keys.ts";
@@ -235,14 +238,14 @@ export class SelectList implements Component {
       this.notifySelectionChange();
     }
     // Enter
-    else if (keyData === "\r") {
+    else if (isEnter(keyData)) {
       const selectedItem = this.filteredItems[this.selectedIndex];
       if (selectedItem && this.onSelect) {
         this.onSelect(selectedItem);
       }
     }
     // Escape or Ctrl+C
-    else if (keyData === "\x1b" || keyData === "\x03") {
+    else if (isEscape(keyData) || isCtrlC(keyData)) {
       if (this.onCancel) {
         this.onCancel();
       }
