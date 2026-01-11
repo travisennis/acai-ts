@@ -42,6 +42,7 @@
     "format": "biome check --formatter-enabled=true --linter-enabled=false --write ./ && biome format --write",
     "dev": "node --no-warnings --env-file=.env ./source/index.ts",
     "oxlint": "oxlint --type-aware --ignore-path .gitignore --deny correctness --deny suspicous --deny pedantic --deny style --node-plugin ./source",
+    "oxlint:single": "oxlint --type-aware --ignore-path .gitignore --deny correctness --deny suspicous --deny pedantic --deny style --node-plugin",
     "knip": "npx knip",
     "knip:prod": "npx knip --production",
     "update": "npx npm-check-updates --interactive --format group",
