@@ -197,7 +197,7 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
     ) {
       const textPart = msgObj.content.at(-1) as TextPart;
       if (textPart?.text && textPart.text.trim() !== "") {
-        this.generateTitle(textPart.text);
+        void this.generateTitle(textPart.text);
       }
       this.createdAt = now;
     }

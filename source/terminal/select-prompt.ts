@@ -366,7 +366,7 @@ export async function select<T = unknown>({
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  (async () => {
+  void (async () => {
     try {
       const res = await select({
         message: "Pick a fruit",
