@@ -701,7 +701,7 @@ export class NewRepl {
 
     if (timeSinceLastCtrlC < 500) {
       // Second Ctrl+C within 500ms - exit
-      this.options.messageHistory.save();
+      void this.options.messageHistory.save();
       this.stop(true);
       process.exit(0);
     } else {
