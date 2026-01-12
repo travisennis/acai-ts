@@ -1,5 +1,6 @@
 import style from "../../terminal/style.ts";
 import type { Component } from "../tui.ts";
+import { visibleWidth } from "../utils.ts";
 
 /**
  * NotificationComponent - displays a notification message with styling
@@ -69,11 +70,13 @@ export class NotificationComponent implements Component {
       const styledText = this.textStyle(line);
       const paddedLine =
         " ".repeat(this.paddingX) + styledText + " ".repeat(this.paddingX);
+      const visibleLength = visibleWidth(paddedLine);
+      const paddingNeeded = Math.max(0, width - visibleLength);
       const bgLine = style.bgRgb(
         this.bgColor.r,
         this.bgColor.g,
         this.bgColor.b,
-      )(paddedLine.padEnd(width));
+      )(paddedLine + " ".repeat(paddingNeeded));
       result.push(bgLine);
     }
 

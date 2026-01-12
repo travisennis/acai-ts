@@ -745,6 +745,7 @@ export class NewRepl {
   }
 
   stop(showExitMessage = false): void {
+    this.notification.setMessage("");
     // Clear any pending notification timer
     if (this.exitNotificationTimer) {
       clearTimeout(this.exitNotificationTimer);
