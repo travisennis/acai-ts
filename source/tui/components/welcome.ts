@@ -4,8 +4,47 @@ import { getPackageVersion } from "../../version.ts";
 import type { Component } from "../tui.ts";
 import { BoxComponent } from "./box.ts";
 
+export interface WelcomeOptions {
+  type?: "default" | "simple";
+}
+
 export class Welcome implements Component {
+  private options: WelcomeOptions;
+
+  constructor(options: WelcomeOptions = {}) {
+    this.options = options;
+  }
+
   render(width: number): string[] {
+    if (this.options.type === "simple") {
+      return this.renderSimple();
+    }
+
+    return this.renderDefault(width);
+  }
+
+  private renderSimple(): string[] {
+    const version = getPackageVersion();
+    const now = new Date();
+    const dateTime = now.toISOString().replace("T", " ").substring(0, 19);
+
+    const line =
+      style.magenta("acai") +
+      " " +
+      style.dim("|") +
+      " " +
+      style.dim("version") +
+      " " +
+      style.magenta(version) +
+      " " +
+      style.dim("|") +
+      " " +
+      style.dim(dateTime);
+
+    return [line];
+  }
+
+  private renderDefault(width: number): string[] {
     const version = getPackageVersion();
     const result: string[] = [];
     result.push(style.magenta(this.getLogo()));

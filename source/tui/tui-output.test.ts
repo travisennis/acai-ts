@@ -27,7 +27,7 @@ const tui = new TUI(terminal);
 function testTuiOutput(): void {
   const container = new Container();
 
-  container.addChild(new Welcome());
+  container.addChild(new Welcome({ type: "simple" }));
 
   // Test basic text components
   container.addChild(new Text("TUI Output Test", 1, 1));

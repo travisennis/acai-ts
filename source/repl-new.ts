@@ -80,7 +80,7 @@ export class NewRepl {
   constructor(options: ReplOptions) {
     this.options = options;
     this.tui = new TUI(new ProcessTerminal());
-    this.welcome = new Welcome();
+    this.welcome = new Welcome({ type: "simple" });
     this.editor = new Editor({
       borderColor: style.gray,
     });
