@@ -212,7 +212,7 @@ export class CommandManager {
     const command = commandArgs.at(0);
     const args = commandArgs.slice(1);
 
-    if (command) {
+    if (command !== undefined) {
       const replCommand = this.commands.get(command);
       if (replCommand) {
         const result = await replCommand.handle(args, options);

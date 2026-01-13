@@ -81,7 +81,7 @@ export const generateRulesCommand = ({
           workspace,
         });
 
-        if (!newRules || newRules.length === 0) {
+        if (newRules == null || newRules.length === 0) {
           container.addChild(
             new Text(
               style.yellow("No new generalizable rules were identified."),

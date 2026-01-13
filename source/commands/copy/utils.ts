@@ -12,7 +12,7 @@ export function extractLastAssistantText(
     for (let j = msg.content.length - 1; j >= 0; j--) {
       const part = msg.content[j];
       if (
-        part &&
+        part != null &&
         part.type === "text" &&
         typeof (part as TextPart).text === "string"
       ) {

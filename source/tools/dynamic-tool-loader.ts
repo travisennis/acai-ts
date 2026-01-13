@@ -37,9 +37,9 @@ export function parseToolMetadata(output: string): ToolMetadata {
 }
 
 function generateZodSchema(parameters: ToolMetadata["parameters"]) {
-  const fields: Record<string, z.ZodTypeAny> = {};
+  const fields: Record<string, z.ZodType> = {};
   for (const param of parameters) {
-    let schema: z.ZodTypeAny;
+    let schema: z.ZodType;
     switch (param.type) {
       case "string":
         schema = z.string();

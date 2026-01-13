@@ -75,7 +75,7 @@ export function modelCommand(options: CommandOptions): ReplCommand {
           const currentModelConfig = modelManager.getModelMetadata("repl");
           const newModelConfig = modelRegistry[arg as ModelName];
 
-          if (!newModelConfig) {
+          if (newModelConfig === undefined) {
             container.addChild(
               new Text(
                 style.red(`Model configuration not found for: ${arg}`),
@@ -172,8 +172,9 @@ class ModelSelectorComponent extends Container {
 
     this.searchInput = new Input();
     this.searchInput.onSubmit = () => {
-      if (this.filteredModels[this.selectedIndex]) {
-        this.handleSelect(this.filteredModels[this.selectedIndex]);
+      const model = this.filteredModels[this.selectedIndex];
+      if (model !== undefined) {
+        this.handleSelect(model);
       }
     };
     this.addChild(this.searchInput);
@@ -234,7 +235,7 @@ class ModelSelectorComponent extends Container {
 
     for (let i = startIndex; i < endIndex; i++) {
       const item = this.filteredModels[i];
-      if (!item) continue;
+      if (item === undefined) continue;
 
       const isSelected = i === this.selectedIndex;
       const isCurrent = this.currentModel === item;
@@ -280,7 +281,7 @@ class ModelSelectorComponent extends Container {
       this.updateList();
     } else if (isEnter(keyData)) {
       const selectedModel = this.filteredModels[this.selectedIndex];
-      if (selectedModel) {
+      if (selectedModel !== undefined) {
         this.handleSelect(selectedModel);
       }
     } else if (isEscape(keyData)) {

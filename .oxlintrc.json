@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
+  "rules": {
+    "typescript/no-floating-promises": "error",
+    "typescript/prefer-includes": "error",
+    "typescript/no-deprecated": "error",
+    "typescript/strict-boolean-expressions": [
+      "error",
+      {
+        "allowNullableObject": true,
+        "allowNullableString": true
+      }
+    ]
+  }
+}

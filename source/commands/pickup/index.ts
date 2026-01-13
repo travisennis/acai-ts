@@ -110,8 +110,9 @@ class HandoffSelectorComponent extends TuiContainer {
 
     this.searchInput = new Input();
     this.searchInput.onSubmit = () => {
-      if (this.filteredHandoffs[this.selectedIndex]) {
-        this.handleSelect(this.filteredHandoffs[this.selectedIndex]);
+      const handoff = this.filteredHandoffs[this.selectedIndex];
+      if (handoff !== undefined) {
+        this.handleSelect(handoff);
       }
     };
     this.addChild(this.searchInput);
@@ -167,7 +168,7 @@ class HandoffSelectorComponent extends TuiContainer {
 
     for (let i = startIndex; i < endIndex; i++) {
       const handoff = this.filteredHandoffs[i];
-      if (!handoff) continue;
+      if (handoff === undefined) continue;
 
       const isSelected = i === this.selectedIndex;
 
@@ -210,7 +211,7 @@ class HandoffSelectorComponent extends TuiContainer {
       this.updateList();
     } else if (isEnter(keyData)) {
       const selectedHandoff = this.filteredHandoffs[this.selectedIndex];
-      if (selectedHandoff) {
+      if (selectedHandoff !== undefined) {
         this.handleSelect(selectedHandoff);
       }
     } else if (isEscape(keyData)) {
