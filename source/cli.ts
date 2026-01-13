@@ -141,12 +141,13 @@ export class Cli {
       // Always cleanup signal handler
       cleanup();
 
-      // Check if it's an abort error
+      // Check if it's an abort error or if the signal was aborted
       const isAbortError =
-        e instanceof Error &&
-        (e.name === "AbortError" ||
-          e.message.includes("aborted") ||
-          e.message.includes("No output generated"));
+        (e instanceof Error &&
+          (e.name === "AbortError" ||
+            e.message.includes("aborted") ||
+            e.message.includes("No output generated"))) ||
+        signal.aborted;
 
       if (isAbortError) {
         logger.info("CLI execution interrupted by user");
