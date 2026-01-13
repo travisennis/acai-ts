@@ -28,7 +28,16 @@ export class Welcome implements Component {
     const now = new Date();
     const dateTime = now.toISOString().replace("T", " ").substring(0, 19);
 
+    const slashes =
+      style.red("/") +
+      style.yellow("/") +
+      style.green("/") +
+      style.cyan("/") +
+      style.magenta("/");
+
     const line =
+      slashes +
+      " " +
       style.magenta("acai") +
       " " +
       style.dim("|") +
@@ -41,7 +50,7 @@ export class Welcome implements Component {
       " " +
       style.dim(dateTime);
 
-    return [line];
+    return ["", line];
   }
 
   private renderDefault(width: number): string[] {
