@@ -1,6 +1,6 @@
 {
   "name": "@travisennis/acai",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "An AI assistant for developing software.",
   "type": "module",
   "main": "dist/index.js",
