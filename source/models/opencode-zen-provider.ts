@@ -1,5 +1,5 @@
-// import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { objectKeys } from "@travisennis/stdlib/object";
 import { customProvider } from "ai";
@@ -29,10 +29,17 @@ const messagesClient = createAnthropic({
 //   },
 // });
 
+const responsesClient = createOpenAI({
+  // biome-ignore lint/style/useNamingConvention: third-party controlled
+  baseURL: "https://opencode.ai/zen/v1/responses",
+  apiKey: process.env["OPENCODE_ZEN_API_TOKEN"] ?? "",
+});
+
 const opencodeZenModels = {
   "glm-4-7": completionsClient("glm-4.7-free"),
   "minimax-m2-1": messagesClient("minimax-m2.1-free"),
   "opus-4-5": messagesClient("claude-opus-4.5"),
+  "gpt-5.2-codex": responsesClient.responses("gpt-5.2-codex"),
 } as const;
 
 type ModelName = `opencode:${keyof typeof opencodeZenModels}`;
@@ -86,5 +93,17 @@ export const opencodeZenModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000005,
     costPerOutputToken: 0.000025,
+  },
+  "opencode:gpt-5.2-codex": {
+    id: "opencode:gpt-5.2-codex",
+    provider: "opencode",
+    contextWindow: 400000,
+    maxOutputTokens: 128000,
+    defaultTemperature: -1,
+    promptFormat: "xml",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000175,
+    costPerOutputToken: 0.000014,
   },
 };
