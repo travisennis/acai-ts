@@ -8,6 +8,8 @@ const openaiModels = {
   o3: originalOpenAi.responses("o3"),
   "o4-mini": originalOpenAi.responses("o4-mini"),
   "codex-mini": originalOpenAi("codex-mini-latest"),
+  "gpt-5.2": originalOpenAi("gpt-5.2"),
+  "gpt-5.1-codex-mini": originalOpenAi("gpt-5.1-codex-mini"),
 } as const;
 
 type ModelName = `openai:${keyof typeof openaiModels}`;
@@ -73,5 +75,29 @@ export const openaiModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000015,
     costPerOutputToken: 0.000006,
+  },
+  "openai:gpt-5.2": {
+    id: "openai:gpt-5.2",
+    provider: "openai",
+    contextWindow: 400000,
+    maxOutputTokens: 128000,
+    defaultTemperature: 1.0,
+    promptFormat: "xml",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000175,
+    costPerOutputToken: 0.000014,
+  },
+  "openai:gpt-5.1-codex-mini": {
+    id: "openai:gpt-5.1-codex-mini",
+    provider: "openai",
+    contextWindow: 400000,
+    maxOutputTokens: 100000,
+    defaultTemperature: -1,
+    promptFormat: "xml",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000025,
+    costPerOutputToken: 0.000002,
   },
 };
