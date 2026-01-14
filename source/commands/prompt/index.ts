@@ -158,17 +158,6 @@ export const promptCommand = ({
 
         container.addChild(new Spacer(1));
 
-        container.addChild(
-          new Text(
-            `Loaded ${promptResult.type} prompt: ${style.blue(promptName)}`,
-            1,
-            0,
-          ),
-        );
-        if (inputArgs.length > 0) {
-          container.addChild(new Text(`Input: "${inputArgs.join(" ")}"`, 2, 0));
-        }
-
         const processedPrompt = await processPrompt(promptContent.trim(), {
           baseDir: workspace.primaryDir,
           model: modelManager.getModelMetadata("repl"),
