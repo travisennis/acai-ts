@@ -106,6 +106,9 @@ acai-ts
 │   │   ├── session/
 │   │   │   ├── index.ts
 │   │   │   └── types.ts
+│   │   ├── share/
+│   │   │   ├── html-renderer.ts
+│   │   │   └── index.ts
 │   │   ├── shell/
 │   │   │   └── index.ts
 │   │   └── types.ts
@@ -382,6 +385,8 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/commands/review/utils.ts**: Utility functions for parsing git diffs and formatting output.
 - **source/commands/session/index.ts**: Main session command implementation for displaying session information.
 - **source/commands/session/types.ts**: Type definitions for session breakdown and token counting utility.
+- **source/commands/share/index.ts**: Main share command implementation for sharing sessions via GitHub Gist.
+- **source/commands/share/html-renderer.ts**: HTML generation utility for rendering sessions as shareable web pages.
 - **source/commands/shell/index.ts**: Main shell command implementation.
 - **source/commands/shell/types.ts**: Type definitions for shell command.
 - **source/commands/shell/utils.ts**: Utility functions for shell command.
@@ -534,6 +539,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **test/commands/resources-command.test.ts**: Unit tests for resources command.
 - **test/commands/review-command.test.ts**: Unit tests for review command.
 - **test/commands/session-command.test.ts**: Unit tests for session command.
+- **test/commands/share.test.ts**: Unit tests for share command HTML rendering and utilities.
 - **test/commands/shell-command.test.ts**: Unit tests for shell command.
 
 **Core Tests**

@@ -35,6 +35,7 @@ import { resourcesCommand } from "./resources/index.ts";
 import { reviewCommand } from "./review/index.ts";
 import { saveCommand } from "./save/index.ts";
 import { sessionCommand } from "./session/index.ts";
+import { shareCommand } from "./share/index.ts";
 import { shellCommand } from "./shell/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
@@ -112,6 +113,7 @@ export class CommandManager {
       copyCommand(options),
       listToolsCommand(options),
       resourcesCommand(options),
+      shareCommand(options),
       shellCommand(options),
     ];
 

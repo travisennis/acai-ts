@@ -300,6 +300,7 @@ For a list of available commands, type `/help` within the REPL.
 - `/history` - View and manage conversation history
 - `/pickup` - Resume a previous conversation
 - `/handoff` - Hand off conversation to another agent
+- `/share` - Share the current session as a GitHub Gist for viewing in a web browser
 - `/shell` - Execute shell commands
 
 **Note**: Some commands mentioned in older documentation may no longer be available. Use `/help` to see current commands.
