@@ -1,5 +1,6 @@
 import {
   isCtrlC,
+  isCtrlG,
   isEnter,
   isEscape,
   isNavigationKey,
@@ -246,6 +247,9 @@ export class Editor implements Component {
   // Custom key handlers for coding-agent
   public onEscape?: () => void;
   public onRenderRequested?: () => void;
+  public onExternalEditor?: (
+    content: string,
+  ) => Promise<{ content: string; aborted: boolean }>;
 
   constructor(theme?: EditorTheme) {
     // Default theme if none provided (backward compatibility)
@@ -273,6 +277,20 @@ export class Editor implements Component {
 
   setAutocompleteProvider(provider: AutocompleteProvider): void {
     this.autocompleteProvider = provider;
+  }
+
+  private async launchExternalEditor(): Promise<void> {
+    if (!this.onExternalEditor) return;
+
+    const currentContent = this.getText();
+    const result = await this.onExternalEditor(currentContent);
+
+    if (!result.aborted) {
+      this.setText(result.content);
+      if (this.onRenderRequested) {
+        this.onRenderRequested();
+      }
+    }
   }
 
   private isEditorEmpty(): boolean {
@@ -516,6 +534,12 @@ export class Editor implements Component {
     // Tab key - context-aware completion (but not when already autocompleting)
     if (isTab(data) && !this.isAutocompleting) {
       void this.handleTabCompletion();
+      return;
+    }
+
+    // Ctrl+G - launch external editor
+    if (isCtrlG(data) && this.onExternalEditor) {
+      void this.launchExternalEditor();
       return;
     }
 

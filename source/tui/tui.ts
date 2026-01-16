@@ -2,7 +2,12 @@
  * Minimal TUI implementation with differential rendering
  */
 
-import { getTerminalSize, isCtrlC, isEscape } from "../terminal/control.ts";
+import {
+  getTerminalSize,
+  isCtrlC,
+  isCtrlZ,
+  isEscape,
+} from "../terminal/control.ts";
 import style from "../terminal/style.ts";
 import type { Modal } from "./components/modal.ts";
 import type { Terminal } from "./terminal.ts";
@@ -89,6 +94,7 @@ export class TUI extends Container {
       (data) => this.handleInput(data),
       () => this.requestRender(),
     );
+    this.terminal.onResume(() => this.requestRender());
     this.terminal.hideCursor();
     this.requestRender();
   }
@@ -111,7 +117,26 @@ export class TUI extends Container {
     });
   }
 
+  private inBracketedPaste = false;
+
   private handleInput(data: string): void {
+    if (data.includes("\x1b[200~")) {
+      this.inBracketedPaste = true;
+    }
+    if (data.includes("\x1b[201~")) {
+      this.inBracketedPaste = false;
+    }
+
+    // Handle Ctrl+Z - background the process (POSIX only)
+    if (
+      isCtrlZ(data) &&
+      !this.inBracketedPaste &&
+      process.platform !== "win32"
+    ) {
+      this.terminal.background();
+      return;
+    }
+
     // Handle Ctrl+C globally - exit the application
     if (isCtrlC(data)) {
       console.info("\nCtrl+C pressed - exiting...");

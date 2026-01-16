@@ -223,6 +223,7 @@ acai-ts
 │   │   │   ├── tool-execution.ts
 │   │   │   ├── user-message.ts
 │   │   │   └── welcome.ts
+│   │   ├── editor-launcher.ts
 │   │   ├── index.ts
 │   │   ├── terminal.ts
 │   │   ├── tui-output.test.ts
@@ -504,8 +505,9 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/tui/components/tool-execution.ts**: Component for displaying tool execution status.
 - **source/tui/components/user-message.ts**: Component for displaying user messages.
 - **source/tui/components/welcome.ts**: Welcome screen component.
+- **source/tui/editor-launcher.ts**: Launches external editors ($EDITOR) with proper terminal mode handling.
 - **source/tui/index.ts**: Main exports for TUI components and interfaces.
-- **source/tui/terminal.ts**: Terminal interface implementation for TUI.
+- **source/tui/terminal.ts**: Terminal interface implementation for TUI with background/resume support.
 - **source/tui/tui.ts**: Main TUI orchestrator with event handling and rendering.
 - **source/tui/utils.ts**: Utility functions for TUI operations.
 

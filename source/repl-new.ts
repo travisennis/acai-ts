@@ -25,6 +25,7 @@ import { FooterComponent } from "./tui/components/footer.ts";
 import { ThinkingBlockComponent } from "./tui/components/thinking-block.ts";
 import { ToolExecutionComponent } from "./tui/components/tool-execution.ts";
 import { Welcome } from "./tui/components/welcome.ts";
+import { launchEditor } from "./tui/editor-launcher.ts";
 import {
   Container,
   Editor,
@@ -36,6 +37,7 @@ import {
   TUI,
   UserMessageComponent,
 } from "./tui/index.ts";
+import type { Terminal } from "./tui/terminal.ts";
 
 interface ReplOptions {
   agent: Agent;
@@ -53,6 +55,7 @@ interface ReplOptions {
 
 export class NewRepl {
   private options: ReplOptions;
+  private terminal: Terminal;
   private tui: TUI;
   private welcome: Welcome;
   private editor: Editor;
@@ -79,7 +82,8 @@ export class NewRepl {
 
   constructor(options: ReplOptions) {
     this.options = options;
-    this.tui = new TUI(new ProcessTerminal());
+    this.terminal = new ProcessTerminal();
+    this.tui = new TUI(this.terminal);
     this.welcome = new Welcome({ type: "simple" });
     this.editor = new Editor({
       borderColor: style.gray,
@@ -102,6 +106,13 @@ export class NewRepl {
     });
     this.editorContainer.addChild(this.editor); // Start with editor
     this.editor.onRenderRequested = () => this.tui.requestRender();
+    this.editor.onExternalEditor = async (content: string) => {
+      return launchEditor({
+        initialContent: content,
+        postfix: ".md",
+        terminal: this.terminal,
+      });
+    };
     this.isInitialized = false;
     this.pendingTools = new Map();
     this.tools = options.tools;

@@ -21,6 +21,11 @@ export { Spacer } from "./components/spacer.ts";
 export { TableComponent } from "./components/table.ts";
 export { Text } from "./components/text.ts";
 export { UserMessageComponent } from "./components/user-message.ts";
+export type {
+  EditorLaunchOptions,
+  EditorLaunchResult,
+} from "./editor-launcher.ts";
+export { launchEditor } from "./editor-launcher.ts";
 // Terminal interface and implementations
 export { ProcessTerminal } from "./terminal.ts";
 export { Container, TUI } from "./tui.ts";
