@@ -1,9 +1,11 @@
 # AGENTS.md
 
 ## Project Overview
+
 This app, acai-ts, is an AI-assistant CLI tool built with TypeScript. It is an agent hardness similar to Claude Code, opencode, and Codex. The project uses a modular architecture with source code in `./source`, organized into commands, tool (agent/llm callable), models, and UI components. Tests are in `/test`. Tech stack: Node.js ≥20, TypeScript (ESNext), Biome for linting/formatting, and AI SDK providers.
 
 ## Build & Development Commands
+
 - **Build:** `npm run build`
 - **Typecheck:** `npm run typecheck`
 - **Lint:** `npm run lint`
@@ -12,15 +14,31 @@ This app, acai-ts, is an AI-assistant CLI tool built with TypeScript. It is an a
 - **Fix Lint/Format:** `npm run lint:fix`
 - **Run All Tests:** `npm test`
 - **Run Single Test:** `node --no-warnings --test test/path/to/test.ts`
-- **Dev Mode:** `npm run dev`
 - **Find Unused Code/Deps:** `npm run knip`
 - **Full Check (typecheck, lint, format):** `npm run check` 
 
 ## Running the App
+
+- **REPL:** `acai`
 - **CLI:** `acai -p <prompt>`
+- **Dev Mode:** `node source/index.ts`
 - **Application logs:** `~/.acai/logs/current.log`
+- **IMPORTANT:** Use `tmux` when running the repl. The `Bash` tool does not support interactive commands.
+
+### Interacting with the REPL via tmux
+
+To automate REPL testing, use tmux with these commands:
+
+1. **Start session:** `tmux new-session -d -s acai-test "node source/index.ts"`
+2. **Type text:** `tmux send-keys -t acai-test -l "your prompt here"`
+3. **Submit (Shift+Enter):** `tmux send-keys -t acai-test Escape "[13;2u"`
+4. **Read output:** `tmux capture-pane -t acai-test -p -S -100`
+5. **Cleanup:** `tmux kill-session -t acai-test`
+
+Note: The editor uses Shift+Enter to submit. The escape sequence `Escape "[13;2u"` sends this key combination via the kitty keyboard protocol.
 
 ## Code Style Guidelines
+
 - **Language:** Strict TypeScript with ESNext target
 - **Modules:** ES Modules only. Use `.ts` extensions for relative imports
 - **Organization:** Keep files <~500 LOC; split/refactor as needed.
@@ -33,11 +51,13 @@ This app, acai-ts, is an AI-assistant CLI tool built with TypeScript. It is an a
 - **Testing:** `node:test` and `node:assert/strict` in `./test` directory
 
 ## Commit & Branch Strategy
+
 - **Commits:** Conventional Commits standard
 - **Message Length:** Keep lines under 100 characters
 - **Branch Strategy:** Feature branches (`feat/`, `fix/`) merged to `master`
 
 ## PR Requirements
+
 - Follow PR template with description, testing details, and checklist
 - All tests must pass
 - Code follows style guidelines
@@ -45,6 +65,7 @@ This app, acai-ts, is an AI-assistant CLI tool built with TypeScript. It is an a
 - Documentation updated if needed
 
 ## Important Notes
+
 - Run the `Full Check` command when you complete a task to make sure the code is correct.
 - The version of node that acai supports can run typescript directly.
 - Never add comments explaining edits - only add comments that explain or clarify how code works
