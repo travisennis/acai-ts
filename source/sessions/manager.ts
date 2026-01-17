@@ -536,6 +536,8 @@ React Component Rendering Debug";
 
   // Method to restore state from a SavedMessageHistory object
   restore(savedHistory: SavedMessageHistory): void {
+    this.sessionId = savedHistory.sessionId;
+    this.modelId = savedHistory.modelId;
     this.title = savedHistory.title;
     // Ensure dates are Date objects, though load should handle this
     this.createdAt =
