@@ -329,6 +329,37 @@ export class Agent {
               if (!iTool) {
                 resultOutput = `No executor for tool ${toolName}`;
               } else {
+                // Pre-validate tool input to catch malformed JSON early
+                if (typeof call.input === "string") {
+                  // If input is a string, try to validate it's proper JSON
+                  try {
+                    JSON.parse(call.input);
+                  } catch {
+                    // Malformed JSON detected - emit error and skip execution
+                    const errorMsg = `Invalid tool input: malformed JSON. Received: "${call.input.slice(0, 50)}${call.input.length > 50 ? "..." : ""}". Expected a JSON object.`;
+                    yield this.processToolEvent(toolsCalled, {
+                      type: "tool-call-error",
+                      name: toolName,
+                      toolCallId: call.toolCallId,
+                      msg: errorMsg,
+                      args: null,
+                    });
+                    continue;
+                  }
+                } else if (call.input === null || call.input === undefined) {
+                  // Null/undefined input
+                  const errorMsg =
+                    "Invalid tool input: received null/undefined. Expected a JSON object matching the schema.";
+                  yield this.processToolEvent(toolsCalled, {
+                    type: "tool-call-error",
+                    name: toolName,
+                    toolCallId: call.toolCallId,
+                    msg: errorMsg,
+                    args: null,
+                  });
+                  continue;
+                }
+
                 const toolExec = iTool.execute as ToolExecuteFunction<
                   unknown,
                   string
