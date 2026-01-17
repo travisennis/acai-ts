@@ -8,6 +8,41 @@ import { resolveCwd, validatePaths } from "../utils/bash.ts";
 import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions } from "./types.ts";
 
+/**
+ * Detects git commit commands with multi-line -m messages that will fail in shell.
+ * Returns an error message if detected, or null if the command is safe.
+ */
+function detectMultilineGitCommit(command: string): string | null {
+  const trimmed = command.trim();
+
+  // Check if it's a git commit command
+  if (!trimmed.startsWith("git commit") && !trimmed.startsWith("git ")) {
+    return null;
+  }
+
+  // Look for -m flag with a message containing newlines
+  // Match patterns like: git commit -m "message\nwith\nnewlines"
+  // Using [\s\S] instead of [^] to match any character including newlines
+  const messageMatch = trimmed.match(/-m\s+["']([\s\S]*?)["']/);
+  if (!messageMatch) {
+    return null;
+  }
+
+  const message = messageMatch[1];
+  if (message.includes("\n")) {
+    return `Multi-line commit messages with -m flag cause shell parsing errors. Instead:
+1. Write the commit message to a temporary file (e.g., /tmp/acai/commit-msg.txt)
+2. Use: git commit -F /tmp/acai/commit-msg.txt
+3. Optionally remove the temp file after committing
+
+Example:
+  First, create the file with the commit message using the write_file tool.
+  Then run: git commit -F /tmp/acai/commit-msg.txt`;
+  }
+
+  return null;
+}
+
 export const BashTool = {
   name: "Bash" as const,
 };
@@ -81,6 +116,12 @@ export const createBashTool = async ({
       );
       if (!pathValidation.isValid) {
         throw new Error(pathValidation.error ?? "Unknown error.");
+      }
+
+      // Check for multi-line git commit messages that will fail
+      const multilineError = detectMultilineGitCommit(command);
+      if (multilineError) {
+        throw new Error(multilineError);
       }
 
       if (abortSignal?.aborted) {
