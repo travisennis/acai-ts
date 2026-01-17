@@ -2,7 +2,6 @@
 import { mkdirSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { text } from "node:stream/consumers";
 import { parseArgs } from "node:util";
 import { asyncTry, isFailure, syncTry } from "@travisennis/stdlib/try";
 import { isDefined } from "@travisennis/stdlib/typeguards";
@@ -22,6 +21,7 @@ import { PromptManager } from "./prompts/manager.ts";
 import { systemPrompt } from "./prompts.ts";
 import { NewRepl } from "./repl-new.ts";
 import { SessionManager } from "./sessions/manager.ts";
+import { readStdinWithLimits } from "./stdin.ts";
 import { setTerminalTitle } from "./terminal/control.ts";
 import { select } from "./terminal/select-prompt.ts";
 import { TokenCounter } from "./tokens/counter.ts";
@@ -146,7 +146,7 @@ interface AppState {
 async function initializeAppState(
   appConfig: ProjectConfig,
   initialPromptInput: string | undefined,
-  stdInPrompt: string | undefined,
+  stdinContent: string | null,
   hasContinueOrResume: boolean,
   resumeSessionId: string | undefined,
 ): Promise<AppState> {
@@ -200,8 +200,12 @@ async function initializeAppState(
     }
   }
 
-  if (stdInPrompt) {
-    promptManager.addContext(stdInPrompt);
+  if (stdinContent && stdinContent.trim().length > 0) {
+    if (isDefined(initialPromptInput)) {
+      promptManager.addContext(stdinContent);
+    } else {
+      promptManager.set(stdinContent);
+    }
   }
 
   const promptHistory: string[] = [];
@@ -271,24 +275,25 @@ function validateCliArguments(): void {
 
 async function determineInitialPrompt(): Promise<{
   initialPromptInput: string | undefined;
-  stdInPrompt: string | undefined;
+  stdinContent: string | null;
   hasContinueOrResume: boolean;
   resumeSessionId: string | undefined;
 }> {
   const hasContinueOrResume = flags.continue === true || flags.resume === true;
   const positionalPrompt = input.at(0);
-  let stdInPrompt: string | undefined;
 
-  // Check if there's data available on stdin
-  if (!process.stdin.isTTY) {
-    try {
-      stdInPrompt = await text(process.stdin);
-    } catch (error) {
-      console.error(`Error reading stdin: ${(error as Error).message}`);
-    }
+  const { content: stdinContent, wasPiped } = await readStdinWithLimits();
+
+  if (
+    wasPiped &&
+    (!stdinContent || stdinContent.trim().length === 0) &&
+    !flags.prompt &&
+    !positionalPrompt
+  ) {
+    console.error("No input provided via stdin.");
+    process.exit(0);
   }
 
-  // Check for session ID with --resume
   const resumeSessionId =
     flags.resume === true && input.length > 0 ? input[0] : undefined;
 
@@ -306,7 +311,7 @@ async function determineInitialPrompt(): Promise<{
 
   return {
     initialPromptInput,
-    stdInPrompt,
+    stdinContent,
     hasContinueOrResume,
     resumeSessionId,
   };
@@ -453,7 +458,10 @@ async function runCliMode(state: AppState): Promise<void> {
   (await asyncTry(cliProcess.run())).recover(handleError);
 }
 
-async function runReplMode(state: AppState): Promise<void> {
+async function runReplMode(
+  state: AppState,
+  stdinWasPiped: boolean,
+): Promise<void> {
   // Initialize tools before creating REPL (needed for session reload reconstruction)
   const tools = await initTools({
     workspace,
@@ -465,6 +473,7 @@ async function runReplMode(state: AppState): Promise<void> {
     tokenTracker: state.tokenTracker,
   });
 
+  // When stdin was piped, use /dev/tty for interactive input instead of process.stdin
   const repl = new NewRepl({
     agent,
     promptManager: state.promptManager,
@@ -477,9 +486,9 @@ async function runReplMode(state: AppState): Promise<void> {
     promptHistory: state.promptHistory,
     workspace,
     tools,
+    terminalOptions: { useTty: stdinWasPiped },
   });
 
-  // Initialize TUI
   await repl.init();
 
   // Reconstruct session display if there are existing messages
@@ -510,6 +519,44 @@ async function runReplMode(state: AppState): Promise<void> {
       console.info(`\nTo resume this session call acai --resume ${sessionId}`);
     }
   });
+
+  // Auto-process pending prompt from stdin
+  if (state.promptManager.isPending()) {
+    const projectConfig = await config.getConfig();
+    const activeTools = projectConfig.tools.activeTools as
+      | CompleteToolNames[]
+      | undefined;
+    const skillsEnabled =
+      !flags["no-skills"] && (projectConfig.skills?.enabled ?? true);
+
+    try {
+      // Get the prompt text before it gets cleared by getUserMessage()
+      const promptText = state.promptManager.get();
+
+      // Get the user message (includes context if any) and add to history
+      const userMessage = state.promptManager.getUserMessage();
+      state.sessionManager.appendUserMessage(userMessage);
+
+      const results = agent.run({
+        systemPrompt: await systemPrompt({
+          activeTools,
+          allowedDirs: workspace.allowedDirs,
+          skillsEnabled,
+        }),
+        input: promptText,
+        tools,
+        activeTools,
+        abortSignal: agent.abortSignal,
+      });
+      for await (const result of results) {
+        await repl.handle(result, agent.state);
+      }
+
+      await state.sessionManager.save();
+    } catch (_error) {
+      // Error displayed in the TUI
+    }
+  }
 
   // Interactive loop
   while (true) {
@@ -561,7 +608,7 @@ async function main() {
     // Determine initial prompt
     const {
       initialPromptInput,
-      stdInPrompt,
+      stdinContent,
       hasContinueOrResume,
       resumeSessionId,
     } = await determineInitialPrompt();
@@ -570,7 +617,7 @@ async function main() {
     const state = await initializeAppState(
       appConfig,
       initialPromptInput,
-      stdInPrompt,
+      stdinContent,
       hasContinueOrResume,
       resumeSessionId,
     );
@@ -584,7 +631,7 @@ async function main() {
     }
 
     // Setup REPL mode
-    return await runReplMode(state);
+    return await runReplMode(state, stdinContent !== null);
   } catch (error) {
     handleError(error as Error);
     process.exit(1);

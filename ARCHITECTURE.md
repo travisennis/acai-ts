@@ -32,7 +32,9 @@ acai-ts
 ├── package-lock.json
 ├── package.json
 ├── scripts
-│   └── show-config.ts
+│   │   └── show-config.ts
+├── specs
+│   └── cli-stdin-handling.md
 ├── source
 │   ├── agent
 │   │   └── index.ts
@@ -147,6 +149,7 @@ acai-ts
 │   ├── sessions
 │   │   └── manager.ts
 │   ├── skills.ts
+│   ├── stdin.ts
 │   ├── terminal
 │   │   ├── ansi-styles.ts
 │   │   ├── control.ts
@@ -281,7 +284,8 @@ acai-ts
 │   │   ├── grep-match-counting.test.ts
 │   │   ├── grep-max-results.test.ts
 │   │   ├── grep.test.ts
-│   │   └── ls.test.ts
+│   │   ├── ls.test.ts
+│   │   └── stdin-handling.test.ts
 │   ├── tui
 │   │   ├── autocomplete.test.ts
 │   │   ├── components
@@ -331,7 +335,9 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 ### source/ Directory (Core Application)
 
 **Entry Point**
-- **source/index.ts**: Main entry point; bootstraps app, initializes subsystems, parses CLI arguments, and starts either CLI mode (with initial prompt) or REPL mode.
+- **source/index.ts**: Main entry point; bootstraps app, initializes subsystems, parses CLI arguments, and starts either CLI mode (with initial prompt) or REPL mode. Handles piped input detection and auto-processing in REPL mode.
+
+- **source/stdin.ts**: Handles reading and validating stdin input with size limits. Exports `readStdinWithLimits()` function with soft limit (50KB warning) and hard limit (200KB error). Used for piped input support in CLI and REPL modes.
 
 **Agent System**
 - **source/agent/index.ts**: Core agent implementation that orchestrates AI interactions and tool execution using the AI SDK.
@@ -507,7 +513,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/tui/components/welcome.ts**: Welcome screen component.
 - **source/tui/editor-launcher.ts**: Launches external editors ($EDITOR) with proper terminal mode handling.
 - **source/tui/index.ts**: Main exports for TUI components and interfaces.
-- **source/tui/terminal.ts**: Terminal interface implementation for TUI with background/resume support.
+- **source/tui/terminal.ts**: Terminal interface implementation for TUI with background/resume support. Exports `ProcessTerminalOptions` interface with `useTty` option for piped stdin scenarios (reads from /dev/tty for interactive input).
 - **source/tui/tui.ts**: Main TUI orchestrator with event handling and rendering.
 - **source/tui/utils.ts**: Utility functions for TUI operations.
 
@@ -573,6 +579,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **test/tools/grep-max-results.test.ts**: Unit tests for grep max results limit.
 - **test/tools/grep.test.ts**: Unit tests for grep tool core functionality.
 - **test/tools/ls.test.ts**: Unit tests for ls tool.
+- **test/stdin-handling.test.ts**: Unit tests for stdin handling including size limit constants, TTY detection, size calculations, and boundary conditions.
 
 **TUI Tests**
 - **test/tui/autocomplete.test.ts**: Unit tests for autocomplete functionality.
@@ -610,12 +617,19 @@ graph TD
   F --> G[Initialize SessionManager source/sessions/manager.ts]
   G --> H[Initialize PromptManager source/prompts/manager.ts]
   H --> I[Initialize CommandManager source/commands/manager.ts]
-  I --> J{Initial prompt provided?}
-  J -->|Yes| K[Run CLI mode source/cli.ts]
-  J -->|No| L[Initialize TUI and start REPL source/repl-new.ts]
-  K --> M[Execute single AI interaction]
-  L --> N[Start NewRepl with TUI]
-  N --> O[Interactive loop]
+  I --> J[Check stdin for piped input source/stdin.ts]
+  J --> K{Initial prompt provided via -p?}
+  K -->|Yes| L[Run CLI mode source/cli.ts]
+  K -->|No| M{Stdin has content?}
+  M -->|Yes| N[Set stdin as initial prompt in PromptManager]
+  M -->|No| O[Initialize TUI and start REPL source/repl-new.ts]
+  N --> O
+  O --> P[Start NewRepl with TUI]
+  P --> Q{Pending prompt from stdin?}
+  Q -->|Yes| R[Auto-process prompt immediately]
+  Q -->|No| S[Interactive loop]
+  R --> S
+  L --> T[Execute single AI interaction with stdin as context]
 ```
 
 ### User Input Handling (Command vs AI Prompt)

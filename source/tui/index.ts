@@ -27,7 +27,7 @@ export type {
 } from "./editor-launcher.ts";
 export { launchEditor } from "./editor-launcher.ts";
 // Terminal interface and implementations
-export { ProcessTerminal } from "./terminal.ts";
+export { ProcessTerminal, type ProcessTerminalOptions } from "./terminal.ts";
 export { Container, TUI } from "./tui.ts";
 // Utilities
 export { visibleWidth } from "./utils.ts";

@@ -16,12 +16,13 @@ Acai is a powerful **AI-driven command-line interface (CLI) tool** designed to a
 *   **Extensible Tooling:** Utilizes a suite of internal tools (e.g., `bash`, `codeInterpreter`, `webSearch`) to perform actions.
 *   **Multi-Model Support:** Seamlessly switch between various AI providers (e.g., OpenAI, Google, Anthropic, DeepSeek, Groq, OpenRouter).
 *   **Context Management:** Automatically incorporates relevant file content, clipboard data, and conversation history into AI prompts.
-*   **Configurable & Learnable:** Customize behavior through project-specific rules and learn from user corrections.
+*   **Piped Input Support:** Pipe text directly to acai via stdin for REPL mode (`echo "prompt" | acai`) or as context with `-p` flag (`echo "context" | acai -p "prompt"). Includes size limits (50KB warning, 200KB max).
 *   **Terminal User Interface:** Modern TUI with modal dialogs, autocomplete, and rich text formatting.
 
 ## ✨ Features
 
 *   **Conversational REPL/TUI:** Intuitive command-line interface and modern terminal UI for interacting with the AI.
+*   **Piped Input Support:** Pipe text directly to acai via stdin. Works in REPL mode (`echo "prompt" | acai`) or as additional context with `-p` flag (`echo "context" | acai -p "prompt"). Includes input size limits with graceful handling.
 *   **File System Operations:** Read, write, edit, move, and delete files.
 *   **File & Directory Mentions:** Include file contents and entire directories in prompts using `@filename` and `@dirname` syntax.
 *   **Code Navigation & Analysis:** Advanced file searching and code analysis capabilities.
@@ -176,8 +177,11 @@ acai --model anthropic:sonnet
 # CLI mode (one-shot execution)
 acai -p "What files contain the term 'toolCallRepair'?"
 
-# Pipe input
+# Pipe input for REPL mode (immediately processes, then becomes interactive)
 echo "How many TypeScript files are in this project?" | acai
+
+# Pipe input as context with CLI mode
+echo "Context information here" | acai -p "Process this context"
 
 # Disable skills discovery
 acai --no-skills
@@ -275,6 +279,33 @@ echo 'Analyze the following code: {{INPUT}}' > .acai/prompts/analyze.md
 ```
 
 **Note:** Using `-p/--prompt` runs in CLI mode (one-shot execution), while running without a prompt starts interactive REPL mode.
+
+### Piped Input
+
+You can pipe text directly to acai via stdin for flexible input scenarios:
+
+```bash
+# REPL mode: piped text becomes the initial prompt, processed immediately
+echo "What can you do?" | acai
+# Acai starts, processes the prompt, displays response,
+# then enters interactive mode for continued conversation
+
+# CLI mode: piped text becomes additional context
+echo "Codebase overview: 50 files, TypeScript project" | acai -p "Summarize this project"
+# Piped content is added as context, -p value is the main prompt
+# Runs in single-shot CLI mode and exits
+
+# Multiple inputs
+echo "Large context file" | acai -p "Analyze and improve"
+```
+
+**Input size limits:**
+- **Soft limit (50KB):** Warning logged to stderr, processing continues
+- **Hard limit (200KB):** Error displayed, process exits with code 1
+
+**Empty input handling:**
+- Empty stdin without `-p` flag: Prints message and exits with code 0
+- Empty stdin with `-p` flag: Proceeds normally (no context added)
 
 For a list of available commands, type `/help` within the REPL.
 

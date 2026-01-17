@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import tty from "node:tty";
+
 /**
  * Minimal terminal interface for TUI
  */
@@ -35,8 +38,15 @@ export interface Terminal {
   onResume(callback: () => void): void;
 }
 
+export interface ProcessTerminalOptions {
+  useTty?: boolean;
+}
+
 /**
  * Real terminal using process.stdin/stdout
+ *
+ * When useTty is true (for piped stdin scenarios), input is read from /dev/tty
+ * instead of process.stdin, allowing interactive input after piped content.
  */
 export class ProcessTerminal implements Terminal {
   private wasRaw = false;
@@ -46,6 +56,14 @@ export class ProcessTerminal implements Terminal {
   private stopped = false;
   private inExternalMode = false;
   private resumeCallback?: () => void;
+  private inputStream: tty.ReadStream;
+  private ttyFd?: number;
+  private useTty: boolean;
+
+  constructor(options: ProcessTerminalOptions = {}) {
+    this.useTty = options.useTty ?? false;
+    this.inputStream = process.stdin;
+  }
 
   private handleSigCont = (): void => {
     if (this.inExternalMode) {
@@ -54,17 +72,27 @@ export class ProcessTerminal implements Terminal {
   };
 
   start(onInput: (data: string) => void, onResize: () => void): void {
-    if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    if (this.useTty) {
+      try {
+        this.ttyFd = fs.openSync("/dev/tty", "r");
+        this.inputStream = new tty.ReadStream(this.ttyFd);
+      } catch {
+        throw new Error("Cannot open /dev/tty for interactive input");
+      }
+    } else {
+      this.inputStream = process.stdin;
+    }
+
+    if (!this.inputStream.isTTY || !process.stdout.isTTY) {
       throw new Error("Terminal requires TTY environment");
     }
 
-    // Save previous state and enable raw mode
-    this.wasRaw = process.stdin.isRaw ?? false;
-    if (process.stdin.setRawMode) {
-      process.stdin.setRawMode(true);
+    this.wasRaw = this.inputStream.isRaw ?? false;
+    if (this.inputStream.setRawMode) {
+      this.inputStream.setRawMode(true);
     }
-    process.stdin.setEncoding("utf8");
-    process.stdin.resume();
+    this.inputStream.setEncoding("utf8");
+    this.inputStream.resume();
 
     // Enable bracketed paste mode - terminal will wrap pastes in \x1b[200~ ... \x1b[201~
     process.stdout.write("\x1b[?2004h");
@@ -94,7 +122,7 @@ export class ProcessTerminal implements Terminal {
 
   private attachListeners(): void {
     if (this.boundInputListener) {
-      process.stdin.on("data", this.boundInputListener);
+      this.inputStream.on("data", this.boundInputListener);
     }
     if (this.boundResizeListener) {
       process.stdout.on("resize", this.boundResizeListener);
@@ -103,7 +131,7 @@ export class ProcessTerminal implements Terminal {
 
   private detachListeners(): void {
     if (this.boundInputListener) {
-      process.stdin.removeListener("data", this.boundInputListener);
+      this.inputStream.removeListener("data", this.boundInputListener);
     }
     if (this.boundResizeListener) {
       process.stdout.removeListener("resize", this.boundResizeListener);
@@ -115,20 +143,33 @@ export class ProcessTerminal implements Terminal {
       process.stdout.write("\x1b[?25h");
       process.stdout.write("\x1b[?2004l");
       process.stdout.write("\x1b[0m");
-      if (process.stdin.setRawMode) {
-        process.stdin.setRawMode(this.wasRaw);
+      if (this.inputStream.setRawMode) {
+        this.inputStream.setRawMode(this.wasRaw);
       }
+      this.closeTtyFd();
     });
 
     process.on("uncaughtException", (error) => {
       process.stdout.write("\x1b[?25h");
       process.stdout.write("\x1b[?2004l");
       process.stdout.write("\x1b[0m");
-      if (process.stdin.setRawMode) {
-        process.stdin.setRawMode(this.wasRaw);
+      if (this.inputStream.setRawMode) {
+        this.inputStream.setRawMode(this.wasRaw);
       }
+      this.closeTtyFd();
       throw error;
     });
+  }
+
+  private closeTtyFd(): void {
+    if (this.ttyFd !== undefined) {
+      try {
+        fs.closeSync(this.ttyFd);
+      } catch {
+        // Ignore close errors
+      }
+      this.ttyFd = undefined;
+    }
   }
 
   stop(): void {
@@ -145,7 +186,7 @@ export class ProcessTerminal implements Terminal {
 
     // Remove event handlers using the exact references that were added
     if (this.boundInputListener) {
-      process.stdin.removeListener("data", this.boundInputListener);
+      this.inputStream.removeListener("data", this.boundInputListener);
       this.boundInputListener = undefined;
     }
     if (this.boundResizeListener) {
@@ -153,12 +194,14 @@ export class ProcessTerminal implements Terminal {
       this.boundResizeListener = undefined;
     }
 
-    process.stdin.pause();
+    this.inputStream.pause();
 
     // Restore raw mode state
-    if (process.stdin.setRawMode) {
-      process.stdin.setRawMode(this.wasRaw);
+    if (this.inputStream.setRawMode) {
+      this.inputStream.setRawMode(this.wasRaw);
     }
+
+    this.closeTtyFd();
   }
 
   write(data: string): void {
@@ -210,10 +253,10 @@ export class ProcessTerminal implements Terminal {
     this.inExternalMode = true;
     this.detachListeners();
 
-    process.stdin.pause();
+    this.inputStream.pause();
 
-    if (process.stdin.setRawMode) {
-      process.stdin.setRawMode(false);
+    if (this.inputStream.setRawMode) {
+      this.inputStream.setRawMode(false);
     }
 
     process.stdout.write("\x1b[0m");
@@ -226,11 +269,11 @@ export class ProcessTerminal implements Terminal {
 
     this.inExternalMode = false;
 
-    if (process.stdin.setRawMode) {
-      process.stdin.setRawMode(true);
+    if (this.inputStream.setRawMode) {
+      this.inputStream.setRawMode(true);
     }
-    process.stdin.setEncoding("utf8");
-    process.stdin.resume();
+    this.inputStream.setEncoding("utf8");
+    this.inputStream.resume();
 
     process.stdout.write("\x1b[?2004h");
     process.stdout.write("\x1b[?25l");

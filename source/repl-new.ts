@@ -37,7 +37,7 @@ import {
   TUI,
   UserMessageComponent,
 } from "./tui/index.ts";
-import type { Terminal } from "./tui/terminal.ts";
+import type { ProcessTerminalOptions, Terminal } from "./tui/terminal.ts";
 
 interface ReplOptions {
   agent: Agent;
@@ -51,6 +51,7 @@ interface ReplOptions {
   promptHistory: string[];
   workspace: WorkspaceContext;
   tools?: CompleteToolSet;
+  terminalOptions?: ProcessTerminalOptions;
 }
 
 export class NewRepl {
@@ -82,7 +83,7 @@ export class NewRepl {
 
   constructor(options: ReplOptions) {
     this.options = options;
-    this.terminal = new ProcessTerminal();
+    this.terminal = new ProcessTerminal(options.terminalOptions);
     this.tui = new TUI(this.terminal);
     this.welcome = new Welcome({ type: "simple" });
     this.editor = new Editor({
