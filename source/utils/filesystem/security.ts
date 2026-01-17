@@ -139,8 +139,12 @@ export async function validatePath(
     });
   };
 
+  // Resolve symlinks in ancestors of the requested path for accurate comparison
+  // This handles cases like /tmp -> /private/tmp on macOS
+  const resolvedRequested = resolveExistingAncestorSync(normalizedRequested);
+
   // Check intended path is within any allowed directory
-  if (!isWithinAllowed(normalizedRequested)) {
+  if (!isWithinAllowed(resolvedRequested)) {
     throw new Error(
       `Access denied - path outside allowed directories: ${absolute} not in any of ${allowedDirectories.join(", ")}`,
     );
