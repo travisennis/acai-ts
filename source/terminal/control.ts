@@ -116,10 +116,16 @@ export function clearTerminal(): Promise<void> {
  * Sets the terminal title
  */
 export function setTerminalTitle(title: string): void {
-  if (process.platform === "win32") {
-    process.title = title ? `✳✳ ${title}` : title;
-  } else {
-    process.stdout.write(`\x1b]0;${title ? `✳✳ ${title}` : ""}\x07`);
+  try {
+    if (process.platform === "win32") {
+      process.title = title ? `✳✳ ${title}` : title;
+    } else {
+      if (process.stdout.writable) {
+        process.stdout.write(`\x1b]0;${title ? `✳✳ ${title}` : ""}\x07`);
+      }
+    }
+  } catch (err) {
+    logger.warn({ err }, "Failed to set terminal title");
   }
 }
 
@@ -149,7 +155,13 @@ export function getTerminalSize(): { rows: number; columns: number } {
  * Sends terminal escape sequence to show progress animation
  */
 export function startProgress(): void {
-  process.stdout.write("\u001b]9;4;3;0\u0007");
+  try {
+    if (process.stdout.writable) {
+      process.stdout.write("\u001b]9;4;3;0\u0007");
+    }
+  } catch {
+    // Ignore write errors (e.g., EPIPE)
+  }
 }
 
 /**
@@ -157,5 +169,11 @@ export function startProgress(): void {
  * Sends terminal escape sequence to hide progress animation
  */
 export function stopProgress(): void {
-  process.stdout.write("\u001b]9;4;0;0\u0007");
+  try {
+    if (process.stdout.writable) {
+      process.stdout.write("\u001b]9;4;0;0\u0007");
+    }
+  } catch {
+    // Ignore write errors (e.g., EPIPE)
+  }
 }
