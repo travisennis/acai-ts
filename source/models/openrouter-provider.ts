@@ -47,7 +47,7 @@ const openrouterModels = {
   "glm-4.6": openRouterClient("z-ai/glm-4.6:exacto"),
   "gpt-oss-120b": openRouterClient("openai/gpt-oss-120b:exacto"),
   "grok-code-fast-1": openRouterClient("x-ai/grok-code-fast-1"),
-  "grok-4-fast": openRouterClient("x-ai/grok-4-fast"),
+  "grok-4-1-fast": openRouterClient("x-ai/grok-4.1-fast"),
   "gpt-5.1": openRouterClient("openai/gpt-5.1"),
   "gpt-5.1-codex": openRouterClient("openai/gpt-5.1-codex"),
   "gpt-5.1-codex-mini": openRouterClient("openai/gpt-5.1-codex-mini"),
@@ -338,8 +338,8 @@ export const openrouterModelRegistry: {
     costPerInputToken: 0.00000007256312,
     costPerOutputToken: 0.0000002903936,
   },
-  "openrouter:grok-4-fast": {
-    id: "openrouter:grok-4-fast",
+  "openrouter:grok-4-1-fast": {
+    id: "openrouter:grok-4-1-fast",
     provider: "openrouter",
     contextWindow: 2000000,
     maxOutputTokens: 30000,
