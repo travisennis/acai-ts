@@ -42,9 +42,7 @@ type App =
   | "conversation-analyzer"
   | "tool-repair"
   | "init-project"
-  | "task-agent"
-  | "handoff-agent"
-  | "edit-fix";
+  | "handoff-agent";
 
 interface ModelManagerEvents {
   "set-model": [app: App, model: ModelName];
