@@ -68,6 +68,7 @@ Note: The editor uses Shift+Enter to submit. The escape sequence `Escape "[13;2u
 
 - Run the `Full Check` command when you complete a task to make sure the code is correct.
 - The version of node that acai supports can run typescript directly.
+- Always use single quotes for commit messages containing special characters
 - Never add comments explaining edits - only add comments that explain or clarify how code works
 - Never add comments indicating that code was removed
 - Always run `Full Check` before committing
