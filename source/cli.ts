@@ -191,11 +191,11 @@ const toolCallRepair = <T extends ToolSet>(modelManager: ModelManager) => {
           schema: tool.inputSchema as z.ZodType<unknown>,
         }),
         prompt: [
-          `The model tried to call the tool "${toolCall.toolName}" with the following arguments:`,
+          `The model tried to call the tool "${toolCall.toolName}" with the following inputs:`,
           JSON.stringify(toolCall.input),
           "The tool accepts the following schema:",
           JSON.stringify(inputSchema(toolCall)),
-          "Please fix the arguments.",
+          "Please fix the inputs.",
         ].join("\n"),
       });
 
