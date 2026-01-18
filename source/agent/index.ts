@@ -649,6 +649,11 @@ const toolCallRepair = <T extends ToolSet>(modelManager: ModelManager) => {
     if (NoSuchToolError.isInstance(error)) {
       return null; // do not attempt to fix invalid tool names
     }
+
+    logger.error(
+      `Attemping to repair tool call: ${toolCall.toolName} - ${toolCall.input}`,
+    );
+
     const tool = tools[toolCall.toolName as keyof typeof tools];
 
     try {
