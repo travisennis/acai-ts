@@ -68,6 +68,55 @@ function createAssistantMessage(content: string): AssistantModelMessage {
   };
 }
 
+function isPlainObject(x: unknown): x is Record<string, unknown> {
+  return typeof x === "object" && x !== null && !Array.isArray(x);
+}
+
+function sanitizeToolCallInput(input: unknown): Record<string, unknown> {
+  if (isPlainObject(input)) {
+    return input;
+  }
+
+  if (typeof input === "string") {
+    try {
+      const parsed = JSON.parse(input);
+      if (isPlainObject(parsed)) {
+        return parsed;
+      }
+    } catch {
+      // JSON parsing failed, fall through to return empty object
+    }
+  }
+
+  logger.warn(
+    { originalInput: typeof input === "string" ? input.slice(0, 100) : input },
+    "Sanitized malformed tool call input to empty object",
+  );
+  return {};
+}
+
+function sanitizeResponseMessages(
+  messages: ResponseMessage[],
+): ResponseMessage[] {
+  return messages.map((msg) => {
+    if (msg.role !== "assistant" || !Array.isArray(msg.content)) {
+      return msg;
+    }
+
+    const content = msg.content.map((part) => {
+      if (part.type === "tool-call") {
+        const sanitizedInput = sanitizeToolCallInput(part.input);
+        if (sanitizedInput !== part.input) {
+          return { ...part, input: sanitizedInput };
+        }
+      }
+      return part;
+    });
+
+    return { ...msg, content } as AssistantModelMessage;
+  });
+}
+
 /**
 A message that was generated during the generation process.
 It can be either an assistant message or a tool message.
@@ -220,8 +269,10 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
 
   appendResponseMessages(responseMessages: ResponseMessage[]) {
     this.updatedAt = new Date();
+    // Sanitize tool call inputs to prevent malformed JSON from poisoning history
+    const sanitizedMessages = sanitizeResponseMessages(responseMessages);
     // Filter out messages with empty content arrays
-    const validMessages = responseMessages.filter(this.validMessage);
+    const validMessages = sanitizedMessages.filter(this.validMessage);
     this.history.push(...validMessages);
   }
 
