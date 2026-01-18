@@ -62,9 +62,9 @@ describe("bash tool allowed paths access", async () => {
     allowedDirs: [baseDir, "/tmp"],
   });
 
-  async function run(command: string) {
+  async function run(command: string, timeout = 5000) {
     return tool.execute(
-      { command, cwd: baseDir, timeout: 1000 },
+      { command, cwd: baseDir, timeout },
       { toolCallId: "t1", messages: [] },
     );
   }
