@@ -4,10 +4,6 @@ import { customProvider } from "ai";
 import type { ModelMetadata } from "./providers.ts";
 
 const openaiModels = {
-  "gpt-4.1": originalOpenAi("gpt-4.1"),
-  o3: originalOpenAi.responses("o3"),
-  "o4-mini": originalOpenAi.responses("o4-mini"),
-  "codex-mini": originalOpenAi("codex-mini-latest"),
   "gpt-5.2": originalOpenAi("gpt-5.2"),
   "gpt-5.2-codex": originalOpenAi.responses("gpt-5.2-codex"),
   "gpt-5.1-codex-mini": originalOpenAi("gpt-5.1-codex-mini"),
@@ -29,54 +25,6 @@ export const openaiProvider = {
 export const openaiModelRegistry: {
   [K in ModelName]: ModelMetadata<ModelName>;
 } = {
-  "openai:gpt-4.1": {
-    id: "openai:gpt-4.1",
-    provider: "openai",
-    contextWindow: 1000000,
-    maxOutputTokens: 32768,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.000002,
-    costPerOutputToken: 0.000008,
-  },
-  "openai:o3": {
-    id: "openai:o3",
-    provider: "openai",
-    contextWindow: 200000,
-    maxOutputTokens: 100000,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.00001,
-    costPerOutputToken: 0.00004,
-  },
-  "openai:o4-mini": {
-    id: "openai:o4-mini",
-    provider: "openai",
-    contextWindow: 200000,
-    maxOutputTokens: 100000,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000011,
-    costPerOutputToken: 0.0000044,
-  },
-  "openai:codex-mini": {
-    id: "openai:codex-mini",
-    provider: "openai",
-    contextWindow: 200000,
-    maxOutputTokens: 100000,
-    defaultTemperature: 0.3,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000015,
-    costPerOutputToken: 0.000006,
-  },
   "openai:gpt-5.2": {
     id: "openai:gpt-5.2",
     provider: "openai",
