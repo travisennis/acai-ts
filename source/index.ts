@@ -537,12 +537,13 @@ async function runReplMode(
       const userMessage = state.promptManager.getUserMessage();
       state.sessionManager.appendUserMessage(userMessage);
 
+      const systemPromptResult = await systemPrompt({
+        activeTools,
+        allowedDirs: workspace.allowedDirs,
+        skillsEnabled,
+      });
       const results = agent.run({
-        systemPrompt: await systemPrompt({
-          activeTools,
-          allowedDirs: workspace.allowedDirs,
-          skillsEnabled,
-        }),
+        systemPrompt: systemPromptResult.prompt,
         input: promptText,
         tools,
         activeTools,
@@ -569,12 +570,13 @@ async function runReplMode(
       !flags["no-skills"] && (projectConfig.skills?.enabled ?? true);
 
     try {
+      const systemPromptResult = await systemPrompt({
+        activeTools,
+        allowedDirs: workspace.allowedDirs,
+        skillsEnabled,
+      });
       const results = agent.run({
-        systemPrompt: await systemPrompt({
-          activeTools,
-          allowedDirs: workspace.allowedDirs,
-          skillsEnabled,
-        }),
+        systemPrompt: systemPromptResult.prompt,
         input: userInput,
         tools,
         activeTools,

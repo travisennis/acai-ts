@@ -74,11 +74,12 @@ export class Cli {
 
     messageHistory.appendUserMessage(userMsg);
 
-    const finalSystemPrompt = await systemPrompt({
+    const finalSystemPromptResult = await systemPrompt({
       activeTools,
       allowedDirs: this.options.workspace.allowedDirs,
       skillsEnabled: this.skillsEnabled,
     });
+    const finalSystemPrompt = finalSystemPromptResult.prompt;
 
     const aiConfig = new AiConfig({
       modelMetadata: modelConfig,

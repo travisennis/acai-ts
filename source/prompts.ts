@@ -6,6 +6,14 @@ import { getShell } from "./terminal/index.ts";
 import type { CompleteToolNames } from "./tools/index.ts";
 import { getCurrentBranch, inGitDirectory } from "./utils/git.ts";
 
+type SystemPromptComponents = {
+  core: string;
+  userAgentsMd: string;
+  cwdAgentsMd: string;
+  learnedRules: string;
+  skills: string;
+};
+
 async function getProjectContext() {
   const agentsFiles = await config.readAgentsFiles();
   const userAgentsFile = agentsFiles.find(
@@ -33,7 +41,13 @@ async function getProjectContext() {
     }
     result += `### Important rules to follow\n\n${learnedRules}`;
   }
-  return result.trim();
+
+  return {
+    text: result.trim(),
+    userAgentsMd: userRules,
+    cwdAgentsMd: cwdRules,
+    learnedRules: learnedRules,
+  };
 }
 
 async function environmentInfo(allowedDirs: string[]) {
@@ -66,16 +80,26 @@ type SystemPromptOptions = {
   skillsEnabled?: boolean;
 };
 
+type SystemPromptResult = {
+  prompt: string;
+  components: SystemPromptComponents;
+};
+
 const DEFAULT_ALLOWED_DIRS = [process.cwd()];
 
-export async function systemPrompt(options?: SystemPromptOptions) {
+export async function systemPrompt(
+  options?: SystemPromptOptions,
+): Promise<SystemPromptResult> {
   const {
     allowedDirs = DEFAULT_ALLOWED_DIRS,
     includeRules = true,
     skillsEnabled = true,
   } = options ?? {};
 
-  const projectContextText = includeRules ? await getProjectContext() : "";
+  const projectContextResult = includeRules
+    ? await getProjectContext()
+    : { text: "", userAgentsMd: "", cwdAgentsMd: "", learnedRules: "" };
+  const projectContextText = projectContextResult.text;
   const environmentInfoText = await environmentInfo(allowedDirs);
 
   let skillsText = "";
@@ -84,7 +108,7 @@ export async function systemPrompt(options?: SystemPromptOptions) {
     skillsText = formatSkillsForPrompt(skills);
   }
 
-  const prompt = dedent`
+  const corePrompt = dedent`
 You are acai. You are running as a coding agent in a CLI on the user's computer.
 
 ## Core Principles
@@ -208,11 +232,17 @@ DEFAULT TO PARALLEL: Unless you have a specific reason why operations MUST be se
 - Apply principle of least privilege in API integrations
 - If a tool fails, ask the user how to proceed
 - Report errors with specific locations and suggested fixes
-
-${projectContextText}
-
-${environmentInfoText}${skillsText}
 `;
 
-  return prompt;
+  const components: SystemPromptComponents = {
+    core: `${corePrompt}\n\n${environmentInfoText}`,
+    userAgentsMd: projectContextResult.userAgentsMd,
+    cwdAgentsMd: projectContextResult.cwdAgentsMd,
+    learnedRules: projectContextResult.learnedRules,
+    skills: skillsText,
+  };
+
+  const assembledPrompt = `${corePrompt}\n${projectContextText}\n\n${environmentInfoText}${skillsText}`;
+  const result: SystemPromptResult = { prompt: assembledPrompt, components };
+  return result;
 }

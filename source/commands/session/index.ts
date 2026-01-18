@@ -47,14 +47,21 @@ export function sessionCommand({
 
       const projectConfig = await config.getConfig();
 
-      const sys = await systemPrompt({
+      const sysResult = await systemPrompt({
         activeTools: projectConfig.tools.activeTools as
           | CompleteToolNames[]
           | undefined,
         allowedDirs: workspace.allowedDirs,
         includeRules: true,
       });
-      const systemPromptTokens = tokenCounter.count(sys);
+      const systemPromptTokens = tokenCounter.count(sysResult.prompt);
+      const systemPromptBreakdown = {
+        core: tokenCounter.count(sysResult.components.core),
+        userAgentsMd: tokenCounter.count(sysResult.components.userAgentsMd),
+        cwdAgentsMd: tokenCounter.count(sysResult.components.cwdAgentsMd),
+        learnedRules: tokenCounter.count(sysResult.components.learnedRules),
+        skills: tokenCounter.count(sysResult.components.skills),
+      };
 
       let toolsTokens = 0;
       try {
@@ -87,6 +94,7 @@ export function sessionCommand({
 
       const breakdown: Breakdown = {
         systemPrompt: systemPromptTokens,
+        systemPromptBreakdown,
         tools: toolsTokens,
         messages: messagesTokens,
         totalUsed: used,
@@ -168,6 +176,37 @@ export function sessionCommand({
           "System Prompt",
           formatNumber(breakdown.systemPrompt),
           formatPercentage(breakdown.systemPrompt, window),
+        ],
+        [
+          "  Core Instructions",
+          formatNumber(breakdown.systemPromptBreakdown.core),
+          formatPercentage(breakdown.systemPromptBreakdown.core, window),
+        ],
+        [
+          "  ~/.acai/AGENTS.md",
+          formatNumber(breakdown.systemPromptBreakdown.userAgentsMd),
+          formatPercentage(
+            breakdown.systemPromptBreakdown.userAgentsMd,
+            window,
+          ),
+        ],
+        [
+          "  ./AGENTS.md",
+          formatNumber(breakdown.systemPromptBreakdown.cwdAgentsMd),
+          formatPercentage(breakdown.systemPromptBreakdown.cwdAgentsMd, window),
+        ],
+        [
+          "  Learned Rules",
+          formatNumber(breakdown.systemPromptBreakdown.learnedRules),
+          formatPercentage(
+            breakdown.systemPromptBreakdown.learnedRules,
+            window,
+          ),
+        ],
+        [
+          "  Skills",
+          formatNumber(breakdown.systemPromptBreakdown.skills),
+          formatPercentage(breakdown.systemPromptBreakdown.skills, window),
         ],
         [
           "System Tools",

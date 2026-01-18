@@ -233,13 +233,14 @@ async function createSystemPrompt(
 ): Promise<string> {
   const projectConfig = await configManager.getConfig();
 
-  const sys = await systemPrompt({
+  const sysResult = await systemPrompt({
     activeTools: projectConfig.tools.activeTools as
       | CompleteToolNames[]
       | undefined,
     includeRules: true,
     allowedDirs: workspace.allowedDirs,
   });
+  const sys = sysResult.prompt;
 
   return `You are an expert analyst reviewing conversations between a coding agent and a software engineer. Your goal is to identify instances where the engineer corrected the agent's approach or understanding in a way that reveals a *generalizable principle* for improving the agent's future behavior across *different* tasks.
 
