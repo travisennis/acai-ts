@@ -79,6 +79,7 @@ export class NotificationComponent implements Component {
       )(paddedLine + " ".repeat(paddingNeeded));
       result.push(bgLine);
     }
+    result.push("");
 
     this.cachedMessage = this.message;
     this.cachedWidth = width;
