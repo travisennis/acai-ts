@@ -163,6 +163,9 @@ export class NewRepl {
       this.handleCtrlC();
     };
 
+    // Set callback for session reconstruction (used by /history command)
+    this.tui.onReconstructSession = () => this.rerender();
+
     this.tui.addChild(this.welcome);
 
     // Initialize footer with current title if one exists

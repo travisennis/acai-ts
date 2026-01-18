@@ -79,6 +79,7 @@ export class TUI extends Container {
   private activeModal: Modal | null = null;
 
   public onCtrlC?: () => void;
+  public onReconstructSession?: () => void;
 
   constructor(terminal: Terminal) {
     super();

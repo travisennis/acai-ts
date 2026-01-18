@@ -132,6 +132,8 @@ export const historyCommand = ({
                   setTerminalTitle(
                     conversation.title || `acai: ${process.cwd()}`,
                   );
+                  // Trigger TUI reconstruction to show restored conversation
+                  tui.onReconstructSession?.();
                   break;
 
                 case "export":
