@@ -694,7 +694,7 @@ Acai supports project-specific configuration through a `.acai/acai.json` file in
 Global application settings are stored in:
 - **Configuration**: `~/.acai/`
 - **Logs**: `~/.acai/logs/acai.log`
-- **Message History**: `~/.acai/message-history/`
+- **Sessions**: `~/.acai/sessions/`
 
 ### Environment-Specific Setup
 

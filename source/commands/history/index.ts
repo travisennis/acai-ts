@@ -94,10 +94,10 @@ export const historyCommand = ({
       },
     ): Promise<"break" | "continue" | "use"> {
       const appDir = config.app;
-      const messageHistoryDir = await appDir.ensurePath("message-history");
+      const sessionsDir = await appDir.ensurePath("sessions");
 
       // Load all histories (use a large number to get all)
-      const histories = await SessionManager.load(messageHistoryDir, 1000);
+      const histories = await SessionManager.load(sessionsDir, 1000);
 
       if (histories.length === 0) {
         container.addChild(

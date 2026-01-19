@@ -729,7 +729,7 @@ graph TD
   K --> L{User exits or interrupt}
   L -->|Exit| M[SessionManager.save]
   L -->|Interrupt| N[Try save on SIGINT]
-  M --> O[Persist to message-history dir]
+  M --> O[Persist to sessions dir]
   N --> O
   O --> P[Print resume message with session ID]
 ```

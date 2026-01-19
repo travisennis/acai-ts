@@ -306,7 +306,11 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
 
   async save() {
     const msgHistoryDir = this.stateDir;
-    const fileName = `message-history-${this.sessionId}.json`;
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .slice(0, 19);
+    const fileName = `session-${timestamp}-${this.sessionId}.json`;
     const filePath = join(msgHistoryDir, fileName);
     const tempFilePath = `${filePath}.tmp`;
 
@@ -517,12 +521,12 @@ React Component Rendering Debug";
   ): Promise<SavedMessageHistory[]> {
     try {
       const files = await readdir(stateDir);
-      const messageHistoryFiles = files.filter(
-        (file) => file.startsWith("message-history-") && file.endsWith(".json"),
+      const sessionFiles = files.filter(
+        (file) => file.startsWith("session-") && file.endsWith(".json"),
       );
 
       // Get file stats and sort by modification time (newest first)
-      const fileStatsPromises = messageHistoryFiles.map(async (fileName) => {
+      const fileStatsPromises = sessionFiles.map(async (fileName) => {
         const filePath = join(stateDir, fileName);
         try {
           const fileStat = await stat(filePath);

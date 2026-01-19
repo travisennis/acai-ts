@@ -153,8 +153,8 @@ async function initializeAppState(
   const appDir = config.app;
 
   // Parallelize independent async operations
-  const [messageHistoryDir, modelManager] = await Promise.all([
-    appDir.ensurePath("message-history"),
+  const [sessionsDir, modelManager] = await Promise.all([
+    appDir.ensurePath("sessions"),
     initializeModelManager(appDir),
   ]);
 
@@ -164,7 +164,7 @@ async function initializeAppState(
 
   // Initialize dependent components
   const sessionManager = await initializeSessionManager(
-    messageHistoryDir,
+    sessionsDir,
     modelManager,
     tokenTracker,
   );
@@ -172,7 +172,7 @@ async function initializeAppState(
   // Handle conversation history loading
   await handleConversationHistory(
     sessionManager,
-    messageHistoryDir,
+    sessionsDir,
     hasContinueOrResume,
     resumeSessionId,
   );
@@ -341,12 +341,12 @@ async function initializeModelManager(
 }
 
 async function initializeSessionManager(
-  messageHistoryDir: string,
+  sessionsDir: string,
   modelManager: ModelManager,
   tokenTracker: TokenTracker,
 ): Promise<SessionManager> {
   const messageHistory = new SessionManager({
-    stateDir: messageHistoryDir,
+    stateDir: sessionsDir,
     modelManager,
     tokenTracker,
   });
@@ -365,13 +365,13 @@ async function initializeSessionManager(
 
 async function handleConversationHistory(
   messageHistory: SessionManager,
-  messageHistoryDir: string,
+  sessionsDir: string,
   _hasContinueOrResume: boolean,
   resumeSessionId: string | undefined,
 ): Promise<void> {
   if (flags.continue === true) {
     const histories = await SessionManager.load(
-      messageHistoryDir,
+      sessionsDir,
       DEFAULT_HISTORY_LIMIT,
     );
     if (histories.length > 0) {
@@ -409,7 +409,7 @@ async function handleConversationHistory(
   } else if (flags.resume === true) {
     if (resumeSessionId) {
       const histories = await SessionManager.load(
-        messageHistoryDir,
+        sessionsDir,
         DEFAULT_HISTORY_LIMIT,
       );
       const targetHistory = histories.find(
@@ -425,7 +425,7 @@ async function handleConversationHistory(
       }
     } else {
       const histories = await SessionManager.load(
-        messageHistoryDir,
+        sessionsDir,
         CONTINUE_HISTORY_LIMIT,
       );
       const latestHistory = histories.at(0);

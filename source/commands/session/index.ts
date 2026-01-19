@@ -103,11 +103,11 @@ export function sessionCommand({
       };
 
       const sessionId = messageHistory.getSessionId();
-      const sessionFile = `message-history-${sessionId}.json`;
-      const modelId = messageHistory.getModelId() || "Not set";
-      const title = messageHistory.getTitle() || "No title";
       const createdAt = messageHistory.getCreatedAt();
       const updatedAt = messageHistory.getUpdatedAt();
+      const sessionFile = `session-${createdAt.toISOString().replace(/[:.]/g, "-").slice(0, 19)}-${sessionId}.json`;
+      const modelId = messageHistory.getModelId() || "Not set";
+      const title = messageHistory.getTitle() || "No title";
       const duration = formatDuration(
         updatedAt.getTime() - createdAt.getTime(),
       );

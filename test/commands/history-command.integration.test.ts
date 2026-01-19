@@ -19,7 +19,7 @@ describe("historyCommand integration", () => {
     mockConfig = createMockConfig();
     mock.method(mockConfig.app, "ensurePath", async (_path: string) => {
       // Return a temporary directory path for testing
-      return "/tmp/test-message-history";
+      return "/tmp/test-sessions";
     });
   });
 
