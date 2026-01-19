@@ -19,7 +19,7 @@ import { ModelManager } from "./models/manager.ts";
 import { isSupportedModel, type ModelName } from "./models/providers.ts";
 import { PromptManager } from "./prompts/manager.ts";
 import { systemPrompt } from "./prompts.ts";
-import { NewRepl } from "./repl-new.ts";
+import { Repl } from "./repl.ts";
 import { SessionManager } from "./sessions/manager.ts";
 import { readStdinWithLimits } from "./stdin.ts";
 import { setTerminalTitle } from "./terminal/control.ts";
@@ -472,7 +472,7 @@ async function runReplMode(
   });
 
   // When stdin was piped, use /dev/tty for interactive input instead of process.stdin
-  const repl = new NewRepl({
+  const repl = new Repl({
     agent,
     promptManager: state.promptManager,
     config: state.appConfig,

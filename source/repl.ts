@@ -54,7 +54,7 @@ interface ReplOptions {
   terminalOptions?: ProcessTerminalOptions;
 }
 
-export class NewRepl {
+export class Repl {
   private options: ReplOptions;
   private terminal: Terminal;
   private tui: TUI;

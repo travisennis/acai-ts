@@ -108,7 +108,7 @@ export class ProcessTerminal implements Terminal {
     this.attachListeners();
 
     this.sigintHandler = () => {
-      // Let the custom editor.onCtrlC handler in NewRepl handle Ctrl+C
+      // Let the custom editor.onCtrlC handler in Repl handle Ctrl+C
       // This prevents a race condition where stop() gets called without the exit message
     };
     process.on("SIGINT", this.sigintHandler);
