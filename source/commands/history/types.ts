@@ -8,4 +8,23 @@ export interface ConversationHistory {
   sessionId: string;
   modelId: string;
   project: string;
+  tokenUsage?: {
+    stepIndex: number;
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    cachedInputTokens: number;
+    reasoningTokens: number;
+    inputTokenDetails: {
+      noCacheTokens: number;
+      cacheReadTokens: number;
+      cacheWriteTokens: number;
+    };
+    outputTokenDetails: {
+      textTokens: number;
+      reasoningTokens: number;
+    };
+    timestamp: number;
+    estimatedCost: number;
+  }[];
 }

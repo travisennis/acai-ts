@@ -465,6 +465,9 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/tokens/counter.ts**: Utilities for counting tokens in text using tiktoken.
 - **source/tokens/tracker.ts**: Tracks token usage across sessions for cost estimation.
 
+**Session Token Usage Tracking**
+- **source/sessions/manager.ts**: Manages conversation history persistence, loading, state restoration, and per-turn token usage tracking for auditing, billing, and session resumption.
+
 **Tools**
 - **source/tools/agent.ts**: AI agent tool for delegating tasks to sub-agents.
 - **source/tools/bash.ts**: Tool for executing shell commands safely with output capture.
@@ -536,6 +539,10 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **source/version.ts**: Manages and exposes application version information.
 
 ### test/ Directory (Tests)
+
+**Session Tests**
+- **test/sessions/manager.test.ts**: Unit tests for session token usage tracking, including turn recording, total usage aggregation, context window retrieval, save/restore persistence, and cost calculation.
+- **test/utils/model-manager.ts**: Test utility for creating ModelManager instances with predefined models for testing.
 
 **Command Tests**
 - **test/commands/clear-command.test.ts**: Unit tests for clear command.

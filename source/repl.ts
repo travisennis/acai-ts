@@ -92,19 +92,22 @@ export class Repl {
     this.chatContainer = new Container();
     this.statusContainer = new Container();
     this.editorContainer = new Container(); // Container to hold editor or selector
-    this.footer = new FooterComponent(options.modelManager, {
-      projectStatus: {
-        path: "",
-        isGitRepository: false,
-        fileChanges: { added: 0, modified: 0, deleted: 0, untracked: 0 },
-        diffStats: { insertions: 0, deletions: 0 },
-        hasChanges: false,
-      } as ProjectStatusData,
-      currentContextWindow: 0,
-      contextWindow:
-        options.modelManager.getModelMetadata("repl").contextWindow,
-      usage: this.options.tokenTracker.getUsageByApp("repl"),
-    });
+    this.footer = new FooterComponent(
+      options.modelManager,
+      options.tokenTracker,
+      {
+        projectStatus: {
+          path: "",
+          isGitRepository: false,
+          fileChanges: { added: 0, modified: 0, deleted: 0, untracked: 0 },
+          diffStats: { insertions: 0, deletions: 0 },
+          hasChanges: false,
+        } as ProjectStatusData,
+        currentContextWindow: 0,
+        contextWindow:
+          options.modelManager.getModelMetadata("repl").contextWindow,
+      },
+    );
     this.editorContainer.addChild(this.editor); // Start with editor
     this.editor.onRenderRequested = () => this.tui.requestRender();
     this.editor.onExternalEditor = async (content: string) => {
@@ -156,7 +159,6 @@ export class Repl {
       projectStatus: await getProjectStatus(),
       currentContextWindow: 0,
       contextWindow: modelConfig.contextWindow,
-      usage: this.options.tokenTracker.getUsageByApp("repl"),
     });
 
     this.tui.onCtrlC = () => {
@@ -286,11 +288,11 @@ export class Repl {
 
     this.footer.setState({
       projectStatus: await getProjectStatus(),
-      currentContextWindow: this.options.messageHistory.getContextWindow(),
+      currentContextWindow:
+        this.options.messageHistory.getLastTurnContextWindow(),
       contextWindow:
         this.options.modelManager.getModelMetadata("repl").contextWindow,
       agentState: state,
-      usage: this.options.tokenTracker.getUsageByApp("repl"),
     });
 
     const eventType = event.type;
@@ -475,12 +477,32 @@ export class Repl {
   }
 
   async rerender() {
+    // When resuming a session, populate tokenTracker with historical usage
+    // so the footer displays the correct total session usage
+    const totalUsage = this.options.messageHistory.getTotalTokenUsage();
+    if (totalUsage.inputTokens > 0 || totalUsage.outputTokens > 0) {
+      this.options.tokenTracker.trackUsage("repl", {
+        inputTokens: totalUsage.inputTokens,
+        outputTokens: totalUsage.outputTokens,
+        totalTokens: totalUsage.totalTokens,
+        inputTokenDetails: {
+          noCacheTokens: totalUsage.inputTokens - totalUsage.cachedInputTokens,
+          cacheReadTokens: totalUsage.cachedInputTokens,
+          cacheWriteTokens: 0,
+        },
+        outputTokenDetails: {
+          textTokens: totalUsage.outputTokens,
+          reasoningTokens: totalUsage.reasoningTokens,
+        },
+      });
+    }
+
     this.footer.setState({
       projectStatus: await getProjectStatus(),
-      currentContextWindow: this.options.messageHistory.getContextWindow(),
+      currentContextWindow:
+        this.options.messageHistory.getLastTurnContextWindow(),
       contextWindow:
         this.options.modelManager.getModelMetadata("repl").contextWindow,
-      usage: this.options.tokenTracker.getUsageByApp("repl"),
     });
 
     // Reconstruct entire session display from messages

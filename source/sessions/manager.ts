@@ -123,7 +123,27 @@ It can be either an assistant message or a tool message.
  */
 type ResponseMessage = AssistantModelMessage | ToolModelMessage;
 
-type SavedMessageHistory = {
+export type TokenUsageTurn = {
+  stepIndex: number;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  cachedInputTokens: number;
+  reasoningTokens: number;
+  inputTokenDetails: {
+    noCacheTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+  };
+  outputTokenDetails: {
+    textTokens: number;
+    reasoningTokens: number;
+  };
+  timestamp: number;
+  estimatedCost: number;
+};
+
+export type SavedMessageHistory = {
   project: string;
   sessionId: string;
   modelId: string;
@@ -131,6 +151,7 @@ type SavedMessageHistory = {
   createdAt: Date;
   updatedAt: Date;
   messages: ModelMessage[];
+  tokenUsage?: TokenUsageTurn[];
 };
 
 type RawMessageHistory = Omit<
@@ -157,6 +178,7 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
   private contextWindow: number;
   private modelManager: ModelManager;
   private tokenTracker: TokenTracker;
+  private tokenUsage: TokenUsageTurn[];
 
   constructor({
     stateDir,
@@ -178,6 +200,7 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
     this.contextWindow = 0;
     this.modelManager = modelManager;
     this.tokenTracker = tokenTracker;
+    this.tokenUsage = [];
   }
 
   create(modelId: string) {
@@ -220,6 +243,7 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
   clear() {
     this.history.length = 0;
     this.contextWindow = 0;
+    this.tokenUsage = [];
     this.emit("clear-history");
   }
 
@@ -305,6 +329,7 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       messages: this.history,
+      tokenUsage: this.tokenUsage,
     };
 
     try {
@@ -599,6 +624,108 @@ React Component Rendering Debug";
       typeof savedHistory.updatedAt === "string"
         ? new Date(savedHistory.updatedAt)
         : savedHistory.updatedAt;
-    this.history = [...savedHistory.messages]; // Use the correct internal property name and create a copy
+    // Sanitize messages to prevent malformed JSON from poisoning history
+    // Only sanitize assistant and tool messages (not user or system messages)
+    const messagesToSanitize = savedHistory.messages.filter(
+      (msg): msg is ResponseMessage =>
+        msg.role === "assistant" || msg.role === "tool",
+    );
+    const sanitizedAssistantAndTool =
+      sanitizeResponseMessages(messagesToSanitize);
+    // Keep user and system messages as-is
+    const otherMessages = savedHistory.messages.filter(
+      (msg) => msg.role === "user" || msg.role === "system",
+    );
+    // Filter out messages with empty content arrays
+    const validMessages = [
+      ...sanitizedAssistantAndTool,
+      ...otherMessages,
+    ].filter(this.validMessage);
+    this.history = [...validMessages];
+    this.tokenUsage = savedHistory.tokenUsage
+      ? [...savedHistory.tokenUsage]
+      : [];
+  }
+
+  // Token usage tracking methods
+  recordTurnUsage(usage: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    cachedInputTokens: number;
+    reasoningTokens: number;
+    inputTokenDetails: {
+      noCacheTokens: number;
+      cacheReadTokens: number;
+      cacheWriteTokens: number;
+    };
+    outputTokenDetails: {
+      textTokens: number;
+      reasoningTokens: number;
+    };
+  }): void {
+    const modelConfig = this.modelManager.getModelMetadata("repl");
+    const estimatedCost =
+      usage.inputTokens * modelConfig.costPerInputToken +
+      usage.outputTokens * modelConfig.costPerOutputToken;
+
+    const turnUsage: TokenUsageTurn = {
+      stepIndex: this.tokenUsage.length,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      totalTokens: usage.totalTokens,
+      cachedInputTokens: usage.cachedInputTokens,
+      reasoningTokens: usage.reasoningTokens,
+      inputTokenDetails: { ...usage.inputTokenDetails },
+      outputTokenDetails: { ...usage.outputTokenDetails },
+      timestamp: Date.now(),
+      estimatedCost,
+    };
+
+    this.tokenUsage.push(turnUsage);
+  }
+
+  getTokenUsage(): TokenUsageTurn[] {
+    return [...this.tokenUsage];
+  }
+
+  getTotalTokenUsage(): {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    cachedInputTokens: number;
+    reasoningTokens: number;
+    estimatedCost: number;
+  } {
+    return this.tokenUsage.reduce(
+      (acc, turn) => {
+        acc.inputTokens += turn.inputTokens;
+        acc.outputTokens += turn.outputTokens;
+        acc.totalTokens += turn.totalTokens;
+        acc.cachedInputTokens += turn.cachedInputTokens;
+        acc.reasoningTokens += turn.reasoningTokens;
+        acc.estimatedCost += turn.estimatedCost;
+        return acc;
+      },
+      {
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        cachedInputTokens: 0,
+        reasoningTokens: 0,
+        estimatedCost: 0,
+      },
+    );
+  }
+
+  getLastTurnContextWindow(): number {
+    if (this.tokenUsage.length === 0) {
+      return 0;
+    }
+    return this.tokenUsage[this.tokenUsage.length - 1].totalTokens;
+  }
+
+  clearTokenUsage(): void {
+    this.tokenUsage = [];
   }
 }

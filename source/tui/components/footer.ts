@@ -1,10 +1,10 @@
-import type { LanguageModelUsage } from "ai";
 import type { AgentState } from "../../agent/index.ts";
 import { formatDuration, formatNumber } from "../../formatting.ts";
 import type { ModelManager } from "../../models/manager.ts";
 import type { ProjectStatusData } from "../../repl/project-status.ts";
 import { getTerminalSize } from "../../terminal/control.ts";
 import style from "../../terminal/style.ts";
+import type { TokenTracker } from "../../tokens/tracker.ts";
 import { type Component, visibleWidth } from "../tui.ts";
 import { ProgressBarComponent } from "./progress-bar.ts";
 
@@ -12,7 +12,6 @@ type State = {
   projectStatus: ProjectStatusData;
   currentContextWindow: number;
   contextWindow: number;
-  usage?: LanguageModelUsage;
   agentState?: AgentState;
 };
 
@@ -59,12 +58,17 @@ function formatProjectStatus(
 
 export class FooterComponent implements Component {
   private modelManager: ModelManager;
+  private tokenTracker?: TokenTracker;
   private state: State;
   private progressBar: ProgressBarComponent;
-  private usage?: LanguageModelUsage;
   private agentState?: AgentState;
-  constructor(modelManager: ModelManager, state: State) {
+  constructor(
+    modelManager: ModelManager,
+    tokenTracker: TokenTracker | undefined,
+    state: State,
+  ) {
     this.modelManager = modelManager;
+    this.tokenTracker = tokenTracker;
     this.agentState = state.agentState;
     this.state = state;
     this.progressBar = new ProgressBarComponent(
@@ -78,16 +82,12 @@ export class FooterComponent implements Component {
     if (state.agentState) {
       this.agentState = state.agentState;
     }
-    if (state.usage) {
-      this.usage = state.usage;
-    }
     this.state = state;
     this.progressBar.setCurrent(state.currentContextWindow);
     this.progressBar.setTotal(state.contextWindow);
   }
 
   resetState() {
-    this.usage = undefined;
     this.agentState = undefined;
   }
 
@@ -107,18 +107,19 @@ export class FooterComponent implements Component {
       results.push(gitLine);
     }
 
-    if (this.usage && this.agentState) {
-      const inputTokens = this.usage.inputTokens ?? 0;
-      const outputTokens = this.usage.outputTokens ?? 0;
+    // Line 3: Total session usage from token tracker (accumulated across all turns)
+    if (this.tokenTracker) {
+      const sessionUsage = this.tokenTracker.getUsageByApp("repl");
+      const inputTokens = sessionUsage.inputTokens ?? 0;
+      const outputTokens = sessionUsage.outputTokens ?? 0;
       const cachedInputTokens =
-        this.usage.inputTokenDetails.cacheReadTokens ?? 0;
+        sessionUsage.inputTokenDetails?.cacheReadTokens ?? 0;
       const tokenSummary = `↑ ${formatNumber(inputTokens)} (${formatNumber(cachedInputTokens)}) ↓ ${formatNumber(outputTokens)} - `;
       let status = tokenSummary;
 
-      const inputCost =
-        this.agentState.modelConfig.costPerInputToken * inputTokens;
-      const outputCost =
-        this.agentState.modelConfig.costPerOutputToken * outputTokens;
+      const modelConfig = this.modelManager.getModelMetadata("repl");
+      const inputCost = modelConfig.costPerInputToken * inputTokens;
+      const outputCost = modelConfig.costPerOutputToken * outputTokens;
       status += `$${(inputCost + outputCost).toFixed(2)}`;
 
       results.push(style.dim(status));
