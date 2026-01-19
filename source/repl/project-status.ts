@@ -2,6 +2,7 @@ import {
   getCurrentBranch,
   getDiffStat,
   getGitStatus,
+  getUnpushedCommitsCount,
   inGitDirectory,
 } from "../utils/git.ts";
 
@@ -10,6 +11,7 @@ export interface ProjectStatusData {
   isGitRepository: boolean;
   branch?: string;
   hasChanges: boolean;
+  unpushedCommits: number;
   fileChanges: {
     added: number;
     modified: number;
@@ -58,6 +60,7 @@ class ProjectStatus {
         deletions: 0,
       },
       hasChanges: false,
+      unpushedCommits: 0,
     };
 
     if (await inGitDirectory()) {
@@ -71,12 +74,14 @@ class ProjectStatus {
         fileChanges.modified > 0;
 
       const stats = await getDiffStat();
+      const unpushedCommits = await getUnpushedCommitsCount();
 
       status = {
         path: currentDir,
         isGitRepository: true,
         branch: branch ?? undefined,
         hasChanges,
+        unpushedCommits,
         fileChanges: {
           added: fileChanges.added,
           modified: fileChanges.modified,

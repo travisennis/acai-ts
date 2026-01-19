@@ -148,3 +148,43 @@ export async function getCurrentBranch(): Promise<string | null> {
     return null;
   }
 }
+
+/**
+ * Count commits that exist locally but haven't been pushed to the remote branch
+ */
+export async function getUnpushedCommitsCount(): Promise<number> {
+  try {
+    // First, check if there's a remote configured
+    const remoteResult = await executeCommand(
+      ["git", "rev-parse", "--abbrev-ref", "@{u}"],
+      {
+        cwd: process.cwd(),
+        throwOnError: false,
+      },
+    );
+
+    if (remoteResult.code !== 0) {
+      // No upstream configured or no remote
+      return 0;
+    }
+
+    // Count unpushed commits using git rev-list
+    // @{u}..HEAD gives commits in HEAD but not in upstream (unpushed commits)
+    const result = await executeCommand(
+      ["git", "rev-list", "--count", "@{u}..HEAD"],
+      {
+        cwd: process.cwd(),
+        throwOnError: false,
+      },
+    );
+
+    if (result.code !== 0 || !result.stdout.trim()) {
+      return 0;
+    }
+
+    const count = Number.parseInt(result.stdout.trim(), 10);
+    return Number.isNaN(count) ? 0 : count;
+  } catch {
+    return 0;
+  }
+}

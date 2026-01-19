@@ -16,7 +16,9 @@ type State = {
   agentState?: AgentState;
 };
 
-function formatProjectStatus(status: ProjectStatusData): string {
+function formatProjectStatus(
+  status: ProjectStatusData,
+): [string, string | null] {
   const { columns: width } = getTerminalSize();
   const maxPathLength = Math.max(20, width - 10);
   let path = status.path;
@@ -26,11 +28,14 @@ function formatProjectStatus(status: ProjectStatusData): string {
     path = `${start}...${end}`;
   }
 
-  let result = style.blue(path);
+  const line1 = style.blue(path);
 
+  // Line 2: git information
   if (status.isGitRepository && status.branch) {
-    const asterisk = status.hasChanges ? "*" : "";
-    result += ` ${style.gray(status.branch + asterisk)}`;
+    let branchDisplay = status.branch;
+    if (status.unpushedCommits > 0) {
+      branchDisplay += ` ${style.cyan(`↑${status.unpushedCommits}`)}`;
+    }
 
     let fileStatus = "";
     if (status.fileChanges.added) fileStatus += ` +${status.fileChanges.added}`;
@@ -41,14 +46,15 @@ function formatProjectStatus(status: ProjectStatusData): string {
     if (status.fileChanges.untracked)
       fileStatus += ` ?${status.fileChanges.untracked}`;
 
-    result +=
-      " " +
-      `${style.dim("[")}${style.yellow(fileStatus.trim())} ` +
-      `${style.green(`+${status.diffStats.insertions}`)} ` +
-      `${style.red(`-${status.diffStats.deletions}`)}${style.dim("]")}`;
+    const line2 =
+      `${style.gray(branchDisplay)}` +
+      `${style.yellow(fileStatus)}` +
+      ` ${style.dim("[")}${style.green(`+${status.diffStats.insertions}`)} ${style.red(`-${status.diffStats.deletions}`)}${style.dim("]")}`;
+
+    return [line1, line2];
   }
 
-  return result;
+  return [line1, null];
 }
 
 export class FooterComponent implements Component {
@@ -89,14 +95,17 @@ export class FooterComponent implements Component {
     const results: string[] = [];
 
     const modelInfo = `${this.modelManager.getModelMetadata("repl").id} [${this.modelManager.getModel("repl").modelId}]`;
-    const projectStatusString = formatProjectStatus(this.state.projectStatus);
+    const [pathLine, gitLine] = formatProjectStatus(this.state.projectStatus);
     const padding = Math.max(
       0,
-      width - visibleWidth(projectStatusString) - modelInfo.length,
+      width - visibleWidth(pathLine) - modelInfo.length,
     );
-    results.push(
-      projectStatusString + " ".repeat(padding) + style.dim(modelInfo),
-    );
+    results.push(pathLine + " ".repeat(padding) + style.dim(modelInfo));
+
+    // Add git information on second line if present
+    if (gitLine) {
+      results.push(gitLine);
+    }
 
     if (this.usage && this.agentState) {
       const inputTokens = this.usage.inputTokens ?? 0;
