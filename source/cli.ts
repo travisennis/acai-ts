@@ -26,7 +26,7 @@ import { type CompleteTools, initTools } from "./tools/index.ts";
 import { ReadFileTool } from "./tools/read-file.ts";
 
 interface CliOptions {
-  messageHistory: SessionManager;
+  sessionManager: SessionManager;
   promptManager: PromptManager;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
@@ -52,7 +52,7 @@ export class Cli {
   }
 
   async run() {
-    const { promptManager, modelManager, tokenTracker, messageHistory } =
+    const { promptManager, modelManager, tokenTracker, sessionManager } =
       this.options;
 
     const abortController = new AbortController();
@@ -72,7 +72,7 @@ export class Cli {
 
     const userMsg = promptManager.getUserMessage();
 
-    messageHistory.appendUserMessage(userMsg);
+    sessionManager.appendUserMessage(userMsg);
 
     const finalSystemPromptResult = await systemPrompt({
       activeTools,
@@ -100,7 +100,7 @@ export class Cli {
         model: langModel,
         maxOutputTokens: aiConfig.maxOutputTokens(),
         system: finalSystemPrompt,
-        messages: messageHistory.get(),
+        messages: sessionManager.get(),
         temperature: aiConfig.temperature(),
         topP: aiConfig.topP(),
         stopWhen: stepCountIs(200),
@@ -126,13 +126,13 @@ export class Cli {
       });
 
       if (result.response.messages.length > 0) {
-        messageHistory.appendResponseMessages(result.response.messages);
+        sessionManager.appendResponseMessages(result.response.messages);
       }
 
       // this tracks the usage of every step in the call to streamText. it's a cumulative usage.
       tokenTracker.trackUsage("cli", result.usage);
 
-      await messageHistory.save();
+      await sessionManager.save();
 
       process.stdout.end(
         result.text.endsWith("\n") ? result.text : `${result.text}\n`,
@@ -154,7 +154,7 @@ export class Cli {
         logger.info("CLI execution interrupted by user");
         // Try to save message history before exiting
         try {
-          await messageHistory.save();
+          await sessionManager.save();
         } catch (_saveError) {
           // Ignore save errors on abort
           logger.warn("Failed to save message history on interrupt");

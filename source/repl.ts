@@ -41,7 +41,7 @@ import type { ProcessTerminalOptions, Terminal } from "./tui/terminal.ts";
 
 interface ReplOptions {
   agent: Agent;
-  messageHistory: SessionManager;
+  sessionManager: SessionManager;
   promptManager: PromptManager;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
@@ -143,7 +143,7 @@ export class Repl {
     const {
       promptManager,
       modelManager,
-      messageHistory,
+      sessionManager,
       commands,
       promptHistory,
     } = this.options;
@@ -264,7 +264,7 @@ export class Repl {
         const userPrompt = promptManager.get();
         const userMsg = promptManager.getUserMessage();
 
-        messageHistory.appendUserMessage(userMsg);
+        sessionManager.appendUserMessage(userMsg);
 
         if (this.onInputCallback) {
           this.onInputCallback(userPrompt);
@@ -289,7 +289,7 @@ export class Repl {
     this.footer.setState({
       projectStatus: await getProjectStatus(),
       currentContextWindow:
-        this.options.messageHistory.getLastTurnContextWindow(),
+        this.options.sessionManager.getLastTurnContextWindow(),
       contextWindow:
         this.options.modelManager.getModelMetadata("repl").contextWindow,
       agentState: state,
@@ -479,7 +479,7 @@ export class Repl {
   async rerender() {
     // When resuming a session, populate tokenTracker with historical usage
     // so the footer displays the correct total session usage
-    const totalUsage = this.options.messageHistory.getTotalTokenUsage();
+    const totalUsage = this.options.sessionManager.getTotalTokenUsage();
     if (totalUsage.inputTokens > 0 || totalUsage.outputTokens > 0) {
       this.options.tokenTracker.trackUsage("repl", {
         inputTokens: totalUsage.inputTokens,
@@ -500,7 +500,7 @@ export class Repl {
     this.footer.setState({
       projectStatus: await getProjectStatus(),
       currentContextWindow:
-        this.options.messageHistory.getLastTurnContextWindow(),
+        this.options.sessionManager.getLastTurnContextWindow(),
       contextWindow:
         this.options.modelManager.getModelMetadata("repl").contextWindow,
     });
@@ -517,7 +517,7 @@ export class Repl {
     this.chatContainer.clear();
 
     // Get session messages
-    const messages = this.options.messageHistory.get();
+    const messages = this.options.sessionManager.get();
 
     // First pass: collect all tool results
     const toolResults = new Map<
@@ -757,7 +757,7 @@ export class Repl {
       this.notification.setMessage("");
       this.tui.requestRender();
 
-      void this.options.messageHistory.save();
+      void this.options.sessionManager.save();
       this.stop(true);
       process.exit(0);
     } else {
@@ -790,7 +790,7 @@ export class Repl {
     }
 
     if (showExitMessage && this.onExitCallback) {
-      this.onExitCallback(this.options.messageHistory.getSessionId());
+      this.onExitCallback(this.options.sessionManager.getSessionId());
     }
     if (this.loadingAnimation) {
       this.loadingAnimation.stop();

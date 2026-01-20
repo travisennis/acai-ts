@@ -6,9 +6,9 @@ import {
   createMockConfig,
   createMockContainer,
   createMockEditor,
-  createMockMessageHistory,
   createMockModelManager,
   createMockPromptManager,
+  createMockSessionManager,
   createMockTokenCounter,
   createMockTokenTracker,
   createMockTui,
@@ -20,7 +20,7 @@ describe("sessionCommand", () => {
   let mockEditor: ReturnType<typeof createMockEditor>;
   let mockTokenCounter: ReturnType<typeof createMockTokenCounter>;
   let mockModelManager: ReturnType<typeof createMockModelManager>;
-  let mockMessageHistory: ReturnType<typeof createMockMessageHistory>;
+  let mockSessionManager: ReturnType<typeof createMockSessionManager>;
   let mockConfig: ReturnType<typeof createMockConfig>;
   let mockTokenTracker: ReturnType<typeof createMockTokenTracker>;
   let mockPromptManager: ReturnType<typeof createMockPromptManager>;
@@ -32,7 +32,7 @@ describe("sessionCommand", () => {
     mockEditor = createMockEditor();
     mockTokenCounter = createMockTokenCounter();
     mockModelManager = createMockModelManager();
-    mockMessageHistory = createMockMessageHistory();
+    mockSessionManager = createMockSessionManager();
     mockConfig = createMockConfig();
     mockTokenTracker = createMockTokenTracker();
     mockPromptManager = createMockPromptManager();
@@ -43,7 +43,7 @@ describe("sessionCommand", () => {
     const options = createMockCommandOptions({
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
-      sessionManager: mockMessageHistory,
+      sessionManager: mockSessionManager,
       tokenTracker: mockTokenTracker,
       config: mockConfig,
       promptManager: mockPromptManager,
@@ -63,7 +63,7 @@ describe("sessionCommand", () => {
     const options = createMockCommandOptions({
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
-      sessionManager: mockMessageHistory,
+      sessionManager: mockSessionManager,
       tokenTracker: mockTokenTracker,
       config: mockConfig,
       promptManager: mockPromptManager,
@@ -80,7 +80,7 @@ describe("sessionCommand", () => {
     const options = createMockCommandOptions({
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
-      sessionManager: mockMessageHistory,
+      sessionManager: mockSessionManager,
       tokenTracker: mockTokenTracker,
       config: mockConfig,
       promptManager: mockPromptManager,
@@ -104,7 +104,7 @@ describe("sessionCommand", () => {
     const options = createMockCommandOptions({
       tokenCounter: mockTokenCounter,
       modelManager: mockModelManager,
-      sessionManager: mockMessageHistory,
+      sessionManager: mockSessionManager,
       tokenTracker: mockTokenTracker,
       config: mockConfig,
       promptManager: mockPromptManager,

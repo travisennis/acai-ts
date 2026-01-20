@@ -5,7 +5,7 @@ import type { CommandOptions, ReplCommand } from "../types.ts";
 
 export const resetCommand = ({
   modelManager,
-  sessionManager: messageHistory,
+  sessionManager,
 }: CommandOptions): ReplCommand => {
   return {
     command: "/reset",
@@ -21,9 +21,9 @@ export const resetCommand = ({
         editor,
       }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
-      if (!messageHistory.isEmpty()) {
-        await messageHistory.save();
-        messageHistory.create(modelManager.getModel("repl").modelId);
+      if (!sessionManager.isEmpty()) {
+        await sessionManager.save();
+        sessionManager.create(modelManager.getModel("repl").modelId);
       }
 
       setTerminalTitle(`acai: ${process.cwd()}`);

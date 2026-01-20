@@ -345,26 +345,26 @@ async function initializeSessionManager(
   modelManager: ModelManager,
   tokenTracker: TokenTracker,
 ): Promise<SessionManager> {
-  const messageHistory = new SessionManager({
+  const sessionManager = new SessionManager({
     stateDir: sessionsDir,
     modelManager,
     tokenTracker,
   });
-  messageHistory.on("update-title", (title) => setTerminalTitle(title));
+  sessionManager.on("update-title", (title) => setTerminalTitle(title));
 
   // Listen for model changes and update session manager when repl model changes
   modelManager.on("set-model", (app, _model) => {
     if (app === "repl") {
       const modelId = modelManager.getModel("repl").modelId;
-      messageHistory.setModelId(modelId);
+      sessionManager.setModelId(modelId);
     }
   });
 
-  return messageHistory;
+  return sessionManager;
 }
 
 async function handleConversationHistory(
-  messageHistory: SessionManager,
+  sessionManager: SessionManager,
   sessionsDir: string,
   _hasContinueOrResume: boolean,
   resumeSessionId: string | undefined,
@@ -386,7 +386,7 @@ async function handleConversationHistory(
         });
         const selectedHistory = histories.at(choice);
         if (selectedHistory) {
-          messageHistory.restore(selectedHistory);
+          sessionManager.restore(selectedHistory);
           logger.info(`Resuming conversation: ${selectedHistory.title}`);
           setTerminalTitle(selectedHistory.title || `acai: ${process.cwd()}`);
         } else {
@@ -416,7 +416,7 @@ async function handleConversationHistory(
         (h) => h.sessionId === resumeSessionId,
       );
       if (targetHistory) {
-        messageHistory.restore(targetHistory);
+        sessionManager.restore(targetHistory);
         logger.info(`Resuming conversation: ${targetHistory.title}`);
         setTerminalTitle(targetHistory.title || `acai: ${process.cwd()}`);
       } else {
@@ -430,7 +430,7 @@ async function handleConversationHistory(
       );
       const latestHistory = histories.at(0);
       if (latestHistory) {
-        messageHistory.restore(latestHistory);
+        sessionManager.restore(latestHistory);
         console.info(`Resuming conversation: ${latestHistory.title}`);
         setTerminalTitle(latestHistory.title || `acai: ${process.cwd()}`);
       } else {
@@ -446,7 +446,7 @@ async function runCliMode(state: AppState): Promise<void> {
 
   const cliProcess = new Cli({
     promptManager: state.promptManager,
-    messageHistory: state.sessionManager,
+    sessionManager: state.sessionManager,
     modelManager: state.modelManager,
     tokenTracker: state.tokenTracker,
     tokenCounter: state.tokenCounter,
@@ -476,7 +476,7 @@ async function runReplMode(
     agent,
     promptManager: state.promptManager,
     config: state.appConfig,
-    messageHistory: state.sessionManager,
+    sessionManager: state.sessionManager,
     modelManager: state.modelManager,
     tokenTracker: state.tokenTracker,
     commands: state.commands,

@@ -6,7 +6,7 @@ import {
   createMockCommandOptions,
   createMockContainer,
   createMockEditor,
-  createMockMessageHistory,
+  createMockSessionManager,
   createMockTui,
 } from "../utils/mocking.ts";
 
@@ -31,7 +31,7 @@ describe("/copy command", () => {
     const mockEditor = createMockEditor();
 
     const options = createMockCommandOptions({
-      sessionManager: createMockMessageHistory([makeUser("hello")]),
+      sessionManager: createMockSessionManager([makeUser("hello")]),
     });
 
     const cmd = copyCommand(options);
@@ -54,7 +54,7 @@ describe("/copy command", () => {
     const mockEditor = createMockEditor();
 
     const options = createMockCommandOptions({
-      sessionManager: createMockMessageHistory([
+      sessionManager: createMockSessionManager([
         makeUser("hello"),
         makeAssistant("world"),
       ]),

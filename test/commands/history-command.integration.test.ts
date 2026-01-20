@@ -7,7 +7,7 @@ import {
   createMockConfig,
   createMockContainer,
   createMockEditor,
-  createMockMessageHistory,
+  createMockSessionManager,
   createMockTui,
 } from "../utils/mocking.ts";
 
@@ -28,10 +28,10 @@ describe("historyCommand integration", () => {
     const mockContainer = createMockContainer();
     const mockEditor = createMockEditor();
 
-    const mockMessageHistory = createMockMessageHistory();
+    const mockSessionManager = createMockSessionManager();
 
     const commandOptions = createMockCommandOptions({
-      sessionManager: mockMessageHistory,
+      sessionManager: mockSessionManager,
       config: mockConfig,
     });
 

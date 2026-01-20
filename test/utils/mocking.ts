@@ -174,9 +174,9 @@ export function createMockModelManager(
 }
 
 /**
- * Creates a mock message history with configurable messages
+ * Creates a mock session manager with configurable messages
  */
-export function createMockMessageHistory(
+export function createMockSessionManager(
   messages: ModelMessage[] = [
     { role: "user", content: [{ type: "text", text: "Hello" }] },
     { role: "assistant", content: [{ type: "text", text: "Hi there!" }] },
@@ -268,7 +268,7 @@ export function createMockCommandOptions(
   const defaults = {
     tokenCounter: createMockTokenCounter(),
     modelManager: createMockModelManager(),
-    messageHistory: createMockMessageHistory(),
+    sessionManager: createMockSessionManager(),
     tokenTracker: createMockTokenTracker(),
     config: createMockConfig(),
     promptManager: createMockPromptManager(),

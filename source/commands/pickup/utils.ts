@@ -52,7 +52,7 @@ export async function loadHandoff(
   tui: TUI,
   editor: Editor,
 ): Promise<void> {
-  const { sessionManager: messageHistory, modelManager } = options;
+  const { sessionManager, modelManager } = options;
   const filepath = `.acai/handoffs/${handoff.filename}`;
 
   try {
@@ -66,8 +66,8 @@ export async function loadHandoff(
       ),
     );
 
-    messageHistory.create(modelManager.getModel("repl").modelId);
-    messageHistory.appendUserMessage(createUserMessage([], handoffContent));
+    sessionManager.create(modelManager.getModel("repl").modelId);
+    sessionManager.appendUserMessage(createUserMessage([], handoffContent));
 
     container.addChild(
       new (await import("../../tui/index.ts")).Text(

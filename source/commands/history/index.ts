@@ -69,7 +69,7 @@ Keep the summary focused and informative, around 3-5 paragraphs. Use plain text 
 }
 
 export const historyCommand = ({
-  sessionManager: messageHistory,
+  sessionManager,
   config,
   modelManager,
   tokenTracker,
@@ -119,7 +119,7 @@ export const historyCommand = ({
               // Handle action selection
               switch (action) {
                 case "resume":
-                  messageHistory.restore(conversation);
+                  sessionManager.restore(conversation);
                   container.addChild(
                     new Text(
                       style.green(

@@ -6,7 +6,7 @@ import type { ExitCommandOptions } from "../../source/commands/exit/types.ts";
 import {
   createMockContainer,
   createMockEditor,
-  createMockMessageHistory,
+  createMockSessionManager,
   createMockTui,
 } from "../utils/mocking.ts";
 import { createTestFixtures } from "../utils/test-fixtures.ts";
@@ -37,10 +37,10 @@ describe("exit command", () => {
     const mockContainer = createMockContainer();
     const mockEditor = createMockEditor();
 
-    const mockMessageHistory = createMockMessageHistory();
+    const mockSessionManager = createMockSessionManager();
 
     const options: ExitCommandOptions = {
-      sessionManager: mockMessageHistory,
+      sessionManager: mockSessionManager,
       baseDir: testBaseDir,
     };
 
@@ -54,9 +54,9 @@ describe("exit command", () => {
 
     assert.equal(result, "break");
     // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
-    assert.equal((mockMessageHistory.isEmpty as any).mock.calls.length, 1);
+    assert.equal((mockSessionManager.isEmpty as any).mock.calls.length, 1);
     // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
-    assert.equal((mockMessageHistory.save as any).mock.calls.length, 1);
+    assert.equal((mockSessionManager.save as any).mock.calls.length, 1);
     // Should have called requestRender
     assert.equal(mockTui.requestRender.mock.calls.length, 1);
     // Should have called setText to clear editor
@@ -80,10 +80,10 @@ describe("exit command", () => {
     const mockContainer = createMockContainer();
     const mockEditor = createMockEditor();
 
-    const mockMessageHistory = createMockMessageHistory([]);
+    const mockSessionManager = createMockSessionManager([]);
 
     const options: ExitCommandOptions = {
-      sessionManager: mockMessageHistory,
+      sessionManager: mockSessionManager,
       baseDir: testBaseDir,
     };
 
@@ -97,9 +97,9 @@ describe("exit command", () => {
 
     assert.equal(result, "break");
     // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
-    assert.equal((mockMessageHistory.isEmpty as any).mock.calls.length, 1);
+    assert.equal((mockSessionManager.isEmpty as any).mock.calls.length, 1);
     // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
-    assert.equal((mockMessageHistory.save as any).mock.calls.length, 0);
+    assert.equal((mockSessionManager.save as any).mock.calls.length, 0);
     // Should have called requestRender
     assert.equal(mockTui.requestRender.mock.calls.length, 1);
     // Should have called setText to clear editor
@@ -123,7 +123,7 @@ describe("exit command", () => {
     const mockContainer = createMockContainer();
     const mockEditor = createMockEditor();
 
-    const mockMessageHistory = createMockMessageHistory();
+    const mockSessionManager = createMockSessionManager();
 
     // Mock console.error to verify error logging
     const originalConsoleError = console.error;
@@ -132,7 +132,7 @@ describe("exit command", () => {
 
     try {
       const options: ExitCommandOptions = {
-        sessionManager: mockMessageHistory,
+        sessionManager: mockSessionManager,
         baseDir: testBaseDir,
       };
 
@@ -146,9 +146,9 @@ describe("exit command", () => {
 
       assert.equal(result, "break");
       // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
-      assert.equal((mockMessageHistory.isEmpty as any).mock.calls.length, 1);
+      assert.equal((mockSessionManager.isEmpty as any).mock.calls.length, 1);
       // biome-ignore lint/suspicious/noExplicitAny: mock properties are dynamically added
-      assert.equal((mockMessageHistory.save as any).mock.calls.length, 1);
+      assert.equal((mockSessionManager.save as any).mock.calls.length, 1);
       // Should have called requestRender
       assert.equal(mockTui.requestRender.mock.calls.length, 1);
       // Should have called setText to clear editor

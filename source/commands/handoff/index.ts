@@ -73,18 +73,14 @@ export const handoffCommand = (options: CommandOptions): ReplCommand => {
 };
 
 async function createHandoffDocument(
-  {
-    modelManager,
-    tokenTracker,
-    sessionManager: messageHistory,
-  }: CommandOptions,
+  { modelManager, tokenTracker, sessionManager }: CommandOptions,
   purpose: string,
 ): Promise<string> {
   const app = "handoff-agent";
 
   const model = modelManager.getModel(app);
   const modelConfig = modelManager.getModelMetadata(app);
-  const messages = messageHistory.get();
+  const messages = sessionManager.get();
   const conversationText = messages
     .map(
       (msg: {

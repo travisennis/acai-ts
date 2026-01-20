@@ -27,7 +27,7 @@ import type { CommandOptions, ReplCommand } from "../types.ts";
 import { hideRuleSelector } from "./utils.ts";
 
 export const generateRulesCommand = ({
-  sessionManager: messageHistory,
+  sessionManager,
   modelManager,
   tokenTracker,
   config,
@@ -54,7 +54,7 @@ export const generateRulesCommand = ({
         editor: Editor;
       },
     ): Promise<"break" | "continue" | "use"> {
-      if (messageHistory.isEmpty()) {
+      if (sessionManager.isEmpty()) {
         container.addChild(
           new Text(
             style.yellow("Cannot generate rules from an empty conversation."),
@@ -75,7 +75,7 @@ export const generateRulesCommand = ({
       try {
         const newRules = await analyzeConversation({
           modelManager,
-          messages: messageHistory.get(),
+          messages: sessionManager.get(),
           tokenTracker,
           config,
           workspace,

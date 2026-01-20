@@ -4,7 +4,7 @@ import { Spacer, Text } from "../../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "../types.ts";
 
 export const saveCommand = ({
-  sessionManager: messageHistory,
+  sessionManager,
 }: CommandOptions): ReplCommand => {
   return {
     command: "/save",
@@ -19,8 +19,8 @@ export const saveCommand = ({
         editor,
       }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"break" | "continue" | "use"> {
-      if (!messageHistory.isEmpty()) {
-        await messageHistory.save();
+      if (!sessionManager.isEmpty()) {
+        await sessionManager.save();
       }
 
       container.addChild(new Spacer(1));

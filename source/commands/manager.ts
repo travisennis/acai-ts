@@ -54,7 +54,7 @@ export class CommandManager {
   constructor({
     promptManager,
     modelManager,
-    sessionManager: messageHistory,
+    sessionManager,
     tokenTracker,
     config,
     tokenCounter,
@@ -64,7 +64,7 @@ export class CommandManager {
     this.commands = new Map();
     this.promptManager = promptManager;
     this.modelManager = modelManager;
-    this.sessionManager = messageHistory;
+    this.sessionManager = sessionManager;
     this.tokenTracker = tokenTracker;
     this.config = config;
     this.tokenCounter = tokenCounter;

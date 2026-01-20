@@ -29,7 +29,7 @@ export function sessionCommand({
   config,
   tokenCounter,
   modelManager,
-  sessionManager: messageHistory,
+  sessionManager,
   workspace,
   tokenTracker,
 }: CommandOptions): ReplCommand {
@@ -85,7 +85,7 @@ export function sessionCommand({
         toolsTokens = 0;
       }
 
-      const messages = messageHistory.get();
+      const messages = sessionManager.get();
       const messagesTokens = countMessageTokens(messages, tokenCounter);
 
       const used = systemPromptTokens + toolsTokens + messagesTokens;
@@ -102,12 +102,12 @@ export function sessionCommand({
         free,
       };
 
-      const sessionId = messageHistory.getSessionId();
-      const createdAt = messageHistory.getCreatedAt();
-      const updatedAt = messageHistory.getUpdatedAt();
+      const sessionId = sessionManager.getSessionId();
+      const createdAt = sessionManager.getCreatedAt();
+      const updatedAt = sessionManager.getUpdatedAt();
       const sessionFile = `session-${createdAt.toISOString().replace(/[:.]/g, "-").slice(0, 19)}-${sessionId}.json`;
-      const modelId = messageHistory.getModelId() || "Not set";
-      const title = messageHistory.getTitle() || "No title";
+      const modelId = sessionManager.getModelId() || "Not set";
+      const title = sessionManager.getTitle() || "No title";
       const duration = formatDuration(
         updatedAt.getTime() - createdAt.getTime(),
       );
