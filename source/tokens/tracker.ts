@@ -118,6 +118,10 @@ export class TokenTracker extends EventEmitter<TokenTrackerEvents> {
     );
   }
 
+  reset() {
+    this.usages = [];
+  }
+
   printSummary() {
     const breakdown = this.getUsageBreakdown();
     console.info("Token Usage Summary:", {

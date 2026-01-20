@@ -6,6 +6,7 @@ import type { CommandOptions, ReplCommand } from "../types.ts";
 export const resetCommand = ({
   modelManager,
   sessionManager,
+  tokenTracker,
 }: CommandOptions): ReplCommand => {
   return {
     command: "/reset",
@@ -25,6 +26,8 @@ export const resetCommand = ({
         await sessionManager.save();
         sessionManager.create(modelManager.getModel("repl").modelId);
       }
+
+      tokenTracker.reset();
 
       setTerminalTitle(`acai: ${process.cwd()}`);
 
