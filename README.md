@@ -585,18 +585,9 @@ name: pdf-extract          # Optional, defaults to directory name
 2. For tables, use `tabula-py` or similar
 3. Always verify extraction quality
 
-Scripts are in: {baseDir}/scripts/
-Configuration: {baseDir}/config.json
+Scripts are in: ./scripts/
+Configuration: ./config.json
 ```
-
-**Required fields:**
-- `description`: Short description shown in system prompt
-
-**Optional fields:**
-- `name`: Override the skill name (defaults to directory name or colon-separated path)
-
-**Placeholder:**
-- `{baseDir}`: Replaced with the skill's base directory path
 
 ### Skill Locations
 
@@ -654,8 +645,7 @@ Skills are enabled by default. You can disable them via:
 3. **User request**: "Extract text from this PDF"
 4. **Agent matches**: Sees "pdf-extract: Extract text and tables from PDF files"
 5. **Skill loading**: Uses `read` tool to load `~/.acai/skills/pdf-extract/SKILL.md`
-6. **Placeholder substitution**: Replaces `{baseDir}` with skill directory path
-7. **Execution**: Follows instructions in skill file
+6. **Execution**: Follows instructions in skill file (run scripts from this file's directory)
 
 ## Configuration
 

@@ -9,9 +9,10 @@ Fetches model details from both OpenCode and OpenRouter APIs to provide structur
 
 ## Usage
 
+Run this script from this file's directory.
+
 ```bash
-# Get details for a specific OpenCode model
-{baseDir}/add-model.js google/gemini-3-flash-preview
+./add-model.js google/gemini-3-flash-preview
 ```
 
 ## How It Works
@@ -214,14 +215,14 @@ If no match is found, defaults are used for pricing and capability fields.
 
 ```bash
 # Add Google Gemini Flash
-{baseDir}/add-model.js google/gemini-3-flash-preview
+./add-model.js google/gemini-3-flash-preview
 
 # Add OpenAI GPT model
-{baseDir}/add-model.js openai/gpt-4o
+./add-model.js openai/gpt-4o
 
 # Add Anthropic Claude model
-{baseDir}/add-model.js anthropic/claude-3-5-sonnet
+./add-model.js anthropic/claude-3-5-sonnet
 
 # Add other provider model
-{baseDir}/add-model.js deepseek/deepseek-v3
+./add-model.js deepseek/deepseek-v3
 ```

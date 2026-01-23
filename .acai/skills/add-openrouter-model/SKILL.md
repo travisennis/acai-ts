@@ -9,9 +9,10 @@ Fetches model details from OpenRouter API and provides structured information fo
 
 ## Usage
 
+Run this script from this file's directory.
+
 ```bash
-# Get details for a specific model
-{baseDir}/add-model.js google/gemini-3-flash-preview
+./add-model.js google/gemini-3-flash-preview
 ```
 
 ## How It Works
@@ -158,11 +159,11 @@ npm run format
 
 ```bash
 # Add Gemini 3 Flash Preview
-{baseDir}/add-model.js google/gemini-3-flash-preview
+./add-model.js google/gemini-3-flash-preview
 
 # Add Claude 3.5 Sonnet
-{baseDir}/add-model.js anthropic/claude-3-5-sonnet
+./add-model.js anthropic/claude-3-5-sonnet
 
 # Add DeepSeek V3
-{baseDir}/add-model.js deepseek/deepseek-v3.2
+./add-model.js deepseek/deepseek-v3.2
 ```
