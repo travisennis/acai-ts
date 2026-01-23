@@ -18,12 +18,7 @@ import { systemPrompt } from "./prompts.ts";
 import type { SessionManager } from "./sessions/manager.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
-import { BashTool } from "./tools/bash.ts";
-import { EditFileTool } from "./tools/edit-file.ts";
-import { GlobTool } from "./tools/glob.ts";
-import { GrepTool } from "./tools/grep.ts";
 import { type CompleteTools, initTools } from "./tools/index.ts";
-import { ReadFileTool } from "./tools/read-file.ts";
 
 interface CliOptions {
   sessionManager: SessionManager;
@@ -32,23 +27,12 @@ interface CliOptions {
   tokenTracker: TokenTracker;
   tokenCounter: TokenCounter;
   workspace: WorkspaceContext;
-  skillsEnabled?: boolean;
 }
-
-const activeTools = [
-  EditFileTool.name,
-  ReadFileTool.name,
-  BashTool.name,
-  GrepTool.name,
-  GlobTool.name,
-];
 
 export class Cli {
   private options: CliOptions;
-  private skillsEnabled: boolean;
   constructor(options: CliOptions) {
     this.options = options;
-    this.skillsEnabled = options.skillsEnabled ?? true;
   }
 
   async run() {
@@ -75,9 +59,7 @@ export class Cli {
     sessionManager.appendUserMessage(userMsg);
 
     const finalSystemPromptResult = await systemPrompt({
-      activeTools,
       allowedDirs: this.options.workspace.allowedDirs,
-      skillsEnabled: this.skillsEnabled,
     });
     const finalSystemPrompt = finalSystemPromptResult.prompt;
 
@@ -118,7 +100,6 @@ export class Cli {
             }),
           ]),
         ) as CompleteTools,
-        activeTools,
         // biome-ignore lint/style/useNamingConvention: third-party controlled
         experimental_repairToolCall:
           toolCallRepair<CompleteTools>(modelManager),

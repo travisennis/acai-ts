@@ -13,6 +13,7 @@ import { createGrepTool, GrepTool } from "./grep.ts";
 import { createLsTool, LsTool } from "./ls.ts";
 import { createReadFileTool, ReadFileTool } from "./read-file.ts";
 import { createSaveFileTool, SaveFileTool } from "./save-file.ts";
+import { createSkillTool, SkillTool } from "./skill.ts";
 import { createThinkTool, ThinkTool } from "./think.ts";
 
 export type CompleteToolSet = {
@@ -71,6 +72,8 @@ export async function initTools({
     allowedDirs: workspace.allowedDirs,
   });
 
+  const skillTool = await createSkillTool();
+
   const dynamicTools = await loadDynamicTools({
     baseDir: workspace.primaryDir,
   });
@@ -86,6 +89,7 @@ export async function initTools({
     [DirectoryTreeTool.name]: directoryTreeTool,
     [ThinkTool.name]: thinkTool,
     [LsTool.name]: lsTool,
+    [SkillTool.name]: skillTool,
 
     // Add dynamic tools - they already have toolDef structure
     ...Object.fromEntries(

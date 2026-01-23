@@ -341,7 +341,7 @@ export function formatSkillsForPrompt(skills: Skill[]): string {
     "",
     "<skills_instructions>",
     "When users ask you to perform tasks, check if any of the available skills below can help complete the task more effectively. Skills provide specialized capabilities and domain knowledge.",
-    "Use the readFile tool to load a skill's file when the task matches its description.",
+    "Use the Skill tool to load a skill's instructions when the task matches its description.",
     "</skills_instructions>",
     "",
     "<available_skills>",
@@ -355,9 +355,6 @@ export function formatSkillsForPrompt(skills: Skill[]): string {
     lines.push("<description>");
     lines.push(skill.description);
     lines.push("</description>");
-    lines.push("<location>");
-    lines.push(skill.filePath);
-    lines.push("</location>");
     lines.push("</skill>");
   }
 

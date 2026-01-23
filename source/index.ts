@@ -441,9 +441,6 @@ async function handleConversationHistory(
 }
 
 async function runCliMode(state: AppState): Promise<void> {
-  const skillsEnabled =
-    !flags["no-skills"] && (await config.getSkillsEnabled());
-
   const cliProcess = new Cli({
     promptManager: state.promptManager,
     sessionManager: state.sessionManager,
@@ -451,7 +448,6 @@ async function runCliMode(state: AppState): Promise<void> {
     tokenTracker: state.tokenTracker,
     tokenCounter: state.tokenCounter,
     workspace,
-    skillsEnabled,
   });
   (await asyncTry(cliProcess.run())).recover(handleError);
 }
@@ -564,15 +560,13 @@ async function runReplMode(
     const activeTools = projectConfig.tools.activeTools as
       | CompleteToolNames[]
       | undefined;
-    const skillsEnabled =
-      !flags["no-skills"] && (projectConfig.skills?.enabled ?? true);
 
     try {
       const systemPromptResult = await systemPrompt({
         activeTools,
         allowedDirs: workspace.allowedDirs,
-        skillsEnabled,
       });
+
       const results = agent.run({
         systemPrompt: systemPromptResult.prompt,
         input: userInput,
