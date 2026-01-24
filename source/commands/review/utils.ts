@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import type { FileChange } from "./types.ts";
 
 export function parseGitDiffFiles(diffOutput: string): FileChange[] {
@@ -92,4 +94,47 @@ export function formatFileDiffForDisplay(
   }
 
   return formattedLines.join("\n");
+}
+
+export async function getUntrackedFiles(
+  untrackedOutput: string,
+  cwd: string,
+): Promise<FileChange[]> {
+  const fileChanges: FileChange[] = [];
+  const untrackedFiles = untrackedOutput
+    .trim()
+    .split("\n")
+    .filter((file) => file.length > 0);
+
+  for (const fileName of untrackedFiles) {
+    try {
+      const filePath = path.join(cwd, fileName);
+      const fileContent = await fs.promises.readFile(filePath, "utf-8");
+      const lines = fileContent.split("\n").length;
+
+      // Create a diff-like representation for the untracked file
+      const diff = `diff --git a/${fileName} b/${fileName}
+new file mode 100644
+index 0000000..0000000
+--- /dev/null
++++ b/${fileName}
+@@ -0,0 +1,${lines} @@
+${fileContent
+  .split("\n")
+  .map((line) => `+${line}`)
+  .join("\n")}
+`;
+
+      fileChanges.push({
+        fileName,
+        diff,
+        stats: `Additions: ${lines}, Deletions: 0`,
+      });
+    } catch (error) {
+      // Skip files that can't be read (e.g., directories, binary files)
+      console.error(`Failed to read untracked file: ${fileName}`, error);
+    }
+  }
+
+  return fileChanges;
 }

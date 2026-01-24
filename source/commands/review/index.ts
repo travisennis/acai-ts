@@ -12,7 +12,11 @@ import {
   type TUI,
 } from "../../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "../types.ts";
-import { formatFileDiffForDisplay, parseGitDiffFiles } from "./utils.ts";
+import {
+  formatFileDiffForDisplay,
+  getUntrackedFiles,
+  parseGitDiffFiles,
+} from "./utils.ts";
 
 export const reviewCommand = (_options: CommandOptions): ReplCommand => {
   return {
@@ -52,10 +56,23 @@ export const reviewCommand = (_options: CommandOptions): ReplCommand => {
           throwOnError: false,
         });
 
+        const untrackedResult = await execEnv.executeCommand(
+          "git ls-files --others --exclude-standard",
+          {
+            cwd: process.cwd(),
+            timeout: 5000,
+            preserveOutputOnError: true,
+            captureStderr: true,
+            throwOnError: false,
+          },
+        );
+
         const stagedOutput =
           stagedResult.exitCode === 0 ? stagedResult.output : "";
         const unstagedOutput =
           unstagedResult.exitCode === 0 ? unstagedResult.output : "";
+        const untrackedOutput =
+          untrackedResult.exitCode === 0 ? untrackedResult.output : "";
         const combinedOutput =
           stagedOutput +
           (stagedOutput && unstagedOutput ? "\n" : "") +
@@ -79,6 +96,11 @@ export const reviewCommand = (_options: CommandOptions): ReplCommand => {
         }
 
         const fileChanges = parseGitDiffFiles(combinedOutput);
+        const untrackedFiles = await getUntrackedFiles(
+          untrackedOutput,
+          process.cwd(),
+        );
+        fileChanges.push(...untrackedFiles);
 
         if (fileChanges.length === 0) {
           container.addChild(new Spacer(1));
