@@ -306,11 +306,7 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
 
   async save() {
     const msgHistoryDir = this.stateDir;
-    const timestamp = new Date()
-      .toISOString()
-      .replace(/[:.]/g, "-")
-      .slice(0, 19);
-    const fileName = `session-${timestamp}-${this.sessionId}.json`;
+    const fileName = `session-${this.sessionId}.json`;
     const filePath = join(msgHistoryDir, fileName);
     const tempFilePath = `${filePath}.tmp`;
 
