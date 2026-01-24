@@ -624,23 +624,17 @@ React Component Rendering Debug";
       typeof savedHistory.updatedAt === "string"
         ? new Date(savedHistory.updatedAt)
         : savedHistory.updatedAt;
-    // Sanitize messages to prevent malformed JSON from poisoning history
+    // Sanitize messages while preserving original order
     // Only sanitize assistant and tool messages (not user or system messages)
-    const messagesToSanitize = savedHistory.messages.filter(
-      (msg): msg is ResponseMessage =>
-        msg.role === "assistant" || msg.role === "tool",
-    );
-    const sanitizedAssistantAndTool =
-      sanitizeResponseMessages(messagesToSanitize);
-    // Keep user and system messages as-is
-    const otherMessages = savedHistory.messages.filter(
-      (msg) => msg.role === "user" || msg.role === "system",
-    );
+    const sanitizedMessages = savedHistory.messages.map((msg) => {
+      if (msg.role === "assistant" || msg.role === "tool") {
+        const [sanitized] = sanitizeResponseMessages([msg as ResponseMessage]);
+        return sanitized;
+      }
+      return msg;
+    });
     // Filter out messages with empty content arrays
-    const validMessages = [
-      ...sanitizedAssistantAndTool,
-      ...otherMessages,
-    ].filter(this.validMessage);
+    const validMessages = sanitizedMessages.filter(this.validMessage);
     this.history = [...validMessages];
     this.tokenUsage = savedHistory.tokenUsage
       ? [...savedHistory.tokenUsage]
