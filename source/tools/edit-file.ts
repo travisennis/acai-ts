@@ -54,7 +54,7 @@ export const createEditFileTool = async ({
       inputSchema,
     },
     display({ path, edits }: EditFileInputSchema) {
-      return `\n> ${style.cyan(path)} (${edits.length} edit${edits.length === 1 ? "" : "s"})`;
+      return `${style.cyan(path)} (${edits.length} edit${edits.length === 1 ? "" : "s"})`;
     },
     async execute(
       { path, edits }: EditFileInputSchema,

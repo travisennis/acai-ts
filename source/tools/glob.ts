@@ -57,7 +57,7 @@ export const createGlobTool = () => {
         patternArray.length === 1
           ? patternArray[0]
           : JSON.stringify(patternArray);
-      return `\n> ${style.cyan(patternStr)} in ${style.cyan(path)}`;
+      return `${style.cyan(patternStr)} in ${style.cyan(path)}`;
     },
     async execute(
       {

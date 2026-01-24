@@ -101,7 +101,7 @@ export const createBashTool = async ({
       inputSchema,
     },
     display({ command }: BashInputSchema) {
-      return `\n> ${style.cyan(command)}`;
+      return `${style.cyan(command)}`;
     },
     async execute(
       { command, cwd, timeout, background }: BashInputSchema,

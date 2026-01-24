@@ -56,7 +56,7 @@ export const createReadFileTool = async ({
       inputSchema,
     },
     display({ path: providedPath, startLine, lineCount }: ReadFileInputSchema) {
-      return `\n> ${style.cyan(providedPath)}${startLine ? style.cyan(`:${startLine}`) : ""}${lineCount ? style.cyan(`:${lineCount}`) : ""}`;
+      return `${style.cyan(providedPath)}${startLine ? style.cyan(`:${startLine}`) : ""}${lineCount ? style.cyan(`:${lineCount}`) : ""}`;
     },
     async execute(
       {

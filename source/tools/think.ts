@@ -26,7 +26,7 @@ export const createThinkTool = () => {
       inputSchema,
     },
     display() {
-      return "\n> Logging thought";
+      return "Logging thought";
     },
     async execute(
       { thought }: z.infer<typeof inputSchema>,

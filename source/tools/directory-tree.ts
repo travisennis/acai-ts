@@ -45,7 +45,7 @@ export const createDirectoryTreeTool = async ({
       inputSchema,
     },
     display({ path, maxDepth, maxResults }: DirectoryTreeInputSchema) {
-      let display = `\n> ${style.cyan(path)}`;
+      let display = `${style.cyan(path)}`;
       if (maxDepth || maxResults) {
         const parts = [];
         if (maxDepth) parts.push(`depth: ${maxDepth}`);

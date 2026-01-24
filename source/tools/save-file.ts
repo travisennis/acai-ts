@@ -46,7 +46,7 @@ export const createSaveFileTool = async ({
       inputSchema,
     },
     display({ path }: SaveFileInputSchema) {
-      return `\n> ${style.cyan(path)}`;
+      return `${style.cyan(path)}`;
     },
     async execute(
       { path: userPath, content, encoding }: SaveFileInputSchema,
