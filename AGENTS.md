@@ -82,3 +82,4 @@ Note: The editor uses Shift+Enter to submit. The escape sequence `Escape "[13;2u
 - **Always confirm before destructive git operations** (reset --hard, clean, stash pop that could overwrite changes)
 - **Use `git add -p` with tmux or `git add <specific-files>` instead of `git add -A` when possible** to avoid staging unintended changes
 - If you accidentally stage unrelated changes, point it out to the user before committing
+- **Never use `--no-verify` without explicit user permission**
