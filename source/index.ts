@@ -126,8 +126,7 @@ export function handleError(error: Error): void {
 export type Flags = typeof flags;
 
 // Configuration constants
-const DEFAULT_HISTORY_LIMIT = 10;
-const CONTINUE_HISTORY_LIMIT = 1;
+const DEFAULT_HISTORY_LIMIT = 20; // the amount of sessions to retrieve from session history
 
 // Application state interface
 interface AppState {
@@ -424,10 +423,7 @@ async function handleConversationHistory(
         process.exit(1);
       }
     } else {
-      const histories = await SessionManager.load(
-        sessionsDir,
-        CONTINUE_HISTORY_LIMIT,
-      );
+      const histories = await SessionManager.load(sessionsDir, 1); // read the most recent session
       const latestHistory = histories.at(0);
       if (latestHistory) {
         sessionManager.restore(latestHistory);
