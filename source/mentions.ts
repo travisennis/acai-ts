@@ -179,7 +179,8 @@ export async function processPrompt(
     pasteStore?: Map<number, string>;
   },
 ): Promise<{ message: string; context: ContextItem[] }> {
-  const fileRegex = /@([^\s@]+(?:\.[\w\d]+))/g;
+  const fileRegex =
+    /(?<![a-zA-Z0-9_-])@([a-zA-Z_][^\s@]*?(?:\.[a-zA-Z0-9]+)?)(?![^\s@]*@[\d.]+)/g;
 
   const shellRegex = /!`([^`]+)`/g;
 
