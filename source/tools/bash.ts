@@ -86,7 +86,14 @@ export const createBashTool = async ({
   baseDir: string;
   allowedDirs?: string[];
 }) => {
-  const execEnv = await initExecutionEnvironment();
+  const execEnv = await initExecutionEnvironment({
+    execution: {
+      env: {
+        // biome-ignore lint/style/useNamingConvention: environment variable
+        TICKETS_DIR: `${process.cwd()}/.tickets`,
+      },
+    },
+  });
   const allowedDirectories = allowedDirs ?? [baseDir];
   return {
     toolDef: {
