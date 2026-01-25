@@ -81,6 +81,13 @@ export class Repl {
   // thinking block tracking
   private thinkingBlockComponent: ThinkingBlockComponent | null = null;
 
+  // Track all verbose-aware components for re-rendering on toggle
+  private allThinkingBlocks: ThinkingBlockComponent[] = [];
+  private allToolExecutions: ToolExecutionComponent[] = [];
+
+  // verbose mode state
+  private verboseMode = false;
+
   constructor(options: ReplOptions) {
     this.options = options;
     this.terminal = new ProcessTerminal(options.terminalOptions);
@@ -163,6 +170,10 @@ export class Repl {
 
     this.tui.onCtrlC = () => {
       this.handleCtrlC();
+    };
+
+    this.tui.onCtrlO = () => {
+      this.handleCtrlO();
     };
 
     // Set callback for session reconstruction (used by /history command)
@@ -368,8 +379,11 @@ export class Repl {
           component.update(event.events);
         } else {
           // Create tool component for new tool call
-          const newComponent = new ToolExecutionComponent(event.events);
+          const newComponent = new ToolExecutionComponent(event.events, {
+            verboseMode: this.verboseMode,
+          });
           this.pendingTools.set(event.toolCallId, newComponent);
+          this.allToolExecutions.push(newComponent);
           this.chatContainer.addChild(newComponent);
         }
         this.tui.requestRender();
@@ -414,8 +428,11 @@ export class Repl {
         break;
 
       case "thinking-start": {
-        const component = new ThinkingBlockComponent();
+        const component = new ThinkingBlockComponent(undefined, {
+          verboseMode: this.verboseMode,
+        });
         this.thinkingBlockComponent = component;
+        this.allThinkingBlocks.push(component);
         this.chatContainer.addChild(component);
         this.thinkingBlockComponent.updateContent(event);
         this.tui.requestRender();
@@ -431,7 +448,7 @@ export class Repl {
 
       case "thinking-end":
         if (this.thinkingBlockComponent) {
-          this.thinkingBlockComponent.updateContent(event);
+          this.thinkingBlockComponent.endThinking();
 
           this.thinkingBlockComponent = null;
           this.tui.requestRender();
@@ -514,6 +531,8 @@ export class Repl {
   private reconstructSession() {
     // Clear existing display
     this.pendingTools.clear();
+    this.allThinkingBlocks = [];
+    this.allToolExecutions = [];
     this.chatContainer.clear();
 
     // Get session messages
@@ -578,8 +597,11 @@ export class Repl {
           const events = this.createToolEvents(toolCallContent);
 
           if (events.length > 0) {
-            const component = new ToolExecutionComponent(events);
+            const component = new ToolExecutionComponent(events, {
+              verboseMode: this.verboseMode,
+            });
             this.pendingTools.set(toolCallId, component);
+            this.allToolExecutions.push(component);
             this.chatContainer.addChild(component);
           }
         }
@@ -739,6 +761,22 @@ export class Repl {
     });
 
     return events;
+  }
+
+  private handleCtrlO(): void {
+    this.verboseMode = !this.verboseMode;
+    const modeText = this.verboseMode ? "ON" : "OFF";
+    this.notification.setMessage(`Verbose mode: ${modeText}`);
+
+    // Update all verbose-aware components to reflect new verbose mode
+    for (const component of this.allThinkingBlocks) {
+      component.setVerboseMode(this.verboseMode);
+    }
+    for (const component of this.allToolExecutions) {
+      component.setVerboseMode(this.verboseMode);
+    }
+
+    this.tui.requestRender();
   }
 
   private handleCtrlC(): void {

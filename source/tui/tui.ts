@@ -5,6 +5,7 @@
 import {
   getTerminalSize,
   isCtrlC,
+  isCtrlO,
   isCtrlZ,
   isEscape,
 } from "../terminal/control.ts";
@@ -80,6 +81,7 @@ export class TUI extends Container {
 
   public onCtrlC?: () => void;
   public onReconstructSession?: () => void;
+  public onCtrlO?: () => void;
 
   constructor(terminal: Terminal) {
     super();
@@ -147,6 +149,14 @@ export class TUI extends Container {
         this.stop();
         process.exit(0);
       }
+    }
+
+    // Handle Ctrl+O - toggle verbose mode
+    if (isCtrlO(data)) {
+      if (this.onCtrlO) {
+        this.onCtrlO();
+      }
+      return;
     }
 
     // Handle Escape key to close modal if one is active

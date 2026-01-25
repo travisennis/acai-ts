@@ -17,12 +17,14 @@ export class ToolExecutionComponent extends Container {
   private loaderComponent: Loader | null;
   private toolName: string;
   private events: ToolEvent[];
+  private verboseMode: boolean;
 
-  constructor(events: ToolEvent[]) {
+  constructor(events: ToolEvent[], options?: { verboseMode?: boolean }) {
     super();
     this.loaderComponent = null;
     this.toolName = events[0].name;
     this.events = events;
+    this.verboseMode = options?.verboseMode ?? false;
 
     // Container for text/thinking content
     this.contentContainer = new Container();
@@ -33,14 +35,18 @@ export class ToolExecutionComponent extends Container {
 
   update(events: ToolEvent[]) {
     this.events = events;
+    this.renderDisplay();
+  }
 
-    // Clear content container
-    this.contentContainer.clear();
-
+  setVerboseMode(verboseMode: boolean): void {
+    this.verboseMode = verboseMode;
     this.renderDisplay();
   }
 
   private renderDisplay() {
+    // Clear content container before rendering
+    this.contentContainer.clear();
+
     // Build display from complete event history with proper ordering
     const processedEvents = this.processEventsInOrder();
 
@@ -58,8 +64,8 @@ export class ToolExecutionComponent extends Container {
           this.getToolCallStartComponent(event, currentStatus);
           break;
         case "tool-call-end":
-          // Render the actual tool output with truncation
-          if (event.msg) {
+          // Only render output in verbose mode
+          if (this.verboseMode && event.msg) {
             this.contentContainer.addChild(this.renderOutputDisplay(event.msg));
           }
           break;
