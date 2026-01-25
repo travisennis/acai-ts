@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import { isNumber } from "@travisennis/stdlib/typeguards";
 import { z } from "zod";
 import style from "../terminal/style.ts";
-
+import { toDisplayPath } from "../utils/filesystem/path-display.ts";
 import { joinWorkingDir, validatePath } from "../utils/filesystem/security.ts";
 import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions } from "./types.ts";
@@ -56,7 +56,8 @@ export const createReadFileTool = async ({
       inputSchema,
     },
     display({ path: providedPath, startLine, lineCount }: ReadFileInputSchema) {
-      return `${style.cyan(providedPath)}${startLine ? style.cyan(`:${startLine}`) : ""}${lineCount ? style.cyan(`:${lineCount}`) : ""}`;
+      const displayPath = toDisplayPath(providedPath);
+      return `${style.cyan(displayPath)}${startLine ? style.cyan(`:${startLine}`) : ""}${lineCount ? style.cyan(`:${lineCount}`) : ""}`;
     },
     async execute(
       {

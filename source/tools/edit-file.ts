@@ -4,6 +4,7 @@ import { z } from "zod";
 import { config } from "../config.ts";
 import { clearProjectStatusCache } from "../repl/project-status.ts";
 import style from "../terminal/style.ts";
+import { toDisplayPath } from "../utils/filesystem/path-display.ts";
 import {
   joinWorkingDir,
   validateFileNotReadOnly,
@@ -54,7 +55,8 @@ export const createEditFileTool = async ({
       inputSchema,
     },
     display({ path, edits }: EditFileInputSchema) {
-      return `${style.cyan(path)} (${edits.length} edit${edits.length === 1 ? "" : "s"})`;
+      const displayPath = toDisplayPath(path);
+      return `${style.cyan(displayPath)} (${edits.length} edit${edits.length === 1 ? "" : "s"})`;
     },
     async execute(
       { path, edits }: EditFileInputSchema,

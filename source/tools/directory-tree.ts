@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import style from "../terminal/style.ts";
-
+import { toDisplayPath } from "../utils/filesystem/path-display.ts";
 import { joinWorkingDir, validatePath } from "../utils/filesystem/security.ts";
 import ignore, { type Ignore } from "../utils/ignore.ts";
 import { convertNullString } from "../utils/zod.ts";
@@ -45,7 +45,8 @@ export const createDirectoryTreeTool = async ({
       inputSchema,
     },
     display({ path, maxDepth, maxResults }: DirectoryTreeInputSchema) {
-      let display = `${style.cyan(path)}`;
+      const displayPath = toDisplayPath(path);
+      let display = `${style.cyan(displayPath)}`;
       if (maxDepth || maxResults) {
         const parts = [];
         if (maxDepth) parts.push(`depth: ${maxDepth}`);

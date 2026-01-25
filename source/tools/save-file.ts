@@ -4,6 +4,7 @@ import { z } from "zod";
 import { config } from "../config.ts";
 import { clearProjectStatusCache } from "../repl/project-status.ts";
 import style from "../terminal/style.ts";
+import { toDisplayPath } from "../utils/filesystem/path-display.ts";
 import {
   joinWorkingDir,
   validateFileNotReadOnly,
@@ -46,7 +47,8 @@ export const createSaveFileTool = async ({
       inputSchema,
     },
     display({ path }: SaveFileInputSchema) {
-      return `${style.cyan(path)}`;
+      const displayPath = toDisplayPath(path);
+      return `${style.cyan(displayPath)}`;
     },
     async execute(
       { path: userPath, content, encoding }: SaveFileInputSchema,

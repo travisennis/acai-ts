@@ -3,6 +3,7 @@ import { inspect } from "node:util";
 import { z } from "zod";
 import style from "../terminal/style.ts";
 
+import { toDisplayPath } from "../utils/filesystem/path-display.ts";
 import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions } from "./types.ts";
 
@@ -74,7 +75,8 @@ export const createGrepTool = () => {
           : filePattern;
 
       // Enhanced tool-init with detailed search parameters
-      let initMessage = `${style.cyan(inspect(pattern))} in ${style.cyan(path)}`;
+      const displayPath = toDisplayPath(path);
+      let initMessage = `${style.cyan(inspect(pattern))} in ${style.cyan(displayPath)}`;
       if (safeFilePattern) {
         initMessage += ` ${style.dim(`(filter: ${safeFilePattern})`)}`;
       }

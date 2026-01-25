@@ -4,6 +4,7 @@ import { z } from "zod";
 import style from "../terminal/style.ts";
 
 import { isDirectory } from "../utils/filesystem/operations.ts";
+import { toDisplayPath } from "../utils/filesystem/path-display.ts";
 import { validatePath } from "../utils/filesystem/security.ts";
 import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions } from "./types.ts";
@@ -41,7 +42,8 @@ export const createLsTool = async (options: {
     display({ path: providedPath, limit }: LsInputSchema) {
       const dirPath = providedPath ?? ".";
       const effectiveLimit = limit ?? 500;
-      return `${style.cyan(dirPath)} (limit: ${effectiveLimit})`;
+      const displayPath = toDisplayPath(dirPath);
+      return `${style.cyan(displayPath)} (limit: ${effectiveLimit})`;
     },
     async execute(
       { path: providedPath, limit }: LsInputSchema,

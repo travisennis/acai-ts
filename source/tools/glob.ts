@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as nodePath from "node:path";
 import { z } from "zod";
 import style from "../terminal/style.ts";
-
+import { toDisplayPath } from "../utils/filesystem/path-display.ts";
 import { glob } from "../utils/glob.ts";
 import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions } from "./types.ts";
@@ -57,7 +57,8 @@ export const createGlobTool = () => {
         patternArray.length === 1
           ? patternArray[0]
           : JSON.stringify(patternArray);
-      return `${style.cyan(patternStr)} in ${style.cyan(path)}`;
+      const displayPath = toDisplayPath(path);
+      return `${style.cyan(patternStr)} in ${style.cyan(displayPath)}`;
     },
     async execute(
       {
