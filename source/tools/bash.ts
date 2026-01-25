@@ -1,4 +1,7 @@
 import { execSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { z } from "zod";
 import { initExecutionEnvironment } from "../execution/index.ts";
 import { logger } from "../logger.ts";
@@ -10,7 +13,8 @@ import type { ToolExecutionOptions } from "./types.ts";
 
 /**
  * Detects git commit commands with multi-line -m messages that will fail in shell.
- * Returns an error message if detected, or null if the command is safe.
+ * Writes the message to a temp file and returns an error with the file path.
+ * Returns null if the command is safe.
  */
 function detectMultilineGitCommit(command: string): string | null {
   const trimmed = command.trim();
@@ -20,24 +24,28 @@ function detectMultilineGitCommit(command: string): string | null {
     return null;
   }
 
-  // Look for -m flag with a message containing newlines
+  // Look for -m or -am flags with a message containing newlines
   // Match patterns like: git commit -m "message\nwith\nnewlines"
+  // or: git commit -am "message\nwith\nnewlines"
   // Using [\s\S] instead of [^] to match any character including newlines
-  const messageMatch = trimmed.match(/-m\s+["']([\s\S]*?)["']/);
+  const messageMatch = trimmed.match(/-am?\s+["']([\s\S]*?)["']/);
   if (!messageMatch) {
     return null;
   }
 
   const message = messageMatch[1];
   if (message.includes("\n")) {
-    return `Multi-line commit messages with -m flag cause shell parsing errors. Instead:
-1. Write the commit message to a temporary file (e.g., /tmp/acai/commit-msg.txt)
-2. Use: git commit -F /tmp/acai/commit-msg.txt
-3. Optionally remove the temp file after committing
-
-Example:
-  First, create the file with the commit message using the write_file tool.
-  Then run: git commit -F /tmp/acai/commit-msg.txt`;
+    const randomId = randomBytes(4).toString("hex");
+    const commitMsgPath = `/tmp/acai/commit-msg-${randomId}.txt`;
+    try {
+      mkdirSync(dirname(commitMsgPath), { recursive: true });
+      writeFileSync(commitMsgPath, message, "utf-8");
+    } catch (error) {
+      logger.error(error, "Failed to write commit message to temp file");
+    }
+    return `Multi-line commit messages with -m flag cause shell parsing errors. The commit message has been written to:
+  ${commitMsgPath}
+Use: git commit -F ${commitMsgPath}`;
   }
 
   return null;
