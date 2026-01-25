@@ -3,48 +3,160 @@ import os from "node:os";
 import path from "node:path";
 import { isPathWithinAllowedDirs } from "./filesystem/security.ts";
 
+// Tokenize shell command respecting quotes and escapes
+function tokenizeShellWords(command: string): string[] {
+  const tokens: string[] = [];
+  let current = "";
+  let mode: "normal" | "single" | "double" = "normal";
+
+  for (let i = 0; i < command.length; i++) {
+    const char = command[i] ?? "";
+
+    if (mode === "normal") {
+      if (/\s/.test(char)) {
+        if (current) {
+          tokens.push(current);
+          current = "";
+        }
+        continue;
+      }
+      if (char === "'") {
+        mode = "single";
+        current += char;
+        continue;
+      }
+      if (char === '"') {
+        mode = "double";
+        current += char;
+        continue;
+      }
+      if (char === "\\") {
+        const next = command[i + 1];
+        if (next !== undefined) {
+          current += char + next;
+          i++;
+          continue;
+        }
+      }
+      current += char;
+      continue;
+    }
+
+    if (mode === "single") {
+      current += char;
+      if (char === "'") mode = "normal";
+      continue;
+    }
+
+    // double quote mode
+    current += char;
+    if (char === "\\") {
+      const next = command[i + 1];
+      if (next !== undefined) {
+        current += next;
+        i++;
+      }
+      continue;
+    }
+    if (char === '"') mode = "normal";
+  }
+
+  if (current) tokens.push(current);
+  return tokens;
+}
+
+// Strip surrounding quotes from a token
+function stripQuotes(token: string): string {
+  if (
+    (token.startsWith('"') && token.endsWith('"')) ||
+    (token.startsWith("'") && token.endsWith("'"))
+  ) {
+    return token.slice(1, -1);
+  }
+  return token;
+}
+
+// Check if a token is fully quoted (content should not be path-validated)
+function isFullyQuoted(token: string): boolean {
+  if (token.length < 2) return false;
+  const first = token[0];
+  const last = token[token.length - 1];
+  return (first === '"' && last === '"') || (first === "'" && last === "'");
+}
+
+// Compute which tokens should be skipped from path validation
+function computeSkipTokenMask(tokens: string[]): boolean[] {
+  const skip = new Array(tokens.length).fill(false) as boolean[];
+
+  const bin = stripQuotes(tokens[0] ?? "");
+  const sub = stripQuotes(tokens[1] ?? "");
+
+  // Commands where -m/--message is a string argument (not a path)
+  const gitMessageSubs = new Set(["commit", "merge", "tag", "revert", "notes"]);
+
+  if (bin === "git" && gitMessageSubs.has(sub)) {
+    let seenDoubleDash = false;
+    for (let i = 2; i < tokens.length; i++) {
+      const t = stripQuotes(tokens[i] ?? "");
+      if (t === "--") {
+        seenDoubleDash = true;
+        continue;
+      }
+      if (seenDoubleDash) continue;
+
+      // --message=<msg> - skip this entire token
+      if (t.startsWith("--message=")) {
+        skip[i] = true;
+        continue;
+      }
+
+      // -m<msg> (attached message) - skip this entire token
+      if (/^-m.+/.test(t)) {
+        skip[i] = true;
+        continue;
+      }
+
+      // -m or --message consumes next token
+      if (t === "-m" || t === "--message") {
+        if (i + 1 < tokens.length) skip[i + 1] = true;
+        continue;
+      }
+
+      // Combined short opts containing m, e.g. -am, -avm
+      if (/^-[^-]+$/.test(t) && t.includes("m")) {
+        if (i + 1 < tokens.length) skip[i + 1] = true;
+      }
+    }
+  }
+
+  return skip;
+}
+
 // Validate path arguments to ensure they're within the project
 export function validatePaths(
   command: string,
   allowedDirs: string[],
   cwd: string,
 ): { isValid: boolean; error?: string } {
-  // Simple tokenization - split on spaces but respect quotes
-  const tokens: string[] = [];
-  let current = "";
-  let inQuotes = false;
-  let quoteChar = "";
-
-  for (let i = 0; i < command.length; i++) {
-    const char = command[i] ?? "";
-
-    if ((char === '"' || char === "'") && !inQuotes) {
-      inQuotes = true;
-      quoteChar = char;
-      current += char;
-    } else if (char === quoteChar && inQuotes) {
-      inQuotes = false;
-      quoteChar = "";
-      current += char;
-    } else if (char === " " && !inQuotes) {
-      if (current) {
-        tokens.push(current);
-        current = "";
-      }
-    } else {
-      current += char;
-    }
-  }
-  if (current) tokens.push(current);
+  const tokens = tokenizeShellWords(command);
+  const skip = computeSkipTokenMask(tokens);
 
   // Check each token that looks like a path
   for (let i = 1; i < tokens.length; i++) {
-    // Skip the command itself
     const token = tokens[i];
     if (!token) continue;
 
+    // Skip tokens marked by command-aware logic
+    if (skip[i]) continue;
+
+    // Skip fully quoted tokens - they're string arguments, not paths
+    // (paths are typically unquoted or only quoted to handle spaces)
+    if (isFullyQuoted(token) && token.includes("\n")) {
+      continue;
+    }
+
     // Remove quotes for path checking
-    const cleanToken = token.replace(/^['"]|['"]$/g, "");
+    const cleanToken = stripQuotes(token);
 
     // Skip if it's clearly not a path
     if (
@@ -52,12 +164,6 @@ export function validatePaths(
       cleanToken.includes("://") ||
       (!cleanToken.includes("/") && cleanToken !== "~")
     ) {
-      continue;
-    }
-
-    // Skip git commit messages and other special cases
-    const prevToken = tokens[i - 1]?.replace(/^['"]|['"]$/g, "");
-    if (prevToken === "-m" || prevToken === "--message") {
       continue;
     }
 
@@ -69,8 +175,6 @@ export function validatePaths(
           : cleanToken;
 
       const resolvedPath = path.resolve(cwd, expandedToken);
-
-      // Allow access to explicitly allowed paths
 
       if (!isPathWithinAllowedDirs(resolvedPath, allowedDirs)) {
         return {

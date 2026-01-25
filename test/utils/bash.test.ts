@@ -138,6 +138,63 @@ describe("bash - validatePaths", () => {
     assert.strictEqual(result.error, undefined);
   });
 
+  it("skips multiline git commit messages with paths", () => {
+    const result = validatePaths(
+      `git commit -m 'feat: add compile cache
+
+Cache location:
+- macOS: ~/Library/Caches/acai-compile-cache
+- Linux: ~/.cache/acai-compile-cache'`,
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+    assert.strictEqual(result.error, undefined);
+  });
+
+  it("skips git commit -am combined flag messages", () => {
+    const result = validatePaths(
+      'git commit -am "fix: update ~/Library/Caches path"',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+    assert.strictEqual(result.error, undefined);
+  });
+
+  it("skips git commit --message= format", () => {
+    const result = validatePaths(
+      'git commit --message="docs: update /etc/hosts reference"',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+    assert.strictEqual(result.error, undefined);
+  });
+
+  it("skips git commit -m attached message format", () => {
+    const result = validatePaths(
+      'git commit -m"fix /etc/passwd mention"',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+    assert.strictEqual(result.error, undefined);
+  });
+
+  it("validates paths after -- in git commit", () => {
+    const result = validatePaths(
+      'git commit -m "message" -- /etc/hosts',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, false);
+    assert.match(
+      result.error ?? "",
+      /resolves outside the allowed directories/,
+    );
+  });
+
   it("catches git commit file flags with actual files", () => {
     const result = validatePaths(
       "git commit -F /tmp/message.txt",
