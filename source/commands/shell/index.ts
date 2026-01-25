@@ -102,6 +102,7 @@ export const shellCommand = (options: CommandOptions): ReplCommand => {
 
         // Remove the selector and show final result
         container.removeChild(contextSelector);
+        tui.setFocus(editor);
         tui.requestRender();
         editor.setText("");
       };
@@ -112,6 +113,7 @@ export const shellCommand = (options: CommandOptions): ReplCommand => {
           new Text(style.gray("Output not added to context."), 3, 0),
         );
         container.removeChild(contextSelector);
+        tui.setFocus(editor);
         tui.requestRender();
         editor.setText("");
       };
