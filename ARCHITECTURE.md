@@ -13,7 +13,7 @@ acai-ts
 ├── TODO.md
 ├── biome.json
 ├── bin
-│   └── acai-wrapper.js
+│   └── acai
 ├── commitlint.config.js
 ├── docs
 │   ├── autocomplete.md
@@ -321,7 +321,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 - **README.md**: Introduction, installation, and usage instructions.
 - **TODO.md**: List of planned features and tasks.
 - **biome.json**: Configuration for Biome (linting and formatting tool).
-- **bin/acai-wrapper.js**: Binary wrapper script that invokes the compiled TypeScript entry point.
+- **bin/acai**: Binary wrapper script that invokes the compiled TypeScript entry point with Node.js compile cache support.
 - **commitlint.config.js**: Configuration for commit message validation.
 - **docs/**: Directory containing design documents, plans, and system prompt variations.
 - **knip.json**: Configuration for Knip (unused code detector).
@@ -608,7 +608,7 @@ Files are grouped by directory. Descriptions are brief overviews of purpose and 
 ## Flow Diagram
 
 Entry points from package.json:
-- Binary: `acai` -> `bin/acai-wrapper.js` (wraps dist/index.js)
+- Binary: `acai` -> `bin/acai` (wrapper script with compile cache, invokes dist/index.js)
 - Development: `npm run dev` -> `node --no-warnings --env-file=.env ./source/index.ts`
 - Production build: `npm run build` -> Compiles TypeScript to dist/ using tsconfig.build.json
 

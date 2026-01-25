@@ -1,0 +1,21 @@
+#!/bin/sh
+# acai wrapper script with Node.js compile cache support
+# Cache is automatically invalidated when source files change
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Set default compile cache directory if not already set
+if [ -z "${NODE_COMPILE_CACHE:-}" ]; then
+  if [ "${OSTYPE:-}" = "darwin*" ]; then
+    export NODE_COMPILE_CACHE="$HOME/Library/Caches/acai-compile-cache"
+  else
+    export NODE_COMPILE_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/acai-compile-cache"
+  fi
+fi
+
+# Create cache directory if it doesn't exist
+mkdir -p "$NODE_COMPILE_CACHE" 2>/dev/null || true
+
+# Execute the actual entry point with compile cache enabled
+exec node "$SCRIPT_DIR/../dist/index.js" "$@"
