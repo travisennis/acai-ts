@@ -30,9 +30,16 @@ export const inputSchema = z.object({
     .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
     .describe("Automatically expand directories to files. (default: true)"),
   ignoreFiles: z
-    .union([z.string(), z.array(z.string())])
-    .nullable()
-    .describe("Glob patterns to look for ignore files. (default: undefined)"),
+    .preprocess((val) => {
+      const converted = convertNullString(val);
+      if (converted === null) {
+        return null;
+      }
+      return converted;
+    }, z.union([z.string(), z.array(z.string())]).nullable())
+    .describe(
+      "Glob patterns to look for ignore files (e.g., '.gitignore'). Pass null to use default behavior.",
+    ),
   cwd: z
     .preprocess((val) => convertNullString(val), z.coerce.string().nullable())
     .describe("Current working directory override. (default: process.cwd())"),

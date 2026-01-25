@@ -8,7 +8,7 @@ test("glob tool has correct name", () => {
 });
 
 test("glob tool input schema validates required fields", () => {
-  // Valid input with all fields present (null for optional)
+  // Valid input with all nullable fields set to null
   const validInput = {
     patterns: "*.ts",
     path: "/some/path",
@@ -70,7 +70,7 @@ test("glob tool input schema handles optional fields", () => {
     inputSchema.parse(fullInput);
   });
 
-  // Valid input with null optional fields
+  // Valid input with null nullable fields
   const nullInput = {
     patterns: "*.ts",
     path: "/some/path",
@@ -83,5 +83,20 @@ test("glob tool input schema handles optional fields", () => {
 
   assert.doesNotThrow(() => {
     inputSchema.parse(nullInput);
+  });
+
+  // Valid input with ignoreFiles as array
+  const arrayInput = {
+    patterns: "*.ts",
+    path: "/some/path",
+    gitignore: null,
+    recursive: null,
+    expandDirectories: null,
+    ignoreFiles: [".gitignore", ".prettierignore"],
+    cwd: null,
+  };
+
+  assert.doesNotThrow(() => {
+    inputSchema.parse(arrayInput);
   });
 });
