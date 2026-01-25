@@ -41,7 +41,7 @@ export const createLsTool = async (options: {
     display({ path: providedPath, limit }: LsInputSchema) {
       const dirPath = providedPath ?? ".";
       const effectiveLimit = limit ?? 500;
-      return `Listing ${style.cyan(dirPath)} (limit: ${effectiveLimit})`;
+      return `${style.cyan(dirPath)} (limit: ${effectiveLimit})`;
     },
     async execute(
       { path: providedPath, limit }: LsInputSchema,
