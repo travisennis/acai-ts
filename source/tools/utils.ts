@@ -1,5 +1,22 @@
-import type { Tool } from "ai";
+import type { Tool, ToolExecuteFunction } from "ai";
+import { tool } from "ai";
 import z from "zod";
+import type { CompleteToolSet, CompleteTools } from "./index.ts";
+
+export function toAiSdkTools(tools: CompleteToolSet): CompleteTools {
+  return Object.fromEntries(
+    Object.entries(tools).map(([name, toolObj]) => [
+      name,
+      tool({
+        ...toolObj.toolDef,
+        execute: toolObj.execute as unknown as ToolExecuteFunction<
+          unknown,
+          string
+        >,
+      }),
+    ]),
+  ) as CompleteTools;
+}
 
 export function prepareTools(tools: { [toolName: string]: Tool }): {
   tools:

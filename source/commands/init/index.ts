@@ -1,7 +1,8 @@
 import { platform } from "node:os";
-import { stepCountIs, streamText, type ToolExecuteFunction, tool } from "ai";
+import { stepCountIs, streamText } from "ai";
 import style from "../../terminal/style.ts";
-import { type CompleteTools, initTools } from "../../tools/index.ts";
+import { initTools } from "../../tools/index.ts";
+import { toAiSdkTools } from "../../tools/utils.ts";
 import type { Container, Editor, TUI } from "../../tui/index.ts";
 import { Markdown, Spacer, Text } from "../../tui/index.ts";
 import { inGitDirectory } from "../../utils/git.ts";
@@ -58,18 +59,7 @@ export const initCommand = ({
         temperature: 0.5,
         prompt: initPrompt,
         stopWhen: stepCountIs(40),
-        tools: Object.fromEntries(
-          Object.entries(tools).map((t) => [
-            t[0],
-            tool({
-              ...t[1]["toolDef"],
-              execute: t[1]["execute"] as unknown as ToolExecuteFunction<
-                unknown,
-                string
-              >,
-            }),
-          ]),
-        ) as CompleteTools,
+        tools: toAiSdkTools(tools),
       });
 
       container.addChild(new Spacer(1));

@@ -11,7 +11,6 @@ import {
   NoSuchToolError,
   Output,
   streamText,
-  tool,
 } from "ai";
 import type z from "zod";
 import { config } from "../config.ts";
@@ -26,6 +25,7 @@ import type {
   CompleteToolSet,
   CompleteTools,
 } from "../tools/index.ts";
+import { toAiSdkTools } from "../tools/utils.ts";
 
 type AgentOptions = {
   modelManager: ModelManager;
@@ -221,10 +221,7 @@ export class Agent {
           topP: aiConfig.topP(),
           maxRetries: 2,
           providerOptions: aiConfig.providerOptions(),
-          tools: Object.fromEntries(
-            // biome-ignore lint/suspicious/noExplicitAny: temporary
-            Object.entries(tools).map((t) => [t[0], tool(t[1].toolDef as any)]),
-          ) as CompleteTools,
+          tools: toAiSdkTools(tools),
           activeTools,
           // biome-ignore lint/style/useNamingConvention: third-party controlled
           experimental_repairToolCall:

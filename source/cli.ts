@@ -4,9 +4,7 @@ import {
   Output,
   stepCountIs,
   type ToolCallRepairFunction,
-  type ToolExecuteFunction,
   type ToolSet,
-  tool,
 } from "ai";
 import type z from "zod";
 import type { WorkspaceContext } from "./index.ts";
@@ -19,6 +17,7 @@ import type { SessionManager } from "./sessions/manager.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
 import { type CompleteTools, initTools } from "./tools/index.ts";
+import { toAiSdkTools } from "./tools/utils.ts";
 
 interface CliOptions {
   sessionManager: SessionManager;
@@ -88,18 +87,7 @@ export class Cli {
         stopWhen: stepCountIs(200),
         maxRetries: 2,
         providerOptions: aiConfig.providerOptions(),
-        tools: Object.fromEntries(
-          Object.entries(tools).map((t) => [
-            t[0],
-            tool({
-              ...t[1]["toolDef"],
-              execute: t[1]["execute"] as unknown as ToolExecuteFunction<
-                unknown,
-                string
-              >,
-            }),
-          ]),
-        ) as CompleteTools,
+        tools: toAiSdkTools(tools),
         // biome-ignore lint/style/useNamingConvention: third-party controlled
         experimental_repairToolCall:
           toolCallRepair<CompleteTools>(modelManager),
