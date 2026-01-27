@@ -39,6 +39,7 @@ const opencodeZenModels = {
   "glm-4-7": completionsClient("glm-4.7"),
   "opus-4-5": messagesClient("claude-opus-4.5"),
   "gpt-5.2-codex": responsesClient.responses("gpt-5.2-codex"),
+  "kimi-k2-5": completionsClient("kimi-k2.5"),
 } as const;
 
 type ModelName = `opencode:${keyof typeof opencodeZenModels}`;
@@ -92,5 +93,17 @@ export const opencodeZenModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000175,
     costPerOutputToken: 0.000014,
+  },
+  "opencode:kimi-k2-5": {
+    id: "opencode:kimi-k2-5",
+    provider: "opencode",
+    contextWindow: 262144,
+    maxOutputTokens: 262144,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 6e-7,
+    costPerOutputToken: 0.000003,
   },
 };
