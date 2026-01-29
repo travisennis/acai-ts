@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { initExecutionEnvironment } from "../../execution/index.ts";
 import { getTerminalSize } from "../../terminal/control.ts";
 import style from "../../terminal/style.ts";
@@ -15,6 +16,7 @@ import type { CommandOptions, ReplCommand } from "../types.ts";
 import {
   formatFileDiffForDisplay,
   getUntrackedFiles,
+  openFileInEditor,
   parseGitDiffFiles,
 } from "./utils.ts";
 
@@ -153,31 +155,108 @@ export const reviewCommand = (_options: CommandOptions): ReplCommand => {
             (file) => file.fileName === selectedItem.value,
           );
 
-          if (selectedFile) {
+          if (!selectedFile) {
             container.addChild(new Spacer(1));
             container.addChild(
-              new Markdown(
-                formatFileDiffForDisplay(
-                  selectedFile.fileName,
-                  selectedFile.diff,
-                ),
-                {
-                  customBgRgb: {
-                    r: 52,
-                    g: 53,
-                    b: 65,
-                  },
-                  paddingX: 1,
-                  paddingY: 1,
+              new Markdown(style.red("Error: Selected file not found."), {
+                customBgRgb: {
+                  r: 52,
+                  g: 53,
+                  b: 65,
                 },
-              ),
+                paddingX: 1,
+                paddingY: 1,
+              }),
             );
+            tui.requestRender();
+            return;
+          }
+
+          // Show action selection menu (view diff or open in editor)
+          const actionItems: AutocompleteItem[] = [
+            { value: "diff", label: "View diff", description: "Show changes" },
+            {
+              value: "edit",
+              label: "Open in editor",
+              description: `Open in ${process.env["EDITOR"] || process.env["VISUAL"] || "vi"}`,
+            },
+          ];
+
+          const actionSelectList = new SelectList(actionItems, 5);
+          const actionContainer = new Container();
+          actionContainer.addChild(new Spacer(1));
+          actionContainer.addChild(
+            new Text(style.blue(`Selected: ${selectedFile.fileName}`), 0, 0),
+          );
+          actionContainer.addChild(new Spacer(1));
+          actionContainer.addChild(actionSelectList);
+          actionContainer.addChild(new Spacer(1));
+          actionContainer.addChild(
+            new Text(style.blue("─".repeat(columns)), 0, 0),
+          );
+
+          inputContainer.clear();
+          inputContainer.addChild(actionContainer);
+          tui.setFocus(actionSelectList);
+          tui.requestRender();
+
+          actionSelectList.onSelect = (actionItem) => {
+            if (actionItem.value === "diff") {
+              // Show diff
+              container.addChild(new Spacer(1));
+              container.addChild(
+                new Markdown(
+                  formatFileDiffForDisplay(
+                    selectedFile.fileName,
+                    selectedFile.diff,
+                  ),
+                  {
+                    customBgRgb: {
+                      r: 52,
+                      g: 53,
+                      b: 65,
+                    },
+                    paddingX: 1,
+                    paddingY: 1,
+                  },
+                ),
+              );
+            } else if (actionItem.value === "edit") {
+              // Open in editor
+              const filePath = join(process.cwd(), selectedFile.fileName);
+              const result = openFileInEditor(filePath, tui.getTerminal());
+
+              if (!result.success) {
+                container.addChild(new Spacer(1));
+                container.addChild(
+                  new Markdown(
+                    `Failed to open file in editor: ${result.error || "Unknown error"}`,
+                    {
+                      customBgRgb: {
+                        r: 52,
+                        g: 53,
+                        b: 65,
+                      },
+                      paddingX: 1,
+                      paddingY: 1,
+                    },
+                  ),
+                );
+              }
+            }
 
             inputContainer.clear();
             inputContainer.addChild(originalEditor);
             tui.setFocus(originalEditor);
             tui.requestRender();
-          }
+          };
+
+          actionSelectList.onCancel = () => {
+            inputContainer.clear();
+            inputContainer.addChild(selectContainer);
+            tui.setFocus(selectList);
+            tui.requestRender();
+          };
         };
 
         selectList.onCancel = () => {

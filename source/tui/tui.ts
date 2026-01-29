@@ -92,6 +92,14 @@ export class TUI extends Container {
     this.focusedComponent = component;
   }
 
+  /**
+   * Get the underlying terminal instance for external mode operations.
+   * Used primarily for spawning external editors.
+   */
+  getTerminal(): Terminal {
+    return this.terminal;
+  }
+
   start(): void {
     this.terminal.start(
       (data) => this.handleInput(data),

@@ -1,5 +1,7 @@
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import path from "node:path";
+import { join } from "node:path";
+import type { Terminal } from "../../tui/terminal.ts";
 import type { FileChange } from "./types.ts";
 
 export function parseGitDiffFiles(diffOutput: string): FileChange[] {
@@ -108,7 +110,7 @@ export async function getUntrackedFiles(
 
   for (const fileName of untrackedFiles) {
     try {
-      const filePath = path.join(cwd, fileName);
+      const filePath = join(cwd, fileName);
       const fileContent = await fs.promises.readFile(filePath, "utf-8");
       const lines = fileContent.split("\n").length;
 
@@ -137,4 +139,37 @@ ${fileContent
   }
 
   return fileChanges;
+}
+
+/**
+ * Open a file in the user's preferred editor ($EDITOR or $VISUAL)
+ */
+export function openFileInEditor(
+  filePath: string,
+  terminal: Terminal,
+): { success: boolean; error?: string } {
+  const editor = process.env["EDITOR"] || process.env["VISUAL"] || "vi";
+
+  terminal.enterExternalMode();
+
+  try {
+    const result = spawnSync(editor, [filePath], {
+      stdio: "inherit",
+    });
+
+    if (result.error) {
+      return { success: false, error: result.error.message };
+    }
+
+    // Note: Editors often exit with non-zero codes (e.g., :cq in vim, or when
+    // quitting without saving). We only treat spawn errors as failures, not
+    // exit codes, since the user may intentionally exit with an error code.
+    return { success: true };
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    return { success: false, error: errorMessage };
+  } finally {
+    terminal.exitExternalMode();
+  }
 }
