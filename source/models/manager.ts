@@ -13,7 +13,7 @@ import {
   modelRegistry,
 } from "./providers.ts";
 
-function getLanguageModel({
+export function getLanguageModel({
   model,
   app,
   stateDir,
@@ -32,6 +32,11 @@ function getLanguageModel({
   });
 
   return langModel;
+}
+
+export function getModelMetadata({ model }: { model: ModelName }) {
+  const modelMetadata = modelRegistry[model];
+  return modelMetadata;
 }
 
 type App =
@@ -68,7 +73,7 @@ export class ModelManager extends EventEmitter<ModelManagerEvents> {
         stateDir: this.stateDir,
       }),
     );
-    const modelMetadata = modelRegistry[model];
+    const modelMetadata = getModelMetadata({ model });
     if (modelMetadata) {
       this.modelMetadataMap.set(app, modelMetadata);
     }

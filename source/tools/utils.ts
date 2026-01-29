@@ -3,16 +3,20 @@ import { tool } from "ai";
 import z from "zod";
 import type { CompleteToolSet, CompleteTools } from "./index.ts";
 
-export function toAiSdkTools(tools: CompleteToolSet): CompleteTools {
+export function toAiSdkTools(
+  tools: CompleteToolSet,
+  includeExecute = true,
+): CompleteTools {
   return Object.fromEntries(
     Object.entries(tools).map(([name, toolObj]) => [
       name,
       tool({
         ...toolObj.toolDef,
-        execute: toolObj.execute as unknown as ToolExecuteFunction<
-          unknown,
-          string
-        >,
+        execute: includeExecute
+          ? (toolObj.execute as unknown as ToolExecuteFunction<unknown, string>)
+          : () => {
+              throw new Error("Tool execution not available");
+            },
       }),
     ]),
   ) as CompleteTools;

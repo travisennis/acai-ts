@@ -221,7 +221,7 @@ export class Agent {
           topP: aiConfig.topP(),
           maxRetries: 2,
           providerOptions: aiConfig.providerOptions(),
-          tools: toAiSdkTools(tools),
+          tools: toAiSdkTools(tools, false),
           activeTools,
           // biome-ignore lint/style/useNamingConvention: third-party controlled
           experimental_repairToolCall:

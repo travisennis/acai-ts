@@ -11,762 +11,810 @@ acai-ts
 ├── LICENSE
 ├── README.md
 ├── TODO.md
+├── benchmark-cache.sh
 ├── biome.json
-├── bin
-│   └── acai
 ├── commitlint.config.js
-├── docs
+├── knip.json
+├── package-lock.json
+├── package.json
+├── plan.md
+├── prompt.md
+├── scripts
+│   └── show-config.ts
+├── specs
+│   ├── background-resume.md
+│   ├── cli-stdin-handling.md
+│   ├── footer-restructure.md
+│   ├── session-storage.md
+│   ├── session-token-usage.md
+│   ├── share-command.md
+│   └── template.md
+├── temp
+│   ├── ANALYSIS.md
+│   ├── COMMANDS-TO-DEPRECATE.md
+│   ├── MARKDOWN-PLAN.md
+│   ├── MARKDOWN_REFACTOR_PLAN.md
+│   ├── PI-CA-TUI.md
+│   ├── PI-TUI-SOURCE.md
+│   ├── REVIEW.md
+│   ├── SOURCE.md
+│   ├── UPDATED-PI-SOURCE.md
+│   ├── UPDATED-PI-CA_SOURCE.md
+│   ├── add-docs.md
 │   ├── autocomplete.md
 │   ├── autocomplete_plan.md
+│   ├── cursor_markdown_parsing_implementation.md
 │   ├── generate-prompts.ts
 │   ├── hooks_feature.md
 │   ├── hooks_feature2.md
 │   ├── new-code-executor.md
-│   ├── PLAN.md
-│   ├── REVIEW.md
+│   ├── ralph.sh
 │   ├── system-prompt-cli.md
 │   ├── system-prompt-full.md
 │   ├── system-prompt-minimal.md
-│   └── system-prompts-comparison.md
-├── knip.json
-├── package-lock.json
-├── package.json
-├── scripts
-│   │   └── show-config.ts
-├── specs
-│   └── cli-stdin-handling.md
-├── source
-│   ├── agent
-│   │   └── index.ts
-│   ├── cli.ts
-│   ├── commands
-│   │   ├── add-directory/
-│   │   │   ├── index.ts
-│   │   │   ├── types.ts
-│   │   │   └── utils.ts
-│   │   ├── clear/
-│   │   │   └── index.ts
-│   │   ├── copy/
-│   │   │   ├── index.ts
-│   │   │   ├── types.ts
-│   │   │   └── utils.ts
-│   │   ├── exit/
-│   │   │   ├── index.ts
-│   │   │   ├── types.ts
-│   │   │   └── utils.ts
-│   │   ├── generate-rules/
-│   │   │   ├── index.ts
-│   │   │   └── utils.ts
-│   │   ├── handoff/
-│   │   │   ├── index.ts
-│   │   │   └── utils.ts
-│   │   ├── health/
-│   │   │   ├── index.ts
-│   │   │   └── utils.ts
-│   │   ├── help/
-│   │   │   └── index.ts
-│   │   ├── history/
-│   │   │   ├── index.ts
-│   │   │   ├── types.ts
-│   │   │   └── utils.ts
-│   │   ├── init/
-│   │   │   └── index.ts
-│   │   ├── init-project/
-│   │   │   ├── index.ts
-│   │   │   └── utils.ts
-│   │   ├── list-directories/
-│   │   │   └── index.ts
-│   │   ├── list-tools/
-│   │   │   └── index.ts
-│   │   ├── manager.ts
-│   │   ├── model/
-│   │   │   ├── index.ts
-│   │   │   └── utils.ts
-│   │   ├── paste/
-│   │   │   ├── index.ts
-│   │   │   └── utils.ts
-│   │   ├── pickup/
-│   │   │   ├── index.ts
-│   │   │   ├── types.ts
-│   │   │   └── utils.ts
-│   │   ├── prompt/
-│   │   │   ├── index.ts
-│   │   │   ├── types.ts
-│   │   │   └── utils.ts
-│   │   ├── remove-directory/
-│   │   │   └── index.ts
-│   │   ├── reset/
-│   │   │   └── index.ts
-│   │   ├── resources/
-│   │   │   └── index.ts
-│   │   ├── review/
-│   │   │   ├── index.ts
-│   │   │   ├── types.ts
-│   │   │   └── utils.ts
-│   │   ├── save/
-│   │   │   └── index.ts
-│   │   ├── session/
-│   │   │   ├── index.ts
-│   │   │   └── types.ts
-│   │   ├── share/
-│   │   │   ├── html-renderer.ts
-│   │   │   └── index.ts
-│   │   ├── shell/
-│   │   │   └── index.ts
-│   │   └── types.ts
-│   ├── config.ts
-│   ├── dedent.ts
-│   ├── execution
-│   │   └── index.ts
-│   ├── formatting.ts
-│   ├── index.ts
-│   ├── logger.ts
-│   ├── mentions.ts
-│   ├── middleware
-│   │   ├── audit-message.ts
-│   │   ├── cache.ts
-│   │   ├── index.ts
-│   │   └── rate-limit.ts
-│   ├── models
-│   │   ├── ai-config.ts
-│   │   ├── anthropic-provider.ts
-│   │   ├── deepseek-provider.ts
-│   │   ├── google-provider.ts
-│   │   ├── groq-provider.ts
-│   │   ├── manager.ts
-│   │   ├── openai-provider.ts
-│   │   ├── opencode-zen-provider.ts
-│   │   ├── openrouter-provider.ts
-│   │   ├── providers.ts
-│   │   └── xai-provider.ts
-│   ├── parsing.ts
-│   ├── prompts
-│   │   ├── manager.ts
-│   │   └── prompts.ts
-│   ├── repl
-│   │   └── project-status-line.ts
-│   ├── repl-new.ts
-│   ├── sessions
-│   │   └── manager.ts
-│   ├── skills.ts
-│   ├── stdin.ts
-│   ├── terminal
-│   │   ├── ansi-styles.ts
-│   │   ├── control.ts
-│   │   ├── default-theme.ts
-│   │   ├── east-asian-width.ts
-│   │   ├── formatting.ts
-│   │   ├── highlight
-│   │   │   ├── index.ts
-│   │   │   └── theme.ts
-│   │   ├── index.ts
-│   │   ├── markdown-utils.ts
-│   │   ├── markdown.ts
-│   │   ├── segmenter.ts
-│   │   ├── select-prompt.ts
-│   │   ├── string-width.ts
-│   │   ├── strip-ansi.ts
-│   │   ├── style.ts
-│   │   ├── supports-color.ts
-│   │   ├── supports-hyperlinks.ts
-│   │   ├── table
-│   │   │   ├── cell.ts
-│   │   │   ├── debug.ts
-│   │   │   ├── index.ts
-│   │   │   ├── layout-manager.ts
-│   │   │   ├── table.ts
-│   │   │   └── utils.ts
-│   │   └── wrap-ansi.ts
-│   ├── tokens
-│   │   ├── counter.ts
-│   │   └── tracker.ts
-│   ├── tools
-│   │   ├── agent.ts
-│   │   ├── bash.ts
-│   │   ├── batch.ts
-│   │   ├── code-interpreter.ts
-│   │   ├── directory-tree.ts
-│   │   ├── dynamic-tool-loader.ts
-│   │   ├── edit-file.ts
-│   │   ├── glob.ts
-│   │   ├── grep.ts
-│   │   ├── index.ts
-│   │   ├── ls.ts
-│   │   ├── read-file.ts
-│   │   ├── save-file.ts
-│   │   ├── think.ts
-│   │   ├── types.ts
-│   │   └── utils.ts
-│   ├── tui
-│   │   ├── autocomplete
-│   │   │   ├── attachment-provider.ts
-│   │   │   ├── base-provider.ts
-│   │   │   ├── combined-provider.ts
-│   │   │   ├── command-provider.ts
-│   │   │   ├── path-provider.ts
-│   │   │   └── utils.ts
-│   │   ├── autocomplete.ts
-│   │   ├── components
-│   │   │   ├── assistant-message.ts
-│   │   │   ├── box.ts
-│   │   │   ├── editor.ts
-│   │   │   ├── footer.ts
-│   │   │   ├── header.ts
-│   │   │   ├── input.ts
-│   │   │   ├── loader.ts
-│   │   │   ├── markdown.ts
-│   │   │   ├── modal.ts
-│   │   │   ├── progress-bar.ts
-│   │   │   ├── prompt-status.ts
-│   │   │   ├── select-list.ts
-│   │   │   ├── spacer.ts
-│   │   │   ├── table.ts
-│   │   │   ├── text.ts
-│   │   │   ├── thinking-block.ts
-│   │   │   ├── tool-execution.ts
-│   │   │   ├── user-message.ts
-│   │   │   └── welcome.ts
-│   │   ├── editor-launcher.ts
-│   │   ├── index.ts
-│   │   ├── terminal.ts
-│   │   ├── tui-output.test.ts
-│   │   ├── tui.ts
-│   │   └── utils.ts
-│   ├── utils
-│   │   ├── bash.ts
-│   │   ├── filesystem
-│   │   │   ├── operations.ts
-│   │   │   └── security.ts
-│   │   ├── filetype-detection.ts
-│   │   ├── funcs.ts
-│   │   ├── generators.ts
-│   │   ├── git.ts
-│   │   ├── glob.ts
-│   │   ├── ignore.ts
-│   │   ├── iterables.ts
-│   │   ├── process.ts
-│   │   ├── yaml.ts
-│   │   └── zod.ts
-│   └── version.ts
-├── test
-│   ├── commands
-│   │   ├── copy-command.test.ts
-│   │   ├── exit-command.test.ts
-│   │   ├── health-command.test.ts
-│   │   ├── history-command.integration.test.ts
-│   │   ├── history-command.test.ts
-│   │   ├── prompt-command.test.ts
-│   │   ├── resources-command.test.ts
-│   │   ├── review-command.test.ts
-│   │   ├── session-command.test.ts
-│   │   └── shell-command.test.ts
-│   ├── config.test.ts
-│   ├── execution.test.ts
-│   ├── mentions.test.ts
-│   ├── messages.test.ts
-│   ├── models
-│   │   ├── ai-config.test.ts
-│   │   └── manager.test.ts
-│   ├── terminal
-│   │   ├── highlight.test.ts
-│   │   ├── markdown-utils.test.ts
-│   │   └── markdown.test.ts
-│   ├── tools
-│   │   ├── bash.test.ts
-│   │   ├── code-interpreter.test.ts
-│   │   ├── dynamic-tool-integration.test.ts
-│   │   ├── dynamic-tool-loader.test.ts
-│   │   ├── edit-file.test.ts
-│   │   ├── glob.test.ts
-│   │   ├── grep-enhanced-ux.test.ts
-│   │   ├── grep-error-handling.test.ts
-│   │   ├── grep-issue-96.test.ts
-│   │   ├── grep-match-counting.test.ts
-│   │   ├── grep-max-results.test.ts
-│   │   ├── grep.test.ts
-│   │   ├── ls.test.ts
-│   │   └── stdin-handling.test.ts
-│   ├── tui
-│   │   ├── autocomplete.test.ts
-│   │   ├── components
-│   │   ├── modal.test.ts
-│   │   ├── tool-execution-race-condition.test.ts
-│   │   └── tool-execution-synthetic-start.test.ts
-│   └── utils
-│       ├── bash.test.ts
-│       ├── filesystem.test.ts
-│       ├── filesystem
-│       ├── generators.test.ts
-│       ├── glob.test.ts
-│       ├── ignore.test.ts
-│       ├── mocking.ts
-│       └── process.test.ts
-├── testing.md
+│   ├── system-prompts-comparison.md
+│   ├── test-coverage-progress.txt
+│   ├── test-coverage.sh
+│   └── test-side-effects.md
 ├── tsconfig.build.json
 └── tsconfig.json
+├── bin
+│   └── acai
+└── source
+    ├── agent
+    │   ├── index.ts
+    │   └── sub-agent.ts
+    ├── cli.ts
+    ├── commands
+    │   ├── add-directory
+    │   │   ├── index.ts
+    │   │   ├── types.ts
+    │   │   └── utils.ts
+    │   ├── clear
+    │   │   └── index.ts
+    │   ├── copy
+    │   │   ├── index.ts
+    │   │   ├── types.ts
+    │   │   └── utils.ts
+    │   ├── exit
+    │   │   ├── index.ts
+    │   │   ├── types.ts
+    │   │   └── utils.ts
+    │   ├── generate-rules
+    │   │   ├── index.ts
+    │   │   └── utils.ts
+    │   ├── handoff
+    │   │   ├── index.ts
+    │   │   └── utils.ts
+    │   ├── health
+    │   │   ├── index.ts
+    │   │   └── utils.ts
+    │   ├── help
+    │   │   └── index.ts
+    │   ├── history
+    │   │   ├── index.ts
+    │   │   ├── types.ts
+    │   │   └── utils.ts
+    │   ├── init
+    │   │   └── index.ts
+    │   ├── init-project
+    │   │   ├── index.ts
+    │   │   └── utils.ts
+    │   ├── list-directories
+    │   │   └── index.ts
+    │   ├── list-tools
+    │   │   └── index.ts
+    │   ├── manager.ts
+    │   ├── model
+    │   │   ├── index.ts
+    │   │   └── utils.ts
+    │   ├── paste
+    │   │   ├── index.ts
+    │   │   └── utils.ts
+    │   ├── pickup
+    │   │   ├── index.ts
+    │   │   ├── types.ts
+    │   │   └── utils.ts
+    │   ├── prompt
+    │   │   ├── index.ts
+    │   │   ├── types.ts
+    │   │   └── utils.ts
+    │   ├── remove-directory
+    │   │   └── index.ts
+    │   ├── reset
+    │   │   ├── index.ts
+    │   │   └── types.ts
+    │   ├── resources
+    │   │   └── index.ts
+    │   ├── review
+    │   │   ├── index.ts
+    │   │   ├── types.ts
+    │   │   └── utils.ts
+    │   ├── save
+    │   │   └── index.ts
+    │   ├── session
+    │   │   ├── index.ts
+    │   │   └── types.ts
+    │   ├── share
+    │   │   ├── html-renderer.ts
+    │   │   └── index.ts
+    │   ├── shell
+    │   │   └── index.ts
+    │   └── types.ts
+    ├── config.ts
+    ├── dedent.ts
+    ├── execution
+    │   └── index.ts
+    ├── formatting.ts
+    ├── index.ts
+    ├── logger.ts
+    ├── mentions.ts
+    ├── middleware
+    │   ├── audit-message.ts
+    │   ├── cache.ts
+    │   ├── index.ts
+    │   └── rate-limit.ts
+    ├── models
+    │   ├── ai-config.ts
+    │   ├── anthropic-provider.ts
+    │   ├── deepseek-provider.ts
+    │   ├── google-provider.ts
+    │   ├── groq-provider.ts
+    │   ├── manager.ts
+    │   ├── openai-provider.ts
+    │   ├── opencode-zen-provider.ts
+    │   ├── openrouter-provider.ts
+    │   ├── providers.ts
+    │   └── xai-provider.ts
+    ├── parsing.ts
+    ├── prompts
+    │   └── manager.ts
+    ├── prompts.ts
+    ├── repl
+    │   └── project-status.ts
+    ├── repl.ts
+    ├── sessions
+    │   └── manager.ts
+    ├── skills.ts
+    ├── stdin.ts
+    ├── subagents.ts
+    ├── terminal
+    │   ├── ansi-styles.ts
+    │   ├── control.ts
+    │   ├── default-theme.ts
+    │   ├── east-asian-width.ts
+    │   ├── formatting.ts
+    │   ├── highlight
+    │   │   ├── index.ts
+    │   │   └── theme.ts
+    │   ├── index.ts
+    │   ├── keys.ts
+    │   ├── markdown-utils.ts
+    │   ├── segmenter.ts
+    │   ├── select-prompt.ts
+    │   ├── string-width.ts
+    │   ├── strip-ansi.ts
+    │   ├── style.ts
+    │   ├── supports-color.ts
+    │   ├── supports-hyperlinks.ts
+    │   ├── table
+    │   │   ├── cell.ts
+    │   │   ├── debug.ts
+    │   │   ├── index.ts
+    │   │   ├── layout-manager.ts
+    │   │   ├── table.ts
+    │   │   └── utils.ts
+    │   └── wrap-ansi.ts
+    ├── tokens
+    │   ├── counter.ts
+    │   └── tracker.ts
+    ├── tools
+    │   ├── agent.ts
+    │   ├── bash.ts
+    │   ├── directory-tree.ts
+    │   ├── dynamic-tool-loader.ts
+    │   ├── edit-file.ts
+    │   ├── glob.ts
+    │   ├── grep.ts
+    │   ├── index.ts
+    │   ├── ls.ts
+    │   ├── read-file.ts
+    │   ├── save-file.ts
+    │   ├── skill.ts
+    │   ├── think.ts
+    │   ├── types.ts
+    │   └── utils.ts
+    ├── tui
+    │   ├── autocomplete
+    │   │   ├── attachment-provider.ts
+    │   │   ├── base-provider.ts
+    │   │   ├── combined-provider.ts
+    │   │   ├── command-provider.ts
+    │   │   ├── file-search-provider.ts
+    │   │   ├── path-provider.ts
+    │   │   └── utils.ts
+    │   ├── autocomplete.ts
+    │   ├── components
+    │   │   ├── assistant-message.ts
+    │   │   ├── box.ts
+    │   │   ├── editor.ts
+    │   │   ├── footer.ts
+    │   │   ├── header.ts
+    │   │   ├── input.ts
+    │   │   ├── loader.ts
+    │   │   ├── markdown.ts
+    │   │   ├── modal.ts
+    │   │   ├── notification.ts
+    │   │   ├── progress-bar.ts
+    │   │   ├── select-list.ts
+    │   │   ├── spacer.ts
+    │   │   ├── table.ts
+    │   │   ├── text.ts
+    │   │   ├── thinking-block.ts
+    │   │   ├── tool-execution.ts
+    │   │   ├── user-message.ts
+    │   │   └── welcome.ts
+    │   ├── editor-launcher.ts
+    │   ├── index.ts
+    │   ├── terminal.ts
+    │   ├── tui-output.test.ts
+    │   ├── tui.ts
+    │   └── utils.ts
+    └── utils
+        ├── bash.ts
+        ├── filesystem
+        │   ├── operations.ts
+        │   ├── path-display.ts
+        │   └── security.ts
+        ├── filetype-detection.ts
+        ├── funcs.ts
+        ├── generators.ts
+        ├── git.ts
+        ├── glob.ts
+        ├── ignore.ts
+        ├── iterables.ts
+        ├── process.ts
+        ├── yaml.ts
+        └── zod.ts
+└── test
+    ├── agent
+    ├── commands
+    │   ├── add-directory.test.ts
+    │   ├── clear-command.test.ts
+    │   ├── copy-command.test.ts
+    │   ├── exit-command.test.ts
+    │   ├── generate-rules.test.ts
+    │   ├── handoff.test.ts
+    │   ├── health.test.ts
+    │   ├── history-command.integration.test.ts
+    │   ├── history-command.test.ts
+    │   ├── init-project.test.ts
+    │   ├── list-directories.test.ts
+    │   ├── list-tools.test.ts
+    │   ├── model.test.ts
+    │   ├── paste.test.ts
+    │   ├── pickup.test.ts
+    │   ├── prompt-command.test.ts
+    │   ├── remove-directory.test.ts
+    │   ├── reset-command.test.ts
+    │   ├── resources-command.test.ts
+    │   ├── review-command.test.ts
+    │   ├── review.test.ts
+    │   ├── save-command.test.ts
+    │   ├── session-command.test.ts
+    │   ├── share.test.ts
+    │   └── shell-command.test.ts
+    ├── config.test.ts
+    ├── execution.test.ts
+    ├── integration
+    ├── mentions.test.ts
+    ├── messages.test.ts
+    ├── models
+    │   ├── ai-config.test.ts
+    │   └── manager.test.ts
+    ├── sessions
+    │   └── manager.test.ts
+    ├── setup.js
+    ├── stdin-handling.test.ts
+    ├── terminal
+    │   ├── highlight.test.ts
+    │   ├── keys.test.ts
+    │   └── markdown-utils.test.ts
+    ├── tokens
+    ├── tools
+    │   ├── bash.test.ts
+    │   ├── dynamic-tool-integration.test.ts
+    │   ├── dynamic-tool-loader.test.ts
+    │   ├── edit-file.test.ts
+    │   ├── glob.test.ts
+    │   ├── grep-enhanced-ux.test.ts
+    │   ├── grep-error-handling.test.ts
+    │   ├── grep-issue-96.test.ts
+    │   ├── grep-match-counting.test.ts
+    │   ├── grep-max-results.test.ts
+    │   ├── grep.test.ts
+    │   └── ls.test.ts
+    ├── tui
+    │   ├── autocomplete.test.ts
+    │   ├── components
+    │   │   ├── select-list.test.ts
+    │   │   └── table.test.ts
+    │   ├── modal.test.ts
+    │   ├── tool-execution-race-condition.test.ts
+    │   └── tool-execution-synthetic-start.test.ts
+    └── utils
+        ├── bash.test.ts
+        ├── filesystem
+        │   ├── path-display.test.ts
+        │   └── security.test.ts
+        ├── filesystem.test.ts
+        ├── generators.test.ts
+        ├── glob.test.ts
+        ├── ignore.test.ts
+        ├── mocking.ts
+        ├── model-manager.ts
+        ├── process.test.ts
+        └── test-fixtures.ts
 ```
-
-Notes:
-- Dot directories (e.g., .acai, .github, .husky) are omitted.
-- The `dist/` directory contains compiled output and is not tracked in source control.
 
 ## File Descriptions
 
-Files are grouped by directory. Descriptions are brief overviews of purpose and responsibilities based on code structure and naming conventions.
+### Root Configuration Files
 
-### Top-level Files
-- **AGENTS.md**: Documentation of agent behaviors, rules, and prompts used by the AI.
-- **ARCHITECTURE.md**: This document, detailing project structure, files, and flows.
-- **LICENSE**: MIT license for the project.
-- **README.md**: Introduction, installation, and usage instructions.
-- **TODO.md**: List of planned features and tasks.
-- **biome.json**: Configuration for Biome (linting and formatting tool).
-- **bin/acai**: Binary wrapper script that invokes the compiled TypeScript entry point with Node.js compile cache support.
-- **commitlint.config.js**: Configuration for commit message validation.
-- **docs/**: Directory containing design documents, plans, and system prompt variations.
-- **knip.json**: Configuration for Knip (unused code detector).
-- **package-lock.json**: Locked dependencies for reproducible installs.
-- **package.json**: Project metadata, dependencies, scripts, and binary entry points (acai -> bin/acai-wrapper.js).
-- **scripts/show-config.ts**: Utility script to display current configuration.
-- **testing.md**: Documentation about testing strategies and approaches.
-- **tsconfig.build.json**: TypeScript configuration for production build.
-- **tsconfig.json**: TypeScript configuration for development and type-checking.
+- **AGENTS.md**: Agent configuration and behavior guidelines for the AI assistant
+- **ARCHITECTURE.md**: This file - comprehensive architecture documentation
+- **LICENSE**: MIT license for the project
+- **README.md**: Project documentation and usage instructions
+- **TODO.md**: Outstanding tasks and planned features
+- **biome.json**: Biome linting and formatting configuration
+- **commitlint.config.js**: Commit message linting configuration
+- **knip.json**: Knip dependency and code analysis configuration
+- **package.json**: NPM package configuration with scripts and dependencies
+- **package-lock.json**: NPM dependency lockfile
+- **plan.md**: Project planning documentation
+- **prompt.md**: System prompt template
+- **tsconfig.json**: TypeScript compiler configuration
+- **tsconfig.build.json**: TypeScript build configuration
 
-### source/ Directory (Core Application)
+### Scripts
 
-**Entry Point**
-- **source/index.ts**: Main entry point; bootstraps app, initializes subsystems, parses CLI arguments, and starts either CLI mode (with initial prompt) or REPL mode. Handles piped input detection and auto-processing in REPL mode.
+- **scripts/show-config.ts**: Utility script to display current configuration
 
-- **source/stdin.ts**: Handles reading and validating stdin input with size limits. Exports `readStdinWithLimits()` function with soft limit (50KB warning) and hard limit (200KB error). Used for piped input support in CLI and REPL modes.
+### Specs
 
-**Agent System**
-- **source/agent/index.ts**: Core agent implementation that orchestrates AI interactions and tool execution using the AI SDK.
+- **specs/background-resume.md**: Specification for session background resumption
+- **specs/cli-stdin-handling.md**: Specification for CLI stdin input handling
+- **specs/footer-restructure.md**: Footer component restructure specification
+- **specs/session-storage.md**: Session persistence and storage specification
+- **specs/session-token-usage.md**: Token usage tracking for sessions
+- **specs/share-command.md**: Share command feature specification
+- **specs/template.md**: Template for new specifications
 
-**CLI and Commands**
-- **source/cli.ts**: Handles single-prompt CLI mode execution with the AI model.
-- **source/commands/clear/index.ts**: Main clear command implementation.
-- **source/commands/clear/types.ts**: Type definitions for clear command.
-- **source/commands/clear/utils.ts**: Utility functions for clear command.
-- **source/commands/copy/index.ts**: Main copy command implementation.
-- **source/commands/copy/types.ts**: Type definitions for copy command.
-- **source/commands/copy/utils.ts**: Utility functions for copy command.
-- **source/commands/exit/index.ts**: Main exit command implementation.
-- **source/commands/exit/types.ts**: Type definitions for exit command.
-- **source/commands/exit/utils.ts**: Utility functions for exit command.
-- **source/commands/generate-rules/index.ts**: Main generate-rules command implementation.
-- **source/commands/generate-rules/types.ts**: Type definitions for generate-rules command.
-- **source/commands/generate-rules/utils.ts**: Utility functions for generate-rules command.
-- **source/commands/handoff/index.ts**: Main handoff command implementation.
-- **source/commands/handoff/utils.ts**: Utility functions for handoff prompt generation and filename utilities.
-- **source/commands/health/index.ts**: Main health command implementation.
-- **source/commands/health/utils.ts**: Utility functions for checking environment variables and bash tools.
-- **source/commands/help/index.ts**: Main help command implementation.
-- **source/commands/help/types.ts**: Type definitions for help command.
-- **source/commands/help/utils.ts**: Utility functions for help command.
-- **source/commands/history/index.ts**: Main history command implementation with conversation selector and action handlers.
-- **source/commands/history/types.ts**: Type definitions for conversation history structures.
-- **source/commands/history/utils.ts**: Utility functions for conversation export and markdown generation.
-- **source/commands/init/index.ts**: Main init command implementation.
-- **source/commands/init-project/index.ts**: Main init-project command implementation.
-- **source/commands/init-project/utils.ts**: Utility functions for project initialization.
-- **source/commands/manager.ts**: Central command registry and executor; manages command registration and execution.
-- **source/commands/model/index.ts**: Main model command implementation with model selector component.
-- **source/commands/model/utils.ts**: Utility functions for hiding model selector.
-- **source/commands/paste/index.ts**: Main paste command implementation for clipboard content.
-- **source/commands/paste/utils.ts**: Utility functions for base64 validation and image format detection.
-- **source/commands/pickup/index.ts**: Main pickup command implementation with handoff selector component.
-- **source/commands/pickup/types.ts**: Type definitions for handoff files.
-- **source/commands/pickup/utils.ts**: Utility functions for loading handoffs and hiding selector.
-- **source/commands/prompt/index.ts**: Main prompt command implementation and loadPrompts function.
-- **source/commands/prompt/types.ts**: Type definitions for prompts and metadata.
-- **source/commands/prompt/utils.ts**: Utility functions for parsing prompts and replacing arguments.
-- **source/commands/reset/index.ts**: Main reset command implementation.
-- **source/commands/reset/types.ts**: Type definitions for reset command.
-- **source/commands/reset/utils.ts**: Utility functions for reset command.
-- **source/commands/resources/index.ts**: Main resources command implementation for listing skills and AGENTS.md.
-- **source/commands/save/index.ts**: Main save command implementation.
-- **source/commands/save/types.ts**: Type definitions for save command.
-- **source/commands/save/utils.ts**: Utility functions for save command.
-- **source/commands/review/index.ts**: Main review command implementation with git diff display.
-- **source/commands/review/types.ts**: Type definitions for file changes and diff parsing.
-- **source/commands/review/utils.ts**: Utility functions for parsing git diffs and formatting output.
-- **source/commands/session/index.ts**: Main session command implementation for displaying session information.
-- **source/commands/session/types.ts**: Type definitions for session breakdown and token counting utility.
-- **source/commands/share/index.ts**: Main share command implementation for sharing sessions via GitHub Gist.
-- **source/commands/share/html-renderer.ts**: HTML generation utility for rendering sessions as shareable web pages.
-- **source/commands/shell/index.ts**: Main shell command implementation.
-- **source/commands/shell/types.ts**: Type definitions for shell command.
-- **source/commands/shell/utils.ts**: Utility functions for shell command.
-- **source/commands/types.ts**: Type definitions for commands, arguments, and options.
+### Temp
 
-**Configuration and Utilities**
-- **source/config.ts**: Loads and validates configuration from environment, files, and defaults.
-- **source/dedent.ts**: Utility function to remove indentation from multi-line template strings.
-- **source/execution/index.ts**: Handles execution of code or commands with proper isolation.
-- **source/formatting.ts**: Utilities for formatting text, code, and output for display.
-- **source/logger.ts**: Configures and provides structured logging throughout the application.
-- **source/mentions.ts**: Detects and handles @mentions in prompts for context references.
-- **source/parsing.ts**: Utilities for parsing user input, tool responses, and structured data.
+- **temp/**: Temporary working directory for analysis and planning documents
 
-**Middleware**
-- **source/middleware/audit-message.ts**: Middleware to audit and log messages for compliance and debugging.
-- **source/middleware/cache.ts**: Middleware to cache responses for performance optimization.
-- **source/middleware/index.ts**: Exports middleware chain for request/response processing.
-- **source/middleware/rate-limit.ts**: Middleware to enforce rate limiting on API calls.
+### Bin
 
-**AI Models**
-- **source/models/ai-config.ts**: Configuration and capability detection for AI models.
-- **source/models/anthropic-provider.ts**: Adapter for Anthropic AI provider (Claude models).
-- **source/models/deepseek-provider.ts**: Adapter for DeepSeek AI provider.
-- **source/models/google-provider.ts**: Adapter for Google AI provider (Gemini models).
-- **source/models/groq-provider.ts**: Adapter for Groq AI provider.
-- **source/models/manager.ts**: Central manager for AI provider selection, initialization, and invocation.
-- **source/models/openai-provider.ts**: Adapter for OpenAI provider (GPT models).
-- **source/models/opencode-zen-provider.ts**: Adapter for OpenCode Zen model.
-- **source/models/openrouter-provider.ts**: Adapter for OpenRouter aggregation service.
-- **source/models/providers.ts**: Base types, interfaces, and utilities for all providers.
-- **source/models/xai-provider.ts**: Adapter for xAI provider (Grok models).
+- **bin/acai**: Shell wrapper script for the CLI with Node.js compile cache support
 
-**Prompts and Sessions**
-- **source/prompts/manager.ts**: Manages loading, saving, and organization of prompt templates.
-- **source/prompts/prompts.ts**: Builds system and user prompts for AI interactions with context injection.
-- **source/repl/project-status-line.ts**: Generates the project status line displayed in REPL.
-- **source/repl-new.ts**: New REPL implementation with TUI support, component-based rendering, and enhanced UX.
-- **source/sessions/manager.ts**: Manages conversation history persistence, loading, and state restoration.
-- **source/skills.ts**: Loads and formats skill files for specialized task instructions.
+### Source - Core
 
-**Terminal/UI**
-- **source/terminal/ansi-styles.ts**: ANSI color and style codes for terminal output formatting.
-- **source/terminal/control.ts**: Terminal control operations including cursor movement and screen clearing.
-- **source/terminal/default-theme.ts**: Default color theme for terminal output and TUI.
-- **source/terminal/east-asian-width.ts**: Utilities for handling East Asian character widths in display.
-- **source/terminal/formatting.ts**: Formatting functions for terminal text output.
-- **source/terminal/highlight/index.ts**: Syntax highlighting implementation for code blocks.
-- **source/terminal/highlight/theme.ts**: Themes for syntax highlighting.
-- **source/terminal/index.ts**: Main exports for terminal utilities module.
-- **source/terminal/markdown-utils.ts**: Utilities for rendering Markdown in terminal.
-- **source/terminal/markdown.ts**: Markdown parser and renderer for terminal output.
-- **source/terminal/segmenter.ts**: Shared Intl.Segmenter singleton for grapheme segmentation.
-- **source/terminal/select-prompt.ts**: Interactive prompt for single selections from a list.
-- **source/terminal/string-width.ts**: Calculates display width of strings accounting for ANSI codes.
-- **source/terminal/strip-ansi.ts**: Strips ANSI escape codes from strings.
-- **source/terminal/style.ts**: Styling utilities for terminal text (bold, colors, etc.).
-- **source/terminal/supports-color.ts**: Detects terminal color support and capabilities.
-- **source/terminal/supports-hyperlinks.ts**: Detects hyperlink support in terminal.
-- **source/terminal/table/cell.ts**: Table cell rendering and formatting.
-- **source/terminal/table/debug.ts**: Debug utilities for table rendering.
-- **source/terminal/table/index.ts**: Main exports for table utilities.
-- **source/terminal/table/layout-manager.ts**: Layout management for terminal tables.
-- **source/terminal/table/table.ts**: Table rendering implementation.
-- **source/terminal/table/utils.ts**: Utility functions for table operations.
-- **source/terminal/wrap-ansi.ts**: Wraps text while preserving ANSI escape codes.
+- **source/index.ts**: Main entry point, handles CLI argument parsing and mode selection
+- **source/cli.ts**: CLI mode handler for single-prompt execution
+- **source/repl.ts**: REPL mode handler for interactive terminal UI
+- **source/config.ts**: Configuration management and loading
+- **source/logger.ts**: Logging infrastructure using Pino
+- **source/dedent.ts**: Utility for dedenting multi-line strings
+- **source/formatting.ts**: Text formatting utilities
+- **source/mentions.ts**: Processes @mentions in prompts
+- **source/parsing.ts**: Text parsing utilities
+- **source/prompts.ts**: System prompt generation
+- **source/skills.ts**: Skills discovery and loading
+- **source/stdin.ts**: Standard input reading utilities
+- **source/subagents.ts**: Subagent management
+- **source/version.ts**: Package version retrieval
 
-**Token Tracking**
-- **source/tokens/counter.ts**: Utilities for counting tokens in text using tiktoken.
-- **source/tokens/tracker.ts**: Tracks token usage across sessions for cost estimation.
+### Source - Agent
 
-**Session Token Usage Tracking**
-- **source/sessions/manager.ts**: Manages conversation history persistence, loading, state restoration, and per-turn token usage tracking for auditing, billing, and session resumption.
+- **source/agent/index.ts**: Main agent implementation for AI interactions
+- **source/agent/sub-agent.ts**: Subagent implementation for specialized tasks
 
-**Tools**
-- **source/tools/agent.ts**: AI agent tool for delegating tasks to sub-agents.
-- **source/tools/bash.ts**: Tool for executing shell commands safely with output capture.
-- **source/tools/batch.ts**: Tool for executing multiple tool calls in a batch.
-- **source/tools/code-interpreter.ts**: Tool for running JavaScript code in a sandboxed environment.
-- **source/tools/directory-tree.ts**: Tool to generate and display project directory trees.
-- **source/tools/dynamic-tool-loader.ts**: Dynamically loads tool definitions from specifications.
-- **source/tools/edit-file.ts**: Tool to edit files with precise line-based diff support.
-- **source/tools/glob.ts**: Tool for glob-based file searching with pattern matching.
-- **source/tools/grep.ts**: Tool for searching files using ripgrep with rich output options.
-- **source/tools/index.ts**: Central tool registry and exports for all available tools.
-- **source/tools/ls.ts**: Tool for listing directory contents with metadata.
-- **source/tools/read-file.ts**: Tool to read file contents with encoding support.
-- **source/tools/save-file.ts**: Tool to save or create files with atomic writes.
-- **source/tools/think.ts**: Tool for agent to log thoughts without side effects.
-- **source/tools/types.ts**: Type definitions for tools, parameters, and results.
-- **source/tools/utils.ts**: Utility functions for tool implementations.
+### Source - Commands
 
-**TUI (Terminal User Interface)**
-- **source/tui/autocomplete.ts**: Main autocomplete orchestrator combining multiple providers.
-- **source/tui/autocomplete/attachment-provider.ts**: Provider for attachment-based autocomplete suggestions.
-- **source/tui/autocomplete/base-provider.ts**: Base class for autocomplete providers.
-- **source/tui/autocomplete/combined-provider.ts**: Combines results from multiple autocomplete providers.
-- **source/tui/autocomplete/command-provider.ts**: Provider for command autocompletion.
-- **source/tui/autocomplete/path-provider.ts**: Provider for file path autocompletion.
-- **source/tui/autocomplete/utils.ts**: Utility functions for autocomplete operations.
-- **source/tui/components/assistant-message.ts**: Component for displaying AI assistant messages.
-- **source/tui/components/box.ts**: Box component for bordered container display.
-- **source/tui/components/editor.ts**: Text editor component with input handling.
-- **source/tui/components/footer.ts**: Footer component for status and keybindings.
-- **source/tui/components/header.ts**: Header component for section titles.
-- **source/tui/components/input.ts**: Input component for user text entry.
-- **source/tui/components/loader.ts**: Loading indicator component with animations.
-- **source/tui/components/markdown.ts**: Markdown rendering component for rich text.
-- **source/tui/components/modal.ts**: Modal dialog component for overlays.
-- **source/tui/components/notification.ts**: Notification component for displaying temporary messages.
-- **source/tui/components/progress-bar.ts**: Progress bar component for operations.
-- **source/tui/components/prompt-status.ts**: Status display for prompt state.
-- **source/tui/components/select-list.ts**: Selectable list component for choices.
-- **source/tui/components/spacer.ts**: Spacer component for layout spacing.
-- **source/tui/components/table.ts**: Table component for structured data display.
-- **source/tui/components/text.ts**: Text display component with styling.
-- **source/tui/components/thinking-block.ts**: Component for displaying AI thinking/processing state.
-- **source/tui/components/tool-execution.ts**: Component for displaying tool execution status.
-- **source/tui/components/user-message.ts**: Component for displaying user messages.
-- **source/tui/components/welcome.ts**: Welcome screen component.
-- **source/tui/editor-launcher.ts**: Launches external editors ($EDITOR) with proper terminal mode handling.
-- **source/tui/index.ts**: Main exports for TUI components and interfaces.
-- **source/tui/terminal.ts**: Terminal interface implementation for TUI with background/resume support. Exports `ProcessTerminalOptions` interface with `useTty` option for piped stdin scenarios (reads from /dev/tty for interactive input).
-- **source/tui/tui.ts**: Main TUI orchestrator with event handling and rendering.
-- **source/tui/utils.ts**: Utility functions for TUI operations.
+- **source/commands/manager.ts**: Command registration and execution manager
+- **source/commands/types.ts**: Shared command type definitions
+- **source/commands/add-directory/**: Command to add working directories
+- **source/commands/clear/**: Command to clear the conversation
+- **source/commands/copy/**: Command to copy content
+- **source/commands/exit/**: Command to exit the REPL
+- **source/commands/generate-rules/**: Command to generate project rules
+- **source/commands/handoff/**: Command for agent handoffs
+- **source/commands/health/**: Command to check system health
+- **source/commands/help/**: Command to display help information
+- **source/commands/history/**: Command to view conversation history
+- **source/commands/init/**: Command to initialize acai configuration
+- **source/commands/init-project/**: Command to initialize a new project
+- **source/commands/list-directories/**: Command to list working directories
+- **source/commands/list-tools/**: Command to list available tools
+- **source/commands/model/**: Command to manage AI model configuration
+- **source/commands/paste/**: Command to paste clipboard content
+- **source/commands/pickup/**: Command to resume from saved state
+- **source/commands/prompt/**: Command to set system prompt
+- **source/commands/remove-directory/**: Command to remove working directories
+- **source/commands/reset/**: Command to reset conversation
+- **source/commands/resources/**: Command to manage resources
+- **source/commands/review/**: Command to review code
+- **source/commands/save/**: Command to save conversation state
+- **source/commands/session/**: Command to manage sessions
+- **source/commands/share/**: Command to share conversations
+- **source/commands/shell/**: Command to execute shell commands
 
-**Utilities**
-- **source/utils/bash.ts**: Utilities for bash command execution and parsing.
-- **source/utils/filesystem/operations.ts**: Filesystem operations (read, write, list, etc.).
-- **source/utils/filesystem/security.ts**: Filesystem security and path validation utilities.
-- **source/utils/filetype-detection.ts**: Detects file types based on content or extension.
-- **source/utils/funcs.ts**: General utility functions used throughout the codebase.
-- **source/utils/generators.ts**: Utilities for generating unique IDs, names, and values.
-- **source/utils/git.ts**: Utilities for Git operations (status, diff, log, etc.).
-- **source/utils/glob.ts**: Glob pattern matching utilities.
-- **source/utils/ignore.ts**: Handles ignore patterns (like .gitignore) for filtering.
-- **source/utils/iterables.ts**: Utilities for working with iterables and collections.
-- **source/utils/process.ts**: Utilities for spawning and managing processes.
-- **source/utils/yaml.ts**: YAML parsing and serialization utilities.
-- **source/utils/zod.ts**: Zod schema utilities for validation.
+### Source - Models
 
-**Version**
-- **source/version.ts**: Manages and exposes application version information.
+- **source/models/manager.ts**: Model lifecycle and configuration management
+- **source/models/ai-config.ts**: AI model configuration abstraction
+- **source/models/providers.ts**: Provider and model type definitions
+- **source/models/anthropic-provider.ts**: Anthropic Claude provider
+- **source/models/deepseek-provider.ts**: DeepSeek provider
+- **source/models/google-provider.ts**: Google Gemini provider
+- **source/models/groq-provider.ts**: Groq provider
+- **source/models/openai-provider.ts**: OpenAI provider
+- **source/models/opencode-zen-provider.ts**: OpenCode Zen provider
+- **source/models/openrouter-provider.ts**: OpenRouter provider
+- **source/models/xai-provider.ts**: xAI Grok provider
 
-### test/ Directory (Tests)
+### Source - Tools
 
-**Session Tests**
-- **test/sessions/manager.test.ts**: Unit tests for session token usage tracking, including turn recording, total usage aggregation, context window retrieval, save/restore persistence, and cost calculation.
-- **test/utils/model-manager.ts**: Test utility for creating ModelManager instances with predefined models for testing.
+- **source/tools/index.ts**: Tool initialization and registry
+- **source/tools/types.ts**: Tool type definitions
+- **source/tools/utils.ts**: Tool utility functions
+- **source/tools/agent.ts**: Agent tool for invoking sub-agents
+- **source/tools/bash.ts**: Bash command execution tool
+- **source/tools/directory-tree.ts**: Directory tree generation tool
+- **source/tools/dynamic-tool-loader.ts**: Dynamic tool loading from filesystem
+- **source/tools/edit-file.ts**: File editing tool
+- **source/tools/glob.ts**: File pattern matching tool
+- **source/tools/grep.ts**: Text search tool
+- **source/tools/ls.ts**: Directory listing tool
+- **source/tools/read-file.ts**: File reading tool
+- **source/tools/save-file.ts**: File writing tool
+- **source/tools/skill.ts**: Skill invocation tool
+- **source/tools/think.ts**: Thinking/reasoning tool
 
-**Command Tests**
-- **test/commands/clear-command.test.ts**: Unit tests for clear command.
-- **test/commands/copy-command.test.ts**: Unit tests for copy command functionality.
-- **test/commands/health.test.ts**: Unit tests for health command utilities.
-- **test/commands/history-command.integration.test.ts**: Integration tests for history command.
-- **test/commands/history-command.test.ts**: Unit tests for history command.
-- **test/commands/prompt-command.test.ts**: Unit tests for prompt command.
-- **test/commands/resources-command.test.ts**: Unit tests for resources command.
-- **test/commands/review-command.test.ts**: Unit tests for review command.
-- **test/commands/session-command.test.ts**: Unit tests for session command.
-- **test/commands/share.test.ts**: Unit tests for share command HTML rendering and utilities.
-- **test/commands/shell-command.test.ts**: Unit tests for shell command.
+### Source - Terminal
 
-**Core Tests**
-- **test/config.test.ts**: Unit tests for configuration loading and validation.
-- **test/execution.test.ts**: Unit tests for execution module.
-- **test/mentions.test.ts**: Unit tests for mention detection and handling.
-- **test/messages.test.ts**: Unit tests for message handling and serialization.
+- **source/terminal/index.ts**: Terminal utilities exports
+- **source/terminal/terminal.ts**: Terminal interface abstraction
+- **source/terminal/control.ts**: Terminal control functions (clear, cursor, etc.)
+- **source/terminal/select-prompt.ts**: Interactive selection prompt
+- **source/terminal/ansi-styles.ts**: ANSI color and style codes
+- **source/terminal/default-theme.ts**: Default terminal theme
+- **source/terminal/east-asian-width.ts**: East Asian character width handling
+- **source/terminal/formatting.ts**: Terminal formatting utilities
+- **source/terminal/keys.ts**: Keyboard key definitions
+- **source/terminal/markdown-utils.ts**: Markdown rendering utilities
+- **source/terminal/segmenter.ts**: Text segmentation utilities
+- **source/terminal/string-width.ts**: String width calculation
+- **source/terminal/strip-ansi.ts**: ANSI code removal
+- **source/terminal/style.ts**: Terminal styling utilities
+- **source/terminal/supports-color.ts**: Color support detection
+- **source/terminal/supports-hyperlinks.ts**: Hyperlink support detection
+- **source/terminal/wrap-ansi.ts**: ANSI-aware text wrapping
+- **source/terminal/highlight/**: Syntax highlighting
+- **source/terminal/table/**: Table rendering components
 
-**Model Tests**
-- **test/models/ai-config.test.ts**: Unit tests for AI configuration.
-- **test/models/manager.test.ts**: Unit tests for model manager.
+### Source - TUI
 
-**Terminal Tests**
-- **test/terminal/highlight.test.ts**: Unit tests for syntax highlighting.
-- **test/terminal/markdown-utils.test.ts**: Unit tests for Markdown utilities.
-- **test/terminal/markdown.test.ts**: Unit tests for Markdown rendering.
+- **source/tui/index.ts**: TUI component exports
+- **source/tui/tui.ts**: Main TUI controller
+- **source/tui/terminal.ts**: Terminal adapter for TUI
+- **source/tui/utils.ts**: TUI utility functions
+- **source/tui/editor-launcher.ts**: External editor launcher
+- **source/tui/autocomplete.ts**: Autocomplete system
+- **source/tui/autocomplete/**: Autocomplete providers
+- **source/tui/components/**: Reusable TUI components (box, editor, footer, header, input, loader, markdown, modal, notification, progress-bar, select-list, spacer, table, text, thinking-block, tool-execution, assistant-message, user-message, welcome)
 
-**Tool Tests**
-- **test/tools/bash.test.ts**: Unit tests for bash tool.
-- **test/tools/code-interpreter.test.ts**: Unit tests for code interpreter tool.
-- **test/tools/dynamic-tool-integration.test.ts**: Integration tests for dynamic tools.
-- **test/tools/dynamic-tool-loader.test.ts**: Unit tests for dynamic tool loader.
-- **test/tools/edit-file.test.ts**: Unit tests for edit file tool.
-- **test/tools/glob.test.ts**: Unit tests for glob tool.
-- **test/tools/grep-enhanced-ux.test.ts**: Unit tests for grep enhanced UX features.
-- **test/tools/grep-error-handling.test.ts**: Unit tests for grep error handling.
-- **test/tools/grep-issue-96.test.ts**: Unit tests for specific grep issue fix.
-- **test/tools/grep-match-counting.test.ts**: Unit tests for grep match counting.
-- **test/tools/grep-max-results.test.ts**: Unit tests for grep max results limit.
-- **test/tools/grep.test.ts**: Unit tests for grep tool core functionality.
-- **test/tools/ls.test.ts**: Unit tests for ls tool.
-- **test/stdin-handling.test.ts**: Unit tests for stdin handling including size limit constants, TTY detection, size calculations, and boundary conditions.
+### Source - Utils
 
-**TUI Tests**
-- **test/tui/autocomplete.test.ts**: Unit tests for autocomplete functionality.
-- **test/tui/components/**: Directory for component-specific tests.
-- **test/tui/modal.test.ts**: Unit tests for modal component.
-- **test/tui/tool-execution-race-condition.test.ts**: Tests for race conditions in tool execution display.
-- **test/tui/tool-execution-synthetic-start.test.ts**: Tests for synthetic start events in tool execution.
+- **source/utils/bash.ts**: Bash command utilities
+- **source/utils/filetype-detection.ts**: File type detection
+- **source/utils/funcs.ts**: General function utilities
+- **source/utils/generators.ts**: Generator utilities
+- **source/utils/git.ts**: Git-related utilities
+- **source/utils/glob.ts**: Glob pattern utilities
+- **source/utils/ignore.ts**: Gitignore-style pattern matching
+- **source/utils/iterables.ts**: Iterable utilities
+- **source/utils/process.ts**: Process utilities
+- **source/utils/yaml.ts**: YAML parsing utilities
+- **source/utils/zod.ts**: Zod schema utilities
+- **source/utils/filesystem/**: Filesystem operations and security
 
-**Utility Tests**
-- **test/utils/bash.test.ts**: Unit tests for bash utilities.
-- **test/utils/filesystem.test.ts**: Unit tests for filesystem utilities.
-- **test/utils/filesystem/**: Directory for filesystem-specific tests.
-- **test/utils/generators.test.ts**: Unit tests for generator utilities.
-- **test/utils/glob.test.ts**: Unit tests for glob utilities.
-- **test/utils/ignore.test.ts**: Unit tests for ignore pattern handling.
-- **test/utils/mocking.ts**: Mocking utilities for tests.
-- **test/utils/process.test.ts**: Unit tests for process utilities.
+### Source - Other
+
+- **source/prompts/manager.ts**: Prompt template management
+- **source/repl/project-status.ts**: Project status display
+- **source/sessions/manager.ts**: Session lifecycle management
+- **source/tokens/counter.ts**: Token counting utilities
+- **source/tokens/tracker.ts**: Token usage tracking
+- **source/middleware/**: Middleware for AI interactions (audit, cache, rate-limit)
+- **source/execution/**: Command execution handling
+
+### Test
+
+- **test/setup.js**: Test setup and configuration
+- **test/agent/**: Agent-related tests
+- **test/commands/**: Command tests
+- **test/config.test.ts**: Configuration tests
+- **test/execution.test.ts**: Execution tests
+- **test/integration/**: Integration tests
+- **test/mentions.test.ts**: Mention processing tests
+- **test/messages.test.ts**: Message handling tests
+- **test/models/**: Model management tests
+- **test/sessions/**: Session management tests
+- **test/stdin-handling.test.ts**: Stdin handling tests
+- **test/terminal/**: Terminal utility tests
+- **test/tokens/**: Token tracking tests
+- **test/tools/**: Tool tests
+- **test/tui/**: TUI component tests
+- **test/utils/**: Utility function tests
 
 ## Flow Diagram
 
-Entry points from package.json:
-- Binary: `acai` -> `bin/acai` (wrapper script with compile cache, invokes dist/index.js)
-- Development: `npm run dev` -> `node --no-warnings --env-file=.env ./source/index.ts`
-- Production build: `npm run build` -> Compiles TypeScript to dist/ using tsconfig.build.json
-
-### Application Startup and Interface Selection
+### Main Entry Point Flow
 
 ```mermaid
-graph TD
-  A[User runs acai binary or dev script] --> B[Execute source/index.ts]
-  B --> C[Parse CLI arguments]
-  C --> D[Load configuration source/config.ts]
-  D --> E[Initialize logger source/logger.ts]
-  E --> F[Initialize ModelManager source/models/manager.ts]
-  F --> G[Initialize SessionManager source/sessions/manager.ts]
-  G --> H[Initialize PromptManager source/prompts/manager.ts]
-  H --> I[Initialize CommandManager source/commands/manager.ts]
-  I --> J[Check stdin for piped input source/stdin.ts]
-  J --> K{Initial prompt provided via -p?}
-  K -->|Yes| L[Run CLI mode source/cli.ts]
-  K -->|No| M{Stdin has content?}
-  M -->|Yes| N[Set stdin as initial prompt in PromptManager]
-  M -->|No| O[Initialize TUI and start REPL source/repl-new.ts]
-  N --> O
-  O --> P[Start NewRepl with TUI]
-  P --> Q{Pending prompt from stdin?}
-  Q -->|Yes| R[Auto-process prompt immediately]
-  Q -->|No| S[Interactive loop]
-  R --> S
-  L --> T[Execute single AI interaction with stdin as context]
+flowchart TD
+    A[User runs acai] --> B[bin/acai wrapper]
+    B --> C[source/index.ts]
+    C --> D{Mode Selection}
+    
+    D -->|--prompt or -p| E[CLI Mode]
+    D -->|No prompt flag| F[REPL Mode]
+    D -->|--continue or --resume| G[Session Resume]
+    
+    E --> H[Cli.run]
+    F --> I[Repl.start]
+    G --> J[Session Selection]
+    J --> I
+    
+    H --> K[Generate Response]
+    K --> L[Output Result]
+    L --> M[Exit]
+    
+    I --> N[Initialize TUI]
+    N --> O[Main Loop]
+    O --> P{User Input}
+    P -->|Command| Q[Execute Command]
+    P -->|Prompt| R[Agent Processing]
+    P -->|Exit| S[Save Session]
+    
+    Q --> O
+    R --> O
+    S --> M
 ```
 
-### User Input Handling (Command vs AI Prompt)
+### REPL Mode Flow
 
 ```mermaid
-graph TD
-  A[User input in TUI] --> B{Starts with / ?}
-  B -->|Yes| C[Execute command via CommandManager]
-  C --> D[Display command result]
-  B -->|No| E[Send to Agent source/agent/index.ts]
-  E --> F[Build prompt with system context]
-  F --> G[Send to ModelManager]
-  G --> H[Provider adapter selects AI model]
-  H --> I[AI generates response]
-  I --> J{Includes tool calls?}
-  J -->|Yes| K[Execute tools via tool executors]
-  K --> L[Feed results back to AI]
-  L --> M[AI continues generation]
-  J -->|No| N[Final response ready]
-  M --> N
-  N --> O[Display response in TUI]
-  O --> P[Append to SessionManager]
-  P --> Q[Save to disk]
+flowchart TD
+    A[Repl.start] --> B[Initialize Terminal]
+    B --> C[Create TUI Components]
+    C --> D[Initialize Agent]
+    D --> E[Load Tools]
+    E --> F[Initialize Session Manager]
+    F --> G[Display Welcome]
+    G --> H[Main Loop]
+    
+    H --> I{User Input}
+    I -->|Command| J[Process Command]
+    I -->|Prompt| K[Agent Processing]
+    I -->|Ctrl+O| L[Toggle Verbose]
+    I -->|Ctrl+C| M[Interrupt]
+    I -->|Exit| N[Cleanup & Exit]
+    
+    J --> H
+    K --> H
+    L --> H
+    M --> H
+    N --> O[Save Session]
+    O --> P[Exit]
+```
+
+### Agent Processing Flow
+
+```mermaid
+flowchart TD
+    A[User Prompt] --> B[Mention Processing]
+    B --> C[Append to Session]
+    C --> D[Generate System Prompt]
+    D --> E[AI Model Call]
+    
+    E --> F{Tool Calls?}
+    F -->|Yes| G[Execute Tools]
+    F -->|No| H[Generate Response]
+    
+    G --> I{More Tool Calls?}
+    I -->|Yes| G
+    I -->|No| H
+    
+    H --> J[Stream Response]
+    J --> K[Append to Session]
+    K --> L[Update Token Count]
+    L --> M[Display Result]
 ```
 
 ### Tool Execution Flow
 
 ```mermaid
-sequenceDiagram
-  participant U as User
-  participant R as NewRepl/TUI
-  participant A as Agent
-  participant M as ModelManager
-  participant T as Tool Executor
-  participant P as Provider
-
-  U->>R: Submit prompt
-  R->>A: Run with prompt and tools
-  A->>M: Generate with tools
-  M->>P: Send to provider
-  P-->>M: Response with tool_calls
-  M-->>A: Deliver tool call request
-  A->>T: Execute tool with validated args
-  T-->>A: Return tool result
-  A->>M: Request continuation with result
-  M->>P: Send updated messages
-  P-->>M: Final response
-  M-->>A: Deliver final text
-  A-->>R: Stream results
-  R->>U: Display in TUI
-  R->>SessionManager: Save conversation
-```
-
-### TUI Component Rendering Flow
-
-```mermaid
-graph TD
-  A[TUI startup] --> B[Initialize Container hierarchy]
-  B --> C[Create components: Welcome, Editor, Chat, Footer]
-  C --> D[Render initial screen]
-  D --> E[Wait for user input in Editor]
-  E --> F[Process input]
-  F --> G{Type: Command or Prompt?}
-  G -->|Command| H[Execute via CommandManager]
-  G -->|Prompt| I[Send to Agent]
-  H --> J[Update TUI state]
-  I --> K[Handle agent results]
-  K --> L[Append messages to chat container]
-  J --> L
-  L --> M[Re-render affected components]
-  M --> E
+flowchart TD
+    A[Agent Requests Tool] --> B[Validate Tool Call]
+    B --> C[Check Permissions]
+    C --> D{Dynamic Tool?}
+    
+    D -->|Yes| E[Load from Filesystem]
+    D -->|No| F[Use Built-in Tool]
+    
+    E --> G[Initialize Tool]
+    F --> G
+    
+    G --> H[Execute Tool]
+    H --> I{Result}
+    I -->|Success| J[Return Result]
+    I -->|Error| K[Return Error]
+    
+    J --> L[Update Token Count]
+    K --> L
+    
+    L --> M[Return to Agent]
 ```
 
 ### Session Management Flow
 
 ```mermaid
-graph TD
-  A[NewRepl initialized] --> B[SessionManager loads recent histories]
-  B --> C[Check --continue or --resume flags]
-  C --> D[--continue: Show selection list with session IDs]
-  C --> E[--resume: Load specific session or most recent]
-  D --> F[User selects from list]
-  F --> G[Restore session state]
-  E -->|With session ID| H[Load specific session]
-  E -->|No session ID| I[Load most recent]
-  H --> G
-  I --> G
-  G --> J[Update terminal title]
-  J --> K[Normal operation]
-  K --> L{User exits or interrupt}
-  L -->|Exit| M[SessionManager.save]
-  L -->|Interrupt| N[Try save on SIGINT]
-  M --> O[Persist to sessions dir]
-  N --> O
-  O --> P[Print resume message with session ID]
+flowchart TD
+    A[Session Start] --> B[Load/Initialize Session]
+    B --> C[Initialize Token Tracker]
+    C --> D[Initialize Prompt History]
+    D --> E[Main Interaction Loop]
+    
+    E --> F[User Input]
+    F --> G[Append to Messages]
+    G --> H[Agent Processing]
+    H --> I[Append Response]
+    I --> J[Update Token Count]
+    J --> K{Exit?}
+    
+    K -->|No| E
+    K -->|Yes| L[Save Session]
+    L --> M[Cleanup]
+    M --> N[Exit]
 ```
 
-### Command Registration and Execution
+### Command Execution Flow
 
 ```mermaid
-graph TD
-  A[CommandManager.initializeCommands] --> B[Register built-in commands]
-  B --> C[Register dynamic commands from config]
-  C --> D[User types /command]
-  D --> E[CommandManager.parse]
-  E --> F{Valid command?}
-  F -->|Yes| G[Execute command handler]
-  F -->|No| H[Show error/suggestions]
-  G --> I[Update state if needed]
-  I --> J[Return result to TUI]
+flowchart TD
+    A[User Input] --> B{Is Command?}
+    B -->|No| C[Prompt Processing]
+    B -->|Yes| D[Parse Command]
+    
+    D --> E[Lookup Command]
+    E --> F{Command Found?}
+    F -->|No| G[Show Error]
+    F -->|Yes| H[Validate Arguments]
+    
+    H --> I{Valid?}
+    I -->|No| J[Show Usage]
+    I -->|Yes| K[Execute Command]
+    
+    K --> L[Return Result]
+    L --> M[Update UI]
+    
+    G --> N[Return to Input]
+    J --> N
+    M --> N
+    C --> O[Agent Processing]
+```
+
+### Model Manager Flow
+
+```mermaid
+flowchart TD
+    A[Initialize Model Manager] --> B[Load Configuration]
+    B --> C[Register Providers]
+    C --> D[Set Default Model]
+    D --> E[Ready]
+    
+    E --> F{Get Model Request}
+    F --> G[Lookup Model Config]
+    G --> H[Create Provider Instance]
+    H --> I[Return Model]
+    
+    I --> J[Use in Agent]
+    J --> K{Update Model?}
+    K -->|Yes| L[Update Config]
+    K -->|No| M[Continue]
+    
+    L --> E
+    M --> E
+```
+
+### Tool Initialization Flow
+
+```mermaid
+flowchart TD
+    A[Init Tools] --> B[Create Built-in Tools]
+    B --> C[Load Dynamic Tools]
+    C --> D{Skills Enabled?}
+    
+    D -->|Yes| E[Discover Skills]
+    D -->|No| F[Skip Skills]
+    
+    E --> G[Load Skill Tools]
+    F --> H[Combine Tool Sets]
+    G --> H
+    
+    H --> I[Return Complete Tool Set]
+    I --> J[Register with Agent]
+```
+
+### TUI Rendering Flow
+
+```mermaid
+flowchart TD
+    A[TUI Start] --> B[Initialize Terminal]
+    B --> C[Setup Event Handlers]
+    C --> D[Create Components]
+    D --> E[Render Loop]
+    
+    E --> F{Event?}
+    F -->|Key Input| G[Process Key]
+    F -->|Resize| H[Adjust Layout]
+    F -->|Update| I[Render Components]
+    
+    G --> J{Command?}
+    J -->|Yes| K[Execute Command]
+    J -->|No| L[Update State]
+    
+    H --> I
+    K --> I
+    L --> I
+    
+    I --> M[Draw to Screen]
+    M --> E
 ```
 
 ### Autocomplete Flow
 
 ```mermaid
-graph TD
-  A[User types in Editor] --> B[Trigger autocomplete]
-  B --> C[CombinedProvider collects suggestions]
-  C --> D[Parallel queries]
-  D --> E[CommandProvider: /commands]
-  D --> F[PathProvider: file paths]
-  D --> G[AttachmentProvider: context]
-  E --> H[Combine and rank results]
-  F --> H
-  G --> H
-  H --> I[Filter by current input]
-  I --> J[Display in select list]
-  J --> K[User selects or continues typing]
-  K -->|Select| L[Insert suggestion]
-  K -->|Continue| A
+flowchart TD
+    A[User Types] --> B[Trigger Autocomplete]
+    B --> C[Get Current Context]
+    C --> D{Providers}
+    
+    D --> E[Command Provider]
+    D --> F[File Search Provider]
+    D --> G[Path Provider]
+    D --> H[Attachment Provider]
+    
+    E --> I[Fetch Commands]
+    F --> J[Search Files]
+    G --> K[Complete Paths]
+    H --> L[Get Attachments]
+    
+    I --> M[Combine Results]
+    J --> M
+    K --> M
+    L --> M
+    
+    M --> N[Filter & Sort]
+    N --> O[Display Suggestions]
+    O --> P{Selection?}
+    P -->|Yes| Q[Insert Selection]
+    P -->|No| R[Continue Typing]
+    
+    Q --> S[Close Autocomplete]
+    R --> A
+    S --> A
 ```
-
-These diagrams cover the primary flows: startup and mode selection, input processing, AI interaction with tools, TUI rendering, session persistence, command execution, and autocomplete functionality.

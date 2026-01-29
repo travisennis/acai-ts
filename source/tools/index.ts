@@ -1,6 +1,7 @@
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import type { Tool } from "ai";
 import type { WorkspaceContext } from "../index.ts";
+import { AgentTool, createAgentTools } from "./agent.ts";
 import { BashTool, createBashTool } from "./bash.ts";
 import {
   createDirectoryTreeTool,
@@ -74,6 +75,8 @@ export async function initTools({
 
   const skillTool = await createSkillTool();
 
+  const agentTool = await createAgentTools({ workspace });
+
   const dynamicTools = await loadDynamicTools({
     baseDir: workspace.primaryDir,
   });
@@ -90,6 +93,7 @@ export async function initTools({
     [ThinkTool.name]: thinkTool,
     [LsTool.name]: lsTool,
     [SkillTool.name]: skillTool,
+    [AgentTool.name]: agentTool,
 
     // Add dynamic tools - they already have toolDef structure
     ...Object.fromEntries(
