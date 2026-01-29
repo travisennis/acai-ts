@@ -200,6 +200,7 @@ export function createMockSessionManager(
     getTitle: mock.fn(() => "Test Title"),
     getCreatedAt: mock.fn(() => new Date("2025-12-16T10:30:00Z")),
     getUpdatedAt: mock.fn(() => new Date("2025-12-16T10:45:00Z")),
+    getSessionFileName: mock.fn(() => "session-test-session-id.json"),
   } as unknown as SessionManager;
 }
 

@@ -306,7 +306,7 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
 
   async save() {
     const msgHistoryDir = this.stateDir;
-    const fileName = `session-${this.sessionId}.json`;
+    const fileName = this.getSessionFileName();
     const filePath = join(msgHistoryDir, fileName);
     const tempFilePath = `${filePath}.tmp`;
 
@@ -509,6 +509,10 @@ React Component Rendering Debug";
 
   getUpdatedAt(): Date {
     return this.updatedAt;
+  }
+
+  getSessionFileName(): string {
+    return `session-${this.sessionId}.json`;
   }
 
   static async load(

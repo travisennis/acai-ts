@@ -94,7 +94,7 @@ export function sessionCommand({
       const sessionId = sessionManager.getSessionId();
       const createdAt = sessionManager.getCreatedAt();
       const updatedAt = sessionManager.getUpdatedAt();
-      const sessionFile = `session-${createdAt.toISOString().replace(/[:.]/g, "-").slice(0, 19)}-${sessionId}.json`;
+      const sessionFile = sessionManager.getSessionFileName();
       const modelId = sessionManager.getModelId() || "Not set";
       const title = sessionManager.getTitle() || "No title";
       const duration = formatDuration(
