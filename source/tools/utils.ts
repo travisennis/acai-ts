@@ -12,11 +12,9 @@ export function toAiSdkTools(
       name,
       tool({
         ...toolObj.toolDef,
-        execute: includeExecute
-          ? (toolObj.execute as unknown as ToolExecuteFunction<unknown, string>)
-          : () => {
-              throw new Error("Tool execution not available");
-            },
+        execute: (includeExecute
+          ? toolObj.execute
+          : undefined) as unknown as ToolExecuteFunction<unknown, string>,
       }),
     ]),
   ) as CompleteTools;
