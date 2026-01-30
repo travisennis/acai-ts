@@ -312,7 +312,7 @@ For a list of available commands, type `/help` within the REPL.
 ## Interactive CLI Commands
 
 - `/help` - Shows usage information
-- `/reset` - Saves chat history and resets the conversation
+- `/new` - Saves chat history and resets the conversation
 - `/save` - Saves chat history
 - `/exit` or `/bye` - Exits and saves chat history
 - `/init` - Generate or improve `AGENTS.md`

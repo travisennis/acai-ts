@@ -3,14 +3,13 @@ import type { FooterComponent } from "../../tui/components/footer.ts";
 import type { Container, Editor, TUI } from "../../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "../types.ts";
 
-export const resetCommand = ({
+export const newCommand = ({
   modelManager,
   sessionManager,
   tokenTracker,
 }: CommandOptions): ReplCommand => {
   return {
-    command: "/reset",
-    aliases: ["/new"],
+    command: "/new",
     description: "Saves the chat history and then resets it.",
     getSubCommands: () => Promise.resolve([]),
 

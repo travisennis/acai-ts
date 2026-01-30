@@ -15,7 +15,7 @@ The `SessionManager` class is being incorrectly referenced as `messageHistory` i
 | `source/index.ts` | 348-363, 367, 389, 419, 433, 449, 479 | Local variables + function parameters |
 | `source/commands/copy/index.ts` | 25-26 | Parameter destructuring |
 | `source/commands/pickup/utils.ts` | 55, 69-70 | Parameter destructuring |
-| `source/commands/reset/index.ts` | 8, 24-26 | Parameter destructuring |
+| `source/commands/new/index.ts` | 8, 24-26 | Parameter destructuring |
 | `source/commands/save/index.ts` | 7, 22-23 | Parameter destructuring |
 | `source/commands/history/index.ts` | 72, 78, 122 | Parameter destructuring |
 | `source/commands/handoff/index.ts` | 79, 87 | Parameter destructuring |
@@ -63,7 +63,7 @@ The `SessionManager` class is being incorrectly referenced as `messageHistory` i
 3. **Update command file parameter destructuring**
    - `source/commands/copy/index.ts`
    - `source/commands/pickup/utils.ts`
-   - `source/commands/reset/index.ts`
+   - `source/commands/new/index.ts`
    - `source/commands/save/index.ts`
    - `source/commands/history/index.ts`
    - `source/commands/handoff/index.ts`

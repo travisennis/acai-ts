@@ -1,10 +1,10 @@
 import { strict as assert } from "node:assert";
 import { describe, it } from "node:test";
-import { resetCommand } from "../../source/commands/reset/index.ts";
+import { newCommand } from "../../source/commands/new/index.ts";
 import type { CommandOptions } from "../../source/commands/types.ts";
 import { fromAny } from "../utils/mocking.ts";
 
-describe("resetCommand", () => {
+describe("newCommand", () => {
   const mockOptions: CommandOptions = {
     promptManager: fromAny({
       set: () => {},
@@ -50,11 +50,11 @@ describe("resetCommand", () => {
   };
 
   it("should be defined", () => {
-    const command = resetCommand(mockOptions);
+    const command = newCommand(mockOptions);
 
     assert.ok(command);
-    assert.equal(command.command, "/reset");
-    assert.deepStrictEqual(command.aliases, ["/new"]);
+    assert.equal(command.command, "/new");
+    assert.equal(command.aliases, undefined);
     assert.equal(
       command.description,
       "Saves the chat history and then resets it.",
@@ -62,11 +62,11 @@ describe("resetCommand", () => {
   });
 
   it("should have correct command properties", () => {
-    const command = resetCommand(mockOptions);
+    const command = newCommand(mockOptions);
 
     assert.ok(command);
-    assert.equal(command.command, "/reset");
-    assert.deepStrictEqual(command.aliases, ["/new"]);
+    assert.equal(command.command, "/new");
+    assert.equal(command.aliases, undefined);
     assert.equal(
       command.description,
       "Saves the chat history and then resets it.",
@@ -75,7 +75,7 @@ describe("resetCommand", () => {
   });
 
   it("should return continue when handle is called", async () => {
-    const command = resetCommand(mockOptions);
+    const command = newCommand(mockOptions);
 
     const mockTui = fromAny({
       requestRender: () => {},

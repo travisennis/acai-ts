@@ -26,11 +26,11 @@ import { initProjectCommand } from "./init-project/index.ts";
 import { listDirectoriesCommand } from "./list-directories/index.ts";
 import { listToolsCommand } from "./list-tools/index.ts";
 import { modelCommand } from "./model/index.ts";
+import { newCommand } from "./new/index.ts";
 import { pasteCommand } from "./paste/index.ts";
 import { pickupCommand } from "./pickup/index.ts";
 import { loadPrompts, promptCommand } from "./prompt/index.ts";
 import { removeDirectoryCommand } from "./remove-directory/index.ts";
-import { resetCommand } from "./reset/index.ts";
 import { resourcesCommand } from "./resources/index.ts";
 import { reviewCommand } from "./review/index.ts";
 import { saveCommand } from "./save/index.ts";
@@ -103,7 +103,7 @@ export class CommandManager {
       pickupCommand(options),
       promptCommand(options),
       removeDirectoryCommand(options),
-      resetCommand(options),
+      newCommand(options),
       reviewCommand(options),
       saveCommand(options),
       modelCommand(options),

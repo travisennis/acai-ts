@@ -121,7 +121,7 @@ acai-ts
     │   │   └── utils.ts
     │   ├── remove-directory
     │   │   └── index.ts
-    │   ├── reset
+    │   ├── new
     │   │   ├── index.ts
     │   │   └── types.ts
     │   ├── resources
@@ -296,7 +296,7 @@ acai-ts
     │   ├── pickup.test.ts
     │   ├── prompt-command.test.ts
     │   ├── remove-directory.test.ts
-    │   ├── reset-command.test.ts
+    │   ├── new-command.test.ts
     │   ├── resources-command.test.ts
     │   ├── review-command.test.ts
     │   ├── review.test.ts
@@ -442,7 +442,7 @@ acai-ts
 - **source/commands/pickup/**: Command to resume from saved state
 - **source/commands/prompt/**: Command to set system prompt
 - **source/commands/remove-directory/**: Command to remove working directories
-- **source/commands/reset/**: Command to reset conversation
+- **source/commands/new/**: Command to reset conversation
 - **source/commands/resources/**: Command to manage resources
 - **source/commands/review/**: Command to review code
 - **source/commands/save/**: Command to save conversation state
