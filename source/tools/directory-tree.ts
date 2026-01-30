@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
+import type { WorkspaceContext } from "../index.ts";
 import style from "../terminal/style.ts";
 import { toDisplayPath } from "../utils/filesystem/path-display.ts";
 import { joinWorkingDir, validatePath } from "../utils/filesystem/security.ts";
@@ -31,14 +32,11 @@ const inputSchema = z.object({
 
 type DirectoryTreeInputSchema = z.infer<typeof inputSchema>;
 
-export const createDirectoryTreeTool = async ({
-  workingDir,
-  allowedDirs,
-}: {
-  workingDir: string;
-  allowedDirs?: string[];
+export const createDirectoryTreeTool = async (options: {
+  workspace: WorkspaceContext;
 }) => {
-  const allowedDirectory = allowedDirs ?? [workingDir];
+  const { primaryDir, allowedDirs } = options.workspace;
+  const allowedDirectory = allowedDirs ?? [primaryDir];
   return {
     toolDef: {
       description: `Get a directory tree structure for a given path. This tool will ignore any directories or files listed in a .gitignore file. Use this tool when you need to see a complete directory tree for a path in the allowed directories. This can be used to get an understanding of how a project is organized and what files are available before using other file system tools. Results are automatically limited to prevent overwhelming output. Default limits are ${DEFAULT_ITEM_LIMIT} items and ${DEFAULT_DEPTH_LIMIT} depth. Use maxResults and maxDepth parameters for better control over output size.`,
@@ -64,7 +62,7 @@ export const createDirectoryTreeTool = async ({
       }
 
       const validPath = await validatePath(
-        joinWorkingDir(path, workingDir),
+        joinWorkingDir(path, primaryDir),
         allowedDirectory,
         { abortSignal },
       );

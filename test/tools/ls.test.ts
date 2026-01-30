@@ -8,8 +8,7 @@ const testDir = `${baseDir}/test-ls-fixture`;
 
 describe("ls tool", async () => {
   const tool = await createLsTool({
-    workingDir: baseDir,
-    allowedDirs: [baseDir],
+    workspace: { primaryDir: baseDir, allowedDirs: [baseDir] },
   });
 
   before(async () => {

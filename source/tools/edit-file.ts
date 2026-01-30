@@ -2,6 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { createTwoFilesPatch } from "diff";
 import { z } from "zod";
 import { config } from "../config.ts";
+import type { WorkspaceContext } from "../index.ts";
 import { clearProjectStatusCache } from "../repl/project-status.ts";
 import style from "../terminal/style.ts";
 import { toDisplayPath } from "../utils/filesystem/path-display.ts";
@@ -10,7 +11,6 @@ import {
   validateFileNotReadOnly,
   validatePath,
 } from "../utils/filesystem/security.ts";
-
 import type { ToolExecutionOptions } from "./types.ts";
 
 export const EditFileTool = {
@@ -35,14 +35,11 @@ const inputSchema = z.object({
 
 type EditFileInputSchema = z.infer<typeof inputSchema>;
 
-export const createEditFileTool = async ({
-  workingDir,
-  allowedDirs,
-}: {
-  workingDir: string;
-  allowedDirs?: string[];
+export const createEditFileTool = async (options: {
+  workspace: WorkspaceContext;
 }) => {
-  const allowedDirectory = allowedDirs ?? [workingDir];
+  const { primaryDir, allowedDirs } = options.workspace;
+  const allowedDirectory = allowedDirs ?? [primaryDir];
   return {
     toolDef: {
       description:
@@ -67,13 +64,13 @@ export const createEditFileTool = async ({
       }
 
       const validPath = await validatePath(
-        joinWorkingDir(path, workingDir),
+        joinWorkingDir(path, primaryDir),
         allowedDirectory,
         { abortSignal },
       );
 
       const projectConfig = await config.getConfig();
-      validateFileNotReadOnly(validPath, projectConfig, workingDir);
+      validateFileNotReadOnly(validPath, projectConfig, primaryDir);
 
       const result = await applyFileEdits(validPath, edits, false, abortSignal);
 

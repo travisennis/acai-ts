@@ -4,9 +4,9 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { z } from "zod";
 import { initExecutionEnvironment } from "../execution/index.ts";
+import type { WorkspaceContext } from "../index.ts";
 import { logger } from "../logger.ts";
 import style from "../terminal/style.ts";
-
 import { resolveCwd, validatePaths } from "../utils/bash.ts";
 import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions } from "./types.ts";
@@ -87,13 +87,10 @@ const inputSchema = z.object({
 
 type BashInputSchema = z.infer<typeof inputSchema>;
 
-export const createBashTool = async ({
-  baseDir,
-  allowedDirs,
-}: {
-  baseDir: string;
-  allowedDirs?: string[];
+export const createBashTool = async (options: {
+  workspace: WorkspaceContext;
 }) => {
+  const { primaryDir, allowedDirs } = options.workspace;
   const execEnv = await initExecutionEnvironment({
     execution: {
       env: {
@@ -102,7 +99,7 @@ export const createBashTool = async ({
       },
     },
   });
-  const allowedDirectories = allowedDirs ?? [baseDir];
+  const allowedDirectories = allowedDirs ?? [primaryDir];
   return {
     toolDef: {
       description: toolDescription,
@@ -121,7 +118,7 @@ export const createBashTool = async ({
 
       // grok doesn't follow my instructions
       const safeCwd = cwd === "null" ? null : cwd;
-      const resolvedCwd = resolveCwd(safeCwd, baseDir, allowedDirectories);
+      const resolvedCwd = resolveCwd(safeCwd, primaryDir, allowedDirectories);
       const safeTimeout = timeout ?? DEFAULT_TIMEOUT;
 
       const pathValidation = validatePaths(

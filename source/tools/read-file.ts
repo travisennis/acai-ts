@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import { isNumber } from "@travisennis/stdlib/typeguards";
 import { z } from "zod";
+import type { WorkspaceContext } from "../index.ts";
 import style from "../terminal/style.ts";
 import { toDisplayPath } from "../utils/filesystem/path-display.ts";
 import { joinWorkingDir, validatePath } from "../utils/filesystem/security.ts";
@@ -42,14 +43,11 @@ const inputSchema = z.object({
 
 type ReadFileInputSchema = z.infer<typeof inputSchema>;
 
-export const createReadFileTool = async ({
-  workingDir,
-  allowedDirs,
-}: {
-  workingDir: string;
-  allowedDirs?: string[];
+export const createReadFileTool = async (options: {
+  workspace: WorkspaceContext;
 }) => {
-  const allowedDirectory = allowedDirs ?? [workingDir];
+  const { primaryDir, allowedDirs } = options.workspace;
+  const allowedDirectory = allowedDirs ?? [primaryDir];
   return {
     toolDef: {
       description: `Read the complete contents of a file from the file system unless startLine and lineCount are given to read a file selection. Handles various text encodings and provides detailed error messages if the file cannot be read. Use this tool when you need to examine the contents of a single file. Only works within allowed directories. Automatically limits file size to prevent overwhelming output. Default limit is ${DEFAULT_BYTE_LIMIT} bytes (${DEFAULT_BYTE_LIMIT / 1024}KB). Use maxBytes parameter to override this limit.`,
@@ -74,7 +72,7 @@ export const createReadFileTool = async ({
       }
 
       const filePath = await validatePath(
-        joinWorkingDir(providedPath, workingDir),
+        joinWorkingDir(providedPath, primaryDir),
         allowedDirectory,
         { abortSignal },
       );

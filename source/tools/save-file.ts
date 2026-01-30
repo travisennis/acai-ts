@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { config } from "../config.ts";
+import type { WorkspaceContext } from "../index.ts";
 import { clearProjectStatusCache } from "../repl/project-status.ts";
 import style from "../terminal/style.ts";
 import { toDisplayPath } from "../utils/filesystem/path-display.ts";
@@ -28,14 +29,11 @@ const inputSchema = z.object({
 
 type SaveFileInputSchema = z.infer<typeof inputSchema>;
 
-export const createSaveFileTool = async ({
-  workingDir,
-  allowedDirs,
-}: {
-  workingDir: string;
-  allowedDirs?: string[];
+export const createSaveFileTool = async (options: {
+  workspace: WorkspaceContext;
 }) => {
-  const allowedDirectory = allowedDirs ?? [workingDir];
+  const { primaryDir, allowedDirs } = options.workspace;
+  const allowedDirectory = allowedDirs ?? [primaryDir];
 
   return {
     toolDef: {
@@ -59,7 +57,7 @@ export const createSaveFileTool = async ({
       }
 
       const filePath = await validatePath(
-        joinWorkingDir(userPath, workingDir),
+        joinWorkingDir(userPath, primaryDir),
         allowedDirectory,
         { requireExistence: false, abortSignal },
       );
@@ -67,7 +65,7 @@ export const createSaveFileTool = async ({
       try {
         await fs.stat(filePath);
         const projectConfig = await config.getConfig();
-        validateFileNotReadOnly(filePath, projectConfig, workingDir);
+        validateFileNotReadOnly(filePath, projectConfig, primaryDir);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
           throw error;

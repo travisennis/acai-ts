@@ -37,25 +37,13 @@ export async function initTools({
 }: {
   workspace: WorkspaceContext;
 }) {
-  const readFileTool = await createReadFileTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
+  const readFileTool = await createReadFileTool({ workspace });
 
-  const editFileTool = await createEditFileTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
+  const editFileTool = await createEditFileTool({ workspace });
 
-  const saveFileTool = await createSaveFileTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
+  const saveFileTool = await createSaveFileTool({ workspace });
 
-  const directoryTreeTool = await createDirectoryTreeTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
+  const directoryTreeTool = await createDirectoryTreeTool({ workspace });
 
   const globTool = createGlobTool();
 
@@ -63,15 +51,9 @@ export async function initTools({
 
   const thinkTool = createThinkTool();
 
-  const lsTool = await createLsTool({
-    workingDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
+  const lsTool = await createLsTool({ workspace });
 
-  const bashTool = await createBashTool({
-    baseDir: workspace.primaryDir,
-    allowedDirs: workspace.allowedDirs,
-  });
+  const bashTool = await createBashTool({ workspace });
 
   const skillTool = await createSkillTool();
 

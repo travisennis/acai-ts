@@ -10,7 +10,7 @@ const baseDir = process.cwd();
 
 describe("bash tool path validation for git message flags", async () => {
   const tool = await createBashTool({
-    baseDir,
+    workspace: { primaryDir: baseDir, allowedDirs: [baseDir] },
   });
 
   async function run(command: string) {
@@ -58,8 +58,7 @@ describe("bash tool path validation for git message flags", async () => {
 
 describe("bash tool allowed paths access", async () => {
   const tool = await createBashTool({
-    baseDir,
-    allowedDirs: [baseDir, "/tmp"],
+    workspace: { primaryDir: baseDir, allowedDirs: [baseDir, "/tmp"] },
   });
 
   async function run(command: string, timeout = 5000) {
@@ -87,7 +86,7 @@ describe("bash tool abort signal handling", async () => {
   it("aborts execution on signal", async () => {
     const ac = new AbortController();
     const tool = await createBashTool({
-      baseDir,
+      workspace: { primaryDir: baseDir, allowedDirs: [baseDir] },
     });
     ac.abort();
     const { execute } = tool;

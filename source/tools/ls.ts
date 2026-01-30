@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
+import type { WorkspaceContext } from "../index.ts";
 import style from "../terminal/style.ts";
-
 import { isDirectory } from "../utils/filesystem/operations.ts";
 import { toDisplayPath } from "../utils/filesystem/path-display.ts";
 import { validatePath } from "../utils/filesystem/security.ts";
@@ -28,11 +28,10 @@ type LsInputSchema = z.infer<typeof inputSchema>;
 const DEFAULT_ENTRY_LIMIT = 500;
 
 export const createLsTool = async (options: {
-  workingDir: string;
-  allowedDirs?: string[];
+  workspace: WorkspaceContext;
 }) => {
-  const { workingDir, allowedDirs } = options;
-  const allowedDirectory = allowedDirs ?? [workingDir];
+  const { primaryDir, allowedDirs } = options.workspace;
+  const allowedDirectory = allowedDirs ?? [primaryDir];
 
   return {
     toolDef: {
@@ -57,7 +56,7 @@ export const createLsTool = async (options: {
       const effectiveLimit = limit ?? DEFAULT_ENTRY_LIMIT;
 
       const resolvedPath = await validatePath(
-        path.resolve(workingDir, dirPath),
+        path.resolve(primaryDir, dirPath),
         allowedDirectory,
         { requireExistence: true, abortSignal },
       );
