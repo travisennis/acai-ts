@@ -25,7 +25,7 @@ test("buildGrepCommand auto-detects unbalanced pattern and uses -F when literal 
 
 test("likelyUnbalancedRegex detects unbalanced parentheses", () => {
   assert.ok(likelyUnbalancedRegex("terminal.table("));
-  assert.ok(likelyUnbalancedRegex("loadDynamicTools({"));
+  assert.ok(likelyUnbalancedRegex("spawnChildProcess({"));
   assert.ok(likelyUnbalancedRegex("function test("));
   assert.ok(!likelyUnbalancedRegex("function test()"));
 });

@@ -8,16 +8,16 @@ import {
 } from "../../source/tools/grep.ts";
 
 // Test for the specific issue mentioned in GitHub issue #96
-test("GitHub issue #96 - grep tool handles loadDynamicTools({ pattern", () => {
+test("GitHub issue #96 - grep tool handles spawnChildProcess({ pattern", () => {
   // Test that the pattern is detected as unbalanced
-  assert.ok(likelyUnbalancedRegex("loadDynamicTools({"));
+  assert.ok(likelyUnbalancedRegex("spawnChildProcess({"));
 
   // Test that the pattern works with fixed-string mode
-  const cmd = buildGrepCommand("loadDynamicTools({", ".", { literal: true });
+  const cmd = buildGrepCommand("spawnChildProcess({", ".", { literal: true });
   assert.ok(cmd.includes(" -F"));
 
   // Test that grepFiles doesn't throw an error with this pattern
-  const result = grepFiles("loadDynamicTools({", ".", { literal: true });
+  const result = grepFiles("spawnChildProcess({", ".", { literal: true });
   // Should either find matches or return "No matches found." without throwing
   assert.ok(result === "No matches found." || result.includes(":"));
 });
@@ -25,7 +25,7 @@ test("GitHub issue #96 - grep tool handles loadDynamicTools({ pattern", () => {
 test("GitHub issue #96 - grep tool handles problematic regex patterns gracefully", () => {
   // Test various problematic patterns that would cause regex parse errors
   const problematicPatterns = [
-    "loadDynamicTools({",
+    "spawnChildProcess({",
     "terminal.table(",
     "function test(",
     "array[",

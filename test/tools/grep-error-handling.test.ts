@@ -22,7 +22,7 @@ test("grepFiles handles exit code 1 (no matches) gracefully", async () => {
 
 test("grepFiles handles problematic patterns with fixed-string mode", () => {
   // This pattern would cause regex parse error without fixed-string mode
-  const result = grepFiles("loadDynamicTools({", ".", { literal: true });
+  const result = grepFiles("spawnChildProcess({", ".", { literal: true });
   // Should either find matches or return "No matches found." without throwing
   assert.ok(result === "No matches found." || result.includes(":"));
 });
