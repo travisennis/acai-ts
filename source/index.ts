@@ -321,7 +321,7 @@ async function initializeModelManager(
 ): Promise<ModelManager> {
   const chosenModel: ModelName = isSupportedModel(flags.model)
     ? flags.model
-    : "opencode:glm-4-7";
+    : "opencode:kimi-k2-5-free";
 
   const modelManager = new ModelManager({
     stateDir: await appDir.ensurePath("audit"),

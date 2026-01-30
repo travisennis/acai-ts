@@ -80,6 +80,6 @@ Note: The editor uses Shift+Enter to submit. The escape sequence `Escape "[13;2u
 - **Never modify published git history** (no amend, rebase, reset --hard on pushed commits)
 - **Never perform hard resets without explicit user permission**
 - **Always confirm before destructive git operations** (reset --hard, clean, stash pop that could overwrite changes)
-- **Use `git add -p` with tmux or `git add <specific-files>` instead of `git add -A` when possible** to avoid staging unintended changes
+- **Use `git add -p` with tmux or `git add <specific-files>` instead of `git add -A`** to avoid staging unintended changes
 - If you accidentally stage unrelated changes, point it out to the user before committing
 - **Never use `--no-verify` without explicit user permission**
