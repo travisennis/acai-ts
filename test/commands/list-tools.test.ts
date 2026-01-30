@@ -15,10 +15,7 @@ describe("listToolsCommand", () => {
 
     assert.ok(command);
     assert.equal(command.command, "/list-tools");
-    assert.equal(
-      command.description,
-      "List all available static and dynamic tools.",
-    );
+    assert.equal(command.description, "List all available tools.");
     assert.deepStrictEqual(command.aliases, ["/lt"]);
   });
 

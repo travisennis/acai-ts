@@ -12,7 +12,7 @@ import type { CommandOptions, ReplCommand } from "../types.ts";
 export function listToolsCommand(options: CommandOptions): ReplCommand {
   return {
     command: "/list-tools",
-    description: "List all available static and dynamic tools.",
+    description: "List all available tools.",
     aliases: ["/lt"],
 
     getSubCommands: async () => [],
@@ -30,18 +30,6 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
         });
         const toolNames = Object.keys(tools).sort();
 
-        // Separate static and dynamic tools
-        const staticTools = [];
-        const dynamicTools = [];
-
-        for (const toolName of toolNames) {
-          if (toolName.startsWith("dynamic-")) {
-            dynamicTools.push(toolName);
-          } else {
-            staticTools.push(toolName);
-          }
-        }
-
         // Build modal content
         const modalContent = new ModalContainer();
 
@@ -51,32 +39,17 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
           // Create table data
           const tableData = [];
 
-          // Add static tools
-          for (const toolName of staticTools) {
+          // Add tools
+          for (const toolName of toolNames) {
             const isActive =
               activeTools === undefined || activeTools.includes(toolName);
-            tableData.push([
-              toolName,
-              "Static",
-              isActive ? "Active" : "Inactive",
-            ]);
-          }
-
-          // Add dynamic tools
-          for (const toolName of dynamicTools) {
-            const isActive =
-              activeTools === undefined || activeTools.includes(toolName);
-            tableData.push([
-              toolName,
-              "Dynamic",
-              isActive ? "Active" : "Inactive",
-            ]);
+            tableData.push([toolName, isActive ? "Active" : "Inactive"]);
           }
 
           modalContent.addChild(
             new TableComponent(tableData, {
-              headers: ["Tool Name", "Type", "Status"],
-              colWidths: [60, 20, 20],
+              headers: ["Tool Name", "Status"],
+              colWidths: [60, 20],
             }),
           );
 
@@ -88,7 +61,7 @@ export function listToolsCommand(options: CommandOptions): ReplCommand {
               : toolNames.filter((tool) => activeTools.includes(tool)).length;
           modalContent.addChild(
             new ModalText(
-              `Total: ${staticTools.length} static, ${dynamicTools.length} dynamic, ${activeCount} active`,
+              `Total: ${toolNames.length} tools, ${activeCount} active`,
               0,
               1,
             ),
