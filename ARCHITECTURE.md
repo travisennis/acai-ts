@@ -212,7 +212,6 @@ acai-ts
     │   ├── agent.ts
     │   ├── bash.ts
     │   ├── directory-tree.ts
-    │   ├── dynamic-tool-loader.ts
     │   ├── edit-file.ts
     │   ├── glob.ts
     │   ├── grep.ts
@@ -323,8 +322,6 @@ acai-ts
     ├── tokens
     ├── tools
     │   ├── bash.test.ts
-    │   ├── dynamic-tool-integration.test.ts
-    │   ├── dynamic-tool-loader.test.ts
     │   ├── edit-file.test.ts
     │   ├── glob.test.ts
     │   ├── grep-enhanced-ux.test.ts
@@ -472,7 +469,6 @@ acai-ts
 - **source/tools/agent.ts**: Agent tool for invoking sub-agents
 - **source/tools/bash.ts**: Bash command execution tool
 - **source/tools/directory-tree.ts**: Directory tree generation tool
-- **source/tools/dynamic-tool-loader.ts**: Dynamic tool loading from filesystem
 - **source/tools/edit-file.ts**: File editing tool
 - **source/tools/glob.ts**: File pattern matching tool
 - **source/tools/grep.ts**: Text search tool
@@ -650,23 +646,17 @@ flowchart TD
 flowchart TD
     A[Agent Requests Tool] --> B[Validate Tool Call]
     B --> C[Check Permissions]
-    C --> D{Dynamic Tool?}
+    C --> D[Initialize Tool]
     
-    D -->|Yes| E[Load from Filesystem]
-    D -->|No| F[Use Built-in Tool]
+    D --> E[Execute Tool]
+    E --> F{Result}
+    F -->|Success| G[Return Result]
+    F -->|Error| H[Return Error]
     
-    E --> G[Initialize Tool]
-    F --> G
+    G --> I[Update Token Count]
+    H --> I
     
-    G --> H[Execute Tool]
-    H --> I{Result}
-    I -->|Success| J[Return Result]
-    I -->|Error| K[Return Error]
-    
-    J --> L[Update Token Count]
-    K --> L
-    
-    L --> M[Return to Agent]
+    I --> J[Return to Agent]
 ```
 
 ### Session Management Flow
@@ -745,18 +735,17 @@ flowchart TD
 ```mermaid
 flowchart TD
     A[Init Tools] --> B[Create Built-in Tools]
-    B --> C[Load Dynamic Tools]
-    C --> D{Skills Enabled?}
+    B --> C{Skills Enabled?}
     
-    D -->|Yes| E[Discover Skills]
-    D -->|No| F[Skip Skills]
+    C -->|Yes| D[Discover Skills]
+    C -->|No| E[Skip Skills]
     
-    E --> G[Load Skill Tools]
-    F --> H[Combine Tool Sets]
-    G --> H
+    D --> F[Load Skill Tools]
+    E --> G[Combine Tool Sets]
+    F --> G
     
-    H --> I[Return Complete Tool Set]
-    I --> J[Register with Agent]
+    G --> H[Return Complete Tool Set]
+    H --> I[Register with Agent]
 ```
 
 ### TUI Rendering Flow
