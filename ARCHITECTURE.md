@@ -223,6 +223,7 @@ acai-ts
     │   ├── think.ts
     │   ├── types.ts
     │   ├── utils.ts
+    │   ├── web-fetch.ts
     │   └── web-search.ts
     ├── tui
     │   ├── autocomplete
@@ -480,6 +481,7 @@ acai-ts
 - **source/tools/skill.ts**: Skill invocation tool
 - **source/tools/think.ts**: Thinking/reasoning tool
 - **source/tools/web-search.ts**: Web search tool using Exa API with DuckDuckGo fallback
+- **source/tools/web-fetch.ts**: Web content fetch tool with HTML cleaning (Jina AI or local Cheerio-based)
 
 ### Source - Terminal
 

@@ -23,6 +23,11 @@ export const ENVIRONMENT_VARIABLES: EnvVarInfo[] = [
   { name: "XAI_API_KEY", description: "X.AI (Grok models - alt)" },
   { name: "OPENROUTER_API_KEY", description: "OpenRouter (multiple models)" },
   { name: "OPENCODE_ZEN_API_TOKEN", description: "OpenCode Zen" },
+  { name: "EXA_API_KEY", description: "Exa (Web Search)" },
+  {
+    name: "JINA_READER_API_KEY",
+    description: "Jina AI (Web Fetch HTML cleaning)",
+  },
   { name: "LOG_LEVEL", description: "Logging level" },
 ];
 
