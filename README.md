@@ -13,7 +13,7 @@ Acai is a powerful **AI-driven command-line interface (CLI) tool** designed to a
 *   **Interactive AI Assistant:** Engage in a conversational REPL (Read-Eval-Print Loop) or TUI (Terminal User Interface) to get assistance with coding, debugging, refactoring, and more.
 *   **Codebase Interaction:** Read, edit, and navigate files; search code; and understand project structure.
 *   **Git Integration:** Generate conventional commits, review pull requests, and manage local changes.
-*   **Extensible Tooling:** Utilizes a suite of internal tools (e.g., `bash`, `codeInterpreter`, `webSearch`) to perform actions.
+*   **Extensible Tooling:** Utilizes a suite of internal tools (e.g., `bash`, `grep`, `WebSearch`) to perform actions.
 *   **Multi-Model Support:** Seamlessly switch between various AI providers (e.g., OpenAI, Google, Anthropic, DeepSeek, Groq, OpenRouter).
 *   **Context Management:** Automatically incorporates relevant file content, clipboard data, and conversation history into AI prompts.
 *   **Piped Input Support:** Pipe text directly to acai via stdin for REPL mode (`echo "prompt" | acai`) or as context with `-p` flag (`echo "context" | acai -p "prompt"). Includes size limits (50KB warning, 200KB max).
@@ -135,6 +135,9 @@ OPENROUTER_API_KEY=your_openrouter_api_key_here
 
 # OpenCode Zen
 OPENCODE_ZEN_API_TOKEN=your_opencode_zen_api_token_here
+
+# Exa API (for WebSearch tool - web search with DuckDuckGo fallback)
+EXA_API_KEY=your_exa_api_key_here
 ```
 
 ### Application Configuration

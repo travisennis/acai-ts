@@ -222,7 +222,8 @@ acai-ts
     │   ├── skill.ts
     │   ├── think.ts
     │   ├── types.ts
-    │   └── utils.ts
+    │   ├── utils.ts
+    │   └── web-search.ts
     ├── tui
     │   ├── autocomplete
     │   │   ├── attachment-provider.ts
@@ -330,7 +331,8 @@ acai-ts
     │   ├── grep-match-counting.test.ts
     │   ├── grep-max-results.test.ts
     │   ├── grep.test.ts
-    │   └── ls.test.ts
+    │   ├── ls.test.ts
+    │   └── web-search.test.ts
     ├── tui
     │   ├── autocomplete.test.ts
     │   ├── components
@@ -477,6 +479,7 @@ acai-ts
 - **source/tools/save-file.ts**: File writing tool
 - **source/tools/skill.ts**: Skill invocation tool
 - **source/tools/think.ts**: Thinking/reasoning tool
+- **source/tools/web-search.ts**: Web search tool using Exa API with DuckDuckGo fallback
 
 ### Source - Terminal
 

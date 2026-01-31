@@ -16,6 +16,7 @@ import { createReadFileTool, ReadFileTool } from "./read-file.ts";
 import { createSaveFileTool, SaveFileTool } from "./save-file.ts";
 import { createSkillTool, SkillTool } from "./skill.ts";
 import { createThinkTool, ThinkTool } from "./think.ts";
+import { createWebSearchTool, WebSearchTool } from "./web-search.ts";
 
 export type CompleteToolSet = {
   -readonly [K in keyof AsyncReturnType<typeof initTools>]: AsyncReturnType<
@@ -59,6 +60,8 @@ export async function initTools({
 
   const agentTool = await createAgentTools({ workspace });
 
+  const webSearchTool = await createWebSearchTool();
+
   // Build tools object for AI SDK
   const tools = {
     [EditFileTool.name]: editFileTool,
@@ -72,6 +75,7 @@ export async function initTools({
     [LsTool.name]: lsTool,
     [SkillTool.name]: skillTool,
     [AgentTool.name]: agentTool,
+    [WebSearchTool.name]: webSearchTool,
   } as const;
 
   return tools;
