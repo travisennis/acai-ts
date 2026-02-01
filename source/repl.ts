@@ -420,11 +420,15 @@ export class Repl {
         }
         this.pendingTools.clear();
         this.editor.disableSubmit = false;
+        // Auto-save session after agent completes
+        await this.options.sessionManager.save();
         this.tui.requestRender();
         break;
 
       case "agent-error":
         logger.error(event, "agent-error");
+        // Auto-save session on error so user can resume from failed state
+        await this.options.sessionManager.save();
         // Stop loading animation
         if (this.loadingAnimation) {
           this.loadingAnimation.stop();
