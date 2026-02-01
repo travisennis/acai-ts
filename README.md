@@ -314,7 +314,6 @@ For a list of available commands, type `/help` within the REPL.
 ## Interactive CLI Commands
 
 - `/help` - Shows usage information
-- `/new` - Saves chat history and resets the conversation
 - `/save` - Saves chat history
 - `/exit` or `/bye` - Exits and saves chat history
 - `/init` - Generate or improve `AGENTS.md`
@@ -351,6 +350,7 @@ These shortcuts work in the interactive TUI mode:
 | :------- | :----- |
 | `Ctrl+C` | First press: clears the editor and shows exit confirmation. Second press within 1 second: exits the application. |
 | `Ctrl+D` | Exits the application only when the editor is empty. If the editor has content, this shortcut does nothing. |
+| `Ctrl+N` | Starts a new chat session (saves current session first if not empty). |
 | `Ctrl+O` | Toggles verbose mode (shows detailed tool execution output). |
 | `Escape` | Closes active modal dialogs or interrupts ongoing processing. |
 
