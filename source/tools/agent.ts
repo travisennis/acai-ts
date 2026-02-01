@@ -93,7 +93,7 @@ export const createAgentTools = async (options: {
 
     try {
       const result = await subagent.execute({
-        model: isSupportedModel(model) ? model : "opencode:glm-4-7",
+        model: isSupportedModel(model) ? model : "opencode:minimax-m2.1-free",
         system,
         prompt,
         abortSignal,
