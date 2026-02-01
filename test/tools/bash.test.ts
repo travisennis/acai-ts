@@ -133,3 +133,47 @@ describe("bash tool home directory (~) validation", () => {
     assert.strictEqual(result.isValid, true);
   });
 });
+
+describe("bash tool with command protection", async () => {
+  const tool = await createBashTool({
+    workspace: { primaryDir: baseDir, allowedDirs: [baseDir, "/tmp"] },
+  });
+
+  async function run(command: string) {
+    return tool.execute(
+      { command, cwd: baseDir, timeout: 1000 },
+      { toolCallId: "t1", messages: [] },
+    );
+  }
+
+  it("blocks destructive git commands", async () => {
+    await assert.rejects(() => run("git reset --hard"), /BLOCKED/);
+  });
+
+  it("blocks rm -rf outside temp directories", async () => {
+    // Path validation catches this first with a different error
+    await assert.rejects(
+      () => run("rm -rf /home/test"),
+      /resolves outside the allowed directories/,
+    );
+  });
+
+  it("allows rm -rf /tmp/*", async () => {
+    // Should not throw BLOCKED error (may fail for other reasons like permissions)
+    try {
+      await run("rm -rf /tmp/acai-test-nonexistent-*");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      assert.ok(
+        !errorMessage.includes("BLOCKED"),
+        "rm -rf /tmp/* should be allowed",
+      );
+    }
+  });
+
+  it("allows safe git commands", async () => {
+    const result = await run("git status");
+    assert.ok(result.length >= 0);
+  });
+});

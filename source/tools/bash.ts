@@ -8,6 +8,10 @@ import type { WorkspaceContext } from "../index.ts";
 import { logger } from "../logger.ts";
 import style from "../terminal/style.ts";
 import { resolveCwd, validatePaths } from "../utils/bash.ts";
+import {
+  detectDestructiveCommand,
+  formatBlockedCommandMessage,
+} from "../utils/command-protection.ts";
 import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions } from "./types.ts";
 
@@ -304,6 +308,12 @@ export const createBashTool = async (options: {
       const multilineError = detectMultilineGitCommit(command);
       if (multilineError) {
         throw new Error(multilineError);
+      }
+
+      // Check for destructive commands
+      const destructiveCheck = detectDestructiveCommand(command);
+      if (destructiveCheck.blocked) {
+        throw new Error(formatBlockedCommandMessage(destructiveCheck));
       }
 
       if (abortSignal?.aborted) {
