@@ -6,6 +6,7 @@ import {
   getTerminalSize,
   isCtrlC,
   isCtrlD,
+  isCtrlN,
   isCtrlO,
   isCtrlZ,
   isEscape,
@@ -83,6 +84,7 @@ export class TUI extends Container {
   public onCtrlC?: () => void;
   public onCtrlD?: () => void;
   public onReconstructSession?: () => void;
+  public onCtrlN?: () => void;
   public onCtrlO?: () => void;
 
   constructor(terminal: Terminal) {
@@ -173,6 +175,14 @@ export class TUI extends Container {
     if (isCtrlO(data)) {
       if (this.onCtrlO) {
         this.onCtrlO();
+      }
+      return;
+    }
+
+    // Handle Ctrl+N - new chat
+    if (isCtrlN(data)) {
+      if (this.onCtrlN) {
+        this.onCtrlN();
       }
       return;
     }

@@ -15,7 +15,12 @@ import {
   type ProjectStatusData,
 } from "./repl/project-status.ts";
 import type { SessionManager } from "./sessions/manager.ts";
-import { alert, startProgress, stopProgress } from "./terminal/control.ts";
+import {
+  alert,
+  setTerminalTitle,
+  startProgress,
+  stopProgress,
+} from "./terminal/control.ts";
 import style from "./terminal/style.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
@@ -178,6 +183,10 @@ export class Repl {
 
     this.tui.onCtrlO = () => {
       this.handleCtrlO();
+    };
+
+    this.tui.onCtrlN = () => {
+      void this.handleCtrlN();
     };
 
     // Set callback for session reconstruction (used by /history command)
@@ -778,6 +787,33 @@ export class Repl {
     }
     for (const component of this.allToolExecutions) {
       component.setVerboseMode(this.verboseMode);
+    }
+
+    this.tui.requestRender();
+  }
+
+  private async handleCtrlN(): Promise<void> {
+    if (!this.options.sessionManager.isEmpty()) {
+      await this.options.sessionManager.save();
+      this.options.sessionManager.create(
+        this.options.modelManager.getModel("repl").modelId,
+      );
+    }
+
+    this.options.tokenTracker.reset();
+
+    setTerminalTitle(`acai: ${process.cwd()}`);
+
+    this.chatContainer.clear();
+    this.editor.setText("");
+
+    // Reset footer state to clear usage/cost/steps/tools/time
+    const footer = this.tui.children.find(
+      (child): child is FooterComponent =>
+        child.constructor.name === "FooterComponent",
+    );
+    if (footer) {
+      footer.resetState();
     }
 
     this.tui.requestRender();
