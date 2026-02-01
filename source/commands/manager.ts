@@ -15,7 +15,6 @@ import type {
 import { addDirectoryCommand } from "./add-directory/index.ts";
 import { clearCommand } from "./clear/index.ts";
 import { copyCommand } from "./copy/index.ts";
-import { exitCommand } from "./exit/index.ts";
 import { generateRulesCommand } from "./generate-rules/index.ts";
 import { handoffCommand } from "./handoff/index.ts";
 import { healthCommand } from "./health/index.ts";
@@ -93,7 +92,6 @@ export class CommandManager {
     const cmds = [
       addDirectoryCommand(options),
       clearCommand(options),
-      exitCommand(options),
       healthCommand(options),
       historyCommand(options),
       initCommand(options),
