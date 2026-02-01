@@ -102,6 +102,7 @@ Usage notes:
     - If the commands depend on each other and must run sequentially, use a single Bash call with '&&' to chain them together (e.g., \`git add . && git commit -m "message" && git push\`). For instance, if one operation must complete before another starts (like mkdir before cp, Write before Bash for git operations, or git add before git commit), run these operations sequentially instead.
     - Use ';' only when you need to run commands sequentially but don't care if earlier commands fail
     - DO NOT use newlines to separate commands (newlines are ok in quoted strings)
+  - Commands execute in the project root directory by default. Do NOT prepend \`cd <project-root> &&\` to commands—it's unnecessary.
   - Try to maintain your current working directory throughout the session by using absolute paths and avoiding usage of \`cd\`. You may use \`cd\` if the User explicitly requests it.
     <good-example>
     pytest /foo/bar/tests
@@ -244,7 +245,7 @@ const inputSchema = z.object({
   cwd: z
     .preprocess((val) => convertNullString(val), z.string().nullable())
     .describe(
-      "Working directory file path (default: project root). Must be within the project directory. Required but nullable.",
+      "Optional working directory. Commands execute in the project root by default. Only specify if you need a different directory. Must be within allowed directories.",
     ),
   timeout: z
     .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
