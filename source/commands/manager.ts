@@ -32,7 +32,6 @@ import { loadPrompts, promptCommand } from "./prompt/index.ts";
 import { removeDirectoryCommand } from "./remove-directory/index.ts";
 import { resourcesCommand } from "./resources/index.ts";
 import { reviewCommand } from "./review/index.ts";
-import { saveCommand } from "./save/index.ts";
 import { sessionCommand } from "./session/index.ts";
 import { shareCommand } from "./share/index.ts";
 import { shellCommand } from "./shell/index.ts";
@@ -102,7 +101,6 @@ export class CommandManager {
       promptCommand(options),
       removeDirectoryCommand(options),
       reviewCommand(options),
-      saveCommand(options),
       modelCommand(options),
       sessionCommand(options),
       generateRulesCommand(options),
