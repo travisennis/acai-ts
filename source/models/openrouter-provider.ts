@@ -213,7 +213,7 @@ export const openrouterModelRegistry: {
     provider: "openrouter",
     contextWindow: 262144,
     maxOutputTokens: 262144,
-    defaultTemperature: 0.5,
+    defaultTemperature: 1.0,
     promptFormat: "markdown",
     supportsReasoning: true,
     supportsToolCalling: true,
