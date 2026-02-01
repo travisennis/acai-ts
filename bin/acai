@@ -2,6 +2,29 @@
 # acai wrapper script with Node.js compile cache support
 # Cache is automatically invalidated when source files change
 
+# Detect one-shot CLI mode (non-interactive)
+# Only use alternate screen for TUI/REPL mode
+use_alt_screen=true
+for arg in "$@"; do
+    case "$arg" in
+        -p|--prompt|-h|--help|-v|--version)
+            use_alt_screen=false
+            break
+            ;;
+    esac
+done
+
+if [ "$use_alt_screen" = true ]; then
+    # Save cursor position and switch to alternate screen buffer
+    printf '\033[?1049h'
+
+    # Ensure screen restoration happens even on crash/ctrl+c
+    cleanup() {
+        printf '\033[?1049l'
+    }
+    trap cleanup EXIT INT TERM
+fi
+
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -18,4 +41,5 @@ fi
 mkdir -p "$NODE_COMPILE_CACHE" 2>/dev/null || true
 
 # Execute the actual entry point with compile cache enabled
-exec node "$SCRIPT_DIR/../dist/index.js" "$@"
+# Note: don't use exec so trap cleanup runs after node exits
+node "$SCRIPT_DIR/../dist/index.js" "$@"
