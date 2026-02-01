@@ -314,8 +314,6 @@ For a list of available commands, type `/help` within the REPL.
 ## Interactive CLI Commands
 
 - `/help` - Shows usage information
-- `/save` - Saves chat history
-- `/exit` or `/bye` - Exits and saves chat history
 - `/init` - Generate or improve `AGENTS.md`
 - `/paste` - Add clipboard contents to the next prompt
 - `/prompt <name> [arguments...]` - Load saved prompts with optional arguments. Project prompts override user prompts. Supports argument placeholders (`$ARGUMENTS`, `$1`, `$2`, etc.) in prompt files.
