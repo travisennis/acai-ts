@@ -76,10 +76,6 @@ acai-ts
     │   │   ├── index.ts
     │   │   ├── types.ts
     │   │   └── utils.ts
-    │   ├── exit
-    │   │   ├── index.ts
-    │   │   ├── types.ts
-    │   │   └── utils.ts
     │   ├── generate-rules
     │   │   ├── index.ts
     │   │   └── utils.ts
@@ -127,8 +123,6 @@ acai-ts
     │   │   ├── index.ts
     │   │   ├── types.ts
     │   │   └── utils.ts
-    │   ├── save
-    │   │   └── index.ts
     │   ├── session
     │   │   ├── index.ts
     │   │   └── types.ts
@@ -280,7 +274,6 @@ acai-ts
     │   ├── add-directory.test.ts
     │   ├── clear-command.test.ts
     │   ├── copy-command.test.ts
-    │   ├── exit-command.test.ts
     │   ├── generate-rules.test.ts
     │   ├── handoff.test.ts
     │   ├── health.test.ts
@@ -297,7 +290,6 @@ acai-ts
     │   ├── resources-command.test.ts
     │   ├── review-command.test.ts
     │   ├── review.test.ts
-    │   ├── save-command.test.ts
     │   ├── session-command.test.ts
     │   ├── share.test.ts
     │   └── shell-command.test.ts
@@ -423,7 +415,6 @@ acai-ts
 - **source/commands/add-directory/**: Command to add working directories
 - **source/commands/clear/**: Command to clear the conversation
 - **source/commands/copy/**: Command to copy content
-- **source/commands/exit/**: Command to exit the REPL
 - **source/commands/generate-rules/**: Command to generate project rules
 - **source/commands/handoff/**: Command for agent handoffs
 - **source/commands/health/**: Command to check system health
@@ -440,7 +431,6 @@ acai-ts
 - **source/commands/remove-directory/**: Command to remove working directories
 - **source/commands/resources/**: Command to manage resources
 - **source/commands/review/**: Command to review code
-- **source/commands/save/**: Command to save conversation state
 - **source/commands/session/**: Command to manage sessions
 - **source/commands/share/**: Command to share conversations
 - **source/commands/shell/**: Command to execute shell commands
