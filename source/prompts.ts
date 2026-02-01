@@ -50,7 +50,10 @@ async function getProjectContext() {
   };
 }
 
-async function environmentInfo(allowedDirs: string[]) {
+export async function environmentInfo(
+  currentWorkingDir: string,
+  allowedDirs: string[],
+) {
   const gitDirectory = await inGitDirectory();
   let gitSection = `- **Is directory a git repo**: ${gitDirectory ? "Yes" : "No"}`;
   if (gitDirectory) {
@@ -58,6 +61,8 @@ async function environmentInfo(allowedDirs: string[]) {
   }
 
   return `## Environment
+### Current working directory:
+${currentWorkingDir}
 
 ### Allowed directories:
 
@@ -74,6 +79,7 @@ ${gitSection}
 }
 
 type SystemPromptOptions = {
+  currentWorkingDir?: string;
   allowedDirs?: string[];
   activeTools?: CompleteToolNames[];
   includeRules?: boolean;
@@ -85,13 +91,15 @@ type SystemPromptResult = {
   components: SystemPromptComponents;
 };
 
-const DEFAULT_ALLOWED_DIRS = [process.cwd()];
+const DEFAULT_WORKING_DIRS = process.cwd();
+const DEFAULT_ALLOWED_DIR = [process.cwd()];
 
 export async function systemPrompt(
   options?: SystemPromptOptions,
 ): Promise<SystemPromptResult> {
   const {
-    allowedDirs = DEFAULT_ALLOWED_DIRS,
+    currentWorkingDir = DEFAULT_WORKING_DIRS,
+    allowedDirs = DEFAULT_ALLOWED_DIR,
     includeRules = true,
     skillsEnabled = true,
   } = options ?? {};
@@ -100,7 +108,10 @@ export async function systemPrompt(
     ? await getProjectContext()
     : { text: "", userAgentsMd: "", cwdAgentsMd: "", learnedRules: "" };
   const projectContextText = projectContextResult.text;
-  const environmentInfoText = await environmentInfo(allowedDirs);
+  const environmentInfoText = await environmentInfo(
+    currentWorkingDir,
+    allowedDirs,
+  );
 
   let skillsText = "";
   if (skillsEnabled) {

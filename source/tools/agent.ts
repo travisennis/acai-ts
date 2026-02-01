@@ -2,6 +2,7 @@ import { z } from "zod";
 import { SubAgent } from "../agent/sub-agent.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { isSupportedModel } from "../models/providers.ts";
+import { environmentInfo } from "../prompts.ts";
 import {
   formatSubagentsForDescription,
   getSubagent,
@@ -89,12 +90,16 @@ export const createAgentTools = async (options: {
       timeout: defaultTimeout,
     } = await loadSubAgentDefinition(type);
 
+    const systemPrompt = `${system}
+
+${await environmentInfo(options.workspace.primaryDir, options.workspace.allowedDirs)}`;
+
     const subagent = new SubAgent({ workspace: options.workspace });
 
     try {
       const result = await subagent.execute({
         model: isSupportedModel(model) ? model : "opencode:minimax-m2.1-free",
-        system,
+        system: systemPrompt,
         prompt,
         abortSignal,
         allowedTools: tools,
