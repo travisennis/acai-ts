@@ -5,6 +5,7 @@
 import {
   getTerminalSize,
   isCtrlC,
+  isCtrlD,
   isCtrlO,
   isCtrlZ,
   isEscape,
@@ -80,6 +81,7 @@ export class TUI extends Container {
   private activeModal: Modal | null = null;
 
   public onCtrlC?: () => void;
+  public onCtrlD?: () => void;
   public onReconstructSession?: () => void;
   public onCtrlO?: () => void;
 
@@ -157,6 +159,14 @@ export class TUI extends Container {
         this.stop();
         process.exit(0);
       }
+    }
+
+    // Handle Ctrl+D - exit only if editor is empty (handled by Repl)
+    if (isCtrlD(data)) {
+      if (this.onCtrlD) {
+        this.onCtrlD();
+      }
+      return;
     }
 
     // Handle Ctrl+O - toggle verbose mode

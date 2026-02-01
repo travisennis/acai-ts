@@ -343,6 +343,19 @@ Clipboard notes:
 - Windows: uses `clip`
 - Linux: tries `xclip`, falls back to `xsel`
 
+### Keyboard Shortcuts
+
+These shortcuts work in the interactive TUI mode:
+
+| Shortcut | Action |
+| :------- | :----- |
+| `Ctrl+C` | First press: clears the editor and shows exit confirmation. Second press within 1 second: exits the application. |
+| `Ctrl+D` | Exits the application only when the editor is empty. If the editor has content, this shortcut does nothing. |
+| `Ctrl+O` | Toggles verbose mode (shows detailed tool execution output). |
+| `Escape` | Closes active modal dialogs or interrupts ongoing processing. |
+
+**Note:** These shortcuts use the Kitty keyboard protocol and also work with raw control characters for maximum terminal compatibility.
+
 ## Skills System
 
 Acai includes a powerful skills system that allows you to create and use specialized instruction files for specific tasks. Skills are markdown files with YAML frontmatter that provide detailed instructions for particular domains (e.g., database migrations, PDF extraction, code review).

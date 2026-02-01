@@ -172,6 +172,10 @@ export class Repl {
       this.handleCtrlC();
     };
 
+    this.tui.onCtrlD = () => {
+      this.handleCtrlD();
+    };
+
     this.tui.onCtrlO = () => {
       this.handleCtrlO();
     };
@@ -777,6 +781,28 @@ export class Repl {
     }
 
     this.tui.requestRender();
+  }
+
+  private handleCtrlD(): void {
+    // Only exit if the editor is empty
+    if (this.editor.getText().trim() !== "") {
+      // Editor has content, do nothing
+      return;
+    }
+
+    // Editor is empty - proceed with exit
+    // Clear any pending notification timer
+    if (this.exitNotificationTimer) {
+      clearTimeout(this.exitNotificationTimer);
+      this.exitNotificationTimer = undefined;
+    }
+
+    this.notification.setMessage("");
+    this.tui.requestRender();
+
+    void this.options.sessionManager.save();
+    this.stop(true);
+    process.exit(0);
   }
 
   private handleCtrlC(): void {
