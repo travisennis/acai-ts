@@ -41,9 +41,7 @@ export class Cli {
     const abortController = new AbortController();
     const { signal } = abortController;
 
-    const cb = () => {
-      abortController.abort();
-    };
+    const cb = abortController.abort.bind(abortController);
 
     // Handle Ctrl+C (SIGINT)
     process.on("SIGINT", cb);

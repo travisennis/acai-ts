@@ -54,6 +54,22 @@ interface SelectOptions<T = unknown> {
   terminal?: TerminalIo;
 }
 
+/**
+ * Factory function for creating prompt abort handlers.
+ * Defined at module level to avoid capturing closure scope.
+ */
+function createPromptAbortHandler(
+  cleanupFn: () => void,
+  rejectFn: (reason?: Error) => void,
+) {
+  return function abortHandler() {
+    cleanupFn();
+    const err = new Error("AbortError") as Error & { name?: string };
+    err.name = "AbortError";
+    rejectFn(err);
+  };
+}
+
 function normalizeChoice<T>(choice: Choice<T>): NormalizedChoice<T> {
   if (typeof choice === "string") {
     return { name: choice, value: choice as T, disabled: false };
@@ -267,12 +283,7 @@ export async function select<T = unknown>({
     }
 
     const abortHandler = signal
-      ? () => {
-          cleanup();
-          const err = new Error("AbortError") as Error & { name?: string };
-          err.name = "AbortError";
-          reject(err);
-        }
+      ? createPromptAbortHandler(cleanup, reject)
       : null;
 
     if (signal && abortHandler) {
@@ -357,7 +368,7 @@ export async function select<T = unknown>({
           stdout.write("\n");
         }
       };
-      process.on("exit", exitHandler);
+      process.once("exit", exitHandler);
     } catch (error) {
       cleanup();
       throw error;

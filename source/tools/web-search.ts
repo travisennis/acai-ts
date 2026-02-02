@@ -72,6 +72,16 @@ function convertNullString(val: unknown): string | null {
 }
 
 /**
+ * Factory function for creating abort handlers.
+ * Defined at module level to avoid capturing closure scope.
+ */
+function createAbortHandler(ctrl: AbortController, signal?: AbortSignal) {
+  return () => {
+    ctrl.abort(signal?.reason ?? new Error("Aborted"));
+  };
+}
+
+/**
  * Create an AbortSignal that combines a timeout with an optional parent signal
  */
 function createTimeoutSignal(
@@ -80,13 +90,15 @@ function createTimeoutSignal(
 ): { signal: AbortSignal; cleanup: () => void } {
   const controller = new AbortController();
 
-  const timeoutId = setTimeout(() => {
-    controller.abort(new Error(`Request timed out after ${timeoutMs}ms`));
-  }, timeoutMs);
+  // Use bind() to avoid capturing scope in timeout callback
+  const abort = controller.abort.bind(controller);
+  const timeoutId = setTimeout(
+    () => abort(new Error(`Request timed out after ${timeoutMs}ms`)),
+    timeoutMs,
+  );
 
-  const abortHandler = () => {
-    controller.abort(parentSignal?.reason ?? new Error("Aborted"));
-  };
+  // Create abort handler using factory to avoid capturing scope
+  const abortHandler = createAbortHandler(controller, parentSignal);
 
   if (parentSignal) {
     if (parentSignal.aborted) {

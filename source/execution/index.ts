@@ -124,6 +124,57 @@ function ttySizeEnv(): Record<string, string> {
   return env;
 }
 
+/**
+ * Factory function for creating abort handlers.
+ * Defined at module level to avoid capturing closure scope,
+ * preventing memory leaks when AbortSignal is long-lived.
+ */
+function createAbortHandler(
+  childProc: ReturnType<typeof exec>,
+  cmd: string,
+  start: number,
+  settleFn: (
+    result: ExecutionResult,
+    shouldReject: boolean,
+    error?: Error,
+  ) => void,
+  shouldThrow: boolean,
+) {
+  return function abortHandler() {
+    childProc.kill("SIGTERM");
+    const error = new Error("Command execution aborted");
+    const duration = Date.now() - start;
+
+    settleFn(
+      {
+        output: "",
+        exitCode: 1,
+        error,
+        command: cmd,
+        duration,
+      },
+      shouldThrow,
+      error,
+    );
+  };
+}
+
+/**
+ * Factory function for creating background process abort handlers.
+ * Defined at module level to avoid capturing closure scope.
+ * Note: Process cleanup from backgroundProcesses map is handled by the exit handler.
+ */
+function createBackgroundAbortHandler(
+  childProc: ReturnType<typeof spawn>,
+  getRunningState: () => boolean,
+) {
+  return function abortHandler() {
+    if (getRunningState()) {
+      childProc.kill("SIGTERM");
+    }
+  };
+}
+
 export class ExecutionEnvironment {
   private config: ExecutionConfig;
   private backgroundProcesses: Map<number, TrackedBackgroundProcess> =
@@ -326,26 +377,13 @@ export class ExecutionEnvironment {
 
       // Handle abort signal
       if (options.abortSignal) {
-        abortHandler = () => {
-          logger.warn(
-            { command, pid: childProcess.pid },
-            "Command execution aborted",
-          );
-          childProcess.kill("SIGTERM");
-          const error = new Error("Command execution aborted");
-
-          settle(
-            {
-              output: "",
-              exitCode: 1,
-              error,
-              command,
-              duration: Date.now() - startTime,
-            },
-            throwOnError,
-            error,
-          );
-        };
+        abortHandler = createAbortHandler(
+          childProcess,
+          command,
+          startTime,
+          settle,
+          throwOnError,
+        );
 
         options.abortSignal.addEventListener("abort", abortHandler, {
           once: true,
@@ -484,14 +522,10 @@ export class ExecutionEnvironment {
     // Handle abort signal for background process
     let abortHandler: (() => void) | undefined;
     if (options.abortSignal) {
-      abortHandler = () => {
-        logger.warn({ command, pid }, "Background command execution aborted");
-        if (isRunning) {
-          childProcess.kill("SIGTERM");
-          isRunning = false;
-          this.backgroundProcesses.delete(pid);
-        }
-      };
+      abortHandler = createBackgroundAbortHandler(
+        childProcess,
+        () => isRunning,
+      );
 
       options.abortSignal.addEventListener("abort", abortHandler, {
         once: true,
