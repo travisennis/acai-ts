@@ -1,7 +1,7 @@
 import { initExecutionEnvironment } from "../../execution/index.ts";
 import style from "../../terminal/style.ts";
 import type { Container, Editor, TUI } from "../../tui/index.ts";
-import { SelectList, Text } from "../../tui/index.ts";
+import { Loader, SelectList, Spacer, Text } from "../../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "../types.ts";
 
 // Command execution timeout in milliseconds
@@ -46,6 +46,15 @@ export const shellCommand = (options: CommandOptions): ReplCommand => {
         ["npm_config_color"]: "true",
       };
 
+      // Show loader before execution
+      const truncatedCommand =
+        commandStr.length > 50
+          ? `${commandStr.substring(0, 50)}...`
+          : commandStr;
+      const loader = new Loader(tui, `Running: ${truncatedCommand}`);
+      container.addChild(loader);
+      tui.requestRender();
+
       const { output, exitCode, duration } = await execEnv.executeCommand(
         commandStr,
         {
@@ -58,6 +67,12 @@ export const shellCommand = (options: CommandOptions): ReplCommand => {
         },
       );
 
+      // Cleanup loader
+      loader.stop();
+      container.removeChild(loader);
+
+      // Display results with spacing
+      container.addChild(new Spacer(1));
       container.addChild(
         new Text(
           style.gray(`Exit code: ${exitCode}, Duration: ${duration}ms`),
@@ -65,6 +80,7 @@ export const shellCommand = (options: CommandOptions): ReplCommand => {
           0,
         ),
       );
+      container.addChild(new Spacer(1));
       container.addChild(new Text(output, 2, 0));
 
       // Create context selection component
