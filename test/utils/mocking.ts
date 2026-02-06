@@ -119,6 +119,7 @@ export function createMockEditor(): Editor & {
   removeChild: ReturnType<typeof mock.fn>;
   clear: ReturnType<typeof mock.fn>;
   render: ReturnType<typeof mock.fn>;
+  addToHistory: ReturnType<typeof mock.fn>;
 } {
   const mockEditor = {
     setText: mock.fn(),
@@ -127,6 +128,7 @@ export function createMockEditor(): Editor & {
     removeChild: mock.fn(),
     clear: mock.fn(),
     render: mock.fn(() => []),
+    addToHistory: mock.fn(),
   };
 
   return mockEditor as unknown as Editor & typeof mockEditor;

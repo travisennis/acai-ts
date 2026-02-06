@@ -260,6 +260,13 @@ export class Editor implements Component {
   }
 
   /**
+   * Get the current history (for testing purposes).
+   */
+  getHistory(): readonly string[] {
+    return this.history;
+  }
+
+  /**
    * Add a prompt to history for up/down arrow navigation.
    * Called after successful submission.
    */
@@ -601,6 +608,7 @@ export class Editor implements Component {
       this.pastes.clear();
       this.pasteCounter = 0;
       this.historyIndex = -1; // Exit history browsing mode
+      this.addToHistory(result); // Save submitted text to history
 
       // Notify that editor is now empty
       if (this.onChange) {
