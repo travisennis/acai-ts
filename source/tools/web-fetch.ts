@@ -1,5 +1,6 @@
 import { load } from "cheerio";
 import { z } from "zod";
+import style from "../terminal/style.ts";
 import type { ToolExecutionOptions } from "./types.ts";
 
 export const WebFetchTool = {
@@ -568,7 +569,7 @@ Example use cases:
       inputSchema,
     },
     display({ url }: WebFetchInputSchema) {
-      return `🌐 Fetch: ${url}`;
+      return `🌐 ${style.cyan(url)}`;
     },
     async execute(
       options: WebFetchInputSchema,

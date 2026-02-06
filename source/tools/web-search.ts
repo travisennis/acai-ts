@@ -1,4 +1,5 @@
 import { z } from "zod";
+import style from "../terminal/style.ts";
 import type { ToolExecutionOptions } from "./types.ts";
 
 export const WebSearchTool = {
@@ -335,7 +336,7 @@ Note: Exa API requires an API key (EXA_API_KEY environment variable). If not set
       inputSchema,
     },
     display({ query }: WebSearchInputSchema) {
-      return `🔍 Web search: ${query}`;
+      return `🔍 ${style.cyan(query)}`;
     },
     async execute(
       options: WebSearchInputSchema,
