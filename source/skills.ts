@@ -12,6 +12,10 @@ interface SkillFrontmatter {
   compatibility?: string;
   metadata?: Record<string, string>;
   "allowed-tools"?: string;
+  "user-invocable"?: boolean;
+  "disable-model-invocation"?: boolean;
+  arguments?: string;
+  examples?: string[];
 }
 
 export interface Skill {
@@ -20,6 +24,11 @@ export interface Skill {
   filePath: string;
   baseDir: string;
   source: string; // "user", "project", "codex-user", etc.
+  userInvocable: boolean;
+  disableModelInvocation: boolean;
+  allowedTools?: string;
+  arguments?: string;
+  examples?: string[];
 }
 
 export interface LoadSkillsFromDirOptions {
@@ -105,6 +114,9 @@ function parseFrontmatter(content: string): {
   const description = data["description"] as string;
 
   // Set default empty values for optional fields
+  const userInvocable = data["user-invocable"];
+  const disableModelInvocation = data["disable-model-invocation"];
+
   const frontmatter: SkillFrontmatter = {
     name: name || "",
     description: description || "",
@@ -112,6 +124,14 @@ function parseFrontmatter(content: string): {
     compatibility: (data["compatibility"] as string) || undefined,
     metadata: (data["metadata"] as Record<string, string>) || undefined,
     "allowed-tools": (data["allowed-tools"] as string) || undefined,
+    "user-invocable":
+      typeof userInvocable === "boolean" ? userInvocable : undefined,
+    "disable-model-invocation":
+      typeof disableModelInvocation === "boolean"
+        ? disableModelInvocation
+        : undefined,
+    arguments: (data["arguments"] as string) || undefined,
+    examples: (data["examples"] as string[]) || undefined,
   };
 
   return { frontmatter, body };
@@ -196,6 +216,12 @@ async function loadSkillsFromDirInternal(
               filePath: skillPath,
               baseDir: entryPath,
               source,
+              userInvocable: frontmatter["user-invocable"] ?? true,
+              disableModelInvocation:
+                frontmatter["disable-model-invocation"] ?? false,
+              allowedTools: frontmatter["allowed-tools"],
+              arguments: frontmatter.arguments,
+              examples: frontmatter.examples,
             });
           } catch (error) {
             logger.warn(error, `Failed to load skill from ${skillPath}:`);
@@ -242,6 +268,12 @@ async function loadSkillsFromDirInternal(
             filePath: entryPath,
             baseDir,
             source,
+            userInvocable: frontmatter["user-invocable"] ?? true,
+            disableModelInvocation:
+              frontmatter["disable-model-invocation"] ?? false,
+            allowedTools: frontmatter["allowed-tools"],
+            arguments: frontmatter.arguments,
+            examples: frontmatter.examples,
           });
         } catch (error) {
           logger.warn(error, `Failed to load skill from ${entryPath}:`);
@@ -361,7 +393,9 @@ export async function loadSkills(): Promise<Skill[]> {
 }
 
 export function formatSkillsForPrompt(skills: Skill[]): string {
-  if (skills.length === 0) {
+  const modelInvocableSkills = skills.filter((s) => !s.disableModelInvocation);
+
+  if (modelInvocableSkills.length === 0) {
     return "";
   }
 
@@ -376,7 +410,7 @@ export function formatSkillsForPrompt(skills: Skill[]): string {
     "<available_skills>",
   ];
 
-  for (const skill of skills) {
+  for (const skill of modelInvocableSkills) {
     lines.push("<skill>");
     lines.push("<name>");
     lines.push(skill.name);

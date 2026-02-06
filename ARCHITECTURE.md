@@ -111,10 +111,6 @@ acai-ts
     │   │   ├── index.ts
     │   │   ├── types.ts
     │   │   └── utils.ts
-    │   ├── prompt
-    │   │   ├── index.ts
-    │   │   ├── types.ts
-    │   │   └── utils.ts
     │   ├── remove-directory
     │   │   └── index.ts
     │   ├── resources
@@ -266,6 +262,7 @@ acai-ts
         ├── ignore.ts
         ├── iterables.ts
         ├── process.ts
+        ├── templates.ts
         ├── yaml.ts
         └── zod.ts
 └── test
@@ -427,7 +424,6 @@ acai-ts
 - **source/commands/model/**: Command to manage AI model configuration
 - **source/commands/paste/**: Command to paste clipboard content
 - **source/commands/pickup/**: Command to resume from saved state
-- **source/commands/prompt/**: Command to set system prompt
 - **source/commands/remove-directory/**: Command to remove working directories
 - **source/commands/resources/**: Command to manage resources
 - **source/commands/review/**: Command to review code
@@ -512,6 +508,7 @@ acai-ts
 - **source/utils/ignore.ts**: Gitignore-style pattern matching
 - **source/utils/iterables.ts**: Iterable utilities
 - **source/utils/process.ts**: Process utilities
+- **source/utils/templates.ts**: Argument placeholder substitution for skill/prompt content
 - **source/utils/yaml.ts**: YAML parsing utilities
 - **source/utils/zod.ts**: Zod schema utilities
 - **source/utils/filesystem/**: Filesystem operations and security

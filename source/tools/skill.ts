@@ -65,6 +65,10 @@ Important:
           return errorMsg;
         }
 
+        if (skill.disableModelInvocation) {
+          return `Skill "${skillName}" is not available for model invocation.`;
+        }
+
         // Read the skill file
         const content = await readFile(skill.filePath, "utf8");
 

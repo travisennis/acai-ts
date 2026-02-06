@@ -1,8 +1,13 @@
+import { readFile } from "node:fs/promises";
 import type { ConfigManager } from "../config.ts";
 import type { WorkspaceContext } from "../index.ts";
+import { logger } from "../logger.ts";
+import { processPrompt } from "../mentions.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManagerApi } from "../prompts/manager.ts";
 import type { SessionManager } from "../sessions/manager.ts";
+import { loadSkills } from "../skills.ts";
+import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import type {
@@ -12,6 +17,9 @@ import type {
   SlashCommand,
   TUI,
 } from "../tui/index.ts";
+import { Spacer, Text } from "../tui/index.ts";
+import { replaceArgumentPlaceholders } from "../utils/templates.ts";
+import { parseFrontMatter } from "../utils/yaml.ts";
 import { addDirectoryCommand } from "./add-directory/index.ts";
 import { clearCommand } from "./clear/index.ts";
 import { copyCommand } from "./copy/index.ts";
@@ -28,7 +36,6 @@ import { modelCommand } from "./model/index.ts";
 
 import { pasteCommand } from "./paste/index.ts";
 import { pickupCommand } from "./pickup/index.ts";
-import { loadPrompts, promptCommand } from "./prompt/index.ts";
 import { removeDirectoryCommand } from "./remove-directory/index.ts";
 import { resourcesCommand } from "./resources/index.ts";
 import { reviewCommand } from "./review/index.ts";
@@ -98,7 +105,6 @@ export class CommandManager {
       listDirectoriesCommand(options),
       pasteCommand(options),
       pickupCommand(options),
-      promptCommand(options),
       removeDirectoryCommand(options),
       reviewCommand(options),
       modelCommand(options),
@@ -125,33 +131,86 @@ export class CommandManager {
       // }
     }
 
-    const promptCmd = this.commands.get("/prompt");
-    if (promptCmd) {
-      const promptSubmCommands = await promptCmd.getSubCommands();
-
-      const prompts = await loadPrompts(options.config);
-      for (const cmd of promptSubmCommands) {
-        const prompt = prompts.get(cmd);
-        this.commands.set(`/${cmd}`, {
-          command: `/${cmd}`,
-          description: prompt?.description ?? "",
-          getSubCommands: (): Promise<string[]> => Promise.resolve([]),
-          async handle(
-            args: string[],
-            options: {
-              tui: TUI;
-              container: Container;
-              inputContainer: Container;
-              editor: Editor;
-            },
-          ): Promise<"break" | "continue" | "use"> {
-            return promptCmd.handle([cmd, ...args], options);
-          },
-        });
-      }
-    }
+    await this.registerSkillCommands(options);
 
     this.initialized = true;
+  }
+
+  private async registerSkillCommands(options: CommandOptions): Promise<void> {
+    const skills = await loadSkills();
+
+    for (const skill of skills) {
+      if (!skill.userInvocable) {
+        continue;
+      }
+
+      const commandName = `/${skill.name}`;
+
+      if (this.commands.has(commandName)) {
+        logger.warn(
+          `Skill "${skill.name}" conflicts with built-in command "${commandName}", skipping skill registration`,
+        );
+        continue;
+      }
+
+      const { promptManager, modelManager, promptHistory, workspace } = options;
+      const skillFilePath = skill.filePath;
+      const skillDescription = skill.description;
+
+      this.commands.set(commandName, {
+        command: commandName,
+        description: skillDescription,
+        getSubCommands: (): Promise<string[]> => Promise.resolve([]),
+        async handle(
+          args: string[],
+          {
+            tui,
+            container,
+            editor,
+          }: {
+            tui: TUI;
+            container: Container;
+            inputContainer: Container;
+            editor: Editor;
+          },
+        ): Promise<"break" | "continue" | "use"> {
+          try {
+            const fileContent = await readFile(skillFilePath, "utf8");
+            const { content: body } = parseFrontMatter(fileContent);
+
+            const content = replaceArgumentPlaceholders(body.trim(), args);
+
+            container.addChild(new Spacer(1));
+
+            const processedPrompt = await processPrompt(content.trim(), {
+              baseDir: workspace.primaryDir,
+              model: modelManager.getModelMetadata("repl"),
+            });
+
+            for (const context of processedPrompt.context) {
+              promptManager.addContext(context);
+            }
+            promptManager.set(processedPrompt.message);
+            promptHistory.push(processedPrompt.message);
+
+            tui.requestRender();
+            editor.setText("");
+            return "use";
+          } catch (error) {
+            container.addChild(
+              new Text(
+                style.red(`Error loading skill: ${(error as Error).message}`),
+                1,
+                0,
+              ),
+            );
+            tui.requestRender();
+            editor.setText("");
+            return "continue";
+          }
+        },
+      });
+    }
   }
 
   private ensureInitialized(): void {

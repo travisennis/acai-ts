@@ -232,50 +232,33 @@ You can reference files and directories directly in your prompts:
 - `@http://example.com` - Fetch and include web content
 - ``!`command` `` - Execute shell command and include output
 
-### Prompt Arguments
+### Skill Arguments
 
-Pass dynamic values to commands using argument placeholders in custom prompts:
+User-invocable skills are registered as slash commands and support argument placeholders:
 
 #### All arguments with `$ARGUMENTS`
 
 The `$ARGUMENTS` placeholder captures all arguments passed to the command:
 
-```bash
-# Command definition
-echo 'Fix issue #$ARGUMENTS following our coding standards' > .acai/prompts/fix-issue.md
-
-# Usage
+```
 > /fix-issue 123 high-priority
 # $ARGUMENTS becomes: "123 high-priority"
 ```
 
 #### Individual arguments with `$1`, `$2`, `$3`, etc.
 
-Access specific arguments individually using positional parameters (similar to shell scripts):
+Access specific arguments individually using positional parameters:
 
-```bash
-# Command definition  
-echo 'Review PR #$1 with priority $2 and assign to $3' > .acai/prompts/review-pr.md
-
-# Usage
+```
 > /review-pr 456 high alice
 # $1 becomes "456", $2 becomes "high", $3 becomes "alice"
 ```
 
-Use positional arguments when you need to:
-- Access arguments individually in different parts of your command
-- Provide defaults for missing arguments
-- Build more structured commands with specific parameter roles
-
 #### Backward compatibility with `{{INPUT}}`
 
-The legacy `{{INPUT}}` placeholder is still supported and works the same as `$ARGUMENTS`:
+The `{{INPUT}}` placeholder works the same as `$ARGUMENTS`:
 
-```bash
-# Command definition
-echo 'Analyze the following code: {{INPUT}}' > .acai/prompts/analyze.md
-
-# Usage
+```
 > /analyze src/file.ts
 # {{INPUT}} becomes: "src/file.ts"
 ```
@@ -316,7 +299,6 @@ For a list of available commands, type `/help` within the REPL.
 - `/help` - Shows usage information
 - `/init` - Generate or improve `AGENTS.md`
 - `/paste` - Add clipboard contents to the next prompt
-- `/prompt <name> [arguments...]` - Load saved prompts with optional arguments. Project prompts override user prompts. Supports argument placeholders (`$ARGUMENTS`, `$1`, `$2`, etc.) in prompt files.
 - `/model [provider:model|category|provider]` - List or switch models
 - `/session` - Show comprehensive session information including usage and costs
 - `/clear` - Clears the terminal screen for the current session
@@ -371,8 +353,10 @@ Skills are markdown files named `SKILL.md` with YAML frontmatter:
 
 ```markdown
 ---
+name: pdf-extract
 description: Extract text and tables from PDF files
-name: pdf-extract          # Optional, defaults to directory name
+user-invocable: true              # Register as /pdf-extract slash command (default: false)
+disable-model-invocation: false   # Hide from AI model (default: false)
 ---
 
 # PDF Processing Instructions
@@ -384,6 +368,15 @@ name: pdf-extract          # Optional, defaults to directory name
 Scripts are in: ./scripts/
 Configuration: ./config.json
 ```
+
+#### Invocation Modes
+
+| `user-invocable` | `disable-model-invocation` | Behavior |
+|---|---|---|
+| `true` | `false` | Both user (slash command) and model can use |
+| `false` | `false` | Only model can auto-invoke (default) |
+| `true` | `true` | Only user can use via slash command |
+| `false` | `true` | Documentation only |
 
 ### Skill Locations
 
@@ -470,7 +463,7 @@ Acai supports project-specific configuration through a `.acai/acai.json` file in
 ### Project-Specific Customization
 
 - **Rules/Guidelines**: Add project-specific AI behavior rules in `AGENTS.md`
-- **Custom Prompts**: Store reusable prompts in `.acai/prompts/`. Supports argument placeholders (`$ARGUMENTS`, `$1`, `$2`, etc.) for dynamic content.
+- **Custom Skills**: Store reusable skill prompts in `.agents/skills/<name>/SKILL.md`. Skills with `user-invocable: true` are registered as slash commands with argument placeholder support (`$ARGUMENTS`, `$1`, `$2`, etc.).
 
 - **File Selections**: Save file/directory selections in `.acai/selections/`
 - **Memory/Rules**: Persistent project rules stored in `.acai/rules/`
