@@ -113,11 +113,11 @@ export class SelectList implements Component {
 
         if (item.description && width > 40) {
           // Calculate how much space we have for value + description
-          const maxValueWidth = Math.min(30, width - prefixWidth - 4);
+          const maxValueWidth = width - prefixWidth - 4;
           const truncatedValue = truncateToWidth(
             displayValue,
             maxValueWidth,
-            "",
+            "...",
           );
           const spacing = " ".repeat(Math.max(1, 32 - truncatedValue.length));
 
@@ -130,7 +130,7 @@ export class SelectList implements Component {
             const truncatedDesc = truncateToWidth(
               item.description,
               remainingWidth,
-              "",
+              "...",
             );
             // Apply selectedText to entire line content
             line = this.theme.selectedText(
@@ -140,14 +140,14 @@ export class SelectList implements Component {
             // Not enough space for description
             const maxWidth = width - prefixWidth - 2;
             line = this.theme.selectedText(
-              `→ ${truncateToWidth(displayValue, maxWidth, "")}`,
+              `→ ${truncateToWidth(displayValue, maxWidth, "...")}`,
             );
           }
         } else {
           // No description or not enough width
           const maxWidth = width - prefixWidth - 2;
           line = this.theme.selectedText(
-            `→ ${truncateToWidth(displayValue, maxWidth, "")}`,
+            `→ ${truncateToWidth(displayValue, maxWidth, "...")}`,
           );
         }
       } else {
@@ -156,11 +156,11 @@ export class SelectList implements Component {
 
         if (item.description && width > 40) {
           // Calculate how much space we have for value + description
-          const maxValueWidth = Math.min(30, width - prefix.length - 4);
+          const maxValueWidth = width - prefix.length - 4;
           const truncatedValue = truncateToWidth(
             displayValue,
             maxValueWidth,
-            "",
+            "...",
           );
           const spacing = " ".repeat(Math.max(1, 32 - truncatedValue.length));
 
@@ -173,19 +173,19 @@ export class SelectList implements Component {
             const truncatedDesc = truncateToWidth(
               item.description,
               remainingWidth,
-              "",
+              "...",
             );
             const descText = this.theme.description(spacing + truncatedDesc);
             line = prefix + truncatedValue + descText;
           } else {
             // Not enough space for description
             const maxWidth = width - prefix.length - 2;
-            line = prefix + truncateToWidth(displayValue, maxWidth, "");
+            line = prefix + truncateToWidth(displayValue, maxWidth, "...");
           }
         } else {
           // No description or not enough width
           const maxWidth = width - prefix.length - 2;
-          line = prefix + truncateToWidth(displayValue, maxWidth, "");
+          line = prefix + truncateToWidth(displayValue, maxWidth, "...");
         }
       }
 
@@ -197,7 +197,7 @@ export class SelectList implements Component {
       const scrollText = `  (${this.selectedIndex + 1}/${this.filteredItems.length})`;
       // Truncate if too long for terminal
       lines.push(
-        this.theme.scrollInfo(truncateToWidth(scrollText, width - 2, "")),
+        this.theme.scrollInfo(truncateToWidth(scrollText, width - 2, "...")),
       );
     }
 

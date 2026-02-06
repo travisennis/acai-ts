@@ -1,9 +1,12 @@
 #!/usr/bin/env node
+
 /**
  * Standalone select prompt (inquirer-like)
  * - TypeScript version
  */
 
+import { truncateToWidth } from "../tui/utils.ts";
+import { getTerminalSize } from "./control.ts";
 import {
   isArrowDown,
   isArrowUp,
@@ -131,7 +134,10 @@ function render<T>(
   prompt: string,
   typed: string,
   totalChoices: number,
+  terminalColumns: number,
 ): string {
+  const maxItemWidth = Math.max(0, terminalColumns - 4); // 4 chars for prefix and spacing
+
   const visible = choices.slice(pageStart, pageStart + pageSize);
   const lines: string[] = [];
 
@@ -146,12 +152,13 @@ function render<T>(
     const actualIndex = pageStart + i;
     const ch = visible[i];
     const prefix = actualIndex === pointerIndex ? "›" : " ";
+    const truncatedName = truncateToWidth(ch.name, maxItemWidth, "...");
     if (ch.disabled) {
-      lines.push(` ${prefix} ${ch.name} (disabled)`);
+      lines.push(` ${prefix} ${truncatedName} (disabled)`);
     } else if (actualIndex === pointerIndex) {
-      lines.push(`${ANSI.cyan} ${prefix} ${ch.name}${ANSI.reset}`);
+      lines.push(`${ANSI.cyan} ${prefix} ${truncatedName}${ANSI.reset}`);
     } else {
-      lines.push(` ${prefix} ${ch.name}`);
+      lines.push(` ${prefix} ${truncatedName}`);
     }
   }
 
@@ -230,6 +237,7 @@ export async function select<T = unknown>({
 
     clearPreviousOutput(previousOutputLines);
 
+    const { columns } = getTerminalSize();
     const out = render(
       filteredChoices,
       pointer,
@@ -238,6 +246,7 @@ export async function select<T = unknown>({
       message,
       searchBuffer,
       normalized.length,
+      columns,
     );
 
     previousOutputLines = out.split("\n").length;
