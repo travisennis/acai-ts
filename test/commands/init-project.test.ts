@@ -1,5 +1,6 @@
 import { strict as assert } from "node:assert";
 import { rmSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import {
   ensureConfigFile,
@@ -10,6 +11,12 @@ import {
 function cleanupTestDir(testDir: string): void {
   try {
     rmSync(testDir, { recursive: true, force: true });
+  } catch {
+    // Ignore cleanup errors
+  }
+  const agentsDir = join(dirname(testDir), ".agents");
+  try {
+    rmSync(agentsDir, { recursive: true, force: true });
   } catch {
     // Ignore cleanup errors
   }
@@ -49,7 +56,7 @@ describe("init-project/utils.ts", () => {
       assert.ok(result.created.includes(".acai/"));
       assert.ok(result.created.includes(".acai/prompts/"));
       assert.ok(result.created.includes(".acai/rules/"));
-      assert.ok(result.created.includes(".acai/skills/"));
+      assert.ok(result.created.includes(".agents/skills/"));
 
       cleanupTestDir(testDir);
     });
@@ -66,7 +73,7 @@ describe("init-project/utils.ts", () => {
       assert.ok(result.existing.includes(".acai/"));
       assert.ok(result.existing.includes(".acai/prompts/"));
       assert.ok(result.existing.includes(".acai/rules/"));
-      assert.ok(result.existing.includes(".acai/skills/"));
+      assert.ok(result.existing.includes(".agents/skills/"));
 
       cleanupTestDir(testDir);
     });

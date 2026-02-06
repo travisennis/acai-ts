@@ -392,15 +392,15 @@ Skills are loaded from these locations (later sources override earlier ones):
 1. `~/.codex/skills/**/SKILL.md` (Codex CLI user skills)
 2. `~/.claude/skills/*/SKILL.md` (Claude Code user skills)
 3. `<cwd>/.claude/skills/*/SKILL.md` (Claude Code project skills)
-4. `~/.acai/skills/**/SKILL.md` (Acai user skills)
-5. `<cwd>/.acai/skills/**/SKILL.md` (Acai project skills)
+4. `~/.agents/skills/**/SKILL.md` (User skills)
+5. `<cwd>/.agents/skills/**/SKILL.md` (Project skills)
 
 ### Directory Structure
 
 Skills can be organized hierarchically with colon-separated names:
 
 ```
-~/.acai/skills/
+~/.agents/skills/
 ├── pdf-extract/
 │   ├── SKILL.md           # Becomes "pdf-extract" skill
 │   └── scripts/           # Optional: supporting files
@@ -416,7 +416,7 @@ Skills can be organized hierarchically with colon-separated names:
 ### Compatibility
 
 Acai's skills system is compatible with:
-- **Pi Native Format**: `~/.acai/skills/**/SKILL.md` (recursive, colon-separated paths)
+- **Pi Native Format**: `~/.agents/skills/**/SKILL.md` (recursive, colon-separated paths)
 - **Claude Code Format**: `~/.claude/skills/*/SKILL.md` (single level only)
 - **Codex CLI Format**: `~/.codex/skills/**/SKILL.md` (recursive, simple names)
 
@@ -440,7 +440,7 @@ Skills are enabled by default. You can disable them via:
 2. **System prompt**: Lists available skills
 3. **User request**: "Extract text from this PDF"
 4. **Agent matches**: Sees "pdf-extract: Extract text and tables from PDF files"
-5. **Skill loading**: Uses `read` tool to load `~/.acai/skills/pdf-extract/SKILL.md`
+5. **Skill loading**: Uses `read` tool to load `~/.agents/skills/pdf-extract/SKILL.md`
 6. **Execution**: Follows instructions in skill file (run scripts from this file's directory)
 
 ## Configuration
@@ -504,10 +504,10 @@ Acai's web functionality has been moved to standalone skills that operate indepe
 ### Skill Locations
 
 Web skills are located in:
-- `~/.acai/skills/web-fetch/` - User-level web fetch skill
-- `~/.acai/skills/web-search/` - User-level web search skill
-- `<project>/.acai/skills/web-fetch/` - Project-level web fetch skill
-- `<project>/.acai/skills/web-search/` - Project-level web search skill
+- `~/.agents/skills/web-fetch/` - User-level web fetch skill
+- `~/.agents/skills/web-search/` - User-level web search skill
+- `<project>/.agents/skills/web-fetch/` - Project-level web fetch skill
+- `<project>/.agents/skills/web-search/` - Project-level web search skill
 
 
 ## ⚙️ Development

@@ -84,7 +84,7 @@ export const initProjectCommand = (_options: CommandOptions): ReplCommand => {
         new Text("  • Configure settings in .acai/acai.json", 2, 0),
       );
       container.addChild(
-        new Text("  • Add project skills to .acai/skills/", 2, 0),
+        new Text("  • Add project skills to .agents/skills/", 2, 0),
       );
 
       tui.requestRender();

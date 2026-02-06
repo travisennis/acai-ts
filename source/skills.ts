@@ -307,10 +307,39 @@ export async function loadSkills(): Promise<Skill[]> {
     skillMap.set(skill.name, skill);
   }
 
-  // acai: recursive, colon-separated path names
-  const globalSkillsDir = join(homedir(), CONFIG_DIR_NAME, "skills");
+  // Deprecated: warn if skills exist in old .acai directories
+  const deprecatedGlobalDir = join(homedir(), CONFIG_DIR_NAME, "skills");
+  try {
+    const entries = await readdir(deprecatedGlobalDir);
+    if (entries.length > 0) {
+      logger.warn(
+        "Skills found in ~/.acai/skills/ are deprecated and will not be loaded. Move them to ~/.agents/skills/ to continue using them.",
+      );
+    }
+  } catch {
+    // Directory doesn't exist, no warning needed
+  }
+
+  const deprecatedProjectDir = resolve(
+    process.cwd(),
+    CONFIG_DIR_NAME,
+    "skills",
+  );
+  try {
+    const entries = await readdir(deprecatedProjectDir);
+    if (entries.length > 0) {
+      logger.warn(
+        "Skills found in .acai/skills/ are deprecated and will not be loaded. Move them to .agents/skills/ to continue using them.",
+      );
+    }
+  } catch {
+    // Directory doesn't exist, no warning needed
+  }
+
+  // .agents: recursive, colon-separated path names (primary)
+  const agentsGlobalSkillsDir = join(homedir(), ".agents", "skills");
   for (const skill of await loadSkillsFromDirInternal(
-    globalSkillsDir,
+    agentsGlobalSkillsDir,
     "user",
     "recursive",
     true,
@@ -318,9 +347,9 @@ export async function loadSkills(): Promise<Skill[]> {
     skillMap.set(skill.name, skill);
   }
 
-  const projectSkillsDir = resolve(process.cwd(), CONFIG_DIR_NAME, "skills");
+  const agentsProjectSkillsDir = resolve(process.cwd(), ".agents", "skills");
   for (const skill of await loadSkillsFromDirInternal(
-    projectSkillsDir,
+    agentsProjectSkillsDir,
     "project",
     "recursive",
     true,

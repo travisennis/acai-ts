@@ -22,7 +22,7 @@ export function ensureProjectDirectory(
     existing.push(".acai/");
   }
 
-  const subdirs = ["prompts", "rules", "skills"];
+  const subdirs = ["prompts", "rules"];
   for (const subdir of subdirs) {
     const dirPath = path.join(projectDir, subdir);
     if (!existsSync(dirPath)) {
@@ -31,6 +31,18 @@ export function ensureProjectDirectory(
     } else {
       existing.push(`.acai/${subdir}/`);
     }
+  }
+
+  const agentsSkillsDir = path.join(
+    path.dirname(projectDir),
+    ".agents",
+    "skills",
+  );
+  if (!existsSync(agentsSkillsDir)) {
+    mkdirSync(agentsSkillsDir, { recursive: true });
+    created.push(".agents/skills/");
+  } else {
+    existing.push(".agents/skills/");
   }
 
   return { created, existing };
