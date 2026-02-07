@@ -7,7 +7,7 @@ import type {
 import type { CommandManager } from "./commands/manager.ts";
 import type { WorkspaceContext } from "./index.ts";
 import { logger } from "./logger.ts";
-import { PromptError, processPrompt } from "./mentions.ts";
+import { processPrompt } from "./mentions.ts";
 import type { ModelManager } from "./models/manager.ts";
 import type { PromptManager } from "./prompts/manager.ts";
 import {
@@ -236,37 +236,14 @@ export class Repl {
           return;
         }
         if (!promptManager.isPending()) {
-          try {
-            const processedPrompt = await processPrompt(text, {
-              baseDir: process.cwd(),
-              model: modelConfig,
-            });
-            for (const context of processedPrompt.context) {
-              promptManager.addContext(context);
-            }
-            promptManager.set(processedPrompt.message);
-          } catch (error) {
-            if (error instanceof PromptError) {
-              this.chatContainer.addChild(
-                new Text(
-                  style.red(`Prompt processing failed: ${error.message}`),
-                  1,
-                  1,
-                ),
-              );
-              if (
-                error.cause &&
-                typeof error.cause === "object" &&
-                "command" in error.cause &&
-                typeof error.cause.command === "string"
-              ) {
-                this.chatContainer.addChild(
-                  new Text(style.red(`Command: ${error.cause.command}`, 1, 1)),
-                );
-              }
-            }
-            throw error; // Re-throw other errors
+          const processedPrompt = await processPrompt(text, {
+            baseDir: process.cwd(),
+            model: modelConfig,
+          });
+          for (const context of processedPrompt.context) {
+            promptManager.addContext(context);
           }
+          promptManager.set(processedPrompt.message);
         } else {
           promptHistory.push(promptManager.get());
           this.editor.addToHistory(promptManager.get());

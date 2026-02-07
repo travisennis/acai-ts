@@ -1,37 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { initExecutionEnvironment } from "./execution/index.ts";
 import type { FormatType } from "./formatting.ts";
 import { formatFile } from "./formatting.ts";
 import type { ModelMetadata } from "./models/providers.ts";
 import type { ContextItem } from "./prompts/manager.ts";
-
-class ShellCommandError extends Error {
-  public readonly command: string;
-  public readonly exitCode?: number;
-  public readonly output?: string;
-
-  constructor(
-    message: string,
-    command: string,
-    exitCode?: number,
-    output?: string,
-  ) {
-    super(message);
-    this.name = "ShellCommandError";
-    this.command = command;
-    this.exitCode = exitCode;
-    this.output = output;
-  }
-}
-
-export class PromptError extends Error {
-  constructor(message: string, cause?: Error) {
-    super(message, { cause });
-    this.name = "PromptError";
-  }
-}
 
 interface CommandContext {
   model: ModelMetadata;
@@ -129,44 +102,6 @@ async function processFileCommand(context: CommandContext): Promise<string> {
   }
 }
 
-async function processShellCommand(command: string): Promise<string> {
-  try {
-    const execEnv = await initExecutionEnvironment();
-    const { output, exitCode } = await execEnv.executeCommand(command, {
-      throwOnError: true,
-    });
-    if (exitCode === 0) {
-      return output;
-    }
-    throw new ShellCommandError(
-      `Command failed with exit code ${exitCode}`,
-      command,
-      exitCode,
-      output,
-    );
-  } catch (error) {
-    if (error instanceof ShellCommandError) {
-      throw error;
-    }
-    if (error instanceof Error) {
-      throw new ShellCommandError(
-        `Command execution failed: ${error.message}`,
-        command,
-        undefined,
-        undefined,
-      );
-    }
-    throw new ShellCommandError(
-      "Command execution failed with unknown error",
-      command,
-      undefined,
-      undefined,
-    );
-  }
-}
-
-// Returns the formatted string or an error message string
-
 export async function processPrompt(
   message: string,
   {
@@ -182,11 +117,8 @@ export async function processPrompt(
   const fileRegex =
     /(?<![a-zA-Z0-9_-])@([a-zA-Z_][^\s@]*?(?:\.[a-zA-Z0-9]+)?)(?![^\s@]*@[\d.]+)/g;
 
-  const shellRegex = /!`([^`]+)`/g;
-
   // Collect all matches for files
   const fileMatches = Array.from(message.matchAll(fileRegex));
-  const shellMatches = Array.from(message.matchAll(shellRegex));
 
   const mentionProcessingPromises: Promise<string>[] = [];
 
@@ -221,30 +153,6 @@ export async function processPrompt(
       }
 
       match = pasteRegex.exec(processedMessage);
-    }
-  }
-
-  // Process shell commands
-  for (const match of shellMatches) {
-    const command = match[1];
-    if (command) {
-      try {
-        const output = await processShellCommand(command);
-        processedMessage = processedMessage.replace(match[0], output);
-      } catch (error) {
-        if (error instanceof ShellCommandError) {
-          // Wrap shell command errors in PromptError
-          throw new PromptError(
-            `Shell command failed: ${error.message}`,
-            error,
-          );
-        }
-        // For other errors, wrap them in PromptError
-        throw new PromptError(
-          `Unexpected error executing command: ${error instanceof Error ? error.message : "Unknown error"}`,
-          error instanceof Error ? error : undefined,
-        );
-      }
     }
   }
 

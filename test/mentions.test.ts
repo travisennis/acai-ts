@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { PromptError, processPrompt } from "../source/mentions.ts";
+import { processPrompt } from "../source/mentions.ts";
 import type { ModelMetadata } from "../source/models/providers.ts";
 
 const mockModel: ModelMetadata = {
@@ -17,33 +17,8 @@ const mockModel: ModelMetadata = {
 };
 
 describe("mentions", () => {
-  describe("PromptError", () => {
-    it("should create PromptError with proper properties", () => {
-      const cause = new Error("Test cause");
-      const error = new PromptError("Test error", cause);
-
-      assert.equal(error.name, "PromptError");
-      assert.equal(error.message, "Test error");
-      assert.equal(error.cause, cause);
-    });
-  });
-
   describe("processPrompt", () => {
-    it("should throw PromptError when shell command fails", async () => {
-      const message = "Run this command: !`exit 1`";
-
-      await assert.rejects(
-        () => processPrompt(message, { baseDir: ".", model: mockModel }),
-        (error) => {
-          return (
-            error instanceof PromptError &&
-            error.message.includes("Shell command failed")
-          );
-        },
-      );
-    });
-
-    it("should successfully process valid shell commands", async () => {
+    it("should not execute shell commands in prompts", async () => {
       const message = "Run this command: !`echo hello`";
 
       const result = await processPrompt(message, {
@@ -51,7 +26,7 @@ describe("mentions", () => {
         model: mockModel,
       });
 
-      assert.ok(result.message.includes("hello"));
+      assert.equal(result.message, message);
       assert.equal(result.context.length, 0);
     });
 
@@ -93,10 +68,7 @@ describe("mentions", () => {
     it("should handle missing paste IDs gracefully", async () => {
       const message =
         "Here is some text [Paste #1, 100 characters] and [Paste #3, 50 characters]";
-      const pasteStore = new Map([
-        [1, "First paste content"],
-        // Missing paste #3
-      ]);
+      const pasteStore = new Map([[1, "First paste content"]]);
 
       const result = await processPrompt(message, {
         baseDir: ".",
@@ -105,7 +77,6 @@ describe("mentions", () => {
       });
 
       assert.ok(result.message.includes("First paste content"));
-      // Paste #3 should remain as placeholder since it's missing from store
       assert.ok(result.message.includes("[Paste #3"));
     });
 
@@ -115,10 +86,8 @@ describe("mentions", () => {
       const result = await processPrompt(message, {
         baseDir: ".",
         model: mockModel,
-        // No pasteStore provided
       });
 
-      // Placeholder should remain unchanged
       assert.ok(result.message.includes("[Paste #1"));
     });
 
@@ -135,7 +104,6 @@ describe("mentions", () => {
         pasteStore,
       });
 
-      // Both placeholders should be expanded
       assert.ok(result.message.includes("This text contains"));
       assert.ok(result.message.includes("nested paste content"));
       assert.ok(!result.message.includes("[Paste #1"));
