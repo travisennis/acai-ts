@@ -641,6 +641,26 @@ export class Repl {
         this.chatContainer.addChild(assistantComponent);
       }
     } else if (Array.isArray(message.content)) {
+      const reasoningParts = message.content
+        .filter(
+          (part): part is { type: "reasoning"; text: string } =>
+            part.type === "reasoning" &&
+            typeof part.text === "string" &&
+            part.text.trim().length > 0,
+        )
+        .map((part) => part.text)
+        .join("\n");
+
+      if (reasoningParts.trim()) {
+        const thinkingComponent = new ThinkingBlockComponent(undefined, {
+          verboseMode: this.verboseMode,
+        });
+        thinkingComponent.updateContent({ content: reasoningParts });
+        thinkingComponent.endThinking();
+        this.allThinkingBlocks.push(thinkingComponent);
+        this.chatContainer.addChild(thinkingComponent);
+      }
+
       const textParts = message.content
         .filter(
           (part): part is { type: "text"; text: string } =>
