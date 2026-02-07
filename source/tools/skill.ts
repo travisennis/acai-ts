@@ -3,6 +3,7 @@ import { dirname } from "node:path";
 import { z } from "zod";
 import { loadSkills } from "../skills.ts";
 import style from "../terminal/style.ts";
+import { replaceArgumentPlaceholders } from "../utils/templates.ts";
 import type { ToolExecutionOptions } from "./types.ts";
 
 export const SkillTool = {
@@ -81,12 +82,8 @@ Important:
         const body =
           yamlEnd !== -1 ? content.slice(yamlEnd + 3).trim() : content;
 
-        result += body;
-
-        // Append args if provided
-        if (args) {
-          result += `\n\n## Skill Arguments\n\n${args}`;
-        }
+        const argsArray = args ? args.split(/\s+/).filter(Boolean) : [];
+        result += replaceArgumentPlaceholders(body, argsArray);
 
         return result;
       } catch (error) {
