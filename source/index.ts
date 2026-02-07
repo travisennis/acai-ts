@@ -45,6 +45,7 @@ export function createWorkspaceContext(
     primaryDir,
     "/tmp/acai",
     path.join(os.homedir(), ".acai"),
+    path.join(os.homedir(), ".agents"),
     ...addDirArgs,
   ];
 
