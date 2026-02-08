@@ -2,211 +2,62 @@
 
 ![Project Status](https://img.shields.io/badge/Status-Active-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
-<!-- Add more badges as appropriate, e.g., build status, version, etc. -->
 
-## 🚀 Overview
+## Overview
 
-Acai is a powerful **AI-driven command-line interface (CLI) tool** designed to assist software developers in their daily tasks. It acts as an intelligent assistant, capable of understanding natural language prompts, interacting with your codebase, and automating various development workflows.
+Acai is an AI-driven command-line tool that assists software developers with coding, debugging, refactoring, and workflow automation. It provides both a conversational REPL and a modern TUI for interacting with large language models in the context of your codebase.
 
-### Core Functionality:
+### Key Capabilities
 
-*   **Interactive AI Assistant:** Engage in a conversational REPL (Read-Eval-Print Loop) or TUI (Terminal User Interface) to get assistance with coding, debugging, refactoring, and more.
-*   **Codebase Interaction:** Read, edit, and navigate files; search code; and understand project structure.
-*   **Git Integration:** Generate conventional commits, review pull requests, and manage local changes.
-*   **Extensible Tooling:** Utilizes a suite of internal tools (e.g., `bash`, `grep`, `WebSearch`) to perform actions.
-*   **Multi-Model Support:** Seamlessly switch between various AI providers (e.g., OpenAI, Google, Anthropic, DeepSeek, Groq, OpenRouter).
-*   **Context Management:** Automatically incorporates relevant file content, clipboard data, and conversation history into AI prompts.
-*   **Piped Input Support:** Pipe text directly to acai via stdin for REPL mode (`echo "prompt" | acai`) or as context with `-p` flag (`echo "context" | acai -p "prompt"). Includes size limits (50KB warning, 200KB max).
-*   **Terminal User Interface:** Modern TUI with modal dialogs, autocomplete, and rich text formatting.
+- **Interactive AI Assistant:** Conversational REPL and TUI with modal dialogs, autocomplete, and rich text formatting.
+- **Codebase Interaction:** Read, edit, search, and navigate files with context-aware AI assistance.
+- **Git Integration:** Generate conventional commits, review pull requests, and manage local changes.
+- **Multi-Model Support:** Switch between OpenAI, Anthropic, Google, DeepSeek, Groq, X.AI, OpenRouter, and OpenCode Zen.
+- **Piped Input:** Pipe text via stdin for REPL mode or as context with the `-p` flag.
+- **Skills System:** Discover and load specialized instruction files for specific tasks.
+- **Multi-workspace Support:** Work across multiple project directories simultaneously.
 
-## ✨ Features
+## Prerequisites
 
-*   **Conversational REPL/TUI:** Intuitive command-line interface and modern terminal UI for interacting with the AI.
-*   **Piped Input Support:** Pipe text directly to acai via stdin. Works in REPL mode (`echo "prompt" | acai`) or as additional context with `-p` flag (`echo "context" | acai -p "prompt"). Includes input size limits with graceful handling.
-*   **File System Operations:** Read, write, edit, move, and delete files.
-*   **File & Directory Mentions:** Include file contents and entire directories in prompts using `@filename` and `@dirname` syntax.
-*   **Code Navigation & Analysis:** Advanced file searching and code analysis capabilities.
-*   **Git Workflow Automation:** Streamline commit messages and code reviews.
-*   **Extensible Commands:** A rich set of built-in commands (`/help`, `/model`, `/session`, `/list-tools`, etc.).
-*   **Token Usage Tracking:** Monitor AI token consumption with comprehensive session overview.
-*   **Configurable AI Models:** Easily switch between different LLM providers and models.
-*   **Shell Integration:** Execute shell commands inline using `!`command`` syntax or via `/shell` command.
-*   **Multi-workspace Support:** Work across multiple project directories simultaneously.
-*   **Skills System:** Discover and load specialized instruction files for specific tasks (PDF extraction, database migrations, etc.).
-
-
-## 🛠️ Technologies Used
-
-Acai is built primarily with **TypeScript** and runs on **Node.js**. Key technologies and dependencies include:
-
-*   **TypeScript:** For type-safe and scalable code.
-*   **Node.js:** The JavaScript runtime environment.
-*   **AI SDK (`@ai-sdk/*`):** For integrating with various Large Language Models (LLMs) like OpenAI, Google Gemini, Anthropic, DeepSeek, Groq, and OpenRouter.
-*   **`ripgrep` (via `grep.ts` tool):** For fast file content searching.
-*   **`pino`:** For structured logging.
-*   **`zod`:** For schema validation.
-*   **`biomejs/biome`:** For code formatting and linting.
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-**Required:**
-*   Node.js 20 or higher
-*   Git
-*   [Ripgrep](https://github.com/BurntSushi/ripgrep) (`rg` command) - Fast file content searching
-*   [GitHub CLI](https://cli.github.com/) (`gh` command) - Git operations and repository management
-
-**Installation of system dependencies:**
+- Node.js 20 or higher
+- Git
+- [Ripgrep](https://github.com/BurntSushi/ripgrep) (`rg`) - Fast file content searching
+- [GitHub CLI](https://cli.github.com/) (`gh`) - Git operations and repository management
 
 ```bash
-# macOS (using Homebrew)
+# macOS
 brew install ripgrep gh
 
 # Ubuntu/Debian
 sudo apt install ripgrep gh
-
-# Windows (using Chocolatey)
-choco install ripgrep gh
-
-# Or using winget
-winget install BurntSushi.ripgrep GitHub.cli
 ```
 
-**Optional but recommended:**
-*   API keys for AI providers (see Environment Variables section below)
-
-### Installation for Users
+## Installation
 
 ```bash
 npm install -g @travisennis/acai
 ```
 
-### Installation for Developers
+## Quick Start
 
 ```bash
-# Clone the repository
-git clone https://github.com/travisennis/acai-ts.git # Assuming this is the repo URL
-cd acai-ts
-
-# Install dependencies
-npm install
-
-# Set up environment variables (see Environment Variables section)
-cp .env.example .env  # If .env.example exists, or create .env manually
-# Edit .env file with your API keys
-
-# Build the project
-npm run build
-
-# Link the CLI tool globally (optional, for easy access)
-npm link
-```
-
-## Environment Variables
-
-Acai supports various AI providers and web services through environment variables. Create a `.env` file in your project root or set these variables in your shell environment.
-
-### AI Provider API Keys
-
-```bash
-# OpenAI (GPT models)
-OPENAI_API_KEY=your_openai_api_key_here
-
-# Anthropic (Claude models)
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-
-# Google (Gemini models)
-GOOGLE_GENERATIVE_AI_API_KEY=your_google_api_key_here
-
-# DeepSeek
-DEEPSEEK_API_KEY=your_deepseek_api_key_here
-
-# Groq (Kimi models)
-GROQ_API_KEY=your_groq_api_key_here
-
-# X.AI (Grok models)
-X_AI_API_KEY=your_xai_api_key_here
-# Alternative name also supported:
-# XAI_API_KEY=your_xai_api_key_here
-
-# OpenRouter (Access to multiple models)
-OPENROUTER_API_KEY=your_openrouter_api_key_here
-
-# OpenCode Zen
-OPENCODE_ZEN_API_TOKEN=your_opencode_zen_api_token_here
-
-# Exa API (for WebSearch tool - web search with DuckDuckGo fallback)
-EXA_API_KEY=your_exa_api_key_here
-```
-
-### Application Configuration
-
-```bash
-# Logging level (optional, defaults to "debug")
-# Options: trace, debug, info, warn, error, fatal
-LOG_LEVEL=info
-```
-
-### Example .env File
-
-```bash
-# Core AI providers (at least one recommended)
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-
-# Optional: Additional providers
-GOOGLE_GENERATIVE_AI_API_KEY=...
-GROQ_API_KEY=...
-OPENROUTER_API_KEY=sk-or-...
-
-# Optional: Application settings
-LOG_LEVEL=info
-```
-
-**Note:** You need at least one AI provider API key to use Acai. The tool will work with any combination of the supported providers.
-
-
-### Usage
-
-```bash
-# Start interactive mode with default model
+# Start interactive mode
 acai
 
 # Specify a model
 acai --model anthropic:sonnet
 
-# CLI mode (one-shot execution)
+# One-shot CLI mode
 acai -p "What files contain the term 'toolCallRepair'?"
 
-# Pipe input for REPL mode (immediately processes, then becomes interactive)
+# Pipe input
 echo "How many TypeScript files are in this project?" | acai
 
-# Pipe input as context with CLI mode
-echo "Context information here" | acai -p "Process this context"
-
-# Disable skills discovery
-acai --no-skills
-
-# Add additional working directories
-acai --add-dir /path/to/project1 --add-dir /path/to/project2
-
-# Resume a previous session by selecting from a list
-acai --continue
-
-# Resume the most recent session
+# Resume a previous session
 acai --resume
-
-# Resume a specific session by ID
-acai --resume a1b2c3d4-e5f6-7890-1234-567890abcdef
 ```
 
-**Note:** When exiting a session with messages, Acai will display a resume command with the session ID:
-```
-To resume this session call acai --resume <session-id>
-```
-
-Once in the REPL, you can type your prompts or use commands:
+Once in the REPL, type prompts or use commands:
 
 ```
 > How do I read a file in Node.js?
@@ -214,396 +65,52 @@ Once in the REPL, you can type your prompts or use commands:
 > /help
 ```
 
-### Prompt Mentions & Special Syntax
+Reference files directly with `@filename`, directories with `@dirname`, or run shell commands with `` !`command` ``.
 
-You can reference files and directories directly in your prompts:
+## Technologies
 
-```
-> Explain the purpose of @source/index.ts
-> What patterns do you see in @source/tools/ directory
-> Find security issues in @config/ directory
-> Check if `!ls -la` shows any suspicious files
-> Analyze @README.md for typos
-```
+- **TypeScript** and **Node.js**
+- **AI SDK (`@ai-sdk/*`)** for LLM provider integration
+- **Ripgrep** for fast file content searching
+- **Pino** for structured logging
+- **Zod** for schema validation
+- **Biome** for formatting and linting
 
-**Supported syntax:**
-- `@filename` - Include contents of a specific file
-- `@dirname` - Recursively include all files in a directory
-- `@http://example.com` - Fetch and include web content
-- ``!`command` `` - Execute shell command and include output
-
-### Skill Arguments
-
-User-invocable skills are registered as slash commands and support argument placeholders:
-
-#### All arguments with `$ARGUMENTS`
-
-The `$ARGUMENTS` placeholder captures all arguments passed to the command:
-
-```
-> /fix-issue 123 high-priority
-# $ARGUMENTS becomes: "123 high-priority"
-```
-
-#### Individual arguments with `$1`, `$2`, `$3`, etc.
-
-Access specific arguments individually using positional parameters:
-
-```
-> /review-pr 456 high alice
-# $1 becomes "456", $2 becomes "high", $3 becomes "alice"
-```
-
-#### Backward compatibility with `{{INPUT}}`
-
-The `{{INPUT}}` placeholder works the same as `$ARGUMENTS`:
-
-```
-> /analyze src/file.ts
-# {{INPUT}} becomes: "src/file.ts"
-```
-
-**Note:** Using `-p/--prompt` runs in CLI mode (one-shot execution), while running without a prompt starts interactive REPL mode.
-
-### Piped Input
-
-You can pipe text directly to acai via stdin for flexible input scenarios:
-
-```bash
-# REPL mode: piped text becomes the initial prompt, processed immediately
-echo "What can you do?" | acai
-# Acai starts, processes the prompt, displays response,
-# then enters interactive mode for continued conversation
-
-# CLI mode: piped text becomes additional context
-echo "Codebase overview: 50 files, TypeScript project" | acai -p "Summarize this project"
-# Piped content is added as context, -p value is the main prompt
-# Runs in single-shot CLI mode and exits
-
-# Multiple inputs
-echo "Large context file" | acai -p "Analyze and improve"
-```
-
-**Input size limits:**
-- **Soft limit (50KB):** Warning logged to stderr, processing continues
-- **Hard limit (200KB):** Error displayed, process exits with code 1
-
-**Empty input handling:**
-- Empty stdin without `-p` flag: Prints message and exits with code 0
-- Empty stdin with `-p` flag: Proceeds normally (no context added)
-
-For a list of available commands, type `/help` within the REPL.
-
-## Interactive CLI Commands
-
-- `/help` - Shows usage information
-- `/init` - Generate or improve `AGENTS.md`
-- `/paste` - Add clipboard contents to the next prompt
-- `/model [provider:model|category|provider]` - List or switch models
-- `/session` - Show comprehensive session information including usage and costs
-- `/clear` - Clears the terminal screen for the current session
-- `/generateRules` - Analyze the current conversation and suggest project rules
-- `/copy` - Copy the last assistant response to the system clipboard
-- `/list-tools` or `/lt` - List all available tools
-- `/add-dir <path>` - Add additional working directory
-- `/list-dirs` - List all working directories
-- `/remove-dir <path>` - Remove a working directory
-- `/health` - Check system health and dependencies
-- `/history` - View and manage conversation history
-- `/pickup` - Resume a previous conversation
-- `/handoff` - Hand off conversation to another agent
-- `/share` - Share the current session as a GitHub Gist for viewing in a web browser
-- `/shell` - Execute shell commands
-
-**Note**: Some commands mentioned in older documentation may no longer be available. Use `/help` to see current commands.
-
-Clipboard notes:
-- macOS: uses `pbcopy`
-- Windows: uses `clip`
-- Linux: tries `xclip`, falls back to `xsel`
-
-### Keyboard Shortcuts
-
-These shortcuts work in the interactive TUI mode:
-
-| Shortcut | Action |
-| :------- | :----- |
-| `Ctrl+C` | First press: clears the editor and shows exit confirmation. Second press within 1 second: exits the application. |
-| `Ctrl+D` | Exits the application only when the editor is empty. If the editor has content, this shortcut does nothing. |
-| `Ctrl+N` | Starts a new chat session (saves current session first if not empty). |
-| `Ctrl+O` | Toggles verbose mode (shows detailed tool execution output). |
-| `Escape` | Closes active modal dialogs or interrupts ongoing processing. |
-
-**Note:** These shortcuts use the Kitty keyboard protocol and also work with raw control characters for maximum terminal compatibility.
-
-## Skills System
-
-Acai includes a powerful skills system that allows you to create and use specialized instruction files for specific tasks. Skills are markdown files with YAML frontmatter that provide detailed instructions for particular domains (e.g., database migrations, PDF extraction, code review).
-
-### How Skills Work
-
-1. **Discovery**: At startup, Acai scans multiple locations for skills
-2. **Listing**: Available skills are listed in the system prompt
-3. **On-demand loading**: When a task matches a skill's description, the agent uses the `read` tool to load the skill file
-4. **Execution**: The agent follows the instructions in the skill file
-
-### Skill File Format
-
-Skills are markdown files named `SKILL.md` with YAML frontmatter:
-
-```markdown
----
-name: pdf-extract
-description: Extract text and tables from PDF files
-user-invocable: true              # Register as /pdf-extract slash command (default: false)
-disable-model-invocation: false   # Hide from AI model (default: false)
----
-
-# PDF Processing Instructions
-
-1. Use `pdftotext` to extract plain text
-2. For tables, use `tabula-py` or similar
-3. Always verify extraction quality
-
-Scripts are in: ./scripts/
-Configuration: ./config.json
-```
-
-#### Invocation Modes
-
-| `user-invocable` | `disable-model-invocation` | Behavior |
-|---|---|---|
-| `true` | `false` | Both user (slash command) and model can use |
-| `false` | `false` | Only model can auto-invoke (default) |
-| `true` | `true` | Only user can use via slash command |
-| `false` | `true` | Documentation only |
-
-### Skill Locations
-
-Skills are loaded from these locations (later sources override earlier ones):
-
-1. `~/.codex/skills/**/SKILL.md` (Codex CLI user skills)
-2. `~/.claude/skills/*/SKILL.md` (Claude Code user skills)
-3. `<cwd>/.claude/skills/*/SKILL.md` (Claude Code project skills)
-4. `~/.agents/skills/**/SKILL.md` (User skills)
-5. `<cwd>/.agents/skills/**/SKILL.md` (Project skills)
-
-### Directory Structure
-
-Skills can be organized hierarchically with colon-separated names:
-
-```
-~/.agents/skills/
-├── pdf-extract/
-│   ├── SKILL.md           # Becomes "pdf-extract" skill
-│   └── scripts/           # Optional: supporting files
-├── db/
-│   └── migrate/
-│       └── SKILL.md       # Becomes "db:migrate" skill
-└── aws/
-    └── s3/
-        └── upload/
-            └── SKILL.md   # Becomes "aws:s3:upload" skill
-```
-
-### Compatibility
-
-Acai's skills system is compatible with:
-- **Pi Native Format**: `~/.agents/skills/**/SKILL.md` (recursive, colon-separated paths)
-- **Claude Code Format**: `~/.claude/skills/*/SKILL.md` (single level only)
-- **Codex CLI Format**: `~/.codex/skills/**/SKILL.md` (recursive, simple names)
-
-### Configuration
-
-Skills are enabled by default. You can disable them via:
-
-1. **CLI flag**: `acai --no-skills`
-2. **Settings file**: Add to `~/.acai/acai.json` or `.acai/acai.json`:
-   ```json
-   {
-     "skills": {
-       "enabled": false
-     }
-   }
-   ```
-
-### Usage Example
-
-1. **Agent startup**: Scans all skill locations
-2. **System prompt**: Lists available skills
-3. **User request**: "Extract text from this PDF"
-4. **Agent matches**: Sees "pdf-extract: Extract text and tables from PDF files"
-5. **Skill loading**: Uses `read` tool to load `~/.agents/skills/pdf-extract/SKILL.md`
-6. **Execution**: Follows instructions in skill file (run scripts from this file's directory)
-
-## Configuration
-
-### Project Configuration
-
-Acai supports project-specific configuration through a `.acai/acai.json` file in your project directory:
-
-```json
-{
-  "logs": {
-    "path": "~/.acai/logs/acai.log"  // Optional: Custom log file location
-  },
-  "notify": true,  // Optional: Enable system notifications (default: false)
-  "tools": {
-    "maxTokens": 30000  // Optional: Global max token limit for tools
-  },
-  "skills": {
-    "enabled": true  // Optional: Enable/disable skills discovery (default: true)
-  },
-
-
-
-}
-```
-
-### Project-Specific Customization
-
-- **Rules/Guidelines**: Add project-specific AI behavior rules in `AGENTS.md`
-- **Custom Skills**: Store reusable skill prompts in `.agents/skills/<name>/SKILL.md`. Skills with `user-invocable: true` are registered as slash commands with argument placeholder support (`$ARGUMENTS`, `$1`, `$2`, etc.).
-
-- **File Selections**: Save file/directory selections in `.acai/selections/`
-- **Memory/Rules**: Persistent project rules stored in `.acai/rules/`
-
-### Global Configuration
-
-Global application settings are stored in:
-- **Configuration**: `~/.acai/`
-- **Logs**: `~/.acai/logs/acai.log`
-- **Sessions**: `~/.acai/sessions/`
-
-### Environment-Specific Setup
-
-For development, you can use different configurations:
-
-```bash
-# Development with .env file
-npm run dev
-
-# Production
-acai
-
-# Custom log level
-LOG_LEVEL=warn acai
-```
-
-## Web Skills
-
-Acai's web functionality has been moved to standalone skills that operate independently of the core codebase. These skills provide web-related capabilities while keeping the main acai-ts project lightweight and focused.
-
-### Skill Locations
-
-Web skills are located in:
-- `~/.agents/skills/web-fetch/` - User-level web fetch skill
-- `~/.agents/skills/web-search/` - User-level web search skill
-- `<project>/.agents/skills/web-fetch/` - Project-level web fetch skill
-- `<project>/.agents/skills/web-search/` - Project-level web search skill
-
-
-## ⚙️ Development
-
-### Development Environment Setup
-
-1. **Clone and install dependencies:**
-   ```bash
-   git clone https://github.com/travisennis/acai-ts.git
-   cd acai-ts
-   npm install
-   ```
-
-2. **Set up environment variables:**
-   ```bash
-   # Create .env file with your API keys
-   touch .env
-   # Add your API keys (see Environment Variables section above)
-   ```
-
-3. **Development workflow:**
-   ```bash
-   # Run in development mode (uses .env file)
-   npm run dev
-   
-   # Build and test
-   npm run build
-   npm test
-   
-   # Code quality
-   npm run lint
-   npm run format
-   ```
-
-### Available NPM Scripts
-
-Here's a list of useful `npm` scripts for development:
-
-| Script        | Description                                                              |
-| :------------ | :----------------------------------------------------------------------- |
-| `npm run build` | Compiles the TypeScript source code to JavaScript.                       |
-| `npm run clean` | Removes the `dist/` directory.                                           |
-| `npm run compile` | Compiles TypeScript files (`tsc --pretty`).                              |
-| `npm run lint`  | Runs Biome linter to check for code style and quality issues.            |
-| `npm run lint:fix` | Automatically fixes linting issues using Biome.                          |
-| `npm run test`  | Runs unit tests with code coverage using `c8`.                           |
-| `npm run format` | Formats the codebase using Biome.                                        |
-| `npm run dev`   | Starts the application in development mode (loads .env file automatically). |
-| `npm run oxlint` | Runs Oxlint for additional code quality checks.                          |
-| `npm run knip`  | Detects unused files, dependencies, and exports.                         |
-| `npm run check` | Interactively checks for and updates outdated npm packages.              |
-| `npm run cpd`   | Checks for copy-pasted code using `jscpd`.                               |
-| `npm run typecheck` | Type checks the codebase without emitting files.                        |
-
-### Code Structure
-
-The project is organized as follows:
+## Project Structure
 
 ```
 .
-├── .acai/             # Internal configuration and temporary files
 ├── source/            # Main application source code
-│   ├── agent/         # Agent loop and manual execution
-│   ├── api/           # External API integrations (e.g., Exa)
+│   ├── agent/         # Agent loop and sub-agent execution
 │   ├── cli.ts         # CLI entry point
-│   ├── commands/      # Implementations of REPL commands
+│   ├── commands/      # REPL command implementations
 │   ├── execution/     # Command execution utilities
-│   ├── middleware/    # AI request/response middleware (logging, rate limiting)
+│   ├── middleware/     # AI request/response middleware
 │   ├── models/        # AI model providers and management
+│   ├── modes/         # Agent mode management
 │   ├── prompts/       # Prompt generation and management
-│   ├── repl/          # REPL interface components
+│   ├── repl/          # REPL utilities
+│   ├── sessions/      # Session persistence and management
 │   ├── terminal/      # Terminal output formatting and rendering
 │   ├── tui/           # Terminal User Interface components
 │   ├── tools/         # AI-callable tools (filesystem, git, web, bash, etc.)
 │   ├── tokens/        # Token counting and tracking
 │   └── utils/         # Utility functions
 ├── test/              # Unit tests
+├── docs/              # Additional documentation
 ├── ARCHITECTURE.md    # Detailed architectural overview and flow diagrams
-├── AGENTS.md          # Project-specific AI rules and guidelines
-├── TODO.md            # Project roadmap and planned features
-├── package.json       # Project metadata, dependencies, and scripts
-└── README.md          # This file
+├── CONTRIBUTING.md    # Development setup and guidelines
+└── AGENTS.md          # Project-specific AI rules and guidelines
 ```
 
-For a more in-depth understanding of the project's architecture and internal flows, please refer to the [ARCHITECTURE.md](ARCHITECTURE.md) document.
+## Documentation
 
-## 📚 Documentation & Examples
+- [Usage Guide](docs/usage.md) - Commands, keyboard shortcuts, piped input, and prompt syntax
+- [Configuration](docs/configuration.md) - Environment variables, project and global settings
+- [Skills System](docs/skills.md) - Creating and using specialized instruction files
+- [Architecture](ARCHITECTURE.md) - Internal architecture and flow diagrams
+- [Contributing](CONTRIBUTING.md) - Development setup, scripts, and code style
 
-*   **[ARCHITECTURE.md](ARCHITECTURE.md):** Provides a comprehensive overview of the project's architecture, including file descriptions and Mermaid flow diagrams.
-*   **[AGENTS.md](AGENTS.md):** Contains specific rules and guidelines for the AI agent's behavior within this project.
-*   **In-app `/help` command:** Use `/help` within the Acai REPL for a list of available commands and their usage.
-*   **`source/commands/` directory:** Review the TypeScript files in this directory to understand how each REPL command is implemented.
-*   **`source/tools/` directory:** Explore the available tools that the AI can leverage.
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) (if it exists, otherwise remove this line) for guidelines on how to contribute.
-
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 📞 Contact
-
-For questions or feedback, please open an issue on the GitHub repository.
-```
