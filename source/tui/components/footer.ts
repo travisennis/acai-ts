@@ -13,6 +13,7 @@ type State = {
   currentContextWindow: number;
   contextWindow: number;
   agentState?: AgentState;
+  currentMode?: string;
 };
 
 function formatProjectStatus(
@@ -62,6 +63,7 @@ export class FooterComponent implements Component {
   private state: State;
   private progressBar: ProgressBarComponent;
   private agentState?: AgentState;
+  private currentMode = "Normal";
   constructor(
     modelManager: ModelManager,
     tokenTracker: TokenTracker | undefined,
@@ -82,6 +84,9 @@ export class FooterComponent implements Component {
     if (state.agentState) {
       this.agentState = state.agentState;
     }
+    if (state.currentMode !== undefined) {
+      this.currentMode = state.currentMode;
+    }
     this.state = state;
     this.progressBar.setCurrent(state.currentContextWindow);
     this.progressBar.setTotal(state.contextWindow);
@@ -89,6 +94,10 @@ export class FooterComponent implements Component {
 
   resetState() {
     this.agentState = undefined;
+  }
+
+  getProjectStatus(): ProjectStatusData {
+    return this.state.projectStatus;
   }
 
   render(width: number): string[] {
@@ -102,9 +111,23 @@ export class FooterComponent implements Component {
     );
     results.push(pathLine + " ".repeat(padding) + style.dim(modelInfo));
 
-    // Add git information on second line if present
+    const modeDisplay =
+      this.currentMode !== "Normal"
+        ? style.magenta(`[${this.currentMode}]`)
+        : "";
+
     if (gitLine) {
-      results.push(gitLine);
+      if (modeDisplay) {
+        const gitPadding = Math.max(
+          0,
+          width - visibleWidth(gitLine) - visibleWidth(modeDisplay),
+        );
+        results.push(`${gitLine}${" ".repeat(gitPadding)}${modeDisplay}`);
+      } else {
+        results.push(gitLine);
+      }
+    } else if (modeDisplay) {
+      results.push(modeDisplay);
     }
 
     // Line 3: Total session usage from token tracker (accumulated across all turns)

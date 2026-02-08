@@ -152,6 +152,7 @@ export type SavedMessageHistory = {
   updatedAt: Date;
   messages: ModelMessage[];
   tokenUsage?: TokenUsageTurn[];
+  metadata?: Record<string, unknown>;
 };
 
 type RawMessageHistory = Omit<
@@ -179,6 +180,8 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
   private modelManager: ModelManager;
   private tokenTracker: TokenTracker;
   private tokenUsage: TokenUsageTurn[];
+  private transientMessages: UserModelMessage[] = [];
+  private metadata: Record<string, unknown> = {};
 
   constructor({
     stateDir,
@@ -237,11 +240,38 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
   }
 
   get() {
-    return [...this.history].filter(this.validMessage);
+    const history = [...this.history].filter(this.validMessage);
+    if (this.transientMessages.length > 0) {
+      const lastIndex = history.length - 1;
+      return [
+        ...history.slice(0, lastIndex),
+        ...this.transientMessages,
+        history[lastIndex] as ModelMessage,
+      ];
+    }
+    return history;
+  }
+
+  setTransientMessages(messages: UserModelMessage[]): void {
+    this.transientMessages = messages;
+  }
+
+  clearTransientMessages(): void {
+    this.transientMessages = [];
+  }
+
+  setMetadata(key: string, value: unknown): void {
+    this.metadata[key] = value;
+  }
+
+  getMetadata(key: string): unknown {
+    return this.metadata[key];
   }
 
   clear() {
     this.history.length = 0;
+    this.transientMessages = [];
+    this.metadata = {};
     this.contextWindow = 0;
     this.tokenUsage = [];
     this.emit("clear-history");
@@ -330,6 +360,8 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
       updatedAt: this.updatedAt,
       messages: this.history,
       tokenUsage: this.tokenUsage,
+      metadata:
+        Object.keys(this.metadata).length > 0 ? this.metadata : undefined,
     };
 
     try {
@@ -643,6 +675,7 @@ React Component Rendering Debug";
     this.tokenUsage = savedHistory.tokenUsage
       ? [...savedHistory.tokenUsage]
       : [];
+    this.metadata = savedHistory.metadata ?? {};
   }
 
   // Token usage tracking methods

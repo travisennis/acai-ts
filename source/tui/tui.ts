@@ -11,6 +11,7 @@ import {
   isCtrlZ,
   isEscape,
 } from "../terminal/control.ts";
+import { isShiftTab } from "../terminal/keys.ts";
 import style from "../terminal/style.ts";
 import type { Modal } from "./components/modal.ts";
 import type { Terminal } from "./terminal.ts";
@@ -86,6 +87,7 @@ export class TUI extends Container {
   public onReconstructSession?: () => void;
   public onCtrlN?: () => void;
   public onCtrlO?: () => void;
+  public onShiftTab?: () => void;
 
   constructor(terminal: Terminal) {
     super();
@@ -183,6 +185,14 @@ export class TUI extends Container {
     if (isCtrlN(data)) {
       if (this.onCtrlN) {
         this.onCtrlN();
+      }
+      return;
+    }
+
+    // Handle Shift+Tab - cycle mode
+    if (isShiftTab(data) && !this.inBracketedPaste) {
+      if (this.onShiftTab) {
+        this.onShiftTab();
       }
       return;
     }

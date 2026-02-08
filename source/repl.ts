@@ -9,12 +9,13 @@ import type { WorkspaceContext } from "./index.ts";
 import { logger } from "./logger.ts";
 import { processPrompt } from "./mentions.ts";
 import type { ModelManager } from "./models/manager.ts";
+import { ModeManager } from "./modes/manager.ts";
 import type { PromptManager } from "./prompts/manager.ts";
 import {
   getProjectStatus,
   type ProjectStatusData,
 } from "./repl/project-status.ts";
-import type { SessionManager } from "./sessions/manager.ts";
+import { createUserMessage, type SessionManager } from "./sessions/manager.ts";
 import {
   alert,
   setTerminalTitle,
@@ -93,6 +94,9 @@ export class Repl {
   // verbose mode state
   private verboseMode = false;
 
+  // mode manager
+  private modeManager: ModeManager;
+
   constructor(options: ReplOptions) {
     this.options = options;
     this.terminal = new ProcessTerminal(options.terminalOptions);
@@ -132,6 +136,7 @@ export class Repl {
     this.isInitialized = false;
     this.pendingTools = new Map();
     this.tools = options.tools;
+    this.modeManager = new ModeManager();
     this.notification = new NotificationComponent(
       "",
       { r: 64, g: 64, b: 64 },
@@ -171,6 +176,7 @@ export class Repl {
       projectStatus: await getProjectStatus(),
       currentContextWindow: 0,
       contextWindow: modelConfig.contextWindow,
+      currentMode: this.modeManager.getDisplayName(),
     });
 
     this.tui.onCtrlC = () => {
@@ -187,6 +193,22 @@ export class Repl {
 
     this.tui.onCtrlN = () => {
       void this.handleCtrlN();
+    };
+
+    this.tui.onShiftTab = () => {
+      this.modeManager.cycleMode();
+      this.notification.setMessage(
+        `Mode: ${this.modeManager.getDisplayName()}`,
+      );
+      this.footer.setState({
+        projectStatus: this.footer.getProjectStatus(),
+        currentContextWindow:
+          this.options.sessionManager.getLastTurnContextWindow(),
+        contextWindow:
+          this.options.modelManager.getModelMetadata("repl").contextWindow,
+        currentMode: this.modeManager.getDisplayName(),
+      });
+      this.tui.requestRender();
     };
 
     // Set callback for session reconstruction (used by /history command)
@@ -265,7 +287,25 @@ export class Repl {
         const userPrompt = promptManager.get();
         const userMsg = promptManager.getUserMessage();
 
-        sessionManager.appendUserMessage(userMsg);
+        if (!this.modeManager.isNormal()) {
+          if (this.modeManager.isFirstMessage()) {
+            const initialPrompt = this.modeManager.getInitialPrompt();
+            if (initialPrompt) {
+              const modeMessage = createUserMessage([], initialPrompt);
+              sessionManager.appendUserMessage(modeMessage);
+            }
+            sessionManager.appendUserMessage(userMsg);
+            this.modeManager.markFirstMessageSent();
+          } else {
+            sessionManager.appendUserMessage(userMsg);
+            const reminderMessage = this.modeManager.getReminderMessage();
+            if (reminderMessage) {
+              sessionManager.setTransientMessages([reminderMessage]);
+            }
+          }
+        } else {
+          sessionManager.appendUserMessage(userMsg);
+        }
 
         if (this.onInputCallback) {
           this.onInputCallback(userPrompt);
@@ -294,6 +334,7 @@ export class Repl {
       contextWindow:
         this.options.modelManager.getModelMetadata("repl").contextWindow,
       agentState: state,
+      currentMode: this.modeManager.getDisplayName(),
     });
 
     const eventType = event.type;
@@ -397,14 +438,22 @@ export class Repl {
         }
         this.pendingTools.clear();
         this.editor.disableSubmit = false;
-        // Auto-save session after agent completes
+        this.options.sessionManager.clearTransientMessages();
+        this.options.sessionManager.setMetadata(
+          "modeState",
+          this.modeManager.toJson(),
+        );
         await this.options.sessionManager.save();
         this.tui.requestRender();
         break;
 
       case "agent-error":
         logger.error(event, "agent-error");
-        // Auto-save session on error so user can resume from failed state
+        this.options.sessionManager.clearTransientMessages();
+        this.options.sessionManager.setMetadata(
+          "modeState",
+          this.modeManager.toJson(),
+        );
         await this.options.sessionManager.save();
         // Stop loading animation
         if (this.loadingAnimation) {
@@ -488,6 +537,11 @@ export class Repl {
   }
 
   async rerender() {
+    const modeState = this.options.sessionManager.getMetadata("modeState");
+    if (modeState && typeof modeState === "object" && "mode" in modeState) {
+      this.modeManager.fromJson(modeState as { mode: string });
+    }
+
     // When resuming a session, populate tokenTracker with historical usage
     // so the footer displays the correct total session usage
     const totalUsage = this.options.sessionManager.getTotalTokenUsage();
@@ -514,6 +568,7 @@ export class Repl {
         this.options.sessionManager.getLastTurnContextWindow(),
       contextWindow:
         this.options.modelManager.getModelMetadata("repl").contextWindow,
+      currentMode: this.modeManager.getDisplayName(),
     });
 
     // Reconstruct entire session display from messages
@@ -795,12 +850,18 @@ export class Repl {
 
   private async handleCtrlN(): Promise<void> {
     if (!this.options.sessionManager.isEmpty()) {
+      this.options.sessionManager.setMetadata(
+        "modeState",
+        this.modeManager.toJson(),
+      );
       await this.options.sessionManager.save();
       this.options.sessionManager.create(
         this.options.modelManager.getModel("repl").modelId,
       );
     }
 
+    this.modeManager.reset();
+    this.options.sessionManager.clearTransientMessages();
     this.options.tokenTracker.reset();
 
     setTerminalTitle(`acai: ${process.cwd()}`);
@@ -816,6 +877,14 @@ export class Repl {
     if (footer) {
       footer.resetState();
     }
+
+    this.footer.setState({
+      projectStatus: this.footer.getProjectStatus(),
+      currentContextWindow: 0,
+      contextWindow:
+        this.options.modelManager.getModelMetadata("repl").contextWindow,
+      currentMode: this.modeManager.getDisplayName(),
+    });
 
     this.tui.requestRender();
   }
@@ -837,6 +906,10 @@ export class Repl {
     this.notification.setMessage("");
     this.tui.requestRender();
 
+    this.options.sessionManager.setMetadata(
+      "modeState",
+      this.modeManager.toJson(),
+    );
     void this.options.sessionManager.save();
     this.stop(true);
     process.exit(0);
@@ -858,6 +931,10 @@ export class Repl {
       this.notification.setMessage("");
       this.tui.requestRender();
 
+      this.options.sessionManager.setMetadata(
+        "modeState",
+        this.modeManager.toJson(),
+      );
       void this.options.sessionManager.save();
       this.stop(true);
       process.exit(0);

@@ -445,6 +445,10 @@ acai-ts
 - **source/models/openrouter-provider.ts**: OpenRouter provider
 - **source/models/xai-provider.ts**: xAI Grok provider
 
+### Source - Modes
+
+- **source/modes/manager.ts**: ModeManager class for cycling through specialized modes (Normal, Planning, Research) with mode-specific context prompt injection
+
 ### Source - Tools
 
 - **source/tools/index.ts**: Tool initialization and registry
