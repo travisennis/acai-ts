@@ -37,6 +37,7 @@ const CODEPOINTS = {
   n: 110,
   o: 111,
   p: 112,
+  r: 114,
   t: 116,
   u: 117,
   w: 119,
@@ -180,6 +181,7 @@ const Keys = {
   CTRL_O: kittySequence(CODEPOINTS.o, MODIFIERS.ctrl),
   CTRL_N: kittySequence(CODEPOINTS.n, MODIFIERS.ctrl),
   CTRL_P: kittySequence(CODEPOINTS.p, MODIFIERS.ctrl),
+  CTRL_R: kittySequence(CODEPOINTS.r, MODIFIERS.ctrl),
   CTRL_T: kittySequence(CODEPOINTS.t, MODIFIERS.ctrl),
   CTRL_U: kittySequence(CODEPOINTS.u, MODIFIERS.ctrl),
   CTRL_W: kittySequence(CODEPOINTS.w, MODIFIERS.ctrl),
@@ -242,6 +244,7 @@ const RAW = {
   CTRL_N: "\x0e",
   CTRL_O: "\x0f",
   CTRL_P: "\x10",
+  CTRL_R: "\x12",
   CTRL_T: "\x14",
   CTRL_U: "\x15",
   CTRL_W: "\x17",
@@ -394,6 +397,18 @@ export function isShiftCtrlP(data: string): boolean {
     data,
     CODEPOINTS.p,
     MODIFIERS.shift + MODIFIERS.ctrl,
+  );
+}
+
+/**
+ * Check if input matches Ctrl+R (raw byte or Kitty protocol).
+ * Ignores lock key bits.
+ */
+export function isCtrlR(data: string): boolean {
+  return (
+    data === RAW.CTRL_R ||
+    data === Keys.CTRL_R ||
+    matchesKittySequence(data, CODEPOINTS.r, MODIFIERS.ctrl)
   );
 }
 

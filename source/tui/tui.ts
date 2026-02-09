@@ -8,6 +8,7 @@ import {
   isCtrlD,
   isCtrlN,
   isCtrlO,
+  isCtrlR,
   isCtrlZ,
   isEscape,
 } from "../terminal/control.ts";
@@ -87,6 +88,7 @@ export class TUI extends Container {
   public onReconstructSession?: () => void;
   public onCtrlN?: () => void;
   public onCtrlO?: () => void;
+  public onCtrlR?: () => void;
   public onShiftTab?: () => void;
 
   constructor(terminal: Terminal) {
@@ -177,6 +179,14 @@ export class TUI extends Container {
     if (isCtrlO(data)) {
       if (this.onCtrlO) {
         this.onCtrlO();
+      }
+      return;
+    }
+
+    // Handle Ctrl+R - review
+    if (isCtrlR(data)) {
+      if (this.onCtrlR) {
+        this.onCtrlR();
       }
       return;
     }

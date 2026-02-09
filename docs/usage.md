@@ -112,6 +112,7 @@ These shortcuts work in the interactive TUI mode:
 | `Ctrl+D` | Exits the application only when the editor is empty. |
 | `Ctrl+N` | Starts a new chat session (saves current session first if not empty). |
 | `Ctrl+O` | Toggles verbose mode (shows detailed tool execution output). |
+| `Ctrl+R` | Opens the review view (equivalent to `/review`). |
 | `Ctrl+Z` | Backgrounds the process (POSIX only; use `fg` to resume). |
 | `Shift+Tab` | Cycles through available modes (Normal, Planning, Research, etc.). |
 | `Escape` | Closes active modal dialogs or interrupts ongoing processing. |

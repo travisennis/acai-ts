@@ -195,6 +195,18 @@ export class Repl {
       void this.handleCtrlN();
     };
 
+    this.tui.onCtrlR = () => {
+      void commands.handle(
+        { userInput: "/review" },
+        {
+          tui: this.tui,
+          container: this.chatContainer,
+          inputContainer: this.editorContainer,
+          editor: this.editor,
+        },
+      );
+    };
+
     this.tui.onShiftTab = () => {
       this.modeManager.cycleMode();
       this.notification.setMessage(
