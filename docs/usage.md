@@ -104,15 +104,39 @@ Use `/help` within the REPL to see the latest available commands.
 
 These shortcuts work in the interactive TUI mode:
 
+### Global Shortcuts
+
 | Shortcut | Action |
 | :--- | :--- |
 | `Ctrl+C` | First press: clears the editor and shows exit confirmation. Second press within 1 second: exits the application. |
 | `Ctrl+D` | Exits the application only when the editor is empty. |
 | `Ctrl+N` | Starts a new chat session (saves current session first if not empty). |
 | `Ctrl+O` | Toggles verbose mode (shows detailed tool execution output). |
+| `Ctrl+Z` | Backgrounds the process (POSIX only; use `fg` to resume). |
+| `Shift+Tab` | Cycles through available modes (Normal, Planning, Research, etc.). |
 | `Escape` | Closes active modal dialogs or interrupts ongoing processing. |
 
-Clipboard operations:
-- macOS: uses `pbcopy`
-- Windows: uses `clip`
-- Linux: tries `xclip`, falls back to `xsel`
+### Editor Shortcuts
+
+| Shortcut | Action |
+| :--- | :--- |
+| `Enter` | Creates a new line. |
+| `Shift+Enter` / `Ctrl+Enter` / `Option+Enter` | Submits the prompt. |
+| `Tab` | Triggers autocomplete suggestions. |
+| `Escape` | Cancels autocomplete or closes custom handlers. |
+| `Up` / `Down` | Navigates command history when the editor is empty. |
+| `Ctrl+A` | Moves the cursor to the start of the line. |
+| `Ctrl+E` | Moves the cursor to the end of the line. |
+| `Ctrl+K` | Deletes from the cursor to the end of the line. |
+| `Ctrl+U` | Deletes from the cursor to the start of the line. |
+| `Ctrl+W` / `Option+Backspace` | Deletes the word before the cursor. |
+| `Ctrl+Left` / `Ctrl+Right` / `Option+Left` / `Option+Right` | Navigates by words. |
+| `Ctrl+G` | Launches the external editor (configured via `EDITOR` or `VISUAL` env var). |
+
+### Clipboard Operations
+
+| Platform | Command |
+| :--- | :--- |
+| macOS | `pbcopy` |
+| Windows | `clip` |
+| Linux | `xclip` (falls back to `xsel` if unavailable) |
