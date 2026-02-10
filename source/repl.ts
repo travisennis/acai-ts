@@ -45,21 +45,39 @@ import {
 } from "./tui/index.ts";
 import type { ProcessTerminalOptions, Terminal } from "./tui/terminal.ts";
 
+/** Configuration options for the REPL instance. */
 interface ReplOptions {
+  /** The AI agent that processes user prompts and generates responses. */
   agent: Agent;
+  /** Manages session persistence, message history, and metadata. */
   sessionManager: SessionManager;
+  /** Manages prompt construction including context injection. */
   promptManager: PromptManager;
+  /** Manages model selection and metadata retrieval. */
   modelManager: ModelManager;
+  /** Tracks token usage across the session. */
   tokenTracker: TokenTracker;
+  /** Handles slash command parsing and execution. */
   commands: CommandManager;
+  /** Application configuration key-value store. */
   config: Record<PropertyKey, unknown>;
+  /** Counts tokens for prompt budgeting. */
   tokenCounter: TokenCounter;
+  /** History of previously submitted prompts for recall. */
   promptHistory: string[];
+  /** Workspace context including allowed directories. */
   workspace: WorkspaceContext;
+  /** Optional complete set of tools available to the agent. */
   tools?: CompleteToolSet;
+  /** Optional terminal configuration for the process terminal. */
   terminalOptions?: ProcessTerminalOptions;
 }
 
+/**
+ * Interactive Read-Eval-Print Loop that provides the primary user interface
+ * for the AI assistant CLI. Manages the TUI layout, handles keyboard shortcuts,
+ * processes agent events for streaming responses, and coordinates session lifecycle.
+ */
 export class Repl {
   private options: ReplOptions;
   private terminal: Terminal;
@@ -97,6 +115,7 @@ export class Repl {
   // mode manager
   private modeManager: ModeManager;
 
+  /** Creates a new Repl instance, initializing the TUI layout and components. */
   constructor(options: ReplOptions) {
     this.options = options;
     this.terminal = new ProcessTerminal(options.terminalOptions);
@@ -145,6 +164,10 @@ export class Repl {
     );
   }
 
+  /**
+   * Initializes the REPL by setting up autocomplete,
+   * keyboard handlers, and the TUI component tree.
+   */
   async init() {
     if (this.isInitialized) {
       return;
@@ -331,6 +354,11 @@ export class Repl {
     this.isInitialized = true;
   }
 
+  /**
+   * Handles an agent event by updating the TUI accordingly.
+   * Processes events such as streaming messages, tool calls, thinking blocks,
+   * and agent lifecycle transitions (start, stop, error).
+   */
   async handle(event: AgentEvent, state: AgentState) {
     if (!this.isInitialized) {
       await this.init();
@@ -515,6 +543,7 @@ export class Repl {
     }
   }
 
+  /** Adds a user message component to the chat container. */
   private addMessageToChat(message: { role: "user"; content: string }): void {
     if (message.role === "user") {
       // Extract text content from content blocks
@@ -526,6 +555,7 @@ export class Repl {
     }
   }
 
+  /** Returns a promise that resolves with the user's next input submission. */
   async getUserInput(): Promise<string> {
     return new Promise((resolve) => {
       this.onInputCallback = (text: string) => {
@@ -535,19 +565,30 @@ export class Repl {
     });
   }
 
+  /** Clears the editor input and triggers a re-render. */
   clearEditor(): void {
     this.editor.setText("");
     this.tui.requestRender();
   }
 
+  /**
+   * Sets the callback invoked when the user presses
+   * Escape to interrupt the agent.
+   */
   setInterruptCallback(callback: () => void): void {
     this.onInterruptCallback = callback;
   }
 
+  /** Sets the callback invoked on exit, receiving the current session ID. */
   setExitCallback(callback: (sessionId: string) => void): void {
     this.onExitCallback = callback;
   }
 
+  /**
+   * Re-renders the entire session by restoring mode state,
+   * replaying token usage, and reconstructing the chat
+   * display.
+   */
   async rerender() {
     const modeState = this.options.sessionManager.getMetadata("modeState");
     if (modeState && typeof modeState === "object" && "mode" in modeState) {
@@ -589,6 +630,11 @@ export class Repl {
     this.tui.requestRender();
   }
 
+  /**
+   * Rebuilds the chat container from the full session
+   * message history, including user messages, assistant
+   * responses, and tool executions.
+   */
   private reconstructSession() {
     // Clear existing display
     this.pendingTools.clear();
@@ -671,6 +717,10 @@ export class Repl {
     }
   }
 
+  /**
+   * Extracts the text content from a user message,
+   * handling both string and array content formats.
+   */
   private extractUserMessageText(message: {
     role: string;
     content: string | Array<{ type: string; text?: string }>;
@@ -693,6 +743,10 @@ export class Repl {
     return null;
   }
 
+  /**
+   * Renders an assistant message into the chat container,
+   * including reasoning/thinking blocks and text content.
+   */
   private renderAssistantMessage(message: {
     role: string;
     content: string | Array<{ type: string; text?: string }>;
@@ -748,6 +802,11 @@ export class Repl {
     }
   }
 
+  /**
+   * Extracts tool call content parts from an assistant
+   * message, matching them with their corresponding
+   * tool results.
+   */
   private extractToolCallsFromAssistant(
     message: {
       role: string;
@@ -804,6 +863,11 @@ export class Repl {
     return toolCallContents;
   }
 
+  /**
+   * Creates start and end/error ToolEvent pairs from a
+   * resolved tool call, using the tool's display function
+   * when available.
+   */
   private createToolEvents(toolCallContent: {
     toolName: string;
     toolCallId: string;
@@ -844,6 +908,10 @@ export class Repl {
     return events;
   }
 
+  /**
+   * Toggles verbose mode on/off, updating all thinking
+   * block and tool execution components.
+   */
   private handleCtrlO(): void {
     this.verboseMode = !this.verboseMode;
     const modeText = this.verboseMode ? "ON" : "OFF";
@@ -860,6 +928,10 @@ export class Repl {
     this.tui.requestRender();
   }
 
+  /**
+   * Starts a new session by saving the current one,
+   * resetting mode/tokens/UI, and clearing the chat.
+   */
   private async handleCtrlN(): Promise<void> {
     if (!this.options.sessionManager.isEmpty()) {
       this.options.sessionManager.setMetadata(
@@ -901,6 +973,7 @@ export class Repl {
     this.tui.requestRender();
   }
 
+  /** Handles Ctrl+D to exit the REPL when the editor is empty. */
   private handleCtrlD(): void {
     // Only exit if the editor is empty
     if (this.editor.getText().trim() !== "") {
@@ -927,6 +1000,11 @@ export class Repl {
     process.exit(0);
   }
 
+  /**
+   * Handles Ctrl+C with double-press-to-exit logic.
+   * First press clears the editor; second press within
+   * 1 second exits.
+   */
   private handleCtrlC(): void {
     // Handle Ctrl+C double-press logic
     const now = Date.now();
@@ -971,6 +1049,10 @@ export class Repl {
     }
   }
 
+  /**
+   * Stops the REPL, cleaning up timers, animations,
+   * and the TUI. Optionally triggers the exit callback.
+   */
   stop(showExitMessage = false): void {
     this.notification.setMessage("");
     // Clear any pending notification timer
