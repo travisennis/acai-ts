@@ -19,6 +19,7 @@ export const defaultConfig = {
   skills: {
     enabled: true,
   },
+  env: {} as Record<string, string>,
 } as const;
 
 // Type definitions
@@ -53,6 +54,7 @@ const ProjectConfigSchema = z.object({
     })
     .optional()
     .default(defaultConfig.skills),
+  env: z.record(z.string(), z.string()).optional().default(defaultConfig.env),
 });
 
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
@@ -131,9 +133,15 @@ export class ConfigManager {
     const appConfig = await this._readConfig(appConfigPath);
     const projectConfig = await this._readConfig(projectConfigPath);
 
+    const mergedEnv = {
+      ...appConfig.env,
+      ...projectConfig.env,
+    };
+
     const mergedConfig = {
       ...appConfig,
       ...projectConfig,
+      env: mergedEnv,
     };
 
     return ProjectConfigSchema.parse(mergedConfig);

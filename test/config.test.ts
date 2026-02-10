@@ -193,6 +193,84 @@ test("getConfig merges app and project configs with project precedence", async (
   });
 });
 
+test("getConfig parses env field from config", async () => {
+  await withTempDir(async (tmpHome) => {
+    const oldHome = process.env["HOME"];
+    const oldCwd = process.cwd();
+    try {
+      process.env["HOME"] = tmpHome;
+      const projectDir = path.join(tmpHome, "proj");
+      await fs.mkdir(projectDir, { recursive: true });
+      process.chdir(projectDir);
+
+      const appCfgDir = path.join(tmpHome, ".acai");
+      await fs.mkdir(appCfgDir, { recursive: true });
+      const envData = Object.fromEntries([
+        ["FOO", "bar"],
+        ["SECRET", "$MY_KEY"],
+      ]);
+      await fs.writeFile(
+        path.join(appCfgDir, "acai.json"),
+        JSON.stringify({ env: envData }),
+        "utf8",
+      );
+
+      const mgr = new ConfigManager();
+      const cfg = await mgr.getConfig();
+      assert.deepEqual(cfg.env, envData);
+    } finally {
+      if (oldHome !== undefined) process.env["HOME"] = oldHome;
+      process.chdir(oldCwd);
+    }
+  });
+});
+
+test("getConfig deep-merges env with project overriding global per-key", async () => {
+  await withTempDir(async (tmpHome) => {
+    const oldHome = process.env["HOME"];
+    const oldCwd = process.cwd();
+    try {
+      process.env["HOME"] = tmpHome;
+      const projectDir = path.join(tmpHome, "proj");
+      await fs.mkdir(projectDir, { recursive: true });
+      process.chdir(projectDir);
+
+      const appCfgDir = path.join(tmpHome, ".acai");
+      await fs.mkdir(appCfgDir, { recursive: true });
+      const globalEnv = Object.fromEntries([
+        ["GLOBAL_VAR", "from_global"],
+        ["SHARED", "global_value"],
+      ]);
+      await fs.writeFile(
+        path.join(appCfgDir, "acai.json"),
+        JSON.stringify({ env: globalEnv }),
+        "utf8",
+      );
+
+      const projCfgDir = path.join(projectDir, ".acai");
+      await fs.mkdir(projCfgDir, { recursive: true });
+      const projectEnv = Object.fromEntries([
+        ["PROJECT_VAR", "from_project"],
+        ["SHARED", "project_value"],
+      ]);
+      await fs.writeFile(
+        path.join(projCfgDir, "acai.json"),
+        JSON.stringify({ env: projectEnv }),
+        "utf8",
+      );
+
+      const mgr = new ConfigManager();
+      const cfg = await mgr.getConfig();
+      assert.equal(cfg.env["GLOBAL_VAR"], "from_global");
+      assert.equal(cfg.env["PROJECT_VAR"], "from_project");
+      assert.equal(cfg.env["SHARED"], "project_value");
+    } finally {
+      if (oldHome !== undefined) process.env["HOME"] = oldHome;
+      process.chdir(oldCwd);
+    }
+  });
+});
+
 test("readAgentsFiles and writeAgentsFile operate in CWD", async () => {
   await withTempDir(async (tmpCwd) => {
     const oldCwd = process.cwd();

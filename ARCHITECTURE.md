@@ -504,6 +504,7 @@ acai-ts
 ### Source - Utils
 
 - **source/utils/bash.ts**: Bash command utilities
+- **source/utils/env-expand.ts**: Environment variable expansion for config values
 - **source/utils/filetype-detection.ts**: File type detection
 - **source/utils/funcs.ts**: General function utilities
 - **source/utils/generators.ts**: Generator utilities

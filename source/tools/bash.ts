@@ -12,6 +12,7 @@ import {
   detectDestructiveCommand,
   formatBlockedCommandMessage,
 } from "../utils/command-protection.ts";
+import { expandEnvVars } from "../utils/env-expand.ts";
 import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions } from "./types.ts";
 
@@ -264,11 +265,14 @@ type BashInputSchema = z.infer<typeof inputSchema>;
 
 export const createBashTool = async (options: {
   workspace: WorkspaceContext;
+  env?: Record<string, string>;
 }) => {
   const { primaryDir, allowedDirs } = options.workspace;
+  const configEnv = options.env ? expandEnvVars(options.env) : {};
   const execEnv = await initExecutionEnvironment({
     execution: {
       env: {
+        ...configEnv,
         // biome-ignore lint/style/useNamingConvention: environment variable
         TICKETS_DIR: `${process.cwd()}/.tickets`,
       },

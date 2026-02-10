@@ -80,6 +80,27 @@ Acai supports project-specific configuration through a `.acai/acai.json` file in
 }
 ```
 
+### Custom Environment Variables
+
+You can define environment variables in `acai.json` that are passed to the Bash tool's execution environment. Values support `$VAR` and `${VAR}` expansion against your shell environment, so you can reference secrets without committing them to config.
+
+```json
+{
+  "env": {
+    "DATABASE_URL": "postgres://localhost:5432/mydb",
+    "API_KEY": "$MY_SECRET_API_KEY",
+    "CUSTOM_PATH": "${HOME}/tools/bin"
+  }
+}
+```
+
+- **Literal values** are passed through as-is
+- **`$VAR`** and **`${VAR}`** references are expanded against your shell environment at config load time
+- Undefined references resolve to empty string
+- Project-level env vars override global-level env vars (per-key)
+
+> **Warning:** Do not store sensitive values directly in `acai.json`. Use `$VAR` references to secrets defined in your shell environment instead.
+
 ### Project-Specific Customization
 
 - **Rules/Guidelines**: Add project-specific AI behavior rules in `AGENTS.md`

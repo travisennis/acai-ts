@@ -1,5 +1,6 @@
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import type { Tool } from "ai";
+import { config } from "../config.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { AgentTool, createAgentTools } from "./agent.ts";
 import { BashTool, createBashTool } from "./bash.ts";
@@ -55,7 +56,8 @@ export async function initTools({
 
   const lsTool = await createLsTool({ workspace });
 
-  const bashTool = await createBashTool({ workspace });
+  const projectConfig = await config.getConfig();
+  const bashTool = await createBashTool({ workspace, env: projectConfig.env });
 
   const skillTool = await createSkillTool();
 
