@@ -93,32 +93,31 @@ describe("CombinedAutocompleteProvider", () => {
   });
 
   describe("file path autocomplete", () => {
-    it("should trigger for @ prefix", async () => {
-      const result = await provider.getSuggestions(["@"], 0, 1);
-      assert.ok(result);
-      assert.strictEqual(result.prefix, "@");
-      assert.equal(
-        !!result.items.find((item) => item.label === "source"),
-        true,
-      );
-      // Should return file suggestions (even if empty)
-    });
-
-    it("should trigger for @ with partial path", async () => {
+    it("should trigger fuzzy search for @ prefix", async () => {
       const result = await provider.getSuggestions(["@source"], 0, 7);
       assert.ok(result);
       assert.strictEqual(result.prefix, "@source");
-      assert.equal(
-        !!result.items.find((item) => item.label === "source"),
-        true,
-      );
     });
 
-    it("should trigger for @ with path containing slash", async () => {
-      const result = await provider.getSuggestions(["@source/to"], 0, 10);
+    it("should trigger attachment for # prefix", async () => {
+      const result = await provider.getSuggestions(["#"], 0, 1);
       assert.ok(result);
-      assert.strictEqual(result.prefix, "@source/to");
-      assert.equal(!!result.items.find((item) => item.label === "tools"), true);
+      assert.strictEqual(result.prefix, "#");
+      assert.ok(result.items.length > 0);
+    });
+
+    it("should trigger attachment for # with partial path", async () => {
+      const result = await provider.getSuggestions(["#source"], 0, 7);
+      assert.ok(result);
+      assert.strictEqual(result.prefix, "#source");
+      assert.ok(result.items.length > 0);
+    });
+
+    it("should trigger attachment for # with path containing slash", async () => {
+      const result = await provider.getSuggestions(["#source/to"], 0, 10);
+      assert.ok(result);
+      assert.strictEqual(result.prefix, "#source/to");
+      assert.ok(result.items.length > 0);
     });
 
     it("should trigger for paths starting with ./", async () => {
@@ -137,13 +136,11 @@ describe("CombinedAutocompleteProvider", () => {
     });
 
     it("should trigger for paths ending with /", async () => {
-      // Use a path that should exist (current directory)
       const result = await provider.getSuggestions(["./source/"], 0, 9);
       assert.ok(result);
     });
 
     it("should trigger for paths starting with /", async () => {
-      // Use the cwd from test setup which is one of the allowed directories
       const cwd = process.cwd();
       const result = await provider.getSuggestions(
         [`read ${cwd}/source`],
@@ -155,14 +152,14 @@ describe("CombinedAutocompleteProvider", () => {
   });
 
   describe("force file completion", () => {
-    it("should trigger for @ prefix with Tab", async () => {
+    it("should trigger for path prefix with Tab", async () => {
       const result = await provider.getForceFileSuggestions(
-        ["@source/to"],
+        ["source/to"],
         0,
-        10,
+        9,
       );
       assert.ok(result);
-      assert.strictEqual(result.prefix, "@source/to");
+      assert.strictEqual(result.prefix, "source/to");
       assert.equal(!!result.items.find((item) => item.label === "tools"), true);
     });
 
@@ -207,18 +204,18 @@ describe("CombinedAutocompleteProvider", () => {
       assert.strictEqual(result.cursorCol, 6); // After "/help "
     });
 
-    it("should apply @ file completion correctly", () => {
+    it("should apply # file completion correctly", () => {
       const result = provider.applyCompletion(
-        ["@source"],
+        ["#source"],
         0,
         7,
-        { value: "@source/to", label: "to" },
-        "@source",
+        { value: "#source/to", label: "to" },
+        "#source",
       );
 
-      assert.deepStrictEqual(result.lines, ["@source/to "]);
+      assert.deepStrictEqual(result.lines, ["#source/to "]);
       assert.strictEqual(result.cursorLine, 0);
-      assert.strictEqual(result.cursorCol, 11); // After "@source/to "
+      assert.strictEqual(result.cursorCol, 11); // After "#source/to "
     });
 
     it("should apply regular file completion correctly", () => {

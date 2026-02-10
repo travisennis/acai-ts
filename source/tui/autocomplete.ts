@@ -34,8 +34,8 @@ export function createDefaultProvider<
 >(commands: T[] = [], allowedDirs: string[] = [process.cwd()]) {
   return new CombinedProvider([
     new CommandProvider<T>(commands),
+    new AttachmentProvider(),
     new FileSearchProvider(),
-    new AttachmentProvider(allowedDirs),
     new PathProvider(allowedDirs),
   ]);
 }

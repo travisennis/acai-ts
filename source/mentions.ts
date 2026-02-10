@@ -115,7 +115,7 @@ export async function processPrompt(
   },
 ): Promise<{ message: string; context: ContextItem[] }> {
   const fileRegex =
-    /(?<![a-zA-Z0-9_-])@([a-zA-Z_][^\s@]*?(?:\.[a-zA-Z0-9]+)?)(?![^\s@]*@[\d.]+)/g;
+    /(?<![a-zA-Z0-9_-])#([a-zA-Z_][^\s#]*?(?:\.[a-zA-Z0-9]+)?)(?![^\s#]*#[\d.]+)/g;
 
   // Collect all matches for files
   const fileMatches = Array.from(message.matchAll(fileRegex));

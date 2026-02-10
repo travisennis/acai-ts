@@ -48,7 +48,7 @@ export class FileSearchProvider implements AutocompleteProvider {
     const currentLine = lines[cursorLine] || "";
     const textBeforeCursor = currentLine.slice(0, cursorCol);
 
-    const pathMatch = textBeforeCursor.match(/#([^\s]*)$/);
+    const pathMatch = textBeforeCursor.match(/(?<!@)@([^\s]*)$/);
     if (!pathMatch) {
       return null;
     }
@@ -74,8 +74,8 @@ export class FileSearchProvider implements AutocompleteProvider {
     item: AutocompleteItem,
     prefix: string,
   ): { lines: string[]; cursorLine: number; cursorCol: number } {
-    // Only handle completions that start with #
-    if (!prefix.startsWith("#")) {
+    // Only handle completions that start with @
+    if (!prefix.startsWith("@")) {
       return { lines, cursorLine, cursorCol };
     }
 
@@ -94,7 +94,7 @@ export class FileSearchProvider implements AutocompleteProvider {
     };
   }
 
-  private async searchFiles(searchTerm: string): Promise<AutocompleteItem[]> {
+  protected async searchFiles(searchTerm: string): Promise<AutocompleteItem[]> {
     const results: AutocompleteItem[] = [];
     const cwd = process.cwd();
 
@@ -131,18 +131,12 @@ export class FileSearchProvider implements AutocompleteProvider {
         }
 
         const isDirectory = match.endsWith("/");
-        const pathWithoutTrailingSlash = isDirectory
-          ? match.slice(0, -1)
-          : match;
-        const label =
-          pathWithoutTrailingSlash.split("/").pop() || pathWithoutTrailingSlash;
-        const parentPath = pathWithoutTrailingSlash
-          .split("/")
-          .slice(0, -1)
-          .join("/");
+        const relPath = isDirectory ? `${relativePath}/` : relativePath;
+        const label = relativePath.split("/").pop() || relativePath;
+        const parentPath = relativePath.split("/").slice(0, -1).join("/");
 
         results.push({
-          value: isDirectory ? `${match} ` : match,
+          value: isDirectory ? `${relPath} ` : relPath,
           label,
           description: parentPath || ".",
         });

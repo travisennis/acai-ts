@@ -796,7 +796,6 @@ export class Editor implements Component {
       else if (char === "@") {
         const currentLine = this.state.lines[this.state.cursorLine] || "";
         const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
-        // Only trigger if @ is after whitespace or at start of line
         const charBeforeAt = textBeforeCursor[textBeforeCursor.length - 2];
         if (
           textBeforeCursor.length === 1 ||
@@ -806,11 +805,10 @@ export class Editor implements Component {
           void this.tryTriggerAutocomplete();
         }
       }
-      // Auto-trigger for "#" file search
+      // Auto-trigger for "#" file attachment
       else if (char === "#") {
         const currentLine = this.state.lines[this.state.cursorLine] || "";
         const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
-        // Only trigger if # is after whitespace or at start of line
         const charBeforeHash = textBeforeCursor[textBeforeCursor.length - 2];
         if (
           textBeforeCursor.length === 1 ||
@@ -828,12 +826,8 @@ export class Editor implements Component {
         if (textBeforeCursor.trimStart().startsWith("/")) {
           void this.tryTriggerAutocomplete();
         }
-        // Check if we're in an @ file reference context
-        else if (textBeforeCursor.match(/(?:^|[\s])@[^\s]*$/)) {
-          void this.tryTriggerAutocomplete();
-        }
-        // Check if we're in a # file search context
-        else if (textBeforeCursor.match(/(?:^|[\s])#[^\s]*$/)) {
+        // Check if we're in an @ file reference or # file attachment context
+        else if (textBeforeCursor.match(/(?:^|[\s])[@#][^\s]*$/)) {
           void this.tryTriggerAutocomplete();
         }
       }
@@ -1462,14 +1456,13 @@ export class Editor implements Component {
     const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
 
     // If we're no longer in the context that triggered autocomplete, cancel it
-    // For slash commands, @ file attachments, and # file search, allow progressive typing
+    // For slash commands and @ file references and # file attachments, allow progressive typing
     // For other file paths, check if we're still in the same path context
     if (
       textBeforeCursor.startsWith("/") ||
-      textBeforeCursor.match(/(?:^|[\s])@[^\s]*$/) ||
-      textBeforeCursor.match(/(?:^|[\s])#[^\s]*$/)
+      textBeforeCursor.match(/(?:^|[\s])[@#][^\s]*$/)
     ) {
-      // For slash commands, @ file attachments, and # file search,
+      // For slash commands and @ file references and # file attachments,
       // continue autocomplete as long as we're in the right context
     } else {
       // For other file paths, check if we're still in the same path context
