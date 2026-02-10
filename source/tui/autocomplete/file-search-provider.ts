@@ -36,6 +36,18 @@ async function loadGitignorePatterns(cwd: string): Promise<string[]> {
   }
 }
 
+function fuzzyScore(filename: string, searchTerm: string): number {
+  const lower = filename.toLowerCase();
+  if (lower.startsWith(searchTerm)) return 0;
+
+  const nameWithoutExt = lower.replace(/\.[^.]+$/, "");
+  if (nameWithoutExt.startsWith(searchTerm)) return 1;
+
+  if (lower.includes(searchTerm)) return 2;
+
+  return 3;
+}
+
 export class FileSearchProvider implements AutocompleteProvider {
   private maxResults = 20;
   private maxDepth = 3;
@@ -98,7 +110,6 @@ export class FileSearchProvider implements AutocompleteProvider {
     const results: AutocompleteItem[] = [];
     const cwd = process.cwd();
 
-    // Build ignore instance with .gitignore patterns + defaults
     const ig = ignore().add(defaultIgnoredPatterns);
     const gitignorePatterns = await loadGitignorePatterns(cwd);
     if (gitignorePatterns.length > 0) {
@@ -140,10 +151,17 @@ export class FileSearchProvider implements AutocompleteProvider {
           label,
           description: parentPath || ".",
         });
+      }
 
-        if (results.length >= this.maxResults) {
-          break;
-        }
+      results.sort((a, b) => {
+        const scoreA = fuzzyScore(a.label, lowerSearchTerm);
+        const scoreB = fuzzyScore(b.label, lowerSearchTerm);
+        if (scoreA !== scoreB) return scoreA - scoreB;
+        return a.label.localeCompare(b.label);
+      });
+
+      if (results.length > this.maxResults) {
+        results.length = this.maxResults;
       }
     } catch {
       // Directory doesn't exist or not accessible
