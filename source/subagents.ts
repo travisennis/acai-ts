@@ -25,7 +25,7 @@ export interface Subagent {
 }
 
 const CONFIG_DIR_NAME = ".acai";
-const DEFAULT_TIMEOUT = 300;
+const DEFAULT_TIMEOUT = 900;
 
 // Validation functions
 function validateSubagentName(

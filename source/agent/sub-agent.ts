@@ -61,14 +61,21 @@ export class SubAgent {
       if (timeout && timeout > 0) {
         const controller = new AbortController();
         timeoutSignal = controller.signal;
-        timeoutId = setTimeout(
-          controller.abort.bind(controller),
-          timeout * 1000,
-        );
+        timeoutId = setTimeout(() => {
+          controller.abort(
+            new Error(`SubAgent timed out after ${timeout} seconds`),
+          );
+        }, timeout * 1000);
       }
 
-      // Combine abort signals
-      const combinedAbortSignal = timeoutSignal || abortSignal;
+      // Combine abort signals so both timeout and parent cancellation work
+      const signals = [timeoutSignal, abortSignal].filter(
+        (s): s is AbortSignal => s != null,
+      );
+      const combinedAbortSignal =
+        signals.length > 1
+          ? AbortSignal.any(signals)
+          : (signals[0] ?? undefined);
 
       try {
         const result = await generateText({
@@ -91,7 +98,15 @@ export class SubAgent {
         }
       }
     } catch (error) {
-      return (error as Error).message;
+      const err = error as Error;
+      if (err.name === "AbortError" || err.name === "TimeoutError") {
+        throw new Error(
+          err.message.includes("timed out")
+            ? err.message
+            : `SubAgent execution was aborted: ${err.message}`,
+        );
+      }
+      throw error;
     }
   }
 }
