@@ -429,65 +429,53 @@ export class Editor implements Component {
   }
 
   handleInput(data: string): void {
-    // Handle bracketed paste mode
-    // Start of paste: \x1b[200~
-    // End of paste: \x1b[201~
+    const pasteStart = "\x1b[200~";
+    const pasteEnd = "\x1b[201~";
+    let input = data;
 
-    // Check if we're starting a bracketed paste
-    if (data.includes("\x1b[200~")) {
-      this.isInPaste = true;
-      this.pasteBuffer = "";
-      // Remove the start marker and keep the rest
-      const cleanedData = data.replace("\x1b[200~", "");
-      // Process the remaining data
-      this.processInputData(cleanedData);
-      return;
-    }
+    while (input.length > 0) {
+      if (!this.isInPaste) {
+        const startIndex = input.indexOf(pasteStart);
+        if (startIndex === -1) break;
 
-    // If we're in a paste, buffer the data
-    if (this.isInPaste) {
-      // Append data to buffer first (end marker could be split across chunks)
-      this.pasteBuffer += data;
-
-      // Check if the accumulated buffer contains the end marker
-      const endIndex = this.pasteBuffer.indexOf("\x1b[201~");
-      if (endIndex !== -1) {
-        // Extract content before the end marker
-        const pasteContent = this.pasteBuffer.substring(0, endIndex);
-
-        // Process the complete paste
-        this.handlePaste(pasteContent);
-
-        // Reset paste state
-        this.isInPaste = false;
-
-        // Process any remaining data after the end marker
-        const remaining = this.pasteBuffer.substring(endIndex + 6); // 6 = length of \x1b[201~
-        this.pasteBuffer = "";
-
-        if (remaining.length > 0) {
-          this.handleInput(remaining);
+        const before = input.slice(0, startIndex);
+        if (before.length > 0) {
+          this.processInputData(before);
         }
-        return;
+
+        this.isInPaste = true;
+        this.pasteBuffer = "";
+        input = input.slice(startIndex + pasteStart.length);
+        continue;
       }
-      // Still accumulating, wait for more data
-      return;
+
+      this.pasteBuffer += input;
+      const endIndex = this.pasteBuffer.indexOf(pasteEnd);
+      if (endIndex === -1) return;
+
+      const pasteContent = this.pasteBuffer.slice(0, endIndex);
+      const remaining = this.pasteBuffer.slice(endIndex + pasteEnd.length);
+
+      this.handlePaste(pasteContent);
+
+      this.isInPaste = false;
+      this.pasteBuffer = "";
+
+      input = remaining;
     }
 
-    // Intercept Escape key - but only if autocomplete is NOT active
-    // (let parent handle escape for autocomplete cancellation)
-    if (isEscape(data) && this.onEscape && !this.isShowingAutocomplete()) {
+    if (input.length === 0) return;
+
+    if (isEscape(input) && this.onEscape && !this.isShowingAutocomplete()) {
       this.onEscape();
       return;
     }
 
-    // Intercept Ctrl+C
-    if (isCtrlC(data)) {
+    if (isCtrlC(input)) {
       return;
     }
 
-    // Process regular input data
-    this.processInputData(data);
+    this.processInputData(input);
   }
 
   private processInputData(data: string): void {
