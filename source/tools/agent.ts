@@ -21,7 +21,7 @@ async function getToolDescription(): Promise<string> {
 
   return `Launch a new agent to handle complex, multi-step tasks autonomously.
 
-The Agent tool launches specialized agents (subprocesses) that autonomously handle complex tasks. Each agent type has specific capabilities and tools available to it.
+The Agent tool launches specialized agents (subagents) that autonomously handle complex tasks. Each agent type has specific capabilities and tools available to it.
 
 Available agent types and the tools they have access to:
 ${subagentList}
