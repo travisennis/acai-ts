@@ -20,7 +20,7 @@ const MODE_DEFINITIONS: Record<Mode, ModeDefinition> = {
   },
   planning: {
     name: "planning",
-    displayName: "Planning",
+    displayName: "Plan",
     initialPrompt: planningPrompt,
     reminderPrompt:
       "Remember: You are still in Plan Mode. Continue focusing on architectural design, systematic planning, and high-level considerations.",

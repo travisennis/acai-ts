@@ -232,9 +232,6 @@ export class Repl {
 
     this.tui.onShiftTab = () => {
       this.modeManager.cycleMode();
-      this.notification.setMessage(
-        `Mode: ${this.modeManager.getDisplayName()}`,
-      );
       this.footer.setState({
         projectStatus: this.footer.getProjectStatus(),
         currentContextWindow:
