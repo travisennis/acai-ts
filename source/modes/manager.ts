@@ -1,5 +1,6 @@
 import type { UserModelMessage } from "ai";
 import { createUserMessage } from "../sessions/manager.ts";
+import { planningPrompt } from "./prompts.ts";
 
 export type Mode = "normal" | "planning" | "research";
 
@@ -20,10 +21,9 @@ const MODE_DEFINITIONS: Record<Mode, ModeDefinition> = {
   planning: {
     name: "planning",
     displayName: "Planning",
-    initialPrompt:
-      "You are in PLANNING MODE. Before writing any code:\n\n1. First, understand the requirements fully\n2. Identify the core problem and constraints\n3. Design the solution architecture\n4. Consider edge cases\n5. Plan implementation\n6. Identify dependencies",
+    initialPrompt: planningPrompt,
     reminderPrompt:
-      "Remember: You are still in PLANNING MODE. Continue focusing on architectural design, systematic planning, and high-level considerations.",
+      "Remember: You are still in Plan Mode. Continue focusing on architectural design, systematic planning, and high-level considerations.",
   },
   research: {
     name: "research",
