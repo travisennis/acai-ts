@@ -1,6 +1,6 @@
 ---
 name: add-opencode-model
-description: Fetch OpenCode Zen model details and provide guidance for adding models to acai-ts provider configuration.
+description: REQUIRED when adding OpenCode Zen models - provides a script that fetches accurate context, max tokens, pricing, and capabilities from the API. Use this skill whenever the user asks to add, register, or configure a new OpenCode Zen model. Do NOT guess model specifications—always fetch real data from the API.
 ---
 
 # Add OpenCode Zen Model
