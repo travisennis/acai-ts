@@ -313,7 +313,7 @@ async function initializeModelManager(
 ): Promise<ModelManager> {
   const chosenModel: ModelName = isSupportedModel(flags.model)
     ? flags.model
-    : "opencode:minimax-m2.1-free";
+    : "opencode:minimax-m2.5-free";
 
   const modelManager = new ModelManager({
     stateDir: await appDir.ensurePath("audit"),

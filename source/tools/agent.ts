@@ -106,7 +106,7 @@ ${await environmentInfo(options.workspace.primaryDir, options.workspace.allowedD
 
     try {
       const result = await subagent.execute({
-        model: isSupportedModel(model) ? model : "opencode:minimax-m2.1-free",
+        model: isSupportedModel(model) ? model : "opencode:minimax-m2.5-free",
         system: systemPrompt,
         prompt,
         abortSignal,
