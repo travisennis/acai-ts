@@ -28,9 +28,7 @@ const openRouterClient = createOpenAICompatible({
 // });
 
 const openrouterModels = {
-  "claude-3-5-sonnet": openRouterClient("anthropic/claude-3.5-sonnet"),
   "deepseek-v3-2": openRouterClient("deepseek/deepseek-v3.2"),
-  "gemini-3-pro": openRouterClient("google/gemini-3-pro-preview"),
   "glm-4-7": openRouterClient("z-ai/glm-4.7"),
   "glm-4-7-flash": openRouterClient("z-ai/glm-4.7-flash"),
   "kat-coder-pro-free": openRouterClient("kwaipilot/kat-coder-pro:free"),
@@ -39,8 +37,6 @@ const openrouterModels = {
   "sonnet-4.5": openRouterClient("anthropic/claude-sonnet-4.5"),
   "opus-4.5": openRouterClient("anthropic/claude-opus-4.5"),
   "haiku-4.5": openRouterClient("anthropic/claude-haiku-4.5"),
-  "kimi-k2": openRouterClient("moonshotai/kimi-k2-0905:exacto"),
-  "kimi-k2-thinking": openRouterClient("moonshotai/kimi-k2-thinking"),
   "kimi-k2-5": openRouterClient("moonshotai/kimi-k2.5"),
   "devstral-medium": openRouterClient("mistralai/devstral-medium"),
   "devstral-2512-free": openRouterClient("mistralai/devstral-2512:free"),
@@ -49,7 +45,6 @@ const openrouterModels = {
   "qwen3-max": openRouterClient("qwen/qwen3-max"),
   "qwen3-max-thinking": openRouterClient("qwen/qwen3-max-thinking"),
   "qwen3-coder-next": openRouterClient("qwen/qwen3-coder-next"),
-  "glm-4.6": openRouterClient("z-ai/glm-4.6:exacto"),
   "glm-5": openRouterClient("z-ai/glm-5"),
   "gpt-oss-120b": openRouterClient("openai/gpt-oss-120b:exacto"),
   "grok-code-fast-1": openRouterClient("x-ai/grok-code-fast-1"),
@@ -60,8 +55,6 @@ const openrouterModels = {
   "gpt-5.1-codex-max": openRouterClient("openai/gpt-5.1-codex-max"),
   "gpt-5.2": openRouterClient("openai/gpt-5.2"),
   "gpt-5.2-codex": openRouterClient("openai/gpt-5.2-codex"),
-  "minimax-m2": openRouterClient("minimax/minimax-m2"),
-  "gemini-3-flash-preview": openRouterClient("google/gemini-3-flash-preview"),
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -80,18 +73,6 @@ export const openrouterProvider = {
 export const openrouterModelRegistry: {
   [K in ModelName]: ModelMetadata<ModelName>;
 } = {
-  "openrouter:claude-3-5-sonnet": {
-    id: "openrouter:claude-3-5-sonnet",
-    provider: "openrouter",
-    contextWindow: 200000,
-    maxOutputTokens: 8192,
-    defaultTemperature: 0.5,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.000006,
-    costPerOutputToken: 0.00003,
-  },
   "openrouter:deepseek-v3-2": {
     id: "openrouter:deepseek-v3-2",
     provider: "openrouter",
@@ -103,18 +84,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000027,
     costPerOutputToken: 0.0000004,
-  },
-  "openrouter:gemini-3-pro": {
-    id: "openrouter:gemini-3-pro",
-    provider: "openrouter",
-    contextWindow: 1048576,
-    maxOutputTokens: 65536,
-    defaultTemperature: 0.5,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.000002,
-    costPerOutputToken: 0.000012,
   },
   "openrouter:glm-4-7": {
     id: "openrouter:glm-4-7",
@@ -199,30 +168,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000003,
     costPerOutputToken: 0.000015,
-  },
-  "openrouter:kimi-k2": {
-    id: "openrouter:kimi-k2",
-    provider: "openrouter",
-    contextWindow: 262144,
-    maxOutputTokens: 8192,
-    defaultTemperature: 0.6,
-    promptFormat: "markdown",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000006,
-    costPerOutputToken: 0.0000025,
-  },
-  "openrouter:kimi-k2-thinking": {
-    id: "openrouter:kimi-k2-thinking",
-    provider: "openrouter",
-    contextWindow: 262144,
-    maxOutputTokens: 8192,
-    defaultTemperature: 0.6,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000006,
-    costPerOutputToken: 0.0000025,
   },
   "openrouter:kimi-k2-5": {
     id: "openrouter:kimi-k2-5",
@@ -319,18 +264,6 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000007,
     costPerOutputToken: 0.0000003,
-  },
-  "openrouter:glm-4.6": {
-    id: "openrouter:glm-4.6",
-    provider: "openrouter",
-    contextWindow: 200000,
-    maxOutputTokens: 128000,
-    defaultTemperature: 0.6,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000006,
-    costPerOutputToken: 0.0000022,
   },
   "openrouter:glm-5": {
     id: "openrouter:glm-5",
@@ -463,29 +396,5 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.00000175,
     costPerOutputToken: 0.000014,
-  },
-  "openrouter:minimax-m2": {
-    id: "openrouter:minimax-m2",
-    provider: "openrouter",
-    contextWindow: 196608,
-    maxOutputTokens: 32768,
-    defaultTemperature: 0.6,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.00000015,
-    costPerOutputToken: 0.00000045,
-  },
-  "openrouter:gemini-3-flash-preview": {
-    id: "openrouter:gemini-3-flash-preview",
-    provider: "openrouter",
-    contextWindow: 1048576,
-    maxOutputTokens: 65535,
-    defaultTemperature: 0.5,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000005,
-    costPerOutputToken: 0.000003,
   },
 };
