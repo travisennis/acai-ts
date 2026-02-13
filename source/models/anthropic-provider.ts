@@ -7,7 +7,7 @@ import { customProvider } from "ai";
 import type { ModelMetadata } from "./providers.ts";
 
 const anthropicModels = {
-  opus: createAnthropic()("claude-opus-4-5"),
+  opus: createAnthropic()("claude-opus-4-6"),
   sonnet: createAnthropic()("claude-sonnet-4-5"),
   haiku: originalAnthropic("claude-haiku-4-5"),
 } as const;

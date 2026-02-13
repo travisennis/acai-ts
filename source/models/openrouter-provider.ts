@@ -35,7 +35,7 @@ const openrouterModels = {
   "minimax-m2-1": openRouterClient("minimax/minimax-m2.1"),
   "minimax-m2-5": openRouterClient("minimax/minimax-m2.5"),
   "sonnet-4.5": openRouterClient("anthropic/claude-sonnet-4.5"),
-  "opus-4.5": openRouterClient("anthropic/claude-opus-4.5"),
+  "opus-4.6": openRouterClient("anthropic/claude-opus-4.6"),
   "haiku-4.5": openRouterClient("anthropic/claude-haiku-4.5"),
   "kimi-k2-5": openRouterClient("moonshotai/kimi-k2.5"),
   "devstral-medium": openRouterClient("mistralai/devstral-medium"),
@@ -145,8 +145,8 @@ export const openrouterModelRegistry: {
     costPerInputToken: 3e-7,
     costPerOutputToken: 0.0000012,
   },
-  "openrouter:opus-4.5": {
-    id: "openrouter:opus-4.5",
+  "openrouter:opus-4.6": {
+    id: "openrouter:opus-4.6",
     provider: "openrouter",
     contextWindow: 200000,
     maxOutputTokens: 32000,
