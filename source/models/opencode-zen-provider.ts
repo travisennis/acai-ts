@@ -38,7 +38,7 @@ const responsesClient = createOpenAI({
 const opencodeZenModels = {
   "glm-4-7": completionsClient("glm-4.7"),
   "opus-4-5": messagesClient("claude-opus-4.5"),
-  "minimax-m2.5-free": messagesClient("minimax-m2.5-free"),
+  "minimax-m2.5-free": completionsClient("minimax-m2.5-free"),
   "gpt-5.2-codex": responsesClient.responses("gpt-5.2-codex"),
   "kimi-k2-5-free": completionsClient("kimi-k2.5-free"),
   "kimi-k2-5": completionsClient("kimi-k2.5"),
