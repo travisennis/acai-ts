@@ -71,6 +71,7 @@ export function formatFileDiffForDisplay(
 
   formattedLines.push(`### ${fileName}`);
   formattedLines.push("");
+  formattedLines.push("```diff");
 
   for (const line of lines) {
     if (line.startsWith("+") && !line.startsWith("+++")) {
@@ -94,6 +95,8 @@ export function formatFileDiffForDisplay(
       formattedLines.push(line);
     }
   }
+
+  formattedLines.push("```");
 
   return formattedLines.join("\n");
 }
