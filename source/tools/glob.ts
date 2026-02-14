@@ -53,6 +53,19 @@ export const inputSchema = z.object({
       if (converted === null) {
         return null;
       }
+      if (typeof converted === "string") {
+        const trimmed = converted.trim();
+        if (trimmed.startsWith("[")) {
+          try {
+            const parsed: unknown = JSON.parse(trimmed);
+            if (Array.isArray(parsed)) {
+              return parsed;
+            }
+          } catch {
+            // Not valid JSON, treat as a plain string
+          }
+        }
+      }
       return converted;
     }, z.union([z.string(), z.array(z.string())]).nullable())
     .describe(
