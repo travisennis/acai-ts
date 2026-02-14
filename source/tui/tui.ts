@@ -6,6 +6,7 @@ import {
   getTerminalSize,
   isCtrlC,
   isCtrlD,
+  isCtrlM,
   isCtrlN,
   isCtrlO,
   isCtrlR,
@@ -88,6 +89,8 @@ export class TUI extends Container {
   public onReconstructSession?: () => void;
   public onCtrlN?: () => void;
   public onCtrlO?: () => void;
+  /** Callback invoked when Ctrl+M is pressed - opens model selector. */
+  public onCtrlM?: () => void;
   public onCtrlR?: () => void;
   public onShiftTab?: () => void;
 
@@ -195,6 +198,14 @@ export class TUI extends Container {
     if (isCtrlN(data)) {
       if (this.onCtrlN) {
         this.onCtrlN();
+      }
+      return;
+    }
+
+    // Handle Ctrl+M - model selector
+    if (isCtrlM(data)) {
+      if (this.onCtrlM) {
+        this.onCtrlM();
       }
       return;
     }

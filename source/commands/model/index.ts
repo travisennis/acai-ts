@@ -270,6 +270,16 @@ class ModelSelectorComponent extends Container {
   }
 
   handleInput(keyData: string): void {
+    // Handle Enter first - check multiple formats for compatibility
+    const enterKeyCodes = ["\r", "\n", "\x1b[13u", "\x0d"];
+    const isEnterKey = enterKeyCodes.includes(keyData) || isEnter(keyData);
+    if (isEnterKey) {
+      const selectedModel = this.filteredModels[this.selectedIndex];
+      if (selectedModel !== undefined) {
+        this.handleSelect(selectedModel);
+      }
+      return;
+    }
     if (isArrowUp(keyData)) {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateList();
@@ -279,11 +289,6 @@ class ModelSelectorComponent extends Container {
         this.selectedIndex + 1,
       );
       this.updateList();
-    } else if (isEnter(keyData)) {
-      const selectedModel = this.filteredModels[this.selectedIndex];
-      if (selectedModel !== undefined) {
-        this.handleSelect(selectedModel);
-      }
     } else if (isEscape(keyData)) {
       this.onCancelCallback();
     } else {

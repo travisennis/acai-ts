@@ -1,197 +1,191 @@
-# Custom Environment Variables for ExecutionEnvironment — Implementation Plan
+# Implementation Plan: Ctrl+M Keyboard Shortcut for Model Selection
 
 ## Overview
 
-Add support for user-defined environment variables in `acai.json` that are passed to the `ExecutionEnvironment` used by the Bash tool. Values support `$VAR` / `${VAR}` expansion against `process.env`, enabling users to reference shell-level secrets without committing them to config.
+Add a keyboard shortcut (Ctrl+M) to trigger the model selector without typing `/model` in the editor. This follows the existing pattern of Ctrl+letter shortcuts (Ctrl+R for review, Ctrl+N for new chat, Ctrl+O for verbose mode).
 
-## GitHub Issue Reference
+## Files to Modify
 
-- Issue URL: https://github.com/travisennis/acai-ts/issues/117
+1. `source/terminal/keys.ts` - Add Ctrl+M key detection functions
+2. `source/terminal/control.ts` - Export new key detection function
+3. `source/tui/tui.ts` - Add onCtrlM handler property and keyboard handling
+4. `source/repl.ts` - Wire up onCtrlM to trigger model command
 
-## Current State Analysis
+---
 
-- `ExecutionConfig.execution.env` already accepts `Record<string, string>` and merges it into the environment ([source/execution/index.ts#L97-L99](file:///Users/travisennis/Projects/acai-ts/source/execution/index.ts#L97-L99))
-- `ProjectConfigSchema` has no `env` field ([source/config.ts#L25-L56](file:///Users/travisennis/Projects/acai-ts/source/config.ts#L25-L56))
-- `createBashTool` hardcodes its env vars and doesn't read from config ([source/tools/bash.ts#L269-L276](file:///Users/travisennis/Projects/acai-ts/source/tools/bash.ts#L269-L276))
-- Config merging uses shallow spread (`{ ...appConfig, ...projectConfig }`) — project wins at the top-level key ([source/config.ts#L134-L137](file:///Users/travisennis/Projects/acai-ts/source/config.ts#L134-L137))
+## Phase 1: Add Ctrl+M Key Detection (keys.ts) ✅
 
-### Key Discoveries:
-- The `env` merge must be deep (per-key) since both global and project configs may define different vars
-- Variable expansion must happen at read-time (in `getConfig` or at consumption), not at write-time, so `process.env` is always current
-- The Bash tool is created in `createBashTool` which receives a `WorkspaceContext` but not the config — config access needs to be threaded through
+**Changes to** `source/terminal/keys.ts`
 
-## Desired End State
+### 1.1 Add 'm' to CODEPOINTS (line ~36-55) ✅
 
-Users can add an `"env"` key to `acai.json` (global or project-level):
+```typescript
+m: 109,
+```
 
-```json
-{
-  "env": {
-    "DATABASE_URL": "postgres://localhost:5432/mydb",
-    "API_KEY": "$MY_SECRET_API_KEY",
-    "CUSTOM_PATH": "${HOME}/tools/bin"
-  }
+### 1.2 Add CTRL_M to Keys object (line ~172-200) ✅
+
+```typescript
+CTRL_M: kittySequence(CODEPOINTS.m, MODIFIERS.ctrl),
+```
+
+### 1.3 Add CTRL_M to RAW object (line ~240-255) ✅
+
+```typescript
+CTRL_M: "\x0d",
+```
+
+### 1.4 Add isCtrlM function (after isCtrlL around line ~335) ✅
+
+```typescript
+/**
+ * Check if input matches Ctrl+M (raw byte or Kitty protocol).
+ * Ignores lock key bits.
+ */
+export function isCtrlM(data: string): boolean {
+  return (
+    data === RAW.CTRL_M ||
+    data === Keys.CTRL_M ||
+    matchesKittySequence(data, CODEPOINTS.m, MODIFIERS.ctrl)
+  );
 }
 ```
 
-- Literal values are passed through as-is
-- `$VAR` and `${VAR}` references are expanded against `process.env` at config load time
-- Undefined references resolve to empty string
-- Project-level env vars override global-level env vars (per-key)
-- These env vars are injected into the `ExecutionEnvironment` used by the Bash tool
-- Documentation warns users not to store sensitive values directly in `acai.json`
+**Automated verification:**
+- [x] `npm run lint` passes
+- [x] `npm run typecheck` passes
+
+---
+
+## Phase 2: Export isCtrlM (control.ts) ✅
+
+**Changes to** `source/terminal/control.ts`
+
+### 2.1 Add isCtrlM to exports (line ~27) ✅
+
+```typescript
+isCtrlM,
+```
+
+**Automated verification:**
+- [x] `npm run lint` passes
+- [x] `npm run typecheck` passes
+
+---
+
+## Phase 3: Add onCtrlM Handler (tui.ts) ✅
+
+**Changes to** `source/tui/tui.ts`
+
+### 3.1 Add onCtrlM property (line ~91, after onCtrlR) ✅
+
+```typescript
+public onCtrlM?: () => void;
+```
+
+### 3.2 Add Ctrl+M keyboard handling (after Ctrl+N handler around line ~200) ✅
+
+```typescript
+// Handle Ctrl+M - model selector
+if (isCtrlM(data)) {
+  if (this.onCtrlM) {
+    this.onCtrlM();
+  }
+  return;
+}
+```
+
+**Automated verification:**
+- [x] `npm run lint` passes
+- [x] `npm run typecheck` passes
+
+---
+
+## Phase 4: Wire up onCtrlM in Repl (repl.ts) ✅
+
+**Changes to** `source/repl.ts`
+
+### 4.1 Add onCtrlM handler registration (after onCtrlR registration around line ~221) ✅
+
+```typescript
+this.tui.onCtrlM = () => {
+  void this.handleCtrlM();
+};
+```
+
+### 4.2 Add handleCtrlM method (after handleCtrlN method around line ~950) ✅
+
+```typescript
+/**
+ * Opens the model selector by invoking the /model command handler.
+ */
+private async handleCtrlM(): Promise<void> {
+  await this.commands.handle(
+    { userInput: "/model" },
+    {
+      tui: this.tui,
+      container: this.chatContainer,
+      inputContainer: this.editorContainer,
+      editor: this.editor,
+    },
+  );
+}
+```
+
+**Automated verification:**
+- [x] `npm run lint` passes
+- [x] `npm run typecheck` passes
+
+---
+
+## Phase 5: Manual Testing
+
+### 5.1 Run the REPL in tmux
+
+```bash
+tmux new-session -d -s acai-test "node source/index.ts"
+```
+
+### 5.2 Test Ctrl+M behavior
+
+- [x] With editor empty - press Ctrl+M - should open model selector
+- [x] With editor having text - press Ctrl+M - should still open model selector
+- [x] Press Escape in model selector - should close and return to editor
+- [x] Select a model with Shift+Enter (Kitty protocol) - should change the active model
+- [ ] Select a model with Enter key - BUG: Enter resets selection to first item
+
+## Known Issues
+
+### Enter Key Not Working in Model Selector - RESOLVED ✅
+
+**Issue**: When pressing Enter in the model selector, the selection resets to the first item instead of activating the selected model.
+
+**Root cause**: `Ctrl+M` and `Enter` both produce the same raw byte `\x0d` (`\r`) in legacy terminal mode. The `isCtrlM` check in `TUI.handleInput()` was positioned before input is forwarded to the focused component, so every Enter keypress was matched by `isCtrlM`, which re-triggered the model selector (resetting it) instead of letting the keypress reach `ModelSelectorComponent.handleInput()`.
+
+**Fix applied**: Removed the `RAW.CTRL_M` (`\x0d`) match from `isCtrlM()` in `source/terminal/keys.ts`. The function now only matches the Kitty keyboard protocol sequence (`\x1b[109;5u`), which is distinct from a plain Enter keypress. Terminals that support the Kitty protocol (like Ghostty) send a disambiguated sequence for Ctrl+M, so the shortcut still works there.
+
+**File changed**: `source/terminal/keys.ts` — `isCtrlM()` function
+
+**Trade-off**: Ctrl+M will only work in terminals that support the Kitty keyboard protocol. Terminals that only send raw control bytes will not be able to use Ctrl+M (Enter will work normally in those terminals instead).
+
+### 5.3 Verify existing shortcuts still work
+
+- [x] Ctrl+R - review command
+- [x] Ctrl+N - new chat
+- [x] Ctrl+O - verbose toggle
+
+---
+
+## Edge Cases
+
+1. **Model selector open + Ctrl+M pressed**: Opens another instance (same as typing /model again)
+2. **During agent execution + Ctrl+M pressed**: Should open model selector (same as /model during execution)
+3. **Modal open + Ctrl+M pressed**: Modal handles input first (e.g., Escape closes modal, then Ctrl+M works)
+
+---
 
 ## What We're NOT Doing
 
-- `.acai/env` or `.env` file support (future enhancement)
-- Runtime `/config` command for setting env vars
-- Full shell expansion (command substitution, arithmetic, etc.)
-- Recursive expansion (`$VAR` referencing another `$VAR2`)
-
-## Implementation Approach
-
-Three phases: (1) add env expansion utility + config schema, (2) wire it into the Bash tool, (3) add tests and documentation.
-
-## Phase 1: Config Schema and Variable Expansion
-
-### Overview
-Add the `env` field to the config schema and implement `$VAR`/`${VAR}` expansion.
-
-### Changes Required:
-
-#### 1. Variable expansion utility
-**File**: `source/utils/env-expand.ts` (new)
-**Changes**: Create a function `expandEnvVars(vars: Record<string, string>): Record<string, string>` that:
-- Iterates over each value
-- Replaces `${VAR_NAME}` and `$VAR_NAME` patterns with `process.env[VAR_NAME] ?? ""`
-- Uses a regex like `/\$\{([^}]+)\}|\$([A-Za-z_][A-Za-z0-9_]*)/g`
-- Returns a new record with expanded values
-
-#### 2. Config schema update
-**File**: `source/config.ts`
-**Changes**:
-- Add `env` field to `ProjectConfigSchema`: `env: z.record(z.string(), z.string()).optional().default({})`
-- Add `env` to `defaultConfig`: `env: {} as Record<string, string>`
-- Update `getConfig()` merge logic to deep-merge `env` (per-key, project overrides global)
-
-### Success Criteria:
-
-#### Automated Verification:
-- [x] Typecheck passes: `npm run typecheck`
-- [x] Lint passes: `npm run lint`
-- [x] Build succeeds: `npm run build`
-
-#### Manual Verification:
-- [x] N/A for this phase
-
----
-
-## Phase 2: Wire Config Env Vars into Bash Tool
-
-### Overview
-Pass the resolved env vars from config into the `ExecutionEnvironment`.
-
-### Changes Required:
-
-#### 1. Thread config into Bash tool creation
-**File**: `source/tools/bash.ts`
-**Changes**:
-- Accept config (or just the `env` record) in `createBashTool` options
-- Merge config env vars with existing hardcoded env vars (hardcoded vars like `TICKETS_DIR` take precedence)
-- Apply `expandEnvVars()` to the config env vars before passing to `initExecutionEnvironment`
-
-#### 2. Pass config env from call site
-**File**: Wherever `createBashTool` is called
-**Changes**: Pass the `env` from the loaded config into `createBashTool`
-
-### Success Criteria:
-
-#### Automated Verification:
-- [x] Typecheck passes: `npm run typecheck`
-- [x] Lint passes: `npm run lint`
-- [x] Build succeeds: `npm run build`
-
-#### Manual Verification:
-- [x] Add `"env": { "TEST_VAR": "hello" }` to `.acai/acai.json`, run acai, execute `echo $TEST_VAR` in Bash tool, see `hello`
-- [x] Add `"env": { "EXPANDED": "$HOME" }` and verify it expands to the actual home directory
-- [x] Verify undefined `$REFS` resolve to empty string
-
-**Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation before proceeding.
-
----
-
-## Phase 3: Tests and Documentation
-
-### Overview
-Add unit tests for expansion and config merging, update docs.
-
-### Changes Required:
-
-#### 1. Unit tests for env expansion
-**File**: `test/env-expand.test.ts` (new)
-**Changes**:
-- Test literal passthrough
-- Test `$VAR` expansion
-- Test `${VAR}` expansion
-- Test undefined var resolves to empty string
-- Test mixed literal and variable values
-- Test no expansion of `$$`, `\$`, or partial patterns
-
-#### 2. Config tests for env merging
-**File**: `test/config.test.ts`
-**Changes**:
-- Test that `env` field is parsed from config
-- Test deep merge: global `env` + project `env` with project winning per-key
-
-#### 3. Documentation
-**File**: `docs/configuration.md`
-**Changes**:
-- Add section documenting the `env` config field
-- Show examples of literal and variable-expanded values
-- Add warning about not storing sensitive values directly — use `$VAR` references instead
-
-#### 4. Update ARCHITECTURE.md
-**File**: `ARCHITECTURE.md`
-**Changes**: Add `source/utils/env-expand.ts` to the file listing
-
-### Success Criteria:
-
-#### Automated Verification:
-- [x] All tests pass: `npm test`
-- [x] Typecheck passes: `npm run typecheck`
-- [x] Lint passes: `npm run lint`
-- [x] Build succeeds: `npm run build`
-- [x] Full check: `npm run check`
-
-#### Manual Verification:
-- [x] Documentation reads clearly and examples are correct
-
----
-
-## Testing Strategy
-
-### Unit Tests:
-- `expandEnvVars` with various input patterns
-- Config schema validation accepts/rejects `env` field correctly
-- Deep merge of `env` across global and project configs
-
-### Manual Testing Steps:
-1. Add `"env": { "FOO": "bar", "SECRET": "$SOME_SHELL_VAR" }` to `.acai/acai.json`
-2. Export `SOME_SHELL_VAR=mysecret` in shell
-3. Run acai, use Bash tool to `echo $FOO` → expect `bar`
-4. Use Bash tool to `echo $SECRET` → expect `mysecret`
-
-## Performance Considerations
-
-Env expansion runs once at config load time — negligible cost. No runtime overhead per command execution.
-
-## Migration Notes
-
-Existing configs without `env` will default to `{}` — fully backwards compatible.
-
-## References
-
-- GitHub issue: https://github.com/travisennis/acai-ts/issues/117
-- Config schema: `source/config.ts#L25-L56`
-- ExecutionEnvironment constructor: `source/execution/index.ts#L189-L204`
-- Bash tool creation: `source/tools/bash.ts#L265-L276`
+- Adding shortcut documentation to welcome component (separate task)
+- Adding shortcut hints to footer component (separate task)
+- Supporting alternative key combinations (e.g., Cmd+M on macOS - would require platform detection)

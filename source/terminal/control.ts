@@ -25,6 +25,7 @@ export {
   isCtrlG,
   isCtrlK,
   isCtrlL,
+  isCtrlM,
   isCtrlN,
   isCtrlO,
   isCtrlP,

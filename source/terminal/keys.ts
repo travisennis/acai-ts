@@ -34,6 +34,7 @@ const CODEPOINTS = {
   g: 103,
   k: 107,
   l: 108,
+  m: 109,
   n: 110,
   o: 111,
   p: 112,
@@ -178,6 +179,7 @@ const Keys = {
   CTRL_G: kittySequence(CODEPOINTS.g, MODIFIERS.ctrl),
   CTRL_K: kittySequence(CODEPOINTS.k, MODIFIERS.ctrl),
   CTRL_L: kittySequence(CODEPOINTS.l, MODIFIERS.ctrl),
+  CTRL_M: kittySequence(CODEPOINTS.m, MODIFIERS.ctrl),
   CTRL_O: kittySequence(CODEPOINTS.o, MODIFIERS.ctrl),
   CTRL_N: kittySequence(CODEPOINTS.n, MODIFIERS.ctrl),
   CTRL_P: kittySequence(CODEPOINTS.p, MODIFIERS.ctrl),
@@ -241,6 +243,7 @@ const RAW = {
   CTRL_G: "\x07",
   CTRL_K: "\x0b",
   CTRL_L: "\x0c",
+  CTRL_M: "\x0d",
   CTRL_N: "\x0e",
   CTRL_O: "\x0f",
   CTRL_P: "\x10",
@@ -337,6 +340,19 @@ export function isCtrlL(data: string): boolean {
     data === RAW.CTRL_L ||
     data === Keys.CTRL_L ||
     matchesKittySequence(data, CODEPOINTS.l, MODIFIERS.ctrl)
+  );
+}
+
+/**
+ * Check if input matches Ctrl+M (Kitty protocol only).
+ * The raw Ctrl+M byte (\x0d) is identical to Enter/Return,
+ * so we only match the Kitty protocol sequence to avoid
+ * intercepting Enter keypresses.
+ */
+export function isCtrlM(data: string): boolean {
+  return (
+    data === Keys.CTRL_M ||
+    matchesKittySequence(data, CODEPOINTS.m, MODIFIERS.ctrl)
   );
 }
 

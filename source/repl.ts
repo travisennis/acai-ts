@@ -230,6 +230,10 @@ export class Repl {
       );
     };
 
+    this.tui.onCtrlM = () => {
+      void this.handleCtrlM();
+    };
+
     this.tui.onShiftTab = () => {
       this.modeManager.cycleMode();
       this.footer.setState({
@@ -968,6 +972,21 @@ export class Repl {
     });
 
     this.tui.requestRender();
+  }
+
+  /**
+   * Opens the model selector by invoking the /model command handler.
+   */
+  private async handleCtrlM(): Promise<void> {
+    await this.options.commands.handle(
+      { userInput: "/model" },
+      {
+        tui: this.tui,
+        container: this.chatContainer,
+        inputContainer: this.editorContainer,
+        editor: this.editor,
+      },
+    );
   }
 
   /** Handles Ctrl+D to exit the REPL when the editor is empty. */

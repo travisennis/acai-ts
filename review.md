@@ -1,118 +1,204 @@
-# Abort Handler Memory Leak Prevention - Code Review
+# Code Review: Ctrl+M Keyboard Shortcut for Model Selection
 
 ## Overview
 
-Review of changes made to the `source/` directory intended to prevent memory leaks with abort methods.
-
-## Files Changed
-
-- `source/agent/sub-agent.ts`
-- `source/cli.ts`
-- `source/execution/index.ts`
-- `source/prompts.ts`
-- `source/terminal/select-prompt.ts`
-- `source/tools/agent.ts`
-- `source/tools/web-fetch.ts`
-- `source/tools/web-search.ts`
+| Item | Details |
+|------|---------|
+| **PR/Change** | Implement Ctrl+M keyboard shortcut to trigger model selector |
+| **Scope** | 5 source files modified |
+| **CI Status** | ✅ All checks pass (typecheck, lint, format) |
+| **Risk Level** | Low |
 
 ## Summary
 
-The changes are **partially effective** but introduce new issues and don't fully address the underlying problem.
+This change adds a keyboard shortcut (Ctrl+M) to open the model selector, following the established pattern of Ctrl+letter shortcuts (Ctrl+R, Ctrl+N, Ctrl+O). The implementation also includes a bug fix for the Enter key not working properly in the model selector.
 
-## Issues Found
+### Files Changed
 
-### 1. `web-fetch.ts` - New Leak Introduced (Critical)
+| File | Changes |
+|------|---------|
+| `source/terminal/keys.ts` | Added `m` codepoint, `CTRL_M` key/raw definitions, `isCtrlM()` function |
+| `source/terminal/control.ts` | Exported `isCtrlM` function |
+| `source/tui/tui.ts` | Added `onCtrlM` callback property and keyboard handler |
+| `source/repl.ts` | Wired up `onCtrlM` handler to trigger `/model` command |
+| `source/commands/model/index.ts` | Fixed Enter key handling in model selector |
 
-`cleanup()` is never called on the success path, leaving dangling timers and abort listeners attached to long-lived parent signals. This is a **regression** that introduces the exact type of leak the changes were meant to prevent.
+---
 
-**Fix**: Wrap the fetch logic in a `try/finally` block to ensure `cleanup()` always runs:
+## Findings
 
-```ts
-while (redirectCount <= MAX_REDIRECTS) {
-  const { signal, cleanup } = createTimeoutSignal(timeout, abortSignal);
+### ✅ Positive Aspects
 
-  try {
-    const response = await fetch(currentUrl, { signal, redirect: "manual" });
-    // ... handle response ...
-  } finally {
-    cleanup();
-  }
+1. **Well-documented design decision**: The `isCtrlM` function includes a clear comment explaining why it only matches the Kitty protocol sequence (not raw `\x0d`) — this avoids conflicting with Enter keypresses since both produce the same raw byte.
+
+2. **Consistent with existing patterns**: The implementation follows the exact same pattern as other Ctrl shortcuts (`onCtrlR`, `onCtrlN`, `onCtrlO`) in the codebase.
+
+3. **Bug fix included**: The Enter key handling fix in the model selector (`source/commands/model/index.ts:270-282`) addresses a real usability issue by checking multiple Enter key formats (`\r`, `\n`, `\x1b[13u`, `\x0d`).
+
+4. **Comprehensive testing notes**: The plan documents manual testing steps and a known limitation — Ctrl+M only works in terminals supporting the Kitty keyboard protocol.
+
+5. **Proper separation of concerns**: The keyboard detection logic is cleanly separated in `keys.ts`, exported via `control.ts`, and wired up in `repl.ts`. Each layer has a clear responsibility.
+
+6. **Robust Enter key fix**: The model selector's Enter key handling now accepts multiple formats, improving compatibility across different terminal emulators. The explicit array provides defense in depth against terminal inconsistencies.
+
+---
+
+### ⚠️ Minor Issues
+
+#### 1. Unused `RAW.CTRL_M` constant
+
+**Location**: `source/terminal/keys.ts:243`
+
+```typescript
+CTRL_M: "\x0d",
+```
+
+**Issue**: The `RAW.CTRL_M` constant is defined but never used. The `isCtrlM` function intentionally excludes raw byte matching (to avoid Enter key conflicts), making this constant dead code.
+
+**Recommendation**: Remove `CTRL_M` from the `RAW` object to avoid confusion. If raw byte support is ever needed, it can be added back with clear documentation of the trade-off.
+
+```typescript
+// In RAW object, remove this line:
+CTRL_M: "\x0d",
+```
+
+**Severity**: Minor (code cleanliness)
+
+---
+
+#### 2. Duplicate Enter key code arrays
+
+**Location**: `source/commands/model/index.ts:271-272`
+
+```typescript
+const enterKeyCodes = ["\r", "\n", "\x1b[13u", "\x0d"];
+const isEnterKey = enterKeyCodes.includes(keyData) || isEnter(keyData);
+```
+
+**Issue**: The array explicitly includes `"\r"`, `"\n"`, and `"\x0d"` which are redundant with the `isEnter(keyData)` call since `isEnter` already checks for `"\r"` and the Kitty protocol sequence.
+
+**Recommendation**: Simplify to either:
+- Just use `isEnter(keyData)` if it handles all needed formats
+- Or keep the explicit array but document why (defense in depth)
+
+```typescript
+// Option A: Use only isEnter
+const isEnterKey = isEnter(keyData);
+
+// Option B: Keep explicit codes with comment
+// Include explicit codes for broader compatibility across terminal types
+const enterKeyCodes = ["\r", "\n", "\x1b[13u", "\x0d"];
+const isEnterKey = enterKeyCodes.includes(keyData) || isEnter(keyData);
+```
+
+**Severity**: Minor (code clarity)
+
+---
+
+#### 3. Missing JSDoc for new callback ✅ RESOLVED
+
+**Location**: `source/tui/tui.ts:90`
+
+Added JSDoc comment for consistency with other callbacks.
+
+---
+
+#### 4. Inconsistent method ordering in ModelSelectorComponent
+
+**Location**: `source/commands/model/index.ts`
+
+**Issue**: In `handleInput`, Enter is handled first with explicit key codes, while Arrow keys use the imported `isArrowUp`/`isArrowDown` functions. This inconsistency could be confusing.
+
+**Recommendation**: For consistency, consider using only the imported detection functions:
+
+```typescript
+// Current
+const enterKeyCodes = ["\r", "\n", "\x1b[13u", "\x0d"];
+const isEnterKey = enterKeyCodes.includes(keyData) || isEnter(keyData);
+
+// Consider using just isEnter for consistency
+if (isEnter(keyData)) {
+  // ...
+} else if (isArrowUp(keyData)) {
+  // ...
 }
 ```
 
-### 2. `sub-agent.ts` - Timer Not Cleared
+**Severity**: Minor (code style)
 
-The `setTimeout` for timeout abort is never cleared when the operation completes normally. Even if not a "forever leak", it causes unnecessary retention until the timer fires.
+---
 
-**Fix**: Store the timeout ID and clear it in a `finally` block after `generateText` resolves/rejects.
+### 📝 Informational Notes
 
-### 3. WeakRef Pattern is Mostly Moot
+#### Terminal Compatibility Trade-off
 
-In `createBackgroundAbortHandler`, the `setupProcessCleanup()` function elsewhere already strongly references `ExecutionEnvironment`, so the WeakRef doesn't provide the intended benefit. The GC cannot collect the object anyway.
+The implementation correctly prioritizes Kitty protocol support over legacy raw byte support. This is documented in the plan:
 
-### 4. Factory Functions Don't Prevent Leaks By Themselves
+- **Works**: Terminals with Kitty protocol (Ghostty, Kitty, WezTerm with Kitty enabled)
+- **Doesn't work**: Legacy terminals that only send raw control bytes
 
-The factory functions (`createAbortHandler`, `createBackgroundAbortHandler`, etc.) still return closures that strongly reference whatever is passed into them:
+This is an acceptable trade-off given:
+1. The bug it fixes (Enter key conflicting with Ctrl+M)
+2. The growing adoption of Kitty protocol
+3. The explicit documentation in the plan
 
-```ts
-function createAbortHandler(ctrl) { return () => ctrl.abort(...) }
-```
+---
 
-This still retains `ctrl` as long as the event listener exists. Factories reduce accidental capture of large lexical environments, but **leaks are prevented by deterministic cleanup** (removing listeners, clearing timers), not by where the function is defined.
+## Security Considerations
 
-### 5. Potential Double-Settlement Race Condition
+- **Input validation**: ✅ The key detection functions validate input strings without executing or processing user data
+- **Command injection**: ✅ No new attack surface — the `/model` command already exists and is properly sanitized
+- **No sensitive data**: ✅ No new secrets, credentials, or sensitive information handled
 
-In `executeCommand`, if abort races with normal completion, `settle` could be called twice. The `settle` function should be idempotent to handle this race condition safely.
+---
 
-**Fix**: Ensure `settleFn` has an internal `settled` boolean or equivalent guard.
+## Performance Considerations
 
-### 6. `select-prompt.ts` - Exit Handler Accumulation
+- **Function complexity**: ✅ `isCtrlM` performs constant-time string comparisons — O(1)
+- **Callback overhead**: ✅ Adding one more callback check in the input handler — negligible impact
+- **No allocations**: ✅ No new heap allocations in hot paths
 
-`process.on("exit", exitHandler)` is added per prompt invocation and never removed. If `select()` is called multiple times, handlers accumulate.
+---
 
-**Fix**: Use `process.once("exit", ...)` or remove the handler in `cleanup()`.
+## Test Coverage
 
-## What Works
+**Current state**: Unit tests added for keyboard detection functions.
 
-- Using `{ once: true }` on abort listeners is correct
-- The `.bind()` and factory patterns are reasonable hygiene improvements
-- Storing handler references (`const cb = ...`) enables proper cleanup
-- The general direction of minimizing closure scope is sound
+**Tests added** (`test/terminal/keys.test.ts`):
+- `isCtrlM` tests: Kitty protocol detection, raw byte rejection, non-letter rejection
+- `isEnter` tests: Legacy format, Kitty protocol, cross-compatibility with Ctrl+M
 
-## Recommendations
+**Recommendations for follow-up**:
+1. Add integration test for Ctrl+M shortcut flow (TUI → Repl → Model Selector)
+2. Test Enter key handling across different terminal types
 
-### Immediate Fixes Required
-
-1. Add `finally` blocks to ensure `cleanup()` always runs in `web-fetch.ts` and `web-search.ts`
-2. Clear the timeout in `sub-agent.ts` after `generateText` resolves
-3. Ensure `settle` function is idempotent to handle race conditions
-4. Fix exit handler accumulation in `select-prompt.ts`
-
-### Consider Adding Helper Utilities
-
-If cleanup is frequently forgotten, consider adding internal helpers that enforce the pattern:
-
-```ts
-async function withAbortListener<T>(
-  parentSignal: AbortSignal | undefined,
-  handler: () => void,
-  fn: () => Promise<T>
-): Promise<T> {
-  if (parentSignal) {
-    parentSignal.addEventListener("abort", handler, { once: true });
-  }
-  try {
-    return await fn();
-  } finally {
-    if (parentSignal) {
-      parentSignal.removeEventListener("abort", handler);
-    }
-  }
-}
-```
-
-This makes "forgetting cleanup on success path" much harder.
+---
 
 ## Conclusion
 
-The changes show good intent but the actual leak prevention hinges on **deterministic cleanup**, not on where functions are defined. The `web-fetch.ts` success path missing `cleanup()` is the most critical issue and should be fixed immediately.
+| Category | Assessment |
+|----------|------------|
+| **Correctness** | ✅ Pass |
+| **Security** | ✅ Pass |
+| **Performance** | ✅ Pass |
+| **Code Quality** | ✅ Pass (minor cleanup opportunities) |
+| **Documentation** | ✅ Pass (minor improvements possible) |
+| **Testing** | ⚠️ Could be improved |
+
+### Recommendation: **Approve with minor comments**
+
+The implementation is well-designed and follows existing patterns. The identified issues are minor cleanup opportunities that don't affect functionality. The code passes all automated checks and is ready for production.
+
+---
+
+## Action Items
+
+1. ~~Remove unused `RAW.CTRL_M` constant~~ - Ignored (minor)
+2. ~~Simplify Enter key detection in model selector~~ - Kept for defense in depth (minor)
+3. ~~Add JSDoc to `onCtrlM` callback~~ - ✅ DONE
+4. ~~Adding unit tests for keyboard detection functions~~ - ✅ DONE
+
+## Follow-up Opportunities
+
+- Add integration test for Ctrl+M shortcut flow (TUI → Repl → Model Selector)
+- Test Enter key handling across different terminal types (manual testing)
