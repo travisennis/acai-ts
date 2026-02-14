@@ -15,7 +15,25 @@ export const GlobTool = {
 
 export const inputSchema = z.object({
   patterns: z
-    .union([z.string(), z.array(z.string())])
+    .preprocess(
+      (val) => {
+        if (typeof val === "string") {
+          const trimmed = val.trim();
+          if (trimmed.startsWith("[")) {
+            try {
+              const parsed: unknown = JSON.parse(trimmed);
+              if (Array.isArray(parsed)) {
+                return parsed;
+              }
+            } catch {
+              // Not valid JSON, treat as a plain glob string
+            }
+          }
+        }
+        return val;
+      },
+      z.union([z.string(), z.array(z.string())]),
+    )
     .describe(
       "Glob patterns to search for (e.g., '*.ts', '**/*.test.ts', 'src/**/*.js')",
     ),
