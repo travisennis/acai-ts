@@ -22,14 +22,17 @@ const inputSchema = z.object({
     .enum(["text", "html", "markdown", "json"])
     .default("text")
     .describe("Output format (default: text)"),
-  jina: z.boolean().default(false).describe("Use Jina AI for HTML cleaning"),
+  jina: z
+    .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
+    .optional()
+    .describe("Use Jina AI for HTML cleaning"),
   timeout: z
     .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
     .optional()
     .describe(`Timeout in milliseconds (default: ${DEFAULT_TIMEOUT}ms)`),
   headers: z
-    .boolean()
-    .default(false)
+    .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
+    .optional()
     .describe("Include HTTP headers in output"),
 });
 
@@ -484,15 +487,17 @@ export async function executeWebFetch(
   }
 
   const effectiveTimeout = timeout ?? DEFAULT_TIMEOUT;
+  const effectiveJina = jina ?? false;
+  const effectiveHeaders = headers ?? false;
 
   let result: FetchResult;
 
   try {
     result = await fetchUrl(url, {
-      useJina: jina,
+      useJina: effectiveJina,
       timeout: effectiveTimeout,
       verbose: false,
-      headers,
+      headers: effectiveHeaders,
       abortSignal: executionOptions.abortSignal,
     });
   } catch (error) {
