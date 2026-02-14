@@ -5,6 +5,8 @@ import type {
   ToolEvent,
 } from "./agent/index.ts";
 import type { CommandManager } from "./commands/manager.ts";
+import { showModelSelector } from "./commands/model/model-panel.ts";
+import { showReviewPanel } from "./commands/review/review-panel.ts";
 import type { WorkspaceContext } from "./index.ts";
 import { logger } from "./logger.ts";
 import { processPrompt } from "./mentions.ts";
@@ -219,14 +221,11 @@ export class Repl {
     };
 
     this.tui.onCtrlR = () => {
-      void commands.handle(
-        { userInput: "/review" },
-        {
-          tui: this.tui,
-          container: this.chatContainer,
-          inputContainer: this.editorContainer,
-          editor: this.editor,
-        },
+      void showReviewPanel(
+        this.tui,
+        this.chatContainer,
+        this.editorContainer,
+        this.editor,
       );
     };
 
@@ -974,18 +973,12 @@ export class Repl {
     this.tui.requestRender();
   }
 
-  /**
-   * Opens the model selector by invoking the /model command handler.
-   */
-  private async handleCtrlM(): Promise<void> {
-    await this.options.commands.handle(
-      { userInput: "/model" },
-      {
-        tui: this.tui,
-        container: this.chatContainer,
-        inputContainer: this.editorContainer,
-        editor: this.editor,
-      },
+  private handleCtrlM(): void {
+    showModelSelector(
+      this.tui,
+      this.editorContainer,
+      this.editor,
+      this.options.modelManager,
     );
   }
 
