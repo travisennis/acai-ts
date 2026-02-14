@@ -75,6 +75,8 @@ Important:
 
         let result = `# Skill Name: ${skill.name}`;
         result += `\n**Base directory**: ${dirname(skill.filePath)}\n\n`;
+        result +=
+          "Relative paths in this skill (e.g., scripts/, reference/) are relative to this base directory.\n";
 
         // Parse frontmatter and body
         const yamlStart = content.indexOf("---");
