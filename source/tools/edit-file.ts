@@ -19,18 +19,38 @@ export const EditFileTool = {
 
 const inputSchema = z.object({
   path: z.string().describe("The path of the file to edit."),
-  edits: z.array(
-    z.object({
-      oldText: z
-        .string()
-        .describe(
-          "Text to search for - must match exactly and enough context must be provided to uniquely match the target text. " +
-            "Special characters require JSON escaping: backticks (\\`...\\`), quotes, backslashes. " +
-            "For multi-line content, include exact newlines and indentation.",
-        ),
-      newText: z.string().describe("Text to replace with"),
-    }),
-  ),
+  edits: z
+    .preprocess(
+      (val) => {
+        if (typeof val === "string") {
+          const trimmed = val.trim();
+          if (trimmed.startsWith("[")) {
+            try {
+              const parsed: unknown = JSON.parse(trimmed);
+              if (Array.isArray(parsed)) {
+                return parsed;
+              }
+            } catch {
+              // Not valid JSON, treat as a plain string
+            }
+          }
+        }
+        return val;
+      },
+      z.array(
+        z.object({
+          oldText: z
+            .string()
+            .describe(
+              "Text to search for - must match exactly and enough context must be provided to uniquely match the target text. " +
+                "Special characters require JSON escaping: backticks (\\`...\\`), quotes, backslashes. " +
+                "For multi-line content, include exact newlines and indentation.",
+            ),
+          newText: z.string().describe("Text to replace with"),
+        }),
+      ),
+    )
+    .describe("The edits to make to the file."),
 });
 
 type EditFileInputSchema = z.infer<typeof inputSchema>;
