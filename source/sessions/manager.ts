@@ -547,6 +547,10 @@ React Component Rendering Debug";
     return `session-${this.sessionId}.json`;
   }
 
+  getSessionFilePath(): string {
+    return join(this.stateDir, this.getSessionFileName());
+  }
+
   static async load(
     stateDir: string,
     count = 10, // Add count parameter with default

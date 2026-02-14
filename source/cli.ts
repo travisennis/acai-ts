@@ -14,6 +14,7 @@ import type { ModelManager } from "./models/manager.js";
 import type { PromptManager } from "./prompts/manager.ts";
 import { systemPrompt } from "./prompts.ts";
 import type { SessionManager } from "./sessions/manager.ts";
+import { printExitSummary } from "./sessions/summary.ts";
 import type { TokenCounter } from "./tokens/counter.ts";
 import type { TokenTracker } from "./tokens/tracker.ts";
 import { type CompleteTools, initTools } from "./tools/index.ts";
@@ -104,6 +105,11 @@ export class Cli {
       process.stdout.end(
         result.text.endsWith("\n") ? result.text : `${result.text}\n`,
       );
+
+      if (!sessionManager.isEmpty()) {
+        printExitSummary(sessionManager);
+      }
+
       cleanup();
     } catch (e) {
       // Always cleanup signal handler

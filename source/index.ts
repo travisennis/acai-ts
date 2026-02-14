@@ -21,6 +21,7 @@ import { PromptManager } from "./prompts/manager.ts";
 import { systemPrompt } from "./prompts.ts";
 import { Repl } from "./repl.ts";
 import { SessionManager } from "./sessions/manager.ts";
+import { writeExitSummary } from "./sessions/summary.ts";
 import { readStdinWithLimits } from "./stdin.ts";
 import { setTerminalTitle } from "./terminal/control.ts";
 import { select } from "./terminal/select-prompt.ts";
@@ -496,9 +497,9 @@ async function runReplMode(
   });
 
   // Set exit callback
-  repl.setExitCallback((sessionId: string) => {
+  repl.setExitCallback((_sessionId: string) => {
     if (!state.sessionManager.isEmpty()) {
-      console.info(`\nTo resume this session call acai --resume ${sessionId}`);
+      writeExitSummary(state.sessionManager);
     }
   });
 
