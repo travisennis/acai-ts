@@ -7,6 +7,8 @@ import {
   isArrowUp,
   isEnter,
   isEscape,
+  isShiftTab,
+  isTab,
   setTerminalTitle,
 } from "../../terminal/control.ts";
 import style from "../../terminal/style.ts";
@@ -372,34 +374,29 @@ class ConversationSelectorComponent extends Container {
     }
   }
 
+  wantsNavigationKeys(): boolean {
+    return true;
+  }
+
   handleInput(keyData: string): void {
-    // Up arrow
-    if (isArrowUp(keyData)) {
+    if (isArrowUp(keyData) || isShiftTab(keyData)) {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateList();
-    }
-    // Down arrow
-    else if (isArrowDown(keyData)) {
+    } else if (isArrowDown(keyData) || isTab(keyData)) {
       this.selectedIndex = Math.min(
         this.filteredConversations.length - 1,
         this.selectedIndex + 1,
       );
       this.updateList();
-    }
-    // Enter
-    else if (isEnter(keyData)) {
+    } else if (isEnter(keyData)) {
       const selectedConversation =
         this.filteredConversations[this.selectedIndex];
       if (selectedConversation) {
         this.handleSelect(selectedConversation);
       }
-    }
-    // Escape
-    else if (isEscape(keyData)) {
+    } else if (isEscape(keyData)) {
       this.onCancelCallback();
-    }
-    // Pass everything else to search input
-    else {
+    } else {
       this.searchInput.handleInput(keyData);
       this.filterConversations(this.searchInput.getValue());
     }
@@ -474,27 +471,24 @@ class ActionSelectorComponent extends Container {
     this.addChild(new Text(style.blue("─".repeat(columns)), 0, 0));
   }
 
+  wantsNavigationKeys(): boolean {
+    return true;
+  }
+
   handleInput(keyData: string): void {
-    // Up arrow
-    if (isArrowUp(keyData)) {
+    if (isArrowUp(keyData) || isShiftTab(keyData)) {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateList();
-    }
-    // Down arrow
-    else if (isArrowDown(keyData)) {
+    } else if (isArrowDown(keyData) || isTab(keyData)) {
       this.selectedIndex = Math.min(2, this.selectedIndex + 1);
       this.updateList();
-    }
-    // Enter
-    else if (isEnter(keyData)) {
+    } else if (isEnter(keyData)) {
       const actions = ["resume", "export", "summarize"] as const;
       const selectedAction = actions[this.selectedIndex];
       if (selectedAction) {
         this.handleSelect(selectedAction);
       }
-    }
-    // Escape
-    else if (isEscape(keyData)) {
+    } else if (isEscape(keyData)) {
       this.onCancelCallback();
     }
   }

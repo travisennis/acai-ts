@@ -204,6 +204,10 @@ export class SelectList implements Component {
     return lines;
   }
 
+  wantsNavigationKeys(): boolean {
+    return true;
+  }
+
   handleInput(keyData: string): void {
     // Up arrow - wrap to bottom when at top
     if (isArrowUp(keyData)) {

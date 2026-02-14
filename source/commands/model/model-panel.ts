@@ -8,6 +8,7 @@ import {
   isEnter,
   isEscape,
 } from "../../terminal/control.ts";
+import { isShiftTab, isTab } from "../../terminal/keys.ts";
 import style from "../../terminal/style.ts";
 import {
   Container,
@@ -183,10 +184,10 @@ class ModelSelectorComponent extends Container {
       }
       return;
     }
-    if (isArrowUp(keyData)) {
+    if (isArrowUp(keyData) || isShiftTab(keyData)) {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateList();
-    } else if (isArrowDown(keyData)) {
+    } else if (isArrowDown(keyData) || isTab(keyData)) {
       this.selectedIndex = Math.min(
         this.filteredModels.length - 1,
         this.selectedIndex + 1,
@@ -202,6 +203,10 @@ class ModelSelectorComponent extends Container {
 
   private handleSelect(model: ModelName): void {
     this.onSelectCallback(model);
+  }
+
+  wantsNavigationKeys(): boolean {
+    return true;
   }
 
   getSearchInput(): Input {

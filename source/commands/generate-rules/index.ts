@@ -11,6 +11,8 @@ import {
   isArrowUp,
   isEnter,
   isEscape,
+  isShiftTab,
+  isTab,
 } from "../../terminal/control.ts";
 import style from "../../terminal/style.ts";
 import type { TokenTracker } from "../../tokens/tracker.ts";
@@ -408,11 +410,15 @@ class RuleSelectorComponent extends Container {
     }
   }
 
+  wantsNavigationKeys(): boolean {
+    return true;
+  }
+
   handleInput(keyData: string): void {
-    if (isArrowUp(keyData)) {
+    if (isArrowUp(keyData) || isShiftTab(keyData)) {
       this.selectedIndex = Math.max(0, this.selectedIndex - 1);
       this.updateList();
-    } else if (isArrowDown(keyData)) {
+    } else if (isArrowDown(keyData) || isTab(keyData)) {
       this.selectedIndex = Math.min(
         this.filteredRules.length - 1,
         this.selectedIndex + 1,

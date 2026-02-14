@@ -41,6 +41,12 @@ export interface Component {
    * and col is 0-indexed column position
    */
   getCursorPosition?(): [number, number] | null;
+
+  /**
+   * Optional method to indicate the component wants to handle Tab/Shift+Tab
+   * navigation keys itself, preventing the TUI from intercepting them.
+   */
+  wantsNavigationKeys?(): boolean;
 }
 
 export { visibleWidth };
@@ -141,6 +147,10 @@ export class TUI extends Container {
 
   private inBracketedPaste = false;
 
+  private focusedComponentWantsNavigation(): boolean {
+    return this.focusedComponent?.wantsNavigationKeys?.() ?? false;
+  }
+
   private handleInput(data: string): void {
     if (data.includes("\x1b[200~")) {
       this.inBracketedPaste = true;
@@ -210,12 +220,16 @@ export class TUI extends Container {
       return;
     }
 
-    // Handle Shift+Tab - cycle mode
+    // Handle Shift+Tab - cycle mode only when no modal is active,
+    // the focused component won't handle navigation (e.g., model selector),
+    // and the editor isn't showing autocomplete
     if (isShiftTab(data) && !this.inBracketedPaste) {
-      if (this.onShiftTab) {
-        this.onShiftTab();
+      if (!this.activeModal && !this.focusedComponentWantsNavigation()) {
+        if (this.onShiftTab) {
+          this.onShiftTab();
+        }
+        return;
       }
-      return;
     }
 
     // Handle Escape key to close modal if one is active

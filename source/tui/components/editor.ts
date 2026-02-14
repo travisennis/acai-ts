@@ -1435,6 +1435,10 @@ export class Editor implements Component {
     return this.isAutocompleting;
   }
 
+  wantsNavigationKeys(): boolean {
+    return this.isAutocompleting;
+  }
+
   private async updateAutocomplete(): Promise<void> {
     if (!this.isAutocompleting || !this.autocompleteProvider) return;
 
