@@ -97,6 +97,10 @@ export class ProcessTerminal implements Terminal {
     // Enable bracketed paste mode - terminal will wrap pastes in \x1b[200~ ... \x1b[201~
     process.stdout.write("\x1b[?2004h");
 
+    // Enable mouse tracking (SGR mode) so trackpad scroll sends mouse events
+    // instead of being translated into arrow key sequences
+    process.stdout.write("\x1b[?1000h\x1b[?1006h");
+
     // Create bound listeners so we can properly remove them later
     this.boundInputListener = (data: Buffer | string) => {
       onInput(typeof data === "string" ? data : data.toString("utf8"));
@@ -142,6 +146,7 @@ export class ProcessTerminal implements Terminal {
     process.on("exit", () => {
       process.stdout.write("\x1b[?25h");
       process.stdout.write("\x1b[?2004l");
+      process.stdout.write("\x1b[?1000l\x1b[?1006l");
       process.stdout.write("\x1b[0m");
       if (this.inputStream.setRawMode) {
         this.inputStream.setRawMode(this.wasRaw);
@@ -152,6 +157,7 @@ export class ProcessTerminal implements Terminal {
     process.on("uncaughtException", (error) => {
       process.stdout.write("\x1b[?25h");
       process.stdout.write("\x1b[?2004l");
+      process.stdout.write("\x1b[?1000l\x1b[?1006l");
       process.stdout.write("\x1b[0m");
       if (this.inputStream.setRawMode) {
         this.inputStream.setRawMode(this.wasRaw);
@@ -181,8 +187,9 @@ export class ProcessTerminal implements Terminal {
       this.sigintHandler = undefined;
     }
 
-    // Disable bracketed paste mode
+    // Disable bracketed paste mode and mouse tracking
     process.stdout.write("\x1b[?2004l");
+    process.stdout.write("\x1b[?1000l\x1b[?1006l");
 
     // Remove event handlers using the exact references that were added
     if (this.boundInputListener) {
@@ -262,6 +269,7 @@ export class ProcessTerminal implements Terminal {
     process.stdout.write("\x1b[0m");
     process.stdout.write("\x1b[?25h");
     process.stdout.write("\x1b[?2004l");
+    process.stdout.write("\x1b[?1000l\x1b[?1006l");
   }
 
   exitExternalMode(): void {
@@ -276,6 +284,7 @@ export class ProcessTerminal implements Terminal {
     this.inputStream.resume();
 
     process.stdout.write("\x1b[?2004h");
+    process.stdout.write("\x1b[?1000h\x1b[?1006h");
     process.stdout.write("\x1b[?25l");
 
     this.attachListeners();

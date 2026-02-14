@@ -256,6 +256,9 @@ export class Repl {
 
     this.tui.addChild(this.chatContainer);
     this.tui.addChild(this.statusContainer);
+
+    // Everything below here is fixed to the bottom of the terminal
+    this.tui.setFixedFooterStart();
     this.tui.addChild(new Spacer(1));
     this.tui.addChild(this.editorContainer); // Use container that can hold editor or selector
     this.tui.addChild(this.footer);
@@ -627,6 +630,7 @@ export class Repl {
     // Reconstruct entire session display from messages
     this.reconstructSession();
 
+    this.tui.scrollToBottom();
     this.tui.requestRender();
   }
 

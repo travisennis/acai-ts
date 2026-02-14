@@ -79,6 +79,14 @@ export class Container implements Component {
 
 /**
  * TUI - Main class for managing terminal UI with differential rendering
+ *
+ * The TUI splits its children into two regions:
+ * - Scrollable content: children added before setFixedFooterStart()
+ * - Fixed footer: children added after setFixedFooterStart()
+ *
+ * The scrollable content region supports virtual scrolling via trackpad/mouse
+ * wheel. The fixed footer (editor, footer bar, notifications) is always
+ * pinned to the bottom of the terminal.
  */
 
 // biome-ignore lint/style/useNamingConvention: override
@@ -89,6 +97,10 @@ export class TUI extends Container {
   private isRendering = false;
   private renderAgain = false;
   private activeModal: Modal | null = null;
+  private scrollOffset = 0;
+  private lastScrollableHeight = 0;
+  private fixedFooterIndex = -1;
+  private isUserScrolledUp = false;
 
   public onCtrlC?: () => void;
   public onCtrlD?: () => void;
@@ -103,6 +115,15 @@ export class TUI extends Container {
   constructor(terminal: Terminal) {
     super();
     this.terminal = terminal;
+  }
+
+  /**
+   * Mark the boundary between scrollable content and fixed footer.
+   * All children added after this call will be rendered as fixed
+   * footer content pinned to the bottom of the terminal.
+   */
+  setFixedFooterStart(): void {
+    this.fixedFooterIndex = this.children.length;
   }
 
   setFocus(component: Component | null): void {
@@ -152,6 +173,12 @@ export class TUI extends Container {
   }
 
   private handleInput(data: string): void {
+    // Handle mouse tracking events (SGR format: \x1b[<button;x;yM)
+    if (data.startsWith("\x1b[<")) {
+      this.handleMouseEvent(data);
+      return;
+    }
+
     if (data.includes("\x1b[200~")) {
       this.inBracketedPaste = true;
     }
@@ -244,8 +271,81 @@ export class TUI extends Container {
       this.requestRender();
     } else if (this.focusedComponent?.handleInput) {
       this.focusedComponent.handleInput(data);
+      this.scrollToBottom();
       this.requestRender();
     }
+  }
+
+  private handleMouseEvent(data: string): void {
+    // SGR mouse format: \x1b[<button;x;yM (press) or \x1b[<button;x;ym (release)
+    // Extract button code between "<" and first ";"
+    const start = data.indexOf("<");
+    const semi = data.indexOf(";", start);
+    if (start === -1 || semi === -1) return;
+
+    const button = Number.parseInt(data.slice(start + 1, semi), 10);
+    const scrollLines = 3;
+    const { rows } = getTerminalSize();
+    const fixedHeight = this.getFixedFooterHeight(this.terminal.columns);
+    const scrollableViewport = rows - fixedHeight;
+
+    // Button 64 = scroll up, button 65 = scroll down
+    if (button === 64) {
+      this.scrollOffset = Math.max(0, this.scrollOffset - scrollLines);
+      const maxOffset = Math.max(
+        0,
+        this.lastScrollableHeight - scrollableViewport,
+      );
+      this.isUserScrolledUp = this.scrollOffset < maxOffset;
+      this.requestRender();
+    } else if (button === 65) {
+      const maxOffset = Math.max(
+        0,
+        this.lastScrollableHeight - scrollableViewport,
+      );
+      this.scrollOffset = Math.min(maxOffset, this.scrollOffset + scrollLines);
+      this.isUserScrolledUp = this.scrollOffset < maxOffset;
+      this.requestRender();
+    }
+  }
+
+  scrollToBottom(): void {
+    const { rows } = getTerminalSize();
+    const fixedHeight = this.getFixedFooterHeight(this.terminal.columns);
+    const scrollableViewport = rows - fixedHeight;
+    this.scrollOffset = Math.max(
+      0,
+      this.lastScrollableHeight - scrollableViewport,
+    );
+    this.isUserScrolledUp = false;
+  }
+
+  private getFixedFooterHeight(width: number): number {
+    if (this.fixedFooterIndex < 0) return 0;
+    let height = 0;
+    for (let i = this.fixedFooterIndex; i < this.children.length; i++) {
+      height += this.children[i].render(width).length;
+    }
+    return height;
+  }
+
+  private renderScrollableContent(width: number): string[] {
+    const end =
+      this.fixedFooterIndex >= 0 ? this.fixedFooterIndex : this.children.length;
+    const lines: string[] = [];
+    for (let i = 0; i < end; i++) {
+      lines.push(...this.children[i].render(width));
+    }
+    return lines;
+  }
+
+  private renderFixedFooter(width: number): string[] {
+    if (this.fixedFooterIndex < 0) return [];
+    const lines: string[] = [];
+    for (let i = this.fixedFooterIndex; i < this.children.length; i++) {
+      lines.push(...this.children[i].render(width));
+    }
+    return lines;
   }
 
   private doRender(): void {
@@ -256,15 +356,48 @@ export class TUI extends Container {
     this.isRendering = true;
     try {
       const width = this.terminal.columns;
+      const { rows } = getTerminalSize();
 
-      // Render all components to get new lines
-      const newLines = this.render(width);
+      // Render fixed footer and scrollable content separately
+      const fixedLines = this.renderFixedFooter(width);
+      const scrollableLines = this.renderScrollableContent(width);
+      this.lastScrollableHeight = scrollableLines.length;
+
+      const fixedHeight = fixedLines.length;
+      const scrollableViewport = rows - fixedHeight;
+
+      // Auto-scroll to bottom when new content arrives,
+      // unless the user has explicitly scrolled up
+      if (!this.isUserScrolledUp) {
+        this.scrollOffset = Math.max(
+          0,
+          scrollableLines.length - scrollableViewport,
+        );
+      }
+
+      // Clamp scroll offset
+      const maxOffset = Math.max(
+        0,
+        scrollableLines.length - scrollableViewport,
+      );
+      if (this.scrollOffset > maxOffset) {
+        this.scrollOffset = maxOffset;
+      }
+
+      // Apply scroll offset to get visible scrollable lines
+      const visibleScrollable = scrollableLines.slice(
+        this.scrollOffset,
+        this.scrollOffset + scrollableViewport,
+      );
+
+      // Combine visible scrollable content with fixed footer
+      const visibleLines = [...visibleScrollable, ...fixedLines];
 
       // Build output buffer using array join (more efficient than string concat)
       const bufferParts: string[] = [
         "\x1b[?2026h", // Begin synchronized output
         "\x1b[3J\x1b[2J\x1b[H", // Clear scrollback, screen, and home
-        newLines.join("\r\n"),
+        visibleLines.join("\r\n"),
       ];
 
       // Render modal on top if active
@@ -298,45 +431,6 @@ export class TUI extends Container {
       }
     }
   }
-
-  // private positionCursor(
-  //   componentCursorPos: [number, number] | null,
-  // ): void {
-  //   if (!componentCursorPos) {
-  //     // No cursor position from component, hide cursor
-  //     this.terminal.hideCursor();
-  //     return;
-  //   }
-
-  //   const [cursorRow, cursorCol] = componentCursorPos;
-  //
-  //   // Calculate absolute cursor position in the terminal
-  //   // We need to find which line in newLines corresponds to the component's cursor row
-  //   // and then position the cursor at that line and column
-  //
-  //   // Find the line offset for the focused component
-  //   let componentStartLine = 0;
-  //   if (this.focusedComponent) {
-  //     // Find the line where this component starts by summing heights of previous components
-  //     for (const child of this.children) {
-  //       if (child === this.focusedComponent) {
-  //         break;
-  //       }
-  //       // Use the already-rendered lines to calculate height, not re-render
-  //       const childLines = child.render(this.terminal.columns);
-  //       componentStartLine += childLines.length;
-  //     }
-  //   }
-  //
-  //   const absoluteRow = componentStartLine + cursorRow;
-  //   const absoluteCol = cursorCol;
-  //
-  //   // Position cursor using absolute positioning
-  //   // Move to home position first, then move down to row, then right to column
-  //   // Note: terminal rows/columns are 1-indexed, so we add 1
-  //   this.terminal.write(`\x1b[H\x1b[${absoluteRow + 1}B\x1b[${absoluteCol + 1}G`);
-  //   this.terminal.showCursor();
-  // }
 
   /**
    * Show a modal dialog
