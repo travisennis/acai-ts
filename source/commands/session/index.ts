@@ -226,7 +226,10 @@ export function sessionCommand({
       );
 
       const barWidth = Math.max(20, Math.min(50, columns - 40));
-      const filled = Math.floor((usedPercentage / 100) * barWidth);
+      const filled = Math.min(
+        barWidth,
+        Math.floor((usedPercentage / 100) * barWidth),
+      );
       const empty = barWidth - filled;
       const progressBar = `[${"█".repeat(filled)}${"░".repeat(empty)}] ${usedPercentage.toFixed(1)}%`;
       modalContent.addChild(new ModalText("", 0, 1));
