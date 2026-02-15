@@ -10,9 +10,13 @@ import path from "node:path";
  * @returns The display-ready path (relative if within cwd, absolute otherwise)
  */
 export function toDisplayPath(
-  absolutePath: string,
+  absolutePath: string | undefined | null,
   cwd: string = process.cwd(),
 ): string {
+  if (!absolutePath) {
+    return ".";
+  }
+
   // If path is already relative, return as-is
   if (!path.isAbsolute(absolutePath)) {
     return absolutePath;
