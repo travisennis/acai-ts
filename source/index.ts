@@ -460,7 +460,7 @@ async function runReplMode(
   const repl = new Repl({
     agent,
     promptManager: state.promptManager,
-    config: state.appConfig,
+    configManager: config,
     sessionManager: state.sessionManager,
     modelManager: state.modelManager,
     tokenTracker: state.tokenTracker,
@@ -496,9 +496,10 @@ async function runReplMode(
     agent.abort();
   });
 
-  // Set exit callback
-  repl.setExitCallback((_sessionId: string) => {
+  // Set exit callback - generate rules before exit if enabled
+  repl.setExitCallback(async (_sessionId: string) => {
     if (!state.sessionManager.isEmpty()) {
+      await repl.triggerRuleGeneration();
       writeExitSummary(state.sessionManager);
     }
   });

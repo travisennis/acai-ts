@@ -76,7 +76,22 @@ Acai supports project-specific configuration through a `.acai/acai.json` file in
   },
   "skills": {
     "enabled": true
-  }
+  },
+  "autoGenerateRules": false
+}
+```
+
+#### autoGenerateRules
+
+When enabled, acai will automatically analyze the conversation at the end of each session (on exit or when starting a new session with `Ctrl+N`) and generate rules based on corrections you made during the conversation. These rules are saved to `.acai/rules/learned-rules.md` and injected into future sessions.
+
+- **`false`** (default): Manual rule generation via `/generate-rules` command
+- **`true`**: Auto-generate rules on session end
+
+Example:
+```json
+{
+  "autoGenerateRules": true
 }
 ```
 
@@ -106,7 +121,7 @@ You can define environment variables in `acai.json` that are passed to the Bash 
 - **Rules/Guidelines**: Add project-specific AI behavior rules in `AGENTS.md`
 - **Custom Skills**: Store reusable skill prompts in `.agents/skills/<name>/SKILL.md`. Skills with `user-invocable: true` are registered as slash commands with argument placeholder support (`$ARGUMENTS`, `$1`, `$2`, etc.).
 - **File Selections**: Save file/directory selections in `.acai/selections/`
-- **Memory/Rules**: Persistent project rules stored in `.acai/rules/`
+- **Memory/Rules**: Persistent project rules stored in `.acai/rules/` (see `autoGenerateRules` above)
 
 ## Global Configuration
 

@@ -4,9 +4,11 @@ import type {
   AgentState,
   ToolEvent,
 } from "./agent/index.ts";
+import { generateRulesFromSession } from "./commands/generate-rules/service.ts";
 import type { CommandManager } from "./commands/manager.ts";
 import { showModelSelector } from "./commands/model/model-panel.ts";
 import { showReviewPanel } from "./commands/review/review-panel.ts";
+import type { ConfigManager } from "./config.ts";
 import type { WorkspaceContext } from "./index.ts";
 import { logger } from "./logger.ts";
 import { processPrompt } from "./mentions.ts";
@@ -61,8 +63,8 @@ interface ReplOptions {
   tokenTracker: TokenTracker;
   /** Handles slash command parsing and execution. */
   commands: CommandManager;
-  /** Application configuration key-value store. */
-  config: Record<PropertyKey, unknown>;
+  /** Application configuration manager for rule generation, etc. */
+  configManager: ConfigManager;
   /** Counts tokens for prompt budgeting. */
   tokenCounter: TokenCounter;
   /** History of previously submitted prompts for recall. */
@@ -95,7 +97,7 @@ export class Repl {
   private onInputCallback?: (text: string) => void;
   private loadingAnimation: Loader | null = null;
   private onInterruptCallback?: () => void;
-  private onExitCallback?: (sessionId: string) => void;
+  private onExitCallback?: (sessionId: string) => void | Promise<void>;
   private lastSigintTime = 0;
   private exitNotificationTimer?: NodeJS.Timeout;
   private pendingTools: Map<string, ToolExecutionComponent>;
@@ -583,7 +585,7 @@ export class Repl {
   }
 
   /** Sets the callback invoked on exit, receiving the current session ID. */
-  setExitCallback(callback: (sessionId: string) => void): void {
+  setExitCallback(callback: (sessionId: string) => void | Promise<void>): void {
     this.onExitCallback = callback;
   }
 
@@ -938,6 +940,9 @@ export class Repl {
    */
   private async handleCtrlN(): Promise<void> {
     if (!this.options.sessionManager.isEmpty()) {
+      // Auto-generate rules before starting new session if enabled
+      await this.maybeGenerateRules();
+
       this.options.sessionManager.setMetadata(
         "modeState",
         this.modeManager.toJson(),
@@ -1075,7 +1080,13 @@ export class Repl {
     }
 
     if (showExitMessage && this.onExitCallback) {
-      this.onExitCallback(this.options.sessionManager.getSessionId());
+      const result = this.onExitCallback(
+        this.options.sessionManager.getSessionId(),
+      );
+      // Await if the callback is async
+      if (result instanceof Promise) {
+        void result;
+      }
     }
     if (this.loadingAnimation) {
       this.loadingAnimation.stop();
@@ -1085,5 +1096,49 @@ export class Repl {
       this.tui.stop();
       this.isInitialized = false;
     }
+  }
+
+  /**
+   * Generates rules automatically if autoGenerateRules is enabled
+   * and the session has messages.
+   */
+  private async maybeGenerateRules(): Promise<void> {
+    try {
+      const config = await this.options.configManager.getConfig();
+      if (!config.autoGenerateRules) {
+        return;
+      }
+
+      if (this.options.sessionManager.isEmpty()) {
+        return;
+      }
+
+      const { rules, savedToProject } = await generateRulesFromSession({
+        modelManager: this.options.modelManager,
+        messages: this.options.sessionManager.get(),
+        tokenTracker: this.options.tokenTracker,
+        config: this.options.configManager,
+        workspace: this.options.workspace,
+      });
+
+      if (rules.length > 0) {
+        const location = savedToProject ? "project" : "cache";
+        this.notification.setMessage(
+          `Auto-generated ${rules.length} rule(s) saved to ${location}`,
+        );
+        this.tui.requestRender();
+      }
+    } catch (error) {
+      // Don't fail the session transition on rule generation errors
+      logger.debug({ error }, "Auto rule generation failed");
+    }
+  }
+
+  /**
+   * Triggers rule generation for use before exit.
+   * Returns a promise that resolves when rules are generated.
+   */
+  async triggerRuleGeneration(): Promise<void> {
+    await this.maybeGenerateRules();
   }
 }

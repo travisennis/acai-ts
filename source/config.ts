@@ -19,6 +19,7 @@ export const defaultConfig = {
   skills: {
     enabled: true,
   },
+  autoGenerateRules: false,
   env: {} as Record<string, string>,
 } as const;
 
@@ -54,6 +55,10 @@ const ProjectConfigSchema = z.object({
     })
     .optional()
     .default(defaultConfig.skills),
+  autoGenerateRules: z
+    .boolean()
+    .optional()
+    .default(defaultConfig.autoGenerateRules),
   env: z.record(z.string(), z.string()).optional().default(defaultConfig.env),
 });
 
