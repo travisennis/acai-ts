@@ -1,191 +1,285 @@
-# Implementation Plan: Ctrl+M Keyboard Shortcut for Model Selection
+# File Activity Panel - Implementation Plan
 
-## Overview
+## Summary
 
-Add a keyboard shortcut (Ctrl+M) to trigger the model selector without typing `/model` in the editor. This follows the existing pattern of Ctrl+letter shortcuts (Ctrl+R for review, Ctrl+N for new chat, Ctrl+O for verbose mode).
+Add a toggleable panel above the editor that shows files being worked on during agent execution. The panel displays filename + operation type (Write/Edit/Delete), appears automatically when agent starts, and clears when the agent commits to git.
 
-## Files to Modify
+## Goals & Success Criteria
 
-1. `source/terminal/keys.ts` - Add Ctrl+M key detection functions
-2. `source/terminal/control.ts` - Export new key detection function
-3. `source/tui/tui.ts` - Add onCtrlM handler property and keyboard handling
-4. `source/repl.ts` - Wire up onCtrlM to trigger model command
+### Automated Verification
+- `npm run check` passes (typecheck, lint, format)
+- New component renders without errors in existing TUI framework
+- Keyboard shortcut `Ctrl+Shift+F` toggles panel visibility
+- File operations from Edit/Write tools appear in panel
+- Panel clears when agent runs git commit
 
----
+### Manual Verification
+- Panel appears above editor when agent starts working
+- Panel shows correct file paths and operation types
+- `Ctrl+Shift+F` shows/hides panel
+- Files clear from panel after agent commits to git
+- Panel does not interfere with editor input or command execution
 
-## Phase 1: Add Ctrl+M Key Detection (keys.ts) ✅
+## Architecture
 
-**Changes to** `source/terminal/keys.ts`
-
-### 1.1 Add 'm' to CODEPOINTS (line ~36-55) ✅
-
-```typescript
-m: 109,
+### Data Flow
+```
+Tool Events (Edit/Write/Bash)
+       ↓
+FileActivityTracker (new)
+       ↓
+FileActivityPanel (new)
+       ↓
+TUI Render
 ```
 
-### 1.2 Add CTRL_M to Keys object (line ~172-200) ✅
+### Key Components
 
+1. **FileActivityTracker** - Captures and stores file operations from tool events
+2. **FileActivityPanel** - TUI component that displays the file list
+3. **Integration in Repl** - Wiring events, keyboard shortcut, git commit detection
+
+## Changes by File
+
+### New Files
+
+#### 1. `source/tui/components/file-activity-panel.ts`
+New TUI component extending `Container`. Based on `ToolExecutionComponent` patterns.
+
+**Responsibilities:**
+- Display list of files with operation type
+- Toggle visibility on keyboard shortcut
+- Clear file list on command
+
+**Interface:**
 ```typescript
-CTRL_M: kittySequence(CODEPOINTS.m, MODIFIERS.ctrl),
-```
+interface FileActivityEntry {
+  path: string;        // Display path (relative to workspace)
+  operation: 'write' | 'edit' | 'delete' | 'create-dir';
+  timestamp: number;
+}
 
-### 1.3 Add CTRL_M to RAW object (line ~240-255) ✅
-
-```typescript
-CTRL_M: "\x0d",
-```
-
-### 1.4 Add isCtrlM function (after isCtrlL around line ~335) ✅
-
-```typescript
-/**
- * Check if input matches Ctrl+M (raw byte or Kitty protocol).
- * Ignores lock key bits.
- */
-export function isCtrlM(data: string): boolean {
-  return (
-    data === RAW.CTRL_M ||
-    data === Keys.CTRL_M ||
-    matchesKittySequence(data, CODEPOINTS.m, MODIFIERS.ctrl)
-  );
+class FileActivityPanel extends Container {
+  addEntry(entry: FileActivityEntry): void;
+  clear(): void;
+  show(): void;
+  hide(): void;
+  toggle(): void;
+  isVisible(): boolean;
 }
 ```
 
-**Automated verification:**
-- [x] `npm run lint` passes
-- [x] `npm run typecheck` passes
+**UI Layout:**
+- Header: "Files" title (1 row)
+- File list: scrollable if > N files (MVP: show last 10)
+- Each row: `{operation-icon} {filename}`
+- Operation icons: `+` (write), `E` (edit), `-` (delete), `D` (dir)
+- Background: slightly darker than chat (existing pattern)
 
 ---
 
-## Phase 2: Export isCtrlM (control.ts) ✅
+### Modified Files
 
-**Changes to** `source/terminal/control.ts`
+#### 2. `source/repl.ts`
 
-### 2.1 Add isCtrlM to exports (line ~27) ✅
+**Changes:**
+- Add `FileActivityPanel` instance (`fileActivityPanel`)
+- Add `fileActivityVisible` state flag
+- Initialize panel in constructor
+- Add panel to TUI layout (above editor container)
+- Handle `Ctrl+Shift+F` in keyboard handlers
+- In `handleAgentEvent()`:
+  - On `agent-start`: call `fileActivityPanel.show()`
+  - On `agent-stop`: call `fileActivityPanel.hide()`
+- In tool event handling: extract file paths and call `fileActivityPanel.addEntry()`
+- Detect git commits: parse tool output for commit success, call `fileActivityPanel.clear()`
 
+**Key locations:**
+- Line ~131: `chatContainer = new Container()` - add panel initialization
+- Line ~218: keyboard handler setup - add `Ctrl+Shift+F`
+- Line ~386-467: `handleAgentEvent()` switch - add file tracking
+- Line ~259-268: TUI layout setup - add panel to layout
+
+#### 3. `source/tui/components/footer.ts` (Reference Only)
+
+No changes needed. The footer already has `getProjectStatus()` that queries git. We'll call this from the file activity panel to enrich display if needed. For MVP, we skip this and just show tool-tracked operations.
+
+#### 4. `source/agent/index.ts` (Reference Only)
+
+**No changes.** We already have `ToolEvent` types exported:
 ```typescript
-isCtrlM,
+export type ToolEvent =
+  | { type: "tool-call-start"; name: string; toolCallId: string; msg: string; args: unknown; }
+  | { type: "tool-call-end"; name: string; toolCallId: string; msg: string; }
+  | { type: "tool-call-error"; name: string; toolCallId: string; msg: string; }
 ```
 
-**Automated verification:**
-- [x] `npm run lint` passes
-- [x] `npm run typecheck` passes
+We'll parse `args` from `tool-call-start` to extract file paths for Write/Edit tools.
 
 ---
 
-## Phase 3: Add onCtrlM Handler (tui.ts) ✅
+## Implementation Details
 
-**Changes to** `source/tui/tui.ts`
+### Phase 1: FileActivityPanel Component
 
-### 3.1 Add onCtrlM property (line ~91, after onCtrlR) ✅
+**File:** `source/tui/components/file-activity-panel.ts`
 
+1. Extend `Container` (like `ToolExecutionComponent`)
+2. Store `entries: FileActivityEntry[]`
+3. Implement `render()` to show file list
+4. Track visibility state internally
+
+**Styling:**
+- Background: use existing `bgColor` from `tool-execution.ts` (`r:52, g:53, b:65`)
+- Header: bold "Files" with dim border
+- Each entry: icon + path, icon colored by operation
+  - `write`: green
+  - `edit`: yellow
+  - `delete`: red
+  - `create-dir`: blue
+
+### Phase 2: Repl Integration
+
+**Step 2.1: Initialize and Layout**
 ```typescript
-public onCtrlM?: () => void;
+// In Repl constructor, after editorContainer:
+this.fileActivityPanel = new FileActivityPanel();
+this.fileActivityVisible = false;
+
+// In init(), add to TUI before editorContainer:
+this.tui.addChild(this.fileActivityPanel);
 ```
 
-### 3.2 Add Ctrl+M keyboard handling (after Ctrl+N handler around line ~200) ✅
-
+**Step 2.2: Keyboard Shortcut**
 ```typescript
-// Handle Ctrl+M - model selector
-if (isCtrlM(data)) {
-  if (this.onCtrlM) {
-    this.onCtrlM();
-  }
-  return;
-}
-```
-
-**Automated verification:**
-- [x] `npm run lint` passes
-- [x] `npm run typecheck` passes
-
----
-
-## Phase 4: Wire up onCtrlM in Repl (repl.ts) ✅
-
-**Changes to** `source/repl.ts`
-
-### 4.1 Add onCtrlM handler registration (after onCtrlR registration around line ~221) ✅
-
-```typescript
-this.tui.onCtrlM = () => {
-  void this.handleCtrlM();
+// Add in init() keyboard setup:
+this.tui.onCtrlShiftF = () => {
+  this.fileActivityPanel.toggle();
+  this.tui.requestRender();
 };
 ```
 
-### 4.2 Add handleCtrlM method (after handleCtrlN method around line ~950) ✅
+Need to check if `onCtrlShiftF` exists in TUI, may need to add to `tui.ts`.
+
+**Step 2.3: Track File Operations**
+
+In `handleAgentEvent()` for `tool` event type:
 
 ```typescript
-/**
- * Opens the model selector by invoking the /model command handler.
- */
-private async handleCtrlM(): Promise<void> {
-  await this.commands.handle(
-    { userInput: "/model" },
-    {
-      tui: this.tui,
-      container: this.chatContainer,
-      inputContainer: this.editorContainer,
-      editor: this.editor,
-    },
-  );
+case "tool": {
+  // Existing tool handling...
+
+  // NEW: Track file operations
+  const toolName = event.events?.[0]?.name;
+  if (toolName === "Write" || toolName === "Edit") {
+    const args = event.events?.[0]?.args as { path?: string; edits?: Array<{ newText?: string }> };
+    if (args?.path) {
+      const operation = toolName === "Write" ? "write" : "edit";
+      this.fileActivityPanel.addEntry({
+        path: args.path,
+        operation,
+        timestamp: Date.now(),
+      });
+    }
+  }
 }
 ```
 
-**Automated verification:**
-- [x] `npm run lint` passes
-- [x] `npm run typecheck` passes
+**Step 2.4: Git Commit Detection**
 
----
+After tool execution completes, check output:
 
-## Phase 5: Manual Testing
-
-### 5.1 Run the REPL in tmux
-
-```bash
-tmux new-session -d -s acai-test "node source/index.ts"
+```typescript
+// In tool-call-end handling
+if (toolName === "Bash") {
+  const output = event.msg;
+  if (output.includes("git commit") && output.includes("commit ")) {
+    // Check for successful commit (has hash)
+    const commitMatch = output.match(/commit ([a-f0-9]+)/i);
+    if (commitMatch) {
+      this.fileActivityPanel.clear();
+    }
+  }
+}
 ```
 
-### 5.2 Test Ctrl+M behavior
+**Step 2.5: Auto-show/hide**
 
-- [x] With editor empty - press Ctrl+M - should open model selector
-- [x] With editor having text - press Ctrl+M - should still open model selector
-- [x] Press Escape in model selector - should close and return to editor
-- [x] Select a model with Shift+Enter (Kitty protocol) - should change the active model
-- [ ] Select a model with Enter key - BUG: Enter resets selection to first item
-
-## Known Issues
-
-### Enter Key Not Working in Model Selector - RESOLVED ✅
-
-**Issue**: When pressing Enter in the model selector, the selection resets to the first item instead of activating the selected model.
-
-**Root cause**: `Ctrl+M` and `Enter` both produce the same raw byte `\x0d` (`\r`) in legacy terminal mode. The `isCtrlM` check in `TUI.handleInput()` was positioned before input is forwarded to the focused component, so every Enter keypress was matched by `isCtrlM`, which re-triggered the model selector (resetting it) instead of letting the keypress reach `ModelSelectorComponent.handleInput()`.
-
-**Fix applied**: Removed the `RAW.CTRL_M` (`\x0d`) match from `isCtrlM()` in `source/terminal/keys.ts`. The function now only matches the Kitty keyboard protocol sequence (`\x1b[109;5u`), which is distinct from a plain Enter keypress. Terminals that support the Kitty protocol (like Ghostty) send a disambiguated sequence for Ctrl+M, so the shortcut still works there.
-
-**File changed**: `source/terminal/keys.ts` — `isCtrlM()` function
-
-**Trade-off**: Ctrl+M will only work in terminals that support the Kitty keyboard protocol. Terminals that only send raw control bytes will not be able to use Ctrl+M (Enter will work normally in those terminals instead).
-
-### 5.3 Verify existing shortcuts still work
-
-- [x] Ctrl+R - review command
-- [x] Ctrl+N - new chat
-- [x] Ctrl+O - verbose toggle
+```typescript
+// In handleAgentEvent:
+case "agent-start":
+  this.fileActivityPanel.show();
+  break;
+case "agent-stop":
+  this.fileActivityPanel.hide();
+  break;
+```
 
 ---
 
 ## Edge Cases
 
-1. **Model selector open + Ctrl+M pressed**: Opens another instance (same as typing /model again)
-2. **During agent execution + Ctrl+M pressed**: Should open model selector (same as /model during execution)
-3. **Modal open + Ctrl+M pressed**: Modal handles input first (e.g., Escape closes modal, then Ctrl+M works)
+1. **Bash tool creates/deletes files**: Track `mkdir`, `rm`, `mv` commands in Bash tool output parsing
+2. **Duplicate entries**: Deduplicate by path (update existing entry if same path appears)
+3. **Long paths**: Truncate with `...` if > 40 chars
+4. **No git repo**: Panel still works, just never clears (until session end)
+5. **Terminal resize**: Panel should reflow content on resize
+6. **Empty state**: Show "No files changed" when panel visible but empty
 
 ---
 
-## What We're NOT Doing
+## Out of Scope (v1)
 
-- Adding shortcut documentation to welcome component (separate task)
-- Adding shortcut hints to footer component (separate task)
-- Supporting alternative key combinations (e.g., Cmd+M on macOS - would require platform detection)
+- Git status integration in panel (uses existing footer instead)
+- Clickable file entries
+- Keyboard navigation in panel
+- Auto-scroll to latest
+- Show diff summary
+- Periodically refresh from git status
+- Configuration option to disable
+
+---
+
+## Testing Strategy
+
+### Unit Tests
+- `FileActivityPanel.addEntry()` - verifies entry added correctly
+- `FileActivityPanel.clear()` - verifies list cleared
+- `FileActivityPanel.toggle()` - verifies visibility toggles
+
+### Manual Testing
+1. Start acai in tmux
+2. Ask: "Create a new file called test.txt with hello world"
+3. Verify panel appears with `test.txt` + write indicator
+4. Press `Ctrl+Shift+F` - panel should hide
+5. Press again - panel should show
+6. Ask: "Commit these changes" (if git initialized)
+7. Verify panel clears after commit
+
+---
+
+## Assumptions
+
+1. `Ctrl+Shift+F` handler can be added to TUI (need to verify in `tui.ts`)
+2. Tool event args contain file paths in expected format (`{ path: string }`)
+3. Git commit detection via output string is reliable enough for MVP
+4. Panel doesn't need to persist across sessions
+
+---
+
+## Files Modified Summary
+
+| File | Change Type | Lines |
+|------|-------------|-------|
+| `source/tui/components/file-activity-panel.ts` | New | ~150 |
+| `source/repl.ts` | Modify | ~30 additions |
+| `source/tui/tui.ts` | Possibly modify | Add `onCtrlShiftF` handler if missing |
+
+---
+
+## Rollback Strategy
+
+If issues arise:
+1. Disable by commenting out panel initialization in `repl.ts`
+2. Keyboard shortcut can be removed independently
+3. File tracking can be disabled while keeping panel structural code
