@@ -4,6 +4,7 @@ import { config } from "../config.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { AgentTool, createAgentTools } from "./agent.ts";
 import { BashTool, createBashTool } from "./bash.ts";
+import { CodeSearchTool, createCodeSearchTool } from "./code-search.ts";
 import {
   createDirectoryTreeTool,
   DirectoryTreeTool,
@@ -51,6 +52,8 @@ export async function initTools({
 
   const grepTool = createGrepTool();
 
+  const codeSearchTool = createCodeSearchTool();
+
   const thinkTool = createThinkTool();
 
   const lsTool = await createLsTool({ workspace });
@@ -74,6 +77,7 @@ export async function initTools({
     [ReadFileTool.name]: readFileTool,
     [GlobTool.name]: globTool,
     [GrepTool.name]: grepTool,
+    [CodeSearchTool.name]: codeSearchTool,
     [DirectoryTreeTool.name]: directoryTreeTool,
     [ThinkTool.name]: thinkTool,
     [LsTool.name]: lsTool,

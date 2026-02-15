@@ -1,191 +1,118 @@
-# Implementation Plan: Ctrl+M Keyboard Shortcut for Model Selection
+# CodeSearch Tool Implementation Plan
 
-## Overview
+## Summary
 
-Add a keyboard shortcut (Ctrl+M) to trigger the model selector without typing `/model` in the editor. This follows the existing pattern of Ctrl+letter shortcuts (Ctrl+R for review, Ctrl+N for new chat, Ctrl+O for verbose mode).
+Create a new `CodeSearch` tool that uses colgrep (semantic code search) to provide natural-language-powered code search capabilities. This tool complements the existing Grep tool by enabling semantic search—finding code by meaning rather than just pattern matching.
 
-## Files to Modify
+## Changes
 
-1. `source/terminal/keys.ts` - Add Ctrl+M key detection functions
-2. `source/terminal/control.ts` - Export new key detection function
-3. `source/tui/tui.ts` - Add onCtrlM handler property and keyboard handling
-4. `source/repl.ts` - Wire up onCtrlM to trigger model command
+### 1. New Tool: `source/tools/code-search.ts`
 
----
+Create a new tool file following the Grep tool structure with:
 
-## Phase 1: Add Ctrl+M Key Detection (keys.ts) ✅
+- **Tool definition**: `CodeSearchTool` constant and `createCodeSearchTool()` function
+- **Input schema** (Zod):
+  - `query`: string (required) - Natural language query for semantic search
+  - `path`: string (optional, default: ".") - Path to search in
+  - `regexPattern`: string (optional) - Regex pre-filter (`-e` flag)
+  - `filePattern`: string (optional) - File filter (`--include` flag)
+  - `excludePattern`: string (optional) - Exclude pattern (`--exclude` flag)
+  - `excludeDir`: string (optional) - Exclude directories (`--exclude-dir` flag)
+  - `maxResults`: number (optional, default: 15) - Number of results (`-k` flag)
+  - `contextLines`: number (optional, default: 6) - Context lines (`-n` flag)
+  - `filesOnly`: boolean (optional) - List only files (`-l` flag)
+  - `showContent`: boolean (optional) - Show full content (`-c` flag)
+  - `codeOnly`: boolean (optional) - Skip config/text files (`--code-only` flag)
 
-**Changes to** `source/terminal/keys.ts`
+- **Execute function**: Calls `colgrep` with appropriate flags and parses output
+- **Display function**: Shows search query and parameters
 
-### 1.1 Add 'm' to CODEPOINTS (line ~36-55) ✅
+### 2. Tool Registration: `source/tools/index.ts`
 
-```typescript
-m: 109,
-```
+- Add import: `import { createCodeSearchTool, CodeSearchTool } from "./code-search.ts";`
+- Add tool creation: `const codeSearchTool = createCodeSearchTool();`
+- Add to tools object: `[CodeSearchTool.name]: codeSearchTool,`
 
-### 1.2 Add CTRL_M to Keys object (line ~172-200) ✅
+### 3. Health Check: `source/commands/health/utils.ts`
 
-```typescript
-CTRL_M: kittySequence(CODEPOINTS.m, MODIFIERS.ctrl),
-```
-
-### 1.3 Add CTRL_M to RAW object (line ~240-255) ✅
-
-```typescript
-CTRL_M: "\x0d",
-```
-
-### 1.4 Add isCtrlM function (after isCtrlL around line ~335) ✅
-
-```typescript
-/**
- * Check if input matches Ctrl+M (raw byte or Kitty protocol).
- * Ignores lock key bits.
- */
-export function isCtrlM(data: string): boolean {
-  return (
-    data === RAW.CTRL_M ||
-    data === Keys.CTRL_M ||
-    matchesKittySequence(data, CODEPOINTS.m, MODIFIERS.ctrl)
-  );
-}
-```
-
-**Automated verification:**
-- [x] `npm run lint` passes
-- [x] `npm run typecheck` passes
-
----
-
-## Phase 2: Export isCtrlM (control.ts) ✅
-
-**Changes to** `source/terminal/control.ts`
-
-### 2.1 Add isCtrlM to exports (line ~27) ✅
+Add colgrep to the `BASH_TOOLS` array:
 
 ```typescript
-isCtrlM,
+{ name: "colgrep", command: "colgrep --version" }
 ```
 
-**Automated verification:**
-- [x] `npm run lint` passes
-- [x] `npm run typecheck` passes
+This ensures the `/health` command reports on colgrep's presence.
 
----
+### 4. Documentation Updates
 
-## Phase 3: Add onCtrlM Handler (tui.ts) ✅
+- **ARCHITECTURE.md**: Add entry for `source/tools/code-search.ts`
+- **README.md**: If tool list exists, add CodeSearch entry
 
-**Changes to** `source/tui/tui.ts`
+## Technical Details
 
-### 3.1 Add onCtrlM property (line ~91, after onCtrlR) ✅
+### Execution Strategy
+
+The tool will use `execSync` to call colgrep with appropriate arguments:
 
 ```typescript
-public onCtrlM?: () => void;
+const args = [
+  query,
+  ...(path !== "." ? [path] : []),
+  ...(regexPattern ? ["-e", regexPattern] : []),
+  ...(filePattern ? ["--include", filePattern] : []),
+  ...(excludePattern ? ["--exclude", excludePattern] : []),
+  ...(excludeDir ? ["--exclude-dir", excludeDir] : []),
+  ...(maxResults !== undefined ? ["-k", String(maxResults)] : []),
+  ...(contextLines !== undefined ? ["-n", String(contextLines)] : []),
+  ...(filesOnly ? ["-l"] : []),
+  ...(showContent ? ["-c"] : []),
+  ...(codeOnly ? ["--code-only"] : []),
+];
 ```
 
-### 3.2 Add Ctrl+M keyboard handling (after Ctrl+N handler around line ~200) ✅
+### Error Handling
 
-```typescript
-// Handle Ctrl+M - model selector
-if (isCtrlM(data)) {
-  if (this.onCtrlM) {
-    this.onCtrlM();
-  }
-  return;
-}
+- **Tool not installed**: Catch execSync error and provide user-friendly message suggesting installation
+- **Path not found**: Check and provide clear error
+- **Index not built**: colgrep auto-indexes; handle gracefully
+- **Search timeout**: Add reasonable timeout (30 seconds)
+
+### Tool Description
+
+```
+Search code semantically using colgrep (AI-powered semantic code search).
+Use natural language queries like "function that handles user authentication"
+to find relevant code even when keywords don't match exactly.
+Supports hybrid search: combine regex filtering with semantic ranking.
+Requires colgrep to be installed (see: https://github.com/lightonai/next-plaid)
 ```
 
-**Automated verification:**
-- [x] `npm run lint` passes
-- [x] `npm run typecheck` passes
+## Out of Scope
 
----
+- Model/embedding configuration options (advanced, rarely needed)
+- Index management subcommands (init, status, clear) - users can use colgrep directly
+- Integration with Claude Code's colgrep plugin features
 
-## Phase 4: Wire up onCtrlM in Repl (repl.ts) ✅
+## Success Criteria
 
-**Changes to** `source/repl.ts`
+### Automated Verification
 
-### 4.1 Add onCtrlM handler registration (after onCtrlR registration around line ~221) ✅
+- [x] `npm run typecheck` - No type errors
+- [x] `npm run lint` - No linting errors
+- [x] `npm run build` - Successful build
+- [x] Tool file exists at `source/tools/code-search.ts`
+- [x] Tool is registered in `source/tools/index.ts`
+- [x] colgrep entry exists in `BASH_TOOLS` in `source/commands/health/utils.ts`
 
-```typescript
-this.tui.onCtrlM = () => {
-  void this.handleCtrlM();
-};
-```
+### Manual Verification
 
-### 4.2 Add handleCtrlM method (after handleCtrlN method around line ~950) ✅
+- `/health` command shows colgrep as installed/not installed
+- CodeSearch tool appears in available tools list
+- Running a semantic search like `"file reading functionality"` returns relevant results
+- Running with regex filter like `-e "async.*"` combined with semantic query works
 
-```typescript
-/**
- * Opens the model selector by invoking the /model command handler.
- */
-private async handleCtrlM(): Promise<void> {
-  await this.commands.handle(
-    { userInput: "/model" },
-    {
-      tui: this.tui,
-      container: this.chatContainer,
-      inputContainer: this.editorContainer,
-      editor: this.editor,
-    },
-  );
-}
-```
+## Assumptions
 
-**Automated verification:**
-- [x] `npm run lint` passes
-- [x] `npm run typecheck` passes
-
----
-
-## Phase 5: Manual Testing
-
-### 5.1 Run the REPL in tmux
-
-```bash
-tmux new-session -d -s acai-test "node source/index.ts"
-```
-
-### 5.2 Test Ctrl+M behavior
-
-- [x] With editor empty - press Ctrl+M - should open model selector
-- [x] With editor having text - press Ctrl+M - should still open model selector
-- [x] Press Escape in model selector - should close and return to editor
-- [x] Select a model with Shift+Enter (Kitty protocol) - should change the active model
-- [ ] Select a model with Enter key - BUG: Enter resets selection to first item
-
-## Known Issues
-
-### Enter Key Not Working in Model Selector - RESOLVED ✅
-
-**Issue**: When pressing Enter in the model selector, the selection resets to the first item instead of activating the selected model.
-
-**Root cause**: `Ctrl+M` and `Enter` both produce the same raw byte `\x0d` (`\r`) in legacy terminal mode. The `isCtrlM` check in `TUI.handleInput()` was positioned before input is forwarded to the focused component, so every Enter keypress was matched by `isCtrlM`, which re-triggered the model selector (resetting it) instead of letting the keypress reach `ModelSelectorComponent.handleInput()`.
-
-**Fix applied**: Removed the `RAW.CTRL_M` (`\x0d`) match from `isCtrlM()` in `source/terminal/keys.ts`. The function now only matches the Kitty keyboard protocol sequence (`\x1b[109;5u`), which is distinct from a plain Enter keypress. Terminals that support the Kitty protocol (like Ghostty) send a disambiguated sequence for Ctrl+M, so the shortcut still works there.
-
-**File changed**: `source/terminal/keys.ts` — `isCtrlM()` function
-
-**Trade-off**: Ctrl+M will only work in terminals that support the Kitty keyboard protocol. Terminals that only send raw control bytes will not be able to use Ctrl+M (Enter will work normally in those terminals instead).
-
-### 5.3 Verify existing shortcuts still work
-
-- [x] Ctrl+R - review command
-- [x] Ctrl+N - new chat
-- [x] Ctrl+O - verbose toggle
-
----
-
-## Edge Cases
-
-1. **Model selector open + Ctrl+M pressed**: Opens another instance (same as typing /model again)
-2. **During agent execution + Ctrl+M pressed**: Should open model selector (same as /model during execution)
-3. **Modal open + Ctrl+M pressed**: Modal handles input first (e.g., Escape closes modal, then Ctrl+M works)
-
----
-
-## What We're NOT Doing
-
-- Adding shortcut documentation to welcome component (separate task)
-- Adding shortcut hints to footer component (separate task)
-- Supporting alternative key combinations (e.g., Cmd+M on macOS - would require platform detection)
+- colgrep version check command `colgrep --version` works as expected (verified: returns `colgrep 1.0.7`)
+- Default colgrep behavior (auto-index) is acceptable for first-time searches
+- Human-readable output format is preferred over JSON for LLM consumption

@@ -39,6 +39,7 @@ export const BASH_TOOLS: ToolInfo[] = [
   { name: "ast-grep", command: "ast-grep --version" },
   { name: "jq", command: "jq --version" },
   { name: "yq", command: "yq --version" },
+  { name: "colgrep", command: "colgrep --version" },
 ];
 
 export function checkEnvironmentVariables(): (string | number)[][] {
