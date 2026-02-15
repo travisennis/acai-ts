@@ -1,4 +1,4 @@
-import { basename, dirname, isAbsolute, join } from "node:path";
+import { basename, dirname, isAbsolute, join, relative } from "node:path";
 import type {
   AutocompleteItem,
   AutocompleteProvider,
@@ -192,12 +192,14 @@ export class PathProvider implements AutocompleteProvider {
         }
       }
 
+      const cwd = process.cwd();
       for (const { entry, fullPath } of validEntries) {
         // Use Dirent.isDirectory() - no extra stat() call needed
         const isDirectory = entry.isDirectory();
+        const relativePath = relative(cwd, fullPath);
 
         suggestions.push({
-          value: isDirectory ? `${fullPath}/` : fullPath,
+          value: isDirectory ? `${relativePath}/` : relativePath,
           label: entry.name,
           description: isDirectory
             ? `directory ${entry.parentPath}`
