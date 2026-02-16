@@ -103,7 +103,7 @@ export class FooterComponent implements Component {
   render(width: number): string[] {
     const results: string[] = [];
 
-    const modelInfo = `${this.modelManager.getModelMetadata("repl").id} [${this.modelManager.getModel("repl").modelId}]`;
+    const modelInfo = `${this.modelManager.getModelMetadata("repl").id}`;
     const [pathLine, gitLine] = formatProjectStatus(this.state.projectStatus);
     const padding = Math.max(
       0,
