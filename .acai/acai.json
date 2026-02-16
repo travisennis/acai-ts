@@ -6,5 +6,5 @@
     "maxTokens": 30000
   },
   "notify": true,
-  "autoGenerateRules": true
+  "autoGenerateRules": false
 }
