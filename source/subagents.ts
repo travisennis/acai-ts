@@ -269,3 +269,50 @@ export function formatSubagentsForDescription(subagents: Subagent[]): string {
 
   return lines.join("\n");
 }
+
+export function formatSubagentsForPrompt(subagents: Subagent[]): string {
+  if (subagents.length === 0) {
+    return "";
+  }
+
+  const lines = [
+    "## Subagents (Agent Tool)",
+    "",
+    "Use the Agent tool to delegate complex, multi-step tasks to specialized subagents. Subagents operate autonomously and return a single result.",
+    "",
+    "**When to use subagents:**",
+    "- Deep codebase research or architecture exploration",
+    "- Complex multi-file refactoring or implementation tasks",
+    "- Writing comprehensive tests across multiple files",
+    "- Creating detailed implementation plans",
+    "- Tasks requiring investigation across many files",
+    "",
+    "<available_subagents>",
+  ];
+
+  for (const subagent of subagents) {
+    lines.push("<subagent>");
+    lines.push("<name>");
+    lines.push(subagent.name);
+    lines.push("</name>");
+    lines.push("<description>");
+    lines.push(subagent.description);
+    lines.push("</description>");
+    if (subagent.tools && subagent.tools.length > 0) {
+      lines.push("<tools>");
+      lines.push(subagent.tools.join(", "));
+      lines.push("</tools>");
+    }
+    lines.push("</subagent>");
+  }
+
+  lines.push("</available_subagents>");
+  lines.push("");
+  lines.push("**Usage notes:**");
+  lines.push("- Subagents are stateless - provide all context in your prompt");
+  lines.push("- Be specific about what information you need returned");
+  lines.push("- Use longer timeouts for complex tasks (1800-3600 seconds)");
+  lines.push("- Launch multiple subagents concurrently for independent tasks");
+
+  return lines.join("\n");
+}

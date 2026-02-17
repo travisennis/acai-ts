@@ -2,6 +2,7 @@ import { platform } from "node:os";
 import { config } from "./config.ts";
 import { dedent } from "./dedent.ts";
 import { formatSkillsForPrompt, loadSkills } from "./skills.ts";
+import { formatSubagentsForPrompt, loadSubagents } from "./subagents.ts";
 import { getShell } from "./terminal/index.ts";
 import type { CompleteToolNames } from "./tools/index.ts";
 import { getCurrentBranch, inGitDirectory } from "./utils/git.ts";
@@ -12,6 +13,7 @@ type SystemPromptComponents = {
   cwdAgentsMd: string;
   learnedRules: string;
   skills: string;
+  subagents: string;
 };
 
 async function getProjectContext() {
@@ -118,6 +120,9 @@ export async function systemPrompt(
     const skills = await loadSkills();
     skillsText = formatSkillsForPrompt(skills);
   }
+
+  const subagents = await loadSubagents();
+  const subagentsText = formatSubagentsForPrompt(subagents);
 
   const corePrompt = dedent`
 You are acai. You are running as a coding agent in a CLI on the user's computer.
@@ -251,9 +256,10 @@ DEFAULT TO PARALLEL: Unless you have a specific reason why operations MUST be se
     cwdAgentsMd: projectContextResult.cwdAgentsMd,
     learnedRules: projectContextResult.learnedRules,
     skills: skillsText,
+    subagents: subagentsText,
   };
 
-  const assembledPrompt = `${corePrompt}\n${projectContextText}\n\n${environmentInfoText}${skillsText}`;
+  const assembledPrompt = `${corePrompt}\n${projectContextText}\n\n${environmentInfoText}${skillsText}\n\n${subagentsText}`;
   const result: SystemPromptResult = { prompt: assembledPrompt, components };
   return result;
 }
