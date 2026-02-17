@@ -1,7 +1,7 @@
 import type { ToolEvent } from "../../agent/index.ts";
 import { capitalize } from "../../formatting.ts";
 import style from "../../terminal/style.ts";
-import { Container, type Loader, Text } from "../index.ts";
+import { Container, type Loader, Spacer, Text } from "../index.ts";
 import type { Component } from "../tui.ts";
 
 type Status = ToolEvent["type"];
@@ -47,6 +47,9 @@ export class ToolExecutionComponent extends Container {
     // Clear content container before rendering
     this.contentContainer.clear();
 
+    // Add spacer with background color for visual separation
+    this.contentContainer.addChild(new Spacer(1, bgColor));
+
     // Build display from complete event history with proper ordering
     const processedEvents = this.processEventsInOrder();
 
@@ -81,6 +84,9 @@ export class ToolExecutionComponent extends Container {
         }
       }
     }
+
+    // Add trailing spacer with background color
+    this.contentContainer.addChild(new Spacer(1, bgColor));
   }
 
   private getToolCallStartComponent(event: ToolEvent, currentStatus: Status) {

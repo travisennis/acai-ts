@@ -1,7 +1,6 @@
 import style from "../../terminal/style.ts";
 import { Container } from "../tui.ts";
 import { Markdown } from "./markdown.ts";
-import { Spacer } from "./spacer.ts";
 import { Text } from "./text.ts";
 
 /**
@@ -51,10 +50,6 @@ export class ThinkingBlockComponent extends Container {
   private renderContent(): void {
     // Clear content container
     this.contentContainer.clear();
-
-    if (this.lastContent.length > 0) {
-      this.contentContainer.addChild(new Spacer(1));
-    }
 
     const content = this.lastContent;
 

@@ -563,12 +563,10 @@ export class Repl {
 
   /**
    * Adds a component to the chat container with spacing.
-   * Adds a Spacer(1) before the component (except for the first component).
+   * Adds a Spacer(1) before every component (including the first).
    */
   private addComponentWithSpacing(component: Component): void {
-    if (this.chatContainer.children.length > 0) {
-      this.chatContainer.addChild(new Spacer(1));
-    }
+    this.chatContainer.addChild(new Spacer(1));
     this.chatContainer.addChild(component);
   }
 
