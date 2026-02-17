@@ -1,6 +1,5 @@
 import { Container } from "../tui.ts";
 import { Markdown } from "./markdown.ts";
-import { Spacer } from "./spacer.ts";
 
 /**
  * Component that renders a complete assistant message
@@ -31,10 +30,6 @@ export class AssistantMessageComponent extends Container {
   }): void {
     // Clear content container
     this.contentContainer.clear();
-
-    if (message.content.length > 0) {
-      this.contentContainer.addChild(new Spacer(1));
-    }
 
     const content = message.content;
     // Assistant text messages with no background - trim the text

@@ -1,7 +1,7 @@
 import type { ToolEvent } from "../../agent/index.ts";
 import { capitalize } from "../../formatting.ts";
 import style from "../../terminal/style.ts";
-import { Container, type Loader, Spacer, Text } from "../index.ts";
+import { Container, type Loader, Text } from "../index.ts";
 import type { Component } from "../tui.ts";
 
 type Status = ToolEvent["type"];
@@ -52,9 +52,6 @@ export class ToolExecutionComponent extends Container {
 
     const currentStatus = processedEvents.at(-1)?.type ?? "tool-call-start";
 
-    this.contentContainer.addChild(new Spacer(1));
-    this.contentContainer.addChild(new Spacer(1, bgColor));
-
     for (let i = 0; i < processedEvents.length; i++) {
       const event = processedEvents[i];
 
@@ -84,9 +81,6 @@ export class ToolExecutionComponent extends Container {
         }
       }
     }
-
-    this.contentContainer.addChild(new Spacer(1, bgColor));
-    this.contentContainer.addChild(new Spacer(1));
   }
 
   private getToolCallStartComponent(event: ToolEvent, currentStatus: Status) {

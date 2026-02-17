@@ -48,6 +48,7 @@ import {
   UserMessageComponent,
 } from "./tui/index.ts";
 import type { ProcessTerminalOptions, Terminal } from "./tui/terminal.ts";
+import type { Component } from "./tui/tui.ts";
 
 /** Configuration options for the REPL instance. */
 interface ReplOptions {
@@ -315,7 +316,7 @@ export class Repl {
 
         if (hasAddedContext) {
           const contextTokenCount = promptManager.getContextTokenCount();
-          this.chatContainer.addChild(
+          this.addComponentWithSpacing(
             new Text(
               style.green(
                 `Context will be added to prompt. (${contextTokenCount} tokens)`,
@@ -417,7 +418,7 @@ export class Repl {
           // Create assistant component for streaming
           const assistantMessageComponent = new AssistantMessageComponent();
           this.streamingComponent = assistantMessageComponent;
-          this.chatContainer.addChild(assistantMessageComponent);
+          this.addComponentWithSpacing(assistantMessageComponent);
           this.streamingComponent.updateContent(event);
           this.tui.requestRender();
         }
@@ -460,7 +461,7 @@ export class Repl {
           });
           this.pendingTools.set(event.toolCallId, newComponent);
           this.allToolExecutions.push(newComponent);
-          this.chatContainer.addChild(newComponent);
+          this.addComponentWithSpacing(newComponent);
         }
         this.tui.requestRender();
         break;
@@ -521,7 +522,7 @@ export class Repl {
         });
         this.thinkingBlockComponent = component;
         this.allThinkingBlocks.push(component);
-        this.chatContainer.addChild(component);
+        this.addComponentWithSpacing(component);
         this.thinkingBlockComponent.updateContent(event);
         this.tui.requestRender();
         break;
@@ -555,9 +556,20 @@ export class Repl {
       const textContent = message.content;
       if (textContent) {
         const userComponent = new UserMessageComponent(textContent);
-        this.chatContainer.addChild(userComponent);
+        this.addComponentWithSpacing(userComponent);
       }
     }
+  }
+
+  /**
+   * Adds a component to the chat container with spacing.
+   * Adds a Spacer(1) before the component (except for the first component).
+   */
+  private addComponentWithSpacing(component: Component): void {
+    if (this.chatContainer.children.length > 0) {
+      this.chatContainer.addChild(new Spacer(1));
+    }
+    this.chatContainer.addChild(component);
   }
 
   /** Returns a promise that resolves with the user's next input submission. */
@@ -693,7 +705,7 @@ export class Repl {
         const textContent = this.extractUserMessageText(message);
         if (textContent) {
           const userComponent = new UserMessageComponent(textContent);
-          this.chatContainer.addChild(userComponent);
+          this.addComponentWithSpacing(userComponent);
         }
       } else if (message.role === "assistant") {
         // Render assistant message text parts
@@ -715,7 +727,7 @@ export class Repl {
             });
             this.pendingTools.set(toolCallId, component);
             this.allToolExecutions.push(component);
-            this.chatContainer.addChild(component);
+            this.addComponentWithSpacing(component);
           }
         }
       }
@@ -765,7 +777,7 @@ export class Repl {
           role: "assistant",
           content: message.content,
         });
-        this.chatContainer.addChild(assistantComponent);
+        this.addComponentWithSpacing(assistantComponent);
       }
     } else if (Array.isArray(message.content)) {
       const reasoningParts = message.content
@@ -785,7 +797,7 @@ export class Repl {
         thinkingComponent.updateContent({ content: reasoningParts });
         thinkingComponent.endThinking();
         this.allThinkingBlocks.push(thinkingComponent);
-        this.chatContainer.addChild(thinkingComponent);
+        this.addComponentWithSpacing(thinkingComponent);
       }
 
       const textParts = message.content
@@ -803,7 +815,7 @@ export class Repl {
           role: "assistant",
           content: textParts,
         });
-        this.chatContainer.addChild(assistantComponent);
+        this.addComponentWithSpacing(assistantComponent);
       }
     }
   }
