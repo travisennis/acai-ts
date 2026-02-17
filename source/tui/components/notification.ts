@@ -4,12 +4,16 @@ import { visibleWidth } from "../utils.ts";
 
 /**
  * NotificationComponent - displays a notification message with styling
+ * and auto-dismiss functionality.
  */
 export class NotificationComponent implements Component {
   private message: string;
   private bgColor: { r: number; g: number; b: number };
   private textStyle: (text: string) => string;
   private paddingX: number;
+  private autoDismissTimer?: NodeJS.Timeout;
+  private autoDismissMs: number;
+  private onDismiss?: () => void;
 
   // Cache for rendered output
   private cachedMessage?: string;
@@ -21,16 +25,62 @@ export class NotificationComponent implements Component {
     bgColor = { r: 64, g: 64, b: 64 },
     textStyle: (text: string) => string = style.yellow,
     paddingX = 1,
+    autoDismissMs = 3000,
+    onDismiss?: () => void,
   ) {
     this.message = message;
     this.bgColor = bgColor;
     this.textStyle = textStyle;
     this.paddingX = paddingX;
+    this.autoDismissMs = autoDismissMs;
+    this.onDismiss = onDismiss;
+  }
+
+  /**
+   * Sets the auto-dismiss timeout in milliseconds.
+   * This affects the next setMessage call.
+   */
+  setAutoDismissMs(ms: number): void {
+    this.autoDismissMs = ms;
+  }
+
+  /**
+   * Clears the notification immediately and cancels any pending timer.
+   */
+  clear(): void {
+    this.clearTimer();
+    this.message = "";
+    this.invalidateCache();
+  }
+
+  /**
+   * Clears any pending auto-dismiss timer.
+   */
+  private clearTimer(): void {
+    if (this.autoDismissTimer) {
+      clearTimeout(this.autoDismissTimer);
+      this.autoDismissTimer = undefined;
+    }
   }
 
   setMessage(message: string): void {
+    // Clear any pending timer first (handles reset on new notification)
+    this.clearTimer();
+
     this.message = message;
     this.invalidateCache();
+
+    // If message is non-empty, set up auto-dismiss
+    if (message) {
+      this.autoDismissTimer = setTimeout(() => {
+        this.message = "";
+        this.autoDismissTimer = undefined;
+        this.invalidateCache();
+        if (this.onDismiss) {
+          this.onDismiss();
+        }
+      }, this.autoDismissMs);
+    }
   }
 
   setBgColor(bgColor: { r: number; g: number; b: number }): void {

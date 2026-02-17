@@ -166,6 +166,8 @@ export class Repl {
       { r: 64, g: 64, b: 64 },
       style.yellow,
       1,
+      3000,
+      () => this.tui.requestRender(),
     );
   }
 
@@ -1059,6 +1061,7 @@ export class Repl {
     } else {
       // First Ctrl+C - clear the editor and show notification
       this.clearEditor();
+      this.notification.setAutoDismissMs(1000);
       this.notification.setMessage("Press Ctrl+C again to exit");
       this.tui.requestRender();
       this.lastSigintTime = now;

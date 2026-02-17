@@ -1,72 +1,66 @@
-# Fix Tool Execution Component Spacing
+# Notification Auto-Dismiss Feature
 
 ## Summary
+Add auto-dismiss functionality to `NotificationComponent` so transient notifications (like "Verbose mode: ON") automatically disappear after a configurable timeout. Default is 3 seconds, with ability to override per-notification.
 
-Remove leading/trailing spacers from chat-related components (`ToolExecutionComponent`, `UserMessageComponent`, `AssistantMessageComponent`) and delegate spacing to the REPL, which will add a single `Spacer(1)` between each component added to the chat container.
+## Changes
 
-## Problem
+### `source/tui/components/notification.ts`
 
-When multiple tools are called in parallel, the `ToolExecutionComponent` adds spacers both before and after itself (2 at top, 2 at bottom). When consecutive tool components are rendered, the trailing spacer of one and leading spacer of the next combine, creating double spacing between tools.
+1. Add import for `NodeJS` timeout types
+2. Add private fields:
+   - `private autoDismissTimer?: NodeJS.Timeout;`
+   - `private autoDismissMs: number;` (default timeout in ms)
+3. Update constructor to accept optional `autoDismissMs` parameter (default 3000ms)
+4. Add `setAutoDismissMs(ms: number): void` method to override default
+5. Modify `setMessage()`:
+   - If message is empty (`""`), clear any pending timer immediately (no auto-dismiss needed)
+   - If message is non-empty:
+     - Clear existing timer first (handles Option A - reset on new notification)
+     - Start new `setTimeout` for `autoDismissMs` duration
+     - On timeout: set message to `""` and invalidate cache
+6. Add private method `clearTimer()` to centralize timer cleanup
+7. Add public method `clear()` to allow external clearing if needed
 
-## Files to Modify
+### `source/repl.ts`
 
-### 1. `source/tui/components/tool-execution.ts`
-- Remove lines 55-56: `this.contentContainer.addChild(new Spacer(1))` and `this.contentContainer.addChild(new Spacer(1, bgColor))` (top spacers)
-- Remove lines 88-89: `this.contentContainer.addChild(new Spacer(1, bgColor))` and `this.contentContainer.addChild(new Spacer(1))` (bottom spacers)
-- Keep internal spacing between events within the component
+1. Line 164-167: Pass `autoDismissMs: 1000` to constructor (preserves Ctrl+C notification behavior)
+2. All other `notification.setMessage()` calls will use default 3-second timeout
+3. Any notification needing different timing can call `notification.setAutoDismissMs(ms)` before `setMessage()`
 
-### 2. `source/tui/components/user-message.ts`
-- Remove line 14: `this.addChild(new Spacer(1))` (leading spacer)
-- Remove line 26: `this.addChild(new Spacer(1))` (trailing spacer)
+## API
 
-### 3. `source/tui/components/assistant-message.ts`
-- Remove line 36: `this.contentContainer.addChild(new Spacer(1))` (leading spacer - only added when content exists)
+```typescript
+// NotificationComponent constructor
+new NotificationComponent(
+  message = "",
+  bgColor = { r: 64, g: 64, b: 64 },
+  textStyle = style.yellow,
+  paddingX = 1,
+  autoDismissMs = 3000  // NEW: default 3 seconds
+)
 
-### 4. `source/repl.ts`
-Add a helper method `addComponentWithSpacing(component: Component)` that adds a Spacer(1) before the component (except for the first component), then call this instead of `chatContainer.addChild()` at all these locations:
-- Line 318: context token info Text
-- Line 420: streaming assistant message component
-- Line 463: tool execution component (tool-call-lifecycle)
-- Line 524: thinking block component
-- Line 558: user message (addMessageToChat)
-- Line 696: user message (reconstructSession)
-- Line 718: tool execution component (reconstructSession)
-- Line 768: assistant message (renderAssistantMessage)
-- Line 788: thinking block (renderAssistantMessage)
-- Line 806: assistant message (renderAssistantMessage)
-
-## Implementation Approach
-
-1. Create a private method in REPL class:
-   ```typescript
-   private addComponentWithSpacing(component: Component): void {
-     if (!this.chatContainer.isEmpty()) {
-       this.chatContainer.addChild(new Spacer(1));
-     }
-     this.chatContainer.addChild(component);
-   }
-   ```
-
-2. Replace all `this.chatContainer.addChild(...)` calls for chat components with `this.addComponentWithSpacing(...)`
-
-3. Remove spacers from the three component files
+// Methods
+setMessage(message: string): void  // auto-dismisses after autoDismissMs
+setAutoDismissMs(ms: number): void // override for next setMessage call
+clear(): void                      // immediate clear, cancels timer
+```
 
 ## Out of Scope
-
-- Modifying other Spacer usages in the codebase (command outputs, modals, etc.)
-- Changing vertical spacing within components (e.g., between events in ToolExecutionComponent)
-- Changes to editor or footer areas
+- User-configurable timeout via settings file
+- Different default timeouts for different notification types beyond Ctrl+C
+- Animation/fade effects on dismiss
 
 ## Success Criteria
 
-### Automated Verification
-- `npm run typecheck` passes
-- `npm run lint` passes
-- `npm run build` passes
+### Automated verification
+- [x] `npm run typecheck` passes
+- [x] `npm run lint` passes  
+- [x] `npm run build` passes
 
-### Manual Verification
-- Run REPL with a prompt that triggers multiple parallel tool calls
-- Verify exactly one blank line between consecutive tool execution components
-- Verify exactly one blank line between user message and tool, and between tool and assistant message
-- Verify components render flush at top when chat is empty
-- Verify all existing functionality (message rendering, thinking blocks, tool output display) still works correctly
+### Manual verification
+- [x] Toggle verbose mode (Ctrl+O): "Verbose mode: ON/OFF" appears for 3 seconds then disappears
+- [x] Press Ctrl+C once: "Press Ctrl+C again to exit" appears for 1 second then disappears
+- [x] Rapidly toggle verbose mode: timer resets each time, notification stays until final 3-second countdown ends
+- [ ] Trigger auto-generated rules: notification appears for 3 seconds then disappears
+- [x] Exit app: no pending timers left behind
