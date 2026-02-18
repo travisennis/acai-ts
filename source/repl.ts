@@ -953,7 +953,10 @@ export class Repl {
   private async handleCtrlN(): Promise<void> {
     if (!this.options.sessionManager.isEmpty()) {
       // Auto-generate rules before starting new session if enabled
-      await this.maybeGenerateRules();
+      // Run in background - don't block new session from starting
+      this.maybeGenerateRules().catch((err) =>
+        logger.debug({ err }, "Background rule generation failed"),
+      );
 
       this.options.sessionManager.setMetadata(
         "modeState",
