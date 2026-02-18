@@ -36,14 +36,16 @@ export async function generateRulesFromSession(
   const analysisMessages: ModelMessage[] = [...messages];
   analysisMessages.push(
     createUserMessage([
-      `Analyze this conversation based on the system instructions. Identify points where the user made significant corrections revealing general principles for agent improvement. Infer concise, broadly applicable rules (Always/Never) based *only* on these corrections.
+      `Analyze this conversation and identify ONLY rules that are broadly applicable to FUTURE, UNRELATED tasks.
+
+**Critical: Most conversations will NOT yield useful generalizable rules.** Only extract a rule if it represents a genuine, reusable principle that would help the agent in completely different contexts.
 
 **Key Requirements:**
-- Focus on *generalizable* rules applicable to future, different tasks.
-- Avoid rules tied to the specifics of *this* conversation.
-- Ensure rules don't already exist in <existing-rules>.
-- If no *new, general* rules can be inferred, return an empty list or response.
-- Return *only* the Markdown list of rules, with no preamble or explanation.
+- A rule must be *universally* applicable, not just to this project or similar tasks
+- If you're uncertain whether a rule is broadly applicable, DO NOT include it
+- Rules about specific files, functions, or variables are NEVER acceptable
+- Return an EMPTY list if no broadly applicable rules can be inferred
+- Return *only* the Markdown list of rules, with no preamble or explanation
 
 <existing-rules>
 ${existingRules}
@@ -119,23 +121,23 @@ async function createAnalysisSystemPrompt(
   });
   const sys = sysResult.prompt;
 
-  return `You are an expert analyst reviewing conversations between a coding agent and a software engineer. Your goal is to identify instances where the engineer corrected the agent's approach or understanding in a way that reveals a *generalizable principle* for improving the agent's future behavior across *different* tasks.
+  return `You are an expert analyst reviewing conversations between a coding agent and a software engineer.
+
+**YOUR PRIMARY DIRECTIVE: Be extremely conservative. Most conversations do NOT contain useful generalizable rules.** Your job is to identify ONLY those rare, genuinely universal principles that would help the agent in completely unrelated future tasks.
 
 **Your Task:**
 1. Analyze the conversation provided.
-2. Identify significant corrections or redirections from the engineer. Ignore minor clarifications or task-specific adjustments.
-3. For each significant correction, infer a *single, concise, broadly applicable, actionable rule* (starting with 'Always' or 'Never') that captures the underlying principle the agent should follow in the future.
-4. Ensure the rule is general enough to be useful in various scenarios, not just the specific context of this conversation.
-5. Provide a brief, illustrative quote or example from the conversation in parentheses after the rule.
-6. List only the inferred rules in Markdown bullet points. Do not include explanations, summaries, or conversational filler.
+2. Identify corrections or redirections that reveal principles TRUE ACROSS ALMOST ANY CONTEXT.
+3. For each correction, ask yourself: "Would this principle be useful if I were working on a completely different project, with different files, different languages, and different requirements?" If not, DO NOT create a rule.
+4. List only rules that pass this high bar in Markdown bullet points. No preamble.
 
-**Crucially, AVOID generating rules that are:**
-- Overly specific to the files, functions, or variables discussed (e.g., "Always check for null in the 'processUserData' function"). Instead, generalize (e.g., "Always validate data from external sources before processing").
-- Merely restatements of the task requirements.
-- Too narrow to be useful outside the immediate context.
-- Related to minor typos or formatting preferences unless they represent a consistent pattern requested by the user.
+**RULES ABOUT RULES:**
+- When in doubt, EXCLUDE. It is better to generate no rules than to generate specific ones.
+- If a rule references any specific file name, function name, variable name, or project-specific detail, it is INVALID.
+- If a rule is specific to a particular language, framework, or tool without broader applicability, it is INVALID.
+- If the user simply clarified requirements (not corrected a flawed approach), it is NOT a rule-worthy correction.
 
-**Good General Rule Examples:**
+**Valid General Rule Examples:**
 <examples>
 - Always ask for clarification if the user's request is ambiguous.
 - Never make assumptions about file paths without confirmation.
@@ -144,11 +146,13 @@ async function createAnalysisSystemPrompt(
 - Always check for potential null or undefined values before accessing properties.
 </examples>
 
-**Bad Specific Rule Examples (Avoid These):**
+**INVALID Examples (Do NOT generate these):**
 <bad-examples>
-- Always use 'const' instead of 'let' for the 'userId' variable in 'auth.ts'.
-- Never forget to pass the 'config' object to the 'initializeDb' function.
-- Always add a try-catch block around the 'api.fetchData()' call in 'dataService.ts'.
+- Always use 'const' instead of 'let' for variables (too specific - depends on mutability needs)
+- Never forget to pass the 'config' object to functions (specific to this codebase)
+- Always add a try-catch block around API calls (too specific - depends on error handling strategy)
+- Always run tests after making changes (task-specific workflow, not a general principle)
+- Never modify the .env file (project-specific)
 </bad-examples>
 
 This is the original system prompt the agent operated under:
