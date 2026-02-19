@@ -459,6 +459,7 @@ acai-ts
 - **source/tools/agent.ts**: Agent tool for invoking sub-agents
 - **source/tools/bash.ts**: Bash command execution tool
 - **source/tools/directory-tree.ts**: Directory tree generation tool
+- **source/tools/dynamic-tool-loader.ts**: Dynamic tool loader for loading user-defined tools from `.acai/tools` directories
 - **source/tools/edit-file.ts**: File editing tool
 - **source/tools/glob.ts**: File pattern matching tool
 - **source/tools/grep.ts**: Text search tool
@@ -736,11 +737,15 @@ flowchart TD
     C -->|No| E[Skip Skills]
     
     D --> F[Load Skill Tools]
-    E --> G[Combine Tool Sets]
-    F --> G
+    E --> G{ Dynamic Tools Enabled? }
     
-    G --> H[Return Complete Tool Set]
-    H --> I[Register with Agent]
+    F --> G
+    G -->|Yes| H[Load Dynamic Tools]
+    G -->|No| I[Combine Tool Sets]
+    
+    H --> I
+    I --> J[Return Complete Tool Set]
+    J --> K[Register with Agent]
 ```
 
 ### TUI Rendering Flow

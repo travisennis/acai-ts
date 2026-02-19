@@ -9,6 +9,7 @@ import {
   createDirectoryTreeTool,
   DirectoryTreeTool,
 } from "./directory-tree.ts";
+import { loadDynamicTools } from "./dynamic-tool-loader.ts";
 import { createEditFileTool, EditFileTool } from "./edit-file.ts";
 import { createGlobTool, GlobTool } from "./glob.ts";
 import { createGrepTool, GrepTool } from "./grep.ts";
@@ -69,6 +70,10 @@ export async function initTools({
 
   const webFetchTool = await createWebFetchTool();
 
+  const dynamicTools = await loadDynamicTools({
+    baseDir: workspace.primaryDir,
+  });
+
   // Build tools object for AI SDK
   const tools = {
     [EditFileTool.name]: editFileTool,
@@ -85,6 +90,11 @@ export async function initTools({
     [AgentTool.name]: agentTool,
     [WebSearchTool.name]: webSearchTool,
     [WebFetchTool.name]: webFetchTool,
+
+    // Add dynamic tools - they already have toolDef structure
+    ...Object.fromEntries(
+      Object.entries(dynamicTools).map(([name, toolObj]) => [name, toolObj]),
+    ),
   } as const;
 
   return tools;

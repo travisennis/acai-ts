@@ -13,6 +13,10 @@ export const defaultConfig = {
     activeTools: undefined as string[] | undefined,
     maxTokens: 30000,
     maxResults: 30,
+    dynamicTools: {
+      enabled: true,
+      maxTools: 10,
+    },
   },
   notify: true,
   readOnlyFiles: [] as string[],
@@ -41,6 +45,17 @@ const ProjectConfigSchema = z.object({
       activeTools: z.array(z.string()).optional(),
       maxTokens: z.number().default(defaultConfig.tools.maxTokens),
       maxResults: z.number().default(defaultConfig.tools.maxResults),
+      dynamicTools: z
+        .object({
+          enabled: z
+            .boolean()
+            .default(defaultConfig.tools.dynamicTools.enabled),
+          maxTools: z
+            .number()
+            .default(defaultConfig.tools.dynamicTools.maxTools),
+        })
+        .optional()
+        .default(defaultConfig.tools.dynamicTools),
     })
     .optional()
     .default(defaultConfig.tools),
