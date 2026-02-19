@@ -414,7 +414,7 @@ acai-ts
 - **source/commands/add-directory/**: Command to add working directories
 - **source/commands/clear/**: Command to clear the conversation
 - **source/commands/copy/**: Command to copy content
-- **source/commands/generate-rules/**: Command to generate project rules (includes service.ts for programmatic rule generation)
+- **source/commands/generate-rules/**: Command to generate global rules (includes service.ts for programmatic rule generation)
 - **source/commands/handoff/**: Command for agent handoffs
 - **source/commands/health/**: Command to check system health
 - **source/commands/help/**: Command to display help information

@@ -1129,7 +1129,7 @@ export class Repl {
         return;
       }
 
-      const { rules, savedToProject } = await generateRulesFromSession({
+      const { rules } = await generateRulesFromSession({
         modelManager: this.options.modelManager,
         messages: this.options.sessionManager.get(),
         tokenTracker: this.options.tokenTracker,
@@ -1138,9 +1138,8 @@ export class Repl {
       });
 
       if (rules.length > 0) {
-        const location = savedToProject ? "project" : "cache";
         this.notification.setMessage(
-          `Auto-generated ${rules.length} rule(s) saved to ${location}`,
+          `Auto-generated ${rules.length} rule(s) saved`,
         );
         this.tui.requestRender();
       }

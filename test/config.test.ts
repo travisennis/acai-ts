@@ -62,48 +62,21 @@ test("ConfigManager.ensureDefaultConfig creates default app config in HOME", asy
   });
 });
 
-test("writeProjectLearnedRulesFile creates project rules file inside .acai", async () => {
-  await withTempDir(async (tmpProject) => {
-    const oldCwd = process.cwd();
-    try {
-      process.chdir(tmpProject);
-      const mgr = new ConfigManager();
-
-      await mgr.writeProjectLearnedRulesFile("# rules\nhello");
-
-      const target = path.join(
-        tmpProject,
-        ".acai",
-        "rules",
-        "learned-rules.md",
-      );
-      const content = await fs.readFile(target, "utf8");
-      assert(content.includes("hello"));
-
-      // readProjectLearnedRulesFile should return the same content
-      const read = await mgr.readProjectLearnedRulesFile();
-      assert(read.includes("hello"));
-    } finally {
-      process.chdir(oldCwd);
-    }
-  });
-});
-
-test("writeCachedLearnedRulesFile and readCachedLearnedRulesFile in HOME", async () => {
+test("writeLearnedRulesFile and readLearnedRulesFile in HOME", async () => {
   await withTempDir(async (tmpHome) => {
     const oldHome = process.env["HOME"];
     try {
       process.env["HOME"] = tmpHome;
       const mgr = new ConfigManager();
 
-      await mgr.writeCachedLearnedRulesFile("cached rules\nabc");
-      const content = await mgr.readCachedLearnedRulesFile();
+      await mgr.writeLearnedRulesFile("learned rules\nabc");
+      const content = await mgr.readLearnedRulesFile();
       assert(content.includes("abc"));
 
       // Removing file should cause read to return empty string
       const filePath = path.join(tmpHome, ".acai", "rules", "learned-rules.md");
       await fs.rm(filePath);
-      const missing = await mgr.readCachedLearnedRulesFile();
+      const missing = await mgr.readLearnedRulesFile();
       assert.equal(missing, "");
     } finally {
       if (oldHome !== undefined) process.env["HOME"] = oldHome;

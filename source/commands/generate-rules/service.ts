@@ -17,12 +17,11 @@ export interface GenerateRulesOptions {
 
 export interface GenerateRulesResult {
   rules: string[];
-  savedToProject: boolean;
 }
 
 /**
  * Analyzes conversation and generates rules without UI interaction.
- * Returns the list of generated rules and whether they were saved to project rules.
+ * Returns the list of generated rules.
  */
 export async function generateRulesFromSession(
   options: GenerateRulesOptions,
@@ -30,7 +29,7 @@ export async function generateRulesFromSession(
   const { modelManager, messages, tokenTracker, config, workspace } = options;
 
   // Read existing learned rules to avoid duplicates
-  const existingRules = await config.readCachedLearnedRulesFile();
+  const existingRules = await config.readLearnedRulesFile();
 
   // Add analysis prompt to messages (clone to avoid side effects)
   const analysisMessages: ModelMessage[] = [...messages];
@@ -66,7 +65,7 @@ ${existingRules}
   const potentialRulesText = text.trim();
 
   if (!potentialRulesText || potentialRulesText.length === 0) {
-    return { rules: [], savedToProject: false };
+    return { rules: [] };
   }
 
   const potentialRulesList = potentialRulesText
@@ -75,35 +74,18 @@ ${existingRules}
     .filter((rule) => rule.length > 0);
 
   if (potentialRulesList.length === 0) {
-    return { rules: [], savedToProject: false };
+    return { rules: [] };
   }
 
-  // Update cached rules file to avoid duplicates in future analysis
-  const updatedCachedRules =
+  // Update learned rules file to avoid duplicates in future analysis
+  const updatedRules =
     existingRules.endsWith("\n") || existingRules.length === 0
       ? `${existingRules}${potentialRulesList.join("\n")}`
       : `${existingRules}\n${potentialRulesList.join("\n")}`;
 
-  await config.writeCachedLearnedRulesFile(updatedCachedRules);
+  await config.writeLearnedRulesFile(updatedRules);
 
-  // Save to project rules file if project directory exists
-  let savedToProject = false;
-  try {
-    const existingProjectRules = await config.readProjectLearnedRulesFile();
-    const projectRulesToAdd = potentialRulesList.join("\n");
-    const updatedProjectRules =
-      existingProjectRules.endsWith("\n") || existingProjectRules.length === 0
-        ? `${existingProjectRules}${projectRulesToAdd}`
-        : `${existingProjectRules}\n${projectRulesToAdd}`;
-
-    await config.writeProjectLearnedRulesFile(updatedProjectRules);
-    savedToProject = true;
-  } catch {
-    // Silently fail if project directory doesn't exist
-    // (e.g., running outside a project)
-  }
-
-  return { rules: potentialRulesList, savedToProject };
+  return { rules: potentialRulesList };
 }
 
 async function createAnalysisSystemPrompt(

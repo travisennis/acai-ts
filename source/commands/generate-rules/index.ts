@@ -98,20 +98,17 @@ export const generateRulesCommand = ({
               );
             } else {
               try {
-                const existingRules =
-                  await config.readProjectLearnedRulesFile();
+                const existingRules = await config.readLearnedRulesFile();
                 const rulesToAdd = selectedRules.join("\n");
-                const updatedProjectRules =
+                const updatedRules =
                   existingRules.endsWith("\n") || existingRules.length === 0
                     ? `${existingRules}${rulesToAdd}`
                     : `${existingRules}\n${rulesToAdd}`;
 
-                await config.writeProjectLearnedRulesFile(updatedProjectRules);
+                await config.writeLearnedRulesFile(updatedRules);
                 container.addChild(
                   new Text(
-                    style.green(
-                      "Selected rules saved to project learned rules.",
-                    ),
+                    style.green("Selected rules saved to learned rules."),
                     2,
                     0,
                   ),

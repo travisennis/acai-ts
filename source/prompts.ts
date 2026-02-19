@@ -24,7 +24,7 @@ async function getProjectContext() {
   const cwdAgentsFile = agentsFiles.find((f) => f.path === "./AGENTS.md");
   const userRules = (userAgentsFile?.content ?? "").trim();
   const cwdRules = (cwdAgentsFile?.content ?? "").trim();
-  const learnedRules = (await config.readProjectLearnedRulesFile()).trim();
+  const learnedRules = (await config.readLearnedRulesFile()).trim();
   let result = "";
 
   if (userRules || cwdRules) {

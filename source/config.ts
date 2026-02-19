@@ -219,41 +219,8 @@ export class ConfigManager {
       throw error;
     }
   }
-  // Project-specific learned rules
-  async readProjectLearnedRulesFile(): Promise<string> {
-    const rulesPath = path.join(
-      this.project.getPath("rules"),
-      "learned-rules.md",
-    );
-    try {
-      return await fs.readFile(rulesPath, "utf8");
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return "";
-      }
-      throw error;
-    }
-  }
-
-  async writeProjectLearnedRulesFile(rules: string): Promise<void> {
-    // Only write project rules if the project directory exists
-    if (!(await this.project.exists())) {
-      return; // Silently return if project directory doesn't exist
-    }
-    const rulesDir = await this.project.ensurePath("rules");
-    const rulesPath = path.join(rulesDir, "learned-rules.md");
-    try {
-      return await fs.writeFile(rulesPath, rules, "utf8");
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-
-  // App-cached learned rules (used during conversation analysis)
-  async readCachedLearnedRulesFile(): Promise<string> {
+  // Learned rules (global, stored in ~/.acai/rules/learned-rules.md)
+  async readLearnedRulesFile(): Promise<string> {
     const rulesPath = path.join(this.app.getPath("rules"), "learned-rules.md");
     try {
       return await fs.readFile(rulesPath, "utf8");
@@ -265,7 +232,7 @@ export class ConfigManager {
     }
   }
 
-  async writeCachedLearnedRulesFile(rules: string): Promise<void> {
+  async writeLearnedRulesFile(rules: string): Promise<void> {
     const rulesDir = await this.app.ensurePath("rules");
     const rulesPath = path.join(rulesDir, "learned-rules.md");
     try {
