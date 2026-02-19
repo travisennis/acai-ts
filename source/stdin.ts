@@ -14,6 +14,20 @@ export async function readStdinWithLimits(): Promise<StdinResult> {
     return { content: null, sizeBytes: 0, wasPiped: false };
   }
 
+  // Check if stdin is a pipe (piped input) vs just not a TTY
+  // When stdin is a TTY or a pipe, we can read from it
+  // When stdin is neither (e.g., running in background without TTY or pipe), treat as empty
+  const isPipe =
+    process.stdin.readableObjectMode ||
+    // @ts-expect-error - _isStdio is internal
+    process.stdin._isStdio;
+
+  // Check if stdin has data by attempting a non-blocking read
+  // If stdin is not a pipe and not a TTY, treat it as empty (no input)
+  if (!isPipe) {
+    return { content: null, sizeBytes: 0, wasPiped: false };
+  }
+
   try {
     const content = await text(process.stdin);
     const sizeBytes = Buffer.byteLength(content, "utf8");

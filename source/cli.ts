@@ -111,6 +111,7 @@ export class Cli {
       }
 
       cleanup();
+      process.exit(0);
     } catch (e) {
       // Always cleanup signal handler
       cleanup();
