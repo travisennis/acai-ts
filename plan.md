@@ -1,106 +1,90 @@
-# Improvements Implementation Plan
+# Reduce Cache Middleware Logging Noise
 
 ## Summary
+Remove excessive logging from `source/middleware/cache.ts` since only Anthropic models (sonnet, opus, haiku) require explicit caching - whether accessed directly or via OpenRouter/OpenCode Zen. Logging "skipping" for other providers is unnecessary noise.
 
-Implement fixes for two issues from improvements.md:
-1. Tool repair mechanism fails when model omits required fields instead of passing `null`
-2. Glob/Grep tools throw TypeError when model passes undefined `path` value
+## Key Architectural Change
 
----
+**Change caching detection from provider-based to model-based:**
 
-## Issue 1: Fix response_format schema validation in tool repair
+Currently, the cache middleware:
+- Detects by provider name (anthropic, openrouter, bedrock, etc.)
+- Applies caching to multiple providers
+- Logs "Unknown provider, skipping" for non-Anthropic models
 
-### Problem
+**Proposed approach:**
+- Detect by model name (sonnet, opus, haiku) regardless of provider
+- Only apply caching to those specific models
+- Only log when caching is actually applied
 
-The tool repair mechanism fails when models pass malformed parameters. The repair process sends the full expected schema but doesn't properly handle required fields - the model omits fields instead of providing `null` for missing values.
+## Changes
 
-### Root Cause
+- [x] All phases completed
 
-- Repair prompt at `source/agent/index.ts:686-702` and `source/cli.ts:167-183` doesn't instruct the model to use `null` for missing fields
-- The AI SDK's `Output.object({ schema })` generates strict validation requiring all fields in the `required` array
+### `source/middleware/cache.ts`
 
-### Files to Modify
+**1. Update `detectProvider()` (lines 75-96)**
+- Detect based on modelId containing "sonnet", "opus", or "haiku"
+- Return "anthropic" for these models regardless of provider (openrouter, opencode-zen, etc.)
+- Return "unknown" for all other models
 
-| File | Lines | Change |
-|------|-------|--------|
-| `source/agent/index.ts` | 686-702 | Update repair prompt to explicitly instruct model to use `null` for missing fields |
-| `source/cli.ts` | 167-183 | Update repair prompt to explicitly instruct model to use `null` for missing fields |
+**2. Update `getMinTokenThreshold()` (lines 49-55)**
+- Current (incorrect): haiku=2048, opus=1024
+- New: haiku=4096, opus=4096, sonnet=1024
+- Apply based on modelId keywords, not provider name
 
-### Implementation
+**3. Remove unnecessary logs:**
+| Line | Remove |
+|------|--------|
+| 107 | `[Cache] Detected provider: ${provider}, model: ${modelId}` |
+| 110 | `[Cache] Unknown provider, skipping caching` |
+| 69 | `[Cache] Ineligible: ${tokenCount} tokens < ${minThreshold} threshold` |
+| 113 | `[Cache] System prompt not eligible for caching` |
+| 118 | `[Cache] Generated cache key: ${cacheKey.substring(0, 8)}...` |
 
-**Step 1:** Update repair prompt in both locations to include:
-```
-"If any field is missing or undefined in the corrected input, you MUST explicitly set its value to null. Do NOT omit fields - every field in the schema must be present, even if with a null value."
-```
+**4. Keep only one log (line 155):**
+- `[Cache] Applied caching for ${provider} model` - only fires when caching is actually applied
 
-**Step 2:** After getting repaired output from AI SDK, validate with Zod and ensure all schema fields are present (treating undefined as null).
+### `improvements.md`
 
----
+Update or remove the "Fix cache for unknown providers" entry since:
+- Unknown providers don't need fixing - they correctly skip caching
+- Only Anthropic models (sonnet, opus, haiku) require explicit caching
+- This is working as intended, not a bug
 
-## Issue 2: Add path validation in Glob/Grep tools
+## Token Thresholds
 
-### Problem
+| Model | Threshold |
+|-------|-----------|
+| opus | 4096 |
+| haiku | 4096 |
+| sonnet | 1024 |
 
-TypeError "The 'path' argument must be of type string. Received undefined" occurs when models pass malformed parameters. The Glob and Grep tools receive undefined or malformed path values, causing runtime errors.
+## Affected Models
 
-### Root Cause
+Caching will apply to these models regardless of provider:
 
-- The model may omit the `path` field entirely instead of providing a value or `null`
-- The `execute` functions in Glob/Grep tools don't validate `path` before using it
-
-### Files to Modify
-
-| File | Lines | Change |
-|------|-------|--------|
-| `source/tools/glob.ts` | 101-145 | Add path validation at start of execute function |
-| `source/tools/grep.ts` | 153-220 | Add path validation at start of execute function |
-
-### Implementation
-
-**Step 1:** In both tools, add validation at the start of `execute`:
-```typescript
-// Validate path - default to cwd if not provided
-const effectivePath = (typeof path === "string" && path.trim() !== "")
-  ? path
-  : process.cwd();
-```
-
-**Step 2:** Use `effectivePath` throughout the execute function instead of raw `path`
-
----
-
-## Out of Scope
-
-- Adding validation to other tools beyond Glob/Grep
-- Broad schema validation changes across all tools
-- Adding new tests (existing test suite covers core functionality)
-- Changes to tool definitions or inputSchema (only execute functions modified)
-
----
+| Model | Direct | OpenRouter | OpenCode Zen |
+|-------|--------|------------|--------------|
+| sonnet | ✅ anthropic:sonnet | ✅ openrouter:sonnet-4.5 | ❌ |
+| opus | ✅ anthropic:opus | ✅ openrouter:opus-4.6 | ✅ opencode:opus-4-6 |
+| haiku | ✅ anthropic:haiku | ✅ openrouter:haiku-4.5 | ❌ |
 
 ## Success Criteria
 
-### Automated Verification
-- [x] `npm run typecheck` passes
-- [x] `npm run lint` passes
-- [x] `npm run build` passes
+**Automated verification:**
+- `npm run typecheck` passes
+- `npm run lint` passes
+- `npm run build` passes
 
-### Manual Verification
-- [ ] Test tool repair with a tool call missing required fields - repair should now include null values
-- [ ] Test Glob tool without path parameter - should default to current working directory
-- [ ] Test Grep tool without path parameter - should default to current working directory
+**Manual verification:**
+- Run with Anthropic model (sonnet/opus/haiku) - see cache applied log
+- Run with OpenRouter Anthropic model (sonnet-4.5, opus-4.6, haiku-4.5) - see cache applied log
+- Run with OpenCode Zen opus-4-6 - see cache applied log
+- Run with any other model (kimi, qwen, glm, etc.) - **no cache logs appear**
 
----
-
-## Migration/Rollback
-
-- No migration needed - these are bug fixes with safe defaults
-- Rollback: Simply revert the file changes to restore previous behavior
-
----
-
-## Assumptions
-
-1. Defaulting path to `process.cwd()` is safe because it's a restricted operation within allowed directories
-2. The repair prompt update will work without changing the AI model - it's purely instructional text
-3. No changes needed to tool inputSchema definitions - validation happens at execute time
+## Out of Scope
+- Changes to caching TTL or other parameters
+- Adding new caching providers
+- Performance optimization of cache middleware
+- Changes to other logging in the codebase

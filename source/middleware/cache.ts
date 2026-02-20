@@ -46,53 +46,31 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
-function getMinTokenThreshold(provider: string, modelId?: string): number {
-  if (provider === "anthropic") {
-    if (modelId?.includes("haiku")) return 2048;
-    if (modelId?.includes("opus")) return 1024;
-    return 1024; // Default for Claude models
-  }
-  return 1024; // Default threshold
+function getMinTokenThreshold(modelId: string): number {
+  if (modelId?.includes("haiku")) return 4096;
+  if (modelId?.includes("opus")) return 4096;
+  if (modelId?.includes("sonnet")) return 1024;
+  return 1024;
 }
 
-function isEligibleForCaching(
-  text: string,
-  provider: string,
-  modelId?: string,
-): boolean {
+function isEligibleForCaching(text: string, modelId?: string): boolean {
   const tokenCount = estimateTokens(text);
-  const minThreshold = getMinTokenThreshold(provider, modelId);
+  const minThreshold = getMinTokenThreshold(modelId ?? "");
 
   if (tokenCount < minThreshold) {
-    logger.info(
-      `[Cache] Ineligible: ${tokenCount} tokens < ${minThreshold} threshold`,
-    );
     return false;
   }
 
   return true;
 }
 
-function detectProvider(providerId: string, modelId: string): string {
+function detectProvider(modelId: string): string {
   if (
-    providerId === "anthropic" ||
-    modelId.includes("anthropic") ||
-    modelId.includes("claude")
+    modelId.includes("sonnet") ||
+    modelId.includes("opus") ||
+    modelId.includes("haiku")
   ) {
     return "anthropic";
-  }
-  if (providerId === "openai" || modelId.includes("gpt-")) {
-    return "openai";
-  }
-  if (
-    providerId === "bedrock" ||
-    modelId.includes("bedrock") ||
-    modelId.includes("amazon")
-  ) {
-    return "bedrock";
-  }
-  if (modelId.includes("openrouter")) {
-    return "openrouter";
   }
   return "unknown";
 }
@@ -100,14 +78,10 @@ function detectProvider(providerId: string, modelId: string): string {
 export const cacheMiddleware: LanguageModelV3Middleware = {
   specificationVersion: "v3",
   transformParams: async ({ params, model }) => {
-    const providerId = model.provider;
     const modelId = model.modelId;
-    const provider = detectProvider(providerId, modelId);
-
-    logger.info(`[Cache] Detected provider: ${provider}, model: ${modelId}`);
+    const provider = detectProvider(modelId);
 
     if (provider === "unknown") {
-      logger.info("[Cache] Unknown provider, skipping caching");
       return params;
     }
 
@@ -128,16 +102,14 @@ export const cacheMiddleware: LanguageModelV3Middleware = {
       .join("\n");
 
     // Check if system prompt is eligible for caching
-    const isEligible = isEligibleForCaching(systemText, provider, modelId);
+    const isEligible = isEligibleForCaching(systemText, modelId);
 
     if (!isEligible) {
-      logger.info("[Cache] System prompt not eligible for caching");
       return params;
     }
 
     // Generate deterministic cache key
     const cacheKey = generateCacheKey(systemText, provider);
-    logger.info(`[Cache] Generated cache key: ${cacheKey.substring(0, 8)}...`);
 
     // Apply caching to system messages
     for (const systemMsg of systemMessages) {
@@ -174,7 +146,7 @@ export const cacheMiddleware: LanguageModelV3Middleware = {
       provider,
       eligible: isEligible,
       systemTokens: estimateTokens(systemText),
-      threshold: getMinTokenThreshold(provider, modelId),
+      threshold: getMinTokenThreshold(modelId),
       timestamp: Date.now(),
     };
 
