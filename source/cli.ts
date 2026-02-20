@@ -179,6 +179,8 @@ const toolCallRepair = <T extends ToolSet>(modelManager: ModelManager) => {
           ),
           "</expected_schema>",
           "",
+          "If any field is missing or undefined in the corrected input, you MUST explicitly set its value to null. Do NOT omit fields - every field in the schema must be present, even if with a null value.",
+          "",
           "Return a corrected version of the input that conforms to the expected schema.",
         ].join("\n"),
       });

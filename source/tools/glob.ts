@@ -115,6 +115,10 @@ export const createGlobTool = () => {
         throw new Error("Glob search aborted");
       }
 
+      // Validate path - default to cwd if not provided
+      const effectivePath =
+        typeof path === "string" && path.trim() !== "" ? path : process.cwd();
+
       const patternArray = Array.isArray(patterns) ? patterns : [patterns];
 
       const globOptions: Record<string, unknown> = {
@@ -139,12 +143,12 @@ export const createGlobTool = () => {
 
       const matchingFiles = await glob(patternArray, {
         ...globOptions,
-        cwd: path,
+        cwd: effectivePath,
       });
 
       const filesWithStats = await Promise.all(
         matchingFiles.map(async (filePath) => {
-          const fullPath = nodePath.join(path, filePath);
+          const fullPath = nodePath.join(effectivePath, filePath);
           try {
             const stats = await fs.promises.stat(fullPath);
             return {

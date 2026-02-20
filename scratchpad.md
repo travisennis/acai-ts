@@ -1,11 +1,20 @@
-# Notification Auto-Dismiss Implementation
+# Improvements Implementation Progress
 
-## Implementation Complete
-All phases implemented and verified.
+## Issue 1: Fix response_format schema validation in tool repair
+- [x] Update repair prompt in source/agent/index.ts
+- [x] Update repair prompt in source/cli.ts
 
-## Manual Verification Results
-- ✅ Verbose mode toggle (Ctrl+O): 3-second auto-dismiss works
-- ✅ Ctrl+C notification: 1-second auto-dismiss works  
-- ✅ Rapid toggles: Timer resets correctly, stays until final countdown
-- ✅ Exit: No pending timers left behind
-- ⏳ Auto-generated rules: Requires specific config to test
+## Issue 2: Add path validation in Glob/Grep tools
+- [x] Add path validation in source/tools/glob.ts
+- [x] Add path validation in source/tools/grep.ts
+
+## Verification
+- [x] Run npm run typecheck - PASSED
+- [x] Run npm run lint - PASSED
+- [x] Run npm run build - PASSED
+
+## Manual Testing Ready
+All automated verification passed. Ready for manual testing:
+1. Test tool repair with a tool call missing required fields
+2. Test Glob tool without path parameter
+3. Test Grep tool without path parameter

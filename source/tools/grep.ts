@@ -110,6 +110,10 @@ export const createGrepTool = () => {
         throw new Error("Grep search aborted");
       }
 
+      // Validate path - default to cwd if not provided
+      const effectivePath =
+        typeof path === "string" && path.trim() !== "" ? path : process.cwd();
+
       try {
         let effectiveLiteral: boolean | null = null;
         if (literal === true) {
@@ -135,7 +139,7 @@ export const createGrepTool = () => {
             ? null
             : filePattern;
 
-        const grepResult = grepFilesStructured(pattern, path, {
+        const grepResult = grepFilesStructured(pattern, effectivePath, {
           recursive,
           ignoreCase,
           filePattern: safeFilePattern,
@@ -148,16 +152,16 @@ export const createGrepTool = () => {
         return grepResult.rawOutput;
       } catch (error) {
         const errorMessage = (error as Error).message;
-        let userFriendlyError = `Error searching for "${pattern}" in ${path}: ${errorMessage}`;
+        let userFriendlyError = `Error searching for "${pattern}" in ${effectivePath}: ${errorMessage}`;
 
         if (errorMessage.includes("No such file or directory")) {
-          userFriendlyError = `Path not found: "${path}"`;
+          userFriendlyError = `Path not found: "${effectivePath}"`;
           if (filePattern) {
             userFriendlyError += ` with file pattern "${filePattern}"`;
           }
           userFriendlyError += " - check if the path exists and is accessible";
         } else if (errorMessage.includes("permission denied")) {
-          userFriendlyError = `Permission denied accessing "${path}"`;
+          userFriendlyError = `Permission denied accessing "${effectivePath}"`;
         } else if (errorMessage.includes("Regex parse error")) {
           userFriendlyError = `Invalid search pattern "${pattern}" - try using literal=true for fixed-string search`;
         }
