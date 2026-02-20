@@ -1,339 +1,144 @@
-# Mode Manager Research Report
+# Mouse-Based Text Selection Research Report
 
 ## Research Question
 
-How does the mode manager work in the acai-ts codebase? What are its responsibilities, how are modes registered and activated, and what is the relationship between modes and other components?
+What would it take to support mouse-based text selection in acai to enable copying text from the terminal output?
 
 ## Overview
 
-The mode manager is a feature that allows users to switch between different "modes" (Normal, Planning, Research) that inject specialized context prompts alongside user messages. This provides the AI model with mode-specific instructions to guide its behavior. The system is implemented through:
+Mouse-based text selection for copying **already works** in acai. The current implementation handles this correctly through standard terminal behavior:
 
-- **ModeManager class** (`source/modes/manager.ts`): Core mode state management
-- **REPL integration** (`source/repl.ts`): Message injection and mode cycling
-- **TUI handling** (`source/tui/tui.ts`): Shift+Tab keyboard handler
-- **Footer display** (`source/tui/components/footer.ts`): Visual mode indicator
-- **Session persistence** (`source/sessions/manager.ts`): Mode state saved in metadata
+- **Regular click + drag**: Does not work (mouse tracking intercepts events)
+- **Shift + Click + drag**: Works (terminal's native selection mode)
 
-## Key Findings
+## Current Implementation
 
-### Mode Manager Architecture
+### Mouse Tracking
 
-The `ModeManager` class is a simple state manager with no external dependencies beyond the `ai` SDK for the `UserModelMessage` type:
+Mouse tracking is enabled in `source/tui/terminal.ts:100-102`:
 
 ```typescript
-// source/modes/manager.ts:40-103
-export class ModeManager {
-  private currentMode: Mode = "normal";
-  private firstMessageInMode = true;
+// Enable mouse tracking (SGR mode) so trackpad scroll sends mouse events
+// instead of being translated into arrow key sequences
+process.stdout.write("\x1b[?1000h\x1b[?1006h");
+```
 
-  getCurrentMode(): Mode
-  getDisplayName(): string
-  cycleMode(): void
-  getInitialPrompt(): string
-  getReminderPrompt(): string
-  isNormal(): boolean
-  isFirstMessage(): boolean
-  markFirstMessageSent(): void
-  getReminderMessage(): UserModelMessage | undefined
-  reset(): void
-  toJson(): { mode: Mode }
-  fromJson(data: { mode?: string }): void
+### Mouse Event Handling
+
+The TUI class in `source/tui/tui.ts:279-306` handles mouse events:
+
+```typescript
+private handleMouseEvent(data: string): void {
+  // SGR mouse format: \x1b[<button;x;yM (press) or \x1b[<button;x;ym (release)
+  const button = Number.parseInt(data.slice(start + 1, semi), 10);
+
+  // Button 64 = scroll up, button 65 = scroll down
+  if (button === 64) {
+    // Handle scroll up
+  } else if (button === 65) {
+    // Handle scroll down
+  }
+  // Button 0 (left-click) is NOT handled - passed through to terminal
 }
 ```
 
-### Mode Types and Definitions
+**Current behavior**:
+- Scroll wheel (buttons 64/65): Handled by application for virtual scrolling
+- Left-click (button 0): **Not handled** - passed through to terminal
+- Shift+Left-click: Terminal's native selection mode activates
 
-There are currently **3 predefined modes** defined in `MODE_DEFINITIONS`:
+### Why Shift+Click Works
 
-| Mode | Display Name | Initial Prompt | Reminder Prompt |
-|------|--------------|----------------|-----------------|
-| `normal` | Normal | (empty) | (empty) |
-| `planning` | Planning | "You are in PLANNING MODE. Before writing any code:\n\n1. First, understand the requirements fully\n2. Identify the core problem and constraints\n3. Design the solution architecture\n4. Consider edge cases\n5. Plan implementation\n6. Identify dependencies" | "Remember: You are still in PLANNING MODE. Continue focusing on architectural design, systematic planning, and high-level considerations." |
-| `research` | Research | "You are in RESEARCH MODE. Your goal is to thoroughly investigate:\n\n1. Current state and context\n2. Existing solutions\n3. Best practices\n4. Trade-offs\n5. Potential pitfalls" | "Remember: You are still in RESEARCH MODE. Continue investigating thoroughly. Synthesize findings." |
+The SGR mouse mode (`?1006h`) sends mouse events to the application. However, terminals implement a standard behavior where **Shift+click bypasses mouse tracking** and activates the terminal's native text selection:
 
-Mode definitions are **hardcoded** in the `MODE_DEFINITIONS` constant object and cannot be configured via AGENTS.md or other configuration files.
+1. When Shift is held during a click, the terminal detects this modifier
+2. Instead of sending the event to the application, the terminal handles it natively
+3. This enables the terminal's standard text selection (click+drag to select)
+4. Users can copy with Cmd+C (macOS) or Ctrl+Shift+C (Linux)
 
-### Mode State Tracking
+This is defined in the XTerm mouse tracking specification and is supported by most modern terminals (iTerm2, Terminal.app, Ghostty, Alacritty, etc.).
 
-The ModeManager tracks two key pieces of state:
+## Existing Copy Functionality
 
-1. **`currentMode`** (`source/modes/manager.ts:41`): The currently active mode ("normal", "planning", or "research")
-2. **`firstMessageInMode`** (`source/modes/manager.ts:42`): Boolean flag indicating if the next message will be the first in the current mode
-
-When cycling modes (`cycleMode()`), the `firstMessageInMode` flag is reset to `true` to trigger the initial prompt injection for the new mode.
-
-## Architecture & Design Patterns
-
-### Pattern 1: Mode State Management
-
-The mode manager follows a **simple state holder pattern** with no event emissions or complex lifecycle. It provides:
-
-- **Query methods**: `getCurrentMode()`, `getDisplayName()`, `isNormal()`, `isFirstMessage()`
-- **State transitions**: `cycleMode()`, `reset()`, `markFirstMessageSent()`
-- **Serialization**: `toJson()` and `fromJson()` for persistence
-
-### Pattern 2: Prompt Injection on Message Submit
-
-Modes influence the AI behavior through **context prompt injection** during message submission:
-
-```
-source/repl.ts:319-378 (submit flow)
-```
-
-The injection logic:
-1. If mode is NOT normal AND it's the first message → inject initial prompt (persisted)
-2. If mode is NOT normal AND it's NOT the first message → set transient reminder (NOT persisted)
-3. If mode is normal → no injection
+acai already has a `/copy` command (`source/commands/copy/index.ts`) that copies the last assistant response to the clipboard:
 
 ```typescript
-// source/repl.ts:325-377
-if (!this.modeManager.isNormal()) {
-  if (this.modeManager.isFirstMessage()) {
-    const initialPrompt = this.modeManager.getInitialPrompt();
-    if (initialPrompt) {
-      const modeMessage = createUserMessage([], initialPrompt);
-      sessionManager.appendUserMessage(modeMessage);  // Persisted to history
+// source/commands/copy/index.ts:8-53
+export function copyCommand(options: CommandOptions): ReplCommand {
+  return {
+    command: "/copy",
+    description: "Copy the last assistant response to the clipboard",
+    async handle(...) {
+      const lastText = extractLastAssistantText(history);
+      if (lastText) {
+        await Clipboard.setText(lastText);
+      }
     }
-    sessionManager.appendUserMessage(userMsg);
-    this.modeManager.markFirstMessageSent();
+  };
+}
+```
+
+The text extraction logic (`source/commands/copy/utils.ts`) iterates through message history to find the last assistant message with text content.
+
+## Current State Summary
+
+| Feature | Status |
+|---------|--------|
+| Shift+Click for selection | ✅ Works (terminal native) |
+| Regular Click+Drag | ❌ Intercepted by app |
+| Scroll via trackpad | ✅ Works (app handles buttons 64/65) |
+| /copy command | ✅ Works (copies last response) |
+
+## How Users Can Copy Text
+
+### Option 1: Shift+Click (Recommended)
+
+1. Hold Shift
+2. Click and drag to select text
+3. Release, then copy with Cmd+C (macOS) or Ctrl+Shift+C (Linux)
+
+### Option 2: /copy Command
+
+Type `/copy` to copy the last assistant message to clipboard.
+
+## Future Enhancements
+
+If the goal is to make regular click+drag work for selection (without holding Shift), there are two approaches:
+
+### Approach A: Disable Mouse Tracking (Simplest)
+
+Add a keyboard shortcut to toggle mouse tracking on/off:
+
+```typescript
+// In terminal.ts - add toggle method
+toggleMouseTracking(enable: boolean): void {
+  if (enable) {
+    process.stdout.write("\x1b[?1000h\x1b[?1006h");
   } else {
-    sessionManager.appendUserMessage(userMsg);
-    const reminderMessage = this.modeManager.getReminderMessage();
-    if (reminderMessage) {
-      sessionManager.setTransientMessages([reminderMessage]);  // NOT persisted
-    }
+    process.stdout.write("\x1b[?1000l\x1b[?1006l");
   }
-} else {
-  sessionManager.appendUserMessage(userMsg);
 }
 ```
 
-### Pattern 3: Transient vs Persistent Messages
+- When disabled: native selection works, but scroll via trackpad sends arrow keys
+- When enabled: scroll works, native selection requires Shift
 
-**Key design decision**: Initial mode prompts are **persisted** to session history; reminder prompts are **transient** (injected at send-time only).
+### Approach B: Application-Managed Selection (Complex)
 
-- **Persistent messages**: Appended via `sessionManager.appendUserMessage()` - saved to disk
-- **Transient messages**: Set via `sessionManager.setTransientMessages()` - only for current turn
+Handle left-click (button 0) in the application:
+1. Track selection start/end positions from mouse coordinates
+2. Map screen coordinates to text offsets
+3. Render selection highlight with ANSI reverse video
+4. Copy to clipboard on selection complete
 
-This design:
-- Preserves important initial context in session exports/history
-- Avoids history bloat from repeated reminder prompts
-- Makes reminders consistent across turns without duplication
+This requires complex coordinate mapping due to:
+- Scroll offset in viewport
+- Fixed footer (editor, input)
+- Line wrapping
+- ANSI escape codes
 
-### Pattern 4: Mode Cycling via Keyboard Handler
+## Conclusion
 
-The TUI component handles mode cycling through the Shift+Tab keybinding:
+The current implementation already supports mouse-based text selection through Shift+Click, which is the standard way to use selection in terminals with mouse tracking enabled. This is working as intended and no changes are required to enable basic text copying.
 
-```typescript
-// source/tui/tui.ts:200-202
-// Handle Shift+Tab - cycle mode
-if (isShiftTab(data) && !this.inBracketedPaste) {
-  if (this.onShiftTab) {
-    this.onShiftTab();
-  }
-  return;
-}
-```
-
-The callback is registered in `Repl.init()`:
-
-```typescript
-// source/repl.ts:232-244
-this.tui.onShiftTab = () => {
-  this.modeManager.cycleMode();
-  this.notification.setMessage(
-    `Mode: ${this.modeManager.getDisplayName()}`,
-  );
-  this.footer.setState({
-    // ...update footer with new mode
-    currentMode: this.modeManager.getDisplayName(),
-  });
-  this.tui.requestRender();
-};
-```
-
-## Data Flow
-
-### Mode State Flow
-
-1. **Initialization** (`source/repl.ts:158`):
-   ```
-   this.modeManager = new ModeManager();
-   ```
-
-2. **Mode Change** (Shift+Tab):
-   ```
-   TUI.onShiftTab() → Repl.modeManager.cycleMode() → Footer.update()
-   ```
-
-3. **Message Submission** (`source/repl.ts:306-377`):
-   ```
-   User submits message
-         ↓
-   Check modeManager.isNormal()
-         ↓
-   ┌──────────────────────────────────────┐
-   │ Normal mode:                         │
-   │   → append user message only         │
-   └──────────────────────────────────────┘
-   ┌──────────────────────────────────────┐
-   │ Non-normal mode:                     │
-   │   If first message:                  │
-   │     → append initial prompt          │
-   │     → append user message            │
-   │     → markFirstMessageSent()         │
-   │   Else:                              │
-   │     → append user message            │
-   │     → set transient reminder         │
-   └──────────────────────────────────────┘
-   ```
-
-4. **Session Save** (`source/repl.ts:480-484`):
-   ```
-   sessionManager.setMetadata("modeState", modeManager.toJson())
-   ```
-
-5. **Session Restore** (`source/repl.ts:593-595`):
-   ```
-   modeState = sessionManager.getMetadata("modeState")
-   modeManager.fromJson(modeState)
-   ```
-
-### Message Flow with Modes
-
-**First message in Planning mode:**
-
-| Step | Action | Persisted? |
-|------|--------|------------|
-| 1 | Create initial prompt message | Yes |
-| 2 | Append initial prompt to history | Yes |
-| 3 | Append user message to history | Yes |
-| 4 | Mark first message sent | N/A |
-
-**Subsequent message in Planning mode:**
-
-| Step | Action | Persisted? |
-|------|--------|------------|
-| 1 | Append user message to history | Yes |
-| 2 | Create reminder message | No (transient) |
-| 3 | Set transient messages | No |
-| 4 | Send to AI with reminder prepended | N/A |
-
-## Components & Files
-
-### Core Components
-
-| Component | File(s) | Responsibility |
-|-----------|---------|----------------|
-| `ModeManager` | `source/modes/manager.ts` | Track mode state, store prompts, handle cycling, serialize/deserialize |
-| `Repl` | `source/repl.ts` | Instantiate ModeManager, inject mode context on message submit, handle mode UI updates |
-| `TUI` | `source/tui/tui.ts` | Handle Shift+Tab keyboard input, trigger mode cycle |
-| `FooterComponent` | `source/tui/components/footer.ts` | Display current mode indicator in footer |
-| `SessionManager` | `source/sessions/manager.ts` | Store/restore modeState in session metadata |
-
-### Data Structures
-
-```typescript
-// Mode type
-type Mode = "normal" | "planning" | "research";
-
-// Mode definition interface
-interface ModeDefinition {
-  name: Mode;
-  displayName: string;
-  initialPrompt: string;
-  reminderPrompt: string;
-}
-
-// ModeManager JSON format
-type ModeState = {
-  mode: Mode;
-};
-```
-
-## Integration Points
-
-### Dependencies
-
-**ModeManager depends on:**
-- `source/sessions/manager.ts`: `createUserMessage()` function for creating mode context messages
-
-**Repl depends on:**
-- `source/modes/manager.ts`: `ModeManager` class
-- `source/sessions/manager.ts`: `createUserMessage()` function
-- `source/tui/tui.ts`: Keyboard event callbacks
-- `source/tui/components/footer.ts`: Footer state updates
-
-**TUI depends on:**
-- `Repl.onShiftTab` callback (set during Repl.init())
-
-### Consumers
-
-- **Shift+Tab keybinding**: Triggers mode cycling via TUI
-- **Message submission**: Mode context is injected by Repl
-- **Session save/restore**: Mode state persists through Ctrl+N and application restarts
-- **Footer display**: Shows current mode visually
-
-## Edge Cases & Error Handling
-
-### Edge Cases
-
-1. **Empty initial/reminder prompts**: `Normal` mode has empty prompts - handled by checking if prompt exists before creating message
-
-2. **Session restore without modeState**: `fromJson()` gracefully handles missing or invalid mode data:
-   ```typescript
-   // source/modes/manager.ts:99-103
-   fromJson(data: { mode?: string }): void {
-     if (data.mode && ALL_MODES.includes(data.mode as Mode)) {
-       this.currentMode = data.mode as Mode;
-     }
-     this.firstMessageInMode = false;  // Always false on restore
-   }
-   ```
-
-3. **Ctrl+N (new chat)**: Mode resets to "normal" via `modeManager.reset()`
-
-4. **Invalid mode in JSON**: `fromJson()` validates against `ALL_MODES` array
-
-### Error Handling
-
-- ModeManager has **no error throwing** - all operations are safe
-- Invalid mode data during restore defaults to "normal"
-- Missing prompts are handled by conditional checks before message creation
-
-## Known Limitations
-
-1. **Hardcoded modes**: Only 3 modes exist (normal, planning, research) with no runtime extensibility
-2. **No mode configuration**: Cannot customize prompts via configuration files
-3. **No slash commands for modes**: Only Shift+Tab cycles modes; no `/planning` or `/research` commands
-4. **Reminder prompts always prepended**: No option to change message ordering
-5. **Single mode only**: Cannot activate multiple modes simultaneously
-
-## Testing Coverage
-
-No dedicated test files for ModeManager were found. The mode functionality appears to be tested indirectly through integration tests in `source/repl.ts` flows.
-
-## Recommendations for Planning
-
-Based on this research, when extending or modifying the mode system:
-
-1. **Follow the transient vs persistent pattern**: Initial prompts persist, reminders are transient - this is a good design that balances context preservation with history cleanliness
-
-2. **Preserve `firstMessageInMode` semantics**: The flag resets on mode change and after first message - any new modes should follow this pattern
-
-3. **Update ALL_MODES array when adding new modes**: The cycling logic depends on this array (`source/modes/manager.ts:38`)
-
-4. **Serialize via toJson/fromJson**: Always use these methods for persistence rather than direct property access
-
-5. **Update footer for UI display**: Any new mode should update the footer to show the display name
-
-6. **Consider the transient message system**: For features that need turn-specific context, use `SessionManager.setTransientMessages()` instead of persisting
-
-## References
-
-- **ModeManager source**: `source/modes/manager.ts`
-- **REPL integration**: `source/repl.ts` (lines 12, 158, 232-244, 325-377, 483-484, 593-595, 938-947, 995-996)
-- **TUI keyboard handling**: `source/tui/tui.ts` (lines 200-202)
-- **Footer display**: `source/tui/components/footer.ts` (lines 16, 66, 87-88, 114-130)
-- **Session persistence**: `source/sessions/manager.ts` (metadata methods)
-- **Related research document**: `research.md` (previous modes feature research)
+Users who want to copy text should use **Shift+Click+drag** followed by **Cmd+C** (macOS) or **Ctrl+Shift+C** (Linux), or use the `/copy` command to copy the last assistant response.
