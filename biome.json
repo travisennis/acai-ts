@@ -8,7 +8,10 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "complexity": { "useLiteralKeys": "off" },
+      "complexity": {
+        "useLiteralKeys": "off",
+        "noExcessiveCognitiveComplexity": "off"
+      },
       "correctness": { "noNodejsModules": "off" },
       "performance": {},
       "security": {},
