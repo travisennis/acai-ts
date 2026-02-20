@@ -160,7 +160,7 @@ export class Repl {
     this.modeManager = new ModeManager();
     this.notification = new NotificationComponent(
       "",
-      { r: 64, g: 64, b: 64 },
+      { r: 52, g: 53, b: 65 },
       style.yellow,
       1,
       3000,

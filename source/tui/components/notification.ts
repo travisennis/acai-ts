@@ -22,7 +22,7 @@ export class NotificationComponent implements Component {
 
   constructor(
     message = "",
-    bgColor = { r: 64, g: 64, b: 64 },
+    bgColor = { r: 52, g: 53, b: 65 },
     textStyle: (text: string) => string = style.yellow,
     paddingX = 1,
     autoDismissMs = 3000,
