@@ -3,7 +3,7 @@ import { join } from "@travisennis/stdlib/desm";
 
 export function getPackageVersion(fallback = "unavailable"): string {
   try {
-    const pkgPath = join(import.meta.url, "..", "package.json");
+    const pkgPath = join(import.meta.url, "..", "..", "package.json");
     const pkgRaw = readFileSync(pkgPath, "utf8");
     const parsed = JSON.parse(pkgRaw) as { version?: unknown };
     const v = typeof parsed.version === "string" ? parsed.version : undefined;
