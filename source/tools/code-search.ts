@@ -52,11 +52,7 @@ type CodeSearchInputSchema = z.infer<typeof inputSchema>;
 export const createCodeSearchTool = () => {
   return {
     toolDef: {
-      description: `Search code semantically using colgrep (AI-powered semantic code search).
-Use natural language queries like "function that handles user authentication"
-to find relevant code even when keywords don't match exactly.
-Supports hybrid search: combine regex filtering with semantic ranking.
-Requires colgrep to be installed (see: https://github.com/lightonai/next-plaid)`,
+      description: "Semantic code search using natural language.",
       inputSchema,
     },
     display({

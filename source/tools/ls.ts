@@ -35,7 +35,7 @@ export const createLsTool = async (options: {
 
   return {
     toolDef: {
-      description: `List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is limited to ${DEFAULT_ENTRY_LIMIT} entries by default. Use the limit parameter to adjust.`,
+      description: "List files in a directory.",
       inputSchema,
     },
     display({ path: providedPath, limit }: LsInputSchema) {

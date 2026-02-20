@@ -3,11 +3,7 @@ import { SubAgent } from "../agent/sub-agent.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { isSupportedModel } from "../models/providers.ts";
 import { environmentInfo } from "../prompts/system-prompt.ts";
-import {
-  formatSubagentsForDescription,
-  getSubagent,
-  loadSubagents,
-} from "../subagents/index.ts";
+import { getSubagent, loadSubagents } from "../subagents/index.ts";
 import style from "../terminal/style.ts";
 import type { ToolExecutionOptions } from "./types.ts";
 
@@ -16,27 +12,7 @@ export const AgentTool = {
 };
 
 async function getToolDescription(): Promise<string> {
-  const subagents = await loadSubagents();
-  const subagentList = formatSubagentsForDescription(subagents);
-
-  return `Launch a new agent to handle complex, multi-step tasks autonomously.
-
-The Agent tool launches specialized agents (subagents) that autonomously handle complex tasks. Each agent type has specific capabilities and tools available to it.
-
-Available agent types and the tools they have access to:
-${subagentList}
-
-Usage notes:
-1. Launch multiple agents concurrently whenever possible, to maximize performance; to do that, use a single message with multiple tool uses
-2. When the agent is done, it will return a single message back to you. The result returned by the agent is not visible to the user. To show the user the result, you should send a text message back to the user with a concise summary of the result.
-3. Each agent invocation is stateless. You will not be able to send additional messages to the agent, nor will the agent be able to communicate with you outside of its final report. Therefore, your prompt should contain a highly detailed task description for the agent to perform autonomously and you should specify exactly what information the agent should return back to you in its final and only message to you.
-4. The agent's outputs should generally be trusted.
-
-Timeout behavior:
-- Default timeout is 15 minutes (900 seconds) unless the subagent specifies otherwise.
-- You can override with the timeout parameter (in seconds, valid range: 1-3600).
-- For complex multi-step tasks, use a longer timeout (e.g., 1800-3600 seconds).
-- If an agent times out, you will receive an error message indicating the timeout duration.`;
+  return "Delegate a task to a specialized subagent.";
 }
 
 const inputSchema = z.object({

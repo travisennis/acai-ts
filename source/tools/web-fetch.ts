@@ -538,35 +538,7 @@ export async function executeWebFetch(
  * Create the web fetch tool
  */
 export const createWebFetchTool = async () => {
-  const toolDescription = `Fetch and clean web content from URLs. Use when the user asks to get, extract, or retrieve content from a webpage or URL.
-
-Features:
-- Fetches content from any URL with intelligent HTML cleaning
-- Jina AI support for advanced HTML extraction (set JINA_READER_API_KEY env var)
-- Local fallback HTML cleaning using Cheerio
-- Support for multiple output formats (text, html, markdown, json)
-- Image to base64 data URL conversion
-- Token counting for the fetched content
-- Redirect handling (max 5 redirects)
-- Configurable timeout support
-- AbortSignal support for cancellation
-
-Content Types:
-- HTML: Cleaned text content (default) or raw HTML
-- Images: Base64 encoded data URLs
-- Text/JSON/XML: Raw text content
-
-Output Formats:
-- text: Cleaned text content (default)
-- html: Raw or cleaned HTML
-- markdown: Simple HTML to Markdown conversion
-- json: Structured response with metadata
-
-Example use cases:
-- "Fetch the content from https://example.com"
-- "Get the main article text from a news website"
-- "Extract the text content from a blog post"
-- "Download an image and convert to base64"`;
+  const toolDescription = "Fetch and extract content from a URL.";
 
   return {
     toolDef: {

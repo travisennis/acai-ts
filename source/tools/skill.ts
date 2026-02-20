@@ -22,24 +22,7 @@ type SkillInputSchema = z.infer<typeof inputSchema>;
 export async function createSkillTool() {
   const skills = await loadSkills();
 
-  const description = `Execute a skill within the main conversation
-
-<skills_instructions>
-When users ask you to perform tasks, check if any of the available skills below can help complete the task more effectively. Skills provide specialized capabilities and domain knowledge. The documentation this tool returns will tell you how to use that skill to complete your task.
-
-How to invoke:
-- Use this tool with the skill name and optional arguments
-- Examples:
-  - \`skill: "pdf"\` - invoke the pdf skill
-  - \`skill: "commit", args: "-m 'Fix bug'"\` - invoke with arguments
-  - \`skill: "review-pr", args: "123"\` - invoke with arguments
-  - \`skill: "ms-office-suite:pdf"\` - invoke using fully qualified name
-
-Important:
-- When a skill is relevant, you must invoke this tool IMMEDIATELY as your first action
-- NEVER just announce or mention a skill in your text response without actually calling this tool
-- This is a BLOCKING REQUIREMENT: invoke the relevant Skill tool BEFORE generating any other response about the task
-</skills_instructions>`;
+  const description = "Run a skill (e.g., commit, review-pr).";
 
   return {
     toolDef: {

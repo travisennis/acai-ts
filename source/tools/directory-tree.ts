@@ -39,7 +39,7 @@ export const createDirectoryTreeTool = async (options: {
   const allowedDirectory = allowedDirs ?? [primaryDir];
   return {
     toolDef: {
-      description: `Get a directory tree structure for a given path. This tool will ignore any directories or files listed in a .gitignore file. Use this tool when you need to see a complete directory tree for a path in the allowed directories. This can be used to get an understanding of how a project is organized and what files are available before using other file system tools. Results are automatically limited to prevent overwhelming output. Default limits are ${DEFAULT_ITEM_LIMIT} items and ${DEFAULT_DEPTH_LIMIT} depth. Use maxResults and maxDepth parameters for better control over output size.`,
+      description: "Show directory structure as a tree.",
       inputSchema,
     },
     display({ path, maxDepth, maxResults }: DirectoryTreeInputSchema) {

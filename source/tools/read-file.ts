@@ -50,7 +50,7 @@ export const createReadFileTool = async (options: {
   const allowedDirectory = allowedDirs ?? [primaryDir];
   return {
     toolDef: {
-      description: `Read the complete contents of a file from the file system unless startLine and lineCount are given to read a file selection. Handles various text encodings and provides detailed error messages if the file cannot be read. Use this tool when you need to examine the contents of a single file. Only works within allowed directories. Automatically limits file size to prevent overwhelming output. Default limit is ${DEFAULT_BYTE_LIMIT} bytes (${DEFAULT_BYTE_LIMIT / 1024}KB). Use maxBytes parameter to override this limit.`,
+      description: "Read the contents of a file.",
       inputSchema,
     },
     display({ path: providedPath, startLine, lineCount }: ReadFileInputSchema) {

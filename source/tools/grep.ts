@@ -57,7 +57,7 @@ type GrepInputSchema = z.infer<typeof inputSchema>;
 export const createGrepTool = () => {
   return {
     toolDef: {
-      description: `Search files for patterns using ripgrep (rg). Uses glob patterns for file filtering (e.g., "*.ts", "**/*.test.ts"). Auto-detects unbalanced regex patterns and falls back to fixed-string search for safety. Results are automatically limited to prevent overwhelming output using a hybrid approach: ripgrep's --max-count flag limits matches per file for efficiency, and post-processing ensures reasonable result counts. Default limit is ${DEFAULT_MAX_RESULTS} matches. Use maxResults parameter to override this limit.`,
+      description: "Search file contents using ripgrep.",
       inputSchema,
     },
     display({

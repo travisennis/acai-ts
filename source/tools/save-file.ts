@@ -37,11 +37,7 @@ export const createSaveFileTool = async (options: {
 
   return {
     toolDef: {
-      description:
-        "Create a new file or completely overwrite an existing file with new content. " +
-        "Automatically creates all missing parent directories. " +
-        "Use with caution as it will overwrite existing files without warning. " +
-        "Handles text content with proper encoding. Only works within allowed directories.",
+      description: "Create or overwrite a file with new content.",
       inputSchema,
     },
     display({ path }: SaveFileInputSchema) {

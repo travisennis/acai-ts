@@ -86,7 +86,7 @@ type GlobInputSchema = z.infer<typeof inputSchema>;
 export const createGlobTool = () => {
   return {
     toolDef: {
-      description: `Search for files using glob patterns (e.g., [1m*.ts[0m, [1m**/*.test.ts[0m, [1msrc/**/*.js[0m). Uses the fast-glob library with support for .gitignore, recursive searching, directory expansion, and automatic result limiting to prevent overwhelming output. Default limit is ${DEFAULT_MAX_RESULTS} files. Use maxResults parameter to override this limit.`,
+      description: "Find files by name pattern (e.g., *.ts).",
       inputSchema,
     },
     display({ patterns, path }: GlobInputSchema) {

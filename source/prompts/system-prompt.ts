@@ -86,6 +86,7 @@ type SystemPromptOptions = {
   activeTools?: CompleteToolNames[];
   includeRules?: boolean;
   skillsEnabled?: boolean;
+  minimalPrompt?: boolean;
 };
 
 type SystemPromptResult = {
@@ -104,6 +105,7 @@ export async function systemPrompt(
     allowedDirs = DEFAULT_ALLOWED_DIR,
     includeRules = true,
     skillsEnabled = true,
+    minimalPrompt = true,
   } = options ?? {};
 
   const projectContextResult = includeRules
@@ -124,7 +126,9 @@ export async function systemPrompt(
   const subagents = await loadSubagents();
   const subagentsText = formatSubagentsForPrompt(subagents);
 
-  const corePrompt = dedent`
+  const corePrompt = minimalPrompt
+    ? "You are acai. You are running as a coding agent in a CLI on the user's computer."
+    : dedent`
 You are acai. You are running as a coding agent in a CLI on the user's computer.
 
 ## Core Principles

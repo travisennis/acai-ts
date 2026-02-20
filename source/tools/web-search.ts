@@ -314,21 +314,7 @@ export async function executeWebSearch(
  * Create the web search tool
  */
 export const createWebSearchTool = async () => {
-  const toolDescription = `Search the web for information using Exa API (with DuckDuckGo fallback). 
-Supports various search queries and returns relevant results with titles, URLs, and snippets.
-
-Features:
-- Uses Exa API for high-quality, relevant search results
-- Automatically falls back to DuckDuckGo if Exa is unavailable
-- Configurable number of results (1-100)
-- Configurable timeout (1-60 seconds)
-
-Example queries:
-- "TypeScript best practices 2024"
-- "React hooks tutorial"
-- "Node.js performance optimization"
-
-Note: Exa API requires an API key (EXA_API_KEY environment variable). If not set, DuckDuckGo will be used automatically.`;
+  const toolDescription = "Search the web for information.";
 
   return {
     toolDef: {
