@@ -1,10 +1,10 @@
 import type { AgentState } from "../../agent/index.ts";
-import { formatDuration, formatNumber } from "../../formatting.ts";
 import type { ModelManager } from "../../models/manager.ts";
 import type { ProjectStatusData } from "../../repl/project-status.ts";
 import { getTerminalSize } from "../../terminal/control.ts";
 import style from "../../terminal/style.ts";
 import type { TokenTracker } from "../../tokens/tracker.ts";
+import { formatDuration, formatNumber } from "../../utils/formatting.ts";
 import { type Component, visibleWidth } from "../tui.ts";
 import { ProgressBarComponent } from "./progress-bar.ts";
 

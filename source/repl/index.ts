@@ -3,39 +3,34 @@ import type {
   AgentEvent,
   AgentState,
   ToolEvent,
-} from "./agent/index.ts";
-import { generateRulesFromSession } from "./commands/generate-rules/service.ts";
-import type { CommandManager } from "./commands/manager.ts";
-import { showModelSelector } from "./commands/model/model-panel.ts";
-import { showReviewPanel } from "./commands/review/review-panel.ts";
-import type { ConfigManager } from "./config.ts";
-import type { WorkspaceContext } from "./index.ts";
-import { logger } from "./logger.ts";
-import { processPrompt } from "./mentions.ts";
-import type { ModelManager } from "./models/manager.ts";
-import { ModeManager } from "./modes/manager.ts";
-import type { PromptManager } from "./prompts/manager.ts";
-import {
-  getProjectStatus,
-  type ProjectStatusData,
-} from "./repl/project-status.ts";
-import { createUserMessage, type SessionManager } from "./sessions/manager.ts";
+} from "../agent/index.ts";
+import { generateRulesFromSession } from "../commands/generate-rules/service.ts";
+import type { CommandManager } from "../commands/manager.ts";
+import { showModelSelector } from "../commands/model/model-panel.ts";
+import { showReviewPanel } from "../commands/review/review-panel.ts";
+import type { ConfigManager } from "../config/index.ts";
+import type { WorkspaceContext } from "../index.ts";
+import type { ModelManager } from "../models/manager.ts";
+import { ModeManager } from "../modes/manager.ts";
+import type { PromptManager } from "../prompts/manager.ts";
+import { processPrompt } from "../prompts/mentions.ts";
+import { createUserMessage, type SessionManager } from "../sessions/manager.ts";
 import {
   alert,
   setTerminalTitle,
   startProgress,
   stopProgress,
-} from "./terminal/control.ts";
-import style from "./terminal/style.ts";
-import type { TokenCounter } from "./tokens/counter.ts";
-import type { TokenTracker } from "./tokens/tracker.ts";
-import type { CompleteToolSet } from "./tools/index.ts";
-import { AssistantMessageComponent } from "./tui/components/assistant-message.ts";
-import { FooterComponent } from "./tui/components/footer.ts";
-import { ThinkingBlockComponent } from "./tui/components/thinking-block.ts";
-import { ToolExecutionComponent } from "./tui/components/tool-execution.ts";
-import { Welcome } from "./tui/components/welcome.ts";
-import { launchEditor } from "./tui/editor-launcher.ts";
+} from "../terminal/control.ts";
+import style from "../terminal/style.ts";
+import type { TokenCounter } from "../tokens/counter.ts";
+import type { TokenTracker } from "../tokens/tracker.ts";
+import type { CompleteToolSet } from "../tools/index.ts";
+import { AssistantMessageComponent } from "../tui/components/assistant-message.ts";
+import { FooterComponent } from "../tui/components/footer.ts";
+import { ThinkingBlockComponent } from "../tui/components/thinking-block.ts";
+import { ToolExecutionComponent } from "../tui/components/tool-execution.ts";
+import { Welcome } from "../tui/components/welcome.ts";
+import { launchEditor } from "../tui/editor-launcher.ts";
 import {
   Container,
   Editor,
@@ -46,9 +41,11 @@ import {
   Text,
   TUI,
   UserMessageComponent,
-} from "./tui/index.ts";
-import type { ProcessTerminalOptions, Terminal } from "./tui/terminal.ts";
-import type { Component } from "./tui/tui.ts";
+} from "../tui/index.ts";
+import type { ProcessTerminalOptions, Terminal } from "../tui/terminal.ts";
+import type { Component } from "../tui/tui.ts";
+import { logger } from "../utils/logger.ts";
+import { getProjectStatus, type ProjectStatusData } from "./project-status.ts";
 
 /** Configuration options for the REPL instance. */
 interface ReplOptions {
@@ -180,7 +177,7 @@ export class Repl {
       return;
     }
     // Setup autocomplete for file paths and slash commands
-    const { createDefaultProvider } = await import("./tui/autocomplete.ts");
+    const { createDefaultProvider } = await import("../tui/autocomplete.ts");
     const autocompleteProvider = createDefaultProvider(
       [...(await this.options.commands.getCompletions())],
       this.options.workspace.allowedDirs,

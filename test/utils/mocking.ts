@@ -3,7 +3,7 @@ import path from "node:path";
 import { mock } from "node:test";
 import type { ModelMessage } from "ai";
 import type { CommandOptions } from "../../source/commands/types.ts";
-import type { ConfigManager } from "../../source/config.ts";
+import type { ConfigManager } from "../../source/config/index.ts";
 import type { ModelManager } from "../../source/models/manager.ts";
 import type { PromptManager } from "../../source/prompts/manager.ts";
 import type { SessionManager } from "../../source/sessions/manager.ts";

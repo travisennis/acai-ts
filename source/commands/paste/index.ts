@@ -1,9 +1,9 @@
 import Clipboard from "@crosscopy/clipboard";
-import { formatBlock } from "../../formatting.ts";
-import { logger } from "../../logger.ts";
 import style from "../../terminal/style.ts";
 import type { Container, Editor, TUI } from "../../tui/index.ts";
 import { Text } from "../../tui/index.ts";
+import { formatBlock } from "../../utils/formatting.ts";
+import { logger } from "../../utils/logger.ts";
 import type { CommandOptions, ReplCommand } from "../types.ts";
 import {
   detectImageFormatFromBase64,

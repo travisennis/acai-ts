@@ -4,8 +4,8 @@
  * Provides functions for controlling terminal behavior and state.
  */
 
-import { config } from "../config.ts";
-import { logger } from "../logger.ts";
+import { config } from "../config/index.ts";
+import { logger } from "../utils/logger.ts";
 
 // Re-export key functions from keys.ts for convenient imports
 export {

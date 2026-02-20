@@ -7,18 +7,18 @@ import {
   type ToolSet,
 } from "ai";
 import type z from "zod";
-import type { WorkspaceContext } from "./index.ts";
-import { logger } from "./logger.ts";
-import { AiConfig } from "./models/ai-config.ts";
-import type { ModelManager } from "./models/manager.js";
-import type { PromptManager } from "./prompts/manager.ts";
-import { systemPrompt } from "./prompts.ts";
-import type { SessionManager } from "./sessions/manager.ts";
-import { printExitSummary } from "./sessions/summary.ts";
-import type { TokenCounter } from "./tokens/counter.ts";
-import type { TokenTracker } from "./tokens/tracker.ts";
-import { type CompleteTools, initTools } from "./tools/index.ts";
-import { toAiSdkTools } from "./tools/utils.ts";
+import type { WorkspaceContext } from "../index.ts";
+import { AiConfig } from "../models/ai-config.ts";
+import type { ModelManager } from "../models/manager.js";
+import type { PromptManager } from "../prompts/manager.ts";
+import { systemPrompt } from "../prompts/system-prompt.ts";
+import type { SessionManager } from "../sessions/manager.ts";
+import { printExitSummary } from "../sessions/summary.ts";
+import type { TokenCounter } from "../tokens/counter.ts";
+import type { TokenTracker } from "../tokens/tracker.ts";
+import { type CompleteTools, initTools } from "../tools/index.ts";
+import { toAiSdkTools } from "../tools/utils.ts";
+import { logger } from "../utils/logger.ts";
 
 interface CliOptions {
   sessionManager: SessionManager;

@@ -1,10 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-
-import type { FormatType } from "./formatting.ts";
-import { formatFile } from "./formatting.ts";
-import type { ModelMetadata } from "./models/providers.ts";
-import type { ContextItem } from "./prompts/manager.ts";
+import type { ModelMetadata } from "../models/providers.ts";
+import type { FormatType } from "../utils/formatting.ts";
+import { formatFile } from "../utils/formatting.ts";
+import type { ContextItem } from "./manager.ts";
 
 interface CommandContext {
   model: ModelMetadata;

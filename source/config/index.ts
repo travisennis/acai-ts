@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import { z } from "zod";
-import { jsonParser } from "./parsing.ts";
+import { jsonParser } from "../utils/parsing.ts";
 
 export const defaultConfig = {
   loop: {

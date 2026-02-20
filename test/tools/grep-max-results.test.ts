@@ -27,7 +27,7 @@ test("grepFilesStructured with null maxResults returns all results", () => {
 });
 
 test("grepFilesStructured with zero maxResults returns all results", () => {
-  const result = grepFilesStructured("const", "source/config.ts", {
+  const result = grepFilesStructured("const", "source/config/index.ts", {
     maxResults: 0,
   });
 
@@ -35,7 +35,7 @@ test("grepFilesStructured with zero maxResults returns all results", () => {
 });
 
 test("grepFilesStructured preserves matchCount when truncated", () => {
-  const result = grepFilesStructured("the", "source/config.ts", {
+  const result = grepFilesStructured("the", "source/config/index.ts", {
     maxResults: 2,
   });
 

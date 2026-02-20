@@ -20,10 +20,10 @@ import {
   type ToolModelMessage,
   type UserModelMessage,
 } from "ai";
-import { dedent } from "../dedent.ts";
-import { logger } from "../logger.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
+import { dedent } from "../utils/dedent.ts";
+import { logger } from "../utils/logger.ts";
 
 // Define a type for the items that can be passed in the first argument
 export type UserMessageContentItem = string | ImagePart;

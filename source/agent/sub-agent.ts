@@ -1,5 +1,5 @@
 import { generateText, stepCountIs } from "ai";
-import { config } from "../config.ts";
+import { config } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { AiConfig } from "../models/ai-config.ts";
 import { getLanguageModel, getModelMetadata } from "../models/manager.ts";

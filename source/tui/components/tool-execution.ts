@@ -1,6 +1,6 @@
 import type { ToolEvent } from "../../agent/index.ts";
-import { capitalize } from "../../formatting.ts";
 import style from "../../terminal/style.ts";
+import { capitalize } from "../../utils/formatting.ts";
 import { Container, type Loader, Spacer, Text } from "../index.ts";
 import type { Component } from "../tui.ts";
 

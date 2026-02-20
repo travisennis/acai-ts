@@ -5,7 +5,7 @@
  * This script reads and displays the merged configuration from both app and project levels
  */
 
-import { config } from '../source/config.ts';
+import { config } from '../source/config/index.ts';
 
 async function main() {
   try {

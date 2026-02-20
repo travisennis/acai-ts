@@ -92,7 +92,7 @@ export function healthCommand(_options: CommandOptions): ReplCommand {
       modalContent.addChild(new ModalText("", 0, 1));
       modalContent.addChild(new ModalText("Current Process:", 0, 1));
 
-      const { formatMemoryUsage } = await import("../../formatting.ts");
+      const { formatMemoryUsage } = await import("../../utils/formatting.ts");
       const formattedUsage = formatMemoryUsage(usage);
       const memoryText = `Memory Usage: ${formattedUsage}`;
       modalContent.addChild(new ModalText(memoryText, 0, 1));

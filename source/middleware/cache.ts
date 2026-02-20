@@ -3,7 +3,7 @@ import type {
   LanguageModelV3Middleware,
   SharedV3ProviderOptions,
 } from "@ai-sdk/provider";
-import { logger } from "../logger.ts";
+import { logger } from "../utils/logger.ts";
 
 interface CacheOptions {
   ttl?: string;

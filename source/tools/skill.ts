@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { z } from "zod";
-import { loadSkills } from "../skills.ts";
+import { loadSkills } from "../skills/index.ts";
 import style from "../terminal/style.ts";
 import { replaceArgumentPlaceholders } from "../utils/templates.ts";
 import type { ToolExecutionOptions } from "./types.ts";

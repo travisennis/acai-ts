@@ -1,4 +1,3 @@
-import { logger } from "../../logger.ts";
 import {
   getTerminalSize,
   isArrowDown,
@@ -17,6 +16,7 @@ import {
   Text,
   type TUI,
 } from "../../tui/index.ts";
+import { logger } from "../../utils/logger.ts";
 import type { CommandOptions, ReplCommand } from "../types.ts";
 import { generateRulesFromSession } from "./service.ts";
 import { hideRuleSelector } from "./utils.ts";

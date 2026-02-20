@@ -1,12 +1,11 @@
 import { readFile } from "node:fs/promises";
-import type { ConfigManager } from "../config.ts";
+import type { ConfigManager } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
-import { logger } from "../logger.ts";
-import { processPrompt } from "../mentions.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManagerApi } from "../prompts/manager.ts";
+import { processPrompt } from "../prompts/mentions.ts";
 import type { SessionManager } from "../sessions/manager.ts";
-import { loadSkills } from "../skills.ts";
+import { loadSkills } from "../skills/index.ts";
 import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
@@ -18,6 +17,7 @@ import type {
   TUI,
 } from "../tui/index.ts";
 import { Spacer, Text } from "../tui/index.ts";
+import { logger } from "../utils/logger.ts";
 import { replaceArgumentPlaceholders } from "../utils/templates.ts";
 import { parseFrontMatter } from "../utils/yaml.ts";
 import { addDirectoryCommand } from "./add-directory/index.ts";

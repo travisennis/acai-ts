@@ -1,8 +1,8 @@
 import { generateText, type ModelMessage } from "ai";
-import type { ConfigManager } from "../../config.ts";
+import type { ConfigManager } from "../../config/index.ts";
 import type { WorkspaceContext } from "../../index.ts";
 import type { ModelManager } from "../../models/manager.ts";
-import { systemPrompt } from "../../prompts.ts";
+import { systemPrompt } from "../../prompts/system-prompt.ts";
 import { createUserMessage } from "../../sessions/manager.ts";
 import type { TokenTracker } from "../../tokens/tracker.ts";
 import type { CompleteToolNames } from "../../tools/index.ts";

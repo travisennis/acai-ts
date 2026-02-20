@@ -1,11 +1,4 @@
-import {
-  formatDate,
-  formatDuration,
-  formatNumber,
-  formatPercentage,
-} from "../../formatting.ts";
-import { logger } from "../../logger.ts";
-import { systemPrompt } from "../../prompts.ts";
+import { systemPrompt } from "../../prompts/system-prompt.ts";
 import { getTerminalSize } from "../../terminal/control.ts";
 import { type CompleteToolNames, initTools } from "../../tools/index.ts";
 import { prepareTools, toAiSdkTools } from "../../tools/utils.ts";
@@ -16,6 +9,13 @@ import {
   ModalText,
   TableComponent,
 } from "../../tui/index.ts";
+import {
+  formatDate,
+  formatDuration,
+  formatNumber,
+  formatPercentage,
+} from "../../utils/formatting.ts";
+import { logger } from "../../utils/logger.ts";
 import type { CommandOptions, ReplCommand } from "../types.ts";
 import type { Breakdown } from "./types.ts";
 import { countMessageTokens } from "./types.ts";

@@ -1,8 +1,8 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
-import { logger } from "./logger.ts";
-import { parseFrontMatter } from "./utils/yaml.ts";
+import { logger } from "../utils/logger.ts";
+import { parseFrontMatter } from "../utils/yaml.ts";
 
 // Core subagent interfaces
 interface SubagentFrontmatter {

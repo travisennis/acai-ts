@@ -1,4 +1,4 @@
-import type { ConfigManager } from "../config.ts";
+import type { ConfigManager } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManagerApi } from "../prompts/manager.ts";

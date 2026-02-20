@@ -13,8 +13,7 @@ import {
   streamText,
 } from "ai";
 import type z from "zod";
-import { config } from "../config.ts";
-import { logger } from "../logger.ts";
+import { config } from "../config/index.ts";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { ModelMetadata } from "../models/providers.ts";
@@ -26,6 +25,7 @@ import type {
   CompleteTools,
 } from "../tools/index.ts";
 import { toAiSdkTools } from "../tools/utils.ts";
+import { logger } from "../utils/logger.ts";
 
 type AgentOptions = {
   modelManager: ModelManager;

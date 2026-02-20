@@ -6,29 +6,29 @@ import { parseArgs } from "node:util";
 import { asyncTry, isFailure, syncTry } from "@travisennis/stdlib/try";
 import { isDefined } from "@travisennis/stdlib/typeguards";
 import { Agent } from "./agent/index.ts";
-import { Cli } from "./cli.ts";
+import { Cli } from "./cli/index.ts";
+import { readStdinWithLimits } from "./cli/stdin.ts";
 import { CommandManager } from "./commands/manager.ts";
 import {
   config,
   type DirectoryProvider,
   type ProjectConfig,
-} from "./config.ts";
-import { logger } from "./logger.ts";
-import { processPrompt } from "./mentions.ts";
+} from "./config/index.ts";
 import { ModelManager } from "./models/manager.ts";
 import { isSupportedModel, type ModelName } from "./models/providers.ts";
 import { PromptManager } from "./prompts/manager.ts";
-import { systemPrompt } from "./prompts.ts";
-import { Repl } from "./repl.ts";
+import { processPrompt } from "./prompts/mentions.ts";
+import { systemPrompt } from "./prompts/system-prompt.ts";
+import { Repl } from "./repl/index.ts";
 import { SessionManager } from "./sessions/manager.ts";
 import { writeExitSummary } from "./sessions/summary.ts";
-import { readStdinWithLimits } from "./stdin.ts";
 import { setTerminalTitle } from "./terminal/control.ts";
 import { select } from "./terminal/select-prompt.ts";
 import { TokenCounter } from "./tokens/counter.ts";
 import { TokenTracker } from "./tokens/tracker.ts";
 import { type CompleteToolNames, initTools } from "./tools/index.ts";
-import { getPackageVersion } from "./version.ts";
+import { logger } from "./utils/logger.ts";
+import { getPackageVersion } from "./utils/version.ts";
 
 // Workspace context for managing multiple working directories
 export interface WorkspaceContext {

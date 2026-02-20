@@ -5,7 +5,7 @@
  * in a controlled environment with proper error handling.
  */
 import { type ExecException, exec, spawn } from "node:child_process";
-import { logger } from "../logger.ts";
+import { logger } from "../utils/logger.ts";
 
 /**
  * Result of a command execution

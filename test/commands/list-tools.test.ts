@@ -1,7 +1,7 @@
 import { strict as assert } from "node:assert";
 import { describe, it } from "node:test";
 import { listToolsCommand } from "../../source/commands/list-tools/index.ts";
-import type { ConfigManager } from "../../source/config.ts";
+import type { ConfigManager } from "../../source/config/index.ts";
 import {
   createMockCommandOptions,
   createMockContainer,

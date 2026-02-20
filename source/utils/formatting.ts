@@ -6,7 +6,7 @@
  */
 
 import path from "node:path";
-import { getCodeblockFromFilePath } from "./utils/filetype-detection.ts";
+import { getCodeblockFromFilePath } from "./filetype-detection.ts";
 
 const MD_TRIPLE_QUOTE = "```";
 

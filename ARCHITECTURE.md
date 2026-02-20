@@ -64,7 +64,9 @@ acai-ts
     ├── agent
     │   ├── index.ts
     │   └── sub-agent.ts
-    ├── cli.ts
+    ├── cli
+    │   ├── index.ts
+    │   └── stdin.ts
     ├── commands
     │   ├── add-directory
     │   │   ├── index.ts
@@ -104,6 +106,7 @@ acai-ts
     │   ├── manager.ts
     │   ├── model
     │   │   ├── index.ts
+    │   │   ├── model-panel.ts
     │   │   └── utils.ts
     │   ├── paste
     │   │   ├── index.ts
@@ -118,6 +121,7 @@ acai-ts
     │   │   └── index.ts
     │   ├── review
     │   │   ├── index.ts
+    │   │   ├── review-panel.ts
     │   │   ├── types.ts
     │   │   └── utils.ts
     │   ├── session
@@ -129,14 +133,11 @@ acai-ts
     │   ├── shell
     │   │   └── index.ts
     │   └── types.ts
-    ├── config.ts
-    ├── dedent.ts
+    ├── config
+    │   └── index.ts
     ├── execution
     │   └── index.ts
-    ├── formatting.ts
     ├── index.ts
-    ├── logger.ts
-    ├── mentions.ts
     ├── middleware
     │   ├── audit-message.ts
     │   ├── cache.ts
@@ -154,18 +155,23 @@ acai-ts
     │   ├── openrouter-provider.ts
     │   ├── providers.ts
     │   └── xai-provider.ts
-    ├── parsing.ts
+    ├── modes
+    │   ├── manager.ts
+    │   └── prompts.ts
     ├── prompts
-    │   └── manager.ts
-    ├── prompts.ts
+    │   ├── manager.ts
+    │   ├── mentions.ts
+    │   └── system-prompt.ts
     ├── repl
+    │   ├── index.ts
     │   └── project-status.ts
-    ├── repl.ts
     ├── sessions
-    │   └── manager.ts
-    ├── skills.ts
-    ├── stdin.ts
-    ├── subagents.ts
+    │   ├── manager.ts
+    │   └── summary.ts
+    ├── skills
+    │   └── index.ts
+    ├── subagents
+    │   └── index.ts
     ├── terminal
     │   ├── ansi-styles.ts
     │   ├── control.ts
@@ -252,19 +258,24 @@ acai-ts
     │   └── utils.ts
     └── utils
         ├── bash.ts
+        ├── dedent.ts
         ├── filesystem
         │   ├── operations.ts
         │   ├── path-display.ts
         │   └── security.ts
         ├── filetype-detection.ts
+        ├── formatting.ts
         ├── funcs.ts
         ├── generators.ts
         ├── git.ts
         ├── glob.ts
         ├── ignore.ts
         ├── iterables.ts
+        ├── logger.ts
+        ├── parsing.ts
         ├── process.ts
         ├── templates.ts
+        ├── version.ts
         ├── yaml.ts
         └── zod.ts
 └── test
@@ -388,19 +399,15 @@ acai-ts
 ### Source - Core
 
 - **source/index.ts**: Main entry point, handles CLI argument parsing and mode selection
-- **source/cli.ts**: CLI mode handler for single-prompt execution
-- **source/repl.ts**: REPL mode handler for interactive terminal UI
-- **source/config.ts**: Configuration management and loading
-- **source/logger.ts**: Logging infrastructure using Pino
-- **source/dedent.ts**: Utility for dedenting multi-line strings
-- **source/formatting.ts**: Text formatting utilities
-- **source/mentions.ts**: Processes @mentions in prompts
-- **source/parsing.ts**: Text parsing utilities
-- **source/prompts.ts**: System prompt generation
-- **source/skills.ts**: Skills discovery and loading
-- **source/stdin.ts**: Standard input reading utilities
-- **source/subagents.ts**: Subagent management
-- **source/version.ts**: Package version retrieval
+
+### Source - CLI
+
+- **source/cli/index.ts**: CLI mode handler for single-prompt execution
+- **source/cli/stdin.ts**: Standard input reading with size limits for piped input
+
+### Source - Config
+
+- **source/config/index.ts**: Configuration management, directory providers, and config schema
 
 ### Source - Agent
 
@@ -450,6 +457,26 @@ acai-ts
 ### Source - Modes
 
 - **source/modes/manager.ts**: ModeManager class for cycling through specialized modes (Normal, Planning, Research) with mode-specific context prompt injection
+- **source/modes/prompts.ts**: Mode-specific prompt templates
+
+### Source - Prompts
+
+- **source/prompts/manager.ts**: Prompt template management and context injection
+- **source/prompts/mentions.ts**: Processes #file mentions and paste placeholders in user input
+- **source/prompts/system-prompt.ts**: System prompt generation and environment info
+
+### Source - REPL
+
+- **source/repl/index.ts**: Interactive REPL mode handler with TUI layout and agent event processing
+- **source/repl/project-status.ts**: Git project status display for footer
+
+### Source - Skills
+
+- **source/skills/index.ts**: Skills discovery, validation, loading, and prompt formatting
+
+### Source - Subagents
+
+- **source/subagents/index.ts**: Subagent discovery, validation, loading, and prompt formatting
 
 ### Source - Tools
 
@@ -508,25 +535,29 @@ acai-ts
 ### Source - Utils
 
 - **source/utils/bash.ts**: Bash command utilities
+- **source/utils/dedent.ts**: Template literal tag for dedenting multi-line strings
 - **source/utils/env-expand.ts**: Environment variable expansion for config values
 - **source/utils/filetype-detection.ts**: File type detection
+- **source/utils/formatting.ts**: Text formatting utilities (files, URLs, code blocks, numbers, dates, durations)
 - **source/utils/funcs.ts**: General function utilities
 - **source/utils/generators.ts**: Generator utilities
 - **source/utils/git.ts**: Git-related utilities
 - **source/utils/glob.ts**: Glob pattern utilities
 - **source/utils/ignore.ts**: Gitignore-style pattern matching
 - **source/utils/iterables.ts**: Iterable utilities
+- **source/utils/logger.ts**: Logging infrastructure using Pino
+- **source/utils/parsing.ts**: JSON/Zod preprocessing utilities
 - **source/utils/process.ts**: Process utilities
 - **source/utils/templates.ts**: Argument placeholder substitution for skill/prompt content
+- **source/utils/version.ts**: Package version retrieval
 - **source/utils/yaml.ts**: YAML parsing utilities
 - **source/utils/zod.ts**: Zod schema utilities
 - **source/utils/filesystem/**: Filesystem operations and security
 
 ### Source - Other
 
-- **source/prompts/manager.ts**: Prompt template management
-- **source/repl/project-status.ts**: Project status display
 - **source/sessions/manager.ts**: Session lifecycle management
+- **source/sessions/summary.ts**: Session exit summary formatting
 - **source/tokens/counter.ts**: Token counting utilities
 - **source/tokens/tracker.ts**: Token usage tracking
 - **source/middleware/**: Middleware for AI interactions (audit, cache, rate-limit)

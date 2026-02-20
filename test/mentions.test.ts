@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { processPrompt } from "../source/mentions.ts";
 import type { ModelMetadata } from "../source/models/providers.ts";
+import { processPrompt } from "../source/prompts/mentions.ts";
 
 const mockModel: ModelMetadata = {
   id: "openai:gpt-4.1",

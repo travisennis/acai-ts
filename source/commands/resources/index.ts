@@ -1,4 +1,4 @@
-import { loadSkills } from "../../skills.ts";
+import { loadSkills } from "../../skills/index.ts";
 import style from "../../terminal/style.ts";
 import type { Container, Editor, TUI } from "../../tui/index.ts";
 import {

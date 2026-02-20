@@ -4,7 +4,7 @@ import {
   readStdinWithLimits,
   STDIN_HARD_LIMIT,
   STDIN_SOFT_LIMIT,
-} from "../source/stdin.ts";
+} from "../source/cli/stdin.ts";
 
 describe("readStdinWithLimits", () => {
   describe("constants", () => {

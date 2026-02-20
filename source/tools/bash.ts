@@ -5,7 +5,6 @@ import { dirname } from "node:path";
 import { z } from "zod";
 import { initExecutionEnvironment } from "../execution/index.ts";
 import type { WorkspaceContext } from "../index.ts";
-import { logger } from "../logger.ts";
 import style from "../terminal/style.ts";
 import { resolveCwd, validatePaths } from "../utils/bash.ts";
 import {
@@ -13,6 +12,7 @@ import {
   formatBlockedCommandMessage,
 } from "../utils/command-protection.ts";
 import { expandEnvVars } from "../utils/env-expand.ts";
+import { logger } from "../utils/logger.ts";
 import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions } from "./types.ts";
 

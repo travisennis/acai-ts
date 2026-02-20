@@ -1,11 +1,11 @@
 import { platform } from "node:os";
-import { config } from "./config.ts";
-import { dedent } from "./dedent.ts";
-import { formatSkillsForPrompt, loadSkills } from "./skills.ts";
-import { formatSubagentsForPrompt, loadSubagents } from "./subagents.ts";
-import { getShell } from "./terminal/index.ts";
-import type { CompleteToolNames } from "./tools/index.ts";
-import { getCurrentBranch, inGitDirectory } from "./utils/git.ts";
+import { config } from "../config/index.ts";
+import { formatSkillsForPrompt, loadSkills } from "../skills/index.ts";
+import { formatSubagentsForPrompt, loadSubagents } from "../subagents/index.ts";
+import { getShell } from "../terminal/index.ts";
+import type { CompleteToolNames } from "../tools/index.ts";
+import { dedent } from "../utils/dedent.ts";
+import { getCurrentBranch, inGitDirectory } from "../utils/git.ts";
 
 type SystemPromptComponents = {
   core: string;

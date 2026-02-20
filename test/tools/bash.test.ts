@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { config } from "../../source/config.ts";
+import { config } from "../../source/config/index.ts";
 import { createBashTool } from "../../source/tools/bash.ts";
 import { validatePaths } from "../../source/utils/bash.ts";
 

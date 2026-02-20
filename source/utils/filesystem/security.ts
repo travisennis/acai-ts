@@ -2,7 +2,7 @@ import { realpathSync, statSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { ProjectConfig } from "../../config.ts";
+import type { ProjectConfig } from "../../config/index.ts";
 
 // Normalize all paths consistently
 function normalizePath(p: string): string {

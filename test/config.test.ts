@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { ConfigManager, DirectoryProvider } from "../source/config.ts";
+import { ConfigManager, DirectoryProvider } from "../source/config/index.ts";
 
 // Helper to create and cleanup a temp directory
 async function withTempDir<T>(fn: (dir: string) => Promise<T>) {

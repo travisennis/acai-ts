@@ -2,12 +2,12 @@ import { z } from "zod";
 import { SubAgent } from "../agent/sub-agent.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { isSupportedModel } from "../models/providers.ts";
-import { environmentInfo } from "../prompts.ts";
+import { environmentInfo } from "../prompts/system-prompt.ts";
 import {
   formatSubagentsForDescription,
   getSubagent,
   loadSubagents,
-} from "../subagents.ts";
+} from "../subagents/index.ts";
 import style from "../terminal/style.ts";
 import type { ToolExecutionOptions } from "./types.ts";
 

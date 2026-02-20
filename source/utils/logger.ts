@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import pino from "pino";
-import { config } from "./config.ts";
+import { config } from "../config/index.ts";
 
 // Create a lazy logger factory that only initializes when first used
 let loggerInstance: pino.Logger | null = null;

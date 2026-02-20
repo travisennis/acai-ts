@@ -1,6 +1,6 @@
 import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import type { Tool } from "ai";
-import { config } from "../config.ts";
+import { config } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { AgentTool, createAgentTools } from "./agent.ts";
 import { BashTool, createBashTool } from "./bash.ts";

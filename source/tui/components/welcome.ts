@@ -1,6 +1,6 @@
-import { dedent } from "../../dedent.ts";
 import style from "../../terminal/style.ts";
-import { getPackageVersion } from "../../version.ts";
+import { dedent } from "../../utils/dedent.ts";
+import { getPackageVersion } from "../../utils/version.ts";
 import type { Component } from "../tui.ts";
 import { BoxComponent } from "./box.ts";
 

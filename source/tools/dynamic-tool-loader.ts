@@ -3,8 +3,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { z } from "zod";
-import { config } from "../config.ts";
-import { logger } from "../logger.ts";
+import { config } from "../config/index.ts";
+import { logger } from "../utils/logger.ts";
 import type { ToolExecutionOptions } from "./types.ts";
 
 // Tool Metadata Schema and Parser

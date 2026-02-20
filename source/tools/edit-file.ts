@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { createTwoFilesPatch } from "diff";
 import { z } from "zod";
-import { config } from "../config.ts";
+import { config } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { clearProjectStatusCache } from "../repl/project-status.ts";
 import style from "../terminal/style.ts";

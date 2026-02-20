@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import { describe, it } from "node:test";
-import { formatSkillsForPrompt, type Skill } from "../source/skills.ts";
+import { formatSkillsForPrompt, type Skill } from "../source/skills/index.ts";
 
 function makeSkill(overrides: Partial<Skill> = {}): Skill {
   return {

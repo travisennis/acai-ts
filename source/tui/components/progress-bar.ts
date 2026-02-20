@@ -1,5 +1,5 @@
-import { formatNumber } from "../../formatting.ts";
 import style from "../../terminal/style.ts";
+import { formatNumber } from "../../utils/formatting.ts";
 import type { Component } from "../tui.ts";
 
 /**
