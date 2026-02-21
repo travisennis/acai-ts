@@ -108,6 +108,57 @@ const stringVisibleTrimSpacesRight = (string: string): string => {
   return words.slice(0, last).join(" ") + words.slice(last).join("");
 };
 
+const processAnsiEscapes = (pre: string[], preString: string): string => {
+  let returnValue = "";
+  let escapeCode: number | undefined;
+  let escapeUrl: string | undefined;
+  let preStringIndex = 0;
+
+  for (const [index, character] of pre.entries()) {
+    returnValue += character;
+
+    if (ESCAPES.has(character)) {
+      const match = new RegExp(
+        `(?:\\\\${ANSI_CSI}(?<code>\\d+)m|\\\\${ANSI_ESCAPE_LINK}(?<uri>.*)${ANSI_ESCAPE_BELL})`,
+      ).exec(preString.slice(preStringIndex));
+
+      if (match?.groups) {
+        const { groups } = match;
+        if (groups["code"] !== undefined) {
+          const code = Number.parseFloat(groups["code"]);
+          escapeCode = code === END_CODE ? undefined : code;
+        } else if (groups["uri"] !== undefined) {
+          escapeUrl = groups["uri"].length === 0 ? undefined : groups["uri"];
+        }
+      }
+    }
+
+    const code = ansiStyles["codes"].get(Number(escapeCode));
+
+    if (pre[index + 1] === "\n") {
+      if (escapeUrl) {
+        returnValue += wrapAnsiHyperlink("");
+      }
+
+      if (escapeCode && code) {
+        returnValue += wrapAnsiCode(code);
+      }
+    } else if (character === "\n") {
+      if (escapeCode && code) {
+        returnValue += wrapAnsiCode(escapeCode);
+      }
+
+      if (escapeUrl) {
+        returnValue += wrapAnsiHyperlink(escapeUrl);
+      }
+    }
+
+    preStringIndex += character.length;
+  }
+
+  return returnValue;
+};
+
 // The wrap-ansi module can be invoked in either 'hard' or 'soft' wrap mode.
 //
 // 'hard' will never allow a string to take up more than columns characters.
@@ -121,10 +172,6 @@ const exec = (
   if (options.trim !== false && string.trim() === "") {
     return "";
   }
-
-  let returnValue = "";
-  let escapeCode: number | undefined;
-  let escapeUrl: string | undefined;
 
   const lengths = wordLengths(string);
   let rows: string[] = [""];
@@ -194,52 +241,7 @@ const exec = (
   const preString = rows.join("\n");
   const pre = [...preString];
 
-  // We need to keep a separate index as `String#slice()` works on Unicode code units, while `pre` is an array of codepoints.
-  let preStringIndex = 0;
-
-  for (const [index, character] of pre.entries()) {
-    returnValue += character;
-
-    if (ESCAPES.has(character)) {
-      const match = new RegExp(
-        `(?:\\\\${ANSI_CSI}(?<code>\\d+)m|\\\\${ANSI_ESCAPE_LINK}(?<uri>.*)${ANSI_ESCAPE_BELL})`,
-      ).exec(preString.slice(preStringIndex));
-
-      if (match?.groups) {
-        const { groups } = match;
-        if (groups["code"] !== undefined) {
-          const code = Number.parseFloat(groups["code"]);
-          escapeCode = code === END_CODE ? undefined : code;
-        } else if (groups["uri"] !== undefined) {
-          escapeUrl = groups["uri"].length === 0 ? undefined : groups["uri"];
-        }
-      }
-    }
-
-    const code = ansiStyles["codes"].get(Number(escapeCode));
-
-    if (pre[index + 1] === "\n") {
-      if (escapeUrl) {
-        returnValue += wrapAnsiHyperlink("");
-      }
-
-      if (escapeCode && code) {
-        returnValue += wrapAnsiCode(code);
-      }
-    } else if (character === "\n") {
-      if (escapeCode && code) {
-        returnValue += wrapAnsiCode(escapeCode);
-      }
-
-      if (escapeUrl) {
-        returnValue += wrapAnsiHyperlink(escapeUrl);
-      }
-    }
-
-    preStringIndex += character.length;
-  }
-
-  return returnValue;
+  return processAnsiEscapes(pre, preString);
 };
 
 // For each newline, invoke the method separately
