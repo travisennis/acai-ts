@@ -1,4 +1,5 @@
 import type {
+  LanguageModelUsage,
   ToolCallRepairFunction,
   ToolExecuteFunction,
   ToolModelMessage,
@@ -119,6 +120,19 @@ type ModelUsage = {
     reasoningTokens: number;
   };
 };
+
+interface PendingToolCall {
+  call: {
+    toolName: string;
+    toolCallId: string;
+    input: unknown;
+    invalid?: boolean;
+    error?: unknown;
+  };
+  toolName: string;
+  // biome-ignore lint/suspicious/noExplicitAny: tool type from CompleteTools
+  iTool: any;
+}
 
 export type AgentState = {
   modelId: string;
@@ -256,78 +270,20 @@ export class Agent {
           toolResults: thisStepToolResults,
         });
 
-        // Buffer for parallel execution - collect all tool calls during streaming
-        interface PendingToolCall {
-          call: {
-            toolName: string;
-            toolCallId: string;
-            input: unknown;
-            invalid?: boolean;
-            error?: unknown;
-          };
-          toolName: string;
-          // biome-ignore lint/suspicious/noExplicitAny: tool type from CompleteTools
-          iTool: any;
-        }
         const pendingToolCalls: PendingToolCall[] = [];
 
         for await (const chunk of result.fullStream) {
-          if (chunk.type === "reasoning-start") {
-            yield {
-              type: "thinking-start",
-              content: "",
-            };
-          } else if (chunk.type === "reasoning-delta") {
-            accumulatedReasoning += chunk.text;
-            yield {
-              type: "thinking",
-              content: accumulatedReasoning,
-            };
-          } else if (chunk.type === "reasoning-end") {
-            yield {
-              type: "thinking-end",
-              content: accumulatedReasoning,
-            };
-          } else if (chunk.type === "text-start") {
-            yield {
-              type: "message-start",
-              role: "assistant",
-              content: "",
-            };
-          } else if (chunk.type === "text-delta") {
-            accumulatedText += chunk.text;
-            yield {
-              type: "message",
-              role: "assistant",
-              content: accumulatedText,
-            };
-          } else if (chunk.type === "text-end") {
-            yield {
-              type: "message-end",
-              role: "assistant",
-              content: accumulatedText,
-            };
-          } else if (chunk.type === "tool-call") {
-            const call = chunk;
-            const toolName = call.toolName as keyof CompleteToolSet;
-            const iTool = tools[toolName];
-
-            // Emit start event immediately for UI responsiveness
-            yield this.processToolEvent(toolsCalled, {
-              type: "tool-call-start",
-              name: toolName,
-              toolCallId: call.toolCallId,
-              // biome-ignore lint/suspicious/noExplicitAny: unknown
-              msg: iTool ? iTool.display(call.input as any) : "",
-              args: call.input,
-            });
-
-            // Buffer tool call for later parallel execution
-            pendingToolCalls.push({
-              call,
-              toolName,
-              iTool,
-            });
+          const event = this.handleStreamChunk(chunk, {
+            accumulatedText,
+            accumulatedReasoning,
+            toolsCalled,
+            tools,
+            pendingToolCalls,
+          });
+          if (event) {
+            accumulatedText = event.accumulatedText;
+            accumulatedReasoning = event.accumulatedReasoning;
+            yield event.agentEvent;
           }
         }
 
@@ -520,45 +476,7 @@ export class Agent {
         sessionManager.appendResponseMessages(responseMessages);
 
         const stepUsage = await result.usage;
-
-        this._state.usage.inputTokens = stepUsage.inputTokens ?? 0;
-        this._state.usage.outputTokens = stepUsage.outputTokens ?? 0;
-        this._state.usage.totalTokens = stepUsage.totalTokens ?? 0;
-        this._state.usage.cachedInputTokens =
-          stepUsage.inputTokenDetails.cacheReadTokens ?? 0;
-        this._state.usage.inputTokenDetails.cacheReadTokens =
-          stepUsage.inputTokenDetails.cacheReadTokens ?? 0;
-        this._state.usage.reasoningTokens =
-          stepUsage.outputTokenDetails.reasoningTokens ?? 0;
-        sessionManager.setContextWindow(stepUsage.totalTokens ?? 0);
-
-        this._state.totalUsage.inputTokens += stepUsage.inputTokens ?? 0;
-        this._state.totalUsage.outputTokens += stepUsage.outputTokens ?? 0;
-        this._state.totalUsage.totalTokens += stepUsage.totalTokens ?? 0;
-        this._state.totalUsage.cachedInputTokens +=
-          stepUsage.inputTokenDetails.cacheReadTokens ?? 0;
-        this._state.totalUsage.inputTokenDetails.cacheReadTokens +=
-          stepUsage.inputTokenDetails.cacheReadTokens ?? 0;
-        this._state.totalUsage.reasoningTokens +=
-          stepUsage.outputTokenDetails.reasoningTokens ?? 0;
-
-        // Record this step's usage (not cumulative total) to avoid double-counting
-        sessionManager.recordTurnUsage({
-          inputTokens: stepUsage.inputTokens ?? 0,
-          outputTokens: stepUsage.outputTokens ?? 0,
-          totalTokens: stepUsage.totalTokens ?? 0,
-          cachedInputTokens: stepUsage.inputTokenDetails.cacheReadTokens ?? 0,
-          reasoningTokens: stepUsage.outputTokenDetails.reasoningTokens ?? 0,
-          inputTokenDetails: {
-            noCacheTokens: stepUsage.inputTokenDetails.noCacheTokens ?? 0,
-            cacheReadTokens: stepUsage.inputTokenDetails.cacheReadTokens ?? 0,
-            cacheWriteTokens: stepUsage.inputTokenDetails.cacheWriteTokens ?? 0,
-          },
-          outputTokenDetails: {
-            textTokens: stepUsage.outputTokenDetails.textTokens ?? 0,
-            reasoningTokens: stepUsage.outputTokenDetails.reasoningTokens ?? 0,
-          },
-        });
+        this.updateUsageStats(stepUsage, sessionManager);
 
         // If finishReason is not tool-calls, break
         const finishReason = await result.finishReason;
@@ -698,6 +616,144 @@ export class Agent {
     };
 
     return this._state;
+  }
+
+  private handleStreamChunk(
+    // biome-ignore lint/suspicious/noExplicitAny: chunk type from AI SDK fullStream is a complex discriminated union
+    chunk: any,
+    ctx: {
+      accumulatedText: string;
+      accumulatedReasoning: string;
+      toolsCalled: Map<string, ToolEvent[]>;
+      tools: CompleteToolSet;
+      pendingToolCalls: PendingToolCall[];
+    },
+  ): {
+    agentEvent: AgentEvent;
+    accumulatedText: string;
+    accumulatedReasoning: string;
+  } | null {
+    if (chunk.type === "reasoning-start") {
+      return {
+        agentEvent: { type: "thinking-start", content: "" },
+        accumulatedText: ctx.accumulatedText,
+        accumulatedReasoning: ctx.accumulatedReasoning,
+      };
+    }
+    if (chunk.type === "reasoning-delta") {
+      const accumulatedReasoning = ctx.accumulatedReasoning + chunk.text;
+      return {
+        agentEvent: { type: "thinking", content: accumulatedReasoning },
+        accumulatedText: ctx.accumulatedText,
+        accumulatedReasoning,
+      };
+    }
+    if (chunk.type === "reasoning-end") {
+      return {
+        agentEvent: {
+          type: "thinking-end",
+          content: ctx.accumulatedReasoning,
+        },
+        accumulatedText: ctx.accumulatedText,
+        accumulatedReasoning: ctx.accumulatedReasoning,
+      };
+    }
+    if (chunk.type === "text-start") {
+      return {
+        agentEvent: { type: "message-start", role: "assistant", content: "" },
+        accumulatedText: ctx.accumulatedText,
+        accumulatedReasoning: ctx.accumulatedReasoning,
+      };
+    }
+    if (chunk.type === "text-delta") {
+      const accumulatedText = ctx.accumulatedText + chunk.text;
+      return {
+        agentEvent: {
+          type: "message",
+          role: "assistant",
+          content: accumulatedText,
+        },
+        accumulatedText,
+        accumulatedReasoning: ctx.accumulatedReasoning,
+      };
+    }
+    if (chunk.type === "text-end") {
+      return {
+        agentEvent: {
+          type: "message-end",
+          role: "assistant",
+          content: ctx.accumulatedText,
+        },
+        accumulatedText: ctx.accumulatedText,
+        accumulatedReasoning: ctx.accumulatedReasoning,
+      };
+    }
+    if (chunk.type === "tool-call") {
+      const call = chunk;
+      const toolName = call.toolName as keyof CompleteToolSet;
+      const iTool = ctx.tools[toolName];
+
+      const agentEvent = this.processToolEvent(ctx.toolsCalled, {
+        type: "tool-call-start",
+        name: toolName,
+        toolCallId: call.toolCallId,
+        // biome-ignore lint/suspicious/noExplicitAny: unknown
+        msg: iTool ? iTool.display(call.input as any) : "",
+        args: call.input,
+      });
+
+      ctx.pendingToolCalls.push({ call, toolName, iTool });
+
+      return {
+        agentEvent,
+        accumulatedText: ctx.accumulatedText,
+        accumulatedReasoning: ctx.accumulatedReasoning,
+      };
+    }
+    return null;
+  }
+
+  private updateUsageStats(
+    stepUsage: LanguageModelUsage,
+    sessionManager: SessionManager,
+  ): void {
+    this._state.usage.inputTokens = stepUsage.inputTokens ?? 0;
+    this._state.usage.outputTokens = stepUsage.outputTokens ?? 0;
+    this._state.usage.totalTokens = stepUsage.totalTokens ?? 0;
+    this._state.usage.cachedInputTokens =
+      stepUsage.inputTokenDetails.cacheReadTokens ?? 0;
+    this._state.usage.inputTokenDetails.cacheReadTokens =
+      stepUsage.inputTokenDetails.cacheReadTokens ?? 0;
+    this._state.usage.reasoningTokens =
+      stepUsage.outputTokenDetails.reasoningTokens ?? 0;
+    sessionManager.setContextWindow(stepUsage.totalTokens ?? 0);
+
+    this._state.totalUsage.inputTokens += stepUsage.inputTokens ?? 0;
+    this._state.totalUsage.outputTokens += stepUsage.outputTokens ?? 0;
+    this._state.totalUsage.totalTokens += stepUsage.totalTokens ?? 0;
+    this._state.totalUsage.cachedInputTokens +=
+      stepUsage.inputTokenDetails.cacheReadTokens ?? 0;
+    this._state.totalUsage.inputTokenDetails.cacheReadTokens +=
+      stepUsage.inputTokenDetails.cacheReadTokens ?? 0;
+    this._state.totalUsage.reasoningTokens +=
+      stepUsage.outputTokenDetails.reasoningTokens ?? 0;
+
+    sessionManager.recordTurnUsage({
+      inputTokens: stepUsage.inputTokens ?? 0,
+      outputTokens: stepUsage.outputTokens ?? 0,
+      totalTokens: stepUsage.totalTokens ?? 0,
+      cachedInputTokens: stepUsage.inputTokenDetails.cacheReadTokens ?? 0,
+      reasoningTokens: stepUsage.outputTokenDetails.reasoningTokens ?? 0,
+      inputTokenDetails: {
+        noCacheTokens: stepUsage.inputTokenDetails.noCacheTokens ?? 0,
+        cacheReadTokens: stepUsage.inputTokenDetails.cacheReadTokens ?? 0,
+        cacheWriteTokens: stepUsage.inputTokenDetails.cacheWriteTokens ?? 0,
+      },
+      outputTokenDetails: {
+        textTokens: stepUsage.outputTokenDetails.textTokens ?? 0,
+        reasoningTokens: stepUsage.outputTokenDetails.reasoningTokens ?? 0,
+      },
+    });
   }
 
   private processToolEvent(
