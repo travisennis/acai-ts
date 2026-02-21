@@ -6,5 +6,8 @@
     "maxTokens": 30000
   },
   "notify": true,
+  "devtools": {
+    "enabled": true
+  },
   "autoGenerateRules": false
 }

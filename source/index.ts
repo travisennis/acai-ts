@@ -316,8 +316,12 @@ async function initializeModelManager(
     ? flags.model
     : "opencode:minimax-m2.5-free";
 
+  const projectConfig = await config.getConfig();
+  const devtoolsEnabled = projectConfig.devtools?.enabled ?? false;
+
   const modelManager = new ModelManager({
     stateDir: await appDir.ensurePath("audit"),
+    devtoolsEnabled,
   });
 
   modelManager.setModel("repl", chosenModel);

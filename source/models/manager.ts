@@ -1,4 +1,5 @@
 import EventEmitter from "node:events";
+import { devToolsMiddleware } from "@ai-sdk/devtools";
 import type { LanguageModelV3 } from "@ai-sdk/provider";
 import { wrapLanguageModel } from "ai";
 import {
@@ -17,18 +18,26 @@ export function getLanguageModel({
   model,
   app,
   stateDir,
+  devtoolsEnabled = false,
 }: {
   model: ModelName;
   app: string;
   stateDir: string;
+  devtoolsEnabled?: boolean;
 }) {
+  const middleware = [
+    cacheMiddleware,
+    createRateLimitMiddleware({ requestsPerMinute: 30 }),
+    auditMessage({ filePath: stateDir, app }),
+  ];
+
+  if (devtoolsEnabled) {
+    middleware.push(devToolsMiddleware());
+  }
+
   const langModel = wrapLanguageModel({
     model: languageModel(model),
-    middleware: [
-      cacheMiddleware,
-      createRateLimitMiddleware({ requestsPerMinute: 30 }),
-      auditMessage({ filePath: stateDir, app }),
-    ],
+    middleware,
   });
 
   return langModel;
@@ -57,11 +66,16 @@ export class ModelManager extends EventEmitter<ModelManagerEvents> {
   private modelMap: Map<App, LanguageModelV3>;
   private modelMetadataMap: Map<App, ModelMetadata>;
   private stateDir: string;
-  constructor({ stateDir }: { stateDir: string }) {
+  private devtoolsEnabled: boolean;
+  constructor({
+    stateDir,
+    devtoolsEnabled = false,
+  }: { stateDir: string; devtoolsEnabled?: boolean }) {
     super();
     this.modelMap = new Map();
     this.modelMetadataMap = new Map();
     this.stateDir = stateDir;
+    this.devtoolsEnabled = devtoolsEnabled;
   }
 
   setModel(app: App, model: ModelName) {
@@ -71,6 +85,7 @@ export class ModelManager extends EventEmitter<ModelManagerEvents> {
         model,
         app,
         stateDir: this.stateDir,
+        devtoolsEnabled: this.devtoolsEnabled,
       }),
     );
     const modelMetadata = getModelMetadata({ model });
