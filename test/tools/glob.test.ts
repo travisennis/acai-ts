@@ -38,10 +38,9 @@ test("glob tool input schema validates required fields", () => {
     inputSchema.parse(validArrayInput);
   });
 
-  // Invalid input - missing required fields
-  const invalidInput = {
+  // Valid input - missing path should default to process.cwd()
+  const missingPathInput = {
     patterns: "*.ts",
-    // missing path
     gitignore: null,
     recursive: null,
     expandDirectories: null,
@@ -49,8 +48,24 @@ test("glob tool input schema validates required fields", () => {
     cwd: null,
   };
 
-  assert.throws(() => {
-    inputSchema.parse(invalidInput);
+  assert.doesNotThrow(() => {
+    const result = inputSchema.parse(missingPathInput);
+    assert.equal(result.path, process.cwd());
+  });
+
+  // Valid input - missing patterns should default to "**/*"
+  const missingPatternsInput = {
+    path: "/some/path",
+    gitignore: null,
+    recursive: null,
+    expandDirectories: null,
+    ignoreFiles: null,
+    cwd: null,
+  };
+
+  assert.doesNotThrow(() => {
+    const result = inputSchema.parse(missingPatternsInput);
+    assert.equal(result.patterns, "**/*");
   });
 });
 
