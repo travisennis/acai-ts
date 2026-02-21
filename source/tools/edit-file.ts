@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { access, constants, readFile, writeFile } from "node:fs/promises";
 import { createTwoFilesPatch } from "diff";
 import { z } from "zod";
 import { config } from "../config/index.ts";
@@ -96,8 +96,35 @@ export const createEditFileTool = async (options: {
 };
 
 // file editing and diffing utilities
+
+/** Detect the line ending used in the content */
+function detectLineEnding(content: string): "\r\n" | "\n" {
+  const crlfIdx = content.indexOf("\r\n");
+  const lfIdx = content.indexOf("\n");
+  // If no line endings at all, default to LF
+  if (crlfIdx === -1 && lfIdx === -1) return "\n";
+  // If CRLF exists (and either no LF or CRLF comes first), return CRLF
+  if (crlfIdx !== -1 && (lfIdx === -1 || crlfIdx < lfIdx)) {
+    return "\r\n";
+  }
+  return "\n";
+}
+
+/** Normalize line endings to LF for internal processing */
 function normalizeLineEndings(text: string): string {
-  return text.replace(/\r\n/g, "\n");
+  return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+}
+
+/** Restore original line endings after processing */
+function restoreLineEndings(text: string, ending: "\r\n" | "\n"): string {
+  return ending === "\r\n" ? text.replace(/\n/g, "\r\n") : text;
+}
+
+/** Strip UTF-8 BOM if present - users won't include invisible BOM in oldText */
+function stripBom(content: string): { bom: string; text: string } {
+  return content.startsWith("\uFEFF")
+    ? { bom: "\uFEFF", text: content.slice(1) }
+    : { bom: "", text: content };
 }
 
 function createUnifiedDiff(
@@ -132,11 +159,26 @@ export async function applyFileEdits(
   if (abortSignal?.aborted) {
     throw new Error("File edit operation aborted");
   }
-  // Read file content literally with signal
-  const originalContent = await readFile(filePath, {
+
+  // Check if file exists and is readable
+  try {
+    await access(filePath, constants.R_OK);
+  } catch {
+    throw new Error(`File not found or not readable: ${filePath}`);
+  }
+
+  // Read file content
+  const rawContent = await readFile(filePath, {
     encoding: "utf-8",
     signal: abortSignal,
   });
+
+  // Strip BOM before processing (users won't include invisible BOM in oldText)
+  const { bom: originalBom, text: bomStrippedContent } = stripBom(rawContent);
+
+  // Detect and preserve original line endings
+  const originalLineEnding = detectLineEnding(bomStrippedContent);
+  const content = normalizeLineEndings(bomStrippedContent);
 
   if (edits.find((edit) => edit.oldText.length === 0)) {
     throw new Error(
@@ -145,7 +187,7 @@ export async function applyFileEdits(
   }
 
   // Apply edits sequentially using literal matches (allow multiple matches)
-  let modifiedContent = originalContent;
+  let modifiedContent = content;
   for (const edit of edits) {
     if (abortSignal?.aborted) {
       throw new Error("File edit operation aborted during processing");
@@ -156,12 +198,22 @@ export async function applyFileEdits(
     if (result.success) {
       modifiedContent = result.content;
     } else {
-      throw new Error("oldText not found in content");
+      throw new Error(
+        `Could not find the exact text in ${filePath}. The oldText must match exactly including all whitespace and newlines. ` +
+          "Tip: Check for invisible characters, extra/missing whitespace, or line ending differences.",
+      );
     }
   }
 
-  // Create unified diff (createUnifiedDiff normalizes line endings internally for diffing)
-  const diff = createUnifiedDiff(originalContent, modifiedContent, filePath);
+  // Restore original line endings and BOM
+  const finalContentWithLineEndings = restoreLineEndings(
+    modifiedContent,
+    originalLineEnding,
+  );
+  const finalContent = originalBom + finalContentWithLineEndings;
+
+  // Create unified diff (use normalized content for diff to avoid noisy line ending changes)
+  const diff = createUnifiedDiff(content, finalContent, filePath);
 
   // Format diff with appropriate number of backticks
   let numBackticks = 3;
@@ -175,7 +227,7 @@ export async function applyFileEdits(
       throw new Error("File edit operation aborted before writing");
     }
     // Write the modified content with signal
-    await writeFile(filePath, modifiedContent, {
+    await writeFile(filePath, finalContent, {
       encoding: "utf-8",
       signal: abortSignal,
     });
@@ -196,10 +248,15 @@ async function applyEditWithLlmFix(
   edit: FileEdit,
   content: string,
 ): Promise<ApplyEditResult> {
-  const { oldText, newText } = edit;
+  // Normalize line endings to match the normalized content
+  const normalizedOldText = normalizeLineEndings(edit.oldText);
+  const normalizedNewText = normalizeLineEndings(edit.newText);
 
-  // Try the original edit first
-  const originalResult = applyLiteralEdit(content, oldText, newText);
+  const originalResult = applyLiteralEdit(
+    content,
+    normalizedOldText,
+    normalizedNewText,
+  );
   if (originalResult.matchCount > 0) {
     return { success: true, content: originalResult.content };
   }

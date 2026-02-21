@@ -93,7 +93,7 @@ describe("editFile tool", () => {
             ),
           {
             name: "Error",
-            message: "oldText not found in content",
+            message: /Could not find the exact text/,
           },
         );
       } finally {
@@ -140,6 +140,125 @@ describe("editFile tool", () => {
         const finalContent = await readFile(tempFile, "utf-8");
         // Should replace "aa" with "b", leaving "a" from the third character
         assert.strictEqual(finalContent, "ba");
+      } finally {
+        await fixtures.cleanup();
+      }
+    });
+
+    it("should preserve CRLF line endings", async () => {
+      const fixtures = await createTestFixtures("edit-file");
+      const testContent = "Hello\r\nworld!\r\n";
+      const tempFile = await fixtures.createFile("test.txt", testContent);
+
+      try {
+        await applyFileEdits(
+          tempFile,
+          [{ oldText: "world", newText: "universe" }],
+          false, // apply changes
+        );
+
+        const finalContent = await readFile(tempFile, "utf-8");
+        assert.strictEqual(finalContent, "Hello\r\nuniverse!\r\n");
+      } finally {
+        await fixtures.cleanup();
+      }
+    });
+
+    it("should preserve LF line endings", async () => {
+      const fixtures = await createTestFixtures("edit-file");
+      const testContent = "Hello\nworld!\n";
+      const tempFile = await fixtures.createFile("test.txt", testContent);
+
+      try {
+        await applyFileEdits(
+          tempFile,
+          [{ oldText: "world", newText: "universe" }],
+          false, // apply changes
+        );
+
+        const finalContent = await readFile(tempFile, "utf-8");
+        assert.strictEqual(finalContent, "Hello\nuniverse!\n");
+      } finally {
+        await fixtures.cleanup();
+      }
+    });
+
+    it("should handle CRLF-only files without standalone LF", async () => {
+      const fixtures = await createTestFixtures("edit-file");
+      // File with only CRLF, no standalone LF
+      const testContent = "line1\r\nline2\r\nline3";
+      const tempFile = await fixtures.createFile("test.txt", testContent);
+
+      try {
+        await applyFileEdits(
+          tempFile,
+          [{ oldText: "line2", newText: "modified" }],
+          false, // apply changes
+        );
+
+        const finalContent = await readFile(tempFile, "utf-8");
+        assert.strictEqual(finalContent, "line1\r\nmodified\r\nline3");
+      } finally {
+        await fixtures.cleanup();
+      }
+    });
+
+    it("should match oldText with LF when file has CRLF", async () => {
+      const fixtures = await createTestFixtures("edit-file");
+      // File with CRLF, but oldText specified with LF
+      const testContent = "Hello\r\nworld!\r\n";
+      const tempFile = await fixtures.createFile("test.txt", testContent);
+
+      try {
+        // oldText uses LF but file uses CRLF - should still match
+        await applyFileEdits(
+          tempFile,
+          [{ oldText: "Hello\nworld", newText: "Hi\nuniverse" }],
+          false, // apply changes
+        );
+
+        const finalContent = await readFile(tempFile, "utf-8");
+        assert.strictEqual(finalContent, "Hi\r\nuniverse!\r\n");
+      } finally {
+        await fixtures.cleanup();
+      }
+    });
+
+    it("should preserve UTF-8 BOM", async () => {
+      const fixtures = await createTestFixtures("edit-file");
+      // File with UTF-8 BOM
+      const testContent = "\uFEFFHello world!";
+      const tempFile = await fixtures.createFile("test.txt", testContent);
+
+      try {
+        await applyFileEdits(
+          tempFile,
+          [{ oldText: "Hello", newText: "Hi" }],
+          false, // apply changes
+        );
+
+        const finalContent = await readFile(tempFile, "utf-8");
+        assert.strictEqual(finalContent, "\uFEFFHi world!");
+      } finally {
+        await fixtures.cleanup();
+      }
+    });
+
+    it("should preserve both BOM and CRLF", async () => {
+      const fixtures = await createTestFixtures("edit-file");
+      // File with UTF-8 BOM and CRLF
+      const testContent = "\uFEFFHello\r\nworld!\r\n";
+      const tempFile = await fixtures.createFile("test.txt", testContent);
+
+      try {
+        await applyFileEdits(
+          tempFile,
+          [{ oldText: "world", newText: "universe" }],
+          false, // apply changes
+        );
+
+        const finalContent = await readFile(tempFile, "utf-8");
+        assert.strictEqual(finalContent, "\uFEFFHello\r\nuniverse!\r\n");
       } finally {
         await fixtures.cleanup();
       }
