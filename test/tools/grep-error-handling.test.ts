@@ -4,27 +4,38 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { buildGrepCommand, grepFiles } from "../../source/tools/grep.ts";
+import {
+  buildGrepCommand,
+  grepFilesStructured,
+} from "../../source/tools/grep.ts";
 
-test("grepFiles handles exit code 1 (no matches) gracefully", async () => {
+test("grepFilesStructured handles exit code 1 (no matches) gracefully", async () => {
   // Use a unique temp directory to avoid matching test file contents
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "acai-grep-test-"));
   try {
     // Use a pattern that definitely won't match anything
-    const result = grepFiles("nonexistentpattern12345xyzabc", tmpDir, {
-      literal: true,
-    });
-    assert.strictEqual(result, "No matches found.");
+    const result = await grepFilesStructured(
+      "nonexistentpattern12345xyzabc",
+      tmpDir,
+      {
+        literal: true,
+      },
+    );
+    assert.strictEqual(result.rawOutput, "No matches found.");
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
   }
 });
 
-test("grepFiles handles problematic patterns with fixed-string mode", () => {
+test("grepFilesStructured handles problematic patterns with fixed-string mode", async () => {
   // This pattern would cause regex parse error without fixed-string mode
-  const result = grepFiles("spawnChildProcess({", ".", { literal: true });
+  const result = await grepFilesStructured("spawnChildProcess({", ".", {
+    literal: true,
+  });
   // Should either find matches or return "No matches found." without throwing
-  assert.ok(result === "No matches found." || result.includes(":"));
+  assert.ok(
+    result.rawOutput === "No matches found." || result.rawOutput.includes(":"),
+  );
 });
 
 test("buildGrepCommand properly escapes patterns", () => {

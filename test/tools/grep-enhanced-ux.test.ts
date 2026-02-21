@@ -4,37 +4,31 @@ import test from "node:test";
 import {
   countActualMatches,
   countContextLines,
-  parseRipgrepOutput,
+  parseRipgrepJsonOutput,
 } from "../../source/tools/grep.ts";
 
-test("enhanced parsing handles complex real-world scenarios", () => {
-  // Test with mixed file formats and context lines
-  const complexOutput = `file1.ts:10:export function testFunction()
-file1.ts-11-  // This is a test function
-file1.ts-12-  console.log("test")
-file1.ts:13:  return "test result"
---
-file2.js:5:const testVar = "value"
-file2.js-6-// test comment
-file2.js:7:testFunction(testVar)`;
+test("JSON parsing handles ripgrep JSON output correctly", () => {
+  // Simulated ripgrep JSON output (using direct strings to avoid lint warnings)
+  const jsonOutput =
+    '{"type":"match","data":{"path":{"text":"file1.ts"},"line_number":10,"lines":{"text":"export function testFunction()\\n"},"submatches":[{"start":0,"end":7,"text":"export"}]}}\n' +
+    '{"type":"context","data":{"path":{"text":"file1.ts"},"line_number":11,"lines":{"text":"  // This is a test function\\n"}}}\n' +
+    '{"type":"match","data":{"path":{"text":"file1.ts"},"line_number":13,"lines":{"text":"  return \\"test result\\"\\n"}}}';
 
-  const result = parseRipgrepOutput(complexOutput);
+  const result = parseRipgrepJsonOutput(jsonOutput);
 
-  assert.strictEqual(result.length, 7);
+  assert.strictEqual(result.length, 3);
 
   // Verify match lines
   const matches = result.filter((m) => m.isMatch && !m.isContext);
-  assert.strictEqual(matches.length, 4);
+  assert.strictEqual(matches.length, 2);
 
   // Verify context lines
   const context = result.filter((m) => m.isContext);
-  assert.strictEqual(context.length, 3);
+  assert.strictEqual(context.length, 1);
 
-  // Verify separator line was skipped
-  assert.strictEqual(
-    result.find((m) => m.content === "--"),
-    undefined,
-  );
+  // Verify file path
+  assert.strictEqual(result[0].file, "file1.ts");
+  assert.strictEqual(result[0].lineNumber, 10);
 });
 
 test("countActualMatches correctly excludes context lines", () => {
@@ -93,53 +87,30 @@ test("countContextLines correctly counts only context lines", () => {
   assert.strictEqual(count, 3);
 });
 
-test("parseRipgrepOutput handles edge cases gracefully", () => {
+test("parseRipgrepJsonOutput handles edge cases gracefully", () => {
   // Test with empty content
-  const emptyResult = parseRipgrepOutput("");
+  const emptyResult = parseRipgrepJsonOutput("");
   assert.strictEqual(emptyResult.length, 0);
 
-  // Test with only separator lines
-  const separatorsOnly = parseRipgrepOutput("--\n--\n--");
-  assert.strictEqual(separatorsOnly.length, 0);
+  // Test with only whitespace
+  const whitespaceOnly = parseRipgrepJsonOutput("   \n   \n   ");
+  assert.strictEqual(whitespaceOnly.length, 0);
 
-  // Test with only empty lines
-  const emptyLinesOnly = parseRipgrepOutput("\n\n\n");
-  assert.strictEqual(emptyLinesOnly.length, 0);
+  // Test with invalid JSON lines
+  const invalidJson = parseRipgrepJsonOutput("not json\nalso not json");
+  assert.strictEqual(invalidJson.length, 0);
 });
 
-test("parseRipgrepOutput handles single file with context correctly", () => {
-  const input = `1:match line 1
-2-context line 1
-3-context line 2
-4:match line 2`;
+test("parseRipgrepJsonOutput extracts submatch information", () => {
+  const jsonOutput =
+    '{"type":"match","data":{"path":{"text":"test.ts"},"line_number":5,"lines":{"text":"const foo = \'bar\'\\n"},"submatches":[{"start":6,"end":9,"text":"foo"},{"start":13,"end":16,"text":"bar"}]}}';
 
-  const result = parseRipgrepOutput(input);
+  const result = parseRipgrepJsonOutput(jsonOutput);
 
-  assert.strictEqual(result.length, 4);
-
-  assert.deepStrictEqual(result[0], {
-    line: 1,
-    content: "match line 1",
-    isMatch: true,
-  });
-
-  assert.deepStrictEqual(result[1], {
-    line: 2,
-    content: "context line 1",
-    isMatch: false,
-    isContext: true,
-  });
-
-  assert.deepStrictEqual(result[2], {
-    line: 3,
-    content: "context line 2",
-    isMatch: false,
-    isContext: true,
-  });
-
-  assert.deepStrictEqual(result[3], {
-    line: 4,
-    content: "match line 2",
-    isMatch: true,
-  });
+  assert.strictEqual(result.length, 1);
+  assert.strictEqual(result[0].isMatch, true);
+  assert.deepStrictEqual(result[0].submatches, [
+    { start: 6, end: 9, text: "foo" },
+    { start: 13, end: 16, text: "bar" },
+  ]);
 });

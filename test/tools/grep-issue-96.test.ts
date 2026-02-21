@@ -3,12 +3,12 @@ import test from "node:test";
 
 import {
   buildGrepCommand,
-  grepFiles,
+  grepFilesStructured,
   likelyUnbalancedRegex,
 } from "../../source/tools/grep.ts";
 
 // Test for the specific issue mentioned in GitHub issue #96
-test("GitHub issue #96 - grep tool handles spawnChildProcess({ pattern", () => {
+test("GitHub issue #96 - grep tool handles spawnChildProcess({ pattern", async () => {
   // Test that the pattern is detected as unbalanced
   assert.ok(likelyUnbalancedRegex("spawnChildProcess({"));
 
@@ -16,13 +16,17 @@ test("GitHub issue #96 - grep tool handles spawnChildProcess({ pattern", () => {
   const cmd = buildGrepCommand("spawnChildProcess({", ".", { literal: true });
   assert.ok(cmd.includes(" -F"));
 
-  // Test that grepFiles doesn't throw an error with this pattern
-  const result = grepFiles("spawnChildProcess({", ".", { literal: true });
+  // Test that grepFilesStructured doesn't throw an error with this pattern
+  const result = await grepFilesStructured("spawnChildProcess({", ".", {
+    literal: true,
+  });
   // Should either find matches or return "No matches found." without throwing
-  assert.ok(result === "No matches found." || result.includes(":"));
+  assert.ok(
+    result.rawOutput === "No matches found." || result.rawOutput.includes(":"),
+  );
 });
 
-test("GitHub issue #96 - grep tool handles problematic regex patterns gracefully", () => {
+test("GitHub issue #96 - grep tool handles problematic regex patterns gracefully", async () => {
   // Test various problematic patterns that would cause regex parse errors
   const problematicPatterns = [
     "spawnChildProcess({",
@@ -50,9 +54,10 @@ test("GitHub issue #96 - grep tool handles problematic regex patterns gracefully
     );
 
     // All these patterns should not throw errors
-    const result = grepFiles(pattern, ".", { literal: true });
+    const result = await grepFilesStructured(pattern, ".", { literal: true });
     assert.ok(
-      result === "No matches found." || result.includes(":"),
+      result.rawOutput === "No matches found." ||
+        result.rawOutput.includes(":"),
       `Pattern "${pattern}" should return valid result`,
     );
   }

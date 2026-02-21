@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { grepFilesStructured } from "../../source/tools/grep.ts";
 
-test("grepFilesStructured applies maxResults limit", () => {
-  const result = grepFilesStructured("^import", "source", {
+test("grepFilesStructured applies maxResults limit", async () => {
+  const result = await grepFilesStructured("^import", "source", {
     recursive: true,
     maxResults: 5,
   });
@@ -17,8 +17,8 @@ test("grepFilesStructured applies maxResults limit", () => {
   }
 });
 
-test("grepFilesStructured with null maxResults returns all results", () => {
-  const result = grepFilesStructured("^import", "source", {
+test("grepFilesStructured with null maxResults returns all results", async () => {
+  const result = await grepFilesStructured("^import", "source", {
     recursive: false,
     maxResults: null,
   });
@@ -26,16 +26,16 @@ test("grepFilesStructured with null maxResults returns all results", () => {
   assert.ok(!result.isTruncated);
 });
 
-test("grepFilesStructured with zero maxResults returns all results", () => {
-  const result = grepFilesStructured("const", "source/config/index.ts", {
+test("grepFilesStructured with zero maxResults returns all results", async () => {
+  const result = await grepFilesStructured("const", "source/config/index.ts", {
     maxResults: 0,
   });
 
   assert.strictEqual(result.isTruncated, false);
 });
 
-test("grepFilesStructured preserves matchCount when truncated", () => {
-  const result = grepFilesStructured("the", "source/config/index.ts", {
+test("grepFilesStructured preserves matchCount when truncated", async () => {
+  const result = await grepFilesStructured("the", "source/config/index.ts", {
     maxResults: 2,
   });
 
@@ -51,8 +51,8 @@ test("grepFilesStructured preserves matchCount when truncated", () => {
   }
 });
 
-test("grepFilesStructured displayedCount not set when not truncated", () => {
-  const result = grepFilesStructured(
+test("grepFilesStructured displayedCount not set when not truncated", async () => {
+  const result = await grepFilesStructured(
     "zzzzuniquepatternthatdoesntexistzzz",
     "source",
     {

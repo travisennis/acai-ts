@@ -1,4 +1,7 @@
-import { execSync } from "node:child_process";
+import {
+  type ExecFileOptionsWithStringEncoding,
+  execFile,
+} from "node:child_process";
 import { inspect } from "node:util";
 import { z } from "zod";
 import style from "../terminal/style.ts";
@@ -115,21 +118,16 @@ export const createGrepTool = () => {
         typeof path === "string" && path.trim() !== "" ? path : process.cwd();
 
       try {
+        // Compute likelyUnbalancedRegex once and pass through
+        const isLikelyUnbalanced = likelyUnbalancedRegex(pattern);
+
         let effectiveLiteral: boolean | null = null;
         if (literal === true) {
           effectiveLiteral = true;
         } else if (literal === false) {
           effectiveLiteral = false;
         } else {
-          try {
-            if (likelyUnbalancedRegex(pattern)) {
-              effectiveLiteral = true;
-            } else {
-              effectiveLiteral = false;
-            }
-          } catch (_err) {
-            effectiveLiteral = false;
-          }
+          effectiveLiteral = isLikelyUnbalanced;
         }
 
         const effectiveMaxResults = maxResults ?? DEFAULT_MAX_RESULTS;
@@ -139,15 +137,21 @@ export const createGrepTool = () => {
             ? null
             : filePattern;
 
-        const grepResult = grepFilesStructured(pattern, effectivePath, {
-          recursive,
-          ignoreCase,
-          filePattern: safeFilePattern,
-          contextLines,
-          searchIgnored,
-          literal: effectiveLiteral,
-          maxResults: effectiveMaxResults,
-        });
+        const grepResult = await grepFilesStructured(
+          pattern,
+          effectivePath,
+          {
+            recursive,
+            ignoreCase,
+            filePattern: safeFilePattern,
+            contextLines,
+            searchIgnored,
+            literal: effectiveLiteral,
+            maxResults: effectiveMaxResults,
+            likelyUnbalanced: isLikelyUnbalanced,
+          },
+          abortSignal,
+        );
 
         return grepResult.rawOutput;
       } catch (error) {
@@ -180,12 +184,12 @@ interface GrepOptions {
   searchIgnored?: boolean | null;
   literal?: boolean | null;
   maxResults?: number | null;
+  likelyUnbalanced?: boolean;
 }
 
-interface ExecSyncError extends Error {
-  status?: number;
-  stdout?: string | Buffer;
-  stderr?: string | Buffer;
+interface ExecFileError extends Error {
+  code?: string | null;
+  signal?: string | null;
 }
 
 export function likelyUnbalancedRegex(pattern: string): boolean {
@@ -341,18 +345,19 @@ export function buildGrepCommand(
   const effectiveFilePattern = options.filePattern;
   const effectiveContextLines = options.contextLines;
 
-  // Determine literal handling: if options.literal is explicitly provided, use it.
-  // If null/undefined, auto-detect unbalanced regexes and prefer fixed-strings.
+  // Use the pre-computed likelyUnbalanced result if available
   let effectiveLiteral: boolean;
   if (options.literal === true) {
     effectiveLiteral = true;
   } else if (options.literal === false) {
     effectiveLiteral = false;
+  } else if (options.likelyUnbalanced !== undefined) {
+    effectiveLiteral = options.likelyUnbalanced;
   } else {
     effectiveLiteral = likelyUnbalancedRegex(pattern);
   }
 
-  let command = "rg --line-number";
+  let command = "rg --json";
 
   if (effectiveRecursive === false) {
     command += " --max-depth=0";
@@ -402,6 +407,13 @@ export interface ParsedMatch {
   content: string;
   isMatch: boolean;
   isContext?: boolean;
+  lineNumber?: number;
+  absolutePath?: string;
+  submatches?: Array<{
+    start: number;
+    end: number;
+    text: string;
+  }>;
 }
 
 interface GrepResult {
@@ -415,84 +427,89 @@ interface GrepResult {
 }
 
 /**
- * Parse ripgrep output and extract structured match information
+ * Parse ripgrep JSON output and extract structured match information
  */
-export function parseRipgrepOutput(content: string): ParsedMatch[] {
-  if (content === "No matches found.") {
+export function parseRipgrepJsonOutput(content: string): ParsedMatch[] {
+  if (!content || content.trim() === "") {
     return [];
   }
 
-  const lines = content.trim().split("\n");
   const parsed: ParsedMatch[] = [];
+  const lines = content.trim().split("\n");
 
   for (const line of lines) {
-    if (line === "--") {
-      // Separator between file groups - skip
+    if (!line.trim()) {
       continue;
     }
 
-    if (line.trim() === "") {
-      // Empty line - skip
-      continue;
-    }
+    try {
+      const rgResult = JSON.parse(line);
 
-    // Try multi-file format: file:line:content
-    const multiFileMatch = line.match(/^([^:]+):(\d+):(.+)$/);
-    if (multiFileMatch) {
-      parsed.push({
-        file: multiFileMatch[1],
-        line: Number.parseInt(multiFileMatch[2], 10),
-        content: multiFileMatch[3],
-        isMatch: true,
-      });
-      continue;
-    }
-
-    // Try single-file format: line:content
-    const singleFileMatch = line.match(/^(\d+):(.+)$/);
-    if (singleFileMatch) {
-      parsed.push({
-        line: Number.parseInt(singleFileMatch[1], 10),
-        content: singleFileMatch[2],
-        isMatch: true,
-      });
-      continue;
-    }
-
-    // Try context line format: file-line-context
-    const contextMatch = line.match(/^([^:]+)-(\d+)-(.+)$/);
-    if (contextMatch) {
-      parsed.push({
-        file: contextMatch[1],
-        line: Number.parseInt(contextMatch[2], 10),
-        content: contextMatch[3],
-        isMatch: false,
-        isContext: true,
-      });
-      continue;
-    }
-
-    // Try context line format without file: line-context
-    const contextNoFileMatch = line.match(/^(\d+)-(.+)$/);
-    if (contextNoFileMatch) {
-      parsed.push({
-        line: Number.parseInt(contextNoFileMatch[1], 10),
-        content: contextNoFileMatch[2],
-        isMatch: false,
-        isContext: true,
-      });
-      continue;
-    }
-
-    // If we get here, it's an unrecognized format - treat as match for backwards compatibility
-    parsed.push({
-      content: line,
-      line: 0,
-      isMatch: true,
-    });
+      // Handle different ripgrep message types
+      if (rgResult.type === "match") {
+        const data = rgResult.data;
+        parsed.push({
+          file: data.path?.text ?? data.path?.bytes?.toString(),
+          line: data.line_number ?? 0,
+          content: data.lines?.text ?? data.line ?? "",
+          isMatch: true,
+          lineNumber: data.line_number,
+          absolutePath:
+            data.absolute_path?.text ?? data.absolute_path?.bytes?.toString(),
+          submatches: data.submatches?.map(
+            (sm: { start: number; end: number; text: string }) => ({
+              start: sm.start,
+              end: sm.end,
+              text: sm.text,
+            }),
+          ),
+        });
+      } else if (rgResult.type === "context") {
+        const data = rgResult.data;
+        parsed.push({
+          file: data.path?.text ?? data.path?.bytes?.toString(),
+          line: data.line_number ?? 0,
+          content: data.lines?.text ?? data.line ?? "",
+          isMatch: false,
+          isContext: true,
+          lineNumber: data.line_number,
+          absolutePath:
+            data.absolute_path?.text ?? data.absolute_path?.bytes?.toString(),
+        });
+      }
+      // Ignore other message types like "begin", "end", "summary"
+    } catch {}
   }
 
   return parsed;
+}
+
+/**
+ * Convert parsed JSON matches back to legacy line-number format for backwards compatibility
+ */
+function matchesToLegacyFormat(matches: ParsedMatch[]): string {
+  const lines: string[] = [];
+
+  for (const match of matches) {
+    const lineNum = match.lineNumber ?? match.line;
+    const file = match.file ?? match.absolutePath;
+
+    if (file) {
+      if (match.isMatch) {
+        lines.push(`${file}:${lineNum}:${match.content}`);
+      } else if (match.isContext) {
+        lines.push(`${file}-${lineNum}-${match.content}`);
+      }
+    } else {
+      if (match.isMatch) {
+        lines.push(`${lineNum}:${match.content}`);
+      } else if (match.isContext) {
+        lines.push(`${lineNum}-${match.content}`);
+      }
+    }
+  }
+
+  return lines.join("\n");
 }
 
 /**
@@ -510,7 +527,7 @@ export function countContextLines(parsed: ParsedMatch[]): number {
 }
 
 /**
- * Truncate matches to a maximum number of results
+ * Truncate matches to a maximum number of results, preserving context lines for kept matches
  */
 export function truncateMatches(
   matches: ParsedMatch[],
@@ -520,23 +537,78 @@ export function truncateMatches(
     return { truncated: matches, isTruncated: false };
   }
 
-  const actualMatches = matches.filter((m) => m.isMatch && !m.isContext);
+  // Find indices of actual matches (excluding context lines)
+  const matchIndices: number[] = [];
+  for (let i = 0; i < matches.length; i++) {
+    if (matches[i].isMatch && !matches[i].isContext) {
+      matchIndices.push(i);
+    }
+  }
 
-  if (actualMatches.length <= maxResults) {
+  if (matchIndices.length <= maxResults) {
     return { truncated: matches, isTruncated: false };
   }
 
+  // Get the indices of matches we want to keep
+  const indicesToKeep = new Set<number>();
+  for (let i = 0; i < maxResults; i++) {
+    indicesToKeep.add(matchIndices[i]);
+  }
+
+  // Build truncated result: include all kept matches AND their associated context lines
   const truncated: ParsedMatch[] = [];
   let matchesKept = 0;
+  const contextWindow = 3; // Include up to 3 context lines around each match
 
-  for (const match of matches) {
+  for (let i = 0; i < matches.length; i++) {
+    const match = matches[i];
+
     if (match.isMatch && !match.isContext) {
+      // This is an actual match
       if (matchesKept < maxResults) {
         truncated.push(match);
         matchesKept++;
       } else {
         break;
       }
+    } else if (match.isContext) {
+      // Check if this context line is adjacent to a kept match
+      let hasKeptMatchNearby = false;
+      for (let j = i - 1; j >= Math.max(0, i - contextWindow); j--) {
+        if (
+          matches[j].isMatch &&
+          !matches[j].isContext &&
+          indicesToKeep.has(j)
+        ) {
+          hasKeptMatchNearby = true;
+          break;
+        }
+      }
+      // Also look forward
+      if (!hasKeptMatchNearby) {
+        for (
+          let j = i + 1;
+          j < Math.min(matches.length, i + contextWindow + 1);
+          j++
+        ) {
+          if (
+            matches[j].isMatch &&
+            !matches[j].isContext &&
+            indicesToKeep.has(j)
+          ) {
+            hasKeptMatchNearby = true;
+            break;
+          }
+        }
+      }
+
+      // Include context lines near kept matches
+      if (hasKeptMatchNearby) {
+        truncated.push(match);
+      }
+    } else {
+      // Other types, include them
+      truncated.push(match);
     }
   }
 
@@ -546,44 +618,87 @@ export function truncateMatches(
   };
 }
 
-/**
- * Extract matches from content (backwards compatibility wrapper)
- */
-export function extractMatches(content: string): string[] {
-  const parsed = parseRipgrepOutput(content);
-  const matches = parsed.filter((match) => match.isMatch && !match.isContext);
-
-  // Convert back to original string format for backwards compatibility
-  return matches.map((match) => {
-    if (match.file) {
-      return `${match.file}:${match.line}:${match.content}`;
-    }
-    return `${match.line}:${match.content}`;
-  });
-}
-
-export function grepFiles(
+export async function grepFilesStructured(
   pattern: string,
   path: string,
   options: GrepOptions = {},
-): string {
-  const result = grepFilesStructured(pattern, path, options);
-  return result.rawOutput;
-}
-
-export function grepFilesStructured(
-  pattern: string,
-  path: string,
-  options: GrepOptions = {},
-): GrepResult {
+  abortSignal?: AbortSignal | null,
+): Promise<GrepResult> {
   try {
     const command = buildGrepCommand(pattern, path, options);
-    const rawOutput = execSync(command, {
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
+
+    // Use execFile for async execution with proper abort signal handling
+    const rawOutput = await new Promise<string>((resolve, reject) => {
+      // Parse command into file and args properly
+      const cmdParts = command.slice(3); // Remove "rg " prefix
+      const args: string[] = [];
+      let current = "";
+      let inQuote = false;
+      let quoteChar = "";
+
+      for (let i = 0; i < cmdParts.length; i++) {
+        const char = cmdParts[i];
+        if ((char === '"' || char === "'") && !inQuote) {
+          inQuote = true;
+          quoteChar = char;
+        } else if (char === quoteChar && inQuote) {
+          inQuote = false;
+          quoteChar = "";
+        } else if (char === " " && !inQuote) {
+          if (current) {
+            args.push(current);
+            current = "";
+          }
+        } else {
+          current += char;
+        }
+      }
+      if (current) {
+        args.push(current);
+      }
+
+      const child = execFile("rg", args, {
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "pipe"],
+      } as ExecFileOptionsWithStringEncoding);
+
+      let stdout = "";
+      let stderr = "";
+
+      child.stdout?.on("data", (data) => {
+        stdout += data;
+      });
+
+      child.stderr?.on("data", (data) => {
+        stderr += data;
+      });
+
+      child.on("close", (code) => {
+        if (code === 0 || code === 1) {
+          resolve(stdout);
+        } else {
+          reject(new Error(stderr || `ripgrep exited with code ${code}`));
+        }
+      });
+
+      child.on("error", (err) => {
+        reject(err);
+      });
+
+      if (abortSignal) {
+        abortSignal.addEventListener("abort", () => {
+          child.kill("SIGTERM");
+          reject(new Error("Grep search aborted"));
+        });
+      }
     });
 
-    const parsedMatches = parseRipgrepOutput(rawOutput);
+    // Parse JSON output from ripgrep
+    const parsedMatches = parseRipgrepJsonOutput(rawOutput);
+
+    // If JSON parsing resulted in no matches, check if it's a "no matches" case
+    // (ripgrep --json returns empty for no matches)
+    const hasMatches = parsedMatches.length > 0;
     const matchCount = countActualMatches(parsedMatches);
 
     // Use the maxResults from options (which will be set by the execute function)
@@ -596,20 +711,24 @@ export function grepFilesStructured(
     const displayedCount = countActualMatches(truncated);
     const displayedContextCount = countContextLines(truncated);
 
+    // Convert to legacy format for backwards compatibility
+    const legacyOutput = matchesToLegacyFormat(truncated);
+    const finalOutput = legacyOutput || "No matches found.";
+
     return {
-      rawOutput,
+      rawOutput: finalOutput,
       parsedMatches: truncated,
       matchCount,
       displayedCount,
       contextCount: displayedContextCount,
-      hasMatches: matchCount > 0,
+      hasMatches,
       isTruncated,
     };
   } catch (error) {
-    const execError = error as ExecSyncError;
-    const exitCode = execError?.status;
+    const execError = error as ExecFileError;
+    const exitCode = execError.code;
 
-    if (exitCode === 1) {
+    if (exitCode === "1") {
       return {
         rawOutput: "No matches found.",
         parsedMatches: [],
@@ -619,11 +738,8 @@ export function grepFilesStructured(
       };
     }
 
-    if (exitCode === 2) {
-      const stderrStr =
-        typeof execError.stderr === "string"
-          ? execError.stderr
-          : (execError.stderr?.toString("utf-8") ?? execError.message);
+    if (exitCode === "2") {
+      const stderrStr = execError.message;
       throw new Error(
         `Regex parse error in pattern "${pattern}": ${stderrStr}`,
       );
