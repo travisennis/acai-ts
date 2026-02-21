@@ -17,6 +17,9 @@ export const inputSchema = z.object({
   patterns: z
     .preprocess(
       (val) => {
+        if (val === null || val === undefined) {
+          return "**/*";
+        }
         if (typeof val === "string") {
           const trimmed = val.trim();
           if (trimmed.startsWith("[")) {
@@ -37,7 +40,12 @@ export const inputSchema = z.object({
     .describe(
       "Glob patterns to search for (e.g., '*.ts', '**/*.test.ts', 'src/**/*.js')",
     ),
-  path: z.string().describe("Base directory to search in"),
+  path: z
+    .preprocess(
+      (val) => (val === null || val === undefined ? process.cwd() : val),
+      z.string(),
+    )
+    .describe("Base directory to search in"),
   gitignore: z
     .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
     .describe("Respect ignore patterns in .gitignore files. (default: true)"),
