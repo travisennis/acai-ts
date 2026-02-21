@@ -479,170 +479,234 @@ export class Editor implements Component {
   }
 
   private processInputData(data: string): void {
-    // Handle special key combinations first
-
     // Ctrl+C - Exit (let parent handle this)
     if (data.charCodeAt(0) === 3) {
       return;
     }
 
-    // Handle autocomplete special keys first (but don't block other input)
-    if (this.isAutocompleting && this.autocompleteList) {
-      // Escape - cancel autocomplete
-      if (isEscape(data)) {
-        this.cancelAutocomplete();
-        return;
-      }
-      // Enter - apply selection
-      if (isEnter(data)) {
-        const selected = this.autocompleteList.getSelectedItem();
-        if (selected && this.autocompleteProvider) {
-          const result = this.autocompleteProvider.applyCompletion(
-            this.state.lines,
-            this.state.cursorLine,
-            this.state.cursorCol,
-            selected,
-            this.autocompletePrefix,
-          );
+    // Delegate to specialized handlers - return true if input was handled
+    if (this.handleAutocompleteInput(data)) return;
+    if (this.handleTabKey(data)) return;
+    if (this.handleExternalEditor(data)) return;
+    if (this.handleControlKey(data)) return;
+    if (this.handlePlainEnter(data)) return;
+    if (this.handleModifiedEnterKey(data)) return;
+    if (this.handleBackspaceKey(data)) return;
+    if (this.handleHomeEndKeys(data)) return;
+    if (this.handleForwardDeleteKey(data)) return;
+    if (this.handleWordNavigation(data)) return;
+    if (this.handleArrowKeys(data)) return;
 
-          this.state.lines = result.lines;
-          this.state.cursorLine = result.cursorLine;
-          this.state.cursorCol = result.cursorCol;
+    // Default: insert printable character
+    if (data.charCodeAt(0) >= 32) {
+      this.insertCharacter(data);
+    }
+  }
 
-          this.cancelAutocomplete();
-
-          if (this.onChange) {
-            this.onChange(this.getText());
-          }
-        }
-        return;
-      }
-      // Navigation keys (arrows, Tab, Shift+Tab) - pass to autocomplete list
-      if (isNavigationKey(data)) {
-        this.autocompleteList.handleInput(data);
-        return;
-      }
-      // For other keys (like regular typing), DON'T return here
-      // Let them fall through to normal character handling
+  private handleAutocompleteInput(data: string): boolean {
+    if (!this.isAutocompleting || !this.autocompleteList) {
+      return false;
     }
 
-    // Tab key - context-aware completion (but not when already autocompleting)
+    // Escape - cancel autocomplete
+    if (isEscape(data)) {
+      this.cancelAutocomplete();
+      return true;
+    }
+
+    // Enter - apply selection
+    if (isEnter(data)) {
+      const selected = this.autocompleteList.getSelectedItem();
+      if (selected && this.autocompleteProvider) {
+        const result = this.autocompleteProvider.applyCompletion(
+          this.state.lines,
+          this.state.cursorLine,
+          this.state.cursorCol,
+          selected,
+          this.autocompletePrefix,
+        );
+
+        this.state.lines = result.lines;
+        this.state.cursorLine = result.cursorLine;
+        this.state.cursorCol = result.cursorCol;
+
+        this.cancelAutocomplete();
+
+        if (this.onChange) {
+          this.onChange(this.getText());
+        }
+      }
+      return true;
+    }
+
+    // Navigation keys (arrows, Tab, Shift+Tab) - pass to autocomplete list
+    if (isNavigationKey(data)) {
+      this.autocompleteList.handleInput(data);
+      return true;
+    }
+
+    return false;
+  }
+
+  private handleTabKey(data: string): boolean {
     if (isTab(data) && !this.isAutocompleting) {
       void this.handleTabCompletion();
-      return;
+      return true;
     }
+    return false;
+  }
 
-    // Ctrl+G - launch external editor
+  private handleExternalEditor(data: string): boolean {
     if (isCtrlG(data) && this.onExternalEditor) {
       void this.launchExternalEditor();
-      return;
+      return true;
     }
+    return false;
+  }
 
-    // Continue with rest of input handling
+  private handleControlKey(data: string): boolean {
+    const charCode = data.charCodeAt(0);
+
     // Ctrl+K - Delete to end of line
-    if (data.charCodeAt(0) === 11) {
+    if (charCode === 11) {
       this.deleteToEndOfLine();
+      return true;
     }
     // Ctrl+U - Delete to start of line
-    else if (data.charCodeAt(0) === 21) {
+    if (charCode === 21) {
       this.deleteToStartOfLine();
+      return true;
     }
     // Ctrl+W - Delete word backwards
-    else if (data.charCodeAt(0) === 23) {
+    if (charCode === 23) {
       this.deleteWordBackwards();
+      return true;
     }
     // Option/Alt+Backspace (e.g. Ghostty sends ESC + DEL)
-    else if (data === "\x1b\x7f") {
+    if (data === "\x1b\x7f") {
       this.deleteWordBackwards();
+      return true;
     }
     // Ctrl+A - Move to start of line
-    else if (data.charCodeAt(0) === 1) {
+    if (charCode === 1) {
       this.moveToLineStart();
+      return true;
     }
     // Ctrl+E - Move to end of line
-    else if (data.charCodeAt(0) === 5) {
+    if (charCode === 5) {
       this.moveToLineEnd();
+      return true;
     }
+
+    return false;
+  }
+
+  private handlePlainEnter(data: string): boolean {
     // Plain Enter (char code 13 for CR) - create new line
-    else if (data.charCodeAt(0) === 13 && data.length === 1) {
+    if (data.charCodeAt(0) === 13 && data.length === 1) {
       this.addNewLine();
+      return true;
     }
-    // Modified Enter keys (Shift+Enter, Ctrl+Enter, etc.) - submit
-    else if (this.isModifiedEnter(data)) {
-      // If submit is disabled, do nothing
-      if (this.disableSubmit) {
-        return;
-      }
+    return false;
+  }
 
-      // Get text and substitute paste markers with actual content
-      let result = this.state.lines.join("\n").trim();
-
-      // Replace all [paste #N +xxx lines] or [paste #N xxx chars] markers with actual paste content
-      for (const [pasteId, pasteContent] of this.pastes) {
-        // Match formats: [paste #N], [paste #N +xxx lines], or [paste #N xxx chars]
-        const markerRegex = new RegExp(
-          `\\[paste #${pasteId}( (\\+\\d+ lines|\\d+ chars))?\\]`,
-          "g",
-        );
-        result = result.replace(markerRegex, pasteContent);
-      }
-
-      // Reset editor and clear pastes
-      this.state = {
-        lines: [""],
-        cursorLine: 0,
-        cursorCol: 0,
-      };
-      this.pastes.clear();
-      this.pasteCounter = 0;
-      this.historyIndex = -1; // Exit history browsing mode
-      this.addToHistory(result); // Save submitted text to history
-
-      // Notify that editor is now empty
-      if (this.onChange) {
-        this.onChange("");
-      }
-
-      if (this.onSubmit) {
-        this.onSubmit(result);
-      }
+  private handleModifiedEnterKey(data: string): boolean {
+    if (!this.isModifiedEnter(data)) {
+      return false;
     }
-    // Backspace
-    else if (data.charCodeAt(0) === 127 || data.charCodeAt(0) === 8) {
+
+    // If submit is disabled, do nothing
+    if (this.disableSubmit) {
+      return true;
+    }
+
+    // Get text and substitute paste markers with actual content
+    let result = this.state.lines.join("\n").trim();
+
+    // Replace all [paste #N +xxx lines] or [paste #N xxx chars] markers with actual paste content
+    for (const [pasteId, pasteContent] of this.pastes) {
+      // Match formats: [paste #N], [paste #N +xxx lines], or [paste #N xxx chars]
+      const markerRegex = new RegExp(
+        `\\[paste #${pasteId}( (\\+\\d+ lines|\\d+ chars))?\\]`,
+        "g",
+      );
+      result = result.replace(markerRegex, pasteContent);
+    }
+
+    // Reset editor and clear pastes
+    this.state = {
+      lines: [""],
+      cursorLine: 0,
+      cursorCol: 0,
+    };
+    this.pastes.clear();
+    this.pasteCounter = 0;
+    this.historyIndex = -1; // Exit history browsing mode
+    this.addToHistory(result); // Save submitted text to history
+
+    // Notify that editor is now empty
+    if (this.onChange) {
+      this.onChange("");
+    }
+
+    if (this.onSubmit) {
+      this.onSubmit(result);
+    }
+
+    return true;
+  }
+
+  private handleBackspaceKey(data: string): boolean {
+    if (data.charCodeAt(0) === 127 || data.charCodeAt(0) === 8) {
       this.handleBackspace();
+      return true;
     }
-    // Line navigation shortcuts (Home/End keys)
-    else if (data === "\x1b[H" || data === "\x1b[1~" || data === "\x1b[7~") {
-      // Home key
+    return false;
+  }
+
+  private handleHomeEndKeys(data: string): boolean {
+    // Home key: \x1b[H, \x1b[1~, or \x1b[7~
+    if (data === "\x1b[H" || data === "\x1b[1~" || data === "\x1b[7~") {
       this.moveToLineStart();
-    } else if (data === "\x1b[F" || data === "\x1b[4~" || data === "\x1b[8~") {
-      // End key
+      return true;
+    }
+    // End key: \x1b[F, \x1b[4~, or \x1b[8~
+    if (data === "\x1b[F" || data === "\x1b[4~" || data === "\x1b[8~") {
       this.moveToLineEnd();
+      return true;
     }
+    return false;
+  }
+
+  private handleForwardDeleteKey(data: string): boolean {
     // Forward delete (Fn+Backspace or Delete key)
-    else if (data === "\x1b[3~") {
-      // Delete key
+    if (data === "\x1b[3~") {
       this.handleForwardDelete();
+      return true;
     }
+    return false;
+  }
+
+  private handleWordNavigation(data: string): boolean {
     // Word navigation (Option/Alt + Arrow or Ctrl + Arrow)
     // Option+Left: \x1b[1;3D or \x1bb
     // Option+Right: \x1b[1;3C or \x1bf
     // Ctrl+Left: \x1b[1;5D
     // Ctrl+Right: \x1b[1;5C
-    else if (data === "\x1b[1;3D" || data === "\x1bb" || data === "\x1b[1;5D") {
-      // Word left
+    if (data === "\x1b[1;3D" || data === "\x1bb" || data === "\x1b[1;5D") {
       this.moveWordBackwards();
-    } else if (
-      data === "\x1b[1;3C" ||
-      data === "\x1bf" ||
-      data === "\x1b[1;5C"
-    ) {
-      // Word right
-      this.moveWordForwards();
+      return true;
     }
-    // Arrow keys
-    else if (data === "\x1b[A") {
-      // Up - history navigation or cursor movement
+    if (data === "\x1b[1;3C" || data === "\x1bf" || data === "\x1b[1;5C") {
+      this.moveWordForwards();
+      return true;
+    }
+    return false;
+  }
+
+  private handleArrowKeys(data: string): boolean {
+    // Up arrow
+    if (data === "\x1b[A") {
       if (this.isEditorEmpty()) {
         this.navigateHistory(-1); // Start browsing history
       } else if (this.historyIndex > -1 && this.isOnFirstVisualLine()) {
@@ -650,24 +714,32 @@ export class Editor implements Component {
       } else {
         this.moveCursor(-1, 0); // Cursor movement (within text or history entry)
       }
-    } else if (data === "\x1b[B") {
-      // Down - history navigation or cursor movement
+      return true;
+    }
+
+    // Down arrow
+    if (data === "\x1b[B") {
       if (this.historyIndex > -1 && this.isOnLastVisualLine()) {
         this.navigateHistory(1); // Navigate to newer history entry or clear
       } else {
         this.moveCursor(1, 0); // Cursor movement (within text or history entry)
       }
-    } else if (data === "\x1b[C") {
-      // Right
+      return true;
+    }
+
+    // Right arrow
+    if (data === "\x1b[C") {
       this.moveCursor(0, 1);
-    } else if (data === "\x1b[D") {
-      // Left
+      return true;
+    }
+
+    // Left arrow
+    if (data === "\x1b[D") {
       this.moveCursor(0, -1);
+      return true;
     }
-    // Regular characters (printable characters and unicode, but not control characters)
-    else if (data.charCodeAt(0) >= 32) {
-      this.insertCharacter(data);
-    }
+
+    return false;
   }
 
   private layoutText(contentWidth: number): LayoutLine[] {
