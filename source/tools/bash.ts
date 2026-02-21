@@ -328,19 +328,13 @@ export const createBashTool = async (options: {
       // Handle background execution
       if (background) {
         // Strip any existing & from command to avoid double backgrounding
-        let processedCommand = command.trim();
-        if (processedCommand.endsWith("&")) {
-          logger.warn(
-            `Stripping '&' from command since background=true: ${command}`,
-          );
-          processedCommand = processedCommand.slice(0, -1).trim();
-        }
+        const processedCommand = stripTrailingAmpersand(command, background);
 
         // Fix rg commands that don't have an explicit path
-        processedCommand = fixRgCommand(processedCommand);
+        const rgFixedCommand = fixRgCommand(processedCommand);
 
         const backgroundProcess = execEnv.executeCommandInBackground(
-          processedCommand,
+          rgFixedCommand,
           {
             cwd: resolvedCwd,
             abortSignal,
@@ -361,20 +355,14 @@ export const createBashTool = async (options: {
 
       // Handle regular synchronous execution
       // Strip & if present to ensure synchronous behavior
-      let processedCommand = command.trim();
-      if (processedCommand.endsWith("&")) {
-        logger.warn(
-          `Stripping '&' from command since background=false: ${command}`,
-        );
-        processedCommand = processedCommand.slice(0, -1).trim();
-      }
+      const processedCommand = stripTrailingAmpersand(command, false);
 
       // Fix rg commands that don't have an explicit path
       // rg hangs when stdin is a socket and no path is given
-      processedCommand = fixRgCommand(processedCommand);
+      const rgFixedCommand = fixRgCommand(processedCommand);
 
       const { output, exitCode } = await execEnv.executeCommand(
-        processedCommand,
+        rgFixedCommand,
         {
           cwd: resolvedCwd,
           timeout: safeTimeout,
@@ -481,7 +469,7 @@ function fixRgCommand(command: string): string {
 
   // Simple heuristic: if last token starts with -, add .
   // This handles cases like: rg -l pattern --type ts --type js
-  const tokens = trimmed.split(/\\s+/);
+  const tokens = trimmed.split(/\s+/);
   const lastToken = tokens[tokens.length - 1];
 
   if (lastToken?.startsWith("-")) {
@@ -520,4 +508,22 @@ function fixRgCommand(command: string): string {
   // No last token or complex case, add . to be safe
   logger.debug(`Adding '.' to rg command: ${command}`);
   return `${command} .`;
+}
+
+/**
+ * Strips trailing '&' from command and logs a warning.
+ * Returns the processed command.
+ */
+function stripTrailingAmpersand(
+  command: string,
+  isBackground: boolean,
+): string {
+  let processedCommand = command.trim();
+  if (processedCommand.endsWith("&")) {
+    logger.warn(
+      `Stripping '&' from command since background=${String(isBackground)}: ${command}`,
+    );
+    processedCommand = processedCommand.slice(0, -1).trim();
+  }
+  return processedCommand;
 }
