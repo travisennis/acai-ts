@@ -3,7 +3,7 @@ import * as nodePath from "node:path";
 import { z } from "zod";
 import style from "../terminal/style.ts";
 import { toDisplayPath } from "../utils/filesystem/path-display.ts";
-import { glob } from "../utils/glob.ts";
+import { glob, type Options } from "../utils/glob.ts";
 import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions } from "./types.ts";
 
@@ -121,72 +121,62 @@ export const createGlobTool = () => {
 
       const patternArray = Array.isArray(patterns) ? patterns : [patterns];
 
-      const globOptions: Record<string, unknown> = {
+      const effectiveMaxResults = maxResults ?? DEFAULT_MAX_RESULTS;
+
+      // Build glob options - spread individual properties to avoid mutating readonly type
+      const globOptions: Options = {
         cwd: cwd || process.cwd(),
+        ...(gitignore !== null && { gitignore }),
+        ...(recursive !== null && { recursive }),
+        ...(expandDirectories !== null && { expandDirectories }),
+        ...(ignoreFiles !== null && { ignoreFiles }),
       };
 
-      if (gitignore !== null) {
-        globOptions["gitignore"] = gitignore;
-      }
-
-      if (recursive !== null) {
-        globOptions["recursive"] = recursive;
-      }
-
-      if (expandDirectories !== null) {
-        globOptions["expandDirectories"] = expandDirectories;
-      }
-
-      if (ignoreFiles !== null) {
-        globOptions["ignoreFiles"] = ignoreFiles;
-      }
-
+      // Get all matching files from glob
       const matchingFiles = await glob(patternArray, {
         ...globOptions,
         cwd: effectivePath,
       });
 
+      // Apply limit BEFORE stat'ing - reduces expensive syscalls
+      const filesToProcess =
+        effectiveMaxResults > 0 && matchingFiles.length > effectiveMaxResults
+          ? matchingFiles.slice(0, effectiveMaxResults)
+          : matchingFiles;
+
+      // Only stat the files we're going to return (or a limited set)
       const filesWithStats = await Promise.all(
-        matchingFiles.map(async (filePath) => {
+        filesToProcess.map(async (filePath) => {
           const fullPath = nodePath.join(effectivePath, filePath);
           try {
             const stats = await fs.promises.stat(fullPath);
             return {
               path: filePath,
-              mtime: stats.mtime,
-              isRecent:
-                Date.now() - stats.mtime.getTime() < 7 * 24 * 60 * 60 * 1000,
+              mtime: stats.mtime.getTime(),
             };
           } catch {
             return {
               path: filePath,
-              mtime: new Date(0),
-              isRecent: false,
+              mtime: 0,
             };
           }
         }),
       );
 
+      // Sort by mtime descending (most recent first), then alphabetically as tiebreaker
       const sortedFiles = filesWithStats
         .sort((a, b) => {
-          if (a.isRecent && !b.isRecent) return -1;
-          if (!a.isRecent && b.isRecent) return 1;
-          if (a.isRecent && b.isRecent) {
-            return b.mtime.getTime() - a.mtime.getTime();
+          // Most recent first
+          if (b.mtime !== a.mtime) {
+            return b.mtime - a.mtime;
           }
+          // Alphabetical tiebreaker
           return a.path.localeCompare(b.path);
         })
         .map((file) => file.path);
 
-      const effectiveMaxResults = maxResults ?? DEFAULT_MAX_RESULTS;
-
-      const limitedFiles =
-        effectiveMaxResults && effectiveMaxResults > 0
-          ? sortedFiles.slice(0, effectiveMaxResults)
-          : sortedFiles;
-
-      return limitedFiles.length > 0
-        ? limitedFiles.join("\n")
+      return sortedFiles.length > 0
+        ? sortedFiles.join("\n")
         : "No files found matching the specified patterns.";
     },
   };

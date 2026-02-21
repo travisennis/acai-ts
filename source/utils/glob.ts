@@ -25,7 +25,7 @@ type ExpandDirectoriesOption =
 
 type FastGlobOptionsWithoutCwd = Omit<FastGlobOptions, "cwd">;
 
-type Options = {
+export type Options = {
   /**
    * If set to `true`, `glob` will automatically glob directories for you. If you define an `Array` it will only glob files that matches the patterns inside the `Array`. You can also define an `Object` with `files` and `extensions` like in the example below.
    *
