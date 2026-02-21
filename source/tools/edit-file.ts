@@ -60,6 +60,10 @@ export const createEditFileTool = async (options: {
 }) => {
   const { primaryDir, allowedDirs } = options.workspace;
   const allowedDirectory = allowedDirs ?? [primaryDir];
+
+  // Cache config at tool creation time instead of on every execute
+  const projectConfig = await config.getConfig();
+
   return {
     toolDef: {
       description: "Edit text in files using literal search-and-replace.",
@@ -83,7 +87,6 @@ export const createEditFileTool = async (options: {
         { abortSignal },
       );
 
-      const projectConfig = await config.getConfig();
       validateFileNotReadOnly(validPath, projectConfig, primaryDir);
 
       const result = await applyFileEdits(validPath, edits, false, abortSignal);
@@ -128,13 +131,10 @@ function stripBom(content: string): { bom: string; text: string } {
 }
 
 function createUnifiedDiff(
-  originalContent: string,
-  newContent: string,
+  normalizedOriginal: string,
+  normalizedNew: string,
   filepath = "file",
 ): string {
-  // Ensure consistent line endings for diff
-  const normalizedOriginal = normalizeLineEndings(originalContent);
-  const normalizedNew = normalizeLineEndings(newContent);
   return createTwoFilesPatch(
     filepath,
     filepath,
@@ -180,7 +180,7 @@ export async function applyFileEdits(
   const originalLineEnding = detectLineEnding(bomStrippedContent);
   const content = normalizeLineEndings(bomStrippedContent);
 
-  if (edits.find((edit) => edit.oldText.length === 0)) {
+  if (edits.some((edit) => edit.oldText.length === 0)) {
     throw new Error(
       "Invalid oldText in edit. The value of oldText must be at least one character",
     );
@@ -193,7 +193,7 @@ export async function applyFileEdits(
       throw new Error("File edit operation aborted during processing");
     }
 
-    const result = await applyEditWithLlmFix(edit, modifiedContent);
+    const result = await applyNormalizedEdit(edit, modifiedContent);
 
     if (result.success) {
       modifiedContent = result.content;
@@ -242,9 +242,9 @@ interface ApplyEditResult {
 }
 
 /**
- * Applies a single edit
+ * Applies a single edit with normalized line endings
  */
-async function applyEditWithLlmFix(
+async function applyNormalizedEdit(
   edit: FileEdit,
   content: string,
 ): Promise<ApplyEditResult> {
@@ -277,27 +277,20 @@ function applyLiteralEdit(
   search: string,
   replace: string,
 ): LiteralEditResult {
-  let modifiedContent = content;
-  let matchCount = 0;
-  let currentIndex = 0;
-
-  while (currentIndex < modifiedContent.length) {
-    const matchIndex = modifiedContent.indexOf(search, currentIndex);
-    if (matchIndex === -1) {
-      break;
-    }
-
-    matchCount++;
-
-    // Apply the replacement
-    modifiedContent =
-      modifiedContent.slice(0, matchIndex) +
-      replace +
-      modifiedContent.slice(matchIndex + search.length);
-
-    // Move current index past the replacement
-    currentIndex = matchIndex + replace.length;
+  if (search === "") {
+    return { matchCount: 0, content };
   }
+
+  // Escape special regex characters for literal matching
+  const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(escapedSearch, "g");
+
+  // Use replace with callback to count matches while replacing all occurrences
+  let matchCount = 0;
+  const modifiedContent = content.replace(regex, () => {
+    matchCount++;
+    return replace;
+  });
 
   return { matchCount, content: modifiedContent };
 }
