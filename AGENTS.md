@@ -23,19 +23,7 @@ This app, acai-ts, is an AI-assistant CLI tool built with TypeScript. It is an a
 - **CLI:** `acai -p <prompt>`
 - **Dev Mode:** `node source/index.ts`
 - **Application logs:** `~/.acai/logs/current.log`
-- **IMPORTANT:** Use `tmux` when running the repl. The `Bash` tool does not support interactive commands.
-
-### Interacting with the REPL via tmux
-
-To automate REPL testing, use tmux with these commands:
-
-1. **Start session:** `tmux new-session -d -s acai-test "node source/index.ts"`
-2. **Type text:** `tmux send-keys -t acai-test -l "your prompt here"`
-3. **Submit (Shift+Enter):** `tmux send-keys -t acai-test Escape "[13;2u"`
-4. **Read output:** `tmux capture-pane -t acai-test -p -S -100`
-5. **Cleanup:** `tmux kill-session -t acai-test`
-
-Note: The editor uses Shift+Enter to submit. The escape sequence `Escape "[13;2u"` sends this key combination via the kitty keyboard protocol.
+- **IMPORTANT:** Use `tmux` when running the REPL. The `Bash` tool does not support interactive commands. See the `manual-testing` skill for detailed instructions.
 
 ## Code Style Guidelines
 
