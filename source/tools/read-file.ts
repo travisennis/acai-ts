@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { createInterface } from "node:readline/promises";
 import { isNumber } from "@travisennis/stdlib/typeguards";
 import { z } from "zod";
 import type { WorkspaceContext } from "../index.ts";
@@ -77,42 +78,74 @@ export const createReadFileTool = async (options: {
         { abortSignal },
       );
 
-      if (abortSignal?.aborted) {
-        throw new Error("File reading aborted before file read");
-      }
+      const effectiveEncoding = encoding ?? "utf-8";
+      const effectiveMaxBytes = maxBytes ?? DEFAULT_BYTE_LIMIT;
 
-      let file = await fs.readFile(filePath, {
-        encoding: encoding ?? "utf-8",
-      });
+      // Use streaming for line-based reads to avoid loading entire file
+      const useLineBasedRead = isNumber(startLine) || isNumber(lineCount);
 
-      if (isNumber(startLine) || isNumber(lineCount)) {
-        const lines = file.split("\n");
-        const totalLines = lines.length;
+      let file: string;
 
+      if (useLineBasedRead) {
+        // Streaming approach: only read needed lines
+        const fileStream = await fs.open(filePath, "r");
+        const rl = createInterface({
+          input: fileStream.createReadStream(),
+          crlfDelay: Number.POSITIVE_INFINITY,
+        });
+
+        const lines: string[] = [];
         const startIndex = (startLine ?? 1) - 1;
-        const count = lineCount ?? totalLines - startIndex;
+        const count = lineCount ?? Number.POSITIVE_INFINITY;
+        let currentIndex = 0;
 
-        if (startIndex < 0 || startIndex >= totalLines) {
+        for await (const line of rl) {
+          if (currentIndex >= startIndex && currentIndex < startIndex + count) {
+            lines.push(line);
+          }
+          currentIndex++;
+
+          // Stop early if we've read past our range
+          if (currentIndex >= startIndex + count) {
+            break;
+          }
+
+          if (abortSignal?.aborted) {
+            rl.close();
+            await fileStream.close();
+            throw new Error("File reading aborted");
+          }
+        }
+
+        rl.close();
+        await fileStream.close();
+
+        if (startIndex >= currentIndex) {
           throw new Error(
-            `startLine ${startLine} is out of bounds for file with ${totalLines} lines.`,
+            `startLine ${startLine} is out of bounds for file with ${currentIndex} lines.`,
           );
         }
 
-        const endIndex = Math.min(startIndex + count, totalLines);
-        file = lines.slice(startIndex, endIndex).join("\n");
+        file = lines.join("\n");
+      } else {
+        if (abortSignal?.aborted) {
+          throw new Error("File reading aborted before file read");
+        }
+
+        file = await fs.readFile(filePath, {
+          encoding: effectiveEncoding,
+        });
       }
 
-      const effectiveMaxBytes = maxBytes ?? DEFAULT_BYTE_LIMIT;
-
-      if (
-        effectiveMaxBytes !== null &&
-        effectiveMaxBytes !== undefined &&
-        effectiveMaxBytes > 0
-      ) {
-        const buffer = Buffer.from(file, encoding ?? "utf-8");
-        if (buffer.byteLength > effectiveMaxBytes) {
-          const truncatedBuffer = buffer.subarray(0, effectiveMaxBytes);
-          file = truncatedBuffer.toString(encoding ?? "utf-8");
+      // Apply maxBytes limit if needed
+      if (effectiveMaxBytes > 0) {
+        const byteLength = Buffer.byteLength(file, effectiveEncoding);
+        if (byteLength > effectiveMaxBytes) {
+          const truncatedBuffer = Buffer.from(file, effectiveEncoding).subarray(
+            0,
+            effectiveMaxBytes,
+          );
+          file = truncatedBuffer.toString(effectiveEncoding);
         }
       }
 
