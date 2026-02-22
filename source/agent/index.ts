@@ -14,7 +14,7 @@ import {
   streamText,
 } from "ai";
 import type z from "zod";
-import { config } from "../config/index.ts";
+import type { Config } from "../config/index.ts";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { ModelMetadata } from "../models/providers.ts";
@@ -29,11 +29,10 @@ import { toAiSdkTools } from "../tools/utils.ts";
 import { logger } from "../utils/logger.ts";
 
 type AgentOptions = {
+  config: Config;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
   sessionManager: SessionManager;
-  maxIterations?: number;
-  maxRetries?: number;
 };
 
 type RunOptions = {
@@ -42,6 +41,8 @@ type RunOptions = {
   tools: CompleteToolSet;
   activeTools?: CompleteToolNames[];
   abortSignal?: AbortSignal;
+  maxRetries?: number;
+  maxIterations?: number;
 };
 
 export type ToolEvent =
@@ -151,13 +152,19 @@ export type AgentState = {
 
 export class Agent {
   private opts: AgentOptions;
+  private config: Config;
   private _state: AgentState;
   private abortController: AbortController;
 
   constructor(opts: AgentOptions) {
     this.opts = opts;
+    this.config = opts.config;
     this.abortController = new AbortController();
     this._state = this.resetState();
+  }
+
+  setConfig(config: Config) {
+    this.config = config;
   }
 
   get state() {
@@ -169,13 +176,10 @@ export class Agent {
   }
 
   async *run(args: RunOptions): AsyncGenerator<AgentEvent> {
-    const {
-      modelManager,
-      sessionManager,
-      tokenTracker,
-      maxIterations = (await config.getConfig()).loop.maxIterations,
-      maxRetries = 2,
-    } = this.opts;
+    const { modelManager, sessionManager, tokenTracker } = this.opts;
+    const maxIterations =
+      args.maxIterations ?? this.config.loop.maxIterations ?? 200;
+    const maxRetries = args.maxRetries ?? 2;
 
     this.resetState();
 
@@ -226,16 +230,19 @@ export class Agent {
           throw new Error("Agent aborted before streamText");
         }
 
+        const messages = sessionManager.get();
+        const aiSdkTools = toAiSdkTools(tools, false);
+
         const result = streamText({
           model: langModel,
           maxOutputTokens: aiConfig.maxOutputTokens(),
           system: systemPrompt,
-          messages: sessionManager.get(),
+          messages,
           temperature: aiConfig.temperature(),
           topP: aiConfig.topP(),
           maxRetries: 2,
           providerOptions: aiConfig.providerOptions(),
-          tools: toAiSdkTools(tools, false),
+          tools: aiSdkTools,
           activeTools,
           // biome-ignore lint/style/useNamingConvention: third-party controlled
           experimental_repairToolCall:

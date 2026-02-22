@@ -2,7 +2,7 @@ import { realpathSync, statSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { ProjectConfig } from "../../config/index.ts";
+import type { Config } from "../../config/index.ts";
 
 // Normalize all paths consistently
 function normalizePath(p: string): string {
@@ -256,7 +256,7 @@ function isFileReadOnly(
 // Validate that a file is not read-only before modification
 export function validateFileNotReadOnly(
   filePath: string,
-  config: ProjectConfig,
+  config: Config,
   workingDir: string,
 ): void {
   if (isFileReadOnly(filePath, config.readOnlyFiles, workingDir)) {

@@ -31,7 +31,7 @@ export const defaultConfig = {
 } as const;
 
 // Type definitions
-const ProjectConfigSchema = z.object({
+const ConfigSchema = z.object({
   logs: z
     .object({
       path: z.string(),
@@ -86,7 +86,7 @@ const ProjectConfigSchema = z.object({
   env: z.record(z.string(), z.string()).optional().default(defaultConfig.env),
 });
 
-export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
+export type Config = z.infer<typeof ConfigSchema>;
 
 export class DirectoryProvider {
   private baseDir: string;
@@ -134,21 +134,19 @@ export class DirectoryProvider {
 export class ConfigManager {
   readonly project: DirectoryProvider;
   readonly app: DirectoryProvider;
-  private cachedConfig: ProjectConfig | null = null;
+  private cachedConfig: Config | null = null;
   private configCacheTime = 0;
-  private configCacheTtl = 5000; // 5 seconds
+  private configCacheTtl = 60000; // 60 seconds
 
   constructor() {
     this.project = new DirectoryProvider(path.join(process.cwd(), ".acai"));
     this.app = new DirectoryProvider(path.join(homedir(), ".acai"));
   }
 
-  private async _readConfig(
-    configPath: string,
-  ): Promise<Partial<ProjectConfig>> {
+  private async _readConfig(configPath: string): Promise<Partial<Config>> {
     try {
       const data = await fs.readFile(configPath, "utf8");
-      return jsonParser(ProjectConfigSchema).parse(data);
+      return jsonParser(ConfigSchema).parse(data);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         return {};
@@ -158,7 +156,7 @@ export class ConfigManager {
   }
 
   // Get merged configuration (project overrides app), cached with TTL
-  async getConfig(): Promise<ProjectConfig> {
+  async getConfig(): Promise<Config> {
     const now = Date.now();
     if (this.cachedConfig && now - this.configCacheTime < this.configCacheTtl) {
       return this.cachedConfig;
@@ -181,7 +179,7 @@ export class ConfigManager {
       env: mergedEnv,
     };
 
-    const result = ProjectConfigSchema.parse(mergedConfig);
+    const result = ConfigSchema.parse(mergedConfig);
     this.cachedConfig = result;
     this.configCacheTime = now;
     return result;
@@ -195,11 +193,11 @@ export class ConfigManager {
 
   async setSkillsEnabled(enabled: boolean): Promise<void> {
     const configPath = path.join(this.app.getPath(), "acai.json");
-    let configData: Partial<ProjectConfig> = {};
+    let configData: Partial<Config> = {};
 
     try {
       const data = await fs.readFile(configPath, "utf8");
-      configData = jsonParser(ProjectConfigSchema.partial()).parse(data);
+      configData = jsonParser(ConfigSchema.partial()).parse(data);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
         throw error;
@@ -281,21 +279,21 @@ export class ConfigManager {
   }
 
   // Private helper for reading app config
-  private async _readAppConfig(configName: string): Promise<ProjectConfig> {
+  private async _readAppConfig(configName: string): Promise<Config> {
     const configPath = path.join(this.app.getPath(), `${configName}.json`);
     try {
       const data = await fs.readFile(configPath, "utf8");
-      return ProjectConfigSchema.parse(JSON.parse(data));
+      return ConfigSchema.parse(JSON.parse(data));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return ProjectConfigSchema.parse(defaultConfig);
+        return ConfigSchema.parse(defaultConfig);
       }
       throw error;
     }
   }
 
   // Ensure default app configuration exists
-  async ensureDefaultConfig(configName: string): Promise<ProjectConfig> {
+  async ensureDefaultConfig(configName: string): Promise<Config> {
     const configPath = path.join(this.app.getPath(), `${configName}.json`);
 
     try {
@@ -306,7 +304,7 @@ export class ConfigManager {
       await this.app.ensurePath();
 
       await fs.writeFile(configPath, JSON.stringify(defaultConfig, null, 2));
-      return ProjectConfigSchema.parse(defaultConfig);
+      return ConfigSchema.parse(defaultConfig);
     }
   }
 

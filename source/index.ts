@@ -9,11 +9,7 @@ import { Agent } from "./agent/index.ts";
 import { Cli } from "./cli/index.ts";
 import { readStdinWithLimits } from "./cli/stdin.ts";
 import { CommandManager } from "./commands/manager.ts";
-import {
-  config,
-  type DirectoryProvider,
-  type ProjectConfig,
-} from "./config/index.ts";
+import { type Config, config, type DirectoryProvider } from "./config/index.ts";
 import { ModelManager } from "./models/manager.ts";
 import { isSupportedModel, type ModelName } from "./models/providers.ts";
 import { PromptManager } from "./prompts/manager.ts";
@@ -132,7 +128,7 @@ const DEFAULT_HISTORY_LIMIT = 20; // the amount of sessions to retrieve from ses
 
 // Application state interface
 interface AppState {
-  appConfig: ProjectConfig;
+  appConfig: Config;
   modelManager: ModelManager;
   tokenTracker: TokenTracker;
   tokenCounter: TokenCounter;
@@ -145,7 +141,7 @@ interface AppState {
 // Helper functions for main()
 
 async function initializeAppState(
-  appConfig: ProjectConfig,
+  appConfig: Config,
   initialPromptInput: string | undefined,
   stdinContent: string | null,
   hasContinueOrResume: boolean,
@@ -455,6 +451,7 @@ async function runReplMode(
   });
 
   const agent = new Agent({
+    config: state.appConfig,
     sessionManager: state.sessionManager,
     modelManager: state.modelManager,
     tokenTracker: state.tokenTracker,
@@ -483,9 +480,10 @@ async function runReplMode(
     await repl.rerender();
   }
 
-  state.sessionManager.on("clear-history", () => {
+  state.sessionManager.on("clear-history", async () => {
     logger.info("Resetting agent state.");
     agent.resetState();
+    agent.setConfig(await config.getConfig());
     void repl.rerender();
   });
 
@@ -509,12 +507,11 @@ async function runReplMode(
   });
 
   // Build the system prompt once at session start
-  const projectConfig = await config.getConfig();
-  const activeTools = projectConfig.tools.activeTools as
+  const activeTools = state.appConfig.tools.activeTools as
     | CompleteToolNames[]
     | undefined;
   const skillsEnabled =
-    !flags["no-skills"] && (projectConfig.skills?.enabled ?? true);
+    !flags["no-skills"] && (state.appConfig.skills?.enabled ?? true);
   const systemPromptResult = await systemPrompt({
     activeTools,
     allowedDirs: workspace.allowedDirs,
@@ -537,6 +534,7 @@ async function runReplMode(
         tools,
         activeTools,
         abortSignal: agent.abortSignal,
+        maxIterations: state.appConfig.loop.maxIterations,
       });
       for await (const result of results) {
         await repl.handle(result, agent.state);
@@ -559,6 +557,7 @@ async function runReplMode(
         tools,
         activeTools,
         abortSignal: agent.abortSignal,
+        maxIterations: state.appConfig.loop.maxIterations,
       });
       for await (const result of results) {
         await repl.handle(result, agent.state);

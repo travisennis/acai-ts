@@ -45,20 +45,22 @@ function calculateThinkingLevel(userInput: string): {
 export class AiConfig {
   private modelMetadata: ModelMetadata;
   private prompt: string;
+  private thinkingLevel: { tokenBudget: number; effort: Effort };
+
   constructor({
     modelMetadata,
     prompt,
   }: { modelMetadata: ModelMetadata; prompt: string }) {
     this.modelMetadata = modelMetadata;
     this.prompt = prompt;
+    this.thinkingLevel = calculateThinkingLevel(this.prompt);
   }
 
   maxOutputTokens() {
     const modelConfig = this.modelMetadata;
-    const thinkingLevel = calculateThinkingLevel(this.prompt);
     const maxTokens =
       modelConfig.provider === "anthropic" && modelConfig.supportsReasoning
-        ? modelConfig.maxOutputTokens - thinkingLevel.tokenBudget
+        ? modelConfig.maxOutputTokens - this.thinkingLevel.tokenBudget
         : modelConfig.maxOutputTokens;
     return modelConfig.provider === "opencode" ? 8000 : maxTokens;
   }
@@ -76,7 +78,7 @@ export class AiConfig {
 
   providerOptions(): SharedV2ProviderMetadata {
     const modelConfig = this.modelMetadata;
-    const thinkingLevel = calculateThinkingLevel(this.prompt);
+    const thinkingLevel = this.thinkingLevel;
 
     const meta: SharedV2ProviderMetadata = {
       [modelConfig.provider]: {},

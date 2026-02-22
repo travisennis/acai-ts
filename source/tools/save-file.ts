@@ -34,6 +34,7 @@ export const createSaveFileTool = async (options: {
 }) => {
   const { primaryDir, allowedDirs } = options.workspace;
   const allowedDirectory = allowedDirs ?? [primaryDir];
+  const projectConfig = await config.getConfig();
 
   return {
     toolDef: {
@@ -60,7 +61,6 @@ export const createSaveFileTool = async (options: {
 
       try {
         await fs.stat(filePath);
-        const projectConfig = await config.getConfig();
         validateFileNotReadOnly(filePath, projectConfig, primaryDir);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") {

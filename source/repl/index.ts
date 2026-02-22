@@ -8,7 +8,7 @@ import { generateRulesFromSession } from "../commands/generate-rules/service.ts"
 import type { CommandManager } from "../commands/manager.ts";
 import { showModelSelector } from "../commands/model/model-panel.ts";
 import { showReviewPanel } from "../commands/review/review-panel.ts";
-import type { ConfigManager } from "../config/index.ts";
+import type { Config, ConfigManager } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
 import type { ModelManager } from "../models/manager.ts";
 import { ModeManager } from "../modes/manager.ts";
@@ -25,6 +25,7 @@ import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import type { CompleteToolSet } from "../tools/index.ts";
+import { createDefaultProvider } from "../tui/autocomplete.ts";
 import { AssistantMessageComponent } from "../tui/components/assistant-message.ts";
 import { FooterComponent } from "../tui/components/footer.ts";
 import { ThinkingBlockComponent } from "../tui/components/thinking-block.ts";
@@ -101,9 +102,6 @@ export class Repl {
   private pendingTools: Map<string, ToolExecutionComponent>;
   private tools?: CompleteToolSet;
 
-  // Track whether user message was already shown in onSubmit
-  private userMessageAlreadyShown = false;
-
   // Streaming message tracking
   private streamingComponent: AssistantMessageComponent | null = null;
 
@@ -119,6 +117,9 @@ export class Repl {
 
   // mode manager
   private modeManager: ModeManager;
+
+  // ProjectConfig - initialized in init()
+  private config!: Config;
 
   /** Creates a new Repl instance, initializing the TUI layout and components. */
   constructor(options: ReplOptions) {
@@ -166,7 +167,6 @@ export class Repl {
       { r: 52, g: 53, b: 65 },
       style.yellow,
       1,
-      3000,
       () => this.tui.requestRender(),
     );
   }
@@ -177,10 +177,10 @@ export class Repl {
    */
   async init() {
     if (this.isInitialized) {
+      this.notification.setMessage("initialized");
       return;
     }
     // Setup autocomplete for file paths and slash commands
-    const { createDefaultProvider } = await import("../tui/autocomplete.ts");
     const autocompleteProvider = createDefaultProvider(
       [...(await this.options.commands.getCompletions())],
       this.options.workspace.allowedDirs,
@@ -193,8 +193,10 @@ export class Repl {
       sessionManager,
       commands,
       promptHistory,
+      configManager,
     } = this.options;
 
+    this.config = await configManager.getConfig();
     // Listen for session title updates
     // messageHistory.on("update-title", (title: string) => {
     //   this.footer.setTitle(title);
@@ -291,6 +293,7 @@ export class Repl {
             editor: this.editor,
           },
         );
+
         if (commandResult.break) {
           this.stop(true);
           process.exit(0);
@@ -300,6 +303,7 @@ export class Repl {
           this.tui.requestRender();
           return;
         }
+
         if (!promptManager.isPending()) {
           const processedPrompt = await processPrompt(text, {
             baseDir: process.cwd(),
@@ -313,6 +317,7 @@ export class Repl {
           promptHistory.push(promptManager.get());
           this.editor.addToHistory(promptManager.get());
         }
+
         // flag to see if the user prompt has added context
         const hasAddedContext = promptManager.hasContext();
 
@@ -349,12 +354,6 @@ export class Repl {
         } else {
           sessionManager.appendUserMessage(userMsg);
         }
-
-        // Show user message and clear editor immediately for responsive UI
-        this.addMessageToChat({ role: "user", content: userPrompt });
-        this.editor.setText("");
-        this.tui.requestRender();
-        this.userMessageAlreadyShown = true;
 
         if (this.onInputCallback) {
           this.onInputCallback(userPrompt);
@@ -436,12 +435,8 @@ export class Repl {
 
       case "message":
         if (event.role === "user") {
-          // Show user message only if not already displayed in onSubmit
-          if (!this.userMessageAlreadyShown) {
-            this.addMessageToChat(event);
-            this.editor.setText("");
-          }
-          this.userMessageAlreadyShown = false;
+          this.addMessageToChat(event);
+          this.editor.setText("");
           this.tui.requestRender();
         } else if (event.role === "assistant") {
           // Update streaming component
@@ -991,6 +986,7 @@ export class Repl {
       );
     }
 
+    this.config = await this.options.configManager.getConfig();
     this.modeManager.reset();
     this.options.sessionManager.clearTransientMessages();
     this.options.tokenTracker.reset();
@@ -1087,8 +1083,7 @@ export class Repl {
     } else {
       // First Ctrl+C - clear the editor and show notification
       this.clearEditor();
-      this.notification.setAutoDismissMs(1000);
-      this.notification.setMessage("Press Ctrl+C again to exit");
+      this.notification.setMessage("Press Ctrl+C again to exit", 1000);
       this.tui.requestRender();
       this.lastSigintTime = now;
 
@@ -1143,7 +1138,7 @@ export class Repl {
    */
   private async maybeGenerateRules(): Promise<void> {
     try {
-      const config = await this.options.configManager.getConfig();
+      const config = this.config;
       if (!config.autoGenerateRules) {
         return;
       }
