@@ -12,7 +12,6 @@ export class NotificationComponent implements Component {
   private textStyle: (text: string) => string;
   private paddingX: number;
   private autoDismissTimer?: NodeJS.Timeout;
-  private autoDismissMs: number;
   private onDismiss?: () => void;
 
   // Cache for rendered output
@@ -25,23 +24,13 @@ export class NotificationComponent implements Component {
     bgColor = { r: 52, g: 53, b: 65 },
     textStyle: (text: string) => string = style.yellow,
     paddingX = 1,
-    autoDismissMs = 3000,
     onDismiss?: () => void,
   ) {
     this.message = message;
     this.bgColor = bgColor;
     this.textStyle = textStyle;
     this.paddingX = paddingX;
-    this.autoDismissMs = autoDismissMs;
     this.onDismiss = onDismiss;
-  }
-
-  /**
-   * Sets the auto-dismiss timeout in milliseconds.
-   * This affects the next setMessage call.
-   */
-  setAutoDismissMs(ms: number): void {
-    this.autoDismissMs = ms;
   }
 
   /**
@@ -63,7 +52,7 @@ export class NotificationComponent implements Component {
     }
   }
 
-  setMessage(message: string): void {
+  setMessage(message: string, autoDismissMs = 3000): void {
     // Clear any pending timer first (handles reset on new notification)
     this.clearTimer();
 
@@ -79,7 +68,7 @@ export class NotificationComponent implements Component {
         if (this.onDismiss) {
           this.onDismiss();
         }
-      }, this.autoDismissMs);
+      }, autoDismissMs);
     }
   }
 

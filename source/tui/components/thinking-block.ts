@@ -9,7 +9,6 @@ import { Text } from "./text.ts";
 export class ThinkingBlockComponent extends Container {
   private contentContainer: Container;
   private verboseMode: boolean;
-  private animationFrame = 0;
   private lastContent = "";
   private isThinking = false;
   private thinkingComplete = false;
@@ -62,11 +61,13 @@ export class ThinkingBlockComponent extends Container {
         }),
       );
     } else if (this.isThinking) {
-      // Non-verbose mode: show animated "Thinking..."
-      this.animationFrame++;
-      const dots = ".".repeat((this.animationFrame % 3) + 1);
+      // Non-verbose mode: show animated "Thinking"
       this.contentContainer.addChild(
-        new Text(style.dim(`Thinking${dots}`), 1, 0),
+        new Text(
+          style.dim(`Thinking ${generateRandomChars(10, lowercase)}`),
+          1,
+          0,
+        ),
       );
     } else if (this.thinkingComplete) {
       // Non-verbose mode: show "Thinking ✓" when complete
@@ -74,4 +75,16 @@ export class ThinkingBlockComponent extends Container {
     }
     // If not verbose and not thinking, show nothing
   }
+}
+
+// const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const lowercase = "abcdefghijklmnopqrstuvwxyz";
+
+function generateRandomChars(length: number, charset?: string): string {
+  const chars =
+    charset ?? "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  return Array.from(
+    { length },
+    () => chars[Math.floor(Math.random() * chars.length)],
+  ).join("");
 }
