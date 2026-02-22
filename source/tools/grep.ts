@@ -192,7 +192,84 @@ interface ExecFileError extends Error {
   signal?: string | null;
 }
 
-export function likelyUnbalancedRegex(pattern: string): boolean {
+/**
+ * Check for invalid repetition operators (e.g., {n}, {n,}, {n,m}) outside of character classes.
+ * Returns true if any invalid repetition operators are found.
+ */
+function hasInvalidRepetition(pattern: string): boolean {
+  for (let i = 0; i < pattern.length; i++) {
+    const ch = pattern[i];
+
+    if (ch === "\\") {
+      i++; // Skip the next character (escaped)
+      continue;
+    }
+
+    if (ch === "[") {
+      // Skip character class
+      i++;
+      while (i < pattern.length && pattern[i] !== "]") {
+        if (pattern[i] === "\\") i++;
+        i++;
+      }
+      continue;
+    }
+
+    if (ch === "}") {
+      // Unmatched closing brace is invalid
+      return true;
+    }
+
+    if (ch === "{") {
+      let j = i + 1;
+      let hasDigits = false;
+      let hasComma = false;
+
+      // Parse content inside braces
+      while (j < pattern.length && pattern[j] !== "}") {
+        const c = pattern[j];
+        if (c >= "0" && c <= "9") {
+          hasDigits = true;
+        } else if (c === "," && !hasComma) {
+          hasComma = true;
+        } else {
+          // Invalid character inside braces
+          return true;
+        }
+        j++;
+      }
+
+      // No closing brace found
+      if (j >= pattern.length) {
+        return true;
+      }
+
+      // Empty braces {} with no preceding atom are treated as literal
+      if (!hasDigits) {
+        const prev = i > 0 ? pattern[i - 1] : undefined;
+        if (prev !== undefined && /\S/.test(prev)) {
+          return true;
+        }
+      }
+
+      i = j; // Move past the closing brace
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Count bracket/paren/brace pairs in a regex pattern, excluding character classes.
+ */
+function countBrackets(pattern: string): {
+  openParen: number;
+  closeParen: number;
+  openBracket: number;
+  closeBracket: number;
+  openBrace: number;
+  closeBrace: number;
+} {
   const counts = {
     openParen: 0,
     closeParen: 0,
@@ -251,75 +328,25 @@ export function likelyUnbalancedRegex(pattern: string): boolean {
     }
   }
 
+  return counts;
+}
+
+export function likelyUnbalancedRegex(pattern: string): boolean {
+  const counts = countBrackets(pattern);
+
   // Check for unbalanced brackets, parentheses, and braces
   const hasUnbalancedBrackets = counts.openBracket !== counts.closeBracket;
   const hasUnbalancedParens = counts.openParen !== counts.closeParen;
   const hasUnbalancedBraces = counts.openBrace !== counts.closeBrace;
 
-  // Also check for invalid repetition operators (e.g., {n}, {n,}, {n,m}) outside of character classes
-  let hasInvalidRepetition = false;
-  {
-    let escaped2 = false;
-    let inClass2 = false;
-    for (let i = 0; i < pattern.length; i++) {
-      const ch = pattern[i];
-      if (escaped2) {
-        escaped2 = false;
-        continue;
-      }
-      if (ch === "\\") {
-        escaped2 = true;
-        continue;
-      }
-      if (ch === "[" && !inClass2) {
-        inClass2 = true;
-        continue;
-      }
-      if (ch === "]" && inClass2) {
-        inClass2 = false;
-        continue;
-      }
-      if (inClass2) {
-        continue;
-      }
-      if (ch === "{") {
-        let j = i + 1;
-        let hasDigits = false;
-        let hasComma = false;
-        while (j < pattern.length && pattern[j] !== "}") {
-          const c = pattern[j];
-          if (c >= "0" && c <= "9") {
-            hasDigits = true;
-          } else if (c === "," && !hasComma) {
-            hasComma = true;
-          } else {
-            break;
-          }
-          j++;
-        }
-        if (j >= pattern.length || pattern[j] !== "}") {
-          hasInvalidRepetition = true;
-          break;
-        }
-        // At this point we have a closing brace at j
-        if (!hasDigits) {
-          // Heuristic: treat empty {} as non-quantifier when it doesn't follow a likely atom
-          const prev = i > 0 ? pattern[i - 1] : undefined;
-          if (prev !== undefined && /\S/.test(prev)) {
-            hasInvalidRepetition = true;
-            break;
-          }
-          // else ignore as literal braces
-        }
-      }
-    }
-  }
+  // Also check for invalid repetition operators
+  const hasInvalidRepetitionFlag = hasInvalidRepetition(pattern);
 
   return (
     hasUnbalancedBrackets ||
     hasUnbalancedParens ||
     hasUnbalancedBraces ||
-    hasInvalidRepetition
+    hasInvalidRepetitionFlag
   );
 }
 

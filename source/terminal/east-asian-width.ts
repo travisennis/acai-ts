@@ -16,224 +16,290 @@ function validate(codePoint: number): asserts codePoint is number {
   }
 }
 
+// Individual code points that are ambiguous (stored in Set for O(1) lookup)
+const AMBIGUOUS_CODE_POINTS = new Set([
+  0xa1,
+  0xa4,
+  0xa7,
+  0xa8,
+  0xaa,
+  0xad,
+  0xae, // 0xa1-0xae range (partial)
+  0xc6,
+  0xd0,
+  0xd7,
+  0xd8, // 0xc6-0xd8 range (partial)
+  0xe6,
+  0xec,
+  0xed,
+  0xf0,
+  0xf2,
+  0xf3, // 0xe6-0xf3 range (partial)
+  0xfc,
+  0xfe, // 0xfc-0xfe
+  0x101,
+  0x111,
+  0x113,
+  0x11b, // 0x101-0x11b range (partial)
+  0x126,
+  0x127,
+  0x12b, // 0x126-0x12b range (partial)
+  0x138, // 0x138
+  0x144, // 0x144
+  0x14d,
+  0x152,
+  0x153, // 0x14d-0x153 range (partial)
+  0x166,
+  0x167,
+  0x16b, // 0x166-0x16b range (partial)
+  0x1ce,
+  0x1d0,
+  0x1d2,
+  0x1d4,
+  0x1d6,
+  0x1d8,
+  0x1da,
+  0x1dc, // 0x1ce-0x1dc range
+  0x251,
+  0x261, // 0x251-0x261 range (partial)
+  0x2c4,
+  0x2c7, // 0x2c4-0x2c7 range (partial)
+  0x2cd,
+  0x2d0, // 0x2cd-0x2d0 range (partial)
+  0x2dd,
+  0x2df, // 0x2dd-0x2df range (partial)
+  0x401,
+  0x451, // 0x401, 0x451
+  0x2010, // 0x2010
+  0x2018,
+  0x2019,
+  0x201c,
+  0x201d, // 0x2018-0x201d range
+  0x2020,
+  0x2021,
+  0x2022, // 0x2020-0x2022 range
+  0x2024,
+  0x2025,
+  0x2026,
+  0x2027, // 0x2024-0x2027 range
+  0x2030,
+  0x2032,
+  0x2033,
+  0x2035, // 0x2030-0x2035 range (partial)
+  0x203b,
+  0x203e, // 0x203b-0x203e range
+  0x2074,
+  0x207f, // 0x2074-0x207f range
+  0x20ac, // 0x20ac
+  0x2103,
+  0x2105,
+  0x2109, // 0x2103-0x2109 range (partial)
+  0x2113,
+  0x2116, // 0x2113-0x2116 range
+  0x2121,
+  0x2122,
+  0x2126,
+  0x212b, // 0x2121-0x212b range
+  0x2153,
+  0x2154, // 0x2153-0x2154
+  0x2189, // 0x2189
+  0x21b8,
+  0x21b9, // 0x21b8-0x21b9
+  0x21d2,
+  0x21d4, // 0x21d2-0x21d4
+  0x21e7, // 0x21e7
+  0x2200,
+  0x2202,
+  0x2203,
+  0x2207, // 0x2200-0x2207 range (partial)
+  0x2208,
+  0x220b, // 0x2208-0x220b range
+  0x220f,
+  0x2211, // 0x220f-0x2211 range
+  0x2215, // 0x2215
+  0x221a, // 0x221a
+  0x2223,
+  0x2225, // 0x2223-0x2225 range
+  0x222e, // 0x222e
+  0x223c,
+  0x223d, // 0x223c-0x223d
+  0x2248,
+  0x224c, // 0x2248-0x224c
+  0x2252, // 0x2252
+  0x2260,
+  0x2261, // 0x2260-0x2261
+  0x226a,
+  0x226b, // 0x226a-0x226b
+  0x226e,
+  0x226f, // 0x226e-0x226f
+  0x2282,
+  0x2283, // 0x2282-0x2283
+  0x2286,
+  0x2287, // 0x2286-0x2287
+  0x2295,
+  0x2299, // 0x2295-0x2299
+  0x22a5,
+  0x22bf, // 0x22a5-0x22bf
+  0x2312, // 0x2312
+  0x25a0,
+  0x25a1, // 0x25a0-0x25a1
+  0x25b2,
+  0x25b3, // 0x25b2-0x25b3
+  0x25b6,
+  0x25b7, // 0x25b6-0x25b7
+  0x25bc,
+  0x25bd, // 0x25bc-0x25bd
+  0x25c0,
+  0x25c1, // 0x25c0-0x25c1
+  0x25cb, // 0x25cb
+  0x25ef, // 0x25ef
+  0x2605,
+  0x2606, // 0x2605-0x2606
+  0x2609, // 0x2609
+  0x260e,
+  0x260f, // 0x260e-0x260f
+  0x261c,
+  0x261e, // 0x261c-0x261e
+  0x2640,
+  0x2642, // 0x2640-0x2642
+  0x2660,
+  0x2661, // 0x2660-0x2661
+  0x266d,
+  0x266f, // 0x266d-0x266f
+  0x269e,
+  0x269f, // 0x269e-0x269f
+  0x26bf, // 0x26bf
+  0x26e3, // 0x26e3
+  0x26e8,
+  0x26e9, // 0x26e8-0x26e9
+  0x26f4, // 0x26f4
+  0x26fb,
+  0x26fc,
+  0x26fe,
+  0x26ff, // 0x26fb-0x26ff
+  0x273d, // 0x273d
+  0xfffd, // 0xfffd
+  0x1f18f,
+  0x1f190, // 0x1f18f-0x1f190
+]);
+
+// Ranges of ambiguous code points (stored as [start, end] tuples)
+const AMBIGUOUS_RANGES: [number, number][] = [
+  [0xb0, 0xb4], // Latin Extended Additional
+  [0xb6, 0xba], // Latin Extended Additional
+  [0xbc, 0xbf], // Latin Extended Additional
+  [0xde, 0xe1], // Latin Extended Additional
+  [0xe8, 0xea], // Latin Extended Additional
+  [0xf7, 0xfa], // Latin Extended Additional
+  [0x101, 0x101], // Added for completeness
+  [0x111, 0x111],
+  [0x113, 0x113],
+  [0x11b, 0x11b],
+  [0x131, 0x133], // Latin Extended Additional
+  [0x13f, 0x142], // Latin Extended Additional
+  [0x144, 0x144],
+  [0x148, 0x14b], // Latin Extended Additional
+  [0x14d, 0x14d],
+  [0x152, 0x153], // Latin Extended Additional
+  [0x166, 0x167], // Latin Extended Additional
+  [0x16b, 0x16b],
+  [0x2c9, 0x2cb], // Cyrillic Extended Additional
+  [0x2d8, 0x2db], // Cyrillic Extended Additional
+  [0x300, 0x36f], // Combining Diacritical Marks
+  [0x391, 0x3a1], // Greek and Coptic (uppercase)
+  [0x3a3, 0x3a9], // Greek and Coptic (uppercase)
+  [0x3b1, 0x3c1], // Greek and Coptic (lowercase)
+  [0x3c3, 0x3c9], // Greek and Coptic (lowercase)
+  [0x410, 0x44f], // Cyrillic
+  [0x2013, 0x2016], // General Punctuation
+  [0x2024, 0x2027], // General Punctuation
+  [0x215b, 0x215e], // Number Forms
+  [0x2160, 0x216b], // Number Forms (Roman numerals)
+  [0x2170, 0x2179], // Number Forms (small Roman)
+  [0x2190, 0x2199], // Arrows
+  [0x21d2, 0x21d2],
+  [0x21d4, 0x21d4],
+  [0x221d, 0x2220], // Mathematical Operators
+  [0x2227, 0x222c], // Mathematical Operators
+  [0x2234, 0x2237], // Mathematical Operators
+  [0x223c, 0x223d], // Mathematical Operators
+  [0x2248, 0x2248],
+  [0x224c, 0x224c],
+  [0x2252, 0x2252],
+  [0x2260, 0x2261], // Mathematical Operators
+  [0x2264, 0x2267], // Mathematical Operators
+  [0x226a, 0x226b], // Mathematical Operators
+  [0x226e, 0x226f], // Mathematical Operators
+  [0x2282, 0x2283], // Mathematical Operators
+  [0x2286, 0x2287], // Mathematical Operators
+  [0x2295, 0x2295],
+  [0x2299, 0x2299],
+  [0x22a5, 0x22a5],
+  [0x22bf, 0x22bf],
+  [0x2312, 0x2312],
+  [0x2460, 0x24e9], // Enclosed Alphanumerics
+  [0x24eb, 0x254b], // Enclosed Alphanumerics
+  [0x2550, 0x2573], // Box Drawing
+  [0x2580, 0x258f], // Block Elements
+  [0x2592, 0x2595], // Block Elements
+  [0x25a3, 0x25a9], // Geometric Shapes
+  [0x25b2, 0x25b3], // Geometric Shapes
+  [0x25b6, 0x25b7], // Geometric Shapes
+  [0x25bc, 0x25bd], // Geometric Shapes
+  [0x25c0, 0x25c1], // Geometric Shapes
+  [0x25c6, 0x25c8], // Geometric Shapes
+  [0x25ce, 0x25d1], // Geometric Shapes
+  [0x25e2, 0x25e5], // Geometric Shapes
+  [0x2605, 0x2606], // Miscellaneous Symbols
+  [0x2609, 0x2609],
+  [0x260e, 0x260f], // Miscellaneous Symbols
+  [0x261c, 0x261e], // Miscellaneous Symbols
+  [0x2640, 0x2640],
+  [0x2642, 0x2642],
+  [0x2660, 0x2661], // Miscellaneous Symbols
+  [0x2663, 0x2665], // Miscellaneous Symbols
+  [0x2667, 0x266a], // Miscellaneous Symbols
+  [0x266c, 0x266c],
+  [0x266d, 0x266d],
+  [0x266f, 0x266f],
+  [0x26c6, 0x26cd], // Miscellaneous Symbols
+  [0x26cf, 0x26d3], // Miscellaneous Symbols
+  [0x26d5, 0x26e1], // Miscellaneous Symbols
+  [0x26e8, 0x26e9], // Miscellaneous Symbols
+  [0x26eb, 0x26f1], // Miscellaneous Symbols
+  [0x26f4, 0x26f4],
+  [0x26f6, 0x26f9], // Miscellaneous Symbols
+  [0x26fb, 0x26fc], // Miscellaneous Symbols
+  [0x26fe, 0x26ff], // Miscellaneous Symbols
+  [0x2776, 0x277f], // Dingbats
+  [0x2b56, 0x2b59], // Miscellaneous Symbols and Arrows
+  [0x3248, 0x324f], // Enclosed CJK
+  [0xe000, 0xf8ff], // Private Use Area
+  [0xfe00, 0xfe0f], // Variation Selectors
+  [0x1f100, 0x1f10a], // Enclosed Alphanumeric Supplement
+  [0x1f110, 0x1f12d], // Enclosed Alphanumeric Supplement
+  [0x1f130, 0x1f169], // Enclosed Alphanumeric Supplement
+  [0x1f170, 0x1f18d], // Enclosed Alphanumeric Supplement
+  [0x1f19b, 0x1f1ac], // Enclosed Alphanumeric Supplement
+  [0xe0100, 0xe01ef], // Variation Selectors Supplement
+  [0xf0000, 0xffffd], // Supplementary Private Use Area-A
+  [0x100000, 0x10fffd], // Supplementary Private Use Area-B
+];
+
 function isAmbiguous(codePoint: number): boolean {
-  return (
-    codePoint === 0xa1 ||
-    codePoint === 0xa4 ||
-    codePoint === 0xa7 ||
-    codePoint === 0xa8 ||
-    codePoint === 0xaa ||
-    codePoint === 0xad ||
-    codePoint === 0xae ||
-    (codePoint >= 0xb0 && codePoint <= 0xb4) ||
-    (codePoint >= 0xb6 && codePoint <= 0xba) ||
-    (codePoint >= 0xbc && codePoint <= 0xbf) ||
-    codePoint === 0xc6 ||
-    codePoint === 0xd0 ||
-    codePoint === 0xd7 ||
-    codePoint === 0xd8 ||
-    (codePoint >= 0xde && codePoint <= 0xe1) ||
-    codePoint === 0xe6 ||
-    (codePoint >= 0xe8 && codePoint <= 0xea) ||
-    codePoint === 0xec ||
-    codePoint === 0xed ||
-    codePoint === 0xf0 ||
-    codePoint === 0xf2 ||
-    codePoint === 0xf3 ||
-    (codePoint >= 0xf7 && codePoint <= 0xfa) ||
-    codePoint === 0xfc ||
-    codePoint === 0xfe ||
-    codePoint === 0x101 ||
-    codePoint === 0x111 ||
-    codePoint === 0x113 ||
-    codePoint === 0x11b ||
-    codePoint === 0x126 ||
-    codePoint === 0x127 ||
-    codePoint === 0x12b ||
-    (codePoint >= 0x131 && codePoint <= 0x133) ||
-    codePoint === 0x138 ||
-    (codePoint >= 0x13f && codePoint <= 0x142) ||
-    codePoint === 0x144 ||
-    (codePoint >= 0x148 && codePoint <= 0x14b) ||
-    codePoint === 0x14d ||
-    codePoint === 0x152 ||
-    codePoint === 0x153 ||
-    codePoint === 0x166 ||
-    codePoint === 0x167 ||
-    codePoint === 0x16b ||
-    codePoint === 0x1ce ||
-    codePoint === 0x1d0 ||
-    codePoint === 0x1d2 ||
-    codePoint === 0x1d4 ||
-    codePoint === 0x1d6 ||
-    codePoint === 0x1d8 ||
-    codePoint === 0x1da ||
-    codePoint === 0x1dc ||
-    codePoint === 0x251 ||
-    codePoint === 0x261 ||
-    codePoint === 0x2c4 ||
-    codePoint === 0x2c7 ||
-    (codePoint >= 0x2c9 && codePoint <= 0x2cb) ||
-    codePoint === 0x2cd ||
-    codePoint === 0x2d0 ||
-    (codePoint >= 0x2d8 && codePoint <= 0x2db) ||
-    codePoint === 0x2dd ||
-    codePoint === 0x2df ||
-    (codePoint >= 0x300 && codePoint <= 0x36f) ||
-    (codePoint >= 0x391 && codePoint <= 0x3a1) ||
-    (codePoint >= 0x3a3 && codePoint <= 0x3a9) ||
-    (codePoint >= 0x3b1 && codePoint <= 0x3c1) ||
-    (codePoint >= 0x3c3 && codePoint <= 0x3c9) ||
-    codePoint === 0x401 ||
-    (codePoint >= 0x410 && codePoint <= 0x44f) ||
-    codePoint === 0x451 ||
-    codePoint === 0x2010 ||
-    (codePoint >= 0x2013 && codePoint <= 0x2016) ||
-    codePoint === 0x2018 ||
-    codePoint === 0x2019 ||
-    codePoint === 0x201c ||
-    codePoint === 0x201d ||
-    (codePoint >= 0x2020 && codePoint <= 0x2022) ||
-    (codePoint >= 0x2024 && codePoint <= 0x2027) ||
-    codePoint === 0x2030 ||
-    codePoint === 0x2032 ||
-    codePoint === 0x2033 ||
-    codePoint === 0x2035 ||
-    codePoint === 0x203b ||
-    codePoint === 0x203e ||
-    codePoint === 0x2074 ||
-    codePoint === 0x207f ||
-    (codePoint >= 0x2081 && codePoint <= 0x2084) ||
-    codePoint === 0x20ac ||
-    codePoint === 0x2103 ||
-    codePoint === 0x2105 ||
-    codePoint === 0x2109 ||
-    codePoint === 0x2113 ||
-    codePoint === 0x2116 ||
-    codePoint === 0x2121 ||
-    codePoint === 0x2122 ||
-    codePoint === 0x2126 ||
-    codePoint === 0x212b ||
-    codePoint === 0x2153 ||
-    codePoint === 0x2154 ||
-    (codePoint >= 0x215b && codePoint <= 0x215e) ||
-    (codePoint >= 0x2160 && codePoint <= 0x216b) ||
-    (codePoint >= 0x2170 && codePoint <= 0x2179) ||
-    codePoint === 0x2189 ||
-    (codePoint >= 0x2190 && codePoint <= 0x2199) ||
-    codePoint === 0x21b8 ||
-    codePoint === 0x21b9 ||
-    codePoint === 0x21d2 ||
-    codePoint === 0x21d4 ||
-    codePoint === 0x21e7 ||
-    codePoint === 0x2200 ||
-    codePoint === 0x2202 ||
-    codePoint === 0x2203 ||
-    codePoint === 0x2207 ||
-    codePoint === 0x2208 ||
-    codePoint === 0x220b ||
-    codePoint === 0x220f ||
-    codePoint === 0x2211 ||
-    codePoint === 0x2215 ||
-    codePoint === 0x221a ||
-    (codePoint >= 0x221d && codePoint <= 0x2220) ||
-    codePoint === 0x2223 ||
-    codePoint === 0x2225 ||
-    (codePoint >= 0x2227 && codePoint <= 0x222c) ||
-    codePoint === 0x222e ||
-    (codePoint >= 0x2234 && codePoint <= 0x2237) ||
-    codePoint === 0x223c ||
-    codePoint === 0x223d ||
-    codePoint === 0x2248 ||
-    codePoint === 0x224c ||
-    codePoint === 0x2252 ||
-    codePoint === 0x2260 ||
-    codePoint === 0x2261 ||
-    (codePoint >= 0x2264 && codePoint <= 0x2267) ||
-    codePoint === 0x226a ||
-    codePoint === 0x226b ||
-    codePoint === 0x226e ||
-    codePoint === 0x226f ||
-    codePoint === 0x2282 ||
-    codePoint === 0x2283 ||
-    codePoint === 0x2286 ||
-    codePoint === 0x2287 ||
-    codePoint === 0x2295 ||
-    codePoint === 0x2299 ||
-    codePoint === 0x22a5 ||
-    codePoint === 0x22bf ||
-    codePoint === 0x2312 ||
-    (codePoint >= 0x2460 && codePoint <= 0x24e9) ||
-    (codePoint >= 0x24eb && codePoint <= 0x254b) ||
-    (codePoint >= 0x2550 && codePoint <= 0x2573) ||
-    (codePoint >= 0x2580 && codePoint <= 0x258f) ||
-    (codePoint >= 0x2592 && codePoint <= 0x2595) ||
-    codePoint === 0x25a0 ||
-    codePoint === 0x25a1 ||
-    (codePoint >= 0x25a3 && codePoint <= 0x25a9) ||
-    codePoint === 0x25b2 ||
-    codePoint === 0x25b3 ||
-    codePoint === 0x25b6 ||
-    codePoint === 0x25b7 ||
-    codePoint === 0x25bc ||
-    codePoint === 0x25bd ||
-    codePoint === 0x25c0 ||
-    codePoint === 0x25c1 ||
-    (codePoint >= 0x25c6 && codePoint <= 0x25c8) ||
-    codePoint === 0x25cb ||
-    (codePoint >= 0x25ce && codePoint <= 0x25d1) ||
-    (codePoint >= 0x25e2 && codePoint <= 0x25e5) ||
-    codePoint === 0x25ef ||
-    codePoint === 0x2605 ||
-    codePoint === 0x2606 ||
-    codePoint === 0x2609 ||
-    codePoint === 0x260e ||
-    codePoint === 0x260f ||
-    codePoint === 0x261c ||
-    codePoint === 0x261e ||
-    codePoint === 0x2640 ||
-    codePoint === 0x2642 ||
-    codePoint === 0x2660 ||
-    codePoint === 0x2661 ||
-    (codePoint >= 0x2663 && codePoint <= 0x2665) ||
-    (codePoint >= 0x2667 && codePoint <= 0x266a) ||
-    codePoint === 0x266c ||
-    codePoint === 0x266d ||
-    codePoint === 0x266f ||
-    codePoint === 0x269e ||
-    codePoint === 0x269f ||
-    codePoint === 0x26bf ||
-    (codePoint >= 0x26c6 && codePoint <= 0x26cd) ||
-    (codePoint >= 0x26cf && codePoint <= 0x26d3) ||
-    (codePoint >= 0x26d5 && codePoint <= 0x26e1) ||
-    codePoint === 0x26e3 ||
-    codePoint === 0x26e8 ||
-    codePoint === 0x26e9 ||
-    (codePoint >= 0x26eb && codePoint <= 0x26f1) ||
-    codePoint === 0x26f4 ||
-    (codePoint >= 0x26f6 && codePoint <= 0x26f9) ||
-    codePoint === 0x26fb ||
-    codePoint === 0x26fc ||
-    codePoint === 0x26fe ||
-    codePoint === 0x26ff ||
-    codePoint === 0x273d ||
-    (codePoint >= 0x2776 && codePoint <= 0x277f) ||
-    (codePoint >= 0x2b56 && codePoint <= 0x2b59) ||
-    (codePoint >= 0x3248 && codePoint <= 0x324f) ||
-    (codePoint >= 0xe000 && codePoint <= 0xf8ff) ||
-    (codePoint >= 0xfe00 && codePoint <= 0xfe0f) ||
-    codePoint === 0xfffd ||
-    (codePoint >= 0x1f100 && codePoint <= 0x1f10a) ||
-    (codePoint >= 0x1f110 && codePoint <= 0x1f12d) ||
-    (codePoint >= 0x1f130 && codePoint <= 0x1f169) ||
-    (codePoint >= 0x1f170 && codePoint <= 0x1f18d) ||
-    codePoint === 0x1f18f ||
-    codePoint === 0x1f190 ||
-    (codePoint >= 0x1f19b && codePoint <= 0x1f1ac) ||
-    (codePoint >= 0xe0100 && codePoint <= 0xe01ef) ||
-    (codePoint >= 0xf0000 && codePoint <= 0xffffd) ||
-    (codePoint >= 0x100000 && codePoint <= 0x10fffd)
-  );
+  // Check individual code points first (O(1) lookup)
+  if (AMBIGUOUS_CODE_POINTS.has(codePoint)) {
+    return true;
+  }
+
+  // Then check ranges (linear in number of ranges, which is much smaller)
+  for (const [start, end] of AMBIGUOUS_RANGES) {
+    if (codePoint >= start && codePoint <= end) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function isFullWidth(codePoint: number): boolean {
