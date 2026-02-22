@@ -134,6 +134,9 @@ export class DirectoryProvider {
 export class ConfigManager {
   readonly project: DirectoryProvider;
   readonly app: DirectoryProvider;
+  private cachedConfig: ProjectConfig | null = null;
+  private configCacheTime = 0;
+  private configCacheTtl = 5000; // 5 seconds
 
   constructor() {
     this.project = new DirectoryProvider(path.join(process.cwd(), ".acai"));
@@ -154,8 +157,13 @@ export class ConfigManager {
     }
   }
 
-  // Get merged configuration (project overrides app)
+  // Get merged configuration (project overrides app), cached with TTL
   async getConfig(): Promise<ProjectConfig> {
+    const now = Date.now();
+    if (this.cachedConfig && now - this.configCacheTime < this.configCacheTtl) {
+      return this.cachedConfig;
+    }
+
     const appConfigPath = path.join(this.app.getPath(), "acai.json");
     const projectConfigPath = path.join(this.project.getPath(), "acai.json");
 
@@ -173,7 +181,10 @@ export class ConfigManager {
       env: mergedEnv,
     };
 
-    return ProjectConfigSchema.parse(mergedConfig);
+    const result = ProjectConfigSchema.parse(mergedConfig);
+    this.cachedConfig = result;
+    this.configCacheTime = now;
+    return result;
   }
 
   // Skills settings helpers

@@ -101,6 +101,9 @@ export class Repl {
   private pendingTools: Map<string, ToolExecutionComponent>;
   private tools?: CompleteToolSet;
 
+  // Track whether user message was already shown in onSubmit
+  private userMessageAlreadyShown = false;
+
   // Streaming message tracking
   private streamingComponent: AssistantMessageComponent | null = null;
 
@@ -347,6 +350,12 @@ export class Repl {
           sessionManager.appendUserMessage(userMsg);
         }
 
+        // Show user message and clear editor immediately for responsive UI
+        this.addMessageToChat({ role: "user", content: userPrompt });
+        this.editor.setText("");
+        this.tui.requestRender();
+        this.userMessageAlreadyShown = true;
+
         if (this.onInputCallback) {
           this.onInputCallback(userPrompt);
         }
@@ -372,8 +381,10 @@ export class Repl {
     // Update footer with current stats
     // this.footer.updateState(state);
 
+    // Use cached project status for all events to avoid blocking on git
+    // subprocess calls; refresh asynchronously at agent-stop
     this.footer.setState({
-      projectStatus: await getProjectStatus(),
+      projectStatus: this.footer.getProjectStatus(),
       currentContextWindow:
         this.options.sessionManager.getLastTurnContextWindow(),
       contextWindow:
@@ -425,9 +436,12 @@ export class Repl {
 
       case "message":
         if (event.role === "user") {
-          // Show user message immediately and clear editor
-          this.addMessageToChat(event);
-          this.editor.setText("");
+          // Show user message only if not already displayed in onSubmit
+          if (!this.userMessageAlreadyShown) {
+            this.addMessageToChat(event);
+            this.editor.setText("");
+          }
+          this.userMessageAlreadyShown = false;
           this.tui.requestRender();
         } else if (event.role === "assistant") {
           // Update streaming component
@@ -489,6 +503,18 @@ export class Repl {
           this.modeManager.toJson(),
         );
         await this.options.sessionManager.save();
+        // Refresh project status now that agent may have modified files
+        await getProjectStatus().then((ps) => {
+          this.footer.setState({
+            projectStatus: ps,
+            currentContextWindow:
+              this.options.sessionManager.getLastTurnContextWindow(),
+            contextWindow:
+              this.options.modelManager.getModelMetadata("repl").contextWindow,
+            currentMode: this.modeManager.getDisplayName(),
+          });
+          this.tui.requestRender();
+        });
         this.tui.requestRender();
         break;
 
