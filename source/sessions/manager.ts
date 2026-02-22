@@ -72,49 +72,82 @@ function isPlainObject(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null && !Array.isArray(x);
 }
 
-function sanitizeToolCallInput(input: unknown): Record<string, unknown> {
+function sanitizeToolCallInput(input: unknown): {
+  sanitized: Record<string, unknown>;
+  isValid: boolean;
+} {
+  // If it's already a valid plain object, return as-is
   if (isPlainObject(input)) {
-    return input;
+    return { sanitized: input, isValid: true };
   }
 
+  // If it's a string, try to parse it as JSON
   if (typeof input === "string") {
     try {
       const parsed = JSON.parse(input);
       if (isPlainObject(parsed)) {
-        return parsed;
+        return { sanitized: parsed, isValid: true };
       }
     } catch {
-      // JSON parsing failed, fall through to return empty object
+      // JSON parsing failed - this is malformed JSON
+      logger.warn(
+        { originalInput: input.slice(0, 100) },
+        "Filtered tool call with malformed JSON input",
+      );
+      return { sanitized: {}, isValid: false };
     }
   }
 
+  // For any other case (undefined, null, array, etc.)
   logger.warn(
     { originalInput: typeof input === "string" ? input.slice(0, 100) : input },
-    "Sanitized malformed tool call input to empty object",
+    "Filtered tool call with invalid input type",
   );
-  return {};
+  return { sanitized: {}, isValid: false };
 }
 
 function sanitizeResponseMessages(
   messages: ResponseMessage[],
 ): ResponseMessage[] {
-  return messages.map((msg) => {
-    if (msg.role !== "assistant" || !Array.isArray(msg.content)) {
-      return msg;
-    }
+  return messages
+    .map((msg) => {
+      if (msg.role !== "assistant" || !Array.isArray(msg.content)) {
+        return msg;
+      }
 
-    const content = msg.content.map((part) => {
-      if (part.type === "tool-call") {
-        const sanitizedInput = sanitizeToolCallInput(part.input);
-        if (sanitizedInput !== part.input) {
-          return { ...part, input: sanitizedInput };
+      // Filter and sanitize tool calls - keep only valid ones
+      const validToolCalls: typeof msg.content = [];
+      let hasAnyToolCall = false;
+      let hasValidToolCall = false;
+
+      for (const part of msg.content) {
+        if (part.type === "tool-call") {
+          hasAnyToolCall = true;
+          const { sanitized, isValid } = sanitizeToolCallInput(part.input);
+          if (isValid) {
+            hasValidToolCall = true;
+            validToolCalls.push({ ...part, input: sanitized });
+          } else {
+            // Skip invalid tool calls - don't add them to history
+            logger.debug(
+              { toolName: part.toolName },
+              "Filtered invalid tool call from history",
+            );
+          }
+        } else {
+          validToolCalls.push(part);
         }
       }
-      return part;
-    });
 
-    return { ...msg, content } as AssistantModelMessage;
-  });
+      // If message had tool calls but none are valid, filter out the entire message
+      if (hasAnyToolCall && !hasValidToolCall) {
+        logger.debug("Filtered assistant message with no valid tool calls");
+        return null; // Will be filtered out below
+      }
+
+      return { ...msg, content: validToolCalls } as AssistantModelMessage;
+    })
+    .filter((msg): msg is ResponseMessage => msg !== null);
 }
 
 /**
