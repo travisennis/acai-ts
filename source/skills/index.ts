@@ -137,153 +137,167 @@ function parseFrontmatter(content: string): {
   return { frontmatter, body };
 }
 
+/**
+ * Creates a Skill object from frontmatter and path info
+ */
+function createSkill(
+  frontmatter: SkillFrontmatter,
+  filePath: string,
+  baseDir: string,
+  source: string,
+): Skill {
+  return {
+    name: frontmatter.name,
+    description: frontmatter.description,
+    filePath,
+    baseDir,
+    source,
+    userInvocable: frontmatter["user-invocable"] ?? true,
+    disableModelInvocation: frontmatter["disable-model-invocation"] ?? false,
+    allowedTools: frontmatter["allowed-tools"],
+    arguments: frontmatter.arguments,
+    examples: frontmatter.examples,
+  };
+}
+
+/**
+ * Validates and creates a skill from a SKILL.md file
+ * Returns null if validation fails
+ */
+async function tryLoadSkillFromFile(
+  skillPath: string,
+  directoryName: string,
+  baseDir: string,
+  source: string,
+): Promise<Skill | null> {
+  try {
+    const content = await readFile(skillPath, "utf8");
+    const { frontmatter } = parseFrontmatter(content);
+
+    const nameValidation = validateSkillName(frontmatter.name, directoryName);
+    if (!nameValidation.valid) {
+      logger.warn(
+        `Invalid skill name in ${skillPath}: ${nameValidation.error}`,
+      );
+      return null;
+    }
+
+    const descriptionValidation = validateSkillDescription(
+      frontmatter.description,
+    );
+    if (!descriptionValidation.valid) {
+      logger.warn(
+        `Invalid skill description in ${skillPath}: ${descriptionValidation.error}`,
+      );
+      return null;
+    }
+
+    return createSkill(frontmatter, skillPath, baseDir, source);
+  } catch (error) {
+    logger.warn(error, `Failed to load skill from ${skillPath}:`);
+    return null;
+  }
+}
+
+/**
+ * Checks if an entry should be skipped (hidden files, symlinks)
+ */
+async function shouldSkipEntry(
+  entryPath: string,
+  entryName: string,
+): Promise<boolean> {
+  // Skip hidden files and directories
+  if (entryName.startsWith(".")) {
+    return true;
+  }
+
+  // Skip symbolic links to avoid infinite recursion
+  try {
+    const stats = await stat(entryPath);
+    if (stats.isSymbolicLink()) {
+      return true;
+    }
+  } catch {
+    // If we can't stat, skip it
+    return true;
+  }
+
+  return false;
+}
+
 async function loadSkillsFromDirInternal(
   dir: string,
   source: string,
   mode: "recursive" | "claude",
-  useColonPath: boolean,
+  _useColonPath: boolean,
   subdir = "",
 ): Promise<Skill[]> {
   const skills: Skill[] = [];
   const fullDir = join(dir, subdir);
 
+  let entries: Awaited<ReturnType<typeof readdir>>;
   try {
-    const entries = await readdir(fullDir, { withFileTypes: true });
-
-    for (const entry of entries) {
-      // Skip hidden files and directories
-      if (entry.name.startsWith(".")) {
-        continue;
-      }
-
-      const entryPath = join(fullDir, entry.name);
-
-      // Skip symbolic links to avoid infinite recursion
-      try {
-        const stats = await stat(entryPath);
-        if (stats.isSymbolicLink()) {
-          continue;
-        }
-      } catch {
-        // If we can't stat, skip it
-        continue;
-      }
-
-      if (entry.isDirectory()) {
-        if (mode === "recursive") {
-          // Recursively scan subdirectories
-          const newSubdir = subdir ? join(subdir, entry.name) : entry.name;
-          const subSkills = await loadSkillsFromDirInternal(
-            dir,
-            source,
-            mode,
-            useColonPath,
-            newSubdir,
-          );
-          skills.push(...subSkills);
-        } else if (mode === "claude") {
-          // Claude mode: only check immediate subdirectories for SKILL.md
-          const skillPath = join(entryPath, "SKILL.md");
-          try {
-            const content = await readFile(skillPath, "utf8");
-            const { frontmatter } = parseFrontmatter(content);
-
-            // Validate required fields
-            const nameValidation = validateSkillName(
-              frontmatter.name,
-              entry.name,
-            );
-            if (!nameValidation.valid) {
-              logger.warn(
-                `Invalid skill name in ${skillPath}: ${nameValidation.error}`,
-              );
-              continue;
-            }
-
-            const descriptionValidation = validateSkillDescription(
-              frontmatter.description,
-            );
-            if (!descriptionValidation.valid) {
-              logger.warn(
-                `Invalid skill description in ${skillPath}: ${descriptionValidation.error}`,
-              );
-              continue;
-            }
-
-            skills.push({
-              name: frontmatter.name,
-              description: frontmatter.description,
-              filePath: skillPath,
-              baseDir: entryPath,
-              source,
-              userInvocable: frontmatter["user-invocable"] ?? true,
-              disableModelInvocation:
-                frontmatter["disable-model-invocation"] ?? false,
-              allowedTools: frontmatter["allowed-tools"],
-              arguments: frontmatter.arguments,
-              examples: frontmatter.examples,
-            });
-          } catch (error) {
-            logger.warn(error, `Failed to load skill from ${skillPath}:`);
-          }
-        }
-      } else if (
-        entry.isFile() &&
-        entry.name === "SKILL.md" &&
-        mode === "recursive"
-      ) {
-        // Found a SKILL.md file in recursive mode
-        try {
-          const content = await readFile(entryPath, "utf8");
-          const { frontmatter } = parseFrontmatter(content);
-
-          // Validate required fields
-          const nameValidation = validateSkillName(
-            frontmatter.name,
-            basename(dirname(entryPath)),
-          );
-          if (!nameValidation.valid) {
-            logger.warn(
-              `Invalid skill name in ${entryPath}: ${nameValidation.error}`,
-            );
-            continue;
-          }
-
-          const descriptionValidation = validateSkillDescription(
-            frontmatter.description,
-          );
-          if (!descriptionValidation.valid) {
-            logger.warn(
-              `Invalid skill description in ${entryPath}: ${descriptionValidation.error}`,
-            );
-            continue;
-          }
-
-          // Base directory is the directory containing the SKILL.md file
-          const baseDir = subdir ? join(dir, subdir) : dir;
-
-          skills.push({
-            name: frontmatter.name,
-            description: frontmatter.description,
-            filePath: entryPath,
-            baseDir,
-            source,
-            userInvocable: frontmatter["user-invocable"] ?? true,
-            disableModelInvocation:
-              frontmatter["disable-model-invocation"] ?? false,
-            allowedTools: frontmatter["allowed-tools"],
-            arguments: frontmatter.arguments,
-            examples: frontmatter.examples,
-          });
-        } catch (error) {
-          logger.warn(error, `Failed to load skill from ${entryPath}:`);
-        }
-      }
-    }
+    // @ts-expect-error - Node.js types have a quirk with withFileTypes
+    entries = await readdir(fullDir, { withFileTypes: true });
   } catch (error) {
     // Directory doesn't exist or can't be read
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
       logger.error(error, `Error reading skills directory ${fullDir}:`);
+    }
+    return skills;
+  }
+
+  for (const entry of entries) {
+    const entryName = entry.name.toString();
+    const entryPath = join(fullDir, entryName);
+
+    // Skip hidden files, symlinks, etc.
+    if (await shouldSkipEntry(entryPath, entryName)) {
+      continue;
+    }
+
+    // Handle directories
+    if (entry.isDirectory()) {
+      if (mode === "recursive") {
+        // Recursively scan subdirectories
+        const newSubdir = subdir ? join(subdir, entryName) : entryName;
+        const subSkills = await loadSkillsFromDirInternal(
+          dir,
+          source,
+          mode,
+          false,
+          newSubdir,
+        );
+        skills.push(...subSkills);
+      } else if (mode === "claude") {
+        // Claude mode: only check immediate subdirectories for SKILL.md
+        const skillPath = join(entryPath, "SKILL.md");
+        const skill = await tryLoadSkillFromFile(
+          skillPath,
+          entryName,
+          entryPath,
+          source,
+        );
+        if (skill) {
+          skills.push(skill);
+        }
+      }
+      continue;
+    }
+
+    // Handle files
+    if (entry.isFile() && entryName === "SKILL.md" && mode === "recursive") {
+      // Base directory is the directory containing the SKILL.md file
+      const baseDir = subdir ? join(dir, subdir) : dir;
+      const skill = await tryLoadSkillFromFile(
+        entryPath,
+        basename(dirname(entryPath)),
+        baseDir,
+        source,
+      );
+      if (skill) {
+        skills.push(skill);
+      }
     }
   }
 

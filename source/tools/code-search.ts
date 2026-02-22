@@ -49,6 +49,112 @@ const inputSchema = z.object({
 
 type CodeSearchInputSchema = z.infer<typeof inputSchema>;
 
+/**
+ * Converts string "null"/"undefined" back to actual null.
+ * Zod preprocess converts null to "null" string, this reverses that.
+ */
+function normalizeNullableString(value: string | null): string | null {
+  if (value === "null" || value === "undefined") {
+    return null;
+  }
+  return value;
+}
+
+/**
+ * Builds colgrep command arguments from search options
+ */
+function buildColgrepArgs(options: {
+  query: string;
+  path: string;
+  regexPattern: string | null;
+  filePattern: string | null;
+  excludePattern: string | null;
+  excludeDir: string | null;
+  maxResults: number | null;
+  contextLines: number | null;
+  filesOnly: boolean | null;
+  showContent: boolean | null;
+  codeOnly: boolean | null;
+}): string[] {
+  const effectivePath = options.path !== "." ? options.path : ".";
+  const effectiveMaxResults = options.maxResults ?? DEFAULT_MAX_RESULTS;
+  const effectiveContextLines = options.contextLines ?? DEFAULT_CONTEXT_LINES;
+
+  const safeRegexPattern = normalizeNullableString(options.regexPattern);
+  const safeFilePattern = normalizeNullableString(options.filePattern);
+  const safeExcludePattern = normalizeNullableString(options.excludePattern);
+  const safeExcludeDir = normalizeNullableString(options.excludeDir);
+
+  const quotedQuery = JSON.stringify(options.query);
+
+  const args: string[] = [quotedQuery];
+
+  if (effectivePath !== ".") {
+    args.push(effectivePath);
+  }
+
+  if (safeRegexPattern) {
+    args.push("-e", safeRegexPattern);
+  }
+  if (safeFilePattern) {
+    args.push("--include", safeFilePattern);
+  }
+  if (safeExcludePattern) {
+    args.push("--exclude", safeExcludePattern);
+  }
+  if (safeExcludeDir) {
+    args.push("--exclude-dir", safeExcludeDir);
+  }
+  if (effectiveMaxResults !== DEFAULT_MAX_RESULTS) {
+    args.push("-k", String(effectiveMaxResults));
+  }
+  if (effectiveContextLines !== DEFAULT_CONTEXT_LINES) {
+    args.push("-n", String(effectiveContextLines));
+  }
+  if (options.filesOnly) {
+    args.push("-l");
+  }
+  if (options.showContent) {
+    args.push("-c");
+  }
+  if (options.codeOnly) {
+    args.push("--code-only");
+  }
+
+  return args;
+}
+
+/**
+ * Converts execSync error to user-friendly message
+ */
+function handleColgrepError(
+  error: unknown,
+  query: string,
+  path: string,
+): never {
+  const errorMessage = (error as Error).message;
+
+  // Check if colgrep is not installed
+  if (errorMessage.includes("ENOENT") || errorMessage.includes("not found")) {
+    throw new Error(
+      "colgrep is not installed. Please install it from https://github.com/lightonai/next-plaid",
+    );
+  }
+
+  let userFriendlyError = `Error searching "${query}" in ${path}: ${errorMessage}`;
+
+  if (errorMessage.includes("No such file or directory")) {
+    userFriendlyError = `Path not found: "${path}" - check if the path exists and is accessible`;
+  } else if (errorMessage.includes("permission denied")) {
+    userFriendlyError = `Permission denied accessing "${path}"`;
+  } else if (errorMessage.includes("timed out")) {
+    userFriendlyError =
+      "Search timed out after 30 seconds - try reducing maxResults";
+  }
+
+  throw new Error(userFriendlyError);
+}
+
 export const createCodeSearchTool = () => {
   return {
     toolDef: {
@@ -68,20 +174,10 @@ export const createCodeSearchTool = () => {
       showContent,
       codeOnly,
     }: CodeSearchInputSchema) {
-      const safeRegexPattern =
-        regexPattern === "null" || regexPattern === "undefined"
-          ? null
-          : regexPattern;
-      const safeFilePattern =
-        filePattern === "null" || filePattern === "undefined"
-          ? null
-          : filePattern;
-      const safeExcludePattern =
-        excludePattern === "null" || excludePattern === "undefined"
-          ? null
-          : excludePattern;
-      const safeExcludeDir =
-        excludeDir === "null" || excludeDir === "undefined" ? null : excludeDir;
+      const safeRegexPattern = normalizeNullableString(regexPattern);
+      const safeFilePattern = normalizeNullableString(filePattern);
+      const safeExcludePattern = normalizeNullableString(excludePattern);
+      const safeExcludeDir = normalizeNullableString(excludeDir);
 
       const displayPath = toDisplayPath(path);
       const effectiveMaxResults = maxResults ?? DEFAULT_MAX_RESULTS;
@@ -138,49 +234,21 @@ export const createCodeSearchTool = () => {
         throw new Error("CodeSearch aborted");
       }
 
+      const args = buildColgrepArgs({
+        query,
+        path,
+        regexPattern: normalizeNullableString(regexPattern),
+        filePattern: normalizeNullableString(filePattern),
+        excludePattern: normalizeNullableString(excludePattern),
+        excludeDir: normalizeNullableString(excludeDir),
+        maxResults,
+        contextLines,
+        filesOnly,
+        showContent,
+        codeOnly,
+      });
+
       try {
-        const effectivePath = path !== "." ? path : ".";
-        const effectiveMaxResults = maxResults ?? DEFAULT_MAX_RESULTS;
-        const effectiveContextLines = contextLines ?? DEFAULT_CONTEXT_LINES;
-
-        const safeRegexPattern =
-          regexPattern === "null" || regexPattern === "undefined"
-            ? null
-            : regexPattern;
-        const safeFilePattern =
-          filePattern === "null" || filePattern === "undefined"
-            ? null
-            : filePattern;
-        const safeExcludePattern =
-          excludePattern === "null" || excludePattern === "undefined"
-            ? null
-            : excludePattern;
-        const safeExcludeDir =
-          excludeDir === "null" || excludeDir === "undefined"
-            ? null
-            : excludeDir;
-
-        // Wrap query in quotes for shell
-        const quotedQuery = JSON.stringify(query);
-
-        const args = [
-          quotedQuery,
-          ...(effectivePath !== "." ? [effectivePath] : []),
-          ...(safeRegexPattern ? ["-e", safeRegexPattern] : []),
-          ...(safeFilePattern ? ["--include", safeFilePattern] : []),
-          ...(safeExcludePattern ? ["--exclude", safeExcludePattern] : []),
-          ...(safeExcludeDir ? ["--exclude-dir", safeExcludeDir] : []),
-          ...(effectiveMaxResults !== DEFAULT_MAX_RESULTS
-            ? ["-k", String(effectiveMaxResults)]
-            : []),
-          ...(effectiveContextLines !== DEFAULT_CONTEXT_LINES
-            ? ["-n", String(effectiveContextLines)]
-            : []),
-          ...(filesOnly ? ["-l"] : []),
-          ...(showContent ? ["-c"] : []),
-          ...(codeOnly ? ["--code-only"] : []),
-        ];
-
         const colgrepResult = execSync(["colgrep", ...args].join(" "), {
           encoding: "utf-8",
           stdio: ["pipe", "pipe", "pipe"],
@@ -189,30 +257,7 @@ export const createCodeSearchTool = () => {
 
         return colgrepResult;
       } catch (error) {
-        const errorMessage = (error as Error).message;
-
-        // Check if colgrep is not installed
-        if (
-          errorMessage.includes("ENOENT") ||
-          errorMessage.includes("not found")
-        ) {
-          throw new Error(
-            "colgrep is not installed. Please install it from https://github.com/lightonai/next-plaid",
-          );
-        }
-
-        let userFriendlyError = `Error searching "${query}" in ${path}: ${errorMessage}`;
-
-        if (errorMessage.includes("No such file or directory")) {
-          userFriendlyError = `Path not found: "${path}" - check if the path exists and is accessible`;
-        } else if (errorMessage.includes("permission denied")) {
-          userFriendlyError = `Permission denied accessing "${path}"`;
-        } else if (errorMessage.includes("timed out")) {
-          userFriendlyError =
-            "Search timed out after 30 seconds - try reducing maxResults";
-        }
-
-        throw new Error(userFriendlyError);
+        handleColgrepError(error, query, path);
       }
     },
   };
