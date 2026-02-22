@@ -108,6 +108,80 @@ const stringVisibleTrimSpacesRight = (string: string): string => {
   return words.slice(0, last).join(" ") + words.slice(last).join("");
 };
 
+/**
+ * Parses an ANSI escape sequence from preString starting at the given index.
+ * Returns the updated escapeCode and escapeUrl.
+ */
+function parseEscapeSequence(
+  preString: string,
+  preStringIndex: number,
+  currentEscapeCode: number | undefined,
+  currentEscapeUrl: string | undefined,
+): { escapeCode: number | undefined; escapeUrl: string | undefined } {
+  const match = new RegExp(
+    `(?:\\\\${ANSI_CSI}(?<code>\\d+)m|\\\\${ANSI_ESCAPE_LINK}(?<uri>.*)${ANSI_ESCAPE_BELL})`,
+  ).exec(preString.slice(preStringIndex));
+
+  let newEscapeCode = currentEscapeCode;
+  let newEscapeUrl = currentEscapeUrl;
+
+  if (match?.groups) {
+    const { groups } = match;
+    if (groups["code"] !== undefined) {
+      const code = Number.parseFloat(groups["code"]);
+      newEscapeCode = code === END_CODE ? undefined : code;
+    } else if (groups["uri"] !== undefined) {
+      newEscapeUrl = groups["uri"].length === 0 ? undefined : groups["uri"];
+    }
+  }
+
+  return { escapeCode: newEscapeCode, escapeUrl: newEscapeUrl };
+}
+
+/**
+ * Handles escape output when the next character is a newline.
+ */
+function handleEscapeOnNextNewline(
+  currentReturnValue: string,
+  escapeCode: number | undefined,
+  escapeUrl: string | undefined,
+): string {
+  const code = ansiStyles["codes"].get(Number(escapeCode));
+  let newReturnValue = currentReturnValue;
+
+  if (escapeUrl) {
+    newReturnValue += wrapAnsiHyperlink("");
+  }
+
+  if (escapeCode && code) {
+    newReturnValue += wrapAnsiCode(code);
+  }
+
+  return newReturnValue;
+}
+
+/**
+ * Handles escape output when the current character is a newline.
+ */
+function handleEscapeOnCurrentNewline(
+  currentReturnValue: string,
+  escapeCode: number | undefined,
+  escapeUrl: string | undefined,
+): string {
+  const code = ansiStyles["codes"].get(Number(escapeCode));
+  let newReturnValue = currentReturnValue;
+
+  if (escapeCode && code) {
+    newReturnValue += wrapAnsiCode(escapeCode);
+  }
+
+  if (escapeUrl) {
+    newReturnValue += wrapAnsiHyperlink(escapeUrl);
+  }
+
+  return newReturnValue;
+}
+
 const processAnsiEscapes = (pre: string[], preString: string): string => {
   let returnValue = "";
   let escapeCode: number | undefined;
@@ -118,39 +192,28 @@ const processAnsiEscapes = (pre: string[], preString: string): string => {
     returnValue += character;
 
     if (ESCAPES.has(character)) {
-      const match = new RegExp(
-        `(?:\\\\${ANSI_CSI}(?<code>\\d+)m|\\\\${ANSI_ESCAPE_LINK}(?<uri>.*)${ANSI_ESCAPE_BELL})`,
-      ).exec(preString.slice(preStringIndex));
-
-      if (match?.groups) {
-        const { groups } = match;
-        if (groups["code"] !== undefined) {
-          const code = Number.parseFloat(groups["code"]);
-          escapeCode = code === END_CODE ? undefined : code;
-        } else if (groups["uri"] !== undefined) {
-          escapeUrl = groups["uri"].length === 0 ? undefined : groups["uri"];
-        }
-      }
+      const parsed = parseEscapeSequence(
+        preString,
+        preStringIndex,
+        escapeCode,
+        escapeUrl,
+      );
+      escapeCode = parsed.escapeCode;
+      escapeUrl = parsed.escapeUrl;
     }
 
-    const code = ansiStyles["codes"].get(Number(escapeCode));
-
     if (pre[index + 1] === "\n") {
-      if (escapeUrl) {
-        returnValue += wrapAnsiHyperlink("");
-      }
-
-      if (escapeCode && code) {
-        returnValue += wrapAnsiCode(code);
-      }
+      returnValue = handleEscapeOnNextNewline(
+        returnValue,
+        escapeCode,
+        escapeUrl,
+      );
     } else if (character === "\n") {
-      if (escapeCode && code) {
-        returnValue += wrapAnsiCode(escapeCode);
-      }
-
-      if (escapeUrl) {
-        returnValue += wrapAnsiHyperlink(escapeUrl);
-      }
+      returnValue = handleEscapeOnCurrentNewline(
+        returnValue,
+        escapeCode,
+        escapeUrl,
+      );
     }
 
     preStringIndex += character.length;

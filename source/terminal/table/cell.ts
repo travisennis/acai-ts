@@ -260,37 +260,55 @@ export class Cell {
     return this.wrapWithStyleColors("border", content.join(""));
   }
 
+  /**
+   * Determines the base border character based on cell position.
+   */
+  private _getBaseTopLeftChar(x: number, offset: number): string {
+    if (this.y === 0) {
+      if (x === 0) return "topLeft";
+      return offset === 0 ? "topMid" : "top";
+    }
+
+    if (x === 0) return "leftMid";
+    return offset === 0 ? "midMid" : "bottomMid";
+  }
+
+  /**
+   * Checks if there's a ColSpanCell above this cell.
+   */
+  private _hasSpanAbove(x: number): boolean {
+    if (!this.cells || this.y === null) return false;
+    return this.cells[this.y - 1]?.[x] instanceof ColSpanCell;
+  }
+
+  /**
+   * Checks if there's a RowSpanCell to the left of this cell (after walking past any ColSpanCells).
+   */
+  private _hasRowSpanToLeft(x: number): boolean {
+    if (!this.cells || this.y === null) return false;
+    let i = 1;
+    while (this.cells[this.y]?.[x - i] instanceof ColSpanCell) {
+      i++;
+    }
+    return this.cells[this.y]?.[x - i] instanceof RowSpanCell;
+  }
+
   _topLeftChar(offset: number): string {
     if (this.x === null) {
       throw new Error("Cell x must be initialized before calling _topLeftChar");
     }
     const x = this.x + offset;
-    let leftChar: string;
-    if (this.y === 0) {
-      leftChar = x === 0 ? "topLeft" : offset === 0 ? "topMid" : "top";
-    } else {
-      if (x === 0) {
+    let leftChar = this._getBaseTopLeftChar(x, offset);
+
+    // Apply span modifications for non-top rows
+    if (this.y !== 0 && x !== 0) {
+      if (this._hasSpanAbove(x)) {
+        leftChar = offset === 0 ? "topMid" : "mid";
+      } else if (offset === 0 && this._hasRowSpanToLeft(x)) {
         leftChar = "leftMid";
-      } else {
-        leftChar = offset === 0 ? "midMid" : "bottomMid";
-        if (this.cells && this.y !== null) {
-          // TODO: cells should always exist - some tests don't fill it in though
-          const spanAbove = this.cells[this.y - 1]?.[x] instanceof ColSpanCell;
-          if (spanAbove) {
-            leftChar = offset === 0 ? "topMid" : "mid";
-          }
-          if (offset === 0) {
-            let i = 1;
-            while (this.cells[this.y]?.[x - i] instanceof ColSpanCell) {
-              i++;
-            }
-            if (this.cells[this.y]?.[x - i] instanceof RowSpanCell) {
-              leftChar = "leftMid";
-            }
-          }
-        }
       }
     }
+
     return this.chars[leftChar as CharName];
   }
 

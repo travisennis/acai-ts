@@ -225,6 +225,104 @@ export function makeTableLayout(rows: unknown[]): Cell[][] {
   return cellRows;
 }
 
+/**
+ * Scans table rows and populates result array with cell widths and collects spanning cells.
+ */
+function scanTableForWidths(
+  colSpan: "colSpan",
+  desiredWidth: "desiredWidth" | "desiredHeight",
+  x: "x" | "y",
+  forcedMin: number,
+  table: Cell[][],
+): { result: number[]; spanners: Cell[]; auto: Record<number, number> } {
+  const result: number[] = [];
+  const spanners: Cell[] = [];
+  const auto: Record<number, number> = {};
+
+  table.forEach((row) => {
+    row.forEach((cell) => {
+      if ((cell[colSpan] || 1) > 1) {
+        spanners.push(cell);
+      } else {
+        const key = cell[x];
+        if (key !== null) {
+          result[key] = Math.max(
+            result[key] || 0,
+            cell[desiredWidth] || 0,
+            forcedMin,
+          );
+        }
+      }
+    });
+  });
+
+  return { result, spanners, auto };
+}
+
+/**
+ * Applies forced values from vals array to result.
+ */
+function applyForcedValues(vals: Array<number | null>, result: number[]): void {
+  vals.forEach((val, index) => {
+    if (typeof val === "number") {
+      result[index] = val;
+    }
+  });
+}
+
+/**
+ * Processes spanning cells and distributes their widths across columns.
+ */
+function processSpanners(
+  colSpan: "colSpan",
+  desiredWidth: "desiredWidth" | "desiredHeight",
+  x: "x" | "y",
+  spanners: Cell[],
+  result: number[],
+  auto: Record<number, number>,
+  vals: Array<number | null>,
+): void {
+  for (let k = spanners.length - 1; k >= 0; k--) {
+    const cell = spanners[k];
+    const span = cell[colSpan];
+    const col = cell[x];
+    if (col === null) continue;
+
+    let existingWidth = result[col];
+    let editableCols = typeof vals[col] === "number" ? 0 : 1;
+
+    if (typeof existingWidth === "number") {
+      for (let i = 1; i < span; i++) {
+        existingWidth += 1 + result[col + i];
+        if (typeof vals[col + i] !== "number") {
+          editableCols++;
+        }
+      }
+    } else {
+      existingWidth =
+        desiredWidth === "desiredWidth" ? cell.desiredWidth - 1 : 1;
+      if (!auto[col] || auto[col] < existingWidth) {
+        auto[col] = existingWidth;
+      }
+    }
+
+    if (cell[desiredWidth] > existingWidth) {
+      let i = 0;
+      while (editableCols > 0 && cell[desiredWidth] > existingWidth) {
+        if (typeof vals[col + i] !== "number") {
+          const dif = Math.round(
+            (cell[desiredWidth] - existingWidth) / editableCols,
+          );
+          existingWidth += dif;
+          result[col + i] += dif;
+          editableCols--;
+        }
+        i++;
+      }
+    }
+  }
+}
+
 export function makeComputeWidths(
   colSpan: "colSpan",
   desiredWidth: "desiredWidth" | "desiredHeight",
@@ -232,70 +330,17 @@ export function makeComputeWidths(
   forcedMin: number,
 ): (vals: Array<number | null>, table: Cell[][]) => void {
   return (vals: Array<number | null>, table: Cell[][]): void => {
-    const result: number[] = [];
-    const spanners: Cell[] = [];
-    const auto: Record<number, number> = {};
-    table.forEach((row) => {
-      row.forEach((cell) => {
-        if ((cell[colSpan] || 1) > 1) {
-          spanners.push(cell);
-        } else {
-          const key = cell[x];
-          if (key !== null) {
-            result[key] = Math.max(
-              result[key] || 0,
-              cell[desiredWidth] || 0,
-              forcedMin,
-            );
-          }
-        }
-      });
-    });
+    const { result, spanners, auto } = scanTableForWidths(
+      colSpan,
+      desiredWidth,
+      x,
+      forcedMin,
+      table,
+    );
 
-    vals.forEach((val, index) => {
-      if (typeof val === "number") {
-        result[index] = val;
-      }
-    });
+    applyForcedValues(vals, result);
 
-    // spanners.forEach(function(cell){
-    for (let k = spanners.length - 1; k >= 0; k--) {
-      const cell = spanners[k];
-      const span = cell[colSpan];
-      const col = cell[x];
-      if (col === null) continue;
-      let existingWidth = result[col];
-      let editableCols = typeof vals[col] === "number" ? 0 : 1;
-      if (typeof existingWidth === "number") {
-        for (let i = 1; i < span; i++) {
-          existingWidth += 1 + result[col + i];
-          if (typeof vals[col + i] !== "number") {
-            editableCols++;
-          }
-        }
-      } else {
-        existingWidth =
-          desiredWidth === "desiredWidth" ? cell.desiredWidth - 1 : 1;
-        if (!auto[col] || auto[col] < existingWidth) {
-          auto[col] = existingWidth;
-        }
-      }
-
-      if (cell[desiredWidth] > existingWidth) {
-        let i = 0;
-        while (editableCols > 0 && cell[desiredWidth] > existingWidth) {
-          if (typeof vals[col + i] !== "number") {
-            const dif = Math.round(
-              (cell[desiredWidth] - existingWidth) / editableCols,
-            );
-            existingWidth += dif;
-            result[col + i] += dif;
-            editableCols--;
-          }
-          i++;
-        }
-      }
-    }
+    processSpanners(colSpan, desiredWidth, x, spanners, result, auto, vals);
 
     Object.assign(vals, result, auto);
     for (let j = 0; j < vals.length; j++) {

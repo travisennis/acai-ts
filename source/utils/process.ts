@@ -37,6 +37,107 @@ type ParseResult =
   | { ok: true; argv: [string, ...string[]] }
   | { ok: false; error: string };
 
+/**
+ * Checks for shell-only constructs that are not allowed.
+ */
+function checkShellConstructs(
+  input: string,
+  i: number,
+  ch: string,
+): { ok: false; error: string } | null {
+  if (ch === "`") {
+    return { ok: false, error: "Backticks are not allowed" };
+  }
+  if (ch === "$" && i + 1 < input.length && input[i + 1] === "(") {
+    return { ok: false, error: "Command substitution $() is not allowed" };
+  }
+  return null;
+}
+
+/**
+ * Handles whitespace outside of quotes.
+ */
+function handleWhitespace(
+  ch: string,
+  inSingle: boolean,
+  inDouble: boolean,
+  argv: string[],
+  currentBuf: string,
+): { done: boolean; buf: string } | null {
+  if (!inSingle && !inDouble && /\s/.test(ch)) {
+    if (currentBuf.length > 0) {
+      argv.push(currentBuf);
+    }
+    return { done: true, buf: "" };
+  }
+  return null;
+}
+
+/**
+ * Handles single quote state transitions.
+ */
+function handleSingleQuote(
+  ch: string,
+  inSingle: boolean,
+  inDouble: boolean,
+): { inSingle: boolean; done: boolean } | null {
+  if (!inDouble && ch === "'" && !inSingle) {
+    return { inSingle: true, done: true };
+  }
+  if (inSingle && ch === "'") {
+    return { inSingle: false, done: true };
+  }
+  return null;
+}
+
+/**
+ * Handles double quote state transitions.
+ */
+function handleDoubleQuote(
+  ch: string,
+  inSingle: boolean,
+  inDouble: boolean,
+): { inDouble: boolean; done: boolean } | null {
+  if (!inSingle && ch === '"' && !inDouble) {
+    return { inDouble: true, done: true };
+  }
+  if (inDouble && ch === '"') {
+    return { inDouble: false, done: true };
+  }
+  return null;
+}
+
+/**
+ * Handles escape sequences.
+ * Returns the new buffer and index after handling the escape.
+ */
+function handleEscape(
+  input: string,
+  i: number,
+  ch: string,
+  inSingle: boolean,
+  inDouble: boolean,
+  buf: string,
+):
+  | { buf: string; i: number; ok: false; error: string }
+  | { buf: string; i: number }
+  | null {
+  if (!inSingle && ch === "\\") {
+    const nextIndex = i + 1;
+    if (nextIndex >= input.length) {
+      return { buf, i: nextIndex, ok: false, error: "Dangling escape" };
+    }
+    const next = input[nextIndex] ?? "";
+    // Inside double quotes, only escape " and \\ reliably
+    if (inDouble && next !== '"' && next !== "\\") {
+      // Keep backslash literally for safety
+      return { buf: `${buf}\\${next}`, i: nextIndex + 1 };
+    }
+    return { buf: buf + next, i: nextIndex + 1 };
+  }
+  return null;
+}
+
 // Quote/escape-aware argv tokenizer that forbids command substitution
 export function parseArgv(input: string): ParseResult {
   const argv: string[] = [];
@@ -50,54 +151,41 @@ export function parseArgv(input: string): ParseResult {
     const ch = input[i] ?? "";
 
     // Reject shell-only constructs early
-    if (ch === "`") return { ok: false, error: "Backticks are not allowed" };
-    if (ch === "$" && i + 1 < n && input[i + 1] === "(") {
-      return { ok: false, error: "Command substitution $() is not allowed" };
+    const shellError = checkShellConstructs(input, i, ch);
+    if (shellError) return shellError;
+
+    // Handle whitespace
+    const whitespace = handleWhitespace(ch, inSingle, inDouble, argv, buf);
+    if (whitespace) {
+      buf = whitespace.buf;
+      i += 1;
+      continue;
     }
 
-    if (!inSingle && !inDouble && /\s/.test(ch)) {
-      if (buf.length > 0) {
-        argv.push(buf);
-        buf = "";
+    // Handle single quotes
+    const singleQuote = handleSingleQuote(ch, inSingle, inDouble);
+    if (singleQuote) {
+      inSingle = singleQuote.inSingle;
+      i += 1;
+      continue;
+    }
+
+    // Handle double quotes
+    const doubleQuote = handleDoubleQuote(ch, inSingle, inDouble);
+    if (doubleQuote) {
+      inDouble = doubleQuote.inDouble;
+      i += 1;
+      continue;
+    }
+
+    // Handle escape sequences
+    const escapeResult = handleEscape(input, i, ch, inSingle, inDouble, buf);
+    if (escapeResult) {
+      if ("ok" in escapeResult && !escapeResult.ok) {
+        return escapeResult;
       }
-      i += 1;
-      continue;
-    }
-
-    if (!inDouble && ch === "'" && !inSingle) {
-      inSingle = true;
-      i += 1;
-      continue;
-    }
-    if (inSingle && ch === "'") {
-      inSingle = false;
-      i += 1;
-      continue;
-    }
-
-    if (!inSingle && ch === '"' && !inDouble) {
-      inDouble = true;
-      i += 1;
-      continue;
-    }
-    if (inDouble && ch === '"') {
-      inDouble = false;
-      i += 1;
-      continue;
-    }
-
-    if (!inSingle && ch === "\\") {
-      i += 1;
-      if (i >= n) return { ok: false, error: "Dangling escape" };
-      const next = input[i] ?? "";
-      // Inside double quotes, only escape " and \\ reliably
-      if (inDouble && next !== '"' && next !== "\\") {
-        // Keep backslash literally for safety
-        buf += `\\${next}`;
-      } else {
-        buf += next;
-      }
-      i += 1;
+      buf = escapeResult.buf;
+      i = escapeResult.i;
       continue;
     }
 

@@ -193,6 +193,58 @@ interface ExecFileError extends Error {
 }
 
 /**
+ * Skips past a character class [...], handling escaped characters.
+ * Returns the new index after the character class.
+ */
+function skipCharacterClass(pattern: string, startIndex: number): number {
+  let i = startIndex + 1;
+  while (i < pattern.length && pattern[i] !== "]") {
+    if (pattern[i] === "\\") i++;
+    i++;
+  }
+  return i;
+}
+
+/**
+ * Parses and validates the content inside braces {..}.
+ * Returns true if the brace content is invalid.
+ */
+function isInvalidBraceContent(pattern: string, startIndex: number): boolean {
+  let j = startIndex + 1;
+  let hasDigits = false;
+  let hasComma = false;
+
+  // Parse content inside braces
+  while (j < pattern.length && pattern[j] !== "}") {
+    const c = pattern[j];
+    if (c >= "0" && c <= "9") {
+      hasDigits = true;
+    } else if (c === "," && !hasComma) {
+      hasComma = true;
+    } else {
+      // Invalid character inside braces
+      return true;
+    }
+    j++;
+  }
+
+  // No closing brace found
+  if (j >= pattern.length) {
+    return true;
+  }
+
+  // Empty braces {} with no preceding atom are treated as literal
+  if (!hasDigits) {
+    const prev = startIndex > 0 ? pattern[startIndex - 1] : undefined;
+    if (prev !== undefined && /\S/.test(prev)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Check for invalid repetition operators (e.g., {n}, {n,}, {n,m}) outside of character classes.
  * Returns true if any invalid repetition operators are found.
  */
@@ -206,12 +258,7 @@ function hasInvalidRepetition(pattern: string): boolean {
     }
 
     if (ch === "[") {
-      // Skip character class
-      i++;
-      while (i < pattern.length && pattern[i] !== "]") {
-        if (pattern[i] === "\\") i++;
-        i++;
-      }
+      i = skipCharacterClass(pattern, i);
       continue;
     }
 
@@ -221,38 +268,16 @@ function hasInvalidRepetition(pattern: string): boolean {
     }
 
     if (ch === "{") {
-      let j = i + 1;
-      let hasDigits = false;
-      let hasComma = false;
-
-      // Parse content inside braces
-      while (j < pattern.length && pattern[j] !== "}") {
-        const c = pattern[j];
-        if (c >= "0" && c <= "9") {
-          hasDigits = true;
-        } else if (c === "," && !hasComma) {
-          hasComma = true;
-        } else {
-          // Invalid character inside braces
-          return true;
-        }
-        j++;
-      }
-
-      // No closing brace found
-      if (j >= pattern.length) {
+      if (isInvalidBraceContent(pattern, i)) {
         return true;
       }
 
-      // Empty braces {} with no preceding atom are treated as literal
-      if (!hasDigits) {
-        const prev = i > 0 ? pattern[i - 1] : undefined;
-        if (prev !== undefined && /\S/.test(prev)) {
-          return true;
-        }
+      // Find closing brace to move past it
+      let j = i + 1;
+      while (j < pattern.length && pattern[j] !== "}") {
+        j++;
       }
-
-      i = j; // Move past the closing brace
+      i = j;
     }
   }
 
