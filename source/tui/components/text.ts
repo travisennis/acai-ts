@@ -44,6 +44,86 @@ export class Text implements Component {
     this.cachedLines = undefined;
   }
 
+  /**
+   * Apply background color to a line if customBgRgb is set
+   */
+  private applyBackground(line: string): string {
+    if (!this.customBgRgb) {
+      return line;
+    }
+    return style.bgRgb(
+      this.customBgRgb.r,
+      this.customBgRgb.g,
+      this.customBgRgb.b,
+    )(line);
+  }
+
+  /**
+   * Create an empty padded line (for top/bottom padding)
+   */
+  private createEmptyPaddedLine(width: number): string {
+    const emptyLine = " ".repeat(width);
+    return this.applyBackground(emptyLine);
+  }
+
+  /**
+   * Wrap a single line of text to fit within contentWidth
+   */
+  private wrapLine(line: string, contentWidth: number): string[] {
+    const lines: string[] = [];
+    const visibleLineLength = visibleWidth(line);
+
+    if (visibleLineLength <= contentWidth) {
+      lines.push(line);
+      return lines;
+    }
+
+    // Word wrap
+    const words = line.split(" ");
+    let currentLine = "";
+
+    for (const word of words) {
+      const currentVisible = visibleWidth(currentLine);
+
+      // If word is too long, truncate it
+      const finalWord = this.truncateWord(word, contentWidth);
+
+      if (currentVisible === 0) {
+        currentLine = finalWord;
+      } else if (currentVisible + 1 + visibleWidth(finalWord) <= contentWidth) {
+        currentLine += ` ${finalWord}`;
+      } else {
+        lines.push(currentLine);
+        currentLine = finalWord;
+      }
+    }
+
+    if (currentLine.length > 0) {
+      lines.push(currentLine);
+    }
+
+    return lines;
+  }
+
+  /**
+   * Truncate a word to fit within contentWidth
+   */
+  private truncateWord(word: string, contentWidth: number): string {
+    const wordVisible = visibleWidth(word);
+    if (wordVisible <= contentWidth) {
+      return word;
+    }
+
+    let truncated = "";
+    for (const char of word) {
+      if (visibleWidth(truncated + char) > contentWidth) {
+        break;
+      }
+      truncated += char;
+    }
+    return truncated;
+  }
+
   render(width: number): string[] {
     // Check cache
     if (
@@ -74,51 +154,8 @@ export class Text implements Component {
     const textLines = normalizedText.split("\n");
 
     for (const line of textLines) {
-      // Measure visible length (strip ANSI codes)
-      const visibleLineLength = visibleWidth(line);
-
-      if (visibleLineLength <= contentWidth) {
-        lines.push(line);
-      } else {
-        // Word wrap
-        const words = line.split(" ");
-        let currentLine = "";
-
-        for (const word of words) {
-          const currentVisible = visibleWidth(currentLine);
-          const wordVisible = visibleWidth(word);
-
-          // If word is too long, truncate it
-          let finalWord = word;
-          if (wordVisible > contentWidth) {
-            // Truncate word to fit
-            let truncated = "";
-            for (const char of word) {
-              if (visibleWidth(truncated + char) > contentWidth) {
-                break;
-              }
-              truncated += char;
-            }
-            finalWord = truncated;
-          }
-
-          if (currentVisible === 0) {
-            currentLine = finalWord;
-          } else if (
-            currentVisible + 1 + visibleWidth(finalWord) <=
-            contentWidth
-          ) {
-            currentLine += ` ${finalWord}`;
-          } else {
-            lines.push(currentLine);
-            currentLine = finalWord;
-          }
-        }
-
-        if (currentLine.length > 0) {
-          lines.push(currentLine);
-        }
-      }
+      const wrappedLines = this.wrapLine(line, contentWidth);
+      lines.push(...wrappedLines);
     }
 
     // Add padding to each line
@@ -131,47 +168,22 @@ export class Text implements Component {
       // Right padding to fill to width (accounting for left padding and content)
       const rightPadLength = Math.max(0, width - this.paddingX - visibleLength);
       const rightPad = " ".repeat(rightPadLength);
-      let paddedLine = leftPad + line + rightPad;
+      const paddedLine = leftPad + line + rightPad;
 
       // Apply background color if specified
-      if (this.customBgRgb) {
-        paddedLine = style.bgRgb(
-          this.customBgRgb.r,
-          this.customBgRgb.g,
-          this.customBgRgb.b,
-        )(paddedLine);
-      }
-
-      paddedLines.push(paddedLine);
+      paddedLines.push(this.applyBackground(paddedLine));
     }
 
     // Add top padding (empty lines)
-    const emptyLine = " ".repeat(width);
     const topPadding: string[] = [];
     for (let i = 0; i < this.paddingY; i++) {
-      let emptyPaddedLine = emptyLine;
-      if (this.customBgRgb) {
-        emptyPaddedLine = style.bgRgb(
-          this.customBgRgb.r,
-          this.customBgRgb.g,
-          this.customBgRgb.b,
-        )(emptyPaddedLine);
-      }
-      topPadding.push(emptyPaddedLine);
+      topPadding.push(this.createEmptyPaddedLine(width));
     }
 
     // Add bottom padding (empty lines)
     const bottomPadding: string[] = [];
     for (let i = 0; i < this.paddingY; i++) {
-      let emptyPaddedLine = emptyLine;
-      if (this.customBgRgb) {
-        emptyPaddedLine = style.bgRgb(
-          this.customBgRgb.r,
-          this.customBgRgb.g,
-          this.customBgRgb.b,
-        )(emptyPaddedLine);
-      }
-      bottomPadding.push(emptyPaddedLine);
+      bottomPadding.push(this.createEmptyPaddedLine(width));
     }
 
     // Combine top padding, content, and bottom padding
