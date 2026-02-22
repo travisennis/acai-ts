@@ -58,34 +58,6 @@ export class CombinedProvider implements AutocompleteProvider {
     return { lines, cursorLine, cursorCol };
   }
 
-  // Force file completion (called on Tab key) - always returns suggestions
-  async getForceFileSuggestions(
-    lines: string[],
-    cursorLine: number,
-    cursorCol: number,
-  ): Promise<{ items: AutocompleteItem[]; prefix: string } | null> {
-    if (!this.shouldTriggerFileCompletion(lines, cursorLine, cursorCol)) {
-      return null;
-    }
-    // Try each provider that has getForceFileSuggestions method
-    for (const provider of this.providers) {
-      if (
-        "getForceFileSuggestions" in provider &&
-        typeof provider.getForceFileSuggestions === "function"
-      ) {
-        const result = await provider.getForceFileSuggestions(
-          lines,
-          cursorLine,
-          cursorCol,
-        );
-        if (result) {
-          return result;
-        }
-      }
-    }
-    return null;
-  }
-
   // Check if we should trigger file completion (called on Tab key)
   shouldTriggerFileCompletion(
     lines: string[],

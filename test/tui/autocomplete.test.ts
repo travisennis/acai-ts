@@ -20,7 +20,7 @@ describe("CombinedAutocompleteProvider", () => {
   beforeEach(() => {
     provider = createDefaultProvider(testCommands, [
       process.cwd(),
-      "/Users/trtravisennis/.acai",
+      "/Users/travisennis/.acai",
     ]);
   });
 
@@ -86,6 +86,7 @@ describe("CombinedAutocompleteProvider", () => {
         ["/tmp"],
       );
       const result = await providerWithArgs.getSuggestions(["/test a"], 0, 7);
+      console.dir(result);
       assert.ok(result);
       assert.strictEqual(result.prefix, "a");
       assert.strictEqual(result.items.length, 2);
@@ -120,72 +121,9 @@ describe("CombinedAutocompleteProvider", () => {
       assert.ok(result.items.length > 0);
     });
 
-    it("should trigger for paths starting with ./", async () => {
-      const result = await provider.getSuggestions(["./"], 0, 2);
-      assert.ok(result);
-      assert.strictEqual(result.prefix, "./");
-      assert.equal(
-        !!result.items.find((item) => item.label === "source"),
-        true,
-      );
-    });
-
     it("shouldn't trigger for paths starting with ~/ (not allowed directory)", async () => {
       const result = await provider.getSuggestions(["~/"], 0, 2);
       assert.strictEqual(result, null);
-    });
-
-    it("should trigger for paths ending with /", async () => {
-      const result = await provider.getSuggestions(["./source/"], 0, 9);
-      assert.ok(result);
-    });
-
-    it("should trigger for paths starting with /", async () => {
-      const cwd = process.cwd();
-      const result = await provider.getSuggestions(
-        [`read ${cwd}/source`],
-        0,
-        5 + cwd.length,
-      );
-      assert.ok(result);
-    });
-  });
-
-  describe("force file completion", () => {
-    it("should trigger for path prefix with Tab", async () => {
-      const result = await provider.getForceFileSuggestions(
-        ["source/to"],
-        0,
-        9,
-      );
-      assert.ok(result);
-      assert.strictEqual(result.prefix, "source/to");
-      assert.equal(!!result.items.find((item) => item.label === "tools"), true);
-    });
-
-    it("should trigger for partial paths with Tab", async () => {
-      const result = await provider.getForceFileSuggestions(["source"], 0, 6);
-      assert.ok(result);
-      assert.strictEqual(result.prefix, "source");
-      assert.equal(
-        !!result.items.find((item) => item.label === "source"),
-        true,
-      );
-    });
-
-    it("should not trigger for slash commands with Tab", async () => {
-      const result = await provider.getForceFileSuggestions(["/h"], 0, 2);
-      assert.strictEqual(result, null);
-    });
-
-    it("should trigger for slash commands with arguments", async () => {
-      const result = await provider.getForceFileSuggestions(
-        ["/help source"],
-        0,
-        12,
-      );
-      assert.ok(result);
-      assert.strictEqual(result.prefix, "source");
     });
   });
 
@@ -216,20 +154,6 @@ describe("CombinedAutocompleteProvider", () => {
       assert.deepStrictEqual(result.lines, ["#source/to "]);
       assert.strictEqual(result.cursorLine, 0);
       assert.strictEqual(result.cursorCol, 11); // After "#source/to "
-    });
-
-    it("should apply regular file completion correctly", () => {
-      const result = provider.applyCompletion(
-        ["source"],
-        0,
-        6,
-        { value: "source/to", label: "to" },
-        "source",
-      );
-
-      assert.deepStrictEqual(result.lines, ["source/to"]);
-      assert.strictEqual(result.cursorLine, 0);
-      assert.strictEqual(result.cursorCol, 9); // After "source/to"
     });
 
     it("should apply command argument completion correctly", () => {

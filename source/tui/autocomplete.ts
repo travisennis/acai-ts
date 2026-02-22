@@ -8,7 +8,6 @@ import {
   type SlashCommand,
 } from "./autocomplete/command-provider.ts";
 import { FileSearchProvider } from "./autocomplete/file-search-provider.ts";
-import { PathProvider } from "./autocomplete/path-provider.ts";
 
 export { AttachmentProvider } from "./autocomplete/attachment-provider.ts";
 export type {
@@ -19,7 +18,6 @@ export { CombinedProvider } from "./autocomplete/combined-provider.ts";
 export type { SlashCommand } from "./autocomplete/command-provider.ts";
 export { CommandProvider } from "./autocomplete/command-provider.ts";
 export { FileSearchProvider } from "./autocomplete/file-search-provider.ts";
-export { PathProvider } from "./autocomplete/path-provider.ts";
 export {
   DirectoryCache,
   directoryCache,
@@ -31,11 +29,10 @@ export {
 // Convenience function for backward compatibility
 export function createDefaultProvider<
   T extends SlashCommand | AutocompleteItem,
->(commands: T[] = [], allowedDirs: string[] = [process.cwd()]) {
+>(commands: T[] = [], _allowedDirs: string[] = [process.cwd()]) {
   return new CombinedProvider([
     new CommandProvider<T>(commands),
     new AttachmentProvider(),
     new FileSearchProvider(),
-    new PathProvider(allowedDirs),
   ]);
 }

@@ -142,7 +142,12 @@ export class FileSearchProvider implements AutocompleteProvider {
         }
 
         const isDirectory = match.endsWith("/");
-        const relPath = isDirectory ? `${relativePath}/` : relativePath;
+        const relativePathWithPrefix = relativePath.startsWith("./")
+          ? relativePath
+          : `./${relativePath}`;
+        const relPath = isDirectory
+          ? `${relativePathWithPrefix}/`
+          : relativePathWithPrefix;
         const label = relativePath.split("/").pop() || relativePath;
         const parentPath = relativePath.split("/").slice(0, -1).join("/");
 

@@ -9,10 +9,7 @@ import {
 import { getSegmenter } from "../../terminal/segmenter.ts";
 import style from "../../terminal/style.ts";
 import type { CombinedProvider as CombinedAutocompleteProvider } from "../autocomplete/combined-provider.ts";
-import type {
-  AutocompleteItem,
-  AutocompleteProvider,
-} from "../autocomplete.ts";
+import type { AutocompleteProvider } from "../autocomplete.ts";
 import type { Component } from "../tui.ts";
 import { visibleWidth } from "../utils.ts";
 import { SelectList } from "./select-list.ts";
@@ -1438,8 +1435,6 @@ export class Editor implements Component {
     // Check if we're in a slash command context
     if (beforeCursor.trimStart().startsWith("/")) {
       await this.handleSlashCommandCompletion();
-    } else {
-      await this.forceFileAutocomplete();
     }
   }
 
@@ -1447,50 +1442,6 @@ export class Editor implements Component {
     // For now, fall back to regular autocomplete (slash commands)
     // This can be extended later to handle command-specific argument completion
     await this.tryTriggerAutocomplete(true);
-  }
-
-  private async forceFileAutocomplete(): Promise<void> {
-    if (!this.autocompleteProvider) return;
-
-    // Check if provider has the force method
-    const provider = this.autocompleteProvider as {
-      getForceFileSuggestions?: (
-        lines: string[],
-        cursorLine: number,
-        cursorCol: number,
-      ) => Promise<{
-        items: AutocompleteItem[];
-        prefix: string;
-      } | null>;
-    };
-    if (!provider.getForceFileSuggestions) {
-      await this.tryTriggerAutocomplete(true);
-      return;
-    }
-
-    const suggestions = await provider.getForceFileSuggestions(
-      this.state.lines,
-      this.state.cursorLine,
-      this.state.cursorCol,
-    );
-
-    if (suggestions && suggestions.items.length > 0) {
-      this.autocompletePrefix = suggestions.prefix;
-      if (this.autocompleteList) {
-        this.autocompleteList.updateItems(suggestions.items);
-      } else {
-        this.autocompleteList = new SelectList(
-          suggestions.items,
-          5,
-          this.theme.selectList,
-        );
-      }
-      this.isAutocompleting = true;
-      // Request re-render to show autocomplete list
-      this.onRenderRequested?.();
-    } else {
-      this.cancelAutocomplete();
-    }
   }
 
   private cancelAutocomplete(): void {
