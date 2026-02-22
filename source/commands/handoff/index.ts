@@ -26,7 +26,7 @@ export const handoffCommand = (options: CommandOptions): ReplCommand => {
         container,
         editor,
       }: { tui: TUI; container: Container; editor: Editor },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       const purpose = args.join(" ").trim();
       if (!purpose) {
         container.addChild(

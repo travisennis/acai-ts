@@ -36,7 +36,7 @@ export function modelCommand(options: CommandOptions): ReplCommand {
         inputContainer: Container;
         editor: Editor;
       },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       const arg = args.join(" ").trim();
 
       if (!arg) {

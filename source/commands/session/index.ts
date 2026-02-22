@@ -36,7 +36,7 @@ export function sessionCommand({
     async handle(
       _args: string[],
       { tui, editor }: { tui: TUI; container: Container; editor: Editor },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       const meta = modelManager.getModelMetadata("repl");
       const window = meta.contextWindow;
 

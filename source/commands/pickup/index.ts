@@ -44,7 +44,7 @@ export const pickupCommand = (options: CommandOptions): ReplCommand => {
         inputContainer: Container;
         editor: Editor;
       },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       const handoffs = await getAvailableHandoffFiles();
 
       if (handoffs.length === 0) {

@@ -94,7 +94,7 @@ export const historyCommand = ({
         inputContainer: Container;
         editor: Editor;
       },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       const appDir = config.app;
       const sessionsDir = await appDir.ensurePath("sessions");
 

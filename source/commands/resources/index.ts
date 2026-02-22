@@ -19,7 +19,7 @@ export function resourcesCommand(options: CommandOptions): ReplCommand {
     async handle(
       _args: string[],
       { tui, editor }: { tui: TUI; container: Container; editor: Editor },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       try {
         const skills = await loadSkills();
 

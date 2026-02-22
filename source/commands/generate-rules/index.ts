@@ -48,7 +48,7 @@ export const generateRulesCommand = ({
         inputContainer: Container;
         editor: Editor;
       },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       if (sessionManager.isEmpty()) {
         container.addChild(
           new Text(

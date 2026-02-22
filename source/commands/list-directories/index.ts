@@ -19,7 +19,7 @@ export const listDirectoriesCommand = ({
     async handle(
       _args: string[],
       { tui, editor }: { tui: TUI; container: Container; editor: Editor },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       // Build modal content
       const modalContent = new ModalContainer();
 

@@ -20,7 +20,7 @@ export interface ReplCommand {
       inputContainer: Container;
       editor: Editor;
     },
-  ) => Promise<"break" | "continue" | "use">;
+  ) => Promise<"continue" | "use">;
 }
 
 export interface CommandOptions {

@@ -44,7 +44,7 @@ export const initCommand = ({
         container,
         editor,
       }: { tui: TUI; container: Container; editor: Editor },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       container.addChild(
         new Text("Initializing project and creating AGENTS.md...", 1, 1),
       );

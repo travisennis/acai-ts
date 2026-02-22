@@ -24,7 +24,7 @@ export const removeDirectoryCommand = ({
         container,
         editor,
       }: { tui: TUI; container: Container; editor: Editor },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       const directoryPath = args?.[0];
       if (!directoryPath) {
         container.addChild(

@@ -22,7 +22,7 @@ export const initProjectCommand = (_options: CommandOptions): ReplCommand => {
         container,
         editor,
       }: { tui: TUI; container: Container; editor: Editor },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       const currentDir = process.cwd();
 
       if (isDevelopmentDirectory(currentDir)) {

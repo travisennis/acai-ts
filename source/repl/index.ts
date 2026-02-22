@@ -294,10 +294,6 @@ export class Repl {
           },
         );
 
-        if (commandResult.break) {
-          this.stop(true);
-          process.exit(0);
-        }
         if (commandResult.continue) {
           this.editor.setText("");
           this.tui.requestRender();

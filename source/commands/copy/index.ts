@@ -21,7 +21,7 @@ export function copyCommand(options: CommandOptions): ReplCommand {
         container,
         editor,
       }: { tui: TUI; container: Container; editor: Editor },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       const { sessionManager } = options;
       const history = sessionManager.get();
 

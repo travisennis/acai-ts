@@ -18,7 +18,7 @@ export const helpCommand = (
     async handle(
       _args: string[],
       { tui, editor }: { tui: TUI; container: Container; editor: Editor },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       const commands = cmds;
 
       const entries: [string, string][] = Array.from(commands.entries())

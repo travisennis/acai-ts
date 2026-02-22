@@ -20,7 +20,7 @@ export const reviewCommand = (_options: CommandOptions): ReplCommand => {
         editor: Editor;
         inputContainer: Container;
       },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       await showReviewPanel(tui, container, inputContainer, editor);
       return "continue";
     },

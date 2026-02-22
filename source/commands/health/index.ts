@@ -23,7 +23,7 @@ export function healthCommand(_options: CommandOptions): ReplCommand {
     async handle(
       _args: string[],
       { tui, editor }: { tui: TUI; container: Container; editor: Editor },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       const envStatus = checkEnvironmentVariables();
       const toolStatus = checkTools();
 

@@ -76,7 +76,7 @@ export const shareCommand = (options: CommandOptions): ReplCommand => {
         container,
         editor,
       }: { tui: TUI; container: Container; editor: Editor },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       const { sessionManager } = options;
 
       container.addChild(new Spacer(1));

@@ -173,7 +173,7 @@ export class CommandManager {
             inputContainer: Container;
             editor: Editor;
           },
-        ): Promise<"break" | "continue" | "use"> {
+        ): Promise<"continue" | "use"> {
           try {
             const fileContent = await readFile(skillFilePath, "utf8");
             const { content: body } = parseFrontMatter(fileContent);
@@ -275,20 +275,12 @@ export class CommandManager {
         if (result === "continue") {
           return {
             continue: true,
-            break: false,
-          };
-        }
-        if (result === "break") {
-          return {
-            continue: false,
-            break: true,
           };
         }
       }
     }
     return {
       continue: false,
-      break: false,
     };
   }
 }

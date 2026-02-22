@@ -29,7 +29,7 @@ export const pasteCommand = ({
         container,
         editor,
       }: { tui: TUI; container: Container; editor: Editor },
-    ): Promise<"break" | "continue" | "use"> {
+    ): Promise<"continue" | "use"> {
       try {
         if (Clipboard.hasImage()) {
           const base64DataUrl = await Clipboard.getImageBase64();
