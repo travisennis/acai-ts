@@ -176,16 +176,20 @@ export class Agent {
   }
 
   async *run(args: RunOptions): AsyncGenerator<AgentEvent> {
-    const { modelManager, sessionManager, tokenTracker } = this.opts;
-    const maxIterations =
-      args.maxIterations ?? this.config.loop.maxIterations ?? 200;
-    const maxRetries = args.maxRetries ?? 2;
+    yield {
+      type: "agent-start",
+    };
+
+    const { systemPrompt, input, tools, activeTools, abortSignal } = args;
 
     this.resetState();
 
     this._state.timestamps.start = performance.now();
 
-    const { systemPrompt, input, tools, activeTools, abortSignal } = args;
+    const { modelManager, sessionManager, tokenTracker } = this.opts;
+    const maxIterations =
+      args.maxIterations ?? this.config.loop.maxIterations ?? 200;
+    const maxRetries = args.maxRetries ?? 2;
 
     const langModel = modelManager.getModel("repl");
     const modelConfig = modelManager.getModelMetadata("repl");
@@ -194,16 +198,6 @@ export class Agent {
       modelMetadata: modelConfig,
       prompt: input,
     });
-
-    yield {
-      type: "agent-start",
-    };
-
-    yield {
-      type: "message",
-      role: "user",
-      content: input,
-    };
 
     let iter = 0;
     let consecutiveErrors = 0;

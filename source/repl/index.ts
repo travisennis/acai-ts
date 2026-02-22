@@ -355,6 +355,10 @@ export class Repl {
           sessionManager.appendUserMessage(userMsg);
         }
 
+        this.addMessageToChat({ role: "user", content: userPrompt });
+        this.editor.setText("");
+        this.tui.requestRender();
+
         if (this.onInputCallback) {
           this.onInputCallback(userPrompt);
         }
@@ -434,11 +438,7 @@ export class Repl {
         break;
 
       case "message":
-        if (event.role === "user") {
-          this.addMessageToChat(event);
-          this.editor.setText("");
-          this.tui.requestRender();
-        } else if (event.role === "assistant") {
+        if (event.role === "assistant") {
           // Update streaming component
           if (this.streamingComponent && event.role === "assistant") {
             this.streamingComponent.updateContent(event);
