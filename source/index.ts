@@ -508,15 +508,21 @@ async function runReplMode(
     }
   });
 
+  // Build the system prompt once at session start
+  const projectConfig = await config.getConfig();
+  const activeTools = projectConfig.tools.activeTools as
+    | CompleteToolNames[]
+    | undefined;
+  const skillsEnabled =
+    !flags["no-skills"] && (projectConfig.skills?.enabled ?? true);
+  const systemPromptResult = await systemPrompt({
+    activeTools,
+    allowedDirs: workspace.allowedDirs,
+    skillsEnabled,
+  });
+
   // Auto-process pending prompt from stdin
   if (state.promptManager.isPending()) {
-    const projectConfig = await config.getConfig();
-    const activeTools = projectConfig.tools.activeTools as
-      | CompleteToolNames[]
-      | undefined;
-    const skillsEnabled =
-      !flags["no-skills"] && (projectConfig.skills?.enabled ?? true);
-
     try {
       // Get the prompt text before it gets cleared by getUserMessage()
       const promptText = state.promptManager.get();
@@ -525,11 +531,6 @@ async function runReplMode(
       const userMessage = state.promptManager.getUserMessage();
       state.sessionManager.appendUserMessage(userMessage);
 
-      const systemPromptResult = await systemPrompt({
-        activeTools,
-        allowedDirs: workspace.allowedDirs,
-        skillsEnabled,
-      });
       const results = agent.run({
         systemPrompt: systemPromptResult.prompt,
         input: promptText,
@@ -550,17 +551,8 @@ async function runReplMode(
   // Interactive loop
   while (true) {
     const userInput = await repl.getUserInput();
-    const projectConfig = await config.getConfig();
-    const activeTools = projectConfig.tools.activeTools as
-      | CompleteToolNames[]
-      | undefined;
 
     try {
-      const systemPromptResult = await systemPrompt({
-        activeTools,
-        allowedDirs: workspace.allowedDirs,
-      });
-
       const results = agent.run({
         systemPrompt: systemPromptResult.prompt,
         input: userInput,
