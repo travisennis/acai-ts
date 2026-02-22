@@ -291,182 +291,18 @@ export class Agent {
         // PARALLEL TOOL EXECUTION
         // ============================================================
 
-        // Results array to store tool execution results
-        const results: Array<{
-          toolCallId: string;
-          toolName: string;
-          resultOutput: string;
-          success: boolean;
-        }> = new Array(pendingToolCalls.length);
-
-        // Collected events to yield after parallel execution completes
-        const collectedEvents: ToolCallLifeCycle[] = [];
-
-        // Phase 2a: Validate all inputs first (before any execution)
-        const validationErrors: Array<{ index: number; error: string }> = [];
-
-        for (let i = 0; i < pendingToolCalls.length; i++) {
-          const { call } = pendingToolCalls[i];
-
-          // Check for invalid call from AI SDK
-          if (call.invalid) {
-            validationErrors.push({
-              index: i,
-              error: String(call.error),
-            });
-            continue;
-          }
-
-          // Validate JSON input
-          if (typeof call.input === "string") {
-            try {
-              JSON.parse(call.input);
-            } catch {
-              validationErrors.push({
-                index: i,
-                error: `Invalid tool input: malformed JSON. Received: "${call.input.slice(0, 50)}${call.input.length > 50 ? "..." : ""}". Expected a JSON object.`,
-              });
-            }
-          } else if (call.input === null || call.input === undefined) {
-            validationErrors.push({
-              index: i,
-              error:
-                "Invalid tool input: received null/undefined. Expected a JSON object matching the schema.",
-            });
-          }
-        }
-
-        // Emit validation errors and mark those tools as failed
-        for (const { index, error } of validationErrors) {
-          const { call, toolName } = pendingToolCalls[index];
-          const event = this.processToolEvent(toolsCalled, {
-            type: "tool-call-error",
-            name: toolName,
-            toolCallId: call.toolCallId,
-            msg: error,
-            args: null,
+        const { collectedEvents, parallelToolMessages } =
+          await this.executeToolsInParallel({
+            pendingToolCalls,
+            abortSignal,
+            toolsCalled,
+            stepToolCalls: thisStepToolCalls,
+            stepToolResults: thisStepToolResults,
           });
-          collectedEvents.push(event);
-          results[index] = {
-            toolCallId: call.toolCallId,
-            toolName,
-            resultOutput: error,
-            success: false,
-          };
-        }
-
-        // Phase 2b: Execute valid tools in parallel
-        const executionPromises = pendingToolCalls.map(
-          async (pending, index) => {
-            // Skip if validation failed
-            if (validationErrors.some((e) => e.index === index)) {
-              return;
-            }
-
-            const { call, toolName, iTool } = pending;
-
-            // Track in step stats
-            thisStepToolCalls.push({ toolName });
-            thisStepToolResults.push({ toolName });
-
-            if (!iTool) {
-              const errorMsg = `No executor for tool ${toolName}`;
-              const event = this.processToolEvent(toolsCalled, {
-                type: "tool-call-error",
-                name: toolName,
-                toolCallId: call.toolCallId,
-                msg: errorMsg,
-                args: null,
-              });
-              collectedEvents.push(event);
-              results[index] = {
-                toolCallId: call.toolCallId,
-                toolName,
-                resultOutput: errorMsg,
-                success: false,
-              };
-              return;
-            }
-
-            const toolExec = iTool.execute as ToolExecuteFunction<
-              unknown,
-              string
-            >;
-
-            try {
-              const output = await toolExec(call.input, {
-                toolCallId: call.toolCallId,
-                messages: sessionManager.get(),
-                abortSignal,
-              });
-              const resultOutput = formatToolResult(output);
-
-              const event = this.processToolEvent(toolsCalled, {
-                type: "tool-call-end",
-                name: call.toolName,
-                toolCallId: call.toolCallId,
-                msg: resultOutput,
-                args: call.input,
-              });
-              collectedEvents.push(event);
-
-              results[index] = {
-                toolCallId: call.toolCallId,
-                toolName,
-                resultOutput,
-                success: true,
-              };
-            } catch (err) {
-              const resultOutput = `Tool error: ${
-                err instanceof Error ? err.message : String(err)
-              }`;
-
-              const event = this.processToolEvent(toolsCalled, {
-                type: "tool-call-error",
-                name: toolName,
-                toolCallId: call.toolCallId,
-                msg: resultOutput,
-                args: null,
-              });
-              collectedEvents.push(event);
-
-              results[index] = {
-                toolCallId: call.toolCallId,
-                toolName,
-                resultOutput,
-                success: false,
-              };
-            }
-          },
-        );
-
-        // Wait for all executions to complete
-        await Promise.allSettled(executionPromises);
 
         // Yield all collected events in order
         for (const event of collectedEvents) {
           yield event;
-        }
-
-        // Phase 2c: Build toolMessages in original call order
-        const parallelToolMessages: ToolModelMessage[] = [];
-        for (const result of results) {
-          if (!result) continue; // Skip if somehow undefined
-
-          parallelToolMessages.push({
-            role: "tool",
-            content: [
-              {
-                type: "tool-result",
-                toolName: result.toolName,
-                toolCallId: result.toolCallId,
-                output: {
-                  type: "text",
-                  value: result.resultOutput,
-                },
-              },
-            ],
-          } as const);
         }
 
         // Get response and tool calls
@@ -780,6 +616,192 @@ export class Agent {
       toolCallId: toolCallId,
       events,
     };
+  }
+
+  private async executeToolsInParallel({
+    pendingToolCalls,
+    abortSignal,
+    toolsCalled,
+    stepToolCalls,
+    stepToolResults,
+  }: {
+    pendingToolCalls: PendingToolCall[];
+    abortSignal: AbortSignal | undefined;
+    toolsCalled: Map<string, ToolEvent[]>;
+    stepToolCalls: Array<{ toolName: string }>;
+    stepToolResults: Array<{ toolName: string }>;
+  }): Promise<{
+    collectedEvents: ToolCallLifeCycle[];
+    parallelToolMessages: ToolModelMessage[];
+  }> {
+    const results: Array<{
+      toolCallId: string;
+      toolName: string;
+      resultOutput: string;
+      success: boolean;
+    }> = new Array(pendingToolCalls.length);
+
+    const collectedEvents: ToolCallLifeCycle[] = [];
+
+    // Phase 2a: Validate all inputs first (before any execution)
+    const validationErrors: Array<{ index: number; error: string }> = [];
+
+    for (let i = 0; i < pendingToolCalls.length; i++) {
+      const { call } = pendingToolCalls[i];
+
+      // Check for invalid call from AI SDK
+      if (call.invalid) {
+        validationErrors.push({
+          index: i,
+          error: String(call.error),
+        });
+        continue;
+      }
+
+      // Validate JSON input
+      if (typeof call.input === "string") {
+        try {
+          JSON.parse(call.input);
+        } catch {
+          validationErrors.push({
+            index: i,
+            error: `Invalid tool input: malformed JSON. Received: "${call.input.slice(0, 50)}${call.input.length > 50 ? "..." : ""}". Expected a JSON object.`,
+          });
+        }
+      } else if (call.input === null || call.input === undefined) {
+        validationErrors.push({
+          index: i,
+          error:
+            "Invalid tool input: received null/undefined. Expected a JSON object matching the schema.",
+        });
+      }
+    }
+
+    // Emit validation errors and mark those tools as failed
+    for (const { index, error } of validationErrors) {
+      const { call, toolName } = pendingToolCalls[index];
+      const event = this.processToolEvent(toolsCalled, {
+        type: "tool-call-error",
+        name: toolName,
+        toolCallId: call.toolCallId,
+        msg: error,
+        args: null,
+      });
+      collectedEvents.push(event);
+      results[index] = {
+        toolCallId: call.toolCallId,
+        toolName,
+        resultOutput: error,
+        success: false,
+      };
+    }
+
+    // Phase 2b: Execute valid tools in parallel
+    const sessionManager = this.opts.sessionManager;
+    const executionPromises = pendingToolCalls.map(async (pending, index) => {
+      // Skip if validation failed
+      if (validationErrors.some((e) => e.index === index)) {
+        return;
+      }
+
+      const { call, toolName, iTool } = pending;
+
+      // Track in step stats
+      stepToolCalls.push({ toolName });
+      stepToolResults.push({ toolName });
+
+      if (!iTool) {
+        const errorMsg = `No executor for tool ${toolName}`;
+        const event = this.processToolEvent(toolsCalled, {
+          type: "tool-call-error",
+          name: toolName,
+          toolCallId: call.toolCallId,
+          msg: errorMsg,
+          args: null,
+        });
+        collectedEvents.push(event);
+        results[index] = {
+          toolCallId: call.toolCallId,
+          toolName,
+          resultOutput: errorMsg,
+          success: false,
+        };
+        return;
+      }
+
+      const toolExec = iTool.execute as ToolExecuteFunction<unknown, string>;
+
+      try {
+        const output = await toolExec(call.input, {
+          toolCallId: call.toolCallId,
+          messages: sessionManager.get(),
+          abortSignal,
+        });
+        const resultOutput = formatToolResult(output);
+
+        const event = this.processToolEvent(toolsCalled, {
+          type: "tool-call-end",
+          name: call.toolName,
+          toolCallId: call.toolCallId,
+          msg: resultOutput,
+          args: call.input,
+        });
+        collectedEvents.push(event);
+
+        results[index] = {
+          toolCallId: call.toolCallId,
+          toolName,
+          resultOutput,
+          success: true,
+        };
+      } catch (err) {
+        const resultOutput = `Tool error: ${
+          err instanceof Error ? err.message : String(err)
+        }`;
+
+        const event = this.processToolEvent(toolsCalled, {
+          type: "tool-call-error",
+          name: toolName,
+          toolCallId: call.toolCallId,
+          msg: resultOutput,
+          args: null,
+        });
+        collectedEvents.push(event);
+
+        results[index] = {
+          toolCallId: call.toolCallId,
+          toolName,
+          resultOutput,
+          success: false,
+        };
+      }
+    });
+
+    // Wait for all executions to complete
+    await Promise.allSettled(executionPromises);
+
+    // Phase 2c: Build toolMessages in original call order
+    const parallelToolMessages: ToolModelMessage[] = [];
+    for (const result of results) {
+      if (!result) continue; // Skip if somehow undefined
+
+      parallelToolMessages.push({
+        role: "tool",
+        content: [
+          {
+            type: "tool-result",
+            toolName: result.toolName,
+            toolCallId: result.toolCallId,
+            output: {
+              type: "text",
+              value: result.resultOutput,
+            },
+          },
+        ],
+      } as const);
+    }
+
+    return { collectedEvents, parallelToolMessages };
   }
 }
 

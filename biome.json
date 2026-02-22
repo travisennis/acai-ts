@@ -10,7 +10,12 @@
     "rules": {
       "complexity": {
         "useLiteralKeys": "off",
-        "noExcessiveCognitiveComplexity": "off"
+        "noExcessiveCognitiveComplexity": {
+          "level": "warn",
+          "options": {
+            "maxAllowedComplexity": 59
+          }
+        }
       },
       "correctness": { "noNodejsModules": "off" },
       "performance": {},
