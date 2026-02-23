@@ -828,7 +828,7 @@ export class Editor implements Component {
   }
 
   // All the editor methods from before...
-  private insertCharacter(char: string): void {
+  private insertCharacter(char: string, suppressAutocomplete = false): void {
     this.historyIndex = -1; // Exit history browsing mode
 
     const line = this.state.lines[this.state.cursorLine] || "";
@@ -841,6 +841,11 @@ export class Editor implements Component {
 
     if (this.onChange) {
       this.onChange(this.getText());
+    }
+
+    // Skip autocomplete triggering during paste operations
+    if (suppressAutocomplete) {
+      return;
     }
 
     // Check if we should trigger or update autocomplete
@@ -923,7 +928,7 @@ export class Editor implements Component {
           ? `[paste #${pasteId} +${pastedLines.length} lines]`
           : `[paste #${pasteId} ${totalChars} chars]`;
       for (const char of marker) {
-        this.insertCharacter(char);
+        this.insertCharacter(char, true);
       }
 
       return;
@@ -933,7 +938,7 @@ export class Editor implements Component {
       // Single line - just insert each character
       const text = pastedLines[0] || "";
       for (const char of text) {
-        this.insertCharacter(char);
+        this.insertCharacter(char, true);
       }
 
       return;
