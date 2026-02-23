@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  buildGrepCommand,
+  buildGrepArgs,
   grepFilesStructured,
   likelyUnbalancedRegex,
 } from "../../source/tools/grep.ts";
@@ -13,8 +13,8 @@ test("GitHub issue #96 - grep tool handles spawnChildProcess({ pattern", async (
   assert.ok(likelyUnbalancedRegex("spawnChildProcess({"));
 
   // Test that the pattern works with fixed-string mode
-  const cmd = buildGrepCommand("spawnChildProcess({", ".", { literal: true });
-  assert.ok(cmd.includes(" -F"));
+  const args = buildGrepArgs("spawnChildProcess({", ".", { literal: true });
+  assert.ok(args.includes("-F"));
 
   // Test that grepFilesStructured doesn't throw an error with this pattern
   const result = await grepFilesStructured("spawnChildProcess({", ".", {
@@ -47,9 +47,9 @@ test("GitHub issue #96 - grep tool handles problematic regex patterns gracefully
     );
 
     // All these patterns should work with fixed-string mode
-    const cmd = buildGrepCommand(pattern, ".", { literal: true });
+    const args = buildGrepArgs(pattern, ".", { literal: true });
     assert.ok(
-      cmd.includes(" -F"),
+      args.includes("-F"),
       `Pattern "${pattern}" should use fixed-string mode`,
     );
 

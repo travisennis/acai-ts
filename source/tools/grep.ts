@@ -399,18 +399,18 @@ export function likelyUnbalancedRegex(pattern: string): boolean {
 }
 
 /**
- * Search files for patterns using ripgrep
+ * Build grep command args array directly
  *
  * @param pattern - The regex pattern to search for
  * @param path - The path to search in
  * @param options - Additional options for the grep command
- * @returns The result of the grep command
+ * @returns The args array for the grep command
  */
-export function buildGrepCommand(
+export function buildGrepArgs(
   pattern: string,
   path: string,
   options: GrepOptions = {},
-): string {
+): string[] {
   const effectiveRecursive =
     options.recursive === null ? true : options.recursive;
   const effectiveIgnoreCase =
@@ -432,30 +432,30 @@ export function buildGrepCommand(
     effectiveLiteral = likelyUnbalancedRegex(pattern);
   }
 
-  let command = "rg --json";
+  const args: string[] = ["--json"];
 
   if (effectiveRecursive === false) {
-    command += " --max-depth=0";
+    args.push("--max-depth=0");
   }
 
   if (effectiveIgnoreCase) {
-    command += " --ignore-case";
+    args.push("--ignore-case");
   }
 
   if (effectiveContextLines !== null && effectiveContextLines !== undefined) {
-    command += ` --context=${effectiveContextLines}`;
+    args.push(`--context=${effectiveContextLines}`);
   }
 
   if (effectiveFilePattern !== null && effectiveFilePattern !== undefined) {
-    command += ` --glob=${JSON.stringify(effectiveFilePattern)}`;
+    args.push(`--glob=${effectiveFilePattern}`);
   }
 
   if (effectiveSearchIgnored) {
-    command += " --no-ignore";
+    args.push("--no-ignore");
   }
 
   if (effectiveLiteral) {
-    command += " -F";
+    args.push("-F");
   }
 
   // Use ripgrep's --max-count flag to limit matches per file for efficiency
@@ -467,13 +467,13 @@ export function buildGrepCommand(
   ) {
     // Use a reasonable per-file limit (max 100 per file) to balance efficiency and completeness
     const perFileLimit = Math.min(options.maxResults, 100);
-    command += ` --max-count=${perFileLimit}`;
+    args.push(`--max-count=${perFileLimit}`);
   }
 
-  command += ` ${JSON.stringify(pattern)}`;
-  command += ` ${JSON.stringify(path)}`;
+  args.push(pattern);
+  args.push(path);
 
-  return command;
+  return args;
 }
 
 export interface ParsedMatch {
@@ -700,38 +700,10 @@ export async function grepFilesStructured(
   abortSignal?: AbortSignal | null,
 ): Promise<GrepResult> {
   try {
-    const command = buildGrepCommand(pattern, path, options);
+    const args = buildGrepArgs(pattern, path, options);
 
     // Use execFile for async execution with proper abort signal handling
     const rawOutput = await new Promise<string>((resolve, reject) => {
-      // Parse command into file and args properly
-      const cmdParts = command.slice(3); // Remove "rg " prefix
-      const args: string[] = [];
-      let current = "";
-      let inQuote = false;
-      let quoteChar = "";
-
-      for (let i = 0; i < cmdParts.length; i++) {
-        const char = cmdParts[i];
-        if ((char === '"' || char === "'") && !inQuote) {
-          inQuote = true;
-          quoteChar = char;
-        } else if (char === quoteChar && inQuote) {
-          inQuote = false;
-          quoteChar = "";
-        } else if (char === " " && !inQuote) {
-          if (current) {
-            args.push(current);
-            current = "";
-          }
-        } else {
-          current += char;
-        }
-      }
-      if (current) {
-        args.push(current);
-      }
-
       const child = execFile("rg", args, {
         encoding: "utf-8",
         stdio: ["pipe", "pipe", "pipe"],

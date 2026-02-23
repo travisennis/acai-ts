@@ -2,25 +2,25 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  buildGrepCommand,
+  buildGrepArgs,
   likelyUnbalancedRegex,
   type ParsedMatch,
   truncateMatches,
 } from "../../source/tools/grep.ts";
 
-test("buildGrepCommand uses -F when literal=true", () => {
-  const cmd = buildGrepCommand("terminal.table(", "/repo", { literal: true });
-  assert.ok(cmd.includes(" -F"));
+test("buildGrepArgs uses -F when literal=true", () => {
+  const args = buildGrepArgs("terminal.table(", "/repo", { literal: true });
+  assert.ok(args.includes("-F"));
 });
 
-test("buildGrepCommand does not use -F when literal=false", () => {
-  const cmd = buildGrepCommand("\\w+", "/repo", { literal: false });
-  assert.ok(!cmd.includes(" -F"));
+test("buildGrepArgs does not use -F when literal=false", () => {
+  const args = buildGrepArgs("\\w+", "/repo", { literal: false });
+  assert.ok(!args.includes("-F"));
 });
 
-test("buildGrepCommand auto-detects unbalanced pattern and uses -F when literal omitted", () => {
-  const cmd = buildGrepCommand("terminal.table(", "/repo", { literal: null });
-  assert.ok(cmd.includes(" -F"));
+test("buildGrepArgs auto-detects unbalanced pattern and uses -F when literal omitted", () => {
+  const args = buildGrepArgs("terminal.table(", "/repo", { literal: null });
+  assert.ok(args.includes("-F"));
 });
 
 test("likelyUnbalancedRegex detects unbalanced parentheses", () => {
@@ -94,14 +94,14 @@ test("likelyUnbalancedRegex returns false for patterns with regex metacharacters
   assert.ok(!likelyUnbalancedRegex("\\d+"));
 });
 
-test("buildGrepCommand uses -F for simple alphanumeric patterns", () => {
-  const cmd = buildGrepCommand("Grep", "/repo", { literal: null });
-  assert.ok(cmd.includes(" -F"), "Expected -F flag for simple string");
+test("buildGrepArgs uses -F for simple alphanumeric patterns", () => {
+  const args = buildGrepArgs("Grep", "/repo", { literal: null });
+  assert.ok(args.includes("-F"), "Expected -F flag for simple string");
 });
 
-test("buildGrepCommand does not use -F for patterns with regex metacharacters", () => {
-  const cmd = buildGrepCommand("a.b", "/repo", { literal: null });
-  assert.ok(!cmd.includes(" -F"), "Expected no -F flag for regex pattern");
+test("buildGrepArgs does not use -F for patterns with regex metacharacters", () => {
+  const args = buildGrepArgs("a.b", "/repo", { literal: null });
+  assert.ok(!args.includes("-F"), "Expected no -F flag for regex pattern");
 });
 
 test("truncateMatches with null maxResults returns all results", () => {

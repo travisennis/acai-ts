@@ -4,10 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import {
-  buildGrepCommand,
-  grepFilesStructured,
-} from "../../source/tools/grep.ts";
+import { buildGrepArgs, grepFilesStructured } from "../../source/tools/grep.ts";
 
 test("grepFilesStructured handles exit code 1 (no matches) gracefully", async () => {
   // Use a unique temp directory to avoid matching test file contents
@@ -38,37 +35,39 @@ test("grepFilesStructured handles problematic patterns with fixed-string mode", 
   );
 });
 
-test("buildGrepCommand properly escapes patterns", () => {
-  const cmd = buildGrepCommand("test pattern", ".", { literal: true });
-  assert.ok(cmd.includes('"test pattern"'));
+test("buildGrepArgs passes patterns directly (no shell escaping needed)", () => {
+  const args = buildGrepArgs("test pattern", ".", { literal: true });
+  // When using args array, pattern is passed directly without shell escaping
+  assert.strictEqual(args[args.length - 2], "test pattern");
 });
 
-test("buildGrepCommand handles glob patterns correctly", () => {
-  const cmd = buildGrepCommand("test", ".", { filePattern: "*.ts" });
-  assert.ok(cmd.includes('--glob="*.ts"'));
+test("buildGrepArgs handles glob patterns correctly", () => {
+  const args = buildGrepArgs("test", ".", { filePattern: "*.ts" });
+  assert.ok(args.includes("--glob=*.ts"));
 });
 
-test("buildGrepCommand handles context lines", () => {
-  const cmd = buildGrepCommand("test", ".", { contextLines: 3 });
-  assert.ok(cmd.includes("--context=3"));
+test("buildGrepArgs handles context lines", () => {
+  const args = buildGrepArgs("test", ".", { contextLines: 3 });
+  assert.ok(args.includes("--context=3"));
 });
 
-test("buildGrepCommand handles ignore case", () => {
-  const cmd = buildGrepCommand("test", ".", { ignoreCase: true });
-  assert.ok(cmd.includes("--ignore-case"));
+test("buildGrepArgs handles ignore case", () => {
+  const args = buildGrepArgs("test", ".", { ignoreCase: true });
+  assert.ok(args.includes("--ignore-case"));
 });
 
-test("buildGrepCommand handles search ignored files", () => {
-  const cmd = buildGrepCommand("test", ".", { searchIgnored: true });
-  assert.ok(cmd.includes("--no-ignore"));
+test("buildGrepArgs handles search ignored files", () => {
+  const args = buildGrepArgs("test", ".", { searchIgnored: true });
+  assert.ok(args.includes("--no-ignore"));
 });
 
-test("buildGrepCommand handles non-recursive search", () => {
-  const cmd = buildGrepCommand("test", ".", { recursive: false });
-  assert.ok(cmd.includes("--max-depth=0"));
+test("buildGrepArgs handles non-recursive search", () => {
+  const args = buildGrepArgs("test", ".", { recursive: false });
+  assert.ok(args.includes("--max-depth=0"));
 });
 
-test("buildGrepCommand quotes path with spaces", () => {
-  const cmd = buildGrepCommand("test", "./dir with spaces", { literal: true });
-  assert.ok(cmd.includes('"./dir with spaces"'));
+test("buildGrepArgs passes path with spaces directly (no shell escaping needed)", () => {
+  const args = buildGrepArgs("test", "./dir with spaces", { literal: true });
+  // When using args array, path is passed directly without shell escaping
+  assert.strictEqual(args[args.length - 1], "./dir with spaces");
 });
