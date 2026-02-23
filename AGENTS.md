@@ -22,7 +22,7 @@ This app, acai-ts, is an AI-assistant CLI tool built with TypeScript. It is an a
 - **REPL:** `acai`
 - **CLI:** `acai -p <prompt>`
 - **Dev Mode:** `node source/index.ts`
-- **Application logs:** `~/.acai/logs/current.log`
+- **Application logs:** `~/.acai/logs/current.log` Do not read read this file directly as it can be quite big. Use tail to see the end of the log file.
 - **IMPORTANT:** Use `tmux` when running the REPL. The `Bash` tool does not support interactive commands. See the `manual-testing` skill for detailed instructions.
 
 ## Code Style Guidelines
