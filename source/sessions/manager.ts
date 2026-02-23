@@ -156,6 +156,36 @@ It can be either an assistant message or a tool message.
  */
 type ResponseMessage = AssistantModelMessage | ToolModelMessage;
 
+/**
+ * Compact token usage stored in session files.
+ * Only stores total aggregated usage and last turn's usage
+ * to minimize session file size while maintaining necessary information.
+ */
+export type SessionTokenUsage = {
+  /** Aggregated total for entire session */
+  total: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    cachedInputTokens: number;
+    reasoningTokens: number;
+    estimatedCost: number;
+  };
+  /** Last turn's usage (for context window display) */
+  lastTurn: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    cachedInputTokens: number;
+    reasoningTokens: number;
+    estimatedCost: number;
+  };
+};
+
+/**
+ * @deprecated Use SessionTokenUsage instead. Kept for backward compatibility
+ * with older session files that may have the old format.
+ */
 export type TokenUsageTurn = {
   stepIndex: number;
   inputTokens: number;
@@ -184,7 +214,7 @@ export type SavedMessageHistory = {
   createdAt: Date;
   updatedAt: Date;
   messages: ModelMessage[];
-  tokenUsage?: TokenUsageTurn[];
+  tokenUsage?: SessionTokenUsage | TokenUsageTurn[];
   metadata?: Record<string, unknown>;
 };
 
@@ -212,7 +242,7 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
   private contextWindow: number;
   private modelManager: ModelManager;
   private tokenTracker: TokenTracker;
-  private tokenUsage: TokenUsageTurn[];
+  private tokenUsage: SessionTokenUsage | null;
   private transientMessages: UserModelMessage[] = [];
   private metadata: Record<string, unknown> = {};
 
@@ -236,7 +266,28 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
     this.contextWindow = 0;
     this.modelManager = modelManager;
     this.tokenTracker = tokenTracker;
-    this.tokenUsage = [];
+    this.tokenUsage = null;
+  }
+
+  private createEmptyTokenUsage(): SessionTokenUsage {
+    return {
+      total: {
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        cachedInputTokens: 0,
+        reasoningTokens: 0,
+        estimatedCost: 0,
+      },
+      lastTurn: {
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        cachedInputTokens: 0,
+        reasoningTokens: 0,
+        estimatedCost: 0,
+      },
+    };
   }
 
   create(modelId: string) {
@@ -306,7 +357,7 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
     this.transientMessages = [];
     this.metadata = {};
     this.contextWindow = 0;
-    this.tokenUsage = [];
+    this.tokenUsage = null;
     this.emit("clear-history");
   }
 
@@ -392,7 +443,7 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       messages: this.history,
-      tokenUsage: this.tokenUsage,
+      ...(this.tokenUsage !== null ? { tokenUsage: this.tokenUsage } : {}),
       metadata:
         Object.keys(this.metadata).length > 0 ? this.metadata : undefined,
     };
@@ -709,9 +760,57 @@ React Component Rendering Debug";
     // Filter out messages with empty content arrays
     const validMessages = sanitizedMessages.filter(this.validMessage);
     this.history = [...validMessages];
-    this.tokenUsage = savedHistory.tokenUsage
-      ? [...savedHistory.tokenUsage]
-      : [];
+
+    // Handle tokenUsage restoration with backward compatibility
+    // Old format: TokenUsageTurn[] (array)
+    // New format: SessionTokenUsage (object with total and lastTurn)
+    if (savedHistory.tokenUsage) {
+      if (Array.isArray(savedHistory.tokenUsage)) {
+        // Old format: convert array to new format
+        const oldUsage = savedHistory.tokenUsage as TokenUsageTurn[];
+        if (oldUsage.length > 0) {
+          const total = oldUsage.reduce(
+            (acc, turn) => {
+              acc.inputTokens += turn.inputTokens;
+              acc.outputTokens += turn.outputTokens;
+              acc.totalTokens += turn.totalTokens;
+              acc.cachedInputTokens += turn.cachedInputTokens;
+              acc.reasoningTokens += turn.reasoningTokens;
+              acc.estimatedCost += turn.estimatedCost;
+              return acc;
+            },
+            {
+              inputTokens: 0,
+              outputTokens: 0,
+              totalTokens: 0,
+              cachedInputTokens: 0,
+              reasoningTokens: 0,
+              estimatedCost: 0,
+            },
+          );
+          const lastTurn = oldUsage[oldUsage.length - 1];
+          this.tokenUsage = {
+            total,
+            lastTurn: {
+              inputTokens: lastTurn.inputTokens,
+              outputTokens: lastTurn.outputTokens,
+              totalTokens: lastTurn.totalTokens,
+              cachedInputTokens: lastTurn.cachedInputTokens,
+              reasoningTokens: lastTurn.reasoningTokens,
+              estimatedCost: lastTurn.estimatedCost,
+            },
+          };
+        } else {
+          this.tokenUsage = null;
+        }
+      } else {
+        // New format: already SessionTokenUsage
+        this.tokenUsage = savedHistory.tokenUsage as SessionTokenUsage;
+      }
+    } else {
+      this.tokenUsage = null;
+    }
+
     this.metadata = savedHistory.metadata ?? {};
   }
 
@@ -737,24 +836,36 @@ React Component Rendering Debug";
       usage.inputTokens * modelConfig.costPerInputToken +
       usage.outputTokens * modelConfig.costPerOutputToken;
 
-    const turnUsage: TokenUsageTurn = {
-      stepIndex: this.tokenUsage.length,
-      inputTokens: usage.inputTokens,
-      outputTokens: usage.outputTokens,
-      totalTokens: usage.totalTokens,
-      cachedInputTokens: usage.cachedInputTokens,
-      reasoningTokens: usage.reasoningTokens,
-      inputTokenDetails: { ...usage.inputTokenDetails },
-      outputTokenDetails: { ...usage.outputTokenDetails },
-      timestamp: Date.now(),
-      estimatedCost,
-    };
+    // Initialize tokenUsage if null
+    if (this.tokenUsage === null) {
+      this.tokenUsage = this.createEmptyTokenUsage();
+    }
 
-    this.tokenUsage.push(turnUsage);
+    // Update total
+    this.tokenUsage.total.inputTokens += usage.inputTokens;
+    this.tokenUsage.total.outputTokens += usage.outputTokens;
+    this.tokenUsage.total.totalTokens += usage.totalTokens;
+    this.tokenUsage.total.cachedInputTokens += usage.cachedInputTokens;
+    this.tokenUsage.total.reasoningTokens += usage.reasoningTokens;
+    this.tokenUsage.total.estimatedCost += estimatedCost;
+
+    // Update lastTurn
+    this.tokenUsage.lastTurn.inputTokens = usage.inputTokens;
+    this.tokenUsage.lastTurn.outputTokens = usage.outputTokens;
+    this.tokenUsage.lastTurn.totalTokens = usage.totalTokens;
+    this.tokenUsage.lastTurn.cachedInputTokens = usage.cachedInputTokens;
+    this.tokenUsage.lastTurn.reasoningTokens = usage.reasoningTokens;
+    this.tokenUsage.lastTurn.estimatedCost = estimatedCost;
   }
 
+  /**
+   * @deprecated This method returns an empty array since we no longer store
+   * per-turn usage data. Use getTotalTokenUsage() or getLastTurnContextWindow() instead.
+   */
   getTokenUsage(): TokenUsageTurn[] {
-    return [...this.tokenUsage];
+    // Return empty array for backward compatibility
+    // The actual data is now stored in compact format in this.tokenUsage
+    return [];
   }
 
   getTotalTokenUsage(): {
@@ -765,35 +876,27 @@ React Component Rendering Debug";
     reasoningTokens: number;
     estimatedCost: number;
   } {
-    return this.tokenUsage.reduce(
-      (acc, turn) => {
-        acc.inputTokens += turn.inputTokens;
-        acc.outputTokens += turn.outputTokens;
-        acc.totalTokens += turn.totalTokens;
-        acc.cachedInputTokens += turn.cachedInputTokens;
-        acc.reasoningTokens += turn.reasoningTokens;
-        acc.estimatedCost += turn.estimatedCost;
-        return acc;
-      },
-      {
+    if (this.tokenUsage === null) {
+      return {
         inputTokens: 0,
         outputTokens: 0,
         totalTokens: 0,
         cachedInputTokens: 0,
         reasoningTokens: 0,
         estimatedCost: 0,
-      },
-    );
+      };
+    }
+    return { ...this.tokenUsage.total };
   }
 
   getLastTurnContextWindow(): number {
-    if (this.tokenUsage.length === 0) {
+    if (this.tokenUsage === null) {
       return 0;
     }
-    return this.tokenUsage[this.tokenUsage.length - 1].totalTokens;
+    return this.tokenUsage.lastTurn.totalTokens;
   }
 
   clearTokenUsage(): void {
-    this.tokenUsage = [];
+    this.tokenUsage = null;
   }
 }

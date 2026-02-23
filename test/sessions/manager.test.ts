@@ -21,7 +21,7 @@ async function withTempDir<T>(fn: (dir: string) => Promise<T>) {
   }
 }
 
-test("recordTurnUsage correctly appends to the tokenUsage array", async () => {
+test("recordTurnUsage correctly updates total and lastTurn", async () => {
   await withTempDir(async (tmp) => {
     const modelManager = await createModelManagerForTest();
     const tokenTracker = new TokenTracker();
@@ -50,20 +50,26 @@ test("recordTurnUsage correctly appends to the tokenUsage array", async () => {
 
     sessionManager.recordTurnUsage(usage);
 
+    // getTokenUsage is deprecated and returns empty array
     const tokenUsage = sessionManager.getTokenUsage();
-    assert.equal(tokenUsage.length, 1);
-    assert.equal(tokenUsage[0].stepIndex, 0);
-    assert.equal(tokenUsage[0].inputTokens, 1000);
-    assert.equal(tokenUsage[0].outputTokens, 500);
-    assert.equal(tokenUsage[0].totalTokens, 1500);
-    assert.equal(tokenUsage[0].cachedInputTokens, 200);
-    assert.equal(tokenUsage[0].reasoningTokens, 100);
-    assert.ok(tokenUsage[0].timestamp > 0);
-    assert.ok(tokenUsage[0].estimatedCost > 0);
+    assert.equal(tokenUsage.length, 0);
+
+    // Check total usage
+    const totalUsage = sessionManager.getTotalTokenUsage();
+    assert.equal(totalUsage.inputTokens, 1000);
+    assert.equal(totalUsage.outputTokens, 500);
+    assert.equal(totalUsage.totalTokens, 1500);
+    assert.equal(totalUsage.cachedInputTokens, 200);
+    assert.equal(totalUsage.reasoningTokens, 100);
+    assert.ok(totalUsage.estimatedCost > 0);
+
+    // Check last turn context window
+    const lastTurnContextWindow = sessionManager.getLastTurnContextWindow();
+    assert.equal(lastTurnContextWindow, 1500);
   });
 });
 
-test("multiple turns accumulate correctly", async () => {
+test("multiple turns accumulate correctly in total and lastTurn", async () => {
   await withTempDir(async (tmp) => {
     const modelManager = await createModelManagerForTest();
     const tokenTracker = new TokenTracker();
@@ -110,12 +116,19 @@ test("multiple turns accumulate correctly", async () => {
     sessionManager.recordTurnUsage(usage1);
     sessionManager.recordTurnUsage(usage2);
 
+    // getTokenUsage is deprecated and returns empty array
     const tokenUsage = sessionManager.getTokenUsage();
-    assert.equal(tokenUsage.length, 2);
-    assert.equal(tokenUsage[0].stepIndex, 0);
-    assert.equal(tokenUsage[0].inputTokens, 1000);
-    assert.equal(tokenUsage[1].stepIndex, 1);
-    assert.equal(tokenUsage[1].inputTokens, 2000);
+    assert.equal(tokenUsage.length, 0);
+
+    // Check total usage (accumulated)
+    const totalUsage = sessionManager.getTotalTokenUsage();
+    assert.equal(totalUsage.inputTokens, 3000); // 1000 + 2000
+    assert.equal(totalUsage.outputTokens, 1500); // 500 + 1000
+    assert.equal(totalUsage.totalTokens, 4500); // 1500 + 3000
+
+    // Check last turn context window (should be the second turn's total)
+    const lastTurnContextWindow = sessionManager.getLastTurnContextWindow();
+    assert.equal(lastTurnContextWindow, 3000);
   });
 });
 
@@ -277,13 +290,18 @@ test("save/restore preserves the full tokenUsage array", async () => {
     const histories = await SessionManager.load(tmp);
     assert.equal(histories.length, 1);
     assert.ok(histories[0].tokenUsage);
-    assert.equal(histories[0].tokenUsage.length, 2);
-    assert.equal(histories[0].tokenUsage[0].inputTokens, 1000);
-    assert.equal(histories[0].tokenUsage[1].inputTokens, 2000);
+
+    // New format: check total and lastTurn
+    const tokenUsage = histories[0].tokenUsage;
+    assert.ok(!Array.isArray(tokenUsage)); // Should be SessionTokenUsage object
+    assert.equal(tokenUsage.total.inputTokens, 3000); // 1000 + 2000
+    assert.equal(tokenUsage.total.outputTokens, 1500); // 500 + 1000
+    assert.equal(tokenUsage.lastTurn.inputTokens, 2000); // Last turn's input
+    assert.equal(tokenUsage.lastTurn.totalTokens, 3000); // Last turn's total
   });
 });
 
-test("restore correctly restores tokenUsage from saved data", async () => {
+test("restore correctly restores tokenUsage from saved data (old format)", async () => {
   await withTempDir(async (tmp) => {
     const modelManager = await createModelManagerForTest();
     const tokenTracker = new TokenTracker();
@@ -293,7 +311,7 @@ test("restore correctly restores tokenUsage from saved data", async () => {
       tokenTracker,
     });
 
-    // Simulate a restored history
+    // Simulate a restored history with old format (array)
     const savedHistory = {
       project: "test-project",
       sessionId: "test-session-id",
@@ -327,21 +345,21 @@ test("restore correctly restores tokenUsage from saved data", async () => {
 
     sessionManager.restore(savedHistory);
 
+    // getTokenUsage is deprecated and returns empty array
     const tokenUsage = sessionManager.getTokenUsage();
-    assert.equal(tokenUsage.length, 1);
-    assert.equal(tokenUsage[0].inputTokens, 1000);
-    assert.equal(tokenUsage[0].totalTokens, 1500);
+    assert.equal(tokenUsage.length, 0);
 
-    const lastContextWindow = sessionManager.getLastTurnContextWindow();
-    assert.equal(lastContextWindow, 1500);
-
+    // Check that total and lastTurn are correctly restored from old format
     const totalUsage = sessionManager.getTotalTokenUsage();
     assert.equal(totalUsage.inputTokens, 1000);
     assert.equal(totalUsage.totalTokens, 1500);
+
+    const lastContextWindow = sessionManager.getLastTurnContextWindow();
+    assert.equal(lastContextWindow, 1500);
   });
 });
 
-test("clearTokenUsage clears the token usage array", async () => {
+test("clearTokenUsage clears the token usage", async () => {
   await withTempDir(async (tmp) => {
     const modelManager = await createModelManagerForTest();
     const tokenTracker = new TokenTracker();
@@ -368,11 +386,14 @@ test("clearTokenUsage clears the token usage array", async () => {
       },
     });
 
-    assert.equal(sessionManager.getTokenUsage().length, 1);
+    // Check that we have data
+    assert.equal(sessionManager.getTotalTokenUsage().inputTokens, 1000);
+    assert.equal(sessionManager.getLastTurnContextWindow(), 1500);
 
     sessionManager.clearTokenUsage();
 
-    assert.equal(sessionManager.getTokenUsage().length, 0);
+    // After clear, should return zeros
+    assert.equal(sessionManager.getTotalTokenUsage().totalTokens, 0);
     assert.equal(sessionManager.getLastTurnContextWindow(), 0);
   });
 });
@@ -404,11 +425,14 @@ test("clear also clears token usage", async () => {
       },
     });
 
-    assert.equal(sessionManager.getTokenUsage().length, 1);
+    // Check that we have data
+    assert.equal(sessionManager.getTotalTokenUsage().inputTokens, 1000);
 
     sessionManager.clear();
 
-    assert.equal(sessionManager.getTokenUsage().length, 0);
+    // After clear, should return zeros
+    assert.equal(sessionManager.getTotalTokenUsage().totalTokens, 0);
+    assert.equal(sessionManager.getLastTurnContextWindow(), 0);
   });
 });
 
@@ -443,10 +467,11 @@ test("cost calculation is accurate", async () => {
       },
     });
 
-    const tokenUsage = sessionManager.getTokenUsage();
+    // Check cost in total usage
+    const totalUsage = sessionManager.getTotalTokenUsage();
     const expectedCost =
       1000 * modelConfig.costPerInputToken +
       500 * modelConfig.costPerOutputToken;
-    assert.equal(tokenUsage[0].estimatedCost, expectedCost);
+    assert.equal(totalUsage.estimatedCost, expectedCost);
   });
 });
