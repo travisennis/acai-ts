@@ -69,6 +69,41 @@ test("likelyUnbalancedRegex handles escape sequences", () => {
   assert.ok(!likelyUnbalancedRegex("\\}"));
 });
 
+test("likelyUnbalancedRegex returns true for simple alphanumeric strings", () => {
+  // Simple words should default to literal mode
+  assert.ok(likelyUnbalancedRegex("Grep"));
+  assert.ok(likelyUnbalancedRegex("hello world"));
+  assert.ok(likelyUnbalancedRegex("test123"));
+  assert.ok(likelyUnbalancedRegex("async"));
+  assert.ok(likelyUnbalancedRegex("function"));
+  assert.ok(likelyUnbalancedRegex("const"));
+  assert.ok(likelyUnbalancedRegex("import"));
+  assert.ok(likelyUnbalancedRegex("export"));
+  assert.ok(likelyUnbalancedRegex("type"));
+});
+
+test("likelyUnbalancedRegex returns false for patterns with regex metacharacters", () => {
+  // Patterns with regex metacharacters should use regex mode
+  assert.ok(!likelyUnbalancedRegex("a.b"));
+  assert.ok(!likelyUnbalancedRegex("a*b"));
+  assert.ok(!likelyUnbalancedRegex("a+b"));
+  assert.ok(!likelyUnbalancedRegex("a?b"));
+  assert.ok(!likelyUnbalancedRegex("a|b"));
+  assert.ok(!likelyUnbalancedRegex("^start"));
+  assert.ok(!likelyUnbalancedRegex("end$"));
+  assert.ok(!likelyUnbalancedRegex("\\d+"));
+});
+
+test("buildGrepCommand uses -F for simple alphanumeric patterns", () => {
+  const cmd = buildGrepCommand("Grep", "/repo", { literal: null });
+  assert.ok(cmd.includes(" -F"), "Expected -F flag for simple string");
+});
+
+test("buildGrepCommand does not use -F for patterns with regex metacharacters", () => {
+  const cmd = buildGrepCommand("a.b", "/repo", { literal: null });
+  assert.ok(!cmd.includes(" -F"), "Expected no -F flag for regex pattern");
+});
+
 test("truncateMatches with null maxResults returns all results", () => {
   const matches: ParsedMatch[] = [
     { file: "f1.ts", line: 1, content: "match 1", isMatch: true },

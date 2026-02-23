@@ -356,7 +356,18 @@ function countBrackets(pattern: string): {
   return counts;
 }
 
+/**
+ * Check if a pattern contains regex metacharacters.
+ * Returns true if the pattern likely needs regex mode.
+ */
+function containsRegexMetacharacters(pattern: string): boolean {
+  // Regex metacharacters: ^ $ . * + ? [ ] ( ) { } | \
+  const metacharacterPattern = /[\^$.*+?[\](){}|\\]/;
+  return metacharacterPattern.test(pattern);
+}
+
 export function likelyUnbalancedRegex(pattern: string): boolean {
+  // First check: unbalanced brackets/parentheses/braces = likely a typo, use literal
   const counts = countBrackets(pattern);
 
   // Check for unbalanced brackets, parentheses, and braces
@@ -367,12 +378,24 @@ export function likelyUnbalancedRegex(pattern: string): boolean {
   // Also check for invalid repetition operators
   const hasInvalidRepetitionFlag = hasInvalidRepetition(pattern);
 
-  return (
+  // If pattern has unbalanced syntax, treat as literal (user probably meant to type literal)
+  if (
     hasUnbalancedBrackets ||
     hasUnbalancedParens ||
     hasUnbalancedBraces ||
     hasInvalidRepetitionFlag
-  );
+  ) {
+    return true;
+  }
+
+  // Second check: if pattern has regex metacharacters, treat as regex (return false)
+  // This allows ripgrep to handle the pattern as a proper regex
+  if (containsRegexMetacharacters(pattern)) {
+    return false;
+  }
+
+  // Default: simple alphanumeric strings should use literal mode
+  return true;
 }
 
 /**

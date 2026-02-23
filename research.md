@@ -1,332 +1,157 @@
-# Acai-TS Codebase Research: CLI Arguments and Session Management
+# Grep Tool Implementation Research
 
 ## Research Question
 
-This research investigates four key aspects of the acai-ts codebase:
-1. Where CLI arguments are parsed
-2. How SessionManager works and its responsibilities
-3. Where SessionManager is instantiated and used throughout the app
-4. How sessions are saved to ~/.acai/sessions
+Investigate the Grep tool bug in the auto-detection logic for literal vs regex mode, specifically:
+1. Find the Grep tool implementation
+2. Locate the `likelyUnbalancedRegex()` function
+3. Understand how the literal/regex mode decision is made
+4. Find how patterns get transformed
+5. Locate related tests
 
 ## Overview
 
-The acai-ts codebase is a CLI tool built with TypeScript/Node.js. It uses Node's built-in `parseArgs` for CLI argument handling (not commander or yargs). The SessionManager class is a central component responsible for managing conversation history, including message storage, session persistence, title generation, and token usage tracking.
+This research covers the Grep tool implementation in the acai-ts codebase, focusing on the auto-detection logic that determines whether a search pattern should be treated as a literal string or a regex pattern. The bug manifests when simple alphanumeric strings like "Grep" are incorrectly treated as regex patterns, causing ripgrep errors.
 
 ## Key Findings
 
-### 1. CLI Argument Parsing
+### 1. Grep Tool Implementation Location
 
-**Location**: `source/index.ts` lines 5, 86-115
+**Primary implementation file**: `/Users/travisennis/Projects/acai-ts/source/tools/grep.ts`
 
-The application uses Node.js's built-in `parseArgs` from the `node:util` module, not an external library like commander or yargs.
+The tool is registered in `/Users/travisennis/Projects/acai-ts/source/tools/index.ts` (lines 15, 54, 79).
 
-```typescript
-// Line 5
-import { parseArgs } from "node:util";
+### 2. The `likelyUnbalancedRegex()` Function
 
-// Lines 86-97
-const parsed = syncTry(() =>
-  parseArgs({
-    options: {
-      model: { type: "string", short: "m" },
-      prompt: { type: "string", short: "p" },
-      continue: { type: "boolean", default: false },
-      resume: { type: "boolean", default: false },
-      "add-dir": { type: "string", multiple: true },
-      "no-skills": { type: "boolean", default: false },
-      help: { type: "boolean", short: "h" },
-      version: { type: "boolean", short: "v" },
-    },
-    allowPositionals: true,
-  }),
-);
-```
-
-**Defined CLI Arguments**:
-
-| Argument | Short | Type | Description |
-|----------|-------|------|-------------|
-| `--model` | `-m` | string | Sets the model to use |
-| `--prompt` | `-p` | string | Sets the prompt (runs in CLI mode) |
-| `--continue` | - | boolean | Select a conversation to resume from a list |
-| `--resume` | - | boolean | Resume a specific session by ID, or most recent if no ID given |
-| `--add-dir` | - | string (multiple) | Add additional working directory |
-| `--no-skills` | - | boolean | Disable skills discovery and loading |
-| `--help` | `-h` | boolean | Show help |
-| `--version` | `-v` | boolean | Show version |
-
-The help text is defined as a template literal at lines 57-83 in `source/index.ts`.
-
----
-
-### 2. SessionManager Class
-
-**Location**: `source/sessions/manager.ts`
-
-The SessionManager class (defined at line 204) extends EventEmitter and is responsible for managing conversation state, message history, session persistence, and token usage tracking.
-
-#### Constructor (lines 225-247)
+**Location**: `/Users/travisennis/Projects/acai-ts/source/tools/grep.ts:296-310`
 
 ```typescript
-constructor({
-  stateDir,
-  modelManager,
-  tokenTracker,
-}: {
-  stateDir: string;
-  modelManager: ModelManager;
-  tokenTracker: TokenTracker;
-}) {
-  super();
-  this.history = [];
-  this.sessionId = randomUUID();
-  this.modelId = modelManager.getModel("repl").modelId;
-  this.title = "";
-  this.createdAt = new Date();
-  this.updatedAt = new Date();
-  this.stateDir = stateDir;
-  this.contextWindow = 0;
-  this.modelManager = modelManager;
-  this.tokenTracker = tokenTracker;
-  this.tokenUsage = [];
+export function likelyUnbalancedRegex(pattern: string): boolean {
+  const counts = countBrackets(pattern);
+
+  // Check for unbalanced brackets, parentheses, and braces
+  const hasUnbalancedBrackets = counts.openBracket !== counts.closeBracket;
+  const hasUnbalancedParens = counts.openParen !== counts.closeParen;
+  const hasUnbalancedBraces = counts.openBrace !== counts.closeBrace;
+
+  // Also check for invalid repetition operators
+  const hasInvalidRepetitionFlag = hasInvalidRepetition(pattern);
+
+  return (
+    hasUnbalancedBrackets ||
+    hasUnbalancedParens ||
+    hasUnbalancedBraces ||
+    hasInvalidRepetitionFlag
+  );
 }
 ```
 
-#### Key Responsibilities:
+**Supporting Functions**:
+- `countBrackets()` (lines 229-283): Counts balanced brackets, parentheses, and braces, excluding character classes
+- `hasInvalidRepetition()` (lines 185-224): Checks for invalid repetition operators like `{n}`, `{n,}`, `{n,m}`
+- `skipCharacterClass()` (lines 162-170): Helper to skip character class content
+- `isInvalidBraceContent()` (lines 173-183): Validates brace content
 
-1. **Message History Management**:
-   - `get()` - Returns filtered message history (lines 279-290)
-   - `appendUserMessage()` - Adds user messages (lines 306-326)
-   - `appendAssistantMessage()` - Adds assistant messages (lines 328-335)
-   - `appendResponseMessages()` - Adds response messages with sanitization (lines 344-350)
-   - `appendToolMessages()` - Adds tool result messages
+### 3. Literal vs Regex Mode Decision
 
-2. **Session Persistence**:
-   - `save()` - Saves session to disk with atomic write (lines 352-411)
-   - `load()` - Static method to load sessions from disk (lines 466-578)
-   - `restore()` - Restores session from SavedMessageHistory (lines 581-612)
+The decision is made in **two locations**:
 
-3. **Title Generation**:
-   - Automatically generates conversation titles using AI (lines 413-459)
-   - Uses the "title-conversation" model
-
-4. **Token Usage Tracking**:
-   - `recordTurnUsage()` - Records token usage for each turn (lines 621-649)
-   - `getTokenUsage()` - Returns all recorded token usage
-   - `getTotalTokenUsage()` - Returns aggregated token usage
-
-5. **Session Metadata**:
-   - `setMetadata()` / `getMetadata()` - Store and retrieve custom metadata
-
-#### Data Structures
-
-**SavedMessageHistory** (lines 166-180):
+#### A. In `execute()` function (lines 124-131)
 ```typescript
-export type SavedMessageHistory = {
-  project: string;
-  sessionId: string;
-  modelId: string;
-  title: string;
-  createdAt: Date;
-  updatedAt: Date;
-  messages: ModelMessage[];
-  tokenUsage?: TokenUsageTurn[];
-  metadata?: Record<string, unknown>;
-};
-```
-
----
-
-### 3. SessionManager Instantiation and Usage
-
-#### Instantiation
-
-**Primary instantiation** in `source/index.ts` lines 335-355:
-
-```typescript
-async function initializeSessionManager(
-  sessionsDir: string,
-  modelManager: ModelManager,
-  tokenTracker: TokenTracker,
-): Promise<SessionManager> {
-  const sessionManager = new SessionManager({
-    stateDir: sessionsDir,
-    modelManager,
-    tokenTracker,
-  });
-
-  return sessionManager;
+let effectiveLiteral: boolean | null = null;
+if (literal === true) {
+  effectiveLiteral = true;
+} else if (literal === false) {
+  effectiveLiteral = false;
+} else {
+  effectiveLiteral = isLikelyUnbalanced;
 }
 ```
 
-The `sessionsDir` is obtained from `appDir.ensurePath("sessions")` where `appDir` points to `~/.acai` (see Configuration section below).
-
-#### Usage Throughout the App
-
-| Component | File | Usage |
-|-----------|------|-------|
-| **Agent** | `source/agent/index.ts` | Receives SessionManager in AgentOptions (line 35), uses for message handling |
-| **CLI** | `source/cli/index.ts` | Uses sessionManager.save() after CLI execution (lines 103, 131) |
-| **CommandManager** | `source/commands/manager.ts` | Stores sessionManager reference (line 51) |
-| **History Command** | `source/commands/history/index.ts` | Uses SessionManager.load() to list sessions (line 102) |
-| **REPL** | `source/repl/index.ts` | Saves session after each turn (lines 496, 519, 979), creates new sessions (line 980) |
-| **Exit Summary** | `source/sessions/summary.ts` | Formats session information for display |
-
----
-
-### 4. Session Saving to ~/.acai/sessions
-
-#### Configuration
-
-**Location**: `source/config/index.ts` lines 125-132
-
+#### B. In `buildGrepCommand()` function (lines 401-410)
 ```typescript
-export class ConfigManager {
-  readonly project: DirectoryProvider;
-  readonly app: DirectoryProvider;
-
-  constructor() {
-    this.project = new DirectoryProvider(path.join(process.cwd(), ".acai"));
-    this.app = new DirectoryProvider(path.join(homedir(), ".acai"));
-  }
+let effectiveLiteral: boolean;
+if (options.literal === true) {
+  effectiveLiteral = true;
+} else if (options.literal === false) {
+  effectiveLiteral = false;
+} else if (options.likelyUnbalanced !== undefined) {
+  effectiveLiteral = options.likelyUnbalanced;
+} else {
+  effectiveLiteral = likelyUnbalancedRegex(pattern);
 }
 ```
 
-The `app` DirectoryProvider points to `path.join(homedir(), ".acai")` which resolves to `~/.acai`.
+**The Bug**: When `literal` is not explicitly provided (null), the code uses `likelyUnbalancedRegex(pattern)` to decide. This function only returns `true` for patterns with unbalanced brackets/parentheses/braces. For simple strings like "Grep", it returns `false`, causing the pattern to be treated as a regex.
 
-#### Session Directory Creation
+### 4. Pattern Transformation
 
-In `source/index.ts` lines 150-156:
+The pattern transformation happens through the `-F` flag in ripgrep:
 
+**Location**: `/Users/travisennis/Projects/acai-ts/source/tools/grep.ts:434-436`
 ```typescript
-const appDir = config.app;
-
-const [sessionsDir, modelManager] = await Promise.all([
-  appDir.ensurePath("sessions"),  // Creates ~/.acai/sessions
-  initializeModelManager(appDir),
-]);
-```
-
-#### Save Process
-
-**Location**: `source/sessions/manager.ts` lines 352-411
-
-The `save()` method:
-1. Writes to a temporary file first (`.tmp` suffix)
-2. Uses atomic rename to move to final location
-3. Cleans up temp file on failure
-
-```typescript
-async save() {
-  const msgHistoryDir = this.stateDir;
-  const fileName = this.getSessionFileName();
-  const filePath = join(msgHistoryDir, fileName);
-  const tempFilePath = `${filePath}.tmp`;
-
-  // ... validation ...
-
-  const output: SavedMessageHistory = {
-    project,
-    sessionId: this.sessionId,
-    modelId: this.modelId,
-    title: this.title,
-    createdAt: this.createdAt,
-    updatedAt: this.updatedAt,
-    messages: this.history,
-    tokenUsage: this.tokenUsage,
-    metadata: Object.keys(this.metadata).length > 0 ? this.metadata : undefined,
-  };
-
-  await writeFile(tempFilePath, JSON.stringify(output, null, 2));
-  await rename(tempFilePath, filePath);
+if (effectiveLiteral) {
+  command += " -F";
 }
 ```
 
-#### File Naming Convention
+**Important Note**: The code itself does NOT add a `(?:` prefix. The error message in the bug report shows ripgrep's internal regex parsing error. The pattern is passed directly to ripgrep, and if `effectiveLiteral` is `false`, ripgrep interprets it as a regex.
 
-- Format: `session-{uuid}.json`
-- Example: `session-a1b2c3d4-e5f6-7890-1234-567890abcdef.json`
-- Full path: `~/.acai/sessions/session-{uuid}.json`
+### 5. Test Files
 
-#### When Sessions Are Saved
-
-1. **After each turn in REPL** (`source/repl/index.ts`):
-   - Line 496: After tool execution
-   - Line 519: After message handling
-   - Line 979: After completion
-
-2. **On interrupt/ctrl+c** (`source/index.ts` line 493):
-   ```typescript
-   repl.setInterruptCallback(async () => {
-     try {
-       await state.sessionManager.save();
-     } catch (error) {
-       logger.warn({ error }, "Failed to save message history on interrupt");
-     }
-   });
-   ```
-
-3. **After CLI execution** (`source/cli/index.ts` lines 103, 131):
-   ```typescript
-   await sessionManager.save();
-   ```
-
-#### Loading Sessions
-
-**Static method** `SessionManager.load(stateDir, count)` (lines 466-578):
-- Loads session files sorted by modification time (newest first)
-- Skips empty or malformed files
-- Returns `SavedMessageHistory[]` array
-- Used for `--continue` and `--resume` flags
-
----
+| Test File | Path |
+|-----------|------|
+| Main tests | `/Users/travisennis/Projects/acai-ts/test/tools/grep.test.ts` |
+| Error handling | `/Users/travisennis/Projects/acai-ts/test/tools/grep-error-handling.test.ts` |
+| Enhanced UX | `/Users/travisennis/Projects/acai-ts/test/tools/grep-enhanced-ux.test.ts` |
+| Issue #96 | `/Users/travisennis/Projects/acai-ts/test/tools/grep-issue-96.test.ts` |
+| Max results | `/Users/travisennis/Projects/acai-ts/test/tools/grep-max-results.test.ts` |
+| Match counting | `/Users/travisennis/Projects/acai-ts/test/tools/grep-match-counting.test.ts` |
 
 ## Architecture & Design Patterns
 
-### Pattern 1: Singleton-like Config Manager
-- **Description**: ConfigManager is instantiated once and provides DirectoryProvider instances for both project (`./.acai`) and app (`~/.acai`) directories
-- **Example**: `source/config/index.ts` lines 115-133
-- **When Used**: Application-wide configuration access
+### Pattern 1: Pre-computed Detection Result
 
-### Pattern 2: EventEmitter for Session Updates
-- **Description**: SessionManager extends EventEmitter to notify components of session changes
-- **Events**: `"update-title"`, `"clear-history"`
-- **Example**: `source/sessions/manager.ts` line 204
-- **When Used**: When session title changes or history is cleared
+The `likelyUnbalancedRegex()` result is computed once in `execute()` and passed through to `buildGrepCommand()`:
 
-### Pattern 3: Atomic File Writes
-- **Description**: Sessions are written to temp files then renamed atomically to prevent corruption
-- **Example**: `source/sessions/manager.ts` lines 379-385
-- **When Used**: Critical file operations where corruption would cause data loss
+- **execute()** at line 122: `const isLikelyUnbalanced = likelyUnbalancedRegex(pattern);`
+- Passed to `grepFilesStructured()` at line 151: `likelyUnbalanced: isLikelyUnbalanced`
+- Used in `buildGrepCommand()` at line 407: `effectiveLiteral = options.likelyUnbalanced;`
 
-### Pattern 4: Message Sanitization
-- **Description**: Tool call inputs are sanitized before being added to history to prevent malformed JSON
-- **Example**: `source/sessions/manager.ts` lines 68-130
-- **When Used**: When appending assistant/tool messages to history
+This avoids redundant computation.
 
----
+### Pattern 2: Three-way Literal Mode
+
+The literal mode follows a three-way logic:
+1. **Explicit `literal: true`** → Use fixed-string mode (`-F` flag)
+2. **Explicit `literal: false`** → Use regex mode (no `-F` flag)
+3. **`literal: null/undefined`** → Auto-detect using `likelyUnbalancedRegex()`
+
+### Pattern 3: Error Message Enhancement
+
+The `execute()` function wraps errors with user-friendly messages (lines 157-175):
+```typescript
+} else if (errorMessage.includes("Regex parse error")) {
+  userFriendlyError = `Invalid search pattern "${pattern}" - try using literal=true for fixed-string search`;
+}
+```
 
 ## Data Flow
 
-1. **CLI Entry Point**:
-   - `bin/acai` shell script → `node dist/index.js`
-
-2. **Argument Parsing**:
-   - `source/index.ts`: `parseArgs()` → `flags` object + `input` positionals
-
-3. **Session Manager Initialization**:
-   - `config.app.ensurePath("sessions")` → `~/.acai/sessions`
-   - `new SessionManager({stateDir, modelManager, tokenTracker})`
-
-4. **Session Loading (--continue/--resume)**:
-   - `SessionManager.load(sessionsDir, count)` → `SavedMessageHistory[]`
-   - `sessionManager.restore(history)` → populates session state
-
-5. **Message Flow During Execution**:
-   - User input → `promptManager` → `agent.run()` → `sessionManager.append*Message()`
-   - After each turn: `sessionManager.save()` → writes `~/.acai/sessions/session-{uuid}.json`
-
----
+1. **User calls Grep tool** with pattern (e.g., "Grep") and optional parameters
+2. **Input validation** via Zod schema (lines 17-48)
+3. **execute() function** is called:
+   - Computes `isLikelyUnbalanced = likelyUnbalancedRegex(pattern)` (line 122)
+   - Determines `effectiveLiteral` based on user input and auto-detection (lines 124-131)
+   - Calls `grepFilesStructured()` with options (lines 137-156)
+4. **grepFilesStructured()** calls `buildGrepCommand()` (line 325)
+5. **buildGrepCommand()**:
+   - Determines final `effectiveLiteral` (lines 401-410)
+   - Builds command with `-F` flag if `effectiveLiteral` is true (lines 434-436)
+   - Executes ripgrep via `execFile()`
+6. **ripgrep** processes the pattern:
+   - With `-F`: treats pattern as literal string
+   - Without `-F`: interprets pattern as regex
 
 ## Components & Files
 
@@ -334,62 +159,127 @@ async save() {
 
 | Component | File(s) | Responsibility |
 |-----------|---------|----------------|
-| **CLI Entry** | `source/index.ts` | Parses CLI arguments, initializes app state, runs REPL or CLI |
-| **SessionManager** | `source/sessions/manager.ts` | Manages message history, session persistence, token tracking |
-| **ConfigManager** | `source/config/index.ts` | Provides directory paths, merged config (project + app) |
-| **DirectoryProvider** | `source/config/index.ts` | Helper class for path management and directory creation |
-| **REPL** | `source/repl/index.ts` | Interactive terminal interface, triggers session saves |
-| **Agent** | `source/agent/index.ts` | AI agent that processes messages |
-| **CLI Handler** | `source/cli/index.ts` | Non-interactive CLI mode handler |
+| GrepTool | `source/tools/grep.ts` | Main tool definition and execution |
+| createGrepTool | `source/tools/grep.ts:60` | Factory function returning tool definition, display, and execute |
+| likelyUnbalancedRegex | `source/tools/grep.ts:296` | Auto-detection function |
+| buildGrepCommand | `source/tools/grep.ts:329` | Constructs ripgrep command string |
+| grepFilesStructured | `source/tools/grep.ts:487` | Executes ripgrep and parses JSON output |
+| parseRipgrepJsonOutput | `source/tools/grep.ts:371` | Parses ripgrep JSON output |
 
 ### Configuration
 
-- **Config files**: `~/.acai/acai.json`, `./.acai/acai.json` (project overrides app)
-- **Sessions directory**: `~/.acai/sessions/`
-- **Session file format**: `session-{uuid}.json`
+- **Input Schema**: Zod schema defining all parameters (lines 17-48)
+- **Default max results**: `DEFAULT_MAX_RESULTS = 100` (line 11)
 
----
+### Key Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| pattern | string | required | Search pattern |
+| path | string | required | Path to search |
+| recursive | boolean | true | Search recursively |
+| ignoreCase | boolean | false | Case-insensitive search |
+| filePattern | string | null | Glob pattern to filter files |
+| contextLines | number | 0 | Number of context lines |
+| searchIgnored | boolean | false | Search ignored files |
+| literal | boolean/null | null | Fixed-string vs regex mode |
+| maxResults | number | 100 | Maximum results |
+
+## Integration Points
+
+### Dependencies
+- **node:child_process**: For executing ripgrep (`execFile`)
+- **zod**: For input validation
+- **node:util**: For `inspect()` in display function
+
+### Consumers
+- **source/tools/index.ts**: Registers the tool in `initTools()`
+- **AI SDK**: Uses the tool definition for agent execution
+
+### External Systems
+- **ripgrep (rg)**: External CLI tool for searching
 
 ## Edge Cases & Error Handling
 
 ### Edge Cases
-- **Empty session files**: Skipped during load (line 578-582)
-- **Malformed JSON**: Caught and logged, file skipped
-- **Interrupted saves**: Temp files cleaned up, warning logged
-- **Missing session on resume**: Error message and exit
+
+1. **Empty pattern**: Not explicitly handled - passes through to ripgrep
+2. **Pattern with only whitespace**: Passed to ripgrep as-is
+3. **Path with spaces**: Properly quoted in command (test at `grep-error-handling.test.ts:64`)
+4. **No matches found**: Returns exit code 1, handled gracefully (line 552-558)
+5. **Regex parse error**: Exit code 2, throws enhanced error (line 560-565)
 
 ### Error Handling
-- **Save failures**: Logged but don't throw (called from interrupt handlers)
-- **Load failures**: Returns empty array, logs error
-- **Title generation failures**: Falls back to first 50 chars of first message
 
----
+1. **File not found**: "Path not found" error message
+2. **Permission denied**: "Permission denied" error message
+3. **Regex parse error**: Suggests using `literal=true`
+4. **Abort signal**: Properly terminates search
+
+## Known Limitations
+
+### Bug: Auto-Detection Logic Flaw
+
+**Issue**: The `likelyUnbalancedRegex()` function only checks for:
+- Unbalanced brackets `[` vs `]`
+- Unbalanced parentheses `(` vs `)`
+- Unbalanced braces `{` vs `}`
+- Invalid repetition operators
+
+**Problem**: It does NOT check for:
+- Simple alphanumeric strings (should default to literal)
+- Regex metacharacters like `.`, `*`, `+`, `?`, `^`, `$`, `|`, `\`
+
+**Result**: A pattern like "Grep" returns `false` from `likelyUnbalancedRegex()`, causing it to be treated as regex mode, which fails because ripgrep interprets certain characters as regex special characters.
+
+**Evidence**:
+- Bug report: Pattern "Grep" causes `regex parse error: (?:\Grep)`
+- This indicates ripgrep is treating it as regex (without `-F` flag)
 
 ## Testing Coverage
 
-No specific test files were found for SessionManager in the search. Test files present:
-- `test/config.test.ts`
-- `test/execution.test.ts`
-- `test/skills.test.ts`
-- `test/stdin-handling.test.ts`
-- `test/env-expand.test.ts`
-- `test/mentions.test.ts`
-- `test/messages.test.ts`
+### Existing Tests
 
----
+| Test Area | File:Line Reference |
+|-----------|---------------------|
+| `-F` flag with literal=true | `grep.test.ts:10-12` |
+| No `-F` with literal=false | `grep.test.ts:14-17` |
+| Auto-detect unbalanced pattern | `grep.test.ts:19-22` |
+| likelyUnbalancedRegex - parentheses | `grep.test.ts:24-28` |
+| likelyUnbalancedRegex - brackets | `grep.test.ts:30-33` |
+| likelyUnbalancedRegex - braces | `grep.test.ts:35-39` |
+| likelyUnbalancedRegex - repetition | `grep.test.ts:41-48` |
+| likelyUnbalancedRegex - character classes | `grep.test.ts:50-56` |
+| likelyUnbalancedRegex - escape sequences | `grep.test.ts:58-66` |
+| truncateMatches | `grep.test.ts:68-128` |
+| Issue #96 - spawnChildProcess pattern | `grep-issue-96.test.ts:10-27` |
+| Error handling - no matches | `grep-error-handling.test.ts:10-24` |
+| Error handling - fixed-string mode | `grep-error-handling.test.ts:26-40` |
+| Command escaping | `grep-error-handling.test.ts:42-80` |
+| JSON parsing | `grep-enhanced-ux.test.ts:10-60` |
+| Max results | `grep-max-results.test.ts:10-65` |
+| Match counting | `grep-match-counting.test.ts:10-120` |
+
+### Test Gaps
+
+1. **No tests for simple alphanumeric patterns**: No test verifies behavior when pattern is "Grep" (simple string without metacharacters)
+2. **No tests for regex metacharacters**: No test checks patterns like `.`, `*`, `+`, `?` are treated as regex
+3. **No tests for default behavior**: No test verifies what happens when `literal` is omitted for a simple pattern
 
 ## References
 
 ### Source Files
-- **Main entry**: `source/index.ts`
-- **SessionManager**: `source/sessions/manager.ts`
-- **Configuration**: `source/config/index.ts`
-- **CLI handler**: `source/cli/index.ts`
-- **REPL**: `source/repl/index.ts`
-- **Agent**: `source/agent/index.ts`
-- **History command**: `source/commands/history/index.ts`
-- **Session summary**: `source/sessions/summary.ts`
+- `/Users/travisennis/Projects/acai-ts/source/tools/grep.ts` - Main implementation
+- `/Users/travisennis/Projects/acai-ts/source/tools/index.ts` - Tool registration
+- `/Users/travisennis/Projects/acai-ts/dist/tools/grep.d.ts` - TypeScript definitions
 
-### Entry Point
-- **Shell wrapper**: `bin/acai`
-- **Compiled entry**: `dist/index.js`
+### Test Files
+- `/Users/travisennis/Projects/acai-ts/test/tools/grep.test.ts`
+- `/Users/travisennis/Projects/acai-ts/test/tools/grep-error-handling.test.ts`
+- `/Users/travisennis/Projects/acai-ts/test/tools/grep-issue-96.test.ts`
+- `/Users/travisennis/Projects/acai-ts/test/tools/grep-enhanced-ux.test.ts`
+- `/Users/travisennis/Projects/acai-ts/test/tools/grep-max-results.test.ts`
+- `/Users/travisennis/Projects/acai-ts/test/tools/grep-match-counting.test.ts`
+
+### Bug Report
+- `/Users/travisennis/Projects/acai-ts/grep-bug.md`
