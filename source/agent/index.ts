@@ -311,7 +311,14 @@ export class Agent {
         const response = await result.response;
         const responseMessages = response.messages;
 
-        sessionManager.appendResponseMessages(responseMessages);
+        // Filter out tool-result messages from responseMessages since we manually
+        // execute tools and add their results via appendToolMessages below.
+        // The AI SDK may include tool-result messages in response.messages even
+        // when tools don't have an execute function.
+        const nonToolMessages = responseMessages.filter(
+          (msg) => msg.role !== "tool",
+        );
+        sessionManager.appendResponseMessages(nonToolMessages);
 
         const stepUsage = await result.usage;
         this.updateUsageStats(stepUsage, sessionManager);
