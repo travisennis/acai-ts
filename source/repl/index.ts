@@ -74,6 +74,8 @@ interface ReplOptions {
   tools?: CompleteToolSet;
   /** Optional terminal configuration for the process terminal. */
   terminalOptions?: ProcessTerminalOptions;
+  /** If true, don't save session to disk. */
+  noSession?: boolean;
 }
 
 /**
@@ -493,7 +495,9 @@ export class Repl {
           "modeState",
           this.modeManager.toJson(),
         );
-        await this.options.sessionManager.save();
+        if (!this.options.noSession) {
+          await this.options.sessionManager.save();
+        }
         // Refresh project status now that agent may have modified files
         await getProjectStatus().then((ps) => {
           this.footer.setState({
@@ -516,7 +520,9 @@ export class Repl {
           "modeState",
           this.modeManager.toJson(),
         );
-        await this.options.sessionManager.save();
+        if (!this.options.noSession) {
+          await this.options.sessionManager.save();
+        }
         // Stop loading animation
         if (this.loadingAnimation) {
           this.loadingAnimation.stop();
@@ -976,7 +982,9 @@ export class Repl {
         "modeState",
         this.modeManager.toJson(),
       );
-      await this.options.sessionManager.save();
+      if (!this.options.noSession) {
+        await this.options.sessionManager.save();
+      }
       this.options.sessionManager.create(
         this.options.modelManager.getModel("repl").modelId,
       );
@@ -1043,7 +1051,9 @@ export class Repl {
       "modeState",
       this.modeManager.toJson(),
     );
-    void this.options.sessionManager.save();
+    if (!this.options.noSession) {
+      void this.options.sessionManager.save();
+    }
     this.stop(true);
     process.exit(0);
   }
@@ -1073,7 +1083,9 @@ export class Repl {
         "modeState",
         this.modeManager.toJson(),
       );
-      void this.options.sessionManager.save();
+      if (!this.options.noSession) {
+        void this.options.sessionManager.save();
+      }
       this.stop(true);
       process.exit(0);
     } else {

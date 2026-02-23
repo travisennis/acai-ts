@@ -68,7 +68,7 @@ Options
   --resume           Resume a specific session by ID, or most recent if no ID given
   --add-dir          Add additional working directory (can be used multiple times)
   --no-skills        Disable skills discovery and loading
-
+  --no-session       Don't save session to disk
 
   --help, -h         Show help
   --version, -v      Show version
@@ -92,6 +92,7 @@ const parsed = syncTry(() =>
 
       "add-dir": { type: "string", multiple: true },
       "no-skills": { type: "boolean", default: false },
+      "no-session": { type: "boolean", default: false },
 
       help: { type: "boolean", short: "h" },
       version: { type: "boolean", short: "v" },
@@ -429,7 +430,7 @@ async function handleConversationHistory(
   }
 }
 
-async function runCliMode(state: AppState): Promise<void> {
+async function runCliMode(state: AppState, noSession: boolean): Promise<void> {
   const cliProcess = new Cli({
     promptManager: state.promptManager,
     sessionManager: state.sessionManager,
@@ -437,6 +438,7 @@ async function runCliMode(state: AppState): Promise<void> {
     tokenTracker: state.tokenTracker,
     tokenCounter: state.tokenCounter,
     workspace,
+    noSession,
   });
   (await asyncTry(cliProcess.run())).recover(handleError);
 }
@@ -444,6 +446,7 @@ async function runCliMode(state: AppState): Promise<void> {
 async function runReplMode(
   state: AppState,
   stdinWasPiped: boolean,
+  noSession: boolean,
 ): Promise<void> {
   // Initialize tools before creating REPL (needed for session reload reconstruction)
   const tools = await initTools({
@@ -471,6 +474,7 @@ async function runReplMode(
     workspace,
     tools,
     terminalOptions: { useTty: stdinWasPiped },
+    noSession,
   });
 
   await repl.init();
@@ -489,11 +493,13 @@ async function runReplMode(
 
   // Set interrupt callback
   repl.setInterruptCallback(async () => {
-    try {
-      await state.sessionManager.save();
-    } catch (error) {
-      // Log but don't throw - we still want to abort the agent
-      logger.warn({ error }, "Failed to save message history on interrupt");
+    if (!noSession) {
+      try {
+        await state.sessionManager.save();
+      } catch (error) {
+        // Log but don't throw - we still want to abort the agent
+        logger.warn({ error }, "Failed to save message history on interrupt");
+      }
     }
     agent.abort();
   });
@@ -502,7 +508,7 @@ async function runReplMode(
   repl.setExitCallback(async (_sessionId: string) => {
     if (!state.sessionManager.isEmpty()) {
       await repl.triggerRuleGeneration();
-      writeExitSummary(state.sessionManager);
+      writeExitSummary(state.sessionManager, noSession);
     }
   });
 
@@ -540,7 +546,9 @@ async function runReplMode(
         await repl.handle(result, agent.state);
       }
 
-      await state.sessionManager.save();
+      if (!noSession) {
+        await state.sessionManager.save();
+      }
     } catch (_error) {
       // Error displayed in the TUI
     }
@@ -563,7 +571,9 @@ async function runReplMode(
         await repl.handle(result, agent.state);
       }
 
-      await state.sessionManager.save();
+      if (!noSession) {
+        await state.sessionManager.save();
+      }
     } catch (_error) {
       // Display error in the TUI by adding an error message to the chat
       // repl.showError((error as Error).message || "Unknown error occurred");
@@ -606,11 +616,15 @@ async function main() {
 
     // Handle CLI mode if initial prompt provided
     if (isDefined(initialPromptInput)) {
-      return await runCliMode(state);
+      return await runCliMode(state, flags["no-session"] === true);
     }
 
     // Setup REPL mode
-    return await runReplMode(state, stdinContent !== null);
+    return await runReplMode(
+      state,
+      stdinContent !== null,
+      flags["no-session"] === true,
+    );
   } catch (error) {
     handleError(error as Error);
     process.exit(1);

@@ -1,144 +1,395 @@
-# Mouse-Based Text Selection Research Report
+# Acai-TS Codebase Research: CLI Arguments and Session Management
 
 ## Research Question
 
-What would it take to support mouse-based text selection in acai to enable copying text from the terminal output?
+This research investigates four key aspects of the acai-ts codebase:
+1. Where CLI arguments are parsed
+2. How SessionManager works and its responsibilities
+3. Where SessionManager is instantiated and used throughout the app
+4. How sessions are saved to ~/.acai/sessions
 
 ## Overview
 
-Mouse-based text selection for copying **already works** in acai. The current implementation handles this correctly through standard terminal behavior:
+The acai-ts codebase is a CLI tool built with TypeScript/Node.js. It uses Node's built-in `parseArgs` for CLI argument handling (not commander or yargs). The SessionManager class is a central component responsible for managing conversation history, including message storage, session persistence, title generation, and token usage tracking.
 
-- **Regular click + drag**: Does not work (mouse tracking intercepts events)
-- **Shift + Click + drag**: Works (terminal's native selection mode)
+## Key Findings
 
-## Current Implementation
+### 1. CLI Argument Parsing
 
-### Mouse Tracking
+**Location**: `source/index.ts` lines 5, 86-115
 
-Mouse tracking is enabled in `source/tui/terminal.ts:100-102`:
+The application uses Node.js's built-in `parseArgs` from the `node:util` module, not an external library like commander or yargs.
 
 ```typescript
-// Enable mouse tracking (SGR mode) so trackpad scroll sends mouse events
-// instead of being translated into arrow key sequences
-process.stdout.write("\x1b[?1000h\x1b[?1006h");
+// Line 5
+import { parseArgs } from "node:util";
+
+// Lines 86-97
+const parsed = syncTry(() =>
+  parseArgs({
+    options: {
+      model: { type: "string", short: "m" },
+      prompt: { type: "string", short: "p" },
+      continue: { type: "boolean", default: false },
+      resume: { type: "boolean", default: false },
+      "add-dir": { type: "string", multiple: true },
+      "no-skills": { type: "boolean", default: false },
+      help: { type: "boolean", short: "h" },
+      version: { type: "boolean", short: "v" },
+    },
+    allowPositionals: true,
+  }),
+);
 ```
 
-### Mouse Event Handling
+**Defined CLI Arguments**:
 
-The TUI class in `source/tui/tui.ts:279-306` handles mouse events:
+| Argument | Short | Type | Description |
+|----------|-------|------|-------------|
+| `--model` | `-m` | string | Sets the model to use |
+| `--prompt` | `-p` | string | Sets the prompt (runs in CLI mode) |
+| `--continue` | - | boolean | Select a conversation to resume from a list |
+| `--resume` | - | boolean | Resume a specific session by ID, or most recent if no ID given |
+| `--add-dir` | - | string (multiple) | Add additional working directory |
+| `--no-skills` | - | boolean | Disable skills discovery and loading |
+| `--help` | `-h` | boolean | Show help |
+| `--version` | `-v` | boolean | Show version |
+
+The help text is defined as a template literal at lines 57-83 in `source/index.ts`.
+
+---
+
+### 2. SessionManager Class
+
+**Location**: `source/sessions/manager.ts`
+
+The SessionManager class (defined at line 204) extends EventEmitter and is responsible for managing conversation state, message history, session persistence, and token usage tracking.
+
+#### Constructor (lines 225-247)
 
 ```typescript
-private handleMouseEvent(data: string): void {
-  // SGR mouse format: \x1b[<button;x;yM (press) or \x1b[<button;x;ym (release)
-  const button = Number.parseInt(data.slice(start + 1, semi), 10);
-
-  // Button 64 = scroll up, button 65 = scroll down
-  if (button === 64) {
-    // Handle scroll up
-  } else if (button === 65) {
-    // Handle scroll down
-  }
-  // Button 0 (left-click) is NOT handled - passed through to terminal
+constructor({
+  stateDir,
+  modelManager,
+  tokenTracker,
+}: {
+  stateDir: string;
+  modelManager: ModelManager;
+  tokenTracker: TokenTracker;
+}) {
+  super();
+  this.history = [];
+  this.sessionId = randomUUID();
+  this.modelId = modelManager.getModel("repl").modelId;
+  this.title = "";
+  this.createdAt = new Date();
+  this.updatedAt = new Date();
+  this.stateDir = stateDir;
+  this.contextWindow = 0;
+  this.modelManager = modelManager;
+  this.tokenTracker = tokenTracker;
+  this.tokenUsage = [];
 }
 ```
 
-**Current behavior**:
-- Scroll wheel (buttons 64/65): Handled by application for virtual scrolling
-- Left-click (button 0): **Not handled** - passed through to terminal
-- Shift+Left-click: Terminal's native selection mode activates
+#### Key Responsibilities:
 
-### Why Shift+Click Works
+1. **Message History Management**:
+   - `get()` - Returns filtered message history (lines 279-290)
+   - `appendUserMessage()` - Adds user messages (lines 306-326)
+   - `appendAssistantMessage()` - Adds assistant messages (lines 328-335)
+   - `appendResponseMessages()` - Adds response messages with sanitization (lines 344-350)
+   - `appendToolMessages()` - Adds tool result messages
 
-The SGR mouse mode (`?1006h`) sends mouse events to the application. However, terminals implement a standard behavior where **Shift+click bypasses mouse tracking** and activates the terminal's native text selection:
+2. **Session Persistence**:
+   - `save()` - Saves session to disk with atomic write (lines 352-411)
+   - `load()` - Static method to load sessions from disk (lines 466-578)
+   - `restore()` - Restores session from SavedMessageHistory (lines 581-612)
 
-1. When Shift is held during a click, the terminal detects this modifier
-2. Instead of sending the event to the application, the terminal handles it natively
-3. This enables the terminal's standard text selection (click+drag to select)
-4. Users can copy with Cmd+C (macOS) or Ctrl+Shift+C (Linux)
+3. **Title Generation**:
+   - Automatically generates conversation titles using AI (lines 413-459)
+   - Uses the "title-conversation" model
 
-This is defined in the XTerm mouse tracking specification and is supported by most modern terminals (iTerm2, Terminal.app, Ghostty, Alacritty, etc.).
+4. **Token Usage Tracking**:
+   - `recordTurnUsage()` - Records token usage for each turn (lines 621-649)
+   - `getTokenUsage()` - Returns all recorded token usage
+   - `getTotalTokenUsage()` - Returns aggregated token usage
 
-## Existing Copy Functionality
+5. **Session Metadata**:
+   - `setMetadata()` / `getMetadata()` - Store and retrieve custom metadata
 
-acai already has a `/copy` command (`source/commands/copy/index.ts`) that copies the last assistant response to the clipboard:
+#### Data Structures
+
+**SavedMessageHistory** (lines 166-180):
+```typescript
+export type SavedMessageHistory = {
+  project: string;
+  sessionId: string;
+  modelId: string;
+  title: string;
+  createdAt: Date;
+  updatedAt: Date;
+  messages: ModelMessage[];
+  tokenUsage?: TokenUsageTurn[];
+  metadata?: Record<string, unknown>;
+};
+```
+
+---
+
+### 3. SessionManager Instantiation and Usage
+
+#### Instantiation
+
+**Primary instantiation** in `source/index.ts` lines 335-355:
 
 ```typescript
-// source/commands/copy/index.ts:8-53
-export function copyCommand(options: CommandOptions): ReplCommand {
-  return {
-    command: "/copy",
-    description: "Copy the last assistant response to the clipboard",
-    async handle(...) {
-      const lastText = extractLastAssistantText(history);
-      if (lastText) {
-        await Clipboard.setText(lastText);
-      }
-    }
+async function initializeSessionManager(
+  sessionsDir: string,
+  modelManager: ModelManager,
+  tokenTracker: TokenTracker,
+): Promise<SessionManager> {
+  const sessionManager = new SessionManager({
+    stateDir: sessionsDir,
+    modelManager,
+    tokenTracker,
+  });
+
+  return sessionManager;
+}
+```
+
+The `sessionsDir` is obtained from `appDir.ensurePath("sessions")` where `appDir` points to `~/.acai` (see Configuration section below).
+
+#### Usage Throughout the App
+
+| Component | File | Usage |
+|-----------|------|-------|
+| **Agent** | `source/agent/index.ts` | Receives SessionManager in AgentOptions (line 35), uses for message handling |
+| **CLI** | `source/cli/index.ts` | Uses sessionManager.save() after CLI execution (lines 103, 131) |
+| **CommandManager** | `source/commands/manager.ts` | Stores sessionManager reference (line 51) |
+| **History Command** | `source/commands/history/index.ts` | Uses SessionManager.load() to list sessions (line 102) |
+| **REPL** | `source/repl/index.ts` | Saves session after each turn (lines 496, 519, 979), creates new sessions (line 980) |
+| **Exit Summary** | `source/sessions/summary.ts` | Formats session information for display |
+
+---
+
+### 4. Session Saving to ~/.acai/sessions
+
+#### Configuration
+
+**Location**: `source/config/index.ts` lines 125-132
+
+```typescript
+export class ConfigManager {
+  readonly project: DirectoryProvider;
+  readonly app: DirectoryProvider;
+
+  constructor() {
+    this.project = new DirectoryProvider(path.join(process.cwd(), ".acai"));
+    this.app = new DirectoryProvider(path.join(homedir(), ".acai"));
+  }
+}
+```
+
+The `app` DirectoryProvider points to `path.join(homedir(), ".acai")` which resolves to `~/.acai`.
+
+#### Session Directory Creation
+
+In `source/index.ts` lines 150-156:
+
+```typescript
+const appDir = config.app;
+
+const [sessionsDir, modelManager] = await Promise.all([
+  appDir.ensurePath("sessions"),  // Creates ~/.acai/sessions
+  initializeModelManager(appDir),
+]);
+```
+
+#### Save Process
+
+**Location**: `source/sessions/manager.ts` lines 352-411
+
+The `save()` method:
+1. Writes to a temporary file first (`.tmp` suffix)
+2. Uses atomic rename to move to final location
+3. Cleans up temp file on failure
+
+```typescript
+async save() {
+  const msgHistoryDir = this.stateDir;
+  const fileName = this.getSessionFileName();
+  const filePath = join(msgHistoryDir, fileName);
+  const tempFilePath = `${filePath}.tmp`;
+
+  // ... validation ...
+
+  const output: SavedMessageHistory = {
+    project,
+    sessionId: this.sessionId,
+    modelId: this.modelId,
+    title: this.title,
+    createdAt: this.createdAt,
+    updatedAt: this.updatedAt,
+    messages: this.history,
+    tokenUsage: this.tokenUsage,
+    metadata: Object.keys(this.metadata).length > 0 ? this.metadata : undefined,
   };
+
+  await writeFile(tempFilePath, JSON.stringify(output, null, 2));
+  await rename(tempFilePath, filePath);
 }
 ```
 
-The text extraction logic (`source/commands/copy/utils.ts`) iterates through message history to find the last assistant message with text content.
+#### File Naming Convention
 
-## Current State Summary
+- Format: `session-{uuid}.json`
+- Example: `session-a1b2c3d4-e5f6-7890-1234-567890abcdef.json`
+- Full path: `~/.acai/sessions/session-{uuid}.json`
 
-| Feature | Status |
-|---------|--------|
-| Shift+Click for selection | ✅ Works (terminal native) |
-| Regular Click+Drag | ❌ Intercepted by app |
-| Scroll via trackpad | ✅ Works (app handles buttons 64/65) |
-| /copy command | ✅ Works (copies last response) |
+#### When Sessions Are Saved
 
-## How Users Can Copy Text
+1. **After each turn in REPL** (`source/repl/index.ts`):
+   - Line 496: After tool execution
+   - Line 519: After message handling
+   - Line 979: After completion
 
-### Option 1: Shift+Click (Recommended)
+2. **On interrupt/ctrl+c** (`source/index.ts` line 493):
+   ```typescript
+   repl.setInterruptCallback(async () => {
+     try {
+       await state.sessionManager.save();
+     } catch (error) {
+       logger.warn({ error }, "Failed to save message history on interrupt");
+     }
+   });
+   ```
 
-1. Hold Shift
-2. Click and drag to select text
-3. Release, then copy with Cmd+C (macOS) or Ctrl+Shift+C (Linux)
+3. **After CLI execution** (`source/cli/index.ts` lines 103, 131):
+   ```typescript
+   await sessionManager.save();
+   ```
 
-### Option 2: /copy Command
+#### Loading Sessions
 
-Type `/copy` to copy the last assistant message to clipboard.
+**Static method** `SessionManager.load(stateDir, count)` (lines 466-578):
+- Loads session files sorted by modification time (newest first)
+- Skips empty or malformed files
+- Returns `SavedMessageHistory[]` array
+- Used for `--continue` and `--resume` flags
 
-## Future Enhancements
+---
 
-If the goal is to make regular click+drag work for selection (without holding Shift), there are two approaches:
+## Architecture & Design Patterns
 
-### Approach A: Disable Mouse Tracking (Simplest)
+### Pattern 1: Singleton-like Config Manager
+- **Description**: ConfigManager is instantiated once and provides DirectoryProvider instances for both project (`./.acai`) and app (`~/.acai`) directories
+- **Example**: `source/config/index.ts` lines 115-133
+- **When Used**: Application-wide configuration access
 
-Add a keyboard shortcut to toggle mouse tracking on/off:
+### Pattern 2: EventEmitter for Session Updates
+- **Description**: SessionManager extends EventEmitter to notify components of session changes
+- **Events**: `"update-title"`, `"clear-history"`
+- **Example**: `source/sessions/manager.ts` line 204
+- **When Used**: When session title changes or history is cleared
 
-```typescript
-// In terminal.ts - add toggle method
-toggleMouseTracking(enable: boolean): void {
-  if (enable) {
-    process.stdout.write("\x1b[?1000h\x1b[?1006h");
-  } else {
-    process.stdout.write("\x1b[?1000l\x1b[?1006l");
-  }
-}
-```
+### Pattern 3: Atomic File Writes
+- **Description**: Sessions are written to temp files then renamed atomically to prevent corruption
+- **Example**: `source/sessions/manager.ts` lines 379-385
+- **When Used**: Critical file operations where corruption would cause data loss
 
-- When disabled: native selection works, but scroll via trackpad sends arrow keys
-- When enabled: scroll works, native selection requires Shift
+### Pattern 4: Message Sanitization
+- **Description**: Tool call inputs are sanitized before being added to history to prevent malformed JSON
+- **Example**: `source/sessions/manager.ts` lines 68-130
+- **When Used**: When appending assistant/tool messages to history
 
-### Approach B: Application-Managed Selection (Complex)
+---
 
-Handle left-click (button 0) in the application:
-1. Track selection start/end positions from mouse coordinates
-2. Map screen coordinates to text offsets
-3. Render selection highlight with ANSI reverse video
-4. Copy to clipboard on selection complete
+## Data Flow
 
-This requires complex coordinate mapping due to:
-- Scroll offset in viewport
-- Fixed footer (editor, input)
-- Line wrapping
-- ANSI escape codes
+1. **CLI Entry Point**:
+   - `bin/acai` shell script → `node dist/index.js`
 
-## Conclusion
+2. **Argument Parsing**:
+   - `source/index.ts`: `parseArgs()` → `flags` object + `input` positionals
 
-The current implementation already supports mouse-based text selection through Shift+Click, which is the standard way to use selection in terminals with mouse tracking enabled. This is working as intended and no changes are required to enable basic text copying.
+3. **Session Manager Initialization**:
+   - `config.app.ensurePath("sessions")` → `~/.acai/sessions`
+   - `new SessionManager({stateDir, modelManager, tokenTracker})`
 
-Users who want to copy text should use **Shift+Click+drag** followed by **Cmd+C** (macOS) or **Ctrl+Shift+C** (Linux), or use the `/copy` command to copy the last assistant response.
+4. **Session Loading (--continue/--resume)**:
+   - `SessionManager.load(sessionsDir, count)` → `SavedMessageHistory[]`
+   - `sessionManager.restore(history)` → populates session state
+
+5. **Message Flow During Execution**:
+   - User input → `promptManager` → `agent.run()` → `sessionManager.append*Message()`
+   - After each turn: `sessionManager.save()` → writes `~/.acai/sessions/session-{uuid}.json`
+
+---
+
+## Components & Files
+
+### Core Components
+
+| Component | File(s) | Responsibility |
+|-----------|---------|----------------|
+| **CLI Entry** | `source/index.ts` | Parses CLI arguments, initializes app state, runs REPL or CLI |
+| **SessionManager** | `source/sessions/manager.ts` | Manages message history, session persistence, token tracking |
+| **ConfigManager** | `source/config/index.ts` | Provides directory paths, merged config (project + app) |
+| **DirectoryProvider** | `source/config/index.ts` | Helper class for path management and directory creation |
+| **REPL** | `source/repl/index.ts` | Interactive terminal interface, triggers session saves |
+| **Agent** | `source/agent/index.ts` | AI agent that processes messages |
+| **CLI Handler** | `source/cli/index.ts` | Non-interactive CLI mode handler |
+
+### Configuration
+
+- **Config files**: `~/.acai/acai.json`, `./.acai/acai.json` (project overrides app)
+- **Sessions directory**: `~/.acai/sessions/`
+- **Session file format**: `session-{uuid}.json`
+
+---
+
+## Edge Cases & Error Handling
+
+### Edge Cases
+- **Empty session files**: Skipped during load (line 578-582)
+- **Malformed JSON**: Caught and logged, file skipped
+- **Interrupted saves**: Temp files cleaned up, warning logged
+- **Missing session on resume**: Error message and exit
+
+### Error Handling
+- **Save failures**: Logged but don't throw (called from interrupt handlers)
+- **Load failures**: Returns empty array, logs error
+- **Title generation failures**: Falls back to first 50 chars of first message
+
+---
+
+## Testing Coverage
+
+No specific test files were found for SessionManager in the search. Test files present:
+- `test/config.test.ts`
+- `test/execution.test.ts`
+- `test/skills.test.ts`
+- `test/stdin-handling.test.ts`
+- `test/env-expand.test.ts`
+- `test/mentions.test.ts`
+- `test/messages.test.ts`
+
+---
+
+## References
+
+### Source Files
+- **Main entry**: `source/index.ts`
+- **SessionManager**: `source/sessions/manager.ts`
+- **Configuration**: `source/config/index.ts`
+- **CLI handler**: `source/cli/index.ts`
+- **REPL**: `source/repl/index.ts`
+- **Agent**: `source/agent/index.ts`
+- **History command**: `source/commands/history/index.ts`
+- **Session summary**: `source/sessions/summary.ts`
+
+### Entry Point
+- **Shell wrapper**: `bin/acai`
+- **Compiled entry**: `dist/index.js`

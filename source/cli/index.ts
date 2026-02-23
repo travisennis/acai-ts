@@ -27,6 +27,7 @@ interface CliOptions {
   tokenTracker: TokenTracker;
   tokenCounter: TokenCounter;
   workspace: WorkspaceContext;
+  noSession?: boolean;
 }
 
 export class Cli {
@@ -100,14 +101,16 @@ export class Cli {
       // this tracks the usage of every step in the call to streamText. it's a cumulative usage.
       tokenTracker.trackUsage("cli", result.usage);
 
-      await sessionManager.save();
+      if (!this.options.noSession) {
+        await sessionManager.save();
+      }
 
       process.stdout.end(
         result.text.endsWith("\n") ? result.text : `${result.text}\n`,
       );
 
       if (!sessionManager.isEmpty()) {
-        printExitSummary(sessionManager);
+        printExitSummary(sessionManager, this.options.noSession);
       }
 
       cleanup();
@@ -127,11 +130,13 @@ export class Cli {
       if (isAbortError) {
         logger.info("CLI execution interrupted by user");
         // Try to save message history before exiting
-        try {
-          await sessionManager.save();
-        } catch (_saveError) {
-          // Ignore save errors on abort
-          logger.warn("Failed to save message history on interrupt");
+        if (!this.options.noSession) {
+          try {
+            await sessionManager.save();
+          } catch (_saveError) {
+            // Ignore save errors on abort
+            logger.warn("Failed to save message history on interrupt");
+          }
         }
         process.exit(0); // Exit gracefully
       } else {
