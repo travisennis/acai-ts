@@ -175,6 +175,7 @@ export class Agent {
     return this.abortController.signal;
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: will be refactored in a future task
   async *run(args: RunOptions): AsyncGenerator<AgentEvent> {
     yield {
       type: "agent-start",
@@ -354,8 +355,43 @@ export class Agent {
           };
           // Continue loop to allow user to provide corrected input
         } else {
+          // Extract additional error context for better debugging
+          const err = error as Error & {
+            cause?: unknown;
+            response?: { status: number; statusText: string };
+          };
+          const errorContext: Record<string, unknown> = {
+            modelId: modelConfig?.id ?? langModel.modelId ?? "unknown",
+            sessionId: sessionManager.getSessionId(),
+            messageCount: sessionManager.get().length,
+            attempt: consecutiveErrors,
+            maxRetries,
+          };
+
+          // Add response info if available (common for Bad Request errors from AI SDK)
+          if (err.cause) {
+            const cause = err.cause as {
+              response?: { status: number; statusText: string; body?: unknown };
+            };
+            if (cause.response) {
+              errorContext["responseStatus"] = cause.response.status;
+              errorContext["responseStatusText"] = cause.response.statusText;
+              // Add body snippet if available (truncated to avoid log bloat)
+              if (
+                cause.response.body &&
+                typeof cause.response.body === "object"
+              ) {
+                const body = cause.response.body as Record<string, unknown>;
+                errorContext["responseBody"] = JSON.stringify(body).slice(
+                  0,
+                  500,
+                );
+              }
+            }
+          }
+
           logger.error(
-            error, // Log the full error object
+            { ...errorContext, error: err },
             `Error on manual agent loop streamText (attempt ${consecutiveErrors}/${maxRetries + 1})`,
           );
 
