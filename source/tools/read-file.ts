@@ -10,8 +10,8 @@ import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions } from "./types.ts";
 import { fileEncodingSchema } from "./types.ts";
 
-// default limit in bytes
-const DEFAULT_BYTE_LIMIT = 80 * 1024;
+// default limit in bytes (20KB)
+const DEFAULT_BYTE_LIMIT = 20 * 1024;
 
 export const ReadFileTool = {
   name: "Read" as const,
@@ -38,7 +38,7 @@ const inputSchema = z.object({
   maxBytes: z
     .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
     .describe(
-      "Maximum number of bytes to read. Set to 0 for no limit. (Default: 80KB)",
+      "Maximum number of bytes to read. Set to 0 for no limit. (Default: 20KB)",
     ),
 });
 
@@ -141,11 +141,15 @@ export const createReadFileTool = async (options: {
       if (effectiveMaxBytes > 0) {
         const byteLength = Buffer.byteLength(file, effectiveEncoding);
         if (byteLength > effectiveMaxBytes) {
-          const truncatedBuffer = Buffer.from(file, effectiveEncoding).subarray(
-            0,
-            effectiveMaxBytes,
+          const fileSizeKb = (byteLength / 1024).toFixed(1);
+          const limitKb = (effectiveMaxBytes / 1024).toFixed(0);
+          throw new Error(
+            `File (${fileSizeKb}KB) exceeds the ${limitKb}KB read limit. To read this file, use one of these options:\n` +
+              "• Set maxBytes: 0 to read the entire file\n" +
+              "• Use startLine and lineCount to read specific portions (e.g., startLine: 1, lineCount: 100)\n" +
+              "• Use the Grep tool to search for specific content\n" +
+              `• Use the Bash tool with 'tail' or 'head' commands`,
           );
-          file = truncatedBuffer.toString(effectiveEncoding);
         }
       }
 
