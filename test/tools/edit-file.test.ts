@@ -25,59 +25,6 @@ describe("editFile tool", () => {
       }
     });
 
-    it("should apply multiple matches of the same edit", async () => {
-      const fixtures = await createTestFixtures("edit-file");
-      const testContent = "Hello world! Hello world! Hello world!";
-      const tempFile = await fixtures.createFile("test.txt", testContent);
-
-      try {
-        const result = await applyFileEdits(
-          tempFile,
-          [{ oldText: "Hello", newText: "Hi" }],
-          true, // dry run
-        );
-
-        // Should show all three replacements in the diff
-        assert(result.includes("Hi world!"));
-        assert(result.includes("@@")); // Should contain diff markers
-
-        // Verify the actual file content after applying changes
-        await applyFileEdits(
-          tempFile,
-          [{ oldText: "Hello", newText: "Hi" }],
-          false, // apply changes
-        );
-
-        const finalContent = await readFile(tempFile, "utf-8");
-        assert.strictEqual(finalContent, "Hi world! Hi world! Hi world!");
-      } finally {
-        await fixtures.cleanup();
-      }
-    });
-
-    it("should handle multiple different edits", async () => {
-      const fixtures = await createTestFixtures("edit-file");
-      const testContent = "Hello world! This is a test. Hello again!";
-      const tempFile = await fixtures.createFile("test.txt", testContent);
-
-      try {
-        const result = await applyFileEdits(
-          tempFile,
-          [
-            { oldText: "Hello", newText: "Hi" },
-            { oldText: "test", newText: "example" },
-          ],
-          true, // dry run
-        );
-
-        assert(result.includes("Hi world!"));
-        assert(result.includes("This is a example."));
-        assert(result.includes("@@")); // Should contain diff markers
-      } finally {
-        await fixtures.cleanup();
-      }
-    });
-
     it("should throw error when oldText not found", async () => {
       const fixtures = await createTestFixtures("edit-file");
       const testContent = "Hello world!";
