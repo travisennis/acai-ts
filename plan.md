@@ -1,242 +1,141 @@
-# Plan: Fix Grep Tool Auto-Detection Bug
+# Tool-Error Verbose Mode Implementation Plan
 
 ## Overview
 
-Fix the Grep tool's auto-detection logic so that simple alphanumeric strings like "Grep" are treated as literal searches by default, rather than being incorrectly interpreted as regex patterns.
+Implement a fix for issue #129: Tool-error output should only be shown in verbose mode (ctrl+o), not by default. The fix requires adding a verbose mode check to the tool-call-error event handler in the ToolExecutionComponent, matching the existing pattern used for tool-call-end events.
 
-## Problem Statement
+## GitHub Issue Reference
 
-The `likelyUnbalancedRegex()` function in `source/tools/grep.ts` only checks for:
-- Unbalanced brackets `[` vs `]`
-- Unbalanced parentheses `(` vs `)`
-- Unbalanced braces `{` vs `}`
-- Invalid repetition operators
+- Issue URL: https://github.com/travisennis/acai-ts/issues/129
 
-It does NOT check for:
-- Simple alphanumeric strings (should default to literal)
-- Regex metacharacters like `.`, `*`, `+`, `?`, `^`, `$`, `|`, `\`
+## Current State Analysis
 
-**Result**: A pattern like "Grep" returns `false` from `likelyUnbalancedRegex()`, causing it to be treated as regex mode, which fails because ripgrep interprets certain characters as regex special characters.
+- Tool errors are displayed regardless of verbose mode setting
+- The `tool-call-error` case in `renderDisplay()` method (lines 72-80 of `source/tui/components/tool-execution.ts`) has NO verbose mode check
+- This contrasts with `tool-call-end` (lines 67-70) which correctly checks `this.verboseMode` before rendering output
 
-## Files to Modify
+### Key Discovery:
+- `source/tui/components/tool-execution.ts:72-80` - The bug location, tool-call-error always renders
+- `source/tui/components/tool-execution.ts:67-70` - Pattern to follow, tool-call-end checks verbose mode
 
-1. **`source/tools/grep.ts`**
-   - Modify `likelyUnbalancedRegex()` function (lines 361-376)
-   - Add new helper function `containsRegexMetacharacters()`
-   - Update the literal/regex decision logic
+## Desired End State
 
-2. **`test/tools/grep.test.ts`**
-   - Add tests for simple alphanumeric patterns
-   - Add tests for patterns with regex metacharacters
+Tool errors are hidden by default and only displayed when verbose mode is enabled (Ctrl+O toggled on). The behavior should match tool-call-end events.
 
----
-
-## Phase 1: Add Helper Function
-
-### 1.1 Create `containsRegexMetacharacters()` function
-
-**Location**: `source/tools/grep.ts`, before `likelyUnbalancedRegex()`
-
-**Purpose**: Check if a pattern contains any regex metacharacters that would indicate it should be treated as regex.
-
-**Implementation**:
-```typescript
-/**
- * Check if a pattern contains regex metacharacters.
- * Returns true if the pattern likely needs regex mode.
- */
-function containsRegexMetacharacters(pattern: string): boolean {
-  // Regex metacharacters: ^ $ . * + ? [ ] ( ) { } | \
-  const metacharacterPattern = /[\^$.*+?[\](){}|\\]/;
-  return metacharacterPattern.test(pattern);
-}
-```
-
-**Automated verification**: 
-- Run `npm run typecheck`
-- Run `npm run lint`
-
----
-
-## Phase 2: Modify Auto-Detection Logic
-
-### 2.1 Update `likelyUnbalancedRegex()` function
-
-**Location**: `source/tools/grep.ts:361-376`
-
-**Current behavior**:
-```typescript
-export function likelyUnbalancedRegex(pattern: string): boolean {
-  const counts = countBrackets(pattern);
-
-  const hasUnbalancedBrackets = counts.openBracket !== counts.closeBracket;
-  const hasUnbalancedParens = counts.openParen !== counts.closeParen;
-  const hasUnbalancedBraces = counts.openBrace !== counts.openBrace;
-
-  const hasInvalidRepetitionFlag = hasInvalidRepetition(pattern);
-
-  return (
-    hasUnbalancedBrackets ||
-    hasUnbalancedParens ||
-    hasUnbalancedBraces ||
-    hasInvalidRepetitionFlag
-  );
-}
-```
-
-**New behavior**:
-```typescript
-export function likelyUnbalancedRegex(pattern: string): boolean {
-  // First check: if pattern has regex metacharacters, treat as regex (return false)
-  // This allows ripgrep to handle the pattern as a proper regex
-  if (containsRegexMetacharacters(pattern)) {
-    return false;
-  }
-
-  // Second check: unbalanced brackets/parentheses/braces = likely a typo, use literal
-  const counts = countBrackets(pattern);
-
-  const hasUnbalancedBrackets = counts.openBracket !== counts.closeBracket;
-  const hasUnbalancedParens = counts.openParen !== counts.closeParen;
-  const hasUnbalancedBraces = counts.openBrace !== counts.closeBrace;
-
-  const hasInvalidRepetitionFlag = hasInvalidRepetition(pattern);
-
-  // If pattern has unbalanced syntax, treat as literal (user probably meant to type literal)
-  // Otherwise, default to literal for simple alphanumeric strings
-  return (
-    hasUnbalancedBrackets ||
-    hasUnbalancedParens ||
-    hasUnbalancedBraces ||
-    hasInvalidRepetitionFlag
-  );
-}
-```
-
-**Logic explanation**:
-1. If pattern contains regex metacharacters → return `false` (use regex mode)
-2. If pattern has unbalanced brackets/parens/braces → return `true` (use literal mode, user likely meant literal)
-3. Otherwise → return `true` (default to literal mode for simple strings)
-
-**Alternative approach**: Could rename function to `shouldUseLiteralMode()` for clarity, but keeping current name for backwards compatibility.
-
-**Automated verification**:
-- Run `npm run typecheck`
-- Run `npm run lint`
-- Run `npm test` (grep tests should pass)
-
----
-
-## Phase 3: Add Tests
-
-### 3.1 Add tests for simple alphanumeric patterns
-
-**Location**: `test/tools/grep.test.ts`
-
-**Add these tests**:
-```typescript
-test("likelyUnbalancedRegex returns true for simple alphanumeric strings", () => {
-  assert.ok(likelyUnbalancedRegex("Grep"));
-  assert.ok(likelyUnbalancedRegex("console.log"));
-  assert.ok(likelyUnbalancedRegex("hello world"));
-  assert.ok(likelyUnbalancedRegex("test123"));
-});
-
-test("likelyUnbalancedRegex returns false for patterns with regex metacharacters", () => {
-  assert.ok(!likelyUnbalancedRegex("a.b"));
-  assert.ok(!likelyUnbalancedRegex("a*b"));
-  assert.ok(!likelyUnbalancedRegex("a+b"));
-  assert.ok(!likelyUnbalancedRegex("a?b"));
-  assert.ok(!likelyUnbalancedRegex("a|b"));
-  assert.ok(!likelyUnbalancedRegex("^start"));
-  assert.ok(!likelyUnbalancedRegex("end$"));
-});
-
-test("buildGrepCommand uses -F for simple alphanumeric patterns", () => {
-  const cmd = buildGrepCommand("Grep", "/repo", { literal: null });
-  assert.ok(cmd.includes(" -F"), "Expected -F flag for simple string");
-});
-
-test("buildGrepCommand does not use -F for patterns with regex metacharacters", () => {
-  const cmd = buildGrepCommand("a.b", "/repo", { literal: null });
-  assert.ok(!cmd.includes(" -F"), "Expected no -F flag for regex pattern");
-});
-```
-
-### 3.2 Run tests to verify
-
-**Automated verification**:
-```bash
-npm test
-```
-
-Expected: All grep tests pass.
-
----
-
-## Phase 4: Manual Verification
-
-### 4.1 Test with simple string pattern
-
-Run the Grep tool with a simple string to verify it works:
-```
-pattern: "Grep"
-path: "./source"
-```
-
-**Expected**: Tool returns results without regex parse error.
-
-### 4.2 Test with regex pattern still works
-
-```
-pattern: "function\\s+(\\w+)"
-path: "./source"
-```
-
-**Expected**: Tool correctly interprets as regex.
-
-### 4.3 Test unbalanced pattern
-
-```
-pattern: "function("
-path: "./source"
-```
-
-**Expected**: Tool uses literal mode (unbalanced parens detected).
-
----
-
-## Success Criteria
-
-### Automated Verification
-- [x] `npm run typecheck` passes
-- [x] `npm run lint` passes
-- [x] `npm test` passes (all grep tests)
-
-### Manual Verification
-- [x] Search for "Grep" works without regex error
-- [x] Search for "console.log" works
-- [x] Search for regex patterns like "a.b" still works as regex
-- [x] Search for unbalanced patterns like "function(" still works
-
----
+### Success Criteria:
+1. Tool errors are NOT displayed when verbose mode is OFF (default)
+2. Tool errors ARE displayed when verbose mode is ON (Ctrl+O pressed)
+3. Toggling verbose mode updates all existing tool execution components correctly
 
 ## What We're NOT Doing
 
-1. **Not changing the function name**: Keeping `likelyUnbalancedRegex()` for backwards compatibility even though the behavior now includes "simple strings default to literal"
+- Adding new tests (the codebase currently has no tests for this behavior)
+- Modifying the documentation (verbose mode is already documented)
+- Adding error handling at the display layer (errors are always valid strings)
+- Changing how tool-call-start or other events are rendered
 
-2. **Not adding a new parameter**: The fix uses the existing `literal` parameter logic - users can still override with `literal: true` or `literal: false`
+## Implementation Approach
 
-3. **Not modifying ripgrep behavior**: This is purely a client-side fix in the tool's auto-detection logic
-
-4. **Not adding more complex regex detection**: We only check for basic metacharacters, not full regex validity (that would require a regex parser)
+Add a verbose mode check to the tool-call-error case in the renderDisplay() method of ToolExecutionComponent, following the exact pattern used for tool-call-end events. This is a single-file, single-location change.
 
 ---
 
-## Rollback Plan
+## Phase 1: Add Verbose Mode Check to Tool-Call-Error
 
-If issues arise:
+### Overview
+Modify the tool-call-error event handler to check verbose mode before rendering error output.
 
-1. Revert changes to `source/tools/grep.ts`
-2. Run tests to confirm original behavior restored
-3. Investigate with `npm test -- --grep` to isolate failing test
+### Changes Required:
+
+#### 1. ToolExecutionComponent
+**File**: `source/tui/components/tool-execution.ts`
+**Lines**: ~72-80 (in the `renderDisplay()` method, inside the switch statement)
+
+**Current code**:
+```typescript
+case "tool-call-error":
+  this.contentContainer.addChild(
+    new Text(
+      `└ ${this.handleToolErrorMessage(event.msg)}`,
+      1,
+      0,
+      bgColor,
+    ),
+  );
+  break;
+```
+
+**New code**:
+```typescript
+case "tool-call-error":
+  // Only render error in verbose mode
+  if (this.verboseMode) {
+    this.contentContainer.addChild(
+      new Text(
+        `└ ${this.handleToolErrorMessage(event.msg)}`,
+        1,
+        0,
+        bgColor,
+      ),
+    );
+  }
+  break;
+```
+
+This matches the pattern used for `tool-call-end` at lines 67-70.
+
+### Success Criteria:
+
+#### Automated Verification:
+- [x] Type checking passes: `npm run typecheck`
+- [x] Linting passes: `npm run lint`
+- [x] Build succeeds: `npm run build`
+
+#### Manual Verification:
+- [x] Run the REPL (`acai` or `node source/index.ts`)
+- [x] Execute a tool that will fail (e.g., a tool with invalid parameters)
+- [x] Verify error is NOT shown by default (verbose mode OFF)
+- [x] Press Ctrl+O to enable verbose mode
+- [x] Execute the same failing tool again
+- [x] Verify error IS shown when verbose mode is ON
+- [x] Press Ctrl+O again to disable verbose mode
+- [x] Verify error is NOT shown again
+
+**Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation from the human that the manual testing was successful before considering this task complete.
+
+---
+
+## Testing Strategy
+
+### Manual Testing Steps:
+1. Start the REPL in tmux (required for interactive testing)
+2. With verbose mode OFF (default):
+   - Run a command that triggers a tool error
+   - Confirm error message is NOT visible in output
+3. Press Ctrl+O to toggle verbose mode ON
+4. Run the same command:
+   - Confirm error message IS visible
+5. Press Ctrl+O again to toggle verbose mode OFF
+6. Run the command again:
+   - Confirm error message is NOT visible
+7. Test edge case: Toggle verbose mode WHILE a tool is executing
+   - Should not cause crashes or rendering issues
+
+### Test Command Ideas:
+- Use a tool with invalid parameters to trigger an error
+- Check logs at `~/.acai/logs/current.log` for any errors
+
+## Performance Considerations
+
+No performance implications - this is a simple conditional check that matches existing patterns.
+
+## Migration Notes
+
+No migration needed - this is a bug fix that changes default behavior to be more user-friendly.
+
+## References
+
+- GitHub issue: https://github.com/travisennis/acai-ts/issues/129
+- Related research: `research.md`
+- Pattern to follow: `source/tui/components/tool-execution.ts:67-70` (tool-call-end)
+- Similar implementation: `source/tui/components/thinking-block.ts` (thinking blocks also check verbose mode)

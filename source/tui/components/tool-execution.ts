@@ -70,14 +70,17 @@ export class ToolExecutionComponent extends Container {
           }
           break;
         case "tool-call-error":
-          this.contentContainer.addChild(
-            new Text(
-              `└ ${this.handleToolErrorMessage(event.msg)}`,
-              1,
-              0,
-              bgColor,
-            ),
-          );
+          // Only render error in verbose mode
+          if (this.verboseMode) {
+            this.contentContainer.addChild(
+              new Text(
+                `└ ${this.handleToolErrorMessage(event.msg)}`,
+                1,
+                0,
+                bgColor,
+              ),
+            );
+          }
           break;
         default: {
           eventType satisfies never;
