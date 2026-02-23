@@ -7,7 +7,7 @@
   },
   "notify": true,
   "devtools": {
-    "enabled": true
+    "enabled": false
   },
   "autoGenerateRules": false
 }
