@@ -40,7 +40,9 @@ export function createWorkspaceContext(
   mkdirSync("/tmp/acai", { recursive: true });
   const allowedDirs = [
     primaryDir,
+    "/tmp",
     "/tmp/acai",
+    "/var/folders",
     path.join(os.homedir(), ".acai"),
     path.join(os.homedir(), ".agents"),
     ...addDirArgs,

@@ -99,6 +99,53 @@ describe("bash tool abort signal handling", async () => {
   });
 });
 
+describe("bash tool system temp directories validation", () => {
+  const baseDir = process.cwd();
+  // Default allowed dirs include /tmp and /var/folders
+  const allowedDirsWithTemp = [baseDir, "/tmp", "/tmp/acai", "/var/folders"];
+
+  it("allows ls /tmp command", () => {
+    const result = validatePaths("ls /tmp", allowedDirsWithTemp, baseDir);
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows cat /tmp/test.txt command", () => {
+    const result = validatePaths(
+      "cat /tmp/test.txt",
+      allowedDirsWithTemp,
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows echo > /tmp/test.txt command", () => {
+    const result = validatePaths(
+      'echo "test" > /tmp/test.txt',
+      allowedDirsWithTemp,
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows /var/folders paths", () => {
+    const result = validatePaths(
+      "ls /var/folders/xx",
+      allowedDirsWithTemp,
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows /var/folders/.../temp paths", () => {
+    const result = validatePaths(
+      "cat /var/folders/wk/2s01rzs92955clqwrzb3z84m0000gn/T/acai-grep-test/test.txt",
+      allowedDirsWithTemp,
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+});
+
 describe("bash tool home directory (~) validation", () => {
   it("rejects ls ~ command", () => {
     const result = validatePaths("ls ~", [baseDir], baseDir);

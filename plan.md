@@ -1,141 +1,134 @@
-# Tool-Error Verbose Mode Implementation Plan
+# Fix Bash Tool Path Validation Errors
 
-## Overview
+## Problem Statement
 
-Implement a fix for issue #129: Tool-error output should only be shown in verbose mode (ctrl+o), not by default. The fix requires adding a verbose mode check to the tool-call-error event handler in the ToolExecutionComponent, matching the existing pattern used for tool-call-end events.
+The Bash tool's path validation incorrectly blocks valid commands that use system temporary directories:
 
-## GitHub Issue Reference
+1. **`/tmp`** - Standard Unix temp directory - blocked even though `/tmp/acai` is allowed
+2. **`/var/folders`** - macOS system temp directories - completely blocked
 
-- Issue URL: https://github.com/travisennis/acai-ts/issues/129
+### Current Allowed Directories (source/index.ts:41-47)
+```typescript
+const allowedDirs = [
+  primaryDir,
+  "/tmp/acai",
+  path.join(os.homedir(), ".acai"),
+  path.join(os.homedir(), ".agents"),
+];
+```
 
-## Current State Analysis
+### Key Files
+- `source/index.ts` - Defines allowed directories
+- `source/utils/bash.ts` - Contains `validatePaths()` function (lines 136-189)
+- `source/utils/filesystem/security.ts` - Contains `isPathWithinAllowedDirs()` (lines 84-91)
 
-- Tool errors are displayed regardless of verbose mode setting
-- The `tool-call-error` case in `renderDisplay()` method (lines 72-80 of `source/tui/components/tool-execution.ts`) has NO verbose mode check
-- This contrasts with `tool-call-end` (lines 67-70) which correctly checks `this.verboseMode` before rendering output
+---
 
-### Key Discovery:
-- `source/tui/components/tool-execution.ts:72-80` - The bug location, tool-call-error always renders
-- `source/tui/components/tool-execution.ts:67-70` - Pattern to follow, tool-call-end checks verbose mode
+## Implementation Plan
 
-## Desired End State
+### Phase 1: Add System Temp Directories to Allowed List
 
-Tool errors are hidden by default and only displayed when verbose mode is enabled (Ctrl+O toggled on). The behavior should match tool-call-end events.
+**Objective:** Allow `/tmp` and `/var/folders` as valid paths.
 
-### Success Criteria:
-1. Tool errors are NOT displayed when verbose mode is OFF (default)
-2. Tool errors ARE displayed when verbose mode is ON (Ctrl+O pressed)
-3. Toggling verbose mode updates all existing tool execution components correctly
+**Changes:**
+1. Edit `source/index.ts` to add `/tmp` and `/var/folders` to allowed directories
+
+**File:** `source/index.ts`
+
+**Lines:** ~41-47
+
+**Change:**
+```typescript
+const allowedDirs = [
+  primaryDir,
+  "/tmp",
+  "/tmp/acai",
+  "/var/folders",
+  path.join(os.homedir(), ".acai"),
+  path.join(os.homedir(), ".agents"),
+];
+```
+
+**Verification:**
+- Run `npm run typecheck`
+- Run `npm run lint`
+- Run `npm run format`
+
+---
+
+### Phase 2: Add Unit Tests for Path Validation
+
+**Objective:** Ensure path validation works correctly for system temp directories and home directory restrictions.
+
+**File to create/modify:** `test/utils/bash.test.ts`
+
+**Tests to add:**
+
+1. **System temp directories should be allowed**
+   - `ls /tmp` should pass
+   - `cat /tmp/test.txt` should pass
+   - `ls /var/folders/xx` should pass
+
+2. **Home directory should be blocked (security)**
+   - `ls ~` should be blocked
+   - `cat ~/Documents/file.txt` should be blocked
+
+**Verification:**
+- Run `npm test`
+
+---
+
+### Phase 3: Manual Verification
+
+**Objective:** Test the fix in the REPL.
+
+**Steps:**
+1. Start the REPL: `npm run dev` (in tmux)
+2. Run commands that were previously blocked:
+   - `ls /tmp`
+   - `echo "test" > /tmp/test.txt`
+   - `ls /var/folders`
+3. Verify these commands are still blocked:
+   - `ls ~`
+   - `ls ~/Documents`
+
+---
+
+## Success Criteria
+
+### Automated Verification
+- [ ] `npm run typecheck` passes
+- [ ] `npm run lint` passes  
+- [ ] `npm run format` passes
+- [ ] `npm test` passes (new tests for path validation)
+
+### Manual Verification
+- [ ] `ls /tmp` works in REPL
+- [ ] Files can be created/read in `/tmp`
+- [ ] Commands using `/var/folders` work
+- [ ] `ls ~` is still blocked
+- [ ] `ls ~/Documents` is still blocked
+
+---
 
 ## What We're NOT Doing
 
-- Adding new tests (the codebase currently has no tests for this behavior)
-- Modifying the documentation (verbose mode is already documented)
-- Adding error handling at the display layer (errors are always valid strings)
-- Changing how tool-call-start or other events are rendered
-
-## Implementation Approach
-
-Add a verbose mode check to the tool-call-error case in the renderDisplay() method of ToolExecutionComponent, following the exact pattern used for tool-call-end events. This is a single-file, single-location change.
+1. **Not allowing full home directory access** - Home directory (`~`) should remain blocked for security
+2. **Not allowing `/` root** - Root filesystem access remains blocked
+3. **Not allowing `/dev/*`** - Device files remain blocked (except via explicit command handling)
 
 ---
 
-## Phase 1: Add Verbose Mode Check to Tool-Call-Error
+## Alternative Approaches Considered
 
-### Overview
-Modify the tool-call-error event handler to check verbose mode before rendering error output.
+### Option A: Add Special Handling in validatePaths (REJECTED)
+Add prefix checking for system temp directories in `validatePaths()` before checking allowed directories.
 
-### Changes Required:
+**Pros:** More flexible runtime handling
+**Cons:** More complex logic; better to just expand allowed directories
 
-#### 1. ToolExecutionComponent
-**File**: `source/tui/components/tool-execution.ts`
-**Lines**: ~72-80 (in the `renderDisplay()` method, inside the switch statement)
+### Option B: Add Command-Aware Whitelisting (REJECTED)
+Skip path validation for certain commands like `ls /tmp`.
 
-**Current code**:
-```typescript
-case "tool-call-error":
-  this.contentContainer.addChild(
-    new Text(
-      `└ ${this.handleToolErrorMessage(event.msg)}`,
-      1,
-      0,
-      bgColor,
-    ),
-  );
-  break;
-```
-
-**New code**:
-```typescript
-case "tool-call-error":
-  // Only render error in verbose mode
-  if (this.verboseMode) {
-    this.contentContainer.addChild(
-      new Text(
-        `└ ${this.handleToolErrorMessage(event.msg)}`,
-        1,
-        0,
-        bgColor,
-      ),
-    );
-  }
-  break;
-```
-
-This matches the pattern used for `tool-call-end` at lines 67-70.
-
-### Success Criteria:
-
-#### Automated Verification:
-- [x] Type checking passes: `npm run typecheck`
-- [x] Linting passes: `npm run lint`
-- [x] Build succeeds: `npm run build`
-
-#### Manual Verification:
-- [x] Run the REPL (`acai` or `node source/index.ts`)
-- [x] Execute a tool that will fail (e.g., a tool with invalid parameters)
-- [x] Verify error is NOT shown by default (verbose mode OFF)
-- [x] Press Ctrl+O to enable verbose mode
-- [x] Execute the same failing tool again
-- [x] Verify error IS shown when verbose mode is ON
-- [x] Press Ctrl+O again to disable verbose mode
-- [x] Verify error is NOT shown again
-
-**Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation from the human that the manual testing was successful before considering this task complete.
-
----
-
-## Testing Strategy
-
-### Manual Testing Steps:
-1. Start the REPL in tmux (required for interactive testing)
-2. With verbose mode OFF (default):
-   - Run a command that triggers a tool error
-   - Confirm error message is NOT visible in output
-3. Press Ctrl+O to toggle verbose mode ON
-4. Run the same command:
-   - Confirm error message IS visible
-5. Press Ctrl+O again to toggle verbose mode OFF
-6. Run the command again:
-   - Confirm error message is NOT visible
-7. Test edge case: Toggle verbose mode WHILE a tool is executing
-   - Should not cause crashes or rendering issues
-
-### Test Command Ideas:
-- Use a tool with invalid parameters to trigger an error
-- Check logs at `~/.acai/logs/current.log` for any errors
-
-## Performance Considerations
-
-No performance implications - this is a simple conditional check that matches existing patterns.
-
-## Migration Notes
-
-No migration needed - this is a bug fix that changes default behavior to be more user-friendly.
-
-## References
-
-- GitHub issue: https://github.com/travisennis/acai-ts/issues/129
-- Related research: `research.md`
-- Pattern to follow: `source/tui/components/tool-execution.ts:67-70` (tool-call-end)
-- Similar implementation: `source/tui/components/thinking-block.ts` (thinking blocks also check verbose mode)
+**Pros:** Could handle more edge cases
+**Cons:** Overly complex; the simple fix of adding directories to allowed list is sufficient
