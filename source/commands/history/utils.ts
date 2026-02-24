@@ -18,23 +18,80 @@ export async function exportConversation(
   return filename;
 }
 
+interface MessagePart {
+  type: string;
+  text?: string;
+  toolCallId?: string;
+  toolName?: string;
+  input?: unknown;
+  output?: unknown;
+}
+
+function formatToolResultOutput(output: unknown): string[] {
+  if (
+    typeof output === "object" &&
+    output !== null &&
+    "type" in output &&
+    output.type === "text" &&
+    "text" in output
+  ) {
+    return ["```", String((output as { text: string }).text), "```"];
+  }
+  return ["```json", JSON.stringify(output, null, 2), "```"];
+}
+
+function formatMessagePart(part: TextPart | MessagePart): string[] {
+  if (part.type === "text" && part.text?.trim()) {
+    return [part.text, ""];
+  }
+  if (part.type === "tool-call") {
+    return [
+      `**Tool Call**: ${part.toolName}`,
+      `**Call ID**: ${part.toolCallId}`,
+      "**Input**:",
+      "```json",
+      JSON.stringify(part.input, null, 2),
+      "```",
+      "",
+    ];
+  }
+  if (part.type === "tool-result") {
+    return [
+      `**Tool Result**: ${part.toolName}`,
+      `**Call ID**: ${part.toolCallId}`,
+      "**Output**:",
+      ...formatToolResultOutput(part.output),
+      "",
+    ];
+  }
+  if (part.type === "tool-error") {
+    return [
+      `**Tool Error**: ${part.toolName}`,
+      `**Call ID**: ${part.toolCallId}`,
+      "**Error**:",
+      "```",
+      String(part.output),
+      "```",
+      "",
+    ];
+  }
+  return [];
+}
+
 export function generateMarkdown(history: ConversationHistory): string {
-  const lines: string[] = [];
-
-  // Header
-  lines.push(`# ${history.title}`);
-  lines.push("");
-  lines.push("## Conversation Metadata");
-  lines.push(`- **Session ID**: ${history.sessionId}`);
-  lines.push(`- **Model**: ${history.modelId}`);
-  lines.push(`- **Created**: ${history.createdAt.toISOString()}`);
-  lines.push(`- **Last Updated**: ${history.updatedAt.toISOString()}`);
-  lines.push(`- **Total Messages**: ${history.messages.length}`);
-  lines.push("");
-
-  // Messages
-  lines.push("## Conversation History");
-  lines.push("");
+  const lines: string[] = [
+    `# ${history.title}`,
+    "",
+    "## Conversation Metadata",
+    `- **Session ID**: ${history.sessionId}`,
+    `- **Model**: ${history.modelId}`,
+    `- **Created**: ${history.createdAt.toISOString()}`,
+    `- **Last Updated**: ${history.updatedAt.toISOString()}`,
+    `- **Total Messages**: ${history.messages.length}`,
+    "",
+    "## Conversation History",
+    "",
+  ];
 
   history.messages.forEach((message: ModelMessage, index: number) => {
     const role = message.role.toUpperCase();
@@ -42,61 +99,9 @@ export function generateMarkdown(history: ConversationHistory): string {
     lines.push("");
 
     if (Array.isArray(message.content)) {
-      message.content.forEach(
-        (
-          part:
-            | TextPart
-            | {
-                type: string;
-                text?: string;
-                toolCallId?: string;
-                toolName?: string;
-                input?: unknown;
-                output?: unknown;
-              },
-        ) => {
-          if (part.type === "text" && part.text?.trim()) {
-            lines.push(part.text);
-            lines.push("");
-          } else if (part.type === "tool-call") {
-            lines.push(`**Tool Call**: ${part.toolName}`);
-            lines.push(`**Call ID**: ${part.toolCallId}`);
-            lines.push("**Input**:");
-            lines.push("```json");
-            lines.push(JSON.stringify(part.input, null, 2));
-            lines.push("```");
-            lines.push("");
-          } else if (part.type === "tool-result") {
-            lines.push(`**Tool Result**: ${part.toolName}`);
-            lines.push(`**Call ID**: ${part.toolCallId}`);
-            lines.push("**Output**:");
-            if (
-              typeof part.output === "object" &&
-              part.output !== null &&
-              "type" in part.output &&
-              part.output.type === "text" &&
-              "text" in part.output
-            ) {
-              lines.push("```");
-              lines.push(String((part.output as { text: string }).text));
-              lines.push("```");
-            } else {
-              lines.push("```json");
-              lines.push(JSON.stringify(part.output, null, 2));
-              lines.push("```");
-            }
-            lines.push("");
-          } else if (part.type === "tool-error") {
-            lines.push(`**Tool Error**: ${part.toolName}`);
-            lines.push(`**Call ID**: ${part.toolCallId}`);
-            lines.push("**Error**:");
-            lines.push("```");
-            lines.push(String(part.output));
-            lines.push("```");
-            lines.push("");
-          }
-        },
-      );
+      for (const part of message.content) {
+        lines.push(...formatMessagePart(part as TextPart | MessagePart));
+      }
     } else if (typeof message.content === "string" && message.content.trim()) {
       lines.push(message.content);
       lines.push("");

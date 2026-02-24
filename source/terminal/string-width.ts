@@ -51,6 +51,39 @@ function trailingHalfwidthWidth(
   return extra;
 }
 
+function segmentWidth(
+  segment: string,
+  eastAsianWidthOptions: { ambiguousAsWide: boolean },
+): number {
+  if (zeroWidthClusterRegex.test(segment)) {
+    return 0;
+  }
+
+  if (rgiEmojiRegex.test(segment)) {
+    return 2;
+  }
+
+  const firstCodePoint = segment.codePointAt(0);
+  if (firstCodePoint === undefined) {
+    return 0;
+  }
+
+  const hasLeadingNonPrinting = leadingNonPrintingRegex.test(segment);
+  const codePoint = hasLeadingNonPrinting
+    ? segment.replace(leadingNonPrintingRegex, "").codePointAt(0)
+    : firstCodePoint;
+
+  if (codePoint === undefined) {
+    return 0;
+  }
+
+  let width = eastAsianWidth(codePoint, eastAsianWidthOptions);
+  if (segment.length > 1) {
+    width += trailingHalfwidthWidth(segment, eastAsianWidthOptions);
+  }
+  return width;
+}
+
 export default function stringWidth(
   input: string,
   options: StringWidthOptions = {},
@@ -71,41 +104,10 @@ export default function stringWidth(
 
   let width = 0;
   const eastAsianWidthOptions = { ambiguousAsWide: !ambiguousIsNarrow };
-
-  // Use lazy segmenter initialization
   const segmenter = getSegmenter();
+
   for (const { segment } of segmenter.segment(string)) {
-    // Zero-width clusters - inline test for hot path
-    if (zeroWidthClusterRegex.test(segment)) {
-      continue;
-    }
-
-    // Emoji width logic
-    if (rgiEmojiRegex.test(segment)) {
-      width += 2;
-      continue;
-    }
-
-    // Get first code point directly, avoiding intermediate string
-    const firstCodePoint = segment.codePointAt(0);
-    if (firstCodePoint === undefined) {
-      continue;
-    }
-
-    // Check if we need to strip leading non-printing characters
-    const hasLeadingNonPrinting = leadingNonPrintingRegex.test(segment);
-    const codePoint = hasLeadingNonPrinting
-      ? segment.replace(leadingNonPrintingRegex, "").codePointAt(0)
-      : firstCodePoint;
-
-    if (codePoint !== undefined) {
-      width += eastAsianWidth(codePoint, eastAsianWidthOptions);
-
-      // Only check trailing width if segment has multiple characters
-      if (segment.length > 1) {
-        width += trailingHalfwidthWidth(segment, eastAsianWidthOptions);
-      }
-    }
+    width += segmentWidth(segment, eastAsianWidthOptions);
   }
 
   return width;

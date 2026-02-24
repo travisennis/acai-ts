@@ -15,84 +15,106 @@ export function isValidBase64(str: string): boolean {
   }
 }
 
+interface MagicSignature {
+  bytes: Array<[number, number]>;
+  mimeType: string;
+}
+
+const IMAGE_SIGNATURES: MagicSignature[] = [
+  {
+    bytes: [
+      [0, 0xff],
+      [1, 0xd8],
+      [2, 0xff],
+    ],
+    mimeType: "image/jpeg",
+  },
+  {
+    bytes: [
+      [0, 0x89],
+      [1, 0x50],
+      [2, 0x4e],
+      [3, 0x47],
+      [4, 0x0d],
+      [5, 0x0a],
+      [6, 0x1a],
+      [7, 0x0a],
+    ],
+    mimeType: "image/png",
+  },
+  {
+    bytes: [
+      [0, 0x47],
+      [1, 0x49],
+      [2, 0x46],
+      [3, 0x38],
+      [4, 0x37],
+      [5, 0x61],
+    ],
+    mimeType: "image/gif",
+  },
+  {
+    bytes: [
+      [0, 0x47],
+      [1, 0x49],
+      [2, 0x46],
+      [3, 0x38],
+      [4, 0x39],
+      [5, 0x61],
+    ],
+    mimeType: "image/gif",
+  },
+  {
+    bytes: [
+      [0, 0x52],
+      [1, 0x49],
+      [2, 0x46],
+      [3, 0x46],
+      [8, 0x57],
+      [9, 0x45],
+      [10, 0x42],
+      [11, 0x50],
+    ],
+    mimeType: "image/webp",
+  },
+  {
+    bytes: [
+      [0, 0x42],
+      [1, 0x4d],
+    ],
+    mimeType: "image/bmp",
+  },
+  {
+    bytes: [
+      [0, 0x49],
+      [1, 0x49],
+      [2, 0x2a],
+      [3, 0x00],
+    ],
+    mimeType: "image/tiff",
+  },
+  {
+    bytes: [
+      [0, 0x4d],
+      [1, 0x4d],
+      [2, 0x00],
+      [3, 0x2a],
+    ],
+    mimeType: "image/tiff",
+  },
+];
+
+function matchesSignature(buffer: Buffer, signature: MagicSignature): boolean {
+  return signature.bytes.every(
+    ([offset, value]) => offset < buffer.length && buffer[offset] === value,
+  );
+}
+
 export function detectImageFormatFromBase64(base64Content: string): string {
   try {
     const buffer = Buffer.from(base64Content, "base64");
-
-    if (
-      buffer.length >= 3 &&
-      buffer[0] === 0xff &&
-      buffer[1] === 0xd8 &&
-      buffer[2] === 0xff
-    ) {
-      return "image/jpeg";
-    }
-
-    if (
-      buffer.length >= 8 &&
-      buffer[0] === 0x89 &&
-      buffer[1] === 0x50 &&
-      buffer[2] === 0x4e &&
-      buffer[3] === 0x47 &&
-      buffer[4] === 0x0d &&
-      buffer[5] === 0x0a &&
-      buffer[6] === 0x1a &&
-      buffer[7] === 0x0a
-    ) {
-      return "image/png";
-    }
-
-    if (
-      buffer.length >= 6 &&
-      ((buffer[0] === 0x47 &&
-        buffer[1] === 0x49 &&
-        buffer[2] === 0x46 &&
-        buffer[3] === 0x38 &&
-        buffer[4] === 0x37 &&
-        buffer[5] === 0x61) ||
-        (buffer[0] === 0x47 &&
-          buffer[1] === 0x49 &&
-          buffer[2] === 0x46 &&
-          buffer[3] === 0x38 &&
-          buffer[4] === 0x39 &&
-          buffer[5] === 0x61))
-    ) {
-      return "image/gif";
-    }
-
-    if (
-      buffer.length >= 12 &&
-      buffer[0] === 0x52 &&
-      buffer[1] === 0x49 &&
-      buffer[2] === 0x46 &&
-      buffer[3] === 0x46 &&
-      buffer[8] === 0x57 &&
-      buffer[9] === 0x45 &&
-      buffer[10] === 0x42 &&
-      buffer[11] === 0x50
-    ) {
-      return "image/webp";
-    }
-
-    if (buffer.length >= 2 && buffer[0] === 0x42 && buffer[1] === 0x4d) {
-      return "image/bmp";
-    }
-
-    if (
-      buffer.length >= 4 &&
-      ((buffer[0] === 0x49 &&
-        buffer[1] === 0x49 &&
-        buffer[2] === 0x2a &&
-        buffer[3] === 0x00) ||
-        (buffer[0] === 0x4d &&
-          buffer[1] === 0x4d &&
-          buffer[2] === 0x00 &&
-          buffer[3] === 0x2a))
-    ) {
-      return "image/tiff";
-    }
-
-    return "unknown";
+    const match = IMAGE_SIGNATURES.find((sig) => matchesSignature(buffer, sig));
+    return match?.mimeType ?? "unknown";
   } catch {
     return "unknown";
   }

@@ -11,39 +11,45 @@ interface CommandContext {
   match: string;
 }
 
-// Helper function to recursively read all files in a directory
+async function readFileEntry(
+  fullPath: string,
+  relativeFilePath: string,
+  format: FormatType,
+): Promise<string> {
+  try {
+    const fileContents = await fs.readFile(fullPath, "utf8");
+    return formatFile(relativeFilePath, fileContents, format);
+  } catch (error) {
+    return `Error reading file ${relativeFilePath}: ${error instanceof Error ? error.message : "Unknown error"}`;
+  }
+}
+
+async function collectFiles(
+  currentPath: string,
+  format: FormatType,
+  allContents: string[],
+  relativePath = "",
+): Promise<void> {
+  const entries = await fs.readdir(currentPath, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const fullPath = path.join(currentPath, entry.name);
+    const relativeFilePath = path.join(relativePath, entry.name);
+
+    if (entry.isDirectory()) {
+      await collectFiles(fullPath, format, allContents, relativeFilePath);
+    } else if (entry.isFile()) {
+      allContents.push(await readFileEntry(fullPath, relativeFilePath, format));
+    }
+  }
+}
+
 async function readDirectoryRecursive(
   dirPath: string,
   format: FormatType,
 ): Promise<string> {
   const allContents: string[] = [];
-
-  async function readDir(
-    currentPath: string,
-    relativePath = "",
-  ): Promise<void> {
-    const entries = await fs.readdir(currentPath, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const fullPath = path.join(currentPath, entry.name);
-      const relativeFilePath = path.join(relativePath, entry.name);
-
-      if (entry.isDirectory()) {
-        await readDir(fullPath, relativeFilePath);
-      } else if (entry.isFile()) {
-        try {
-          const fileContents = await fs.readFile(fullPath, "utf8");
-          allContents.push(formatFile(relativeFilePath, fileContents, format));
-        } catch (error) {
-          allContents.push(
-            `Error reading file ${relativeFilePath}: ${error instanceof Error ? error.message : "Unknown error"}`,
-          );
-        }
-      }
-    }
-  }
-
-  await readDir(dirPath);
+  await collectFiles(dirPath, format, allContents);
 
   if (allContents.length === 0) {
     return `Directory ${path.basename(dirPath)} is empty or contains no readable files.`;

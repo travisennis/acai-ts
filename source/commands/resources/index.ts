@@ -1,3 +1,4 @@
+import type { Skill } from "../../skills/index.ts";
 import { loadSkills } from "../../skills/index.ts";
 import style from "../../terminal/style.ts";
 import type { Container, Editor, TUI } from "../../tui/index.ts";
@@ -7,6 +8,38 @@ import {
   ModalText,
 } from "../../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "../types.ts";
+
+function formatSkillSection(
+  label: string,
+  skills: Skill[],
+  showSource = false,
+): string[] {
+  if (skills.length === 0) return [];
+
+  const lines: string[] = [style.gray(`${label} (${skills.length}):`)];
+  for (const skill of skills) {
+    const pathSuffix = showSource ? ` ${style.dim(`[${skill.source}]`)}` : "";
+    lines.push(
+      `${style.yellow.bold(skill.name)}\n${skill.description}\n${style.dim(skill.filePath)}${pathSuffix}\n`,
+    );
+  }
+  lines.push("");
+  return lines;
+}
+
+function formatAgentsFiles(
+  agentsFiles: Array<{ path: string; content: string }>,
+): string[] {
+  const lines: string[] = [style.gray("AGENTS.md:")];
+  for (const agentsFile of agentsFiles) {
+    const status =
+      agentsFile.content.length > 0
+        ? style.green("(Exists)")
+        : style.dim("(Not found)");
+    lines.push(`  • ${agentsFile.path} ${status}`);
+  }
+  return lines;
+}
 
 export function resourcesCommand(options: CommandOptions): ReplCommand {
   return {
@@ -22,7 +55,6 @@ export function resourcesCommand(options: CommandOptions): ReplCommand {
     ): Promise<"continue" | "use"> {
       try {
         const skills = await loadSkills();
-
         const agentsFiles = await options.config.readAgentsFiles();
 
         const projectSkills = skills.filter((s) => s.source === "project");
@@ -31,64 +63,22 @@ export function resourcesCommand(options: CommandOptions): ReplCommand {
           (s) => s.source !== "project" && s.source !== "user",
         );
 
-        const lines: string[] = [];
-
-        if (projectSkills.length > 0) {
-          lines.push(style.gray(`Project Skills (${projectSkills.length}):`));
-          for (const skill of projectSkills) {
-            lines.push(
-              `${style.yellow.bold(skill.name)}
-${skill.description}
-${style.dim(skill.filePath)}
-`,
-            );
-          }
-          lines.push("");
-        }
-
-        if (userSkills.length > 0) {
-          lines.push(style.gray(`User Skills (${userSkills.length}):`));
-          for (const skill of userSkills) {
-            lines.push(
-              `${style.yellow.bold(skill.name)}
-${skill.description}
-${style.dim(skill.filePath)}
-`,
-            );
-          }
-          lines.push("");
-        }
-
-        if (otherSkills.length > 0) {
-          lines.push(style.gray(`Other Skills (${otherSkills.length}):`));
-          for (const skill of otherSkills) {
-            lines.push(
-              `${style.yellow.bold(skill.name)}
-${skill.description}
-${style.dim(skill.filePath)} ${style.dim(`[${skill.source}]`)}
-`,
-            );
-          }
-          lines.push("");
-        }
-
-        lines.push(style.gray("AGENTS.md:"));
-        for (const agentsFile of agentsFiles) {
-          if (agentsFile.content.length > 0) {
-            lines.push(`  • ${agentsFile.path} ${style.green("(Exists)")}`);
-          } else {
-            lines.push(`  • ${agentsFile.path} ${style.dim("(Not found)")}`);
-          }
-        }
+        const lines: string[] = [
+          ...formatSkillSection("Project Skills", projectSkills),
+          ...formatSkillSection("User Skills", userSkills),
+          ...formatSkillSection("Other Skills", otherSkills, true),
+          ...formatAgentsFiles(agentsFiles),
+        ];
 
         const modalContent = new ModalContainer();
         const formattedText = lines.join("\n");
-
-        if (formattedText.trim()) {
-          modalContent.addChild(new ModalText(formattedText, 0, 1));
-        } else {
-          modalContent.addChild(new ModalText("No resources found.", 0, 1));
-        }
+        modalContent.addChild(
+          new ModalText(
+            formattedText.trim() ? formattedText : "No resources found.",
+            0,
+            1,
+          ),
+        );
 
         const modal = new Modal("Active Resources", modalContent, true, () => {
           editor.setText("");

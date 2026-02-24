@@ -7,9 +7,101 @@ import { logger } from "../../utils/logger.ts";
 import type { CommandOptions, ReplCommand } from "../types.ts";
 import {
   detectImageFormatFromBase64,
+  extractBase64Content,
   extractMimeTypeFromDataUrl,
   isValidBase64,
 } from "./utils.ts";
+
+function resolveMimeType(base64DataUrl: string): string {
+  try {
+    const dataUrlMimeType = extractMimeTypeFromDataUrl(base64DataUrl);
+    const base64Content = extractBase64Content(base64DataUrl);
+    const detectedFormat = detectImageFormatFromBase64(base64Content);
+
+    if (detectedFormat === "unknown") {
+      logger.warn(
+        `Could not detect image format, using data URL MIME type: ${dataUrlMimeType}`,
+      );
+      return dataUrlMimeType;
+    }
+
+    if (dataUrlMimeType !== detectedFormat) {
+      logger.warn(
+        `Clipboard library reported ${dataUrlMimeType} but actual image format is ${detectedFormat}. Using detected format.`,
+      );
+    }
+    return detectedFormat;
+  } catch (error) {
+    logger.warn(`Failed to extract MIME type from clipboard image: ${error}`);
+    return "image/png";
+  }
+}
+
+function buildImageDataUrl(
+  base64DataUrl: string,
+  mimeType: string,
+): { dataUrl: string; valid: boolean } {
+  if (base64DataUrl.startsWith(`data:${mimeType};base64,`)) {
+    return { dataUrl: base64DataUrl, valid: true };
+  }
+  const base64Content = extractBase64Content(base64DataUrl);
+  const correctedDataUrl = `data:${mimeType};base64,${base64Content}`;
+  return { dataUrl: correctedDataUrl, valid: isValidBase64(correctedDataUrl) };
+}
+
+interface PasteContext {
+  tui: TUI;
+  container: Container;
+  editor: Editor;
+}
+
+function showMessage(ctx: PasteContext, message: string): void {
+  ctx.container.addChild(new Text(message, 1, 0));
+  ctx.tui.requestRender();
+  ctx.editor.setText("");
+}
+
+async function handleImagePaste(
+  ctx: PasteContext,
+  promptManager: CommandOptions["promptManager"],
+): Promise<"continue"> {
+  const base64DataUrl = await Clipboard.getImageBase64();
+
+  if (!isValidBase64(base64DataUrl)) {
+    showMessage(
+      ctx,
+      style.red(
+        "Invalid base64 data in clipboard. The image data may be corrupted.",
+      ),
+    );
+    return "continue";
+  }
+
+  const mimeType = resolveMimeType(base64DataUrl);
+  const { dataUrl, valid } = buildImageDataUrl(base64DataUrl, mimeType);
+
+  if (!valid) {
+    showMessage(
+      ctx,
+      style.red(
+        "Failed to correct base64 data format. The image data may be corrupted.",
+      ),
+    );
+    return "continue";
+  }
+
+  promptManager.addContext({
+    type: "image",
+    image: dataUrl,
+    mediaType: mimeType,
+  });
+
+  showMessage(
+    ctx,
+    style.green("Image from clipboard will be added to your next prompt."),
+  );
+  return "continue";
+}
 
 export const pasteCommand = ({
   modelManager,
@@ -30,102 +122,10 @@ export const pasteCommand = ({
         editor,
       }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"continue" | "use"> {
+      const ctx = { tui, container, editor };
       try {
         if (Clipboard.hasImage()) {
-          const base64DataUrl = await Clipboard.getImageBase64();
-
-          if (!isValidBase64(base64DataUrl)) {
-            container.addChild(
-              new Text(
-                style.red(
-                  "Invalid base64 data in clipboard. The image data may be corrupted.",
-                ),
-                1,
-                0,
-              ),
-            );
-            tui.requestRender();
-            editor.setText("");
-            return "continue";
-          }
-
-          let mimeType: string;
-          try {
-            const dataUrlMimeType = extractMimeTypeFromDataUrl(base64DataUrl);
-            const base64Content = base64DataUrl.replace(
-              /^data:.*?;base64,/,
-              "",
-            );
-            const detectedFormat = detectImageFormatFromBase64(base64Content);
-
-            if (detectedFormat !== "unknown") {
-              mimeType = detectedFormat;
-
-              if (dataUrlMimeType !== detectedFormat) {
-                logger.warn(
-                  `Clipboard library reported ${dataUrlMimeType} but actual image format is ${detectedFormat}. Using detected format.`,
-                );
-              }
-            } else {
-              mimeType = dataUrlMimeType;
-              logger.warn(
-                `Could not detect image format, using data URL MIME type: ${mimeType}`,
-              );
-            }
-          } catch (error) {
-            logger.warn(
-              `Failed to extract MIME type from clipboard image: ${error}`,
-            );
-            mimeType = "image/png";
-          }
-
-          if (!base64DataUrl.startsWith(`data:${mimeType};base64,`)) {
-            const base64Content = base64DataUrl.replace(
-              /^data:.*?;base64,/,
-              "",
-            );
-            const correctedDataUrl = `data:${mimeType};base64,${base64Content}`;
-
-            if (!isValidBase64(correctedDataUrl)) {
-              container.addChild(
-                new Text(
-                  style.red(
-                    "Failed to correct base64 data format. The image data may be corrupted.",
-                  ),
-                  1,
-                  0,
-                ),
-              );
-              tui.requestRender();
-              editor.setText("");
-              return "continue";
-            }
-
-            promptManager.addContext({
-              type: "image",
-              image: correctedDataUrl,
-              mediaType: mimeType,
-            });
-          } else {
-            promptManager.addContext({
-              type: "image",
-              image: base64DataUrl,
-              mediaType: mimeType,
-            });
-          }
-
-          container.addChild(
-            new Text(
-              style.green(
-                "Image from clipboard will be added to your next prompt.",
-              ),
-              1,
-              0,
-            ),
-          );
-          tui.requestRender();
-          editor.setText("");
-          return "continue";
+          return await handleImagePaste(ctx, promptManager);
         }
 
         const clipboardContent = await Clipboard.getText();
@@ -148,30 +148,20 @@ export const pasteCommand = ({
 
         const tokenCount = tokenCounter.count(content);
 
-        container.addChild(
-          new Text(
-            style.green(
-              `Clipboard content will be added to your next prompt. (${tokenCount} tokens)`,
-            ),
-            1,
-            0,
+        showMessage(
+          ctx,
+          style.green(
+            `Clipboard content will be added to your next prompt. (${tokenCount} tokens)`,
           ),
         );
-        tui.requestRender();
-        editor.setText("");
         return "continue";
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        container.addChild(
-          new Text(
-            style.red(`Error processing clipboard content: ${message}`),
-            1,
-            0,
-          ),
+        showMessage(
+          ctx,
+          style.red(`Error processing clipboard content: ${message}`),
         );
         logger.error(error, "Paste command error:");
-        tui.requestRender();
-        editor.setText("");
         return "continue";
       }
     },

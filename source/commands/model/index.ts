@@ -1,5 +1,6 @@
 import {
   isValidModel,
+  type ModelMetadata,
   type ModelName,
   modelRegistry,
   models,
@@ -13,6 +14,24 @@ import {
 } from "../../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "../types.ts";
 import { showModelSelector } from "./model-panel.ts";
+
+function getCapabilityWarnings(
+  current: ModelMetadata,
+  next: ModelMetadata,
+): string[] {
+  const warnings: string[] = [];
+  if (current.supportsToolCalling && !next.supportsToolCalling) {
+    warnings.push(
+      "The new model doesn't support tool calling, which may limit functionality.",
+    );
+  }
+  if (current.supportsReasoning && !next.supportsReasoning) {
+    warnings.push(
+      "The new model doesn't support reasoning, which may change response quality.",
+    );
+  }
+  return warnings;
+}
 
 export function modelCommand(options: CommandOptions): ReplCommand {
   const { modelManager } = options;
@@ -46,9 +65,7 @@ export function modelCommand(options: CommandOptions): ReplCommand {
 
       if (isValidModel(arg)) {
         try {
-          const currentModelConfig = modelManager.getModelMetadata("repl");
           const newModelConfig = modelRegistry[arg as ModelName];
-
           if (newModelConfig === undefined) {
             container.addChild(
               new Text(
@@ -57,44 +74,17 @@ export function modelCommand(options: CommandOptions): ReplCommand {
                 0,
               ),
             );
-            tui.requestRender();
-            editor.setText("");
-            return "continue";
-          }
-
-          if (
-            currentModelConfig.supportsToolCalling &&
-            !newModelConfig.supportsToolCalling
-          ) {
-            container.addChild(
-              new Text(
-                style.yellow(
-                  "The new model doesn't support tool calling, which may limit functionality.",
-                ),
-                1,
-                0,
-              ),
+          } else {
+            const currentModelConfig = modelManager.getModelMetadata("repl");
+            const warnings = getCapabilityWarnings(
+              currentModelConfig,
+              newModelConfig,
             );
+            for (const warning of warnings) {
+              container.addChild(new Text(style.yellow(warning), 1, 0));
+            }
+            modelManager.setModel("repl", arg as ModelName);
           }
-          if (
-            currentModelConfig.supportsReasoning &&
-            !newModelConfig.supportsReasoning
-          ) {
-            container.addChild(
-              new Text(
-                style.yellow(
-                  "The new model doesn't support reasoning, which may change response quality.",
-                ),
-                2,
-                0,
-              ),
-            );
-          }
-
-          modelManager.setModel("repl", arg as ModelName);
-          tui.requestRender();
-          editor.setText("");
-          return "continue";
         } catch (error) {
           container.addChild(
             new Text(
@@ -103,9 +93,6 @@ export function modelCommand(options: CommandOptions): ReplCommand {
               0,
             ),
           );
-          tui.requestRender();
-          editor.setText("");
-          return "continue";
         }
       }
 
