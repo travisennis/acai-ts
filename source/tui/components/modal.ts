@@ -242,6 +242,44 @@ export class Modal extends Container implements Component {
   }
 }
 
+function wrapLine(line: string, contentWidth: number): string[] {
+  const words = line.split(" ");
+  const lines: string[] = [];
+  let currentLine = "";
+
+  for (const word of words) {
+    const currentVisible = visibleWidth(currentLine);
+    const wordVisible = visibleWidth(word);
+
+    let finalWord = word;
+    if (wordVisible > contentWidth) {
+      let truncated = "";
+      for (const char of word) {
+        if (visibleWidth(truncated + char) > contentWidth) {
+          break;
+        }
+        truncated += char;
+      }
+      finalWord = truncated;
+    }
+
+    if (currentVisible === 0) {
+      currentLine = finalWord;
+    } else if (currentVisible + 1 + visibleWidth(finalWord) <= contentWidth) {
+      currentLine += ` ${finalWord}`;
+    } else {
+      lines.push(currentLine);
+      currentLine = finalWord;
+    }
+  }
+
+  if (currentLine.length > 0) {
+    lines.push(currentLine);
+  }
+
+  return lines;
+}
+
 /**
  * ModalText component - displays text content in a modal with word wrapping
  */
@@ -275,43 +313,7 @@ export class ModalText extends Container {
       if (visibleLineLength <= contentWidth) {
         lines.push(line);
       } else {
-        // Word wrap
-        const words = line.split(" ");
-        let currentLine = "";
-
-        for (const word of words) {
-          const currentVisible = visibleWidth(currentLine);
-          const wordVisible = visibleWidth(word);
-
-          let finalWord = word;
-          if (wordVisible > contentWidth) {
-            // Truncate word to fit
-            let truncated = "";
-            for (const char of word) {
-              if (visibleWidth(truncated + char) > contentWidth) {
-                break;
-              }
-              truncated += char;
-            }
-            finalWord = truncated;
-          }
-
-          if (currentVisible === 0) {
-            currentLine = finalWord;
-          } else if (
-            currentVisible + 1 + visibleWidth(finalWord) <=
-            contentWidth
-          ) {
-            currentLine += ` ${finalWord}`;
-          } else {
-            lines.push(currentLine);
-            currentLine = finalWord;
-          }
-        }
-
-        if (currentLine.length > 0) {
-          lines.push(currentLine);
-        }
+        lines.push(...wrapLine(line, contentWidth));
       }
     }
 

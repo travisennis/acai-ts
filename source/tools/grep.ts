@@ -601,6 +601,29 @@ export function countContextLines(parsed: ParsedMatch[]): number {
   return parsed.filter((match) => match.isContext).length;
 }
 
+function isContextNearKeptMatch(
+  matches: ParsedMatch[],
+  index: number,
+  indicesToKeep: Set<number>,
+  contextWindow: number,
+): boolean {
+  for (let j = index - 1; j >= Math.max(0, index - contextWindow); j--) {
+    if (matches[j].isMatch && !matches[j].isContext && indicesToKeep.has(j)) {
+      return true;
+    }
+  }
+  for (
+    let j = index + 1;
+    j < Math.min(matches.length, index + contextWindow + 1);
+    j++
+  ) {
+    if (matches[j].isMatch && !matches[j].isContext && indicesToKeep.has(j)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Truncate matches to a maximum number of results, preserving context lines for kept matches
  */
@@ -647,38 +670,7 @@ export function truncateMatches(
         break;
       }
     } else if (match.isContext) {
-      // Check if this context line is adjacent to a kept match
-      let hasKeptMatchNearby = false;
-      for (let j = i - 1; j >= Math.max(0, i - contextWindow); j--) {
-        if (
-          matches[j].isMatch &&
-          !matches[j].isContext &&
-          indicesToKeep.has(j)
-        ) {
-          hasKeptMatchNearby = true;
-          break;
-        }
-      }
-      // Also look forward
-      if (!hasKeptMatchNearby) {
-        for (
-          let j = i + 1;
-          j < Math.min(matches.length, i + contextWindow + 1);
-          j++
-        ) {
-          if (
-            matches[j].isMatch &&
-            !matches[j].isContext &&
-            indicesToKeep.has(j)
-          ) {
-            hasKeptMatchNearby = true;
-            break;
-          }
-        }
-      }
-
-      // Include context lines near kept matches
-      if (hasKeptMatchNearby) {
+      if (isContextNearKeptMatch(matches, i, indicesToKeep, contextWindow)) {
         truncated.push(match);
       }
     } else {

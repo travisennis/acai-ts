@@ -3,65 +3,81 @@ import os from "node:os";
 import path from "node:path";
 import { isPathWithinAllowedDirs } from "./filesystem/security.ts";
 
+interface TokenizerState {
+  current: string;
+  mode: "normal" | "single" | "double";
+  i: number;
+}
+
+function handleNormalMode(
+  state: TokenizerState,
+  char: string,
+  command: string,
+  tokens: string[],
+): void {
+  if (/\s/.test(char)) {
+    if (state.current) {
+      tokens.push(state.current);
+      state.current = "";
+    }
+    return;
+  }
+  if (char === "'") {
+    state.mode = "single";
+    state.current += char;
+    return;
+  }
+  if (char === '"') {
+    state.mode = "double";
+    state.current += char;
+    return;
+  }
+  if (char === "\\") {
+    const next = command[state.i + 1];
+    if (next !== undefined) {
+      state.current += char + next;
+      state.i++;
+      return;
+    }
+  }
+  state.current += char;
+}
+
+function handleSingleQuoteMode(state: TokenizerState, char: string): void {
+  state.current += char;
+  if (char === "'") state.mode = "normal";
+}
+
+function handleDoubleQuoteMode(
+  state: TokenizerState,
+  char: string,
+  command: string,
+): void {
+  state.current += char;
+  if (char === "\\") {
+    const next = command[state.i + 1];
+    if (next !== undefined) {
+      state.current += next;
+      state.i++;
+    }
+    return;
+  }
+  if (char === '"') state.mode = "normal";
+}
+
 // Tokenize shell command respecting quotes and escapes
 function tokenizeShellWords(command: string): string[] {
   const tokens: string[] = [];
-  let current = "";
-  let mode: "normal" | "single" | "double" = "normal";
+  const state: TokenizerState = { current: "", mode: "normal", i: 0 };
 
-  for (let i = 0; i < command.length; i++) {
-    const char = command[i] ?? "";
-
-    if (mode === "normal") {
-      if (/\s/.test(char)) {
-        if (current) {
-          tokens.push(current);
-          current = "";
-        }
-        continue;
-      }
-      if (char === "'") {
-        mode = "single";
-        current += char;
-        continue;
-      }
-      if (char === '"') {
-        mode = "double";
-        current += char;
-        continue;
-      }
-      if (char === "\\") {
-        const next = command[i + 1];
-        if (next !== undefined) {
-          current += char + next;
-          i++;
-          continue;
-        }
-      }
-      current += char;
-      continue;
-    }
-
-    if (mode === "single") {
-      current += char;
-      if (char === "'") mode = "normal";
-      continue;
-    }
-
-    // double quote mode
-    current += char;
-    if (char === "\\") {
-      const next = command[i + 1];
-      if (next !== undefined) {
-        current += next;
-        i++;
-      }
-      continue;
-    }
-    if (char === '"') mode = "normal";
+  for (state.i = 0; state.i < command.length; state.i++) {
+    const char = command[state.i] ?? "";
+    if (state.mode === "normal") handleNormalMode(state, char, command, tokens);
+    else if (state.mode === "single") handleSingleQuoteMode(state, char);
+    else handleDoubleQuoteMode(state, char, command);
   }
 
-  if (current) tokens.push(current);
+  if (state.current) tokens.push(state.current);
   return tokens;
 }
 
@@ -260,6 +276,97 @@ export const resolveCwd = (
   return target;
 };
 
+const mutatingBinaries = new Set([
+  "rm",
+  "mv",
+  "cp",
+  "mkdir",
+  "rmdir",
+  "touch",
+  "chmod",
+  "chown",
+  "ln",
+  "truncate",
+  "dd",
+  "tee",
+]);
+
+const npmMutating = new Set([
+  "install",
+  "uninstall",
+  "update",
+  "ci",
+  "publish",
+  "link",
+  "dedupe",
+  "prune",
+  "rebuild",
+  "add",
+]);
+
+const gitMutating = new Set([
+  "add",
+  "am",
+  "apply",
+  "branch",
+  "checkout",
+  "switch",
+  "cherry-pick",
+  "clean",
+  "commit",
+  "merge",
+  "mv",
+  "pull",
+  "push",
+  "rebase",
+  "reset",
+  "revert",
+  "stash",
+  "tag",
+  "worktree",
+  "submodule",
+  "config",
+]);
+
+const actionMutating = new Set(["create", "update", "upgrade", "install"]);
+
+const packageManagers = new Set(["npm", "pnpm", "yarn"]);
+
+function isSegmentMutating(seg: string): boolean {
+  const tokens = seg.split(/\s+/);
+  if (tokens.length === 0) return false;
+  const bin = tokens[0];
+  if (!bin) return false;
+
+  if (tokens.some((t) => actionMutating.has(t))) {
+    return true;
+  }
+
+  if (bin === "sed" && tokens.some((t) => /^-i/.test(t))) {
+    return true;
+  }
+
+  if (mutatingBinaries.has(bin)) {
+    return true;
+  }
+
+  if (bin === "git" && tokens.length > 1) {
+    const sub = tokens[1];
+    if (typeof sub === "string" && gitMutating.has(sub)) {
+      return true;
+    }
+  }
+
+  if (packageManagers.has(bin) && tokens.length > 1) {
+    const sub = tokens[1];
+    if (typeof sub === "string" && npmMutating.has(sub)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export const isMutatingCommand = (rawCommand: string): boolean => {
   const command = rawCommand.trim();
 
@@ -274,105 +381,5 @@ export const isMutatingCommand = (rawCommand: string): boolean => {
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
 
-  const mutatingBinaries = new Set([
-    "rm",
-    "mv",
-    "cp",
-    "mkdir",
-    "rmdir",
-    "touch",
-    "chmod",
-    "chown",
-    "ln",
-    "truncate",
-    "dd",
-    "tee",
-  ]);
-
-  const npmMutating = new Set([
-    "install",
-    "uninstall",
-    "update",
-    "ci",
-    "publish",
-    "link",
-    "dedupe",
-    "prune",
-    "rebuild",
-    "add",
-  ]);
-
-  const gitMutating = new Set([
-    "add",
-    "am",
-    "apply",
-    "branch",
-    "checkout",
-    "switch",
-    "cherry-pick",
-    "clean",
-    "commit",
-    "merge",
-    "mv",
-    "pull",
-    "push",
-    "rebase",
-    "reset",
-    "revert",
-    "stash",
-    "tag",
-    "worktree",
-    "submodule",
-    "config",
-  ]);
-
-  // Generic action words that should be considered mutating when present in the command
-  const actionMutating = new Set(["create", "update", "upgrade", "install"]);
-
-  for (const seg of segments) {
-    const tokens = seg.split(/\s+/);
-    if (tokens.length === 0) continue;
-    const bin = tokens[0];
-    if (!bin) continue;
-
-    // If any token is an action-like mutating word, consider mutating
-    if (tokens.some((t) => actionMutating.has(t))) {
-      return true;
-    }
-
-    // sed -i is mutating
-    if (bin === "sed") {
-      if (tokens.some((t) => /^-i/.test(t))) {
-        return true;
-      }
-      // sed without -i is not mutating
-    }
-
-    if (mutatingBinaries.has(bin)) {
-      return true;
-    }
-
-    if (bin === "git" && tokens.length > 1) {
-      const sub = tokens[1];
-      if (typeof sub === "string" && gitMutating.has(sub)) {
-        return true;
-      }
-    }
-
-    if (bin === "npm" && tokens.length > 1) {
-      const sub = tokens[1];
-      if (typeof sub === "string" && npmMutating.has(sub)) {
-        return true;
-      }
-    }
-
-    if ((bin === "pnpm" || bin === "yarn") && tokens.length > 1) {
-      const sub = tokens[1];
-      if (typeof sub === "string" && npmMutating.has(sub)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  return segments.some((seg) => isSegmentMutating(seg));
 };

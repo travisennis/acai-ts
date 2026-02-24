@@ -51,6 +51,64 @@ function translateLevel(level: number): ColorSupport | false {
   };
 }
 
+function detectCiColorLevel(min: number): number | undefined {
+  if (!("CI" in env)) {
+    return undefined;
+  }
+
+  if (
+    ["GITHUB_ACTIONS", "GITEA_ACTIONS", "CIRCLECI"].some((key) => key in env)
+  ) {
+    return 3;
+  }
+
+  if (
+    ["TRAVIS", "APPVEYOR", "GITLAB_CI", "BUILDKITE", "DRONE"].some(
+      (sign) => sign in env,
+    ) ||
+    env["CI_NAME"] === "codeship"
+  ) {
+    return 1;
+  }
+
+  return min;
+}
+
+function detectTerminalColorLevel(): number | undefined {
+  if ("TERM_PROGRAM" in env) {
+    const termProgramVersion = String(env["TERM_PROGRAM_VERSION"] || "0");
+    const version = Number.parseInt(
+      termProgramVersion.split(".")[0] ?? "0",
+      10,
+    );
+
+    switch (env["TERM_PROGRAM"]) {
+      case "iTerm.app": {
+        return version >= 3 ? 3 : 2;
+      }
+
+      case "Apple_Terminal": {
+        return 2;
+      }
+      // No default
+    }
+  }
+
+  if (/-256(color)?$/i.test(env["TERM"] || "")) {
+    return 2;
+  }
+
+  if (
+    /^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(
+      env["TERM"] || "",
+    )
+  ) {
+    return 1;
+  }
+
+  return undefined;
+}
+
 function _supportsColor(
   haveStream: boolean,
   options: { streamIsTty?: boolean } = {},
@@ -89,23 +147,9 @@ function _supportsColor(
     return 1;
   }
 
-  if ("CI" in env) {
-    if (
-      ["GITHUB_ACTIONS", "GITEA_ACTIONS", "CIRCLECI"].some((key) => key in env)
-    ) {
-      return 3;
-    }
-
-    if (
-      ["TRAVIS", "APPVEYOR", "GITLAB_CI", "BUILDKITE", "DRONE"].some(
-        (sign) => sign in env,
-      ) ||
-      env["CI_NAME"] === "codeship"
-    ) {
-      return 1;
-    }
-
-    return min;
+  const ciLevel = detectCiColorLevel(min);
+  if (ciLevel !== undefined) {
+    return ciLevel;
   }
 
   if ("TEAMCITY_VERSION" in env) {
@@ -126,35 +170,9 @@ function _supportsColor(
     return 3;
   }
 
-  if ("TERM_PROGRAM" in env) {
-    const termProgramVersion = String(env["TERM_PROGRAM_VERSION"] || "0");
-    const version = Number.parseInt(
-      termProgramVersion.split(".")[0] ?? "0",
-      10,
-    );
-
-    switch (env["TERM_PROGRAM"]) {
-      case "iTerm.app": {
-        return version >= 3 ? 3 : 2;
-      }
-
-      case "Apple_Terminal": {
-        return 2;
-      }
-      // No default
-    }
-  }
-
-  if (/-256(color)?$/i.test(env["TERM"] || "")) {
-    return 2;
-  }
-
-  if (
-    /^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(
-      env["TERM"] || "",
-    )
-  ) {
-    return 1;
+  const terminalLevel = detectTerminalColorLevel();
+  if (terminalLevel !== undefined) {
+    return terminalLevel;
   }
 
   if ("COLORTERM" in env) {

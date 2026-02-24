@@ -215,36 +215,21 @@ export class TUI extends Container {
       return;
     }
 
-    // Handle Ctrl+O - toggle verbose mode
-    if (isCtrlO(data)) {
-      if (this.onCtrlO) {
-        this.onCtrlO();
-      }
-      return;
-    }
+    const keyBindings: Array<{
+      check: (data: string) => boolean;
+      handler: (() => void) | undefined;
+    }> = [
+      { check: isCtrlO, handler: this.onCtrlO },
+      { check: isCtrlR, handler: this.onCtrlR },
+      { check: isCtrlN, handler: this.onCtrlN },
+      { check: isCtrlM, handler: this.onCtrlM },
+    ];
 
-    // Handle Ctrl+R - review
-    if (isCtrlR(data)) {
-      if (this.onCtrlR) {
-        this.onCtrlR();
+    for (const binding of keyBindings) {
+      if (binding.check(data)) {
+        binding.handler?.();
+        return;
       }
-      return;
-    }
-
-    // Handle Ctrl+N - new chat
-    if (isCtrlN(data)) {
-      if (this.onCtrlN) {
-        this.onCtrlN();
-      }
-      return;
-    }
-
-    // Handle Ctrl+M - model selector
-    if (isCtrlM(data)) {
-      if (this.onCtrlM) {
-        this.onCtrlM();
-      }
-      return;
     }
 
     // Handle Shift+Tab - cycle mode only when no modal is active,

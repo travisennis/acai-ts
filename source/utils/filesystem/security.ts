@@ -90,6 +90,41 @@ export function isPathWithinAllowedDirs(
   );
 }
 
+async function resolveValidAncestor(
+  startDir: string,
+  isWithinAllowed: (p: string) => boolean,
+): Promise<boolean> {
+  let current = startDir;
+  while (true) {
+    try {
+      const stat = await fs.stat(current);
+      if (!stat.isDirectory()) {
+        throw new Error(
+          `Nearest existing ancestor is not a directory: ${current}`,
+        );
+      }
+      const realAncestor = await fs.realpath(current);
+      const normalizedAncestor = normalizePath(realAncestor);
+
+      if (!isWithinAllowed(normalizedAncestor)) {
+        throw new Error(
+          "Access denied - ancestor directory resolves outside allowed directories",
+        );
+      }
+      return true;
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith("Access denied")) {
+        throw err;
+      }
+      const parent = path.dirname(current);
+      if (parent === current) {
+        return false;
+      }
+      current = parent;
+    }
+  }
+}
+
 // Security utilities
 export async function validatePath(
   requestedPath: string,
@@ -165,40 +200,10 @@ export async function validatePath(
   } catch (_error) {
     // For new files or paths where some directories don't exist yet:
     // Walk up to the nearest existing ancestor directory and validate it.
-    let current = path.dirname(absolute);
-    let foundValidAncestor = false;
-    while (true) {
-      try {
-        const stat = await fs.stat(current);
-        if (!stat.isDirectory()) {
-          throw new Error(
-            `Nearest existing ancestor is not a directory: ${current}`,
-          );
-        }
-        const realAncestor = await fs.realpath(current);
-        const normalizedAncestor = normalizePath(realAncestor);
-
-        if (!isWithinAllowed(normalizedAncestor)) {
-          throw new Error(
-            "Access denied - ancestor directory resolves outside allowed directories",
-          );
-        }
-        // Ancestor is within allowed; allow creation below it.
-        foundValidAncestor = true;
-        break;
-      } catch (err) {
-        // If it's a security denial, rethrow
-        if (err instanceof Error && err.message.startsWith("Access denied")) {
-          throw err;
-        }
-        // If we reached the filesystem root, break to fallback check
-        const parent = path.dirname(current);
-        if (parent === current) {
-          break;
-        }
-        current = parent;
-      }
-    }
+    const foundValidAncestor = await resolveValidAncestor(
+      path.dirname(absolute),
+      isWithinAllowed,
+    );
     if (!foundValidAncestor) {
       // Rely on intended path check
     }
