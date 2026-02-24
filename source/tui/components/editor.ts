@@ -828,6 +828,15 @@ export class Editor implements Component {
   }
 
   // All the editor methods from before...
+
+  private isAfterWhitespaceOrStart(textBeforeCursor: string): boolean {
+    return (
+      textBeforeCursor.length === 1 ||
+      textBeforeCursor[textBeforeCursor.length - 2] === " " ||
+      textBeforeCursor[textBeforeCursor.length - 2] === "\t"
+    );
+  }
+
   private insertCharacter(char: string, suppressAutocomplete = false): void {
     this.historyIndex = -1; // Exit history browsing mode
 
@@ -858,12 +867,7 @@ export class Editor implements Component {
       else if (char === "@") {
         const currentLine = this.state.lines[this.state.cursorLine] || "";
         const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
-        const charBeforeAt = textBeforeCursor[textBeforeCursor.length - 2];
-        if (
-          textBeforeCursor.length === 1 ||
-          charBeforeAt === " " ||
-          charBeforeAt === "\t"
-        ) {
+        if (this.isAfterWhitespaceOrStart(textBeforeCursor)) {
           void this.tryTriggerAutocomplete();
         }
       }
@@ -871,12 +875,15 @@ export class Editor implements Component {
       else if (char === "#") {
         const currentLine = this.state.lines[this.state.cursorLine] || "";
         const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
-        const charBeforeHash = textBeforeCursor[textBeforeCursor.length - 2];
-        if (
-          textBeforeCursor.length === 1 ||
-          charBeforeHash === " " ||
-          charBeforeHash === "\t"
-        ) {
+        if (this.isAfterWhitespaceOrStart(textBeforeCursor)) {
+          void this.tryTriggerAutocomplete();
+        }
+      }
+      // Auto-trigger for ">" skill invocation
+      else if (char === ">") {
+        const currentLine = this.state.lines[this.state.cursorLine] || "";
+        const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
+        if (this.isAfterWhitespaceOrStart(textBeforeCursor)) {
           void this.tryTriggerAutocomplete();
         }
       }
@@ -888,8 +895,8 @@ export class Editor implements Component {
         if (textBeforeCursor.trimStart().startsWith("/")) {
           void this.tryTriggerAutocomplete();
         }
-        // Check if we're in an @ file reference or # file attachment context
-        else if (textBeforeCursor.match(/(?:^|[\s])[@#][^\s]*$/)) {
+        // Check if we're in an @ file reference, # file attachment, or > skill context
+        else if (textBeforeCursor.match(/(?:^|[\s])[@#>[^\s]*$/)) {
           void this.tryTriggerAutocomplete();
         }
       }

@@ -15,6 +15,7 @@ import { ModeManager } from "../modes/manager.ts";
 import type { PromptManager } from "../prompts/manager.ts";
 import { processPrompt } from "../prompts/mentions.ts";
 import { createUserMessage, type SessionManager } from "../sessions/manager.ts";
+import { loadSkills } from "../skills/index.ts";
 import {
   alert,
   setTerminalTitle,
@@ -25,7 +26,13 @@ import style from "../terminal/style.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
 import type { CompleteToolSet } from "../tools/index.ts";
-import { createDefaultProvider } from "../tui/autocomplete.ts";
+import {
+  AttachmentProvider,
+  CombinedProvider,
+  CommandProvider,
+  FileSearchProvider,
+  SkillProvider,
+} from "../tui/autocomplete.ts";
 import { AssistantMessageComponent } from "../tui/components/assistant-message.ts";
 import { FooterComponent } from "../tui/components/footer.ts";
 import { ThinkingBlockComponent } from "../tui/components/thinking-block.ts";
@@ -182,11 +189,17 @@ export class Repl {
       this.notification.setMessage("initialized");
       return;
     }
-    // Setup autocomplete for file paths and slash commands
-    const autocompleteProvider = createDefaultProvider(
-      [...(await this.options.commands.getCompletions())],
-      this.options.workspace.allowedDirs,
-    );
+    // Setup autocomplete for file paths, slash commands, and skills
+    const skills = await loadSkills();
+    const userInvocableSkills = skills.filter((s) => s.userInvocable);
+    const commandsList = await this.options.commands.getCompletions();
+
+    const autocompleteProvider = new CombinedProvider([
+      new CommandProvider(commandsList),
+      new AttachmentProvider(),
+      new FileSearchProvider(),
+      new SkillProvider(userInvocableSkills),
+    ]);
     this.editor.setAutocompleteProvider(autocompleteProvider);
 
     const {

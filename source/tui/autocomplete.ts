@@ -18,6 +18,7 @@ export { CombinedProvider } from "./autocomplete/combined-provider.ts";
 export type { SlashCommand } from "./autocomplete/command-provider.ts";
 export { CommandProvider } from "./autocomplete/command-provider.ts";
 export { FileSearchProvider } from "./autocomplete/file-search-provider.ts";
+export { SkillProvider } from "./autocomplete/skill-provider.ts";
 export {
   DirectoryCache,
   directoryCache,
