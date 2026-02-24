@@ -255,6 +255,227 @@ Cache location:
     assert.strictEqual(result.isValid, true);
     assert.strictEqual(result.error, undefined);
   });
+
+  it("allows piped commands with valid paths", () => {
+    const result = validatePaths(
+      "cat source/index.ts | grep import",
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows dot path (current directory)", () => {
+    const result = validatePaths("ls .", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows ./relative paths within project", () => {
+    const result = validatePaths("cat ./source/index.ts", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows multiple allowed directories", () => {
+    const result = validatePaths(
+      "cat /tmp/test.txt",
+      [baseDir, "/tmp"],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("rejects paths outside all allowed directories", () => {
+    const result = validatePaths("cat /etc/passwd", [baseDir, "/tmp"], baseDir);
+    assert.strictEqual(result.isValid, false);
+    assert.match(
+      result.error ?? "",
+      /resolves outside the allowed directories/,
+    );
+  });
+
+  it("allows commands with no path-like arguments", () => {
+    const result = validatePaths("echo hello world", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows commands with flags only", () => {
+    const result = validatePaths("ls -la --color=auto", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows URLs with paths (https)", () => {
+    const result = validatePaths(
+      "curl https://api.example.com/v1/users/123",
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows URLs with paths (http)", () => {
+    const result = validatePaths(
+      "wget http://example.com/files/data.tar.gz",
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("rejects parent traversal that escapes project", () => {
+    const result = validatePaths("cat ../../../etc/shadow", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, false);
+    assert.match(
+      result.error ?? "",
+      /resolves outside the allowed directories/,
+    );
+  });
+
+  it("allows parent traversal that stays within project", () => {
+    const subDir = path.join(baseDir, "source", "tools");
+    const result = validatePaths("cat ../utils/bash.ts", [baseDir], subDir);
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows git log and diff commands without path issues", () => {
+    const result = validatePaths("git log --oneline", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows git diff with relative file paths", () => {
+    const result = validatePaths(
+      "git diff HEAD -- source/index.ts",
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows npm/node commands with local scripts", () => {
+    const result = validatePaths("node source/index.ts", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows grep with relative path arguments", () => {
+    const result = validatePaths("grep -r pattern source/", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("rejects grep with absolute path outside project", () => {
+    const result = validatePaths("grep -r secret /etc/", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, false);
+  });
+
+  it("allows find within project directory", () => {
+    const result = validatePaths(
+      "find source/ -name '*.ts'",
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("rejects find outside project directory", () => {
+    const result = validatePaths(
+      "find /usr/local -name '*.conf'",
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, false);
+  });
+
+  it("allows git merge message flag", () => {
+    const result = validatePaths(
+      'git merge -m "merge: integrate /feature/branch"',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows git tag message flag", () => {
+    const result = validatePaths(
+      'git tag -m "release /v1.0.0" v1.0.0',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows git revert message flag", () => {
+    const result = validatePaths(
+      'git revert --message "revert /path/change"',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows commands with environment variable syntax", () => {
+    const result = validatePaths(
+      "NODE_ENV=production node source/index.ts",
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows paths with spaces in double quotes within project", () => {
+    const result = validatePaths(
+      'cat "source/some file.ts"',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows deeply nested paths within project", () => {
+    const result = validatePaths(
+      "cat source/utils/filesystem/security.ts",
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("handles semicolon-separated commands with valid paths", () => {
+    const result = validatePaths(
+      "echo hello; cat package.json",
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows gh CLI commands with URLs", () => {
+    const result = validatePaths(
+      "gh pr view https://github.com/owner/repo/pull/1",
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows rg/ripgrep with project-relative paths", () => {
+    const result = validatePaths("rg 'import' source/", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("rejects rg with paths outside project", () => {
+    const result = validatePaths("rg secret /var/log/", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, false);
+  });
+
+  it("allows wc with project file", () => {
+    const result = validatePaths("wc -l source/index.ts", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows head/tail with project files", () => {
+    const r1 = validatePaths("head -20 source/index.ts", [baseDir], baseDir);
+    assert.strictEqual(r1.isValid, true);
+    const r2 = validatePaths("tail -f source/index.ts", [baseDir], baseDir);
+    assert.strictEqual(r2.isValid, true);
+  });
 });
 
 describe("bash - isMutatingCommand", () => {

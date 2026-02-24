@@ -181,6 +181,127 @@ describe("bash tool home directory (~) validation", () => {
   });
 });
 
+describe("bash tool path validation edge cases", async () => {
+  const tool = await createBashTool({
+    workspace: { primaryDir: baseDir, allowedDirs: [baseDir] },
+  });
+
+  async function run(command: string) {
+    return tool.execute(
+      { command, cwd: baseDir, timeout: 5000 },
+      { toolCallId: "t1", messages: [] },
+    );
+  }
+
+  it("allows ls with relative subdirectory", async () => {
+    const result = await run("ls source/");
+    assert.ok(result.length >= 0);
+  });
+
+  it("allows ls with dot path", async () => {
+    const result = await run("ls .");
+    assert.ok(result.length >= 0);
+  });
+
+  it("allows cat of a known project file", async () => {
+    const result = await run("cat package.json");
+    assert.ok(result.includes("name"));
+  });
+
+  it("allows piped commands within project", async () => {
+    const result = await run("cat package.json | head -5");
+    assert.ok(result.length > 0);
+  });
+
+  it("rejects cat of /etc/passwd", async () => {
+    await assert.rejects(
+      () => run("cat /etc/passwd"),
+      /resolves outside the allowed directories/,
+    );
+  });
+
+  it("rejects parent traversal escaping project", async () => {
+    await assert.rejects(
+      () => run("cat ../../../etc/shadow"),
+      /resolves outside the allowed directories/,
+    );
+  });
+
+  it("allows git log with flags (no external paths)", async () => {
+    const result = await run("git log --oneline -5");
+    assert.ok(result.length >= 0);
+  });
+
+  it("allows git diff with project-relative path", async () => {
+    const result = await run("git diff HEAD -- source/index.ts");
+    assert.ok(typeof result === "string");
+  });
+
+  it("rejects find targeting /usr", async () => {
+    await assert.rejects(
+      () => run("find /usr -name '*.ts'"),
+      /resolves outside the allowed directories/,
+    );
+  });
+
+  it("allows wc -l on project file", async () => {
+    const result = await run("wc -l package.json");
+    assert.ok(result.length > 0);
+  });
+
+  it("allows commands with URLs (no false positive)", async () => {
+    const result = await run(
+      "echo https://github.com/owner/repo/blob/main/file.ts",
+    );
+    assert.ok(result.includes("https://"));
+  });
+
+  it("allows grep within project", async () => {
+    const result = await run("grep -r 'validatePaths' source/utils/bash.ts");
+    assert.ok(result.length > 0);
+  });
+
+  it("rejects grep targeting /var/log", async () => {
+    await assert.rejects(
+      () => run("grep -r error /var/log/"),
+      /resolves outside the allowed directories/,
+    );
+  });
+});
+
+describe("bash tool multiple allowed dirs", async () => {
+  const tool = await createBashTool({
+    workspace: {
+      primaryDir: baseDir,
+      allowedDirs: [baseDir, "/tmp", "/var/folders"],
+    },
+  });
+
+  async function run(command: string) {
+    return tool.execute(
+      { command, cwd: baseDir, timeout: 5000 },
+      { toolCallId: "t1", messages: [] },
+    );
+  }
+
+  it("allows ls /tmp with multiple allowed dirs", async () => {
+    const result = await run("ls /tmp");
+    assert.ok(typeof result === "string");
+  });
+
+  it("still rejects /etc even with multiple allowed dirs", async () => {
+    await assert.rejects(
+      () => run("ls /etc"),
+      /resolves outside the allowed directories/,
+    );
+  });
+
+  it("allows project files alongside tmp access", async () => {
+    const result = await run("cat package.json");
+    assert.ok(result.includes("name"));
+  });
+});
+
 describe("bash tool with command protection", async () => {
   const tool = await createBashTool({
     workspace: { primaryDir: baseDir, allowedDirs: [baseDir, "/tmp"] },
