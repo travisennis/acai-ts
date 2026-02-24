@@ -535,6 +535,8 @@ acai-ts
 ### Source - Utils
 
 - **source/utils/bash.ts**: Bash command utilities
+- **source/utils/bash/parse.ts**: Shell command parser (ported from shell-quote)
+- **source/utils/bash/quote.ts**: Shell command quoting (ported from shell-quote)
 - **source/utils/dedent.ts**: Template literal tag for dedenting multi-line strings
 - **source/utils/env-expand.ts**: Environment variable expansion for config values
 - **source/utils/filetype-detection.ts**: File type detection
@@ -580,6 +582,8 @@ acai-ts
 - **test/tokens/**: Token tracking tests
 - **test/tools/**: Tool tests
 - **test/tui/**: TUI component tests
+- **test/utils/bash/parse.test.ts**: Shell parser tests
+- **test/utils/bash/quote.test.ts**: Shell quoting tests
 - **test/utils/**: Utility function tests
 
 ## Flow Diagram
