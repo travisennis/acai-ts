@@ -896,7 +896,7 @@ export class Editor implements Component {
           void this.tryTriggerAutocomplete();
         }
         // Check if we're in an @ file reference, # file attachment, or > skill context
-        else if (textBeforeCursor.match(/(?:^|[\s])[@#>[^\s]*$/)) {
+        else if (textBeforeCursor.match(/(?:^|\s)(?:[@#]|>)[^\s]*$/)) {
           void this.tryTriggerAutocomplete();
         }
       }
