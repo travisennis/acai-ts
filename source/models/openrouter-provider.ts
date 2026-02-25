@@ -47,6 +47,7 @@ const openrouterModels = {
   "gpt-5.1-codex-max": openRouterClient("openai/gpt-5.1-codex-max"),
   "gpt-5.2": openRouterClient("openai/gpt-5.2"),
   "gpt-5.2-codex": openRouterClient("openai/gpt-5.2-codex"),
+  "gpt-5-3-codex": openRouterClient("openai/gpt-5.3-codex"),
 } as const;
 
 type ModelName = `openrouter:${keyof typeof openrouterModels}`;
@@ -283,6 +284,18 @@ export const openrouterModelRegistry: {
   },
   "openrouter:gpt-5.2-codex": {
     id: "openrouter:gpt-5.2-codex",
+    provider: "openrouter",
+    contextWindow: 400000,
+    maxOutputTokens: 128000,
+    defaultTemperature: -1,
+    promptFormat: "xml",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000175,
+    costPerOutputToken: 0.000014,
+  },
+  "openrouter:gpt-5-3-codex": {
+    id: "openrouter:gpt-5-3-codex",
     provider: "openrouter",
     contextWindow: 400000,
     maxOutputTokens: 128000,
