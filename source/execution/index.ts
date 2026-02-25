@@ -312,6 +312,72 @@ export class ExecutionEnvironment {
         }
       };
 
+      // Extract callback handlers to reduce cognitive complexity
+      const handleExecError = (
+        error: ExecException,
+        output: string,
+        duration: number,
+      ) => {
+        const exitCode = error.code ?? 1;
+        logger.error(
+          {
+            error: error.message,
+            exitCode,
+            duration,
+          },
+          `Command execution failed: ${command}`,
+        );
+
+        settle(
+          {
+            output: preserveOutputOnError ? output : "",
+            exitCode,
+            error,
+            command,
+            duration,
+          },
+          throwOnError,
+          error,
+        );
+      };
+
+      const handleExecSuccess = (output: string, duration: number) => {
+        logger.debug(
+          {
+            duration,
+            outputLength: output.length,
+          },
+          `Command executed successfully: ${command}`,
+        );
+
+        settle(
+          {
+            output,
+            exitCode: 0,
+            command,
+            duration,
+          },
+          false,
+        );
+      };
+
+      const handleExecCallback = (
+        error: ExecException | null,
+        stdout: string,
+        stderr: string,
+      ) => {
+        const duration = Date.now() - startTime;
+        const output = captureStderr
+          ? `${stdout}${stderr ? stderr : ""}`
+          : stdout;
+
+        if (error) {
+          handleExecError(error, output, duration);
+        } else {
+          handleExecSuccess(output, duration);
+        }
+      };
+
       const childProcess = exec(
         command,
         {
@@ -323,56 +389,7 @@ export class ExecutionEnvironment {
           windowsHide: true,
           encoding: "utf8",
         },
-        (error: ExecException | null, stdout: string, stderr: string) => {
-          const duration = Date.now() - startTime;
-
-          // Combine stdout and stderr if requested
-          const output = captureStderr
-            ? `${stdout}${stderr ? stderr : ""}`
-            : stdout;
-
-          if (error) {
-            const exitCode = error.code ?? 1;
-            logger.error(
-              {
-                error: error.message,
-                exitCode,
-                duration,
-              },
-              `Command execution failed: ${command}`,
-            );
-
-            settle(
-              {
-                output: preserveOutputOnError ? output : "",
-                exitCode,
-                error,
-                command,
-                duration,
-              },
-              throwOnError,
-              error,
-            );
-          } else {
-            logger.debug(
-              {
-                duration,
-                outputLength: output.length,
-              },
-              `Command executed successfully: ${command}`,
-            );
-
-            settle(
-              {
-                output,
-                exitCode: 0,
-                command,
-                duration,
-              },
-              false,
-            );
-          }
-        },
+        handleExecCallback,
       );
 
       // Handle abort signal

@@ -97,3 +97,75 @@ describe("test validateCommand", () => {
 //     `expected bg-end in outputs: ${JSON.stringify(outputs)}`,
 //   );
 // });
+
+describe("test captureStderr option", () => {
+  test("executeCommand captures stderr when captureStderr is true", async () => {
+    const env = new ExecutionEnvironment();
+    const result = await env.executeCommand(
+      "echo stdout; echo stderr >&2",
+      { captureStderr: true },
+    );
+
+    assert.strictEqual(result.exitCode, 0);
+    assert.ok(result.output.includes("stdout"));
+    assert.ok(result.output.includes("stderr"));
+  });
+
+  test("executeCommand does not capture stderr when captureStderr is false", async () => {
+    const env = new ExecutionEnvironment();
+    const result = await env.executeCommand(
+      "echo stdout; echo stderr >&2",
+      { captureStderr: false },
+    );
+
+    assert.strictEqual(result.exitCode, 0);
+    assert.ok(result.output.includes("stdout"));
+    assert.ok(!result.output.includes("stderr"));
+  });
+});
+
+describe("test preserveOutputOnError option", () => {
+  test("executeCommand preserves output on error when preserveOutputOnError is true", async () => {
+    const env = new ExecutionEnvironment();
+    const result = await env.executeCommand(
+      "echo error_output; exit 1",
+      { preserveOutputOnError: true },
+    );
+
+    assert.strictEqual(result.exitCode, 1);
+    assert.ok(result.output.includes("error_output"));
+  });
+
+  test("executeCommand clears output on error when preserveOutputOnError is false", async () => {
+    const env = new ExecutionEnvironment();
+    const result = await env.executeCommand(
+      "echo error_output; exit 1",
+      { preserveOutputOnError: false },
+    );
+
+    assert.strictEqual(result.exitCode, 1);
+    assert.strictEqual(result.output, "");
+  });
+});
+
+describe("test throwOnError option", () => {
+  test("executeCommand throws when throwOnError is true and command fails", async () => {
+    const env = new ExecutionEnvironment();
+    await assert.rejects(
+      async () => {
+        await env.executeCommand("exit 1", { throwOnError: true });
+      },
+      (error: Error) => {
+        assert.ok(error instanceof Error);
+        return true;
+      },
+    );
+  });
+
+  test("executeCommand does not throw when throwOnError is false and command fails", async () => {
+    const env = new ExecutionEnvironment();
+    const result = await env.executeCommand("exit 1", { throwOnError: false });
+
+    assert.strictEqual(result.exitCode, 1);
+  });
+});
