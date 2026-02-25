@@ -106,7 +106,28 @@ function sanitizeToolCallInput(input: unknown): {
   return { sanitized: {}, isValid: false };
 }
 
-function sanitizeResponseMessages(
+/**
+ * Check if a tool call input is valid and return sanitized version.
+ * This helper reduces complexity by extracting validation logic.
+ */
+function validateAndSanitizeToolCall(
+  part: Extract<AssistantModelMessage["content"], readonly unknown[]>[number],
+): { isValid: boolean; sanitizedPart: typeof part } | null {
+  if (part.type !== "tool-call") {
+    return null; // Not a tool call, keep as-is
+  }
+
+  const { sanitized, isValid } = sanitizeToolCallInput(part.input);
+  if (isValid) {
+    return { isValid: true, sanitizedPart: { ...part, input: sanitized } };
+  }
+
+  // Skip invalid tool calls - don't add them to history
+  logger.debug({ toolName: part.toolName }, "Filtered invalid tool call from history");
+  return { isValid: false, sanitizedPart: part };
+}
+
+export function sanitizeResponseMessages(
   messages: ResponseMessage[],
 ): ResponseMessage[] {
   return messages
@@ -121,21 +142,18 @@ function sanitizeResponseMessages(
       let hasValidToolCall = false;
 
       for (const part of msg.content) {
-        if (part.type === "tool-call") {
-          hasAnyToolCall = true;
-          const { sanitized, isValid } = sanitizeToolCallInput(part.input);
-          if (isValid) {
-            hasValidToolCall = true;
-            validToolCalls.push({ ...part, input: sanitized });
-          } else {
-            // Skip invalid tool calls - don't add them to history
-            logger.debug(
-              { toolName: part.toolName },
-              "Filtered invalid tool call from history",
-            );
-          }
-        } else {
+        const result = validateAndSanitizeToolCall(part);
+
+        if (result === null) {
+          // Not a tool call, keep it
           validToolCalls.push(part);
+        } else if (result.isValid) {
+          hasAnyToolCall = true;
+          hasValidToolCall = true;
+          validToolCalls.push(result.sanitizedPart);
+        } else {
+          // Invalid tool call - already logged in helper
+          hasAnyToolCall = true;
         }
       }
 

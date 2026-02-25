@@ -475,3 +475,101 @@ test("cost calculation is accurate", async () => {
     assert.equal(totalUsage.estimatedCost, expectedCost);
   });
 });
+
+test("sanitizeResponseMessages preserves user messages", async () => {
+  const { sanitizeResponseMessages } = await import(
+    "../../source/sessions/manager.ts"
+  );
+
+  const messages = [
+    {
+      role: "user" as const,
+      content: [{ type: "text" as const, text: "Hello" }],
+    },
+  ];
+
+  const result = sanitizeResponseMessages(messages as any);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].role, "user");
+});
+
+test("sanitizeResponseMessages preserves tool messages", async () => {
+  const { sanitizeResponseMessages } = await import(
+    "../../source/sessions/manager.ts"
+  );
+
+  const messages = [
+    {
+      role: "tool" as const,
+      content: [
+        {
+          type: "tool-result" as const,
+          toolName: "test-tool",
+          toolCallId: "call-123",
+          result: "result",
+        },
+      ],
+    },
+  ];
+
+  const result = sanitizeResponseMessages(messages as any);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].role, "tool");
+});
+
+test("sanitizeResponseMessages filters invalid tool calls", async () => {
+  const { sanitizeResponseMessages } = await import(
+    "../../source/sessions/manager.ts"
+  );
+
+  const messages = [
+    {
+      role: "assistant" as const,
+      content: [
+        { type: "text" as const, text: "I'll help with that" },
+        {
+          type: "tool-call" as const,
+          toolName: "bash",
+          toolCallId: "call-1",
+          input: { command: "ls -la" }, // Valid object
+        },
+        {
+          type: "tool-call" as const,
+          toolName: "bash",
+          toolCallId: "call-2",
+          input: "not a valid object", // Invalid - not an object
+        },
+      ],
+    },
+  ];
+
+  const result = sanitizeResponseMessages(messages as any);
+  assert.equal(result.length, 1);
+  const content = (result[0] as any).content;
+  // Only the valid tool call should remain
+  assert.equal(content.length, 2); // text + 1 valid tool call
+  assert.equal(content[1].toolCallId, "call-1");
+});
+
+test("sanitizeResponseMessages removes message if all tool calls are invalid", async () => {
+  const { sanitizeResponseMessages } = await import(
+    "../../source/sessions/manager.ts"
+  );
+
+  const messages = [
+    {
+      role: "assistant" as const,
+      content: [
+        {
+          type: "tool-call" as const,
+          toolName: "bash",
+          toolCallId: "call-1",
+          input: "invalid json string", // Invalid - not an object
+        },
+      ],
+    },
+  ];
+
+  const result = sanitizeResponseMessages(messages as any);
+  assert.equal(result.length, 0);
+});
