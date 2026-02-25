@@ -160,6 +160,53 @@ export function insertCell(cell: Cell, row: Cell[]): void {
   row.splice(x, 0, cell);
 }
 
+function findColSpan(
+  table: Cell[][],
+  startX: number,
+  y: number,
+  wMax: number,
+): number {
+  let colSpan = 1;
+  let x = startX;
+  // Increment x first, then check while loop (matches original logic)
+  x++;
+  while (x < wMax && !conflictExists(table, x, y)) {
+    colSpan++;
+    x++;
+  }
+  return colSpan;
+}
+
+function findRowSpan(
+  table: Cell[][],
+  x: number,
+  y: number,
+  colSpan: number,
+  hMax: number,
+): number {
+  let rowSpan = 1;
+  let y2 = y + 1;
+  while (y2 < hMax && allBlank(table, y2, x, x + colSpan)) {
+    rowSpan++;
+    y2++;
+  }
+  return rowSpan;
+}
+
+function createAndInsertMissingCell(
+  table: Cell[][],
+  x: number,
+  y: number,
+  colSpan: number,
+  rowSpan: number,
+): void {
+  const cell = new Cell({ content: "", colSpan, rowSpan });
+  cell.x = x;
+  cell.y = y;
+  debug.warn(`Missing cell at ${y}-${x}.`);
+  insertCell(cell, table[y]);
+}
+
 export function fillInTable(table: Cell[][]): void {
   const hMax = maxHeight(table);
   const wMax = maxWidth(table);
@@ -167,25 +214,10 @@ export function fillInTable(table: Cell[][]): void {
   for (let y = 0; y < hMax; y++) {
     for (let x = 0; x < wMax; x++) {
       if (!conflictExists(table, x, y)) {
-        const opts = { x: x, y: y, colSpan: 1, rowSpan: 1 };
-        x++;
-        while (x < wMax && !conflictExists(table, x, y)) {
-          opts.colSpan++;
-          x++;
-        }
-        let y2 = y + 1;
-        while (
-          y2 < hMax &&
-          allBlank(table, y2, opts.x, opts.x + opts.colSpan)
-        ) {
-          opts.rowSpan++;
-          y2++;
-        }
-        const cell = new Cell({ ...opts, content: "" });
-        cell.x = opts.x;
-        cell.y = opts.y;
-        debug.warn(`Missing cell at ${cell.y}-${cell.x}.`);
-        insertCell(cell, table[y]);
+        const colSpan = findColSpan(table, x, y, wMax);
+        const rowSpan = findRowSpan(table, x, y, colSpan, hMax);
+        createAndInsertMissingCell(table, x, y, colSpan, rowSpan);
+        x += colSpan - 1;
       }
     }
   }
