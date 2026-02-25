@@ -57,6 +57,7 @@
     "@ai-sdk/devtools": "^0.0.15",
     "@ai-sdk/google": "^3.0.30",
     "@ai-sdk/groq": "^3.0.24",
+    "@ai-sdk/open-responses": "^1.0.2",
     "@ai-sdk/openai": "^3.0.31",
     "@ai-sdk/openai-compatible": "^2.0.30",
     "@crosscopy/clipboard": "^0.3.6",

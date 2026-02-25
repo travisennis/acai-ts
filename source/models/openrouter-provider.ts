@@ -1,10 +1,11 @@
-// import { createOpenAI } from "@ai-sdk/openai";
+import { createOpenResponses } from "@ai-sdk/open-responses";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { ProviderV2 } from "@ai-sdk/provider";
 import { objectKeys } from "@travisennis/stdlib/object";
 import { customProvider } from "ai";
 import type { ModelMetadata } from "./providers.ts";
 
+// Original OpenAI-compatible client for most models
 const openRouterClient = createOpenAICompatible({
   name: "openrouter",
   apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
@@ -16,17 +17,18 @@ const openRouterClient = createOpenAICompatible({
   },
 });
 
-// const openRouterClient = createOpenAI({
-//   // biome-ignore lint/style/useNamingConvention: third-party controlled
-//   baseURL: "https://openrouter.ai/api/v1",
-//   name: "openrouter",
-//   apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
-//   headers: {
-//     "HTTP-Referer": "https://github.com/travisennis/acai-ts",
-//     "X-Title": "acai",
-//   },
-// });
+// Open Responses client for GPT models
+const openResponses = createOpenResponses({
+  name: "openrouter",
+  url: "https://openrouter.ai/api/v1/responses",
+  apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
+  headers: {
+    "HTTP-Referer": "https://github.com/travisennis/acai-ts",
+    "X-Title": "acai",
+  },
+});
 
+// Models using OpenAI-compatible API
 const openrouterModels = {
   "deepseek-v3-2": openRouterClient("deepseek/deepseek-v3.2"),
   "glm-4-7": openRouterClient("z-ai/glm-4.7"),
@@ -40,25 +42,31 @@ const openrouterModels = {
   "qwen3-max-thinking": openRouterClient("qwen/qwen3-max-thinking"),
   "qwen3-coder-next": openRouterClient("qwen/qwen3-coder-next"),
   "glm-5": openRouterClient("z-ai/glm-5"),
-  "gpt-oss-120b": openRouterClient("openai/gpt-oss-120b:exacto"),
   "grok-code-fast-1": openRouterClient("x-ai/grok-code-fast-1"),
   "grok-4-1-fast": openRouterClient("x-ai/grok-4.1-fast"),
-  "gpt-5.1-codex-mini": openRouterClient("openai/gpt-5.1-codex-mini"),
-  "gpt-5.1-codex-max": openRouterClient("openai/gpt-5.1-codex-max"),
-  "gpt-5.2": openRouterClient("openai/gpt-5.2"),
-  "gpt-5.2-codex": openRouterClient("openai/gpt-5.2-codex"),
-  "gpt-5-3-codex": openRouterClient("openai/gpt-5.3-codex"),
-} as const;
+};
 
-type ModelName = `openrouter:${keyof typeof openrouterModels}`;
+// Models using Open Responses API (GPT models)
+const openResponsesModels = {
+  "gpt-oss-120b": openResponses("openai/gpt-oss-120b:exacto"),
+  "gpt-5.1-codex-mini": openResponses("openai/gpt-5.1-codex-mini"),
+  "gpt-5.1-codex-max": openResponses("openai/gpt-5.1-codex-max"),
+  "gpt-5.2": openResponses("openai/gpt-5.2"),
+  "gpt-5.2-codex": openResponses("openai/gpt-5.2-codex"),
+  "gpt-5-3-codex": openResponses("openai/gpt-5.3-codex"),
+};
 
-export const openrouterModelNames: ModelName[] = objectKeys(
-  openrouterModels,
-).map((key) => `openrouter:${key}` as const);
+const allModels = { ...openrouterModels, ...openResponsesModels };
+
+type ModelName = `openrouter:${keyof typeof allModels}`;
+
+export const openrouterModelNames: ModelName[] = objectKeys(allModels).map(
+  (key) => `openrouter:${key}` as const,
+);
 
 export const openrouterProvider = {
   openrouter: customProvider({
-    languageModels: openrouterModels,
+    languageModels: allModels,
     fallbackProvider: openRouterClient as unknown as ProviderV2,
   }),
 };

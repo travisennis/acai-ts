@@ -1,178 +1,366 @@
-# Research Report: Skill Autocomplete Trigger (Issue #130)
+# Provider Implementation Research
 
-## Issue Summary
+## Research Question
 
-**Title:** Create an autocomplete trigger that will list skills by name
+How is the OpenRouter provider implemented in the acai-ts codebase, and how are providers registered/configured?
 
-**Description:** Create an autocomplete trigger in the Editor component that will list skills by name. These skills should be user invocable.
+## Overview
 
-## Current State Analysis
+This research covers the provider implementation in the acai-ts codebase, focusing on:
+1. OpenRouter provider implementation
+2. Provider registration and configuration
+3. Provider implementation structure
+4. Model metadata and registry
 
-### 1. Skills System (`source/skills/index.ts`)
+## Key Findings
 
-**Key Findings:**
+### 1. OpenRouter Provider Implementation
 
-- Skills are loaded from multiple directories:
-  - `~/.codex/skills/` (recursive)
-  - `~/.claude/skills/` (single level)
-  - `~/.claude/project/skills/` (single level)
-  - `~/.agents/skills/` (recursive, primary)
-  - `./.agents/skills/` (project-level, recursive)
+**File**: `source/models/openrouter-provider.ts`
 
-- **Skill Interface** (`source/skills/index.ts:16-30`):
-  ```typescript
-  interface Skill {
-    name: string;
-    description: string;
-    filePath: string;
-    baseDir: string;
-    source: string; // "user", "project", "codex-user", etc.
-    userInvocable: boolean;  // <-- Key property for filtering
-    disableModelInvocation: boolean;
-    allowedTools?: string;
-    arguments?: string;
-    examples?: string[];
-  }
-  ```
-
-- **`userInvocable` defaults to `true`** (`source/skills/index.ts:155`):
-  ```typescript
-  userInvocable: frontmatter["user-invocable"] ?? true,
-  ```
-
-- Skills with `userInvocable: false` are hidden from users but can still be invoked by the AI model.
-
-### 2. Skills Registration as Commands (`source/commands/manager.ts`)
-
-**Key Findings:**
-
-- Skills are registered as slash commands via `registerSkillCommands()` (`source/commands/manager.ts:139-175`)
-- Only skills with `userInvocable: true` are registered (`source/commands/manager.ts:143-145`):
-  ```typescript
-  if (!skill.userInvocable) {
-    continue;
-  }
-  ```
-- Commands are named with `/` prefix (e.g., `/commit`, `/review-pr`, `/pdf`)
-
-- **`getCompletions()` method** (`source/commands/manager.ts:224-240`):
-  - Returns ALL commands including skills as `SlashCommand[]`
-  - Each command has a `name` and `description`
-  - Includes sub-command completion support
-
-### 3. Autocomplete System
-
-**Architecture:**
-
-1. **Base Provider Interface** (`source/tui/autocomplete/base-provider.ts:1-25`):
-   ```typescript
-   interface AutocompleteProvider {
-     getSuggestions(lines, cursorLine, cursorCol): Promise<{items: AutocompleteItem[], prefix: string} | null>;
-     applyCompletion(lines, cursorLine, cursorCol, item, prefix): {lines, cursorLine, cursorCol};
-   }
-   ```
-
-2. **CombinedProvider** (`source/tui/autocomplete/combined-provider.ts`):
-   - Chains multiple providers together
-   - Tries each provider in order until suggestions are found
-
-3. **Existing Providers:**
-   - **CommandProvider** (`source/tui/autocomplete/command-provider.ts`): Handles `/` slash commands
-   - **FileSearchProvider** (`source/tui/autocomplete/file-search-provider.ts`): Handles file path completions
-   - **AttachmentProvider** (`source/tui/autocomplete/attachment-provider.ts`): Extends FileSearchProvider for `#` file attachments
-
-4. **Trigger Characters** (`source/tui/components/editor.ts:850-895`):
-   - `/` - Slash commands (at start of message)
-   - `@` - File references (fuzzy search)
-   - `#` - File attachments
-
-### 4. Editor Component (`source/tui/components/editor.ts`)
-
-**Key Methods:**
-
-- `setAutocompleteProvider(provider)` - Sets the autocomplete provider (`source/tui/components/editor.ts:282-284`)
-- `tryTriggerAutocomplete()` - Triggers autocomplete based on context (`source/tui/components/editor.ts:1388-1420`)
-- `insertCharacter()` - Handles character input and triggers autocomplete (`source/tui/components/editor.ts:836-895`)
-
-**Current Autocomplete Triggers:**
-- When typing `/` at start of message: triggers slash command autocomplete
-- When typing `@` after whitespace: triggers file reference autocomplete
-- When typing `#` after whitespace: triggers file attachment autocomplete
-- When typing letters after `/`: updates slash command suggestions
-
-### 5. REPL Integration (`source/repl/index.ts:185-190`)
+The OpenRouter provider is implemented using the `@ai-sdk/openai-compatible` package with a custom provider setup:
 
 ```typescript
-const autocompleteProvider = createDefaultProvider(
-  [...(await this.options.commands.getCompletions())],
-  this.options.workspace.allowedDirs,
-);
-this.editor.setAutocompleteProvider(autocompleteProvider);
+// source/models/openrouter-provider.ts:6-17
+const openRouterClient = createOpenAICompatible({
+  name: "openrouter",
+  apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
+  // biome-ignore lint/style/useNamingConvention: third-party controlled
+  baseURL: "https://openrouter.ai/api/v1",
+  headers: {
+    "HTTP-Referer": "https://github.com/travisennis/acai-ts",
+    "X-Title": "acai",
+  },
+});
 ```
 
-## Implementation Requirements
+**Model Definitions** (lines 20-38):
+- Uses an `openrouterModels` object with model IDs as keys
+- Each model is created using `openRouterClient("provider/model-id")` format
+- Example: `deepseek-v3-2` maps to `openRouterClient("deepseek/deepseek-v3.2")`
 
-To implement issue #130, the following changes are needed:
+**Provider Export** (lines 51-55):
+```typescript
+export const openrouterProvider = {
+  openrouter: customProvider({
+    languageModels: openrouterModels,
+    fallbackProvider: openRouterClient as unknown as ProviderV2,
+  }),
+};
+```
 
-### Option A: Add a New Trigger Character for Skills
+**Model Registry** (lines 57-260):
+Each model has metadata including:
+- `id`: Full model identifier (e.g., "openrouter:deepseek-v3-2")
+- `provider`: "openrouter"
+- `contextWindow`: Token context window size
+- `maxOutputTokens`: Maximum output tokens
+- `defaultTemperature`: Default temperature setting
+- `promptFormat`: "xml" | "markdown" | "bracket"
+- `supportsReasoning`: Boolean for reasoning support
+- `supportsToolCalling`: Boolean for tool calling support
+- `costPerInputToken` / `costPerOutputToken`: Pricing information
 
-1. **Choose a trigger character**: Common options include:
-   - `>` - Common for skill/command palette style
-   - `!` - Exclamation for "actions"
-   - `:` - Colon (used in some tools)
+---
 
-2. **Create a SkillProvider** (`source/tui/autocomplete/skill-provider.ts`):
-   - Implement `AutocompleteProvider` interface
-   - Load skills via `loadSkills()` from `source/skills/index.ts`
-   - Filter to only include `userInvocable: true` skills
-   - Return skill names as autocomplete items
+### 2. Provider Registration/Configuration
 
-3. **Add trigger logic in Editor** (`source/tui/components/editor.ts`):
-   - In `insertCharacter()`, detect the chosen trigger character
-   - Call `tryTriggerAutocomplete()` when trigger is typed
+**File**: `source/models/providers.ts`
 
-4. **Register provider in REPL** (`source/repl/index.ts`):
-   - Add SkillProvider to CombinedProvider
+Providers are registered in a centralized location:
 
-### Option B: Enhance CommandProvider with Skill Filtering
+```typescript
+// source/models/providers.ts:64-76
+const registry = createProviderRegistry({
+  ...anthropicProvider,
+  ...deepseekProvider,
+  ...googleProvider,
+  ...groqProvider,
+  ...openaiProvider,
+  ...openrouterProvider,
+  ...xaiProvider,
+  ...opencodeZenProvider,
+});
+```
 
-1. Modify `CommandProvider` to accept a separate list of skills
-2. Add a second trigger mechanism that only shows skills
+**Supported Providers** (lines 41-49):
+```typescript
+const providers = [
+  "anthropic",
+  "openai",
+  "google",
+  "groq",
+  "deepseek",
+  "openrouter",
+  "xai",
+  "opencode",
+] as const;
+```
 
-## Key Files to Modify
+**Model Name Exports** (lines 79-87):
+```typescript
+export const models = [
+  ...anthropicModelNames,
+  ...openaiModelNames,
+  ...googleModelNames,
+  ...groqModelNames,
+  ...deepseekModelNames,
+  ...openrouterModelNames,
+  ...xaiModelNames,
+  ...opencodeZenModelNames,
+] as const;
+```
 
-1. **`source/tui/components/editor.ts`** - Add skill trigger detection in `insertCharacter()`
-2. **`source/tui/autocomplete/`** - Create new `skill-provider.ts` or extend existing providers
-3. **`source/repl/index.ts`** - Register new provider
-4. **`source/skills/index.ts`** - Already has `loadSkills()` function (use existing)
+**Type Definitions** (lines 89-101):
+```typescript
+export type ModelName =
+  | (typeof models)[number]
+  | (`xai:${string}` & {})
+  | (`openai:${string}` & {})
+  | (`anthropic:${string}` & {})
+  | (`google:${string}` & {})
+  | (`groq:${string}` & {})
+  | (`deepseek:${string}` & {})
+  | (`openrouter:${string}` & {})
+  | (`opencode:${string}` & {});
+```
 
-## Test Coverage Considerations
+---
 
-- Test skill autocomplete with various trigger characters
-- Test filtering of non-user-invocable skills
-- Test that skills are sorted alphabetically
-- Test completion application inserts correct text
+### 3. Provider Implementation Structure
 
-## Edge Cases
+Each provider follows a consistent pattern. Example structure:
 
-1. **No skills available**: Should show empty list or no autocomplete
-2. **Skill with arguments**: Should allow passing arguments after skill name
-3. **Partial matching**: Should filter skills as user types
-4. **Special characters in skill names**: Skills use lowercase letters, numbers, hyphens only
-5. **Concurrent typing**: Debounce rapid autocomplete requests
+**File**: `source/models/anthropic-provider.ts`
 
-## Dependencies
+```typescript
+// 1. Create the AI SDK client
+const anthropicModels = {
+  opus: createAnthropic()("claude-opus-4-6"),
+  sonnet: createAnthropic()("claude-sonnet-4-5"),
+  haiku: originalAnthropic("claude-haiku-4-5"),
+} as const;
 
-- `loadSkills()` from `source/skills/index.ts`
-- `AutocompleteProvider` interface from `source/tui/autocomplete/base-provider.ts`
-- `Editor` component from `source/tui/components/editor.ts`
-- `CombinedProvider` from `source/tui/autocomplete/combined-provider.ts`
+// 2. Define model name type
+type ModelName = `anthropic:${keyof typeof anthropicModels>`;
 
-## Conclusion
+// 3. Export model names array
+export const anthropicModelNames: ModelName[] = objectKeys(anthropicModels).map(
+  (key) => `anthropic:${key}` as const,
+);
 
-The implementation requires:
-1. A new trigger character detection in the Editor
-2. A new autocomplete provider for skills (or repurposing existing providers)
-3. Integration with the REPL's autocomplete system
+// 4. Create and export provider
+export const anthropicProvider = {
+  anthropic: customProvider({
+    languageModels: anthropicModels,
+    fallbackProvider: originalAnthropic,
+  }),
+};
 
-The skills system is already well-established with proper filtering for `userInvocable`, so the main work is adding the UI trigger and provider.
+// 5. Export model registry with metadata
+export const anthropicModelRegistry: {
+  [K in ModelName]: ModelMetadata<ModelName>;
+} = {
+  // ... metadata for each model
+};
+```
+
+---
+
+### 4. Model Selection and Initialization
+
+**File**: `source/index.ts:311-336`
+
+```typescript
+async function initializeModelManager(
+  appDir: DirectoryProvider,
+): Promise<ModelManager> {
+  const chosenModel: ModelName = isSupportedModel(flags.model)
+    ? flags.model
+    : "opencode:minimax-m2.5-free";
+
+  const projectConfig = await config.getConfig();
+  const devtoolsEnabled = projectConfig.devtools?.enabled ?? false;
+
+  const modelManager = new ModelManager({
+    stateDir: await appDir.ensurePath("audit"),
+    devtoolsEnabled,
+  });
+
+  modelManager.setModel("repl", chosenModel);
+  modelManager.setModel("cli", chosenModel);
+  modelManager.setModel("title-conversation", chosenModel);
+  // ... other apps
+}
+```
+
+---
+
+### 5. AiConfig for Provider Options
+
+**File**: `source/models/ai-config.ts`
+
+Handles provider-specific configuration options including reasoning/thinking support:
+
+```typescript
+// source/models/ai-config.ts:63-95
+providerOptions(): SharedV2ProviderMetadata {
+  const modelConfig = this.modelMetadata;
+  const thinkingLevel = this.thinkingLevel;
+
+  const meta: SharedV2ProviderMetadata = {
+    [modelConfig.provider]: {},
+  };
+
+  if (modelConfig.supportsReasoning && thinkingLevel.effort !== "none") {
+    switch (modelConfig.provider) {
+      case "anthropic":
+        Object.assign(meta["anthropic"], {
+          thinking: { type: "enabled", budgetTokens: thinkingLevel.tokenBudget },
+        });
+        break;
+      case "openai":
+        Object.assign(meta["openai"], { reasoningEffort: thinkingLevel.effort });
+        break;
+      case "google":
+        Object.assign(meta["google"], { thinkingConfig: { thinkingBudget: thinkingLevel.tokenBudget } });
+        break;
+      case "openrouter":
+        Object.assign(meta["openrouter"], { reasoning: { enabled: true, effort: thinkingLevel.effort } });
+        break;
+      // ...
+    }
+  }
+}
+```
+
+---
+
+## Architecture & Design Patterns
+
+### Pattern 1: Custom Provider with Fallback
+
+**Description**: Each provider uses the `customProvider` from the `ai` package with a fallback provider.
+**Example**: `source/models/openrouter-provider.ts:51-55`
+**When Used**: All provider implementations use this pattern.
+
+### Pattern 2: Model Registry Pattern
+
+**Description**: Models are defined in a registry object with metadata for each model.
+**Example**: `source/models/providers.ts:103-112`
+```typescript
+export const modelRegistry: Record<ModelName, ModelMetadata> = {
+  ...anthropicModelRegistry,
+  ...openaiModelRegistry,
+  // ... all provider registries
+};
+```
+**When Used**: Used for model validation, metadata lookup, and pricing calculations.
+
+### Pattern 3: Type-Safe Model Names
+
+**Description**: Model names are typed with provider prefix (e.g., `openrouter:deepseek-v3-2`).
+**Example**: `source/models/providers.ts:89-101`
+**When Used**: Ensures type safety for model selection.
+
+### Pattern 4: Provider Registry with Spread
+
+**Description**: All providers are merged into a single registry using spread operator.
+**Example**: `source/models/providers.ts:64-76`
+**When Used**: Centralized provider registration.
+
+---
+
+## Data Flow
+
+1. **CLI/REPL starts** → `source/index.ts:initializeModelManager()`
+2. **Model selected from flags** → Falls back to default `"opencode:minimax-m2.5-free"`
+3. **ModelManager created** → `source/models/manager.ts:ModelManager`
+4. **Models set per app** → `modelManager.setModel("repl", chosenModel)`
+5. **Language model retrieved** → `languageModel(model)` from registry
+6. **Middleware applied** → Cache, rate limiting, audit messages
+7. **Model used for requests** → Through Vercel AI SDK
+
+---
+
+## Components & Files
+
+### Core Components
+
+| Component | File(s) | Responsibility |
+|-----------|---------|----------------|
+| OpenRouter Provider | `source/models/openrouter-provider.ts` | Defines OpenRouter models, provider, and metadata |
+| Provider Registry | `source/models/providers.ts` | Central registry for all providers and model names |
+| Model Manager | `source/models/manager.ts` | Manages models per application context |
+| AiConfig | `source/models/ai-config.ts` | Handles provider-specific configuration |
+| CLI Entry | `source/index.ts` | Initializes model manager with CLI flags |
+
+### Configuration Files
+
+- **`source/config/index.ts`**: General app configuration (not model-specific)
+- **Environment Variables**: `OPENROUTER_API_KEY` (required for OpenRouter)
+- **CLI Flags**: `--model` flag to specify model
+
+---
+
+## Integration Points
+
+### Dependencies
+- `@ai-sdk/openai-compatible` - For OpenRouter API compatibility
+- `@ai-sdk/provider` - For ProviderV2 type
+- `ai` - For customProvider and createProviderRegistry
+- `vercel/ai` - Core SDK
+
+### Consumers
+- `source/index.ts` - Main entry point
+- `source/models/manager.ts` - Uses providers for LLM calls
+- `source/sessions/manager.ts` - Uses model metadata for token tracking
+- `source/agent/index.ts` - Uses models for agent execution
+
+---
+
+## Edge Cases & Error Handling
+
+### Edge Cases
+1. **Unsupported model**: Falls back to default `"opencode:minimax-m2.5-free"` (source/index.ts:314-316)
+2. **Missing API key**: Uses empty string which will fail at runtime
+3. **Provider-specific features**: Model metadata determines reasoning/tool calling support
+
+### Error Handling
+1. **Model not initialized**: Throws error with "Model not initialized" message (source/models/manager.ts:87, 94)
+2. **Invalid model name**: Checked via `isSupportedModel()` and `isValidModel()` functions
+
+---
+
+## Known Limitations
+
+1. **Hardcoded API keys in environment**: OpenRouter API key must be set via `OPENROUTER_API_KEY` environment variable
+2. **No dynamic model addition**: Models are hardcoded in provider files, no runtime registration
+3. **Limited provider options**: Only supports 8 providers (anthropic, openai, google, groq, deepseek, openrouter, xai, opencode)
+
+---
+
+## Testing Coverage
+
+### Existing Tests
+- Provider type exports are validated through TypeScript compilation
+- Model metadata structure validated through type system
+- No explicit provider unit tests found in the codebase
+
+### Test Gaps
+- No integration tests for provider API calls
+- No unit tests for model metadata validation
+- No tests for provider-specific configuration options
+
+---
+
+## References
+
+### Source Files
+- `source/models/openrouter-provider.ts` - OpenRouter implementation
+- `source/models/providers.ts` - Central provider registry
+- `source/models/manager.ts` - Model manager
+- `source/models/ai-config.ts` - AI configuration with provider options
+- `source/models/anthropic-provider.ts` - Example provider implementation
+- `source/models/openai-provider.ts` - Another example provider
+- `source/index.ts` - Main entry point with model initialization
