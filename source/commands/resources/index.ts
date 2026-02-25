@@ -55,11 +55,12 @@ export function resourcesCommand(options: CommandOptions): ReplCommand {
     ): Promise<"continue" | "use"> {
       try {
         const skills = await loadSkills();
+        const allSkills = skills.getAll();
         const agentsFiles = await options.config.readAgentsFiles();
 
-        const projectSkills = skills.filter((s) => s.source === "project");
-        const userSkills = skills.filter((s) => s.source === "user");
-        const otherSkills = skills.filter(
+        const projectSkills = allSkills.filter((s) => s.source === "project");
+        const userSkills = allSkills.filter((s) => s.source === "user");
+        const otherSkills = allSkills.filter(
           (s) => s.source !== "project" && s.source !== "user",
         );
 

@@ -152,7 +152,7 @@ function createSkill(
     filePath,
     baseDir,
     source,
-    userInvocable: frontmatter["user-invocable"] ?? true,
+    userInvocable: frontmatter["user-invocable"] ?? false,
     disableModelInvocation: frontmatter["disable-model-invocation"] ?? false,
     allowedTools: frontmatter["allowed-tools"],
     arguments: frontmatter.arguments,
@@ -318,7 +318,27 @@ export async function loadSkillsFromDir(
   );
 }
 
-export async function loadSkills(): Promise<Skill[]> {
+export class Skills {
+  private skills: Skill[];
+
+  constructor(skills: Skill[]) {
+    this.skills = skills;
+  }
+
+  getAll(): Skill[] {
+    return this.skills;
+  }
+
+  getUserInvocable(): Skill[] {
+    return this.skills.filter((s) => s.userInvocable);
+  }
+
+  getModelInvocable(): Skill[] {
+    return this.skills.filter((s) => !s.disableModelInvocation);
+  }
+}
+
+export async function loadSkills(): Promise<Skills> {
   const skillMap = new Map<string, Skill>();
 
   // Codex: recursive, simple directory name
@@ -403,7 +423,7 @@ export async function loadSkills(): Promise<Skill[]> {
     skillMap.set(skill.name, skill);
   }
 
-  return Array.from(skillMap.values());
+  return new Skills(Array.from(skillMap.values()));
 }
 
 export function formatSkillsForPrompt(skills: Skill[]): string {

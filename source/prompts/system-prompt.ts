@@ -120,7 +120,7 @@ export async function systemPrompt(
   let skillsText = "";
   if (skillsEnabled) {
     const skills = await loadSkills();
-    skillsText = formatSkillsForPrompt(skills);
+    skillsText = formatSkillsForPrompt(skills.getModelInvocable());
   }
 
   const subagents = await loadSubagents();

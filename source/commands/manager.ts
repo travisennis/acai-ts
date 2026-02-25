@@ -138,12 +138,9 @@ export class CommandManager {
 
   private async registerSkillCommands(options: CommandOptions): Promise<void> {
     const skills = await loadSkills();
+    const userInvocableSkills = skills.getUserInvocable();
 
-    for (const skill of skills) {
-      if (!skill.userInvocable) {
-        continue;
-      }
-
+    for (const skill of userInvocableSkills) {
       const commandName = `/${skill.name}`;
 
       if (this.commands.has(commandName)) {

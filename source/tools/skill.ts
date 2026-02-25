@@ -21,6 +21,7 @@ type SkillInputSchema = z.infer<typeof inputSchema>;
 
 export async function createSkillTool() {
   const skills = await loadSkills();
+  const modelInvocableSkills = skills.getModelInvocable();
 
   const description = "Run a skill (e.g., commit, review-pr).";
 
@@ -42,9 +43,11 @@ export async function createSkillTool() {
         }
 
         // Find the skill
-        const skill = skills.find((s) => s.name === skillName);
+        const skill = modelInvocableSkills.find((s) => s.name === skillName);
         if (!skill) {
-          const availableSkillNames = skills.map((s) => s.name).join(", ");
+          const availableSkillNames = modelInvocableSkills
+            .map((s) => s.name)
+            .join(", ");
           const errorMsg = `Skill "${skillName}" not found. Available skills: ${availableSkillNames}`;
           return errorMsg;
         }
