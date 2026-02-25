@@ -8,8 +8,7 @@ export class SkillProvider implements AutocompleteProvider {
   private skills: Skill[];
 
   constructor(skills: Skill[] = []) {
-    // Filter to only user-invocable skills
-    this.skills = skills.filter((skill) => skill.userInvocable);
+    this.skills = skills;
   }
 
   async getSuggestions(
@@ -24,7 +23,7 @@ export class SkillProvider implements AutocompleteProvider {
     if (textBeforeCursor.match(/(?:^|[\s])>$/)) {
       // User just typed ">" - show all skills
       const items = this.skills.map((skill) => ({
-        value: skill.name,
+        value: `\`${skill.name}\` skill`,
         label: skill.name,
         description: skill.description,
       }));
@@ -44,7 +43,7 @@ export class SkillProvider implements AutocompleteProvider {
           skill.name.toLowerCase().startsWith(prefix.toLowerCase()),
         )
         .map((skill) => ({
-          value: skill.name,
+          value: `\`${skill.name}\` skill`,
           label: skill.name,
           description: skill.description,
         }));

@@ -191,14 +191,13 @@ export class Repl {
     }
     // Setup autocomplete for file paths, slash commands, and skills
     const skills = await loadSkills();
-    const userInvocableSkills = skills.getUserInvocable();
     const commandsList = await this.options.commands.getCompletions();
 
     const autocompleteProvider = new CombinedProvider([
       new CommandProvider(commandsList),
       new AttachmentProvider(),
       new FileSearchProvider(),
-      new SkillProvider(userInvocableSkills),
+      new SkillProvider(skills.getModelInvocable()),
     ]);
     this.editor.setAutocompleteProvider(autocompleteProvider);
 
