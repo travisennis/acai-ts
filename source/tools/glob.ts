@@ -8,6 +8,7 @@ import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions } from "./types.ts";
 
 const DEFAULT_MAX_RESULTS = 100;
+const MAX_STAT_FILES = 1000;
 
 interface FileWithStats {
   path: string;
@@ -183,19 +184,25 @@ export const createGlobTool = () => {
         cwd: effectivePath,
       });
 
-      const filesToProcess =
-        effectiveMaxResults > 0 && matchingFiles.length > effectiveMaxResults
-          ? matchingFiles.slice(0, effectiveMaxResults)
+      const filesToStat =
+        matchingFiles.length > MAX_STAT_FILES
+          ? matchingFiles.slice(0, MAX_STAT_FILES)
           : matchingFiles;
 
       const filesWithStats = await Promise.all(
-        filesToProcess.map((filePath) =>
+        filesToStat.map((filePath) =>
           getFileWithStats(filePath, effectivePath),
         ),
       );
 
       const sortedFiles = sortFilesByMtime(filesWithStats);
-      return formatResult(sortedFiles);
+
+      const result =
+        effectiveMaxResults > 0 && sortedFiles.length > effectiveMaxResults
+          ? sortedFiles.slice(0, effectiveMaxResults)
+          : sortedFiles;
+
+      return formatResult(result);
     },
   };
 };
