@@ -279,6 +279,75 @@ export const createBashTool = async (options: {
     },
   });
   const allowedDirectories = allowedDirs ?? [primaryDir];
+
+  function validateCommand(
+    command: string,
+    allowedDirs: string[],
+    cwd: string,
+  ): void {
+    const pathValidation = validatePaths(command, allowedDirs, cwd);
+    if (!pathValidation.isValid) {
+      throw new Error(pathValidation.error ?? "Unknown error.");
+    }
+
+    const multilineError = detectMultilineGitCommit(command);
+    if (multilineError) {
+      throw new Error(multilineError);
+    }
+
+    const destructiveCheck = detectDestructiveCommand(command);
+    if (destructiveCheck.blocked) {
+      throw new Error(formatBlockedCommandMessage(destructiveCheck));
+    }
+  }
+
+  function processCommand(cmd: string, isBackground: boolean): string {
+    const stripped = stripTrailingAmpersand(cmd, isBackground);
+    return fixRgCommand(stripped);
+  }
+
+  function executeBackground(
+    cmd: string,
+    cwd: string,
+    signal: AbortSignal | undefined,
+  ): string {
+    const proc = execEnv.executeCommandInBackground(cmd, {
+      cwd,
+      abortSignal: signal,
+      onOutput: (output: string) => {
+        logger.debug({ output }, "Background command output:");
+      },
+      onError: (error: string) => {
+        logger.debug({ error }, "Background command error:");
+      },
+      onExit: (code: number | null) => {
+        logger.debug(`Background command exited with code ${code}`);
+      },
+    });
+    return `Background process started with PID: ${proc.pid}`;
+  }
+
+  async function executeSync(
+    cmd: string,
+    cwd: string,
+    timeout: number,
+    signal: AbortSignal | undefined,
+  ): Promise<string> {
+    const { output, exitCode } = await execEnv.executeCommand(cmd, {
+      cwd,
+      timeout,
+      abortSignal: signal,
+      preserveOutputOnError: true,
+      captureStderr: true,
+      throwOnError: false,
+    });
+
+    if (exitCode !== 0) {
+      throw new Error(output);
+    }
+    return output;
+  }
+
   return {
     toolDef: {
       description: simpleDescription,
@@ -295,89 +364,28 @@ export const createBashTool = async (options: {
         throw new Error("Command execution aborted");
       }
 
-      // grok doesn't follow my instructions
       const safeCwd = cwd === "null" ? null : cwd;
       const resolvedCwd = resolveCwd(safeCwd, primaryDir, allowedDirectories);
       const safeTimeout = timeout ?? DEFAULT_TIMEOUT;
 
-      const pathValidation = validatePaths(
-        command,
-        allowedDirectories,
-        resolvedCwd,
-      );
-      if (!pathValidation.isValid) {
-        throw new Error(pathValidation.error ?? "Unknown error.");
-      }
-
-      // Check for multi-line git commit messages that will fail
-      const multilineError = detectMultilineGitCommit(command);
-      if (multilineError) {
-        throw new Error(multilineError);
-      }
-
-      // Check for destructive commands
-      const destructiveCheck = detectDestructiveCommand(command);
-      if (destructiveCheck.blocked) {
-        throw new Error(formatBlockedCommandMessage(destructiveCheck));
-      }
+      validateCommand(command, allowedDirectories, resolvedCwd);
 
       if (abortSignal?.aborted) {
         throw new Error("Command execution aborted before running the command");
       }
 
-      // Handle background execution
+      const processedCommand = processCommand(command, background ?? false);
+
       if (background) {
-        // Strip any existing & from command to avoid double backgrounding
-        const processedCommand = stripTrailingAmpersand(command, background);
-
-        // Fix rg commands that don't have an explicit path
-        const rgFixedCommand = fixRgCommand(processedCommand);
-
-        const backgroundProcess = execEnv.executeCommandInBackground(
-          rgFixedCommand,
-          {
-            cwd: resolvedCwd,
-            abortSignal,
-            onOutput: (output) => {
-              logger.debug({ output }, "Background command output:");
-            },
-            onError: (error) => {
-              logger.debug({ error }, "Background command error:");
-            },
-            onExit: (code) => {
-              logger.debug(`Background command exited with code ${code}`);
-            },
-          },
-        );
-
-        return `Background process started with PID: ${backgroundProcess.pid}`;
+        return executeBackground(processedCommand, resolvedCwd, abortSignal);
       }
 
-      // Handle regular synchronous execution
-      // Strip & if present to ensure synchronous behavior
-      const processedCommand = stripTrailingAmpersand(command, false);
-
-      // Fix rg commands that don't have an explicit path
-      // rg hangs when stdin is a socket and no path is given
-      const rgFixedCommand = fixRgCommand(processedCommand);
-
-      const { output, exitCode } = await execEnv.executeCommand(
-        rgFixedCommand,
-        {
-          cwd: resolvedCwd,
-          timeout: safeTimeout,
-          abortSignal,
-          preserveOutputOnError: true,
-          captureStderr: true,
-          throwOnError: false,
-        },
+      return executeSync(
+        processedCommand,
+        resolvedCwd,
+        safeTimeout,
+        abortSignal,
       );
-
-      if (exitCode !== 0) {
-        throw new Error(output);
-      }
-
-      return output;
     },
   };
 };
