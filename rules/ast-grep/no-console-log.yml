@@ -1,0 +1,6 @@
+id: no-console-log
+language: TypeScript
+rule:
+  pattern: console.log($$$ARGS)
+message: "Use logger or console.info instead of console.log"
+severity: error

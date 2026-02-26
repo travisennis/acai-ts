@@ -1,0 +1,15 @@
+id: node-builtin-prefix
+language: TypeScript
+rule:
+  any:
+    - pattern: import $_ from '$MOD'
+      has:
+        regex: "^(fs|path|os|crypto|http|https|url|stream|buffer|events|child_process|util|assert|readline|net|tls|dns|zlib|vm|worker_threads|perf_hooks|timers|module|process)$"
+    - pattern: import '$MOD'
+      has:
+        regex: "^(fs|path|os|crypto|http|https|url|stream|buffer|events|child_process|util|assert|readline|net|tls|dns|zlib|vm|worker_threads|perf_hooks|timers|module|process)$"
+    - pattern: require('$MOD')
+      has:
+        regex: "^(fs|path|os|crypto|http|https|url|stream|buffer|events|child_process|util|assert|readline|net|tls|dns|zlib|vm|worker_threads|perf_hooks|timers|module|process)$"
+message: "Use the node: prefix for built-in modules (e.g., 'node:fs' not 'fs')"
+severity: error

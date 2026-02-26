@@ -1,0 +1,6 @@
+id: no-non-null-assertion
+language: TypeScript
+rule:
+  pattern: $EXPR!
+message: "Avoid non-null assertions (!). Handle null/undefined explicitly."
+severity: error
