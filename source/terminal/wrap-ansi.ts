@@ -29,14 +29,10 @@ const wordLengths = (string: string): number[] =>
   string.split(" ").map((character) => stringWidth(character));
 
 // Check if character starts an ANSI escape sequence
-const isEscapeStart = (character: string): boolean =>
-  ESCAPES.has(character);
+const isEscapeStart = (character: string): boolean => ESCAPES.has(character);
 
 // Check if this is the start of a hyperlink escape sequence
-const isLinkEscapeStart = (
-  characters: string[],
-  index: number,
-): boolean => {
+const isLinkEscapeStart = (characters: string[], index: number): boolean => {
   const candidate = characters
     .slice(index + 1, index + 1 + ANSI_ESCAPE_LINK.length)
     .join("");
