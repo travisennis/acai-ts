@@ -110,65 +110,49 @@ function sanitizeToolCallInput(input: unknown): {
  * Check if a tool call input is valid and return sanitized version.
  * This helper reduces complexity by extracting validation logic.
  */
-function validateAndSanitizeToolCall(
+function sanitizeToolCallPart(
   part: Extract<AssistantModelMessage["content"], readonly unknown[]>[number],
-): { isValid: boolean; sanitizedPart: typeof part } | null {
+): typeof part | null {
   if (part.type !== "tool-call") {
     return null; // Not a tool call, keep as-is
   }
 
   const { sanitized, isValid } = sanitizeToolCallInput(part.input);
-  if (isValid) {
-    return { isValid: true, sanitizedPart: { ...part, input: sanitized } };
+  if (!isValid) {
+    logger.debug(
+      { toolName: part.toolName },
+      "Sanitized invalid tool call input",
+    );
   }
 
-  // Skip invalid tool calls - don't add them to history
-  logger.debug(
-    { toolName: part.toolName },
-    "Filtered invalid tool call from history",
-  );
-  return { isValid: false, sanitizedPart: part };
+  // Always keep tool calls so the model can see the corresponding tool-result
+  return { ...part, input: sanitized };
 }
 
 export function sanitizeResponseMessages(
   messages: ResponseMessage[],
 ): ResponseMessage[] {
-  return messages
-    .map((msg) => {
-      if (msg.role !== "assistant" || !Array.isArray(msg.content)) {
-        return msg;
+  return messages.map((msg) => {
+    if (msg.role !== "assistant" || !Array.isArray(msg.content)) {
+      return msg;
+    }
+
+    // Sanitize tool call inputs while always preserving the tool-call itself.
+    // The model needs to see every tool-call to match it with its tool-result.
+    const sanitizedContent: typeof msg.content = [];
+
+    for (const part of msg.content) {
+      const sanitized = sanitizeToolCallPart(part);
+      if (sanitized === null) {
+        // Not a tool call, keep as-is
+        sanitizedContent.push(part);
+      } else {
+        sanitizedContent.push(sanitized);
       }
+    }
 
-      // Filter and sanitize tool calls - keep only valid ones
-      const validToolCalls: typeof msg.content = [];
-      let hasAnyToolCall = false;
-      let hasValidToolCall = false;
-
-      for (const part of msg.content) {
-        const result = validateAndSanitizeToolCall(part);
-
-        if (result === null) {
-          // Not a tool call, keep it
-          validToolCalls.push(part);
-        } else if (result.isValid) {
-          hasAnyToolCall = true;
-          hasValidToolCall = true;
-          validToolCalls.push(result.sanitizedPart);
-        } else {
-          // Invalid tool call - already logged in helper
-          hasAnyToolCall = true;
-        }
-      }
-
-      // If message had tool calls but none are valid, filter out the entire message
-      if (hasAnyToolCall && !hasValidToolCall) {
-        logger.debug("Filtered assistant message with no valid tool calls");
-        return null; // Will be filtered out below
-      }
-
-      return { ...msg, content: validToolCalls } as AssistantModelMessage;
-    })
-    .filter((msg): msg is ResponseMessage => msg !== null);
+    return { ...msg, content: sanitizedContent } as AssistantModelMessage;
+  });
 }
 
 /**
@@ -423,7 +407,29 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
 
   appendToolMessages(toolResultMessages: ToolModelMessage[]) {
     this.updatedAt = new Date();
-    this.history.push(...toolResultMessages);
+
+    // Collect existing tool-result IDs to prevent duplicates
+    // (the AI SDK may include tool-results that acai also creates)
+    const existingIds = new Set<string>();
+    for (const msg of this.history) {
+      if (msg.role === "tool" && Array.isArray(msg.content)) {
+        for (const part of msg.content) {
+          if (part.type === "tool-result") {
+            existingIds.add(part.toolCallId);
+          }
+        }
+      }
+    }
+
+    const deduplicated = toolResultMessages.filter((msg) => {
+      if (!Array.isArray(msg.content)) return true;
+      return !msg.content.some(
+        (part) =>
+          part.type === "tool-result" && existingIds.has(part.toolCallId),
+      );
+    });
+
+    this.history.push(...deduplicated);
   }
 
   appendResponseMessages(responseMessages: ResponseMessage[]) {

@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: test file */
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -517,7 +518,7 @@ test("sanitizeResponseMessages preserves tool messages", async () => {
   assert.equal(result[0].role, "tool");
 });
 
-test("sanitizeResponseMessages filters invalid tool calls", async () => {
+test("sanitizeResponseMessages keeps invalid tool calls with sanitized input", async () => {
   const { sanitizeResponseMessages } = await import(
     "../../source/sessions/manager.ts"
   );
@@ -546,12 +547,15 @@ test("sanitizeResponseMessages filters invalid tool calls", async () => {
   const result = sanitizeResponseMessages(messages as any);
   assert.equal(result.length, 1);
   const content = (result[0] as any).content;
-  // Only the valid tool call should remain
-  assert.equal(content.length, 2); // text + 1 valid tool call
+  // Both tool calls should remain; invalid one gets sanitized input
+  assert.equal(content.length, 3); // text + 2 tool calls
   assert.equal(content[1].toolCallId, "call-1");
+  assert.deepStrictEqual(content[1].input, { command: "ls -la" });
+  assert.equal(content[2].toolCallId, "call-2");
+  assert.deepStrictEqual(content[2].input, {}); // sanitized to empty object
 });
 
-test("sanitizeResponseMessages removes message if all tool calls are invalid", async () => {
+test("sanitizeResponseMessages keeps message even if all tool calls are invalid", async () => {
   const { sanitizeResponseMessages } = await import(
     "../../source/sessions/manager.ts"
   );
@@ -571,5 +575,9 @@ test("sanitizeResponseMessages removes message if all tool calls are invalid", a
   ];
 
   const result = sanitizeResponseMessages(messages as any);
-  assert.equal(result.length, 0);
+  assert.equal(result.length, 1);
+  const content = (result[0] as any).content;
+  assert.equal(content.length, 1);
+  assert.equal(content[0].toolCallId, "call-1");
+  assert.deepStrictEqual(content[0].input, {}); // sanitized to empty object
 });
