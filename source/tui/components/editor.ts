@@ -1483,13 +1483,13 @@ export class Editor implements Component {
     const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
 
     // If we're no longer in the context that triggered autocomplete, cancel it
-    // For slash commands and @ file references and # file attachments, allow progressive typing
+    // For slash commands, @ file references, # file attachments, and > skill invocations, allow progressive typing
     // For other file paths, check if we're still in the same path context
     if (
       textBeforeCursor.startsWith("/") ||
-      textBeforeCursor.match(/(?:^|[\s])[@#][^\s]*$/)
+      textBeforeCursor.match(/(?:^|[\s])[@#>][^\s]*$/)
     ) {
-      // For slash commands and @ file references and # file attachments,
+      // For slash commands, @ file references, # file attachments, and > skill invocations,
       // continue autocomplete as long as we're in the right context
     } else {
       // For other file paths, check if we're still in the same path context
