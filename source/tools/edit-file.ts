@@ -164,6 +164,60 @@ interface FileEdit {
   newText: string;
 }
 
+async function validateFileReadable(filePath: string): Promise<void> {
+  try {
+    await access(filePath, constants.R_OK);
+  } catch {
+    throw new Error(`File not found or not readable: ${filePath}`);
+  }
+}
+
+function validateEdits(edits: FileEdit[]): void {
+  if (edits.some((edit) => edit.oldText.length === 0)) {
+    throw new Error(
+      "Invalid oldText in edit. The value of oldText must be at least one character",
+    );
+  }
+}
+
+async function applyEditsSequentially(
+  edits: FileEdit[],
+  content: string,
+  abortSignal?: AbortSignal,
+  filePath?: string,
+): Promise<string> {
+  let modifiedContent = content;
+
+  for (const edit of edits) {
+    if (abortSignal?.aborted) {
+      throw new Error("File edit operation aborted during processing");
+    }
+
+    const result = await applyNormalizedEdit(edit, modifiedContent);
+
+    if (result.success) {
+      modifiedContent = result.content;
+    } else if (result.errorMessage) {
+      throw new Error(result.errorMessage);
+    } else {
+      throw new Error(
+        `Could not find the exact text in ${filePath}. The oldText must match exactly including all whitespace and newlines. ` +
+          "Tip: Check for invisible characters, extra/missing whitespace, or line ending differences.",
+      );
+    }
+  }
+
+  return modifiedContent;
+}
+
+function formatDiff(diff: string, _filePath: string): string {
+  let numBackticks = 3;
+  while (diff.includes("`".repeat(numBackticks))) {
+    numBackticks++;
+  }
+  return `${"`".repeat(numBackticks)} diff\n${diff}\n${"`".repeat(numBackticks)}`;
+}
+
 export async function applyFileEdits(
   filePath: string,
   edits: FileEdit[],
@@ -174,77 +228,39 @@ export async function applyFileEdits(
     throw new Error("File edit operation aborted");
   }
 
-  // Check if file exists and is readable
-  try {
-    await access(filePath, constants.R_OK);
-  } catch {
-    throw new Error(`File not found or not readable: ${filePath}`);
-  }
+  await validateFileReadable(filePath);
 
-  // Read file content
   const rawContent = await readFile(filePath, {
     encoding: "utf-8",
     signal: abortSignal,
   });
 
-  // Strip BOM before processing (users won't include invisible BOM in oldText)
   const { bom: originalBom, text: bomStrippedContent } = stripBom(rawContent);
-
-  // Detect and preserve original line endings
   const originalLineEnding = detectLineEnding(bomStrippedContent);
   const content = normalizeLineEndings(bomStrippedContent);
 
-  if (edits.some((edit) => edit.oldText.length === 0)) {
-    throw new Error(
-      "Invalid oldText in edit. The value of oldText must be at least one character",
-    );
-  }
+  validateEdits(edits);
 
-  // Apply edits sequentially using literal matches (allow multiple matches)
-  let modifiedContent = content;
-  for (const edit of edits) {
-    if (abortSignal?.aborted) {
-      throw new Error("File edit operation aborted during processing");
-    }
+  const modifiedContent = await applyEditsSequentially(
+    edits,
+    content,
+    abortSignal,
+    filePath,
+  );
 
-    const result = await applyNormalizedEdit(edit, modifiedContent);
-
-    if (result.success) {
-      modifiedContent = result.content;
-    } else {
-      // Use the detailed error message from applyNormalizedEdit if available
-      if (result.errorMessage) {
-        throw new Error(result.errorMessage);
-      }
-      throw new Error(
-        `Could not find the exact text in ${filePath}. The oldText must match exactly including all whitespace and newlines. ` +
-          "Tip: Check for invisible characters, extra/missing whitespace, or line ending differences.",
-      );
-    }
-  }
-
-  // Restore original line endings and BOM
   const finalContentWithLineEndings = restoreLineEndings(
     modifiedContent,
     originalLineEnding,
   );
   const finalContent = originalBom + finalContentWithLineEndings;
 
-  // Create unified diff (use normalized content for diff to avoid noisy line ending changes)
   const diff = createUnifiedDiff(content, finalContent, filePath);
-
-  // Format diff with appropriate number of backticks
-  let numBackticks = 3;
-  while (diff.includes("`".repeat(numBackticks))) {
-    numBackticks++;
-  }
-  const formattedDiff = `${"`".repeat(numBackticks)} diff\n${diff}\n${"`".repeat(numBackticks)}`;
+  const formattedDiff = formatDiff(diff, filePath);
 
   if (!dryRun) {
     if (abortSignal?.aborted) {
       throw new Error("File edit operation aborted before writing");
     }
-    // Write the modified content with signal
     await writeFile(filePath, finalContent, {
       encoding: "utf-8",
       signal: abortSignal,
