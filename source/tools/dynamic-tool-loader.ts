@@ -238,7 +238,7 @@ function createDynamicTool(
   metadata: ToolMetadata,
 ): { [x: string]: DynamicToolObject } {
   const inputSchema = generateZodSchema(metadata.parameters);
-  const toolName = `dynamic-${metadata.name}`;
+  const toolName = metadata.name;
 
   return {
     [toolName]: {
@@ -271,7 +271,13 @@ function createDynamicTool(
   };
 }
 
-export async function loadDynamicTools({ baseDir }: { baseDir: string }) {
+export async function loadDynamicTools({
+  baseDir,
+  existingToolNames = [],
+}: {
+  baseDir: string;
+  existingToolNames?: string[];
+}) {
   const projectConfig = await config.getConfig();
   const dynamicConfig = projectConfig.tools.dynamicTools;
 
@@ -330,8 +336,35 @@ export async function loadDynamicTools({ baseDir }: { baseDir: string }) {
   }
 
   const tools: Record<string, DynamicToolObject> = {};
+  const conflictingTools: string[] = [];
+
   for (const [_, { path, metadata }] of toolMap) {
+    const toolName = metadata.name;
+
+    // Check for conflicts with existing tools
+    if (existingToolNames.includes(toolName)) {
+      conflictingTools.push(toolName);
+      logger.warn(
+        `Dynamic tool '${toolName}' conflicts with existing tool. Skipping.`,
+      );
+      continue;
+    }
+
+    // Check for duplicate dynamic tool names
+    if (tools[toolName]) {
+      logger.warn(
+        `Duplicate dynamic tool name '${toolName}' found. Skipping duplicate.`,
+      );
+      continue;
+    }
+
     Object.assign(tools, createDynamicTool(path, metadata));
+  }
+
+  if (conflictingTools.length > 0) {
+    logger.warn(
+      `Warning: ${conflictingTools.length} dynamic tool(s) skipped due to name conflicts: ${conflictingTools.join(", ")}`,
+    );
   }
 
   return tools;

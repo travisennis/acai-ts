@@ -72,6 +72,22 @@ export async function initTools({
 
   const dynamicTools = await loadDynamicTools({
     baseDir: workspace.primaryDir,
+    existingToolNames: [
+      EditFileTool.name,
+      BashTool.name,
+      SaveFileTool.name,
+      ReadFileTool.name,
+      GlobTool.name,
+      GrepTool.name,
+      CodeSearchTool.name,
+      DirectoryTreeTool.name,
+      ThinkTool.name,
+      LsTool.name,
+      SkillTool.name,
+      AgentTool.name,
+      WebSearchTool.name,
+      WebFetchTool.name,
+    ],
   });
 
   // Build tools object for AI SDK
