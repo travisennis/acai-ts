@@ -829,14 +829,6 @@ export class Editor implements Component {
 
   // All the editor methods from before...
 
-  private isAfterWhitespaceOrStart(textBeforeCursor: string): boolean {
-    return (
-      textBeforeCursor.length === 1 ||
-      textBeforeCursor[textBeforeCursor.length - 2] === " " ||
-      textBeforeCursor[textBeforeCursor.length - 2] === "\t"
-    );
-  }
-
   private insertCharacter(char: string, suppressAutocomplete = false): void {
     this.historyIndex = -1; // Exit history browsing mode
 
@@ -859,44 +851,10 @@ export class Editor implements Component {
 
     // Check if we should trigger or update autocomplete
     if (!this.isAutocompleting) {
-      // Auto-trigger for "/" at the start of a line (slash commands)
-      if (char === "/" && this.isAtStartOfMessage()) {
-        void this.tryTriggerAutocomplete();
-      }
-      // Auto-trigger for "@" file reference (fuzzy search)
-      else if (char === "@") {
+      if (this.autocompleteProvider) {
         const currentLine = this.state.lines[this.state.cursorLine] || "";
         const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
-        if (this.isAfterWhitespaceOrStart(textBeforeCursor)) {
-          void this.tryTriggerAutocomplete();
-        }
-      }
-      // Auto-trigger for "#" file attachment
-      else if (char === "#") {
-        const currentLine = this.state.lines[this.state.cursorLine] || "";
-        const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
-        if (this.isAfterWhitespaceOrStart(textBeforeCursor)) {
-          void this.tryTriggerAutocomplete();
-        }
-      }
-      // Auto-trigger for ">" skill invocation
-      else if (char === ">") {
-        const currentLine = this.state.lines[this.state.cursorLine] || "";
-        const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
-        if (this.isAfterWhitespaceOrStart(textBeforeCursor)) {
-          void this.tryTriggerAutocomplete();
-        }
-      }
-      // Also auto-trigger when typing letters in a slash command context
-      else if (/[a-zA-Z0-9]/.test(char)) {
-        const currentLine = this.state.lines[this.state.cursorLine] || "";
-        const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
-        // Check if we're in a slash command (with or without space for arguments)
-        if (textBeforeCursor.trimStart().startsWith("/")) {
-          void this.tryTriggerAutocomplete();
-        }
-        // Check if we're in an @ file reference, # file attachment, or > skill context
-        else if (textBeforeCursor.match(/(?:^|\s)(?:[@#]|>)[^\s]*$/)) {
+        if (this.autocompleteProvider.matchesContext(textBeforeCursor)) {
           void this.tryTriggerAutocomplete();
         }
       }
@@ -1041,13 +999,10 @@ export class Editor implements Component {
     // Update autocomplete after backspace
     if (this.isAutocompleting) {
       void this.updateAutocomplete();
-    } else {
-      // Check if we should trigger autocomplete after backspace in slash command context
+    } else if (this.autocompleteProvider) {
       const currentLine = this.state.lines[this.state.cursorLine] || "";
       const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
-
-      // Trigger autocomplete if we're in a slash command context (typing command name)
-      if (textBeforeCursor.startsWith("/") && !textBeforeCursor.includes(" ")) {
+      if (this.autocompleteProvider.matchesContext(textBeforeCursor)) {
         void this.tryTriggerAutocomplete();
       }
     }
@@ -1382,15 +1337,6 @@ export class Editor implements Component {
     this.state.cursorCol = newCol;
   }
 
-  // Helper method to check if cursor is at start of message (for slash command detection)
-  private isAtStartOfMessage(): boolean {
-    const currentLine = this.state.lines[this.state.cursorLine] || "";
-    const beforeCursor = currentLine.slice(0, this.state.cursorCol);
-
-    // At start if line is empty, only contains whitespace, or is just "/"
-    return beforeCursor.trim() === "" || beforeCursor.trim() === "/";
-  }
-
   // Autocomplete methods
   private async tryTriggerAutocomplete(explicitTab = false): Promise<void> {
     if (!this.autocompleteProvider) return;
@@ -1478,25 +1424,12 @@ export class Editor implements Component {
     if (!this.isAutocompleting || !this.autocompleteProvider) return;
 
     // Check if the current text still matches our autocomplete context
-    // This prevents unnecessary updates when typing unrelated text
     const currentLine = this.state.lines[this.state.cursorLine] || "";
     const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
 
-    // If we're no longer in the context that triggered autocomplete, cancel it
-    // For slash commands, @ file references, # file attachments, and > skill invocations, allow progressive typing
-    // For other file paths, check if we're still in the same path context
-    if (
-      textBeforeCursor.startsWith("/") ||
-      textBeforeCursor.match(/(?:^|[\s])[@#>][^\s]*$/)
-    ) {
-      // For slash commands, @ file references, # file attachments, and > skill invocations,
-      // continue autocomplete as long as we're in the right context
-    } else {
-      // For other file paths, check if we're still in the same path context
-      if (!textBeforeCursor.endsWith(this.autocompletePrefix)) {
-        this.cancelAutocomplete();
-        return;
-      }
+    if (!this.autocompleteProvider.matchesContext(textBeforeCursor)) {
+      this.cancelAutocomplete();
+      return;
     }
 
     // Clear any existing debounce timer

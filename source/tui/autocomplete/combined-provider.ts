@@ -10,6 +10,10 @@ export class CombinedProvider implements AutocompleteProvider {
     this.providers = providers;
   }
 
+  matchesContext(textBeforeCursor: string): boolean {
+    return this.providers.some((p) => p.matchesContext(textBeforeCursor));
+  }
+
   async getSuggestions(
     lines: string[],
     cursorLine: number,

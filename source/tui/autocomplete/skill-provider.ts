@@ -11,6 +11,10 @@ export class SkillProvider implements AutocompleteProvider {
     this.skills = skills;
   }
 
+  matchesContext(textBeforeCursor: string): boolean {
+    return /(?:^|\s)>[^\s]*$/.test(textBeforeCursor);
+  }
+
   async getSuggestions(
     lines: string[],
     cursorLine: number,
@@ -20,27 +24,15 @@ export class SkillProvider implements AutocompleteProvider {
     const textBeforeCursor = currentLine.slice(0, cursorCol);
 
     // Check for skill trigger (">" at start or after whitespace)
-    if (textBeforeCursor.match(/(?:^|[\s])>$/)) {
-      // User just typed ">" - show all skills
-      const items = this.skills.map((skill) => ({
-        value: `\`${skill.name}\` skill`,
-        label: skill.name,
-        description: skill.description,
-      }));
-
-      // Sort alphabetically
-      items.sort((a, b) => a.label.localeCompare(b.label));
-
-      return { items, prefix: "" };
-    }
-
-    // Check for partial match (typing after ">")
     const match = textBeforeCursor.match(/(?:^|[\s])>([^\s]*)$/);
     if (match) {
-      const prefix = match[1];
+      const searchTerm = match[1];
+      const prefix = `>${searchTerm}`;
       const filtered = this.skills
-        .filter((skill) =>
-          skill.name.toLowerCase().startsWith(prefix.toLowerCase()),
+        .filter(
+          (skill) =>
+            searchTerm === "" ||
+            skill.name.toLowerCase().startsWith(searchTerm.toLowerCase()),
         )
         .map((skill) => ({
           value: `\`${skill.name}\` skill`,
@@ -63,30 +55,25 @@ export class SkillProvider implements AutocompleteProvider {
     cursorLine: number,
     cursorCol: number,
     item: AutocompleteItem,
-    _prefix: string,
+    prefix: string,
   ): { lines: string[]; cursorLine: number; cursorCol: number } {
-    const currentLine = lines[cursorLine] || "";
-    const textBeforeCursor = currentLine.slice(0, cursorCol);
-
-    // Find the position of ">" in the text before cursor
-    const triggerMatch = textBeforeCursor.match(/(?:^|[\s])>([^\s]*)$/);
-    if (!triggerMatch || triggerMatch.index === undefined) {
+    if (!prefix.startsWith(">")) {
       return { lines, cursorLine, cursorCol };
     }
 
-    const triggerStart = triggerMatch.index;
-    const beforeTrigger = currentLine.slice(0, triggerStart + 1); // Include ">"
+    const currentLine = lines[cursorLine] || "";
+    const beforePrefix = currentLine.slice(0, cursorCol - prefix.length);
     const afterCursor = currentLine.slice(cursorCol);
 
     // Replace prefix after ">" with selected skill name
-    const newLine = `${beforeTrigger}${item.value}${afterCursor}`;
+    const newLine = `${beforePrefix}${item.value}${afterCursor}`;
     const newLines = [...lines];
     newLines[cursorLine] = newLine;
 
     return {
       lines: newLines,
       cursorLine,
-      cursorCol: beforeTrigger.length + item.value.length,
+      cursorCol: beforePrefix.length + item.value.length + 1,
     };
   }
 }

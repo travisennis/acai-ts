@@ -5,6 +5,10 @@ export interface AutocompleteItem {
 }
 
 export interface AutocompleteProvider {
+  // Check if the text before cursor is in a context where this provider is relevant
+  // Used to trigger autocomplete and to continue it during progressive typing
+  matchesContext(textBeforeCursor: string): boolean;
+
   // Get autocomplete suggestions for current text/cursor position
   // Returns null if no suggestions available
   getSuggestions(

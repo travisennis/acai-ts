@@ -3,6 +3,10 @@ import type { AutocompleteItem } from "./base-provider.ts";
 import { FileSearchProvider } from "./file-search-provider.ts";
 
 export class AttachmentProvider extends FileSearchProvider {
+  override matchesContext(textBeforeCursor: string): boolean {
+    return /(?:^|\s)#[^\s]*$/.test(textBeforeCursor);
+  }
+
   override async getSuggestions(
     lines: string[],
     cursorLine: number,

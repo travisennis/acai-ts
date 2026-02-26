@@ -20,6 +20,10 @@ export class CommandProvider<T extends SlashCommand | AutocompleteItem>
     this.commands = commands;
   }
 
+  matchesContext(textBeforeCursor: string): boolean {
+    return textBeforeCursor.trimStart().startsWith("/");
+  }
+
   async getSuggestions(
     lines: string[],
     cursorLine: number,

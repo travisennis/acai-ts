@@ -52,6 +52,10 @@ export class FileSearchProvider implements AutocompleteProvider {
   private maxResults = 20;
   private maxDepth = 3;
 
+  matchesContext(textBeforeCursor: string): boolean {
+    return /(?:^|\s)@[^\s]*$/.test(textBeforeCursor);
+  }
+
   async getSuggestions(
     lines: string[],
     cursorLine: number,
