@@ -9,6 +9,47 @@ import type { ToolExecutionOptions } from "./types.ts";
 
 const DEFAULT_MAX_RESULTS = 100;
 
+interface FileWithStats {
+  path: string;
+  mtime: number;
+}
+
+async function getFileWithStats(
+  filePath: string,
+  effectivePath: string,
+): Promise<FileWithStats> {
+  const fullPath = nodePath.join(effectivePath, filePath);
+  try {
+    const stats = await fs.promises.stat(fullPath);
+    return {
+      path: filePath,
+      mtime: stats.mtime.getTime(),
+    };
+  } catch {
+    return {
+      path: filePath,
+      mtime: 0,
+    };
+  }
+}
+
+function sortFilesByMtime(files: FileWithStats[]): string[] {
+  return files
+    .sort((a, b) => {
+      if (b.mtime !== a.mtime) {
+        return b.mtime - a.mtime;
+      }
+      return a.path.localeCompare(b.path);
+    })
+    .map((file) => file.path);
+}
+
+function formatResult(sortedFiles: string[]): string {
+  return sortedFiles.length > 0
+    ? sortedFiles.join("\n")
+    : "No files found matching the specified patterns.";
+}
+
 export const GlobTool = {
   name: "Glob" as const,
 };
@@ -123,15 +164,12 @@ export const createGlobTool = () => {
         throw new Error("Glob search aborted");
       }
 
-      // Validate path - default to cwd if not provided
       const effectivePath =
         typeof path === "string" && path.trim() !== "" ? path : process.cwd();
 
       const patternArray = Array.isArray(patterns) ? patterns : [patterns];
-
       const effectiveMaxResults = maxResults ?? DEFAULT_MAX_RESULTS;
 
-      // Build glob options - spread individual properties to avoid mutating readonly type
       const globOptions: Options = {
         cwd: cwd || process.cwd(),
         ...(gitignore !== null && { gitignore }),
@@ -140,52 +178,24 @@ export const createGlobTool = () => {
         ...(ignoreFiles !== null && { ignoreFiles }),
       };
 
-      // Get all matching files from glob
       const matchingFiles = await glob(patternArray, {
         ...globOptions,
         cwd: effectivePath,
       });
 
-      // Apply limit BEFORE stat'ing - reduces expensive syscalls
       const filesToProcess =
         effectiveMaxResults > 0 && matchingFiles.length > effectiveMaxResults
           ? matchingFiles.slice(0, effectiveMaxResults)
           : matchingFiles;
 
-      // Only stat the files we're going to return (or a limited set)
       const filesWithStats = await Promise.all(
-        filesToProcess.map(async (filePath) => {
-          const fullPath = nodePath.join(effectivePath, filePath);
-          try {
-            const stats = await fs.promises.stat(fullPath);
-            return {
-              path: filePath,
-              mtime: stats.mtime.getTime(),
-            };
-          } catch {
-            return {
-              path: filePath,
-              mtime: 0,
-            };
-          }
-        }),
+        filesToProcess.map((filePath) =>
+          getFileWithStats(filePath, effectivePath),
+        ),
       );
 
-      // Sort by mtime descending (most recent first), then alphabetically as tiebreaker
-      const sortedFiles = filesWithStats
-        .sort((a, b) => {
-          // Most recent first
-          if (b.mtime !== a.mtime) {
-            return b.mtime - a.mtime;
-          }
-          // Alphabetical tiebreaker
-          return a.path.localeCompare(b.path);
-        })
-        .map((file) => file.path);
-
-      return sortedFiles.length > 0
-        ? sortedFiles.join("\n")
-        : "No files found matching the specified patterns.";
+      const sortedFiles = sortFilesByMtime(filesWithStats);
+      return formatResult(sortedFiles);
     },
   };
 };
