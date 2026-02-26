@@ -155,33 +155,43 @@ interface State {
   lastBackgroundAdded?: string;
 }
 
+function isForegroundColor(code: number): boolean {
+  return (code >= 30 && code <= 39) || (code >= 90 && code <= 97);
+}
+
+function isBackgroundColor(code: number): boolean {
+  return (code >= 40 && code <= 49) || (code >= 100 && code <= 107);
+}
+
+function clearState(state: State): void {
+  for (const i in state) {
+    /* istanbul ignore else */
+    if (Object.hasOwn(state, i)) {
+      delete state[i];
+    }
+  }
+}
+
 function updateState(state: State, controlChars: RegExpExecArray): void {
   const controlCode = controlChars[1]
     ? Number.parseInt(controlChars[1].split(";")[0], 10)
     : 0;
-  if (
-    (controlCode >= 30 && controlCode <= 39) ||
-    (controlCode >= 90 && controlCode <= 97)
-  ) {
+
+  if (isForegroundColor(controlCode)) {
     state.lastForegroundAdded = controlChars[0];
     return;
   }
-  if (
-    (controlCode >= 40 && controlCode <= 49) ||
-    (controlCode >= 100 && controlCode <= 107)
-  ) {
+
+  if (isBackgroundColor(controlCode)) {
     state.lastBackgroundAdded = controlChars[0];
     return;
   }
+
   if (controlCode === 0) {
-    for (const i in state) {
-      /* istanbul ignore else */
-      if (Object.hasOwn(state, i)) {
-        delete state[i];
-      }
-    }
+    clearState(state);
     return;
   }
+
   const info = codeCache[controlChars[0]] as CodeCacheEntry;
   if (info) {
     state[info.set] = info.to;
