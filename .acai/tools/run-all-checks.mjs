@@ -7,7 +7,7 @@ import { writeFileSync, readFileSync, unlinkSync } from 'node:fs';
 
 if (process.env.TOOL_ACTION === 'describe') {
   console.log(JSON.stringify({
-    name: 'run-all-checks',
+    name: 'RunAllChecks',
     description: 'Run all checks in a project workspace (typecheck, lint:fix, format)',
     parameters: [
       {
