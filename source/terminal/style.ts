@@ -362,9 +362,9 @@ for (const model of usedModels) {
     get(this: StyleInstance): (...args: number[]) => StyleInstance {
       const { level } = this;
       return function (this: StyleInstance, ...args: number[]): StyleInstance {
+        const levelValue = level ?? 0;
         const styler = createStyler(
-          // biome-ignore lint/style/noNonNullAssertion: Level is guaranteed to be valid for style compatibility
-          getModelAnsi(model, levelMapping[level]!, "color", ...args),
+          getModelAnsi(model, levelMapping[levelValue], "color", ...args),
           // biome-ignore lint/suspicious/noExplicitAny: Dynamic property access needed for style compatibility
           (ansiStyles.color as any).close,
           // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for style compatibility
@@ -376,15 +376,14 @@ for (const model of usedModels) {
     },
   };
 
-  // biome-ignore lint/style/noNonNullAssertion: Model string is guaranteed to be valid for style compatibility
-  const bgModel = `bg${model[0]!.toUpperCase()}${model.slice(1)}` as const;
+  const bgModel = `bg${model[0].toUpperCase()}${model.slice(1)}` as const;
   styles[bgModel] = {
     get(this: StyleInstance): (...args: number[]) => StyleInstance {
       const { level } = this;
       return function (this: StyleInstance, ...args: number[]): StyleInstance {
+        const levelValue = level ?? 0;
         const styler = createStyler(
-          // biome-ignore lint/style/noNonNullAssertion: Level is guaranteed to be valid for style compatibility
-          getModelAnsi(model, levelMapping[level]!, "bgColor", ...args),
+          getModelAnsi(model, levelMapping[levelValue], "bgColor", ...args),
           // biome-ignore lint/suspicious/noExplicitAny: Dynamic property access needed for style compatibility
           (ansiStyles.bgColor as any).close,
           // biome-ignore lint/suspicious/noExplicitAny: Dynamic symbol access needed for style compatibility

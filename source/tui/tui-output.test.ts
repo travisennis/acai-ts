@@ -333,14 +333,14 @@ The end of this complex example.
 
   // Set up exit handler
   process.on("SIGINT", () => {
-    console.log("\nSIGINT received - exiting TUI test...");
+    console.info("\nSIGINT received - exiting TUI test...");
     tui.stop();
     process.exit(0);
   });
 
   // Auto-exit after 10 seconds for testing
   setTimeout(() => {
-    console.log("\nAuto-exiting TUI test after 10 seconds...");
+    console.info("\nAuto-exiting TUI test after 10 seconds...");
     tui.stop();
     process.exit(0);
   }, 10000);
