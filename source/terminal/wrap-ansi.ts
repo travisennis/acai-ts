@@ -28,6 +28,43 @@ const wrapAnsiHyperlink = (url: string): string =>
 const wordLengths = (string: string): number[] =>
   string.split(" ").map((character) => stringWidth(character));
 
+// Check if character starts an ANSI escape sequence
+const isEscapeStart = (character: string): boolean =>
+  ESCAPES.has(character);
+
+// Check if this is the start of a hyperlink escape sequence
+const isLinkEscapeStart = (
+  characters: string[],
+  index: number,
+): boolean => {
+  const candidate = characters
+    .slice(index + 1, index + 1 + ANSI_ESCAPE_LINK.length)
+    .join("");
+  return candidate === ANSI_ESCAPE_LINK;
+};
+
+// Check if character ends an escape sequence
+const isEscapeEnd = (
+  character: string,
+  isInsideLinkEscape: boolean,
+): boolean => {
+  if (isInsideLinkEscape) {
+    return character === ANSI_ESCAPE_BELL;
+  }
+  return character === ANSI_SGR_TERMINATOR;
+};
+
+// Handle final row edge case (ANSI-only rows)
+const handleFinalRowEdgeCase = (rows: string[], visible: number): void => {
+  const lastRow = rows.at(-1);
+  if (!visible && lastRow && lastRow.length > 0 && rows.length > 1) {
+    const poppedRow = rows.pop();
+    if (poppedRow) {
+      rows[rows.length - 1] += poppedRow;
+    }
+  }
+};
+
 // Wrap a long word across multiple rows
 // Ansi escape codes do not count towards length
 const wrapWord = (rows: string[], word: string, columns: number): void => {
@@ -47,25 +84,18 @@ const wrapWord = (rows: string[], word: string, columns: number): void => {
       visible = 0;
     }
 
-    if (ESCAPES.has(character)) {
+    // Handle escape sequence detection
+    if (isEscapeStart(character)) {
       isInsideEscape = true;
-
-      const ansiEscapeLinkCandidate = characters
-        .slice(index + 1, index + 1 + ANSI_ESCAPE_LINK.length)
-        .join("");
-      isInsideLinkEscape = ansiEscapeLinkCandidate === ANSI_ESCAPE_LINK;
+      isInsideLinkEscape = isLinkEscapeStart(characters, index);
     }
 
+    // Process escape sequence
     if (isInsideEscape) {
-      if (isInsideLinkEscape) {
-        if (character === ANSI_ESCAPE_BELL) {
-          isInsideEscape = false;
-          isInsideLinkEscape = false;
-        }
-      } else if (character === ANSI_SGR_TERMINATOR) {
+      if (isEscapeEnd(character, isInsideLinkEscape)) {
         isInsideEscape = false;
+        isInsideLinkEscape = false;
       }
-
       continue;
     }
 
@@ -77,15 +107,7 @@ const wrapWord = (rows: string[], word: string, columns: number): void => {
     }
   }
 
-  // It's possible that the last row we copy over is only
-  // ansi escape characters, handle this edge-case
-  const lastRow = rows.at(-1);
-  if (!visible && lastRow && lastRow.length > 0 && rows.length > 1) {
-    const poppedRow = rows.pop();
-    if (poppedRow) {
-      rows[rows.length - 1] += poppedRow;
-    }
-  }
+  handleFinalRowEdgeCase(rows, visible);
 };
 
 // Trims spaces from a string ignoring invisible sequences
