@@ -445,15 +445,118 @@ async function runCliMode(state: AppState, noSession: boolean): Promise<void> {
   (await asyncTry(cliProcess.run())).recover(handleError);
 }
 
+function setupReplEventHandlers(
+  repl: Repl,
+  agent: Agent,
+  sessionManager: SessionManager,
+  noSession: boolean,
+): void {
+  sessionManager.on("clear-history", async () => {
+    logger.info("Resetting agent state.");
+    agent.resetState();
+    agent.setConfig(await config.getConfig());
+    void repl.rerender();
+  });
+
+  repl.setInterruptCallback(async () => {
+    if (!noSession) {
+      try {
+        await sessionManager.save();
+      } catch (error) {
+        logger.warn({ error }, "Failed to save message history on interrupt");
+      }
+    }
+    agent.abort();
+  });
+
+  repl.setExitCallback(async (_sessionId: string) => {
+    if (!sessionManager.isEmpty()) {
+      await repl.triggerRuleGeneration();
+      writeExitSummary(sessionManager, noSession);
+    }
+  });
+}
+
+async function handleStdinPrompt(
+  state: AppState,
+  agent: Agent,
+  repl: Repl,
+  tools: Awaited<ReturnType<typeof initTools>>,
+  activeTools: CompleteToolNames[] | undefined,
+  systemPromptResult: { prompt: string },
+  noSession: boolean,
+): Promise<boolean> {
+  if (!state.promptManager.isPending()) {
+    return false;
+  }
+
+  try {
+    const promptText = state.promptManager.get();
+    const userMessage = state.promptManager.getUserMessage();
+    state.sessionManager.appendUserMessage(userMessage);
+
+    const results = agent.run({
+      systemPrompt: systemPromptResult.prompt,
+      input: promptText,
+      tools,
+      activeTools,
+      abortSignal: agent.abortSignal,
+      maxIterations: state.appConfig.loop.maxIterations,
+    });
+    for await (const result of results) {
+      await repl.handle(result, agent.state);
+    }
+
+    if (!noSession) {
+      await state.sessionManager.save();
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function runInteractiveLoop(
+  repl: Repl,
+  agent: Agent,
+  tools: Awaited<ReturnType<typeof initTools>>,
+  activeTools: CompleteToolNames[] | undefined,
+  systemPromptResult: { prompt: string },
+  noSession: boolean,
+  sessionManager: SessionManager,
+  maxIterations: number,
+): Promise<void> {
+  while (true) {
+    const userInput = await repl.getUserInput();
+
+    try {
+      const results = agent.run({
+        systemPrompt: systemPromptResult.prompt,
+        input: userInput,
+        tools,
+        activeTools,
+        abortSignal: agent.abortSignal,
+        maxIterations,
+      });
+      for await (const result of results) {
+        await repl.handle(result, agent.state);
+      }
+
+      if (!noSession) {
+        await sessionManager.save();
+      }
+    } catch {
+      // Error displayed in the TUI
+    }
+  }
+}
+
 async function runReplMode(
   state: AppState,
   stdinWasPiped: boolean,
   noSession: boolean,
 ): Promise<void> {
-  // Initialize tools before creating REPL (needed for session reload reconstruction)
-  const tools = await initTools({
-    workspace,
-  });
+  const tools = await initTools({ workspace });
 
   const agent = new Agent({
     config: state.appConfig,
@@ -462,7 +565,6 @@ async function runReplMode(
     tokenTracker: state.tokenTracker,
   });
 
-  // When stdin was piped, use /dev/tty for interactive input instead of process.stdin
   const repl = new Repl({
     agent,
     promptManager: state.promptManager,
@@ -481,40 +583,12 @@ async function runReplMode(
 
   await repl.init();
 
-  // Reconstruct session display if there are existing messages
   if (!state.sessionManager.isEmpty()) {
     await repl.rerender();
   }
 
-  state.sessionManager.on("clear-history", async () => {
-    logger.info("Resetting agent state.");
-    agent.resetState();
-    agent.setConfig(await config.getConfig());
-    void repl.rerender();
-  });
+  setupReplEventHandlers(repl, agent, state.sessionManager, noSession);
 
-  // Set interrupt callback
-  repl.setInterruptCallback(async () => {
-    if (!noSession) {
-      try {
-        await state.sessionManager.save();
-      } catch (error) {
-        // Log but don't throw - we still want to abort the agent
-        logger.warn({ error }, "Failed to save message history on interrupt");
-      }
-    }
-    agent.abort();
-  });
-
-  // Set exit callback - generate rules before exit if enabled
-  repl.setExitCallback(async (_sessionId: string) => {
-    if (!state.sessionManager.isEmpty()) {
-      await repl.triggerRuleGeneration();
-      writeExitSummary(state.sessionManager, noSession);
-    }
-  });
-
-  // Build the system prompt once at session start
   const activeTools = state.appConfig.tools.activeTools as
     | CompleteToolNames[]
     | undefined;
@@ -526,61 +600,26 @@ async function runReplMode(
     skillsEnabled,
   });
 
-  // Auto-process pending prompt from stdin
-  if (state.promptManager.isPending()) {
-    try {
-      // Get the prompt text before it gets cleared by getUserMessage()
-      const promptText = state.promptManager.get();
+  await handleStdinPrompt(
+    state,
+    agent,
+    repl,
+    tools,
+    activeTools,
+    systemPromptResult,
+    noSession,
+  );
 
-      // Get the user message (includes context if any) and add to history
-      const userMessage = state.promptManager.getUserMessage();
-      state.sessionManager.appendUserMessage(userMessage);
-
-      const results = agent.run({
-        systemPrompt: systemPromptResult.prompt,
-        input: promptText,
-        tools,
-        activeTools,
-        abortSignal: agent.abortSignal,
-        maxIterations: state.appConfig.loop.maxIterations,
-      });
-      for await (const result of results) {
-        await repl.handle(result, agent.state);
-      }
-
-      if (!noSession) {
-        await state.sessionManager.save();
-      }
-    } catch (_error) {
-      // Error displayed in the TUI
-    }
-  }
-
-  // Interactive loop
-  while (true) {
-    const userInput = await repl.getUserInput();
-
-    try {
-      const results = agent.run({
-        systemPrompt: systemPromptResult.prompt,
-        input: userInput,
-        tools,
-        activeTools,
-        abortSignal: agent.abortSignal,
-        maxIterations: state.appConfig.loop.maxIterations,
-      });
-      for await (const result of results) {
-        await repl.handle(result, agent.state);
-      }
-
-      if (!noSession) {
-        await state.sessionManager.save();
-      }
-    } catch (_error) {
-      // Display error in the TUI by adding an error message to the chat
-      // repl.showError((error as Error).message || "Unknown error occurred");
-    }
-  }
+  await runInteractiveLoop(
+    repl,
+    agent,
+    tools,
+    activeTools,
+    systemPromptResult,
+    noSession,
+    state.sessionManager,
+    state.appConfig.loop.maxIterations,
+  );
 }
 
 async function main() {
