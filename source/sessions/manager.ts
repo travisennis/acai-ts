@@ -123,7 +123,10 @@ function validateAndSanitizeToolCall(
   }
 
   // Skip invalid tool calls - don't add them to history
-  logger.debug({ toolName: part.toolName }, "Filtered invalid tool call from history");
+  logger.debug(
+    { toolName: part.toolName },
+    "Filtered invalid tool call from history",
+  );
   return { isValid: false, sanitizedPart: part };
 }
 

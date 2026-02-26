@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { Cell } from "../../../source/terminal/table/cell.ts";
-import { makeComputeWidths, fillInTable } from "../../../source/terminal/table/layout-manager.ts";
+import {
+  fillInTable,
+  makeComputeWidths,
+} from "../../../source/terminal/table/layout-manager.ts";
 
 describe("makeComputeWidths", () => {
   const computeWidths = makeComputeWidths("colSpan", "desiredWidth", "x", 1);
