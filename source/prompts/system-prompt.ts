@@ -55,11 +55,20 @@ async function getProjectContext() {
 export async function environmentInfo(
   currentWorkingDir: string,
   allowedDirs: string[],
+  logsPath?: string,
 ) {
   const gitDirectory = await inGitDirectory();
   let gitSection = `- **Is directory a git repo**: ${gitDirectory ? "Yes" : "No"}`;
   if (gitDirectory) {
     gitSection += `\n- **Current git branch**: ${await getCurrentBranch()}`;
+  }
+
+  let logsSection = "";
+  if (logsPath) {
+    logsSection = `
+### Project logs:
+
+- ${logsPath}`;
   }
 
   return `## Environment
@@ -68,7 +77,7 @@ ${currentWorkingDir}
 
 ### Allowed directories:
 
-${allowedDirs.map((dir) => `- ${dir}`).join("\n")}
+${allowedDirs.map((dir) => `- ${dir}`).join("\n")}${logsSection}
 
 ### Information:
 
@@ -82,6 +91,7 @@ ${gitSection}
 type SystemPromptOptions = {
   currentWorkingDir?: string;
   allowedDirs?: string[];
+  logsPath?: string;
   activeTools?: CompleteToolNames[];
   includeRules?: boolean;
   skillsEnabled?: boolean;
@@ -102,6 +112,7 @@ export async function systemPrompt(
   const {
     currentWorkingDir = DEFAULT_WORKING_DIRS,
     allowedDirs = DEFAULT_ALLOWED_DIR,
+    logsPath,
     includeRules = true,
     skillsEnabled = true,
     minimalPrompt = true,
@@ -114,6 +125,7 @@ export async function systemPrompt(
   const environmentInfoText = await environmentInfo(
     currentWorkingDir,
     allowedDirs,
+    logsPath,
   );
 
   let skillsText = "";

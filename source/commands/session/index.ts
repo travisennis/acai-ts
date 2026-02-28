@@ -161,6 +161,7 @@ export function sessionCommand({
           | CompleteToolNames[]
           | undefined,
         allowedDirs: workspace.allowedDirs,
+        logsPath: projectConfig.logs?.path,
         includeRules: true,
       });
       const systemPromptTokens = tokenCounter.count(sysResult.prompt);

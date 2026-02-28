@@ -7,6 +7,7 @@ import {
   type ToolSet,
 } from "ai";
 import type z from "zod";
+import { config } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { AiConfig } from "../models/ai-config.ts";
 import type { ModelManager } from "../models/manager.js";
@@ -57,8 +58,10 @@ export class Cli {
 
     sessionManager.appendUserMessage(userMsg);
 
+    const cliConfig = await config.getConfig();
     const finalSystemPromptResult = await systemPrompt({
       allowedDirs: this.options.workspace.allowedDirs,
+      logsPath: cliConfig.logs?.path,
     });
     const finalSystemPrompt = finalSystemPromptResult.prompt;
 

@@ -597,6 +597,7 @@ async function runReplMode(
   const systemPromptResult = await systemPrompt({
     activeTools,
     allowedDirs: workspace.allowedDirs,
+    logsPath: state.appConfig.logs?.path,
     skillsEnabled,
   });
 
@@ -651,6 +652,15 @@ async function main() {
       hasContinueOrResume,
       resumeSessionId,
     );
+
+    // Add logs directory to allowed directories if configured
+    const logsPath = appConfig.logs?.path;
+    if (logsPath) {
+      const logsDir = path.resolve(logsPath);
+      if (!workspace.allowedDirs.includes(logsDir)) {
+        workspace.allowedDirs.push(logsDir);
+      }
+    }
 
     // Set terminal title after all validation is complete
     setTerminalTitle(`acai: ${workspace.primaryDir}`);

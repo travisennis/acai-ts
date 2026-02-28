@@ -100,6 +100,7 @@ async function createAnalysisSystemPrompt(
       | undefined,
     includeRules: true,
     allowedDirs: workspace.allowedDirs,
+    logsPath: projectConfig.logs?.path,
   });
   const sys = sysResult.prompt;
 
