@@ -54,7 +54,6 @@ describe("init-project/utils.ts", () => {
       assert.ok(result.created.length > 0);
       assert.strictEqual(result.existing.length, 0);
       assert.ok(result.created.includes(".acai/"));
-      assert.ok(result.created.includes(".acai/prompts/"));
       assert.ok(result.created.includes(".acai/rules/"));
       assert.ok(result.created.includes(".agents/skills/"));
 
@@ -71,7 +70,6 @@ describe("init-project/utils.ts", () => {
       assert.strictEqual(result.created.length, 0);
       assert.ok(result.existing.length > 0);
       assert.ok(result.existing.includes(".acai/"));
-      assert.ok(result.existing.includes(".acai/prompts/"));
       assert.ok(result.existing.includes(".acai/rules/"));
       assert.ok(result.existing.includes(".agents/skills/"));
 
