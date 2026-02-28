@@ -79,9 +79,6 @@ export const initProjectCommand = (_options: CommandOptions): ReplCommand => {
         new Text("Project initialized successfully. You can now:", 1, 0),
       );
       container.addChild(
-        new Text("  • Add project-specific prompts to .acai/prompts/", 2, 0),
-      );
-      container.addChild(
         new Text("  • Configure settings in .acai/acai.json", 2, 0),
       );
       container.addChild(

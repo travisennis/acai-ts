@@ -22,7 +22,7 @@ export function ensureProjectDirectory(
     existing.push(".acai/");
   }
 
-  const subdirs = ["prompts", "rules"];
+  const subdirs = ["rules"];
   for (const subdir of subdirs) {
     const dirPath = path.join(projectDir, subdir);
     if (!existsSync(dirPath)) {
