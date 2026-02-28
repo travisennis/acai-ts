@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { Container, Editor, TUI } from "../../tui/index.ts";
 import { Spacer, Text } from "../../tui/index.ts";
 import type { CommandOptions, ReplCommand } from "../types.ts";
@@ -41,7 +42,7 @@ export const initProjectCommand = (_options: CommandOptions): ReplCommand => {
         return "continue";
       }
 
-      const projectDir = require("node:path").join(currentDir, ".acai");
+      const projectDir = path.join(currentDir, ".acai");
       const dirResult = ensureProjectDirectory(projectDir);
       const configResult = ensureConfigFile(projectDir);
 
