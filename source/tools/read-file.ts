@@ -81,79 +81,109 @@ export const createReadFileTool = async (options: {
       const effectiveEncoding = encoding ?? "utf-8";
       const effectiveMaxBytes = maxBytes ?? DEFAULT_BYTE_LIMIT;
 
-      // Use streaming for line-based reads to avoid loading entire file
-      const useLineBasedRead = isNumber(startLine) || isNumber(lineCount);
+      const file = await readFileContent(
+        filePath,
+        effectiveEncoding,
+        startLine,
+        lineCount,
+        abortSignal,
+      );
 
-      let file: string;
-
-      if (useLineBasedRead) {
-        // Streaming approach: only read needed lines
-        const fileStream = await fs.open(filePath, "r");
-        const rl = createInterface({
-          input: fileStream.createReadStream(),
-          crlfDelay: Number.POSITIVE_INFINITY,
-        });
-
-        const lines: string[] = [];
-        const startIndex = (startLine ?? 1) - 1;
-        const count = lineCount ?? Number.POSITIVE_INFINITY;
-        let currentIndex = 0;
-
-        for await (const line of rl) {
-          if (currentIndex >= startIndex && currentIndex < startIndex + count) {
-            lines.push(line);
-          }
-          currentIndex++;
-
-          // Stop early if we've read past our range
-          if (currentIndex >= startIndex + count) {
-            break;
-          }
-
-          if (abortSignal?.aborted) {
-            rl.close();
-            await fileStream.close();
-            throw new Error("File reading aborted");
-          }
-        }
-
-        rl.close();
-        await fileStream.close();
-
-        if (startIndex >= currentIndex) {
-          throw new Error(
-            `startLine ${startLine} is out of bounds for file with ${currentIndex} lines.`,
-          );
-        }
-
-        file = lines.join("\n");
-      } else {
-        if (abortSignal?.aborted) {
-          throw new Error("File reading aborted before file read");
-        }
-
-        file = await fs.readFile(filePath, {
-          encoding: effectiveEncoding,
-        });
-      }
-
-      // Apply maxBytes limit if needed
-      if (effectiveMaxBytes > 0) {
-        const byteLength = Buffer.byteLength(file, effectiveEncoding);
-        if (byteLength > effectiveMaxBytes) {
-          const fileSizeKb = (byteLength / 1024).toFixed(1);
-          const limitKb = (effectiveMaxBytes / 1024).toFixed(0);
-          throw new Error(
-            `File (${fileSizeKb}KB) exceeds the ${limitKb}KB read limit. To read this file, use one of these options:\n` +
-              "• Set maxBytes: 0 to read the entire file\n" +
-              "• Use startLine and lineCount to read specific portions (e.g., startLine: 1, lineCount: 100)\n" +
-              "• Use the Grep tool to search for specific content\n" +
-              `• Use the Bash tool with 'tail' or 'head' commands`,
-          );
-        }
-      }
+      validateByteLimit(file, effectiveEncoding, effectiveMaxBytes);
 
       return file;
     },
   };
 };
+
+// Read file content either line-by-line or as a whole
+async function readFileContent(
+  filePath: string,
+  encoding: BufferEncoding,
+  startLine: number | null,
+  lineCount: number | null,
+  abortSignal: AbortSignal | undefined,
+): Promise<string> {
+  const useLineBasedRead = isNumber(startLine) || isNumber(lineCount);
+
+  if (useLineBasedRead) {
+    return readFileLines(filePath, startLine, lineCount, abortSignal);
+  }
+
+  if (abortSignal?.aborted) {
+    throw new Error("File reading aborted before file read");
+  }
+
+  return fs.readFile(filePath, { encoding });
+}
+
+// Read specific lines from a file using streaming
+async function readFileLines(
+  filePath: string,
+  startLine: number | null,
+  lineCount: number | null,
+  abortSignal: AbortSignal | undefined,
+): Promise<string> {
+  const fileStream = await fs.open(filePath, "r");
+  const rl = createInterface({
+    input: fileStream.createReadStream(),
+    crlfDelay: Number.POSITIVE_INFINITY,
+  });
+
+  const lines: string[] = [];
+  const startIndex = (startLine ?? 1) - 1;
+  const count = lineCount ?? Number.POSITIVE_INFINITY;
+  let currentIndex = 0;
+
+  for await (const line of rl) {
+    if (currentIndex >= startIndex && currentIndex < startIndex + count) {
+      lines.push(line);
+    }
+    currentIndex++;
+
+    if (currentIndex >= startIndex + count) {
+      break;
+    }
+
+    if (abortSignal?.aborted) {
+      rl.close();
+      await fileStream.close();
+      throw new Error("File reading aborted");
+    }
+  }
+
+  rl.close();
+  await fileStream.close();
+
+  if (startIndex >= currentIndex) {
+    throw new Error(
+      `startLine ${startLine} is out of bounds for file with ${currentIndex} lines.`,
+    );
+  }
+
+  return lines.join("\n");
+}
+
+// Validate that file content doesn't exceed byte limit
+function validateByteLimit(
+  file: string,
+  encoding: BufferEncoding,
+  maxBytes: number,
+): void {
+  if (maxBytes <= 0) {
+    return;
+  }
+
+  const byteLength = Buffer.byteLength(file, encoding);
+  if (byteLength > maxBytes) {
+    const fileSizeKb = (byteLength / 1024).toFixed(1);
+    const limitKb = (maxBytes / 1024).toFixed(0);
+    throw new Error(
+      `File (${fileSizeKb}KB) exceeds the ${limitKb}KB read limit. To read this file, use one of these options:\n` +
+        "• Set maxBytes: 0 to read the entire file\n" +
+        "• Use startLine and lineCount to read specific portions (e.g., startLine: 1, lineCount: 100)\n" +
+        "• Use the Grep tool to search for specific content\n" +
+        `• Use the Bash tool with 'tail' or 'head' commands`,
+    );
+  }
+}
