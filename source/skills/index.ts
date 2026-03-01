@@ -1,4 +1,4 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { logger } from "../utils/logger.ts";
@@ -200,25 +200,19 @@ async function tryLoadSkillFromFile(
 }
 
 /**
- * Checks if an entry should be skipped (hidden files, symlinks)
+ * Checks if an entry should be skipped (hidden files, inaccessible paths)
  */
 async function shouldSkipEntry(
   entryPath: string,
   entryName: string,
 ): Promise<boolean> {
-  // Skip hidden files and directories
   if (entryName.startsWith(".")) {
     return true;
   }
 
-  // Skip symbolic links to avoid infinite recursion
   try {
-    const stats = await stat(entryPath);
-    if (stats.isSymbolicLink()) {
-      return true;
-    }
+    await stat(entryPath);
   } catch {
-    // If we can't stat, skip it
     return true;
   }
 
@@ -231,9 +225,22 @@ async function loadSkillsFromDirInternal(
   mode: "recursive" | "claude",
   _useColonPath: boolean,
   subdir = "",
+  visited: Set<string> = new Set(),
 ): Promise<Skill[]> {
   const skills: Skill[] = [];
   const fullDir = join(dir, subdir);
+
+  // Resolve the real path to detect symlink cycles
+  try {
+    const real = await realpath(fullDir);
+    if (visited.has(real)) {
+      logger.warn(`Skipping ${fullDir}: symlink cycle detected`);
+      return skills;
+    }
+    visited.add(real);
+  } catch {
+    return skills;
+  }
 
   let entries: Awaited<ReturnType<typeof readdir>>;
   try {
@@ -267,6 +274,7 @@ async function loadSkillsFromDirInternal(
           mode,
           false,
           newSubdir,
+          visited,
         );
         skills.push(...subSkills);
       } else if (mode === "claude") {
