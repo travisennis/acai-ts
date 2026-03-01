@@ -17,6 +17,7 @@ import type { SessionManager } from "../sessions/manager.ts";
 import { printExitSummary } from "../sessions/summary.ts";
 import type { TokenCounter } from "../tokens/counter.ts";
 import type { TokenTracker } from "../tokens/tracker.ts";
+import type { CompleteToolSet } from "../tools/index.ts";
 import { type CompleteTools, initTools } from "../tools/index.ts";
 import { toAiSdkTools } from "../tools/utils.ts";
 import { logger } from "../utils/logger.ts";
@@ -44,10 +45,7 @@ export class Cli {
     const abortController = new AbortController();
     const { signal } = abortController;
 
-    const cb = abortController.abort.bind(abortController);
-
-    // Handle Ctrl+C (SIGINT)
-    process.on("SIGINT", cb);
+    const { cleanup } = this.setupSignalHandlers(abortController);
 
     const langModel = modelManager.getModel("cli");
     const modelConfig = modelManager.getModelMetadata("cli");
@@ -58,26 +56,11 @@ export class Cli {
 
     sessionManager.appendUserMessage(userMsg);
 
-    const cliConfig = await config.getConfig();
-    const finalSystemPromptResult = await systemPrompt({
-      allowedDirs: this.options.workspace.allowedDirs,
-      logsPath: cliConfig.logs?.path,
-    });
-    const finalSystemPrompt = finalSystemPromptResult.prompt;
-
-    const aiConfig = new AiConfig({
-      modelMetadata: modelConfig,
-      prompt: userPrompt,
-    });
-
-    const tools = await initTools({
-      workspace: this.options.workspace,
-    });
-
-    // Cleanup function to remove signal handler
-    const cleanup = () => {
-      process.removeListener("SIGINT", cb);
-    };
+    const { aiConfig, finalSystemPrompt, tools } =
+      await this.initializeAiConfig({
+        userPrompt,
+        modelConfig,
+      });
 
     try {
       const result = await generateText({
@@ -119,10 +102,8 @@ export class Cli {
       cleanup();
       process.exit(0);
     } catch (e) {
-      // Always cleanup signal handler
       cleanup();
 
-      // Check if it's an abort error or if the signal was aborted
       const isAbortError =
         (e instanceof Error &&
           (e.name === "AbortError" ||
@@ -131,26 +112,75 @@ export class Cli {
         signal.aborted;
 
       if (isAbortError) {
-        logger.info("CLI execution interrupted by user");
-        // Try to save message history before exiting
-        if (!this.options.noSession) {
-          try {
-            await sessionManager.save();
-          } catch (_saveError) {
-            // Ignore save errors on abort
-            logger.warn("Failed to save message history on interrupt");
-          }
-        }
-        process.exit(0); // Exit gracefully
+        await this.handleAbort();
       } else {
-        if (e instanceof Error) {
-          logger.error(e);
-        } else {
-          logger.error(JSON.stringify(e, null, 2));
-        }
-        process.exit(1);
+        this.handleError(e);
       }
     }
+  }
+
+  private setupSignalHandlers(abortController: AbortController): {
+    cleanup: () => void;
+  } {
+    const cb = abortController.abort.bind(abortController);
+    process.on("SIGINT", cb);
+
+    const cleanup = () => {
+      process.removeListener("SIGINT", cb);
+    };
+
+    return { cleanup };
+  }
+
+  private async initializeAiConfig({
+    userPrompt,
+    modelConfig,
+  }: {
+    userPrompt: string;
+    modelConfig: ReturnType<ModelManager["getModelMetadata"]>;
+  }): Promise<{
+    aiConfig: AiConfig;
+    finalSystemPrompt: string;
+    tools: CompleteToolSet;
+  }> {
+    const cliConfig = await config.getConfig();
+    const finalSystemPromptResult = await systemPrompt({
+      allowedDirs: this.options.workspace.allowedDirs,
+      logsPath: cliConfig.logs?.path,
+    });
+    const finalSystemPrompt = finalSystemPromptResult.prompt;
+
+    const aiConfig = new AiConfig({
+      modelMetadata: modelConfig,
+      prompt: userPrompt,
+    });
+
+    const tools = await initTools({
+      workspace: this.options.workspace,
+    });
+
+    return { aiConfig, finalSystemPrompt, tools };
+  }
+
+  private async handleAbort(): Promise<void> {
+    logger.info("CLI execution interrupted by user");
+    if (!this.options.noSession) {
+      try {
+        await this.options.sessionManager.save();
+      } catch {
+        logger.warn("Failed to save message history on interrupt");
+      }
+    }
+    process.exit(0);
+  }
+
+  private handleError(e: unknown): void {
+    if (e instanceof Error) {
+      logger.error(e);
+    } else {
+      logger.error(JSON.stringify(e, null, 2));
+    }
+    process.exit(1);
   }
 }
 
