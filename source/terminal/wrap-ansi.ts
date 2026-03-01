@@ -240,6 +240,117 @@ const processAnsiEscapes = (pre: string[], preString: string): string => {
   return returnValue;
 };
 
+// Determines if a new row should be started based on current row state
+const shouldStartNewRow = (
+  rowLength: number,
+  columns: number,
+  options: WrapAnsiOptions,
+): boolean =>
+  rowLength >= columns &&
+  (options.wordWrap === false || options.trim === false);
+
+// Adds a space between words if needed
+const addWordSpacing = (
+  rows: string[],
+  rowLength: number,
+  options: WrapAnsiOptions,
+): number => {
+  if (rowLength > 0 || options.trim === false) {
+    rows[rows.length - 1] += " ";
+    return rowLength + 1;
+  }
+  return rowLength;
+};
+
+// Handles hard wrap mode where words cannot exceed column width
+const handleHardWrap = (
+  rows: string[],
+  word: string,
+  wordLength: number,
+  rowLength: number,
+  columns: number,
+): boolean => {
+  if (wordLength <= columns) {
+    return false;
+  }
+
+  const remainingColumns = columns - rowLength;
+  const breaksStartingThisLine =
+    1 + Math.floor((wordLength - remainingColumns - 1) / columns);
+  const breaksStartingNextLine = Math.floor((wordLength - 1) / columns);
+  if (breaksStartingNextLine < breaksStartingThisLine) {
+    rows.push("");
+  }
+
+  wrapWord(rows, word, columns);
+  return true;
+};
+
+// Handles soft wrap mode for normal word wrapping
+const handleSoftWrap = (
+  rows: string[],
+  word: string,
+  wordLength: number,
+  rowLength: number,
+  columns: number,
+  options: WrapAnsiOptions,
+): boolean => {
+  const totalLength = rowLength + wordLength;
+
+  if (totalLength > columns && rowLength > 0 && wordLength > 0) {
+    if (options.wordWrap === false && rowLength < columns) {
+      wrapWord(rows, word, columns);
+      return true;
+    }
+    rows.push("");
+  }
+
+  if (totalLength > columns && options.wordWrap === false) {
+    wrapWord(rows, word, columns);
+    return true;
+  }
+
+  return false;
+};
+
+// Process a single word and update rows accordingly
+const processWord = (
+  rows: string[],
+  word: string,
+  wordLength: number,
+  index: number,
+  columns: number,
+  options: WrapAnsiOptions,
+): number => {
+  if (options.trim !== false) {
+    rows[rows.length - 1] = rows.at(-1)?.trimStart() ?? "";
+  }
+
+  let rowLength = stringWidth(rows.at(-1) ?? "");
+
+  if (index !== 0) {
+    if (shouldStartNewRow(rowLength, columns, options)) {
+      rows.push("");
+      rowLength = 0;
+    }
+
+    rowLength = addWordSpacing(rows, rowLength, options);
+  }
+
+  if (options.hard) {
+    if (handleHardWrap(rows, word, wordLength, rowLength, columns)) {
+      return -1;
+    }
+  }
+
+  if (handleSoftWrap(rows, word, wordLength, rowLength, columns, options)) {
+    return -1;
+  }
+
+  rows[rows.length - 1] += word;
+  return stringWidth(rows.at(-1) ?? "");
+};
+
 // The wrap-ansi module can be invoked in either 'hard' or 'soft' wrap mode.
 //
 // 'hard' will never allow a string to take up more than columns characters.
@@ -255,64 +366,11 @@ const exec = (
   }
 
   const lengths = wordLengths(string);
+  const words = string.split(" ");
   let rows: string[] = [""];
 
-  for (const [index, word] of string.split(" ").entries()) {
-    if (options.trim !== false) {
-      rows[rows.length - 1] = rows.at(-1)?.trimStart() ?? "";
-    }
-
-    let rowLength = stringWidth(rows.at(-1) ?? "");
-
-    if (index !== 0) {
-      if (
-        rowLength >= columns &&
-        (options.wordWrap === false || options.trim === false)
-      ) {
-        // If we start with a new word but the current row length equals the length of the columns, add a new row
-        rows.push("");
-        rowLength = 0;
-      }
-
-      if (rowLength > 0 || options.trim === false) {
-        rows[rows.length - 1] += " ";
-        rowLength++;
-      }
-    }
-
-    // In 'hard' wrap mode, the length of a line is never allowed to extend past 'columns'
-    if (options.hard && lengths[index] > columns) {
-      const remainingColumns = columns - rowLength;
-      const breaksStartingThisLine =
-        1 + Math.floor((lengths[index] - remainingColumns - 1) / columns);
-      const breaksStartingNextLine = Math.floor((lengths[index] - 1) / columns);
-      if (breaksStartingNextLine < breaksStartingThisLine) {
-        rows.push("");
-      }
-
-      wrapWord(rows, word, columns);
-      continue;
-    }
-
-    if (
-      rowLength + lengths[index] > columns &&
-      rowLength > 0 &&
-      lengths[index] > 0
-    ) {
-      if (options.wordWrap === false && rowLength < columns) {
-        wrapWord(rows, word, columns);
-        continue;
-      }
-
-      rows.push("");
-    }
-
-    if (rowLength + lengths[index] > columns && options.wordWrap === false) {
-      wrapWord(rows, word, columns);
-      continue;
-    }
-
-    rows[rows.length - 1] += word;
+  for (const [index, word] of words.entries()) {
+    processWord(rows, word, lengths[index], index, columns, options);
   }
 
   if (options.trim !== false) {

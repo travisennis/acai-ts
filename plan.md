@@ -1,320 +1,277 @@
-# Implementation Plan: Skill Autocomplete Trigger (Issue #130)
+# install-skill CLI Subcommand Implementation Plan
 
 ## Overview
 
-Create an autocomplete trigger in the Editor component that lists user-invocable skills by name, triggered via a new trigger character (`>`).
+Implement a new `install-skill` CLI subcommand that allows users to install skills from GitHub repositories. This will be invoked as `acai install-skill -r owner/repo`, running as a standalone command that performs the action and exits.
 
-## Summary
+## GitHub Issue Reference
 
-This feature adds a new autocomplete provider for skills, triggered when the user types `>` at the start of a message or after whitespace. The autocomplete will show all skills where `userInvocable: true`.
+- No GitHub issue provided
 
-## Design Decisions
+## Current State Analysis
 
-### Trigger Character: `>`
-- Common convention for skill/command palette style
-- Doesn't conflict with existing triggers (`/` for commands, `@` for files, `#` for attachments)
-- Visually distinct from similar features in other tools
+The acai-ts project currently supports:
+- **REPL mode**: `acai` - interactive session with commands like `/init-project`, `/help`
+- **CLI mode**: `acai -p "prompt"` - runs single prompt and exits
+- **Early exits**: `acai --version`, `acai --help`, `acai --resume`, `acai --continue`
 
-### Architecture
-- Create a new `SkillProvider` class implementing `AutocompleteProvider`
-- Add trigger detection in `Editor.insertCharacter()` method
-- Extend `createDefaultProvider()` to accept optional skills parameter, or create new factory function in REPL
+**What's missing:**
+- No subcommand pattern (e.g., `acai <subcommand>`)
+- No command to install skills from GitHub repositories
 
----
+**Key file:** `source/index.ts` - Main entry point with argument parsing
 
-## Phase 1: Create SkillProvider
+## Desired End State
 
-### Files to Create
-- `source/tui/autocomplete/skill-provider.ts` - New autocomplete provider
+A working `acai install-skill` command that:
+1. Accepts `-r/--repo` for GitHub repo (short name `owner/repo` or full URL)
+2. Accepts `--skill-path` for optional subdirectory within the repo
+3. Prompts user for project vs global installation
+4. Shows files to be installed with destination paths
+5. Confirms with user before installing
+6. Handles skill name conflicts by prompting for new name
+7. Exits after completion
 
-### Implementation Details
-
-**SkillProvider class** (`source/tui/autocomplete/skill-provider.ts`):
-```typescript
-import type {
-  AutocompleteItem,
-  AutocompleteProvider,
-} from "./base-provider.ts";
-import type { Skill } from "../../skills/index.ts";
-
-export class SkillProvider implements AutocompleteProvider {
-  private skills: Skill[];
-
-  constructor(skills: Skill[] = []) {
-    // Filter to only user-invocable skills
-    this.skills = skills.filter((skill) => skill.userInvocable);
-  }
-
-  async getSuggestions(
-    lines: string[],
-    cursorLine: number,
-    cursorCol: number,
-  ): Promise<{ items: AutocompleteItem[]; prefix: string } | null> {
-    const currentLine = lines[cursorLine] || "";
-    const textBeforeCursor = currentLine.slice(0, cursorCol);
-
-    // Check for skill trigger (">" at start or after whitespace)
-    if (textBeforeCursor.match(/(?:^|[\s])>$/)) {
-      // User just typed ">" - show all skills
-      const items = this.skills.map((skill) => ({
-        value: skill.name,
-        label: skill.name,
-        description: skill.description,
-      }));
-
-      // Sort alphabetically
-      items.sort((a, b) => a.label.localeCompare(b.label));
-
-      return { items, prefix: "" };
-    }
-
-    // Check for partial match (typing after ">")
-    const match = textBeforeCursor.match(/(?:^|[\s])>([^\s]*)$/);
-    if (match) {
-      const prefix = match[1];
-      const filtered = this.skills
-        .filter((skill) => skill.name.toLowerCase().startsWith(prefix.toLowerCase()))
-        .map((skill) => ({
-          value: skill.name,
-          label: skill.name,
-          description: skill.description,
-        }));
-
-      filtered.sort((a, b) => a.label.localeCompare(b.label));
-
-      if (filtered.length === 0) return null;
-
-      return { items: filtered, prefix };
-    }
-
-    return null;
-  }
-
-  applyCompletion(
-    lines: string[],
-    cursorLine: number,
-    cursorCol: number,
-    item: AutocompleteItem,
-    prefix: string,
-  ): { lines: string[]; cursorLine: number; cursorCol: number } {
-    const currentLine = lines[cursorLine] || "";
-    const textBeforeCursor = currentLine.slice(0, cursorCol);
-
-    // Find the position of ">" in the text before cursor
-    const triggerMatch = textBeforeCursor.match(/(?:^|[\s])>([^\s]*)$/);
-    if (!triggerMatch) {
-      return { lines, cursorLine, cursorCol };
-    }
-
-    const triggerStart = triggerMatch.index!;
-    const beforeTrigger = currentLine.slice(0, triggerStart + 1); // Include ">"
-    const afterCursor = currentLine.slice(cursorCol);
-
-    // Replace prefix after ">" with selected skill name
-    const newLine = `${beforeTrigger}${item.value}${afterCursor}`;
-    const newLines = [...lines];
-    newLines[cursorLine] = newLine;
-
-    return {
-      lines: newLines,
-      cursorLine,
-      cursorCol: beforeTrigger.length + item.value.length,
-    };
-  }
-}
-```
-
-### Export
-Add export to `source/tui/autocomplete.ts`:
-```typescript
-export { SkillProvider } from "./autocomplete/skill-provider.ts";
-```
-
-### Success Criteria - Phase 1
-- [x] **Automated**: `SkillProvider` class compiles without errors
-- [x] **Automated**: TypeScript type checking passes
-- [x] **Automated**: Unit tests created for SkillProvider in `test/tui/autocomplete/skill-provider.test.ts`
-- [x] **Manual**: SkillProvider correctly filters non-user-invocable skills
-
----
-
-## Phase 2: Add Trigger Detection in Editor
-
-### Files to Modify
-- `source/tui/components/editor.ts` - Add `>` trigger detection in `insertCharacter()`
-
-### Implementation Details
-
-Add trigger detection in `insertCharacter()` method around line 856 (after `#` trigger):
-
-```typescript
-// Auto-trigger for ">" skill invocation
-else if (char === ">") {
-  const currentLine = this.state.lines[this.state.cursorLine] || "";
-  const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
-  const charBeforeGt = textBeforeCursor[textBeforeCursor.length - 2];
-  if (
-    textBeforeCursor.length === 1 ||
-    charBeforeGt === " " ||
-    charBeforeGt === "\t"
-  ) {
-    void this.tryTriggerAutocomplete();
-  }
-}
-```
-
-Also update the existing letter-typing handler to support `>` context (around line 897):
-
-```typescript
-// Check if we're in a skill context (">" with optional prefix)
-else if (textBeforeCursor.match(/(?:^|[\s])>[^\s]*$/)) {
-  void this.tryTriggerAutocomplete();
-}
-```
-
-### Success Criteria - Phase 2
-- [x] **Automated**: TypeScript type checking passes
-- [x] **Automated**: `npm run lint` passes (with pre-existing warning)
-- [x] **Manual**: Typing `>` at start of message triggers autocomplete
-- [x] **Manual**: Typing `>` after whitespace triggers autocomplete
-- [x] **Manual**: Continuing to type after `>` filters skills
-
----
-
-## Phase 3: Integrate SkillProvider in REPL
-
-### Files to Modify
-- `source/repl/index.ts` - Load skills and create SkillProvider
-- `source/tui/autocomplete.ts` - Optionally enhance createDefaultProvider
-
-### Implementation Details
-
-Option A - Enhance REPL initialization (`source/repl/index.ts:185-190`):
-
-```typescript
-import { SkillProvider } from "./tui/autocomplete/skill-provider.ts";
-import { loadSkills } from "./skills/index.ts";
-
-// In init() method, before creating autocomplete provider:
-const skills = await loadSkills();
-const userInvocableSkills = skills.filter(s => s.userInvocable);
-
-const autocompleteProvider = new CombinedProvider([
-  new CommandProvider(await this.options.commands.getCompletions()),
-  new AttachmentProvider(),
-  new FileSearchProvider(),
-  new SkillProvider(userInvocableSkills),
-]);
-```
-
-Option B - Extend createDefaultProvider (simpler, maintains backward compatibility):
-
-```typescript
-// In source/tui/autocomplete.ts
-export function createSkillAwareProvider(
-  commands: SlashCommand[] = [],
-  skills: Skill[] = [],
-  allowedDirs: string[] = [process.cwd()],
-) {
-  const userInvocableSkills = skills.filter((s) => s.userInvocable);
-  
-  return new CombinedProvider([
-    new CommandProvider(commands),
-    new AttachmentProvider(),
-    new FileSearchProvider(),
-    new SkillProvider(userInvocableSkills),
-  ]);
-}
-```
-
-**Recommendation**: Use Option B for cleaner API and backward compatibility.
-
-### Success Criteria - Phase 3
-- [x] **Automated**: TypeScript type checking passes
-- [x] **Automated**: All existing tests pass
-- [x] **Manual**: Skills appear in autocomplete when typing `>`
-- [x] **Manual**: Selecting a skill inserts the skill name correctly
-- [x] **Manual**: Skills without `userInvocable: true` do NOT appear
-
----
-
-## Phase 4: Testing and Edge Cases
-
-### Test Scenarios
-
-1. **No skills available**: Show empty list or no autocomplete (graceful handling)
-2. **Skill with arguments**: Arguments not supported in this phase (v2)
-3. **Partial matching**: Filter skills as user types after `>`
-4. **Special characters**: Skills use lowercase letters, numbers, hyphens only
-5. **Concurrent typing**: Use existing debounce in autocomplete system
-6. **Multiple cursors**: Not supported (single cursor only)
-
-### Additional Tests
-
-Create tests in `test/tui/autocomplete/skill-provider.test.ts`:
-- `getSuggestions` returns all user-invocable skills when just `>` is typed
-- `getSuggestions` filters by prefix when typing after `>`
-- `getSuggestions` returns null for non-`>` contexts
-- `applyCompletion` correctly inserts skill name
-- Skills are sorted alphabetically
-
-### Success Criteria - Phase 4
-- [x] **Automated**: All new tests pass
-- [x] **Automated**: Full test suite passes (`npm test`)
-- [x] **Manual**: Test with real skills in `~/.agents/skills/`
-- [x] **Manual**: Verify skill descriptions display in autocomplete
-
----
-
-## What We're NOT Doing (v1)
-
-1. **Skill arguments** - Full command syntax with arguments will be v2
-2. **Nested skill paths** - Only skill name, not directory path
-3. **Custom trigger characters** - Only `>` in this implementation
-4. **Skill preview/description expansion** - Just labels in v1
-
----
-
-## Dependencies
-
-- `loadSkills()` from `source/skills/index.ts` (already exported)
-- `AutocompleteProvider` interface from `source/tui/autocomplete/base-provider.ts`
-- `Editor` component from `source/tui/components/editor.ts`
-- `CombinedProvider` from `source/tui/autocomplete/combined-provider.ts`
-
----
-
-## Key Files Summary
-
-| File | Action |
-|------|--------|
-| `source/tui/autocomplete/skill-provider.ts` | Create |
-| `source/tui/autocomplete.ts` | Modify (add export) |
-| `source/tui/components/editor.ts` | Modify (add trigger) |
-| `source/repl/index.ts` | Modify (integrate provider) |
-| `test/tui/autocomplete/skill-provider.test.ts` | Create |
-
----
-
-## Verification Commands
-
+### Example Usage:
 ```bash
-# Type checking
-npm run typecheck
-
-# Linting
-npm run lint
-
-# Format check
-npm run format
-
-# Full check
-npm run check
-
-# Tests
-npm test
-
-# Manual testing in REPL
-tmux
-# Then run: acai
+acai install-skill -r owner/skill-repo
+acai install-skill --repo https://github.com/owner/skill-repo
+acai install-skill -r owner/skill-repo --skill-path skills/my-skill
 ```
+
+### Key Discoveries:
+- Skills require `SKILL.md` with valid frontmatter (`source/skills/index.ts:48-88`)
+- Skill names must be lowercase alphanumeric with hyphens, matching directory name
+- Global skills go to `~/.agents/skills/`, project skills to `.agents/skills/`
+- Use `Executor` class for git operations
+- Use `select` for interactive prompts
+
+## What We're NOT Doing
+
+- REPL command version (only CLI subcommand)
+- Supporting sources other than GitHub
+- Automatic skill updates/versioning
+- Installing multiple skills from single repo
+- Validating skill functionality after installation
+
+## Implementation Approach
+
+**Architecture:** Add subcommand detection in `source/index.ts` before the main flow:
+1. Parse arguments normally
+2. Check if first positional is a known subcommand
+3. If yes, run that subcommand and exit
+4. If no, continue with existing REPL/CLI behavior
+
+This approach is extensible for future subcommands.
+
+## Phase 1: Core CLI Subcommand Infrastructure
+
+### Overview
+Modify `source/index.ts` to detect and route subcommands.
+
+### Changes Required:
+
+#### 1. Modify source/index.ts
+**File**: `source/index.ts`
+**Changes**:
+- Add import for subcommand handler
+- Add subcommand detection after argument parsing (around line 113)
+- Create subcommand router function
+- Add subcommand options to parseArgs (for help display)
+
+### Success Criteria:
+
+#### Automated Verification:
+- [ ] Type checking passes: `npm run typecheck`
+- [ ] Linting passes: `npm run lint`
+- [ ] Build succeeds: `npm run build`
+
+#### Manual Verification:
+- [ ] `acai install-skill --help` shows help
+- [ ] Unknown subcommand shows error
+
+---
+
+## Phase 2: Create install-skill Command Module
+
+### Overview
+Create the core install-skill implementation.
+
+### Changes Required:
+
+#### 1. Create cli-commands directory
+**New Directory**: `source/cli-commands/`
+
+#### 2. Create install-skill command
+**New File**: `source/cli-commands/install-skill/index.ts`
+- Main command handler function
+- Parse `-r/--repo` and `--skill-path` arguments
+- Clone repo logic using `Executor`
+- Skill discovery from cloned repo
+- Project/global prompt
+- File preview and confirmation
+- Handle skill name conflicts
+
+**New File**: `source/cli-commands/install-skill/utils.ts`
+- `parseRepoUrl(input: string): { owner: string; repo: string }`
+- `cloneRepo(owner: string, repo: string, targetDir: string): Promise<void>`
+- `findSkillInRepo(repoDir: string, skillPath?: string): Promise<string | null>`
+- `getSkillName(skillDir: string): Promise<string | null>`
+- `getSkillFiles(skillDir: string): Promise<string[]>`
+- `validateSkillName(name: string): { valid: boolean; error?: string }`
+- `getInstallDestination(skillName: string, scope: "project" | "global"): string`
+
+### Success Criteria:
+
+#### Automated Verification:
+- [ ] Type checking passes: `npm run typecheck`
+- [ ] Linting passes: `npm run lint`
+- [ ] Build succeeds: `npm run build`
+
+#### Manual Verification:
+- [ ] Command exists and is callable
+
+---
+
+## Phase 3: Git Clone and Skill Discovery
+
+### Overview
+Implement the git clone functionality and skill discovery logic.
+
+### Changes Required:
+
+#### 1. Implement utils.ts functions
+- `cloneRepo` using shallow clone (`--depth 1`) for performance
+- `findSkillInRepo` to locate SKILL.md in repo or at skill-path
+- `getSkillName` to parse frontmatter
+- `getSkillFiles` to list skill directory contents
+- Error handling for edge cases
+
+### Success Criteria:
+
+#### Automated Verification:
+- [ ] Type checking passes: `npm run typecheck`
+- [ ] Linting passes: `npm run lint`
+
+#### Manual Verification:
+- [ ] Can clone a valid GitHub repo
+- [ ] Error handling for invalid repos
+- [ ] Error handling for repos without SKILL.md
+
+---
+
+## Phase 4: User Interaction Flow
+
+### Overview
+Implement interactive prompts for installation scope, file preview, and confirmation.
+
+### Changes Required:
+
+#### 1. Extend install-skill/index.ts
+- Prompt for project vs global using `select`
+- Show file preview: source → destination mapping
+- Confirmation prompt before installation
+- Skill name conflict detection
+- Rename prompt if conflict
+- Success message with next steps
+
+### Success Criteria:
+
+#### Automated Verification:
+- [ ] Type checking passes: `npm run typecheck`
+- [ ] Linting passes: `npm run lint`
+
+#### Manual Verification:
+- [ ] Prompts user for installation scope
+- [ ] Shows file list before installing
+- [ ] Confirms before making changes
+- [ ] Handles skill name conflicts
+
+---
+
+## Phase 5: Help Text Update
+
+### Overview
+Update help text to include the new subcommand.
+
+### Changes Required:
+
+#### 1. Modify source/index.ts
+**File**: `source/index.ts`
+**Changes**: Update `helpText` constant to include subcommand
+
+### Success Criteria:
+
+#### Automated Verification:
+- [ ] Type checking passes: `npm run typecheck`
+- [ ] Linting passes: `npm run lint`
+
+#### Manual Verification:
+- [ ] `acai --help` shows install-skill
+
+---
+
+## Phase 6: Documentation
+
+### Overview
+Update architecture and README documentation.
+
+### Changes Required:
+
+#### 1. Modify ARCHITECTURE.md
+- Add `source/cli-commands/` to project structure
+- Document CLI subcommand pattern
+
+#### 2. Modify README.md
+- Add `install-skill` to command list with description
+
+### Success Criteria:
+
+#### Automated Verification:
+- [ ] Full check passes: `npm run check`
+
+---
+
+## Testing Strategy
+
+### Unit Tests:
+- Test `parseRepoUrl` with various inputs:
+  - Short name: `owner/repo`
+  - Full URL: `https://github.com/owner/repo`
+  - Full URL with .git: `https://github.com/owner/repo.git`
+  - Invalid inputs
+- Test `validateSkillName`:
+  - Valid names
+  - Invalid characters
+  - Wrong length
+  - Doesn't match directory
+
+### Integration Tests:
+- Test full flow with test GitHub repo
+- Test error handling for network failures
+- Test error handling for permission errors
+
+### Manual Testing Steps:
+1. Run `acai install-skill -r owner/repo` and verify clone
+2. Run with `--skill-path` argument
+3. Choose project installation, verify `.agents/skills/`
+4. Choose global installation, verify `~/.agents/skills/`
+5. Try installing same skill again, verify conflict prompt
+6. Provide new name, verify rename works
+
+## Performance Considerations
+
+- Use shallow clone: `git clone --depth 1`
+- Clean up temp directory after installation
+
+## Migration Notes
+
+No migration needed - this is a new feature.
+
+## References
+
+- Current argument parsing: `source/index.ts:87-113`
+- Executor for git: `source/execution/index.ts`
+- User prompts: `source/terminal/select-prompt.ts`
+- Skills loading: `source/skills/index.ts:280-310`
+- Skill validation: `source/skills/index.ts:38-88`
