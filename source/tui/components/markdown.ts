@@ -462,9 +462,26 @@ export class Markdown implements Component {
     // by temporarily replacing them with placeholders
     const { protectedText, codeSpans } = this.protectCodeSpans(line);
 
+    // Calculate the total visible width difference between placeholders and code spans
+    // This is needed because wrapAnsi calculates positions based on visible width,
+    // and after restoration the visible width will change
+    let totalWidthDiff = 0;
+    for (let i = 0; i < codeSpans.length; i++) {
+      const placeholder = `__CODE_SPAN_${i}__`;
+      const codeSpan = codeSpans[i];
+      const placeholderWidth = visibleWidth(placeholder);
+      const codeSpanWidth = visibleWidth(codeSpan);
+      totalWidthDiff += codeSpanWidth - placeholderWidth;
+    }
+
+    // Adjust contentWidth to account for the width difference after restoration
+    // We wrap at a narrower width so that after restoration, the visible width
+    // stays within the original contentWidth
+    const adjustedWidth = Math.max(1, contentWidth - totalWidthDiff);
+
     // Use the existing wrapAnsi function for robust ANSI-aware wrapping
-    // Use contentWidth (available width after padding) for wrapping
-    const wrappedText = wrapAnsi(protectedText, contentWidth, { trim: false });
+    // Use adjustedWidth for wrapping
+    const wrappedText = wrapAnsi(protectedText, adjustedWidth, { trim: false });
     const lines = wrappedText.split("\n");
 
     // Restore the code spans
@@ -484,20 +501,42 @@ export class Markdown implements Component {
   ): number {
     let cleanPos = 0;
     let styledPos = 0;
+    const escapeChar = String.fromCharCode(27);
 
-    while (cleanPos < cleanIndex && styledPos < styledText.length) {
+    // Handle edge case: if cleanIndex is 0, return 0
+    if (cleanIndex === 0) {
+      return 0;
+    }
+
+    while (styledPos < styledText.length) {
+      // If we've found all the clean characters we need, skip any escape
+      // sequences at the current position and return after them
+      if (cleanPos >= cleanIndex) {
+        // Skip any escape sequences at this position
+        while (
+          styledPos < styledText.length &&
+          styledText[styledPos] === escapeChar
+        ) {
+          while (
+            styledPos < styledText.length &&
+            styledText[styledPos] !== "m"
+          ) {
+            styledPos++;
+          }
+          styledPos++; // skip 'm'
+        }
+        return styledPos;
+      }
+
       const char = cleanText[cleanPos];
 
-      // Check if we're at an ANSI escape sequence in the styled text
-      const escapeChar = String.fromCharCode(27);
       if (styledText[styledPos] === escapeChar) {
         // Skip the entire ANSI escape sequence
         while (styledPos < styledText.length && styledText[styledPos] !== "m") {
           styledPos++;
         }
-        // Skip the 'm' character too
         styledPos++;
-        // Don't increment cleanPos - ANSI codes are inserted between characters
+        // Don't increment cleanPos - ANSI codes don't correspond to clean text characters
       } else if (styledText[styledPos] === char) {
         // Characters match, advance both
         cleanPos++;
@@ -632,6 +671,7 @@ export class Markdown implements Component {
         const placeholder = `__CODE_SPAN_${i}__`;
         const codeSpan = codeSpans[i];
 
+        // Perform the replacement
         restoredLine = restoredLine.replace(placeholder, codeSpan);
       }
 
