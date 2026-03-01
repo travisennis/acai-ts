@@ -453,39 +453,17 @@ export class Markdown implements Component {
   }
 
   private wrapLine(line: string, contentWidth: number): string[] {
-    // Handle undefined or null lines
     if (!line) {
       return [""];
     }
 
-    // Protect inline code spans from being split across lines
-    // by temporarily replacing them with placeholders
-    const { protectedText, codeSpans } = this.protectCodeSpans(line);
+    const { protectedText, codeSpans, placeholders } =
+      this.protectCodeSpans(line);
 
-    // Calculate the total visible width difference between placeholders and code spans
-    // This is needed because wrapAnsi calculates positions based on visible width,
-    // and after restoration the visible width will change
-    let totalWidthDiff = 0;
-    for (let i = 0; i < codeSpans.length; i++) {
-      const placeholder = `__CODE_SPAN_${i}__`;
-      const codeSpan = codeSpans[i];
-      const placeholderWidth = visibleWidth(placeholder);
-      const codeSpanWidth = visibleWidth(codeSpan);
-      totalWidthDiff += codeSpanWidth - placeholderWidth;
-    }
-
-    // Adjust contentWidth to account for the width difference after restoration
-    // We wrap at a narrower width so that after restoration, the visible width
-    // stays within the original contentWidth
-    const adjustedWidth = Math.max(1, contentWidth - totalWidthDiff);
-
-    // Use the existing wrapAnsi function for robust ANSI-aware wrapping
-    // Use adjustedWidth for wrapping
-    const wrappedText = wrapAnsi(protectedText, adjustedWidth, { trim: false });
+    const wrappedText = wrapAnsi(protectedText, contentWidth, { trim: false });
     const lines = wrappedText.split("\n");
 
-    // Restore the code spans
-    const restoredLines = this.restoreCodeSpans(lines, codeSpans);
+    const restoredLines = this.restoreCodeSpans(lines, codeSpans, placeholders);
 
     return restoredLines;
   }
@@ -552,29 +530,54 @@ export class Markdown implements Component {
   }
 
   /**
-   * Protect inline code spans by replacing them with placeholders
-   * This prevents wrapAnsi from breaking code spans across lines
+   * Create a placeholder string whose visible width matches the target width.
+   * Returns null if the code span is too short to protect reliably.
+   */
+  private createWidthMatchedPlaceholder(
+    index: number,
+    targetWidth: number,
+  ): string | null {
+    if (targetWidth < 3) {
+      return null;
+    }
+
+    const core = `__CS${index}__`;
+    const coreWidth = core.length;
+
+    if (targetWidth >= coreWidth) {
+      return core + "_".repeat(targetWidth - coreWidth);
+    }
+
+    const short = `_${index}_`;
+    if (targetWidth >= short.length) {
+      return short + "_".repeat(targetWidth - short.length);
+    }
+
+    return null;
+  }
+
+  /**
+   * Protect inline code spans by replacing them with width-matched placeholders.
+   * This prevents wrapAnsi from breaking code spans across lines while
+   * preserving the correct visible width for accurate wrapping.
    */
   private protectCodeSpans(text: string): {
     protectedText: string;
     codeSpans: string[];
+    placeholders: string[];
   } {
     const codeSpans: string[] = [];
+    const placeholders: string[] = [];
     let protectedText = text;
     let placeholderIndex = 0;
 
-    // Create a version of the text without ANSI codes for code span detection
-    // This allows us to reliably find code spans regardless of styling
     const cleanText = stripAnsi(text);
 
-    // Use the clean text to find code spans
     let i = 0;
     while (i < cleanText.length) {
-      // Find the next backtick in clean text
       const backtickIndex = cleanText.indexOf("`", i);
       if (backtickIndex === -1) break;
 
-      // Look for the closing backtick in clean text
       let closingIndex = -1;
       let depth = 1;
 
@@ -589,7 +592,6 @@ export class Markdown implements Component {
       }
 
       if (closingIndex !== -1) {
-        // Map the positions to the styled text
         const styledStart = this.cleanToStyledIndex(
           cleanText,
           text,
@@ -601,28 +603,29 @@ export class Markdown implements Component {
           closingIndex + 1,
         );
 
-        // Extract the styled code span
         const styledCodeSpan = text.slice(styledStart, styledEnd);
+        const codeSpanWidth = visibleWidth(styledCodeSpan);
 
-        const placeholder = `__CODE_SPAN_${placeholderIndex}__`;
+        const placeholder = this.createWidthMatchedPlaceholder(
+          placeholderIndex,
+          codeSpanWidth,
+        );
 
-        // Store the full styled code span for restoration
-        codeSpans.push(styledCodeSpan);
+        if (placeholder !== null) {
+          codeSpans.push(styledCodeSpan);
+          placeholders.push(placeholder);
+          protectedText = protectedText.replace(styledCodeSpan, placeholder);
+          placeholderIndex++;
+        }
 
-        // Replace with placeholder
-        protectedText = protectedText.replace(styledCodeSpan, placeholder);
-        placeholderIndex++;
-
-        // Move past this code span
         i = closingIndex + 1;
         continue;
       }
 
-      // Move to next character
       i = backtickIndex + 1;
     }
 
-    return { protectedText, codeSpans };
+    return { protectedText, codeSpans, placeholders };
   }
 
   /**
@@ -659,20 +662,16 @@ export class Markdown implements Component {
     return false;
   }
 
-  /**
-   * Restore code spans from placeholders after wrapping
-   */
-  private restoreCodeSpans(lines: string[], codeSpans: string[]): string[] {
+  private restoreCodeSpans(
+    lines: string[],
+    codeSpans: string[],
+    placeholders: string[],
+  ): string[] {
     return lines.map((line) => {
       let restoredLine = line;
 
-      // Restore each code span placeholder
       for (let i = 0; i < codeSpans.length; i++) {
-        const placeholder = `__CODE_SPAN_${i}__`;
-        const codeSpan = codeSpans[i];
-
-        // Perform the replacement
-        restoredLine = restoredLine.replace(placeholder, codeSpan);
+        restoredLine = restoredLine.replace(placeholders[i], codeSpans[i]);
       }
 
       return restoredLine;
