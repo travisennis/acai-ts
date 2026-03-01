@@ -654,9 +654,14 @@ async function main() {
     );
 
     // Add logs directory to allowed directories if configured
-    const logsPath = appConfig.logs?.path;
+    const logsPath = (await config.getConfig()).logs?.path;
     if (logsPath) {
-      const logsDir = path.resolve(logsPath);
+      // Expand ~ to home directory before resolving
+      const expandedLogsPath =
+        logsPath.startsWith("~/") || logsPath === "~"
+          ? path.join(os.homedir(), logsPath.slice(1))
+          : logsPath;
+      const logsDir = path.dirname(path.resolve(expandedLogsPath));
       if (!workspace.allowedDirs.includes(logsDir)) {
         workspace.allowedDirs.push(logsDir);
       }
