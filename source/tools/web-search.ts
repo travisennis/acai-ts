@@ -9,7 +9,7 @@ export const WebSearchTool = {
 // Default search options
 const DEFAULT_NUM_RESULTS = 10;
 const DEFAULT_TIMEOUT = 30000; // 30 seconds
-const EXA_API_BASE = "https://api.exa.com";
+const EXA_API_BASE = "https://api.exa.ai";
 const EXA_API_VERSION = "2024-05-22";
 
 /**
@@ -285,6 +285,18 @@ export async function executeWebSearch(
         // Fall back to DuckDuckGo if Exa fails (but not if aborted)
         if (signal.aborted) {
           throw exaError;
+        }
+        // Provide more helpful error message about Exa failure
+        const errorMsg =
+          exaError instanceof Error ? exaError.message : String(exaError);
+        if (
+          errorMsg.includes("fetch failed") ||
+          errorMsg.includes("ENOTFOUND") ||
+          errorMsg.includes("connect")
+        ) {
+          throw new Error(
+            `Exa API is not accessible (network error). Try using provider="duckduckgo" instead.`,
+          );
         }
         response = await fetchDuckDuckGo(query, effectiveNumResults, signal);
       }
