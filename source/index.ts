@@ -313,7 +313,7 @@ async function initializeModelManager(
 ): Promise<ModelManager> {
   const chosenModel: ModelName = isSupportedModel(flags.model)
     ? flags.model
-    : "opencode:minimax-m2.5-free";
+    : "openrouter:glm-5";
 
   const projectConfig = await config.getConfig();
   const devtoolsEnabled = projectConfig.devtools?.enabled ?? false;
