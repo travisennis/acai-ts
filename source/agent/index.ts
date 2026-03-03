@@ -807,7 +807,6 @@ export class Agent {
 
     // Track in step stats
     stepToolCalls.push({ toolName });
-    stepToolResults.push({ toolName });
 
     if (!iTool) {
       const errorMsg = `No executor for tool ${toolName}`;
@@ -846,6 +845,8 @@ export class Agent {
         args: call.input,
       });
       collectedEvents.push(event);
+
+      stepToolResults.push({ toolName });
 
       results[index] = {
         toolCallId: call.toolCallId,

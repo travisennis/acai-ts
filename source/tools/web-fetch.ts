@@ -401,7 +401,7 @@ async function fetchUrl(
   let redirectCount = 0;
   let currentUrl = url;
 
-  while (redirectCount <= MAX_REDIRECTS) {
+  while (redirectCount < MAX_REDIRECTS) {
     const { signal, cleanup } = createTimeoutSignal(timeout, abortSignal);
 
     try {

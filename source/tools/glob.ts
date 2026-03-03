@@ -172,17 +172,14 @@ export const createGlobTool = () => {
       const effectiveMaxResults = maxResults ?? DEFAULT_MAX_RESULTS;
 
       const globOptions: Options = {
-        cwd: cwd || process.cwd(),
+        cwd: cwd || effectivePath,
         ...(gitignore !== null && { gitignore }),
         ...(recursive !== null && { recursive }),
         ...(expandDirectories !== null && { expandDirectories }),
         ...(ignoreFiles !== null && { ignoreFiles }),
       };
 
-      const matchingFiles = await glob(patternArray, {
-        ...globOptions,
-        cwd: effectivePath,
-      });
+      const matchingFiles = await glob(patternArray, globOptions);
 
       const filesToStat =
         matchingFiles.length > MAX_STAT_FILES

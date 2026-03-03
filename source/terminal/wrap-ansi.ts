@@ -8,10 +8,10 @@ interface WrapAnsiOptions {
   wordWrap?: boolean;
 }
 
-const ESCAPES = new Set(["\\u001B", "\\u009B"]);
+const ESCAPES = new Set(["\u001B", "\u009B"]);
 
 const END_CODE = 39;
-const ANSI_ESCAPE_BELL = "\\u0007";
+const ANSI_ESCAPE_BELL = "\u0007";
 const ANSI_CSI = "[";
 const ANSI_OSC = "]";
 const ANSI_SGR_TERMINATOR = "m";

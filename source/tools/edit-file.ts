@@ -254,7 +254,7 @@ export async function applyFileEdits(
   );
   const finalContent = originalBom + finalContentWithLineEndings;
 
-  const diff = createUnifiedDiff(content, finalContent, filePath);
+  const diff = createUnifiedDiff(content, modifiedContent, filePath);
   const formattedDiff = formatDiff(diff, filePath);
 
   if (!dryRun) {

@@ -667,7 +667,6 @@ export function truncateMatches(
         truncated.push(match);
         matchesKept++;
       } else {
-        break;
       }
     } else if (match.isContext) {
       if (isContextNearKeptMatch(matches, i, indicesToKeep, contextWindow)) {

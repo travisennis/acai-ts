@@ -25,7 +25,7 @@ function detectMultilineGitCommit(command: string): string | null {
   const trimmed = command.trim();
 
   // Check if it's a git commit command
-  if (!trimmed.startsWith("git commit") && !trimmed.startsWith("git ")) {
+  if (!trimmed.startsWith("git commit")) {
     return null;
   }
 
@@ -503,9 +503,11 @@ function fixRgCommand(command: string): string {
     // If it's just alphanumeric with maybe some regex chars, it's probably a pattern
     // Common pattern chars: ., *, +, ?, [, ], ^, $, (, ), |, \\
     // But we want to be conservative - if it looks like a filename without path, add .
-    if (!lastToken.includes("/") && !lastToken.includes("*")) {
-      // Doesn't look like a path with glob or directory, likely a pattern
-      // Need to add path
+    if (
+      !lastToken.includes("/") &&
+      !lastToken.includes("*") &&
+      !lastToken.includes(".")
+    ) {
       logger.debug(`Adding '.' to rg command: ${command}`);
       return `${command} .`;
     }

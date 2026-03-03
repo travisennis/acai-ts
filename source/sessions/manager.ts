@@ -330,7 +330,7 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
 
   get() {
     const history = [...this.history].filter(this.validMessage);
-    if (this.transientMessages.length > 0) {
+    if (this.transientMessages.length > 0 && history.length > 0) {
       const lastIndex = history.length - 1;
       return [
         ...history.slice(0, lastIndex),
