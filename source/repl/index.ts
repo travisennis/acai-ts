@@ -556,7 +556,22 @@ export class Repl {
         });
         this.thinkingBlockComponent = component;
         this.allThinkingBlocks.push(component);
-        this.addComponentWithSpacing(component);
+
+        // If a streaming message component already exists (text came before thinking),
+        // insert the thinking block BEFORE it to ensure correct visual order
+        if (this.streamingComponent) {
+          this.chatContainer.insertChildBefore(
+            this.streamingComponent,
+            component,
+          );
+          this.chatContainer.insertChildBefore(
+            this.streamingComponent,
+            new Spacer(1),
+          );
+        } else {
+          this.addComponentWithSpacing(component);
+        }
+
         this.thinkingBlockComponent.updateContent(event);
         this.tui.requestRender();
         break;

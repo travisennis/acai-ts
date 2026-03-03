@@ -68,6 +68,15 @@ export class Container implements Component {
     }
   }
 
+  insertChildBefore(beforeComponent: Component, newComponent: Component): void {
+    const index = this.children.indexOf(beforeComponent);
+    if (index !== -1) {
+      this.children.splice(index, 0, newComponent);
+    } else {
+      this.children.push(newComponent);
+    }
+  }
+
   clear(): void {
     this.children = [];
   }
