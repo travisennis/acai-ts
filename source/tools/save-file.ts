@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { config } from "../config/index.ts";
+import { config, type Config } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { clearProjectStatusCache } from "../repl/project-status.ts";
 import style from "../terminal/style.ts";
@@ -28,6 +28,30 @@ const inputSchema = z.object({
 });
 
 type SaveFileInputSchema = z.infer<typeof inputSchema>;
+
+async function checkFileNotReadOnly(
+  filePath: string,
+  projectConfig: Config,
+  primaryDir: string,
+): Promise<void> {
+  try {
+    await fs.stat(filePath);
+    validateFileNotReadOnly(filePath, projectConfig, primaryDir);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
+  }
+}
+
+async function ensurePathIsFile(
+  filePath: string,
+): Promise<void> {
+  const stat = await fs.stat(filePath);
+  if (stat.isDirectory()) {
+    throw new Error(`Cannot save file - path is a directory: ${filePath}`);
+  }
+}
 
 export const createSaveFileTool = async (options: {
   workspace: WorkspaceContext;
@@ -59,30 +83,8 @@ export const createSaveFileTool = async (options: {
         { requireExistence: false, abortSignal },
       );
 
-      try {
-        await fs.stat(filePath);
-        validateFileNotReadOnly(filePath, projectConfig, primaryDir);
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-          throw error;
-        }
-      }
-
-      try {
-        const stat = await fs.stat(filePath);
-        if (stat.isDirectory()) {
-          throw new Error(
-            `Cannot save file - path is a directory: ${filePath}`,
-          );
-        }
-      } catch (error) {
-        if (
-          error instanceof Error &&
-          error.message.includes("is a directory")
-        ) {
-          throw error;
-        }
-      }
+      await checkFileNotReadOnly(filePath, projectConfig, primaryDir);
+      await ensurePathIsFile(filePath);
 
       if (abortSignal?.aborted) {
         throw new Error("File saving aborted before writing");
