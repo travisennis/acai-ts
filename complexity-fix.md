@@ -24,4 +24,4 @@ Iteratively reduce cognitive complexity across the codebase to a maximum thresho
 
 9. **Commit the fix**: Stage and commit the changes. Only stage the file(s) you worked on. Since there are existing lint errors elsewhere in the codebase that will cause the precommit hook to fail, you must use `git commit --no-verify` to bypass the precommit checks. Use a conventional commit message following the format `fix: reduce cognitive complexity of <method/function-name> in <file-path>`, replacing `<method/function-name>` with the method or function you worked on and the `<file-path>` with the relative path to the modified file.
 
-11. **Ask to continue**: Present the results to the user and ask if they'd like to proceed to the next violation. If yes, return to step 2. If no, stop.
+11. **Stop**: Present the results to the user and stop.
