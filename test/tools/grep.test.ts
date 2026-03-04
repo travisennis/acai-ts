@@ -199,3 +199,25 @@ test("truncateMatches with limit of 1", () => {
   assert.strictEqual(truncated.length, 1);
   assert.strictEqual(truncated[0].content, "match 1");
 });
+
+test("likelyUnbalancedRegex detects invalid characters inside braces", () => {
+  // Letters are invalid inside braces (only digits and commas allowed)
+  assert.ok(likelyUnbalancedRegex("a{b}c"));
+  assert.ok(likelyUnbalancedRegex("a{abc}c"));
+  assert.ok(likelyUnbalancedRegex("a{1b}c"));
+});
+
+test("likelyUnbalancedRegex returns false for valid brace content with digits", () => {
+  assert.ok(!likelyUnbalancedRegex("a{1}c"));
+  assert.ok(!likelyUnbalancedRegex("a{123}c"));
+  assert.ok(!likelyUnbalancedRegex("a{1,5}c"));
+});
+
+test("likelyUnbalancedRegex detects empty braces with preceding atom", () => {
+  assert.ok(likelyUnbalancedRegex("a{}b"));
+  assert.ok(likelyUnbalancedRegex("x{}y"));
+});
+
+test("likelyUnbalancedRegex handles empty braces at start", () => {
+  assert.ok(!likelyUnbalancedRegex("{}b"));
+});

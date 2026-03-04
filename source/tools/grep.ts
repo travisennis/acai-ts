@@ -206,39 +206,50 @@ function skipCharacterClass(pattern: string, startIndex: number): number {
 }
 
 /**
+ * Checks if a character is valid inside braces (digits 0-9 or comma).
+ */
+function isValidBraceChar(c: string): boolean {
+  return (c >= "0" && c <= "9") || c === ",";
+}
+
+/**
+ * Checks if empty braces have a preceding atom.
+ * Empty braces with no preceding atom are treated as literal.
+ */
+function hasPrecedingAtom(pattern: string, startIndex: number): boolean {
+  if (startIndex === 0) return false;
+  const prev = pattern[startIndex - 1];
+  return /\S/.test(prev);
+}
+
+/**
  * Parses and validates the content inside braces {..}.
  * Returns true if the brace content is invalid.
  */
 function isInvalidBraceContent(pattern: string, startIndex: number): boolean {
-  let j = startIndex + 1;
-  let hasDigits = false;
-  let hasComma = false;
+  const j = startIndex + 1;
 
-  // Parse content inside braces
-  while (j < pattern.length && pattern[j] !== "}") {
-    const c = pattern[j];
-    if (c >= "0" && c <= "9") {
-      hasDigits = true;
-    } else if (c === "," && !hasComma) {
-      hasComma = true;
-    } else {
-      // Invalid character inside braces
+  // Find closing brace and check for invalid characters
+  let hasDigits = false;
+  let k = j;
+  while (k < pattern.length && pattern[k] !== "}") {
+    if (!isValidBraceChar(pattern[k])) {
       return true;
     }
-    j++;
+    if (pattern[k] >= "0" && pattern[k] <= "9") {
+      hasDigits = true;
+    }
+    k++;
   }
 
   // No closing brace found
-  if (j >= pattern.length) {
+  if (k >= pattern.length) {
     return true;
   }
 
-  // Empty braces {} with no preceding atom are treated as literal
-  if (!hasDigits) {
-    const prev = startIndex > 0 ? pattern[startIndex - 1] : undefined;
-    if (prev !== undefined && /\S/.test(prev)) {
-      return true;
-    }
+  // Empty braces {} with preceding atom are invalid
+  if (!hasDigits && hasPrecedingAtom(pattern, startIndex)) {
+    return true;
   }
 
   return false;
