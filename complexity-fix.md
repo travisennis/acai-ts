@@ -1,12 +1,16 @@
 # Cognitive Complexity Fix Workflow
 
-Iteratively reduce cognitive complexity across the codebase to a maximum threshold of 15.
+Reduce cognitive complexity in the codebase to a maximum threshold of 15.
+
+## Important Constraint
+
+**This workflow fixes EXACTLY ONE method and then stops.** Do not loop back to fix additional methods. The user will re-invoke this workflow if they want more methods fixed.
 
 ## Setup
 
 1. **Set the threshold**: Update `biome.json` and set `noExcessiveCognitiveComplexity` → `maxAllowedComplexity` to **15** and change the `level` to **"error"**.
 
-## Iteration Loop
+## Fix Workflow
 
 2. **Find violations**: Run `npm run check` and collect all `lint/complexity/noExcessiveCognitiveComplexity` errors. If there are no errors, the workflow is complete — stop here.
 
@@ -22,6 +26,6 @@ Iteratively reduce cognitive complexity across the codebase to a maximum thresho
 
 8. **Verify the fix**: Run `npm run check` to confirm the method no longer triggers a complexity error, then run `npm test` to confirm all tests still pass.
 
-9. **Commit the fix**: Stage and commit the changes. Only stage the file(s) you worked on. Since there are existing lint errors elsewhere in the codebase that will cause the precommit hook to fail, you must use `git commit --no-verify` to bypass the precommit checks. Use a conventional commit message following the format `fix: reduce cognitive complexity of <method/function-name> in <file-path>`, replacing `<method/function-name>` with the method or function you worked on and the `<file-path>` with the relative path to the modified file.
+9. **Commit the fix**: Stage and commit the changes. Only stage the file(s) you worked on. Since there are existing lint errors elsewhere in the codebase that will cause the precommit hook to fail, you must use `git commit --no-verify` to bypass the precommit checks. Use a conventional commit message following the format `fix: reduce cognitive complexity of <method/function-name> in <file-path>`, replacing `<method/function-name>` with the method or function you worked on and the `<file-path>` with the relative path to the modified file. **This completes the workflow.**
 
-11. **Stop**: Present the results to the user and stop.
+10. **Present results**: Present the results to the user and stop.
