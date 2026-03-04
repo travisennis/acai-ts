@@ -51,6 +51,37 @@ function formatResult(sortedFiles: string[]): string {
     : "No files found matching the specified patterns.";
 }
 
+function normalizePatternArray(patterns: string | string[]): string[] {
+  return Array.isArray(patterns) ? patterns : [patterns];
+}
+
+function buildGlobOptions(
+  effectivePath: string,
+  gitignore: boolean | null,
+  recursive: boolean | null,
+  expandDirectories: boolean | null,
+  ignoreFiles: string | string[] | null,
+  cwd: string | null,
+): Options {
+  return {
+    cwd: cwd || effectivePath,
+    ...(gitignore !== null && { gitignore }),
+    ...(recursive !== null && { recursive }),
+    ...(expandDirectories !== null && { expandDirectories }),
+    ...(ignoreFiles !== null && { ignoreFiles }),
+  };
+}
+
+function limitResults(
+  sortedFiles: string[],
+  effectiveMaxResults: number,
+): string[] {
+  if (effectiveMaxResults > 0 && sortedFiles.length > effectiveMaxResults) {
+    return sortedFiles.slice(0, effectiveMaxResults);
+  }
+  return sortedFiles;
+}
+
 export const GlobTool = {
   name: "Glob" as const,
 };
@@ -168,16 +199,17 @@ export const createGlobTool = () => {
       const effectivePath =
         typeof path === "string" && path.trim() !== "" ? path : process.cwd();
 
-      const patternArray = Array.isArray(patterns) ? patterns : [patterns];
+      const patternArray = normalizePatternArray(patterns);
       const effectiveMaxResults = maxResults ?? DEFAULT_MAX_RESULTS;
 
-      const globOptions: Options = {
-        cwd: cwd || effectivePath,
-        ...(gitignore !== null && { gitignore }),
-        ...(recursive !== null && { recursive }),
-        ...(expandDirectories !== null && { expandDirectories }),
-        ...(ignoreFiles !== null && { ignoreFiles }),
-      };
+      const globOptions = buildGlobOptions(
+        effectivePath,
+        gitignore,
+        recursive,
+        expandDirectories,
+        ignoreFiles,
+        cwd,
+      );
 
       const matchingFiles = await glob(patternArray, globOptions);
 
@@ -193,11 +225,7 @@ export const createGlobTool = () => {
       );
 
       const sortedFiles = sortFilesByMtime(filesWithStats);
-
-      const result =
-        effectiveMaxResults > 0 && sortedFiles.length > effectiveMaxResults
-          ? sortedFiles.slice(0, effectiveMaxResults)
-          : sortedFiles;
+      const result = limitResults(sortedFiles, effectiveMaxResults);
 
       return formatResult(result);
     },
