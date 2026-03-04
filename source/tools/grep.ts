@@ -273,26 +273,33 @@ function hasInvalidRepetition(pattern: string): boolean {
       continue;
     }
 
+    // Unmatched closing brace is invalid
     if (ch === "}") {
-      // Unmatched closing brace is invalid
       return true;
     }
 
+    // Handle opening brace
     if (ch === "{") {
       if (isInvalidBraceContent(pattern, i)) {
         return true;
       }
-
-      // Find closing brace to move past it
-      let j = i + 1;
-      while (j < pattern.length && pattern[j] !== "}") {
-        j++;
-      }
-      i = j;
+      i = findClosingBrace(pattern, i);
     }
   }
 
   return false;
+}
+
+/**
+ * Finds the index of the closing brace matching an opening brace.
+ * Returns the index of the closing brace, or the last index of pattern if not found.
+ */
+function findClosingBrace(pattern: string, startIndex: number): number {
+  let j = startIndex + 1;
+  while (j < pattern.length && pattern[j] !== "}") {
+    j++;
+  }
+  return j;
 }
 
 /**
