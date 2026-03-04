@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { config, type Config } from "../config/index.ts";
+import { type Config, config } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { clearProjectStatusCache } from "../repl/project-status.ts";
 import style from "../terminal/style.ts";
@@ -44,9 +44,7 @@ async function checkFileNotReadOnly(
   }
 }
 
-async function ensurePathIsFile(
-  filePath: string,
-): Promise<void> {
+async function ensurePathIsFile(filePath: string): Promise<void> {
   const stat = await fs.stat(filePath);
   if (stat.isDirectory()) {
     throw new Error(`Cannot save file - path is a directory: ${filePath}`);
