@@ -597,41 +597,44 @@ export class Agent {
     stepUsage: LanguageModelUsage,
     sessionManager: SessionManager,
   ): void {
-    this._state.usage.inputTokens = stepUsage.inputTokens ?? 0;
-    this._state.usage.outputTokens = stepUsage.outputTokens ?? 0;
-    this._state.usage.totalTokens = stepUsage.totalTokens ?? 0;
-    this._state.usage.cachedInputTokens =
-      stepUsage.inputTokenDetails.cacheReadTokens ?? 0;
-    this._state.usage.inputTokenDetails.cacheReadTokens =
-      stepUsage.inputTokenDetails.cacheReadTokens ?? 0;
-    this._state.usage.reasoningTokens =
-      stepUsage.outputTokenDetails.reasoningTokens ?? 0;
-    sessionManager.setContextWindow(stepUsage.totalTokens ?? 0);
+    // Extract values with null coalescing once
+    const inputTokens = stepUsage.inputTokens ?? 0;
+    const outputTokens = stepUsage.outputTokens ?? 0;
+    const totalTokens = stepUsage.totalTokens ?? 0;
+    const cacheReadTokens = stepUsage.inputTokenDetails.cacheReadTokens ?? 0;
+    const reasoningTokens = stepUsage.outputTokenDetails.reasoningTokens ?? 0;
 
-    this._state.totalUsage.inputTokens += stepUsage.inputTokens ?? 0;
-    this._state.totalUsage.outputTokens += stepUsage.outputTokens ?? 0;
-    this._state.totalUsage.totalTokens += stepUsage.totalTokens ?? 0;
-    this._state.totalUsage.cachedInputTokens +=
-      stepUsage.inputTokenDetails.cacheReadTokens ?? 0;
-    this._state.totalUsage.inputTokenDetails.cacheReadTokens +=
-      stepUsage.inputTokenDetails.cacheReadTokens ?? 0;
-    this._state.totalUsage.reasoningTokens +=
-      stepUsage.outputTokenDetails.reasoningTokens ?? 0;
+    // Update step usage
+    this._state.usage.inputTokens = inputTokens;
+    this._state.usage.outputTokens = outputTokens;
+    this._state.usage.totalTokens = totalTokens;
+    this._state.usage.cachedInputTokens = cacheReadTokens;
+    this._state.usage.inputTokenDetails.cacheReadTokens = cacheReadTokens;
+    this._state.usage.reasoningTokens = reasoningTokens;
+    sessionManager.setContextWindow(totalTokens);
+
+    // Update total usage (accumulate)
+    this._state.totalUsage.inputTokens += inputTokens;
+    this._state.totalUsage.outputTokens += outputTokens;
+    this._state.totalUsage.totalTokens += totalTokens;
+    this._state.totalUsage.cachedInputTokens += cacheReadTokens;
+    this._state.totalUsage.inputTokenDetails.cacheReadTokens += cacheReadTokens;
+    this._state.totalUsage.reasoningTokens += reasoningTokens;
 
     sessionManager.recordTurnUsage({
-      inputTokens: stepUsage.inputTokens ?? 0,
-      outputTokens: stepUsage.outputTokens ?? 0,
-      totalTokens: stepUsage.totalTokens ?? 0,
-      cachedInputTokens: stepUsage.inputTokenDetails.cacheReadTokens ?? 0,
-      reasoningTokens: stepUsage.outputTokenDetails.reasoningTokens ?? 0,
+      inputTokens,
+      outputTokens,
+      totalTokens,
+      cachedInputTokens: cacheReadTokens,
+      reasoningTokens,
       inputTokenDetails: {
         noCacheTokens: stepUsage.inputTokenDetails.noCacheTokens ?? 0,
-        cacheReadTokens: stepUsage.inputTokenDetails.cacheReadTokens ?? 0,
+        cacheReadTokens,
         cacheWriteTokens: stepUsage.inputTokenDetails.cacheWriteTokens ?? 0,
       },
       outputTokenDetails: {
         textTokens: stepUsage.outputTokenDetails.textTokens ?? 0,
-        reasoningTokens: stepUsage.outputTokenDetails.reasoningTokens ?? 0,
+        reasoningTokens,
       },
     });
   }
