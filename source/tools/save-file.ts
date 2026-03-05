@@ -45,9 +45,15 @@ async function checkFileNotReadOnly(
 }
 
 async function ensurePathIsFile(filePath: string): Promise<void> {
-  const stat = await fs.stat(filePath);
-  if (stat.isDirectory()) {
-    throw new Error(`Cannot save file - path is a directory: ${filePath}`);
+  try {
+    const stat = await fs.stat(filePath);
+    if (stat.isDirectory()) {
+      throw new Error(`Cannot save file - path is a directory: ${filePath}`);
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
   }
 }
 
