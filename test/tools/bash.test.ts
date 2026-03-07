@@ -345,3 +345,48 @@ describe("bash tool with command protection", async () => {
     assert.ok(result.length >= 0);
   });
 });
+
+describe("bash tool output truncation", async () => {
+  const tool = await createBashTool({
+    workspace: { primaryDir: baseDir, allowedDirs: [baseDir, "/tmp"] },
+  });
+
+  async function run(command: string, timeout = 10000) {
+    return tool.execute(
+      { command, cwd: baseDir, timeout },
+      { toolCallId: "t1", messages: [] },
+    );
+  }
+
+  it("truncates large output", async () => {
+    // Generate output larger than 50KB (the MAX_OUTPUT_SIZE is 51,200 bytes)
+    // Each line is 10 bytes, so 10000 lines = 100,000 bytes
+    const result = await run("yes 'test line' | head -n 10000");
+    assert.ok(result.includes("[OUTPUT TRUNCATED"));
+    assert.ok(result.length <= 55 * 1024); // Should be close to 50KB + truncation message
+  });
+
+  it("does not truncate small output", async () => {
+    const result = await run("echo 'small output'");
+    assert.ok(!result.includes("[OUTPUT TRUNCATED"));
+    assert.ok(result.includes("small output"));
+  });
+
+  it("truncates error output when command fails", async () => {
+    // Generate a large error output
+    const result = await run(
+      "node -e \"for(let i=0; i<10000; i++) console.error('error line ' + i); process.exit(1);\"",
+    ).catch((e) => e.message);
+    assert.ok(result.includes("[OUTPUT TRUNCATED"));
+  });
+
+  it("preserves beginning of truncated output", async () => {
+    const result = await run("yes 'test line' | head -n 10000");
+    assert.ok(result.startsWith("test line"));
+  });
+
+  it("includes original size in truncation message", async () => {
+    const result = await run("yes 'test line' | head -n 10000");
+    assert.ok(/\d[\d,]* characters total/.test(result));
+  });
+});

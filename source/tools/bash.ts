@@ -243,6 +243,25 @@ const simpleDescription = "Run terminal commands.";
 // Command execution timeout in milliseconds
 const DEFAULT_TIMEOUT = 1.5 * 60 * 1000; // 1.5 minutes
 
+// Maximum output size in bytes (50KB) to prevent context window exhaustion
+const MAX_OUTPUT_SIZE = 50 * 1024;
+
+/**
+ * Truncates output if it exceeds MAX_OUTPUT_SIZE and adds a clear message.
+ * This prevents extremely large outputs from exhausting the context window.
+ */
+function truncateOutput(output: string): string {
+  if (output.length <= MAX_OUTPUT_SIZE) {
+    return output;
+  }
+
+  const truncatedLength = MAX_OUTPUT_SIZE;
+  const originalLength = output.length;
+  const truncated = output.slice(0, truncatedLength);
+
+  return `${truncated}\n\n[OUTPUT TRUNCATED: ${originalLength.toLocaleString()} characters total, showing first ${truncatedLength.toLocaleString()} characters. The output was too large and was truncated to prevent context window exhaustion. Consider using commands that produce smaller output (e.g., head, tail with line limits, or redirecting to a file).]`;
+}
+
 const inputSchema = z.object({
   command: z.string().describe("Full CLI command to execute."),
   cwd: z
@@ -343,9 +362,9 @@ export const createBashTool = async (options: {
     });
 
     if (exitCode !== 0) {
-      throw new Error(output);
+      throw new Error(truncateOutput(output));
     }
-    return output;
+    return truncateOutput(output);
   }
 
   return {
