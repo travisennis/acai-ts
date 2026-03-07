@@ -31,14 +31,45 @@ describe("mentions", () => {
     });
 
     it("should process file mentions successfully", async () => {
-      const message = "Check this file: @package.json";
+      const message = "Check this file: #package.json";
 
       const result = await processPrompt(message, {
         baseDir: ".",
         model: mockModel,
       });
 
-      assert.ok(result.message.includes("package.json"));
+      // The file reference should be removed from the message
+      assert.ok(!result.message.includes("#package.json"));
+      // The file content should be in context
+      assert.ok(result.context.length > 0);
+      // The context should contain file content
+      const contextItem = result.context[0];
+      assert.ok(
+        typeof contextItem === "string" && contextItem.includes("package.json"),
+      );
+    });
+
+    it("should handle relative paths starting with ./", async () => {
+      const message = "Read this file: #./package.json";
+
+      const result = await processPrompt(message, {
+        baseDir: ".",
+        model: mockModel,
+      });
+
+      assert.ok(!result.message.includes("#./package.json"));
+      assert.ok(result.context.length > 0);
+    });
+
+    it("should handle hidden files starting with .", async () => {
+      const message = "Read this file: #.gitignore";
+
+      const result = await processPrompt(message, {
+        baseDir: ".",
+        model: mockModel,
+      });
+
+      assert.ok(!result.message.includes("#.gitignore"));
       assert.ok(result.context.length > 0);
     });
 

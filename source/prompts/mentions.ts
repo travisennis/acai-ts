@@ -119,24 +119,35 @@ export async function processPrompt(
     pasteStore?: Map<number, string>;
   },
 ): Promise<{ message: string; context: ContextItem[] }> {
+  // Regex matches # followed by a file path:
+  // - Can start with . (relative paths like ./file or .hidden)
+  // - Can start with / (absolute paths)
+  // - Can start with ~ (home directory)
+  // - Can start with alphanumeric/underscore (simple filenames)
+  // - Path continues with non-whitespace, non-# characters
+  // - Does NOT match # followed by just digits (paste placeholder format like [Paste #1])
+  // - Does NOT match # followed by digits and dots (version numbers like #1.2.3)
+  // - Does NOT match issue references like #123
   const fileRegex =
-    /(?<![a-zA-Z0-9_-])#([a-zA-Z_][^\s#]*?(?:\.[a-zA-Z0-9]+)?)(?![^\s#]*#[\d.]+)/g;
+    /(?<![a-zA-Z0-9_-])#(?![\d.]+(?:[\s,\]]|$))([./~]?[a-zA-Z0-9_][a-zA-Z0-9_./~-]*|[./~][a-zA-Z0-9_./~-]+)/g;
 
   // Collect all matches for files
   const fileMatches = Array.from(message.matchAll(fileRegex));
 
   const mentionProcessingPromises: Promise<string>[] = [];
+  const matchStrings: string[] = [];
 
   // Process file references - collect promises
   for (const match of fileMatches) {
-    const firstMatch = match[1];
-    if (firstMatch) {
+    const filePath = match[1];
+    if (filePath) {
       const context = {
         model,
         baseDir,
-        match: firstMatch,
+        match: filePath,
       };
       mentionProcessingPromises.push(processFileCommand(context));
+      matchStrings.push(match[0]); // Store the full match including #
     }
   }
 
@@ -166,9 +177,20 @@ export async function processPrompt(
 
   const context: ContextItem[] = [];
 
-  for (const mention of mentionResults) {
-    context.push(mention);
+  // Remove file references from message and add contents to context
+  for (let i = 0; i < mentionResults.length; i++) {
+    const fileContent = mentionResults[i];
+    const matchString = matchStrings[i];
+
+    // Add file content to context
+    context.push(fileContent);
+
+    // Remove the #filepath reference from the message
+    processedMessage = processedMessage.replace(matchString, "");
   }
+
+  // Clean up any double spaces or trailing/leading whitespace left by removals
+  processedMessage = processedMessage.replace(/\s+/g, " ").trim();
 
   return {
     message: processedMessage,
