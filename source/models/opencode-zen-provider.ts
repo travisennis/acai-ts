@@ -39,9 +39,8 @@ const opencodeZenModels = {
   "glm-4-7": completionsClient("glm-4.7"),
   "glm-5": completionsClient("glm-5"),
   "opus-4-6": messagesClient("claude-opus-4.6"),
-  "minimax-m2.5-free": completionsClient("minimax-m2.5-free"),
+  "minimax-m2.5": completionsClient("minimax-m2.5"),
   "gpt-5.2-codex": responsesClient.responses("gpt-5.2-codex"),
-  "kimi-k2-5-free": completionsClient("kimi-k2.5-free"),
   "kimi-k2-5": completionsClient("kimi-k2.5"),
 } as const;
 
@@ -109,18 +108,6 @@ export const opencodeZenModelRegistry: {
     costPerInputToken: 0.00000175,
     costPerOutputToken: 0.000014,
   },
-  "opencode:kimi-k2-5-free": {
-    id: "opencode:kimi-k2-5-free",
-    provider: "opencode",
-    contextWindow: 262144,
-    maxOutputTokens: 262144,
-    defaultTemperature: 1.0,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
-  },
   "opencode:kimi-k2-5": {
     id: "opencode:kimi-k2-5",
     provider: "opencode",
@@ -133,8 +120,8 @@ export const opencodeZenModelRegistry: {
     costPerInputToken: 6e-7,
     costPerOutputToken: 0.000003,
   },
-  "opencode:minimax-m2.5-free": {
-    id: "opencode:minimax-m2.5-free",
+  "opencode:minimax-m2.5": {
+    id: "opencode:minimax-m2.5",
     provider: "opencode",
     contextWindow: 204800,
     maxOutputTokens: 131072,
@@ -142,7 +129,7 @@ export const opencodeZenModelRegistry: {
     promptFormat: "markdown",
     supportsReasoning: true,
     supportsToolCalling: true,
-    costPerInputToken: 0,
-    costPerOutputToken: 0,
+    costPerInputToken: 3e-7,
+    costPerOutputToken: 0.0000012,
   },
 };
