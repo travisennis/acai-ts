@@ -99,6 +99,65 @@ describe("bash tool abort signal handling", async () => {
   });
 });
 
+describe("bash tool timeout handling", async () => {
+  it("returns error message to agent when command times out", async () => {
+    const tool = await createBashTool({
+      workspace: { primaryDir: baseDir, allowedDirs: [baseDir] },
+    });
+    const { execute } = tool;
+
+    // Use a very short timeout that will definitely trigger
+    const result = execute(
+      { command: "sleep 5", cwd: baseDir, timeout: 10 },
+      { toolCallId: "t1", messages: [] },
+    );
+
+    let errorMessage = "";
+    try {
+      await result;
+      assert.fail("Should have thrown");
+    } catch (error) {
+      errorMessage = error instanceof Error ? error.message : String(error);
+    }
+    // Should contain some error message (not empty)
+    assert.ok(
+      errorMessage.length > 0,
+      `Error message should not be empty, got: ${errorMessage}`,
+    );
+    // Should mention the command that failed
+    assert.ok(
+      errorMessage.includes("sleep"),
+      `Error message should mention the command, got: ${errorMessage}`,
+    );
+  });
+
+  it("includes error message when command fails", async () => {
+    const tool = await createBashTool({
+      workspace: { primaryDir: baseDir, allowedDirs: [baseDir] },
+    });
+    const { execute } = tool;
+
+    // Run a command that will fail
+    const result = execute(
+      { command: "exit 1", cwd: baseDir, timeout: 1000 },
+      { toolCallId: "t1", messages: [] },
+    );
+
+    let errorMessage = "";
+    try {
+      await result;
+      assert.fail("Should have thrown");
+    } catch (error) {
+      errorMessage = error instanceof Error ? error.message : String(error);
+    }
+    // Should contain exit code or error info
+    assert.ok(
+      errorMessage.includes("exited with code") || errorMessage.includes("1"),
+      `Error message should mention exit code, got: ${errorMessage}`,
+    );
+  });
+});
+
 describe("bash tool system temp directories validation", () => {
   const baseDir = process.cwd();
   // Default allowed dirs include /tmp and /var/folders

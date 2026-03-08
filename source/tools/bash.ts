@@ -352,7 +352,7 @@ export const createBashTool = async (options: {
     timeout: number,
     signal: AbortSignal | undefined,
   ): Promise<string> {
-    const { output, exitCode } = await execEnv.executeCommand(cmd, {
+    const { output, exitCode, error } = await execEnv.executeCommand(cmd, {
       cwd,
       timeout,
       abortSignal: signal,
@@ -362,7 +362,13 @@ export const createBashTool = async (options: {
     });
 
     if (exitCode !== 0) {
-      throw new Error(truncateOutput(output));
+      const errorMessage = error
+        ? error.message
+        : `Command exited with code ${exitCode}`;
+      const combinedOutput = output
+        ? `${errorMessage}\n${output}`
+        : errorMessage;
+      throw new Error(truncateOutput(combinedOutput));
     }
     return truncateOutput(output);
   }
