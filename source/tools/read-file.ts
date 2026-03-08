@@ -1,17 +1,34 @@
 import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { createInterface } from "node:readline/promises";
 import { isNumber } from "@travisennis/stdlib/typeguards";
 import { z } from "zod";
 import type { WorkspaceContext } from "../index.ts";
 import style from "../terminal/style.ts";
 import { toDisplayPath } from "../utils/filesystem/path-display.ts";
-import { joinWorkingDir, validatePath } from "../utils/filesystem/security.ts";
 import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions } from "./types.ts";
 import { fileEncodingSchema } from "./types.ts";
 
 // default limit in bytes (20KB)
 const DEFAULT_BYTE_LIMIT = 20 * 1024;
+
+// Resolve a path for reading, expanding ~ and handling relative paths
+function resolveReadPath(providedPath: string, workingDir: string): string {
+  // Expand ~ to home directory
+  let resolved = providedPath;
+  if (resolved.startsWith("~/") || resolved === "~") {
+    resolved = path.join(os.homedir(), resolved.slice(1));
+  }
+
+  // If not absolute, join with working directory
+  if (!path.isAbsolute(resolved)) {
+    resolved = path.join(workingDir, resolved);
+  }
+
+  return path.normalize(resolved);
+}
 
 export const ReadFileTool = {
   name: "Read" as const,
@@ -47,8 +64,7 @@ type ReadFileInputSchema = z.infer<typeof inputSchema>;
 export const createReadFileTool = async (options: {
   workspace: WorkspaceContext;
 }) => {
-  const { primaryDir, allowedDirs } = options.workspace;
-  const allowedDirectory = allowedDirs ?? [primaryDir];
+  const { primaryDir } = options.workspace;
   return {
     toolDef: {
       description: "Read the contents of a file.",
@@ -72,11 +88,7 @@ export const createReadFileTool = async (options: {
         throw new Error("File reading aborted");
       }
 
-      const filePath = await validatePath(
-        joinWorkingDir(providedPath, primaryDir),
-        allowedDirectory,
-        { abortSignal },
-      );
+      const filePath = resolveReadPath(providedPath, primaryDir);
 
       const effectiveEncoding = encoding ?? "utf-8";
       const effectiveMaxBytes = maxBytes ?? DEFAULT_BYTE_LIMIT;
