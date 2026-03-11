@@ -85,15 +85,15 @@
   },
   "devDependencies": {
     "@ai-sdk/provider": "^3.0.8",
-    "@ast-grep/napi": "^0.41.0",
+    "@ast-grep/napi": "^0.41.1",
     "@biomejs/biome": "2.4.6",
     "@commitlint/config-conventional": "^20.4.3",
-    "@types/node": "^25.3.5",
+    "@types/node": "^25.4.0",
     "c8": "^11.0.0",
     "commitlint": "^20.4.3",
     "domhandler": "^5.0.3",
     "husky": "^9.1.7",
-    "oxlint": "^1.51.0",
+    "oxlint": "^1.52.0",
     "oxlint-tsgolint": "^0.16.0",
     "typescript": "^5.9.3"
   },
