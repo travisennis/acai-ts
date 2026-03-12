@@ -35,6 +35,9 @@ const openrouterModels = {
   "glm-4-7-flash": openRouterClient("z-ai/glm-4.7-flash"),
   "hunter-alpha": openRouterClient("openrouter/hunter-alpha"),
   "minimax-m2-5": openRouterClient("minimax/minimax-m2.5"),
+  "nemotron-3-super-120b-a12b-free": openRouterClient(
+    "nvidia/nemotron-3-super-120b-a12b:free",
+  ),
   "sonnet-4.5": openRouterClient("anthropic/claude-sonnet-4.5"),
   "opus-4.6": openRouterClient("anthropic/claude-opus-4.6"),
   "haiku-4.5": openRouterClient("anthropic/claude-haiku-4.5"),
@@ -122,6 +125,18 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 3e-7,
     costPerOutputToken: 0.0000012,
+  },
+  "openrouter:nemotron-3-super-120b-a12b-free": {
+    id: "openrouter:nemotron-3-super-120b-a12b-free",
+    provider: "openrouter",
+    contextWindow: 262144,
+    maxOutputTokens: 262144,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0,
+    costPerOutputToken: 0,
   },
   "openrouter:opus-4.6": {
     id: "openrouter:opus-4.6",
