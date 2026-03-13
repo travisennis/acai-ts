@@ -4,14 +4,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Terminal } from "./terminal.ts";
 
-export interface EditorLaunchOptions {
+interface EditorLaunchOptions {
   initialContent?: string;
   postfix?: string;
   terminal: Terminal;
   signal?: AbortSignal;
 }
 
-export interface EditorLaunchResult {
+interface EditorLaunchResult {
   content: string;
   aborted: boolean;
 }

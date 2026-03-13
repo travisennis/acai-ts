@@ -7,7 +7,7 @@ import { createUserMessage } from "../../sessions/manager.ts";
 import type { TokenTracker } from "../../tokens/tracker.ts";
 import type { CompleteToolNames } from "../../tools/index.ts";
 
-export interface GenerateRulesOptions {
+interface GenerateRulesOptions {
   modelManager: ModelManager;
   messages: ModelMessage[];
   tokenTracker: TokenTracker;
@@ -15,7 +15,7 @@ export interface GenerateRulesOptions {
   workspace: WorkspaceContext;
 }
 
-export interface GenerateRulesResult {
+interface GenerateRulesResult {
   rules: string[];
 }
 

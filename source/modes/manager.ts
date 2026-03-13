@@ -2,7 +2,7 @@ import type { UserModelMessage } from "ai";
 import { createUserMessage } from "../sessions/manager.ts";
 import { planningPrompt } from "./prompts.ts";
 
-export type Mode = "normal" | "planning" | "research";
+type Mode = "normal" | "planning" | "research";
 
 interface ModeDefinition {
   name: Mode;

@@ -41,7 +41,7 @@ type WebFetchInputSchema = z.infer<typeof inputSchema>;
 /**
  * Fetch result interface
  */
-export interface FetchResult {
+interface FetchResult {
   content: string;
   contentType: string;
   sourceUrl: string;

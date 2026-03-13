@@ -2,7 +2,12 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import { join } from "node:path";
 import type { Terminal } from "../../tui/terminal.ts";
-import type { FileChange } from "./types.ts";
+
+interface FileChange {
+  fileName: string;
+  diff: string;
+  stats: string;
+}
 
 function isDiffContentLine(line: string): boolean {
   return (

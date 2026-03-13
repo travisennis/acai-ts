@@ -40,7 +40,7 @@ type WebSearchInputSchema = z.infer<typeof inputSchema>;
 /**
  * Search result interface
  */
-export interface SearchResult {
+interface SearchResult {
   title: string;
   url: string;
   snippet: string;
@@ -50,7 +50,7 @@ export interface SearchResult {
 /**
  * Search response interface
  */
-export interface SearchResponse {
+interface SearchResponse {
   results: SearchResult[];
   provider: string;
   query: string;

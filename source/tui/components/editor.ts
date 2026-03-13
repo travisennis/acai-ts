@@ -179,7 +179,7 @@ function computeLineChunks(line: string, maxWidth: number): LineChunk[] {
 
 import type { SelectListTheme } from "./select-list.ts";
 
-export interface EditorTheme {
+interface EditorTheme {
   borderColor: (str: string) => string;
   selectList?: SelectListTheme;
 }
@@ -647,7 +647,7 @@ export class Editor implements Component {
     }
 
     if (this.onSubmit) {
-      this.onSubmit(result);
+      void this.onSubmit(result);
     }
 
     return true;

@@ -27,7 +27,7 @@ export class DirectoryCache {
 export const directoryCache = new DirectoryCache();
 
 // Extended Dirent with parent path for easier processing
-export interface DirentWithPath extends Dirent {
+interface DirentWithPath extends Dirent {
   parentPath: string;
 }
 

@@ -3,7 +3,7 @@ import { text } from "node:stream/consumers";
 export const STDIN_SOFT_LIMIT = 50 * 1024; // 50KB
 export const STDIN_HARD_LIMIT = 200 * 1024; // 200KB
 
-export interface StdinResult {
+interface StdinResult {
   content: string | null;
   sizeBytes: number;
   wasPiped: boolean;

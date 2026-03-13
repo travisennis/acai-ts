@@ -23,7 +23,7 @@ const toolMetadataSchema = z.object({
   needsApproval: z.boolean().default(true),
 });
 
-export type ToolMetadata = z.infer<typeof toolMetadataSchema>;
+type ToolMetadata = z.infer<typeof toolMetadataSchema>;
 
 export function parseToolMetadata(output: string): ToolMetadata {
   try {

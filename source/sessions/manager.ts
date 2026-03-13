@@ -166,7 +166,7 @@ type ResponseMessage = AssistantModelMessage | ToolModelMessage;
  * Only stores total aggregated usage and last turn's usage
  * to minimize session file size while maintaining necessary information.
  */
-export type SessionTokenUsage = {
+type SessionTokenUsage = {
   /** Aggregated total for entire session */
   total: {
     inputTokens: number;
@@ -191,7 +191,7 @@ export type SessionTokenUsage = {
  * @deprecated Use SessionTokenUsage instead. Kept for backward compatibility
  * with older session files that may have the old format.
  */
-export type TokenUsageTurn = {
+type TokenUsageTurn = {
   stepIndex: number;
   inputTokens: number;
   outputTokens: number;
@@ -211,7 +211,7 @@ export type TokenUsageTurn = {
   estimatedCost: number;
 };
 
-export type SavedMessageHistory = {
+type SavedMessageHistory = {
   project: string;
   sessionId: string;
   modelId: string;

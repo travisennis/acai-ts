@@ -35,7 +35,7 @@ type Color =
  * Theme functions for markdown elements.
  * Each function takes text and returns styled text with ANSI codes.
  */
-export interface MarkdownTheme {
+interface MarkdownTheme {
   heading: (text: string) => string;
   paragraph: (text: string) => string;
   link: (text: string) => string;
@@ -74,7 +74,7 @@ const DEFAULT_THEME: MarkdownTheme = {
 /**
  * Options for configuring Markdown component
  */
-export interface MarkdownOptions {
+interface MarkdownOptions {
   /** Background color */
   bgColor?: Color;
   /** Custom background RGB color */

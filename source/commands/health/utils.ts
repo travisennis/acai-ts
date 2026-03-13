@@ -1,11 +1,11 @@
 import { execSync } from "node:child_process";
 
-export interface EnvVarInfo {
+interface EnvVarInfo {
   name: string;
   description: string;
 }
 
-export interface ToolInfo {
+interface ToolInfo {
   name: string;
   command: string;
 }

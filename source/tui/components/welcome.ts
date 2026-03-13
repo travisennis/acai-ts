@@ -4,7 +4,7 @@ import { getPackageVersion } from "../../utils/version.ts";
 import type { Component } from "../tui.ts";
 import { BoxComponent } from "./box.ts";
 
-export interface WelcomeOptions {
+interface WelcomeOptions {
   type?: "default" | "simple";
 }
 

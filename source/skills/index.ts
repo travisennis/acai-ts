@@ -31,7 +31,7 @@ export interface Skill {
   examples?: string[];
 }
 
-export interface LoadSkillsFromDirOptions {
+interface LoadSkillsFromDirOptions {
   dir: string;
   source: string;
   useColonPath?: boolean; // For colon-separated names (db:migrate)

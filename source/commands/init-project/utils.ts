@@ -4,7 +4,7 @@ import { defaultConfig } from "../../config/index.ts";
 
 export const DEVELOPMENT_DIRECTORY = "/Users/travisennis/Github/acai-ts";
 
-export interface InitializationResult {
+interface InitializationResult {
   created: string[];
   existing: string[];
 }

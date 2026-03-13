@@ -13,7 +13,7 @@ interface SubagentFrontmatter {
   timeout?: number;
 }
 
-export interface Subagent {
+interface Subagent {
   name: string;
   description: string;
   model?: string;

@@ -480,11 +480,11 @@ export function hyperlink(url: string, text: string): string {
 }
 
 export type {
+  Cell,
+  CellOptions,
   CharName,
   HorizontalAlignment,
-  VerticalAlignment,
-  TableInstanceOptions,
   TableConstructorOptions,
-  CellOptions,
-  Cell,
+  TableInstanceOptions,
+  VerticalAlignment,
 };
