@@ -130,7 +130,7 @@ export const openrouterModelRegistry: {
     id: "openrouter:nemotron-3-super-120b-a12b-free",
     provider: "openrouter",
     contextWindow: 262144,
-    maxOutputTokens: 262144,
+    maxOutputTokens: 16000,
     defaultTemperature: 0.5,
     promptFormat: "markdown",
     supportsReasoning: true,
