@@ -405,9 +405,29 @@ async function fetchUrl(
     const { signal, cleanup } = createTimeoutSignal(timeout, abortSignal);
 
     try {
+      // Standard browser headers to avoid 403 errors on bot-protected sites
+      const requestHeaders: Record<string, string> = {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        // biome-ignore lint/style/useNamingConvention: HTTP header name must match specification
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        // biome-ignore lint/style/useNamingConvention: HTTP header name must match specification
+        Connection: "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Cache-Control": "max-age=0",
+      };
+
       const response = await fetch(currentUrl, {
         signal,
         redirect: "manual",
+        headers: requestHeaders,
       });
 
       // Handle redirects
