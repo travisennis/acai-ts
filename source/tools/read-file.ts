@@ -11,8 +11,8 @@ import { convertNullString } from "../utils/zod.ts";
 import type { ToolExecutionOptions } from "./types.ts";
 import { fileEncodingSchema } from "./types.ts";
 
-// default limit in bytes (20KB)
-const DEFAULT_BYTE_LIMIT = 20 * 1024;
+// hardcoded limit in bytes (50KB) - not configurable by the agent
+const BYTE_LIMIT = 50 * 1024;
 
 // Resolve a path for reading, expanding ~ and handling relative paths
 function resolveReadPath(providedPath: string, workingDir: string): string {
@@ -52,11 +52,6 @@ const inputSchema = z.object({
     .describe(
       "Maximum number of lines to read. Required but nullable. Pass null to get all lines.",
     ),
-  maxBytes: z
-    .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
-    .describe(
-      "Maximum number of bytes to read. Set to 0 for no limit. (Default: 20KB)",
-    ),
 });
 
 type ReadFileInputSchema = z.infer<typeof inputSchema>;
@@ -80,7 +75,6 @@ export const createReadFileTool = async (options: {
         encoding,
         startLine,
         lineCount,
-        maxBytes,
       }: ReadFileInputSchema,
       { abortSignal }: ToolExecutionOptions,
     ): Promise<string> {
@@ -91,7 +85,6 @@ export const createReadFileTool = async (options: {
       const filePath = resolveReadPath(providedPath, primaryDir);
 
       const effectiveEncoding = encoding ?? "utf-8";
-      const effectiveMaxBytes = maxBytes ?? DEFAULT_BYTE_LIMIT;
 
       const file = await readFileContent(
         filePath,
@@ -101,7 +94,7 @@ export const createReadFileTool = async (options: {
         abortSignal,
       );
 
-      validateByteLimit(file, effectiveEncoding, effectiveMaxBytes);
+      validateByteLimit(file, effectiveEncoding, BYTE_LIMIT);
 
       return file;
     },
@@ -182,17 +175,12 @@ function validateByteLimit(
   encoding: BufferEncoding,
   maxBytes: number,
 ): void {
-  if (maxBytes <= 0) {
-    return;
-  }
-
   const byteLength = Buffer.byteLength(file, encoding);
   if (byteLength > maxBytes) {
     const fileSizeKb = (byteLength / 1024).toFixed(1);
     const limitKb = (maxBytes / 1024).toFixed(0);
     throw new Error(
       `File (${fileSizeKb}KB) exceeds the ${limitKb}KB read limit. To read this file, use one of these options:\n` +
-        "• Set maxBytes: 0 to read the entire file\n" +
         "• Use startLine and lineCount to read specific portions (e.g., startLine: 1, lineCount: 100)\n" +
         "• Use the Grep tool to search for specific content\n" +
         `• Use the Bash tool with 'tail' or 'head' commands`,
