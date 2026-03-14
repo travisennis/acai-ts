@@ -151,6 +151,7 @@ acai-ts
     │   ├── groq-provider.ts
     │   ├── manager.ts
     │   ├── openai-provider.ts
+    │   ├── opencode-go-provider.ts
     │   ├── opencode-zen-provider.ts
     │   ├── openrouter-provider.ts
     │   ├── providers.ts
@@ -450,6 +451,7 @@ acai-ts
 - **source/models/google-provider.ts**: Google Gemini provider
 - **source/models/groq-provider.ts**: Groq provider
 - **source/models/openai-provider.ts**: OpenAI provider
+- **source/models/opencode-go-provider.ts**: OpenCode Go provider
 - **source/models/opencode-zen-provider.ts**: OpenCode Zen provider
 - **source/models/openrouter-provider.ts**: OpenRouter provider
 - **source/models/xai-provider.ts**: xAI Grok provider

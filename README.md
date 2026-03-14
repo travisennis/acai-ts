@@ -12,7 +12,7 @@ Acai is an AI-driven command-line tool that assists software developers with cod
 - **Interactive AI Assistant:** Conversational REPL and TUI with modal dialogs, autocomplete, and rich text formatting.
 - **Codebase Interaction:** Read, edit, search, and navigate files with context-aware AI assistance.
 - **Git Integration:** Generate conventional commits, review pull requests, and manage local changes.
-- **Multi-Model Support:** Switch between OpenAI, Anthropic, Google, DeepSeek, Groq, X.AI, OpenRouter, and OpenCode Zen.
+- **Multi-Model Support:** Switch between OpenAI, Anthropic, Google, DeepSeek, Groq, X.AI, OpenRouter, OpenCode Zen, and OpenCode Go.
 - **Piped Input:** Pipe text via stdin for REPL mode or as context with the `-p` flag.
 - **Skills System:** Discover and load specialized instruction files for specific tasks.
 - **Multi-workspace Support:** Work across multiple project directories simultaneously.
@@ -111,6 +111,10 @@ Reference files directly with `@filename`, directories with `@dirname`, or run s
 - [Dynamic Tools](docs/dynamic-tools.md) - Creating custom tools to extend acai
 - [Architecture](ARCHITECTURE.md) - Internal architecture and flow diagrams
 - [Contributing](CONTRIBUTING.md) - Development setup, scripts, and code style
+
+## Acknowledgments
+
+Special thanks to [OpenCode](https://opencode.ai) for providing access to their AI model aggregation service, which enables seamless integration with multiple state-of-the-art models through a unified API.
 
 ## License
 

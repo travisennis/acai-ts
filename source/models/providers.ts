@@ -26,6 +26,11 @@ import {
   openaiProvider,
 } from "./openai-provider.ts";
 import {
+  opencodeGoModelNames,
+  opencodeGoModelRegistry,
+  opencodeGoProvider,
+} from "./opencode-go-provider.ts";
+import {
   opencodeZenModelNames,
   opencodeZenModelRegistry,
   opencodeZenProvider,
@@ -50,6 +55,7 @@ const providers = [
   "openrouter",
   "xai",
   "opencode",
+  "opencode-go",
 ] as const;
 
 type ModelProvider = (typeof providers)[number];
@@ -62,6 +68,7 @@ const registry = createProviderRegistry({
   ...openaiProvider,
   ...openrouterProvider,
   ...xaiProvider,
+  ...opencodeGoProvider,
   ...opencodeZenProvider,
 });
 
@@ -73,6 +80,7 @@ export const models = [
   ...deepseekModelNames,
   ...openrouterModelNames,
   ...xaiModelNames,
+  ...opencodeGoModelNames,
   ...opencodeZenModelNames,
 ] as const;
 
@@ -85,6 +93,7 @@ export type ModelName =
   | (`groq:${string}` & {})
   | (`deepseek:${string}` & {})
   | (`openrouter:${string}` & {})
+  | (`opencode-go:${string}` & {})
   | (`opencode:${string}` & {});
 
 export function isSupportedModel(model: unknown): model is ModelName {
@@ -98,6 +107,7 @@ export function isSupportedModel(model: unknown): model is ModelName {
         model.startsWith("groq:") ||
         model.startsWith("xai:") ||
         model.startsWith("deepseek:") ||
+        model.startsWith("opencode-go:") ||
         model.startsWith("opencode:")))
   );
 }
@@ -128,6 +138,7 @@ export const modelRegistry: Record<ModelName, ModelMetadata> = {
   ...deepseekModelRegistry,
   ...openrouterModelRegistry,
   ...xaiModelRegistry,
+  ...opencodeGoModelRegistry,
   ...opencodeZenModelRegistry,
 };
 
