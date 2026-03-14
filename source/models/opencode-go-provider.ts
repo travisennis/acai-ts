@@ -55,7 +55,7 @@ export const opencodeGoModelRegistry: {
     id: "opencode-go:kimi-k2-5",
     provider: "opencode-go",
     contextWindow: 262144,
-    maxOutputTokens: 262144,
+    maxOutputTokens: 8192,
     defaultTemperature: 1.0,
     promptFormat: "markdown",
     supportsReasoning: true,
