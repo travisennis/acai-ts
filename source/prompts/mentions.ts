@@ -189,8 +189,18 @@ export async function processPrompt(
     processedMessage = processedMessage.replace(matchString, "");
   }
 
-  // Clean up any double spaces or trailing/leading whitespace left by removals
-  processedMessage = processedMessage.replace(/\s+/g, " ").trim();
+  // Clean up multiple spaces left by removals, but preserve newlines
+  // First, normalize line endings to \n
+  processedMessage = processedMessage
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n");
+  // Replace multiple spaces with a single space (but not newlines)
+  processedMessage = processedMessage.replace(/[ \t]+/g, " ");
+  // Trim whitespace from each line while preserving empty lines
+  processedMessage = processedMessage
+    .split("\n")
+    .map((line) => line.trim())
+    .join("\n");
 
   return {
     message: processedMessage,

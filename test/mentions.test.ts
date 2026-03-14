@@ -140,5 +140,27 @@ describe("mentions", () => {
       assert.ok(!result.message.includes("[Paste #1"));
       assert.ok(!result.message.includes("[Paste #2"));
     });
+
+    it("should preserve newlines in message", async () => {
+      const message = "Line 1\nLine 2\nLine 3";
+
+      const result = await processPrompt(message, {
+        baseDir: ".",
+        model: mockModel,
+      });
+
+      assert.ok(result.message.includes("Line 1\nLine 2\nLine 3"));
+    });
+
+    it("should preserve double newlines in message", async () => {
+      const message = "Paragraph 1\n\nParagraph 2";
+
+      const result = await processPrompt(message, {
+        baseDir: ".",
+        model: mockModel,
+      });
+
+      assert.ok(result.message.includes("Paragraph 1\n\nParagraph 2"));
+    });
   });
 });
