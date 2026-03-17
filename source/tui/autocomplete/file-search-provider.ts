@@ -50,7 +50,7 @@ function fuzzyScore(filename: string, searchTerm: string): number {
 
 export class FileSearchProvider implements AutocompleteProvider {
   private maxResults = 20;
-  private maxDepth = 3;
+  private maxDepth = 8;
 
   matchesContext(textBeforeCursor: string): boolean {
     return /(?:^|\s)@[^\s]*$/.test(textBeforeCursor);
