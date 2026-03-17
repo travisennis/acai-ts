@@ -492,7 +492,7 @@ acai-ts
 - **source/tools/edit-file.ts**: File editing tool
 - **source/tools/glob.ts**: File pattern matching tool
 - **source/tools/grep.ts**: Text search tool
-- **source/tools/code-search.ts**: Semantic code search tool using colgrep
+
 - **source/tools/ls.ts**: Directory listing tool
 - **source/tools/read-file.ts**: File reading tool
 - **source/tools/save-file.ts**: File writing tool

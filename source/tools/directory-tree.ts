@@ -39,7 +39,8 @@ export const createDirectoryTreeTool = async (options: {
   const allowedDirectory = allowedDirs ?? [primaryDir];
   return {
     toolDef: {
-      description: "Show directory structure as a tree.",
+      description:
+        "Show directory structure as a recursive tree. Use this to explore nested directories and understand the overall project structure. For a simple flat list of a single directory, use LS instead.",
       inputSchema,
     },
     display({ path, maxDepth, maxResults }: DirectoryTreeInputSchema) {

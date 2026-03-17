@@ -35,7 +35,8 @@ export const createLsTool = async (options: {
 
   return {
     toolDef: {
-      description: "List files in a directory.",
+      description:
+        "List files in a single directory. Fast and simple - use this when you need a quick flat list of files in one directory. For recursive tree views, use DirectoryTree instead.",
       inputSchema,
     },
     display({ path: providedPath, limit }: LsInputSchema) {

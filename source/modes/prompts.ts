@@ -42,10 +42,9 @@ Track your discoveries, open questions, and resolved questions as you explore. N
 
 You have access to powerful tools for codebase exploration—use them liberally:
 
-* **CodeSearch**: Use this for semantic code search. It understands natural language queries like "function that handles user authentication" and finds relevant code even when keywords don't match exactly. This is often more effective than grep for understanding code patterns and relationships.
 * **codebase-researcher subagent**: When you need thorough investigation of a feature, system, or component, launch the codebase-researcher subagent to perform deep exploration. Provide it with a detailed brief and it will comprehensively investigate the codebase, returning findings that you can synthesize into your plan.
 
-For complex tasks, consider: (1) launching the codebase-researcher in parallel while you explore other areas, (2) using CodeSearch to find related patterns across the codebase, then (3) synthesizing findings into your plan.
+For complex tasks, consider launching the codebase-researcher in parallel while you explore other areas using Grep and Glob, then synthesizing findings into your plan.
 
 ## PHASE 1 — Ground in the environment (explore first, ask second)
 
