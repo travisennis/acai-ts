@@ -21,6 +21,7 @@ const opencodeGoModels = {
   "glm-5": completionsClient("glm-5"),
   "kimi-k2-5": completionsClient("kimi-k2.5"),
   "minimax-m2-5": messagesClient("minimax-m2.5"),
+  "minimax-m2-7": messagesClient("minimax-m2.7"),
 } as const;
 
 type ModelName = `opencode-go:${keyof typeof opencodeGoModels}`;
@@ -65,6 +66,18 @@ export const opencodeGoModelRegistry: {
   },
   "opencode-go:minimax-m2-5": {
     id: "opencode-go:minimax-m2-5",
+    provider: "opencode-go",
+    contextWindow: 204800,
+    maxOutputTokens: 131072,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 3e-7,
+    costPerOutputToken: 0.0000012,
+  },
+  "opencode-go:minimax-m2-7": {
+    id: "opencode-go:minimax-m2-7",
     provider: "opencode-go",
     contextWindow: 204800,
     maxOutputTokens: 131072,

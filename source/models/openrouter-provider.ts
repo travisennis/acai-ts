@@ -35,6 +35,7 @@ const openrouterModels = {
   "glm-4-7-flash": openRouterClient("z-ai/glm-4.7-flash"),
   "hunter-alpha": openRouterClient("openrouter/hunter-alpha"),
   "minimax-m2-5": openRouterClient("minimax/minimax-m2.5"),
+  "minimax-m2-7": openRouterClient("minimax/minimax-m2.7"),
   "nemotron-3-super-120b-a12b-free": openRouterClient(
     "nvidia/nemotron-3-super-120b-a12b:free",
   ),
@@ -116,6 +117,18 @@ export const openrouterModelRegistry: {
   },
   "openrouter:minimax-m2-5": {
     id: "openrouter:minimax-m2-5",
+    provider: "openrouter",
+    contextWindow: 204800,
+    maxOutputTokens: 131072,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 3e-7,
+    costPerOutputToken: 0.0000012,
+  },
+  "openrouter:minimax-m2-7": {
+    id: "openrouter:minimax-m2-7",
     provider: "openrouter",
     contextWindow: 204800,
     maxOutputTokens: 131072,

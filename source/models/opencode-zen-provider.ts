@@ -40,6 +40,7 @@ const opencodeZenModels = {
   "glm-5": completionsClient("glm-5"),
   "opus-4-6": messagesClient("claude-opus-4.6"),
   "minimax-m2.5": completionsClient("minimax-m2.5"),
+  "minimax-m2.7": completionsClient("minimax-m2.7"),
   "gpt-5.2-codex": responsesClient.responses("gpt-5.2-codex"),
   "kimi-k2-5": completionsClient("kimi-k2.5"),
 } as const;
@@ -122,6 +123,18 @@ export const opencodeZenModelRegistry: {
   },
   "opencode:minimax-m2.5": {
     id: "opencode:minimax-m2.5",
+    provider: "opencode",
+    contextWindow: 204800,
+    maxOutputTokens: 131072,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 3e-7,
+    costPerOutputToken: 0.0000012,
+  },
+  "opencode:minimax-m2.7": {
+    id: "opencode:minimax-m2.7",
     provider: "opencode",
     contextWindow: 204800,
     maxOutputTokens: 131072,
