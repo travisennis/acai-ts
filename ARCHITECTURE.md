@@ -205,6 +205,7 @@ acai-ts
     │   └── tracker.ts
     ├── tools
     │   ├── agent.ts
+    │   ├── apply-patch.ts
     │   ├── bash.ts
     │   ├── code-search.ts
     │   ├── directory-tree.ts
@@ -492,6 +493,7 @@ acai-ts
 - **source/tools/edit-file.ts**: File editing tool
 - **source/tools/glob.ts**: File pattern matching tool
 - **source/tools/grep.ts**: Text search tool
+- **source/tools/apply-patch.ts**: Apply unified patch format for batch file modifications (supports add, update, delete, and move operations)
 
 - **source/tools/ls.ts**: Directory listing tool
 - **source/tools/read-file.ts**: File reading tool

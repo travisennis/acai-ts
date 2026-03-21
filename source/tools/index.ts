@@ -3,6 +3,7 @@ import type { Tool } from "ai";
 import { config } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { AgentTool, createAgentTools } from "./agent.ts";
+import { ApplyPatchTool, createApplyPatchTool } from "./apply-patch.ts";
 import { BashTool, createBashTool } from "./bash.ts";
 import {
   createDirectoryTreeTool,
@@ -67,9 +68,12 @@ export async function initTools({
 
   const webFetchTool = await createWebFetchTool();
 
+  const applyPatchTool = await createApplyPatchTool({ workspace });
+
   const dynamicTools = await loadDynamicTools({
     baseDir: workspace.primaryDir,
     existingToolNames: [
+      ApplyPatchTool.name,
       EditFileTool.name,
       BashTool.name,
       SaveFileTool.name,
@@ -88,6 +92,7 @@ export async function initTools({
 
   // Build tools object for AI SDK
   const tools = {
+    [ApplyPatchTool.name]: applyPatchTool,
     [EditFileTool.name]: editFileTool,
     [BashTool.name]: bashTool,
     [SaveFileTool.name]: saveFileTool,
