@@ -362,8 +362,10 @@ export const createBashTool = async (options: {
       throwOnError: false,
     });
     const elapsedMs = Date.now() - startTime;
+    const timeStr =
+      elapsedMs < 1000 ? `${elapsedMs}ms` : `${(elapsedMs / 1000).toFixed(1)}s`;
 
-    const metadataFooter = `[exit:${exitCode} | ${elapsedMs}ms]`;
+    const metadataFooter = `[exit:${exitCode} | ${timeStr}]`;
 
     if (exitCode !== 0) {
       const errorMessage = error
