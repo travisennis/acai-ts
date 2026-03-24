@@ -60,16 +60,16 @@
     "@ai-sdk/anthropic": "^3.0.63",
     "@ai-sdk/deepseek": "^2.0.26",
     "@ai-sdk/devtools": "^0.0.15",
-    "@ai-sdk/google": "^3.0.52",
+    "@ai-sdk/google": "^3.0.53",
     "@ai-sdk/groq": "^3.0.31",
     "@ai-sdk/open-responses": "^1.0.8",
-    "@ai-sdk/openai": "^3.0.47",
+    "@ai-sdk/openai": "^3.0.48",
     "@ai-sdk/openai-compatible": "^2.0.37",
     "@crosscopy/clipboard": "^0.3.6",
     "@travisennis/stdlib": "^0.0.14",
-    "ai": "^6.0.134",
+    "ai": "^6.0.137",
     "cheerio": "^1.2.0",
-    "diff": "^8.0.3",
+    "diff": "^8.0.4",
     "fast-glob": "^3.3.3",
     "fdir": "^6.5.0",
     "highlight.js": "^11.11.1",
@@ -94,8 +94,8 @@
     "domhandler": "^6.0.1",
     "husky": "^9.1.7",
     "oxlint": "^1.56.0",
-    "oxlint-tsgolint": "^0.17.1",
-    "typescript": "^5.9.3"
+    "oxlint-tsgolint": "^0.17.2",
+    "typescript": "^6.0.2"
   },
   "engines": {
     "node": ">=20"
