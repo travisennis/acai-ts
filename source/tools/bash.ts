@@ -352,6 +352,7 @@ export const createBashTool = async (options: {
     timeout: number,
     signal: AbortSignal | undefined,
   ): Promise<string> {
+    const startTime = Date.now();
     const { output, exitCode, error } = await execEnv.executeCommand(cmd, {
       cwd,
       timeout,
@@ -360,6 +361,9 @@ export const createBashTool = async (options: {
       captureStderr: true,
       throwOnError: false,
     });
+    const elapsedMs = Date.now() - startTime;
+
+    const metadataFooter = `[exit:${exitCode} | ${elapsedMs}ms]`;
 
     if (exitCode !== 0) {
       const errorMessage = error
@@ -368,9 +372,9 @@ export const createBashTool = async (options: {
       const combinedOutput = output
         ? `${errorMessage}\n${output}`
         : errorMessage;
-      throw new Error(truncateOutput(combinedOutput));
+      throw new Error(truncateOutput(`${combinedOutput}\n${metadataFooter}`));
     }
-    return truncateOutput(output);
+    return truncateOutput(`${output}\n${metadataFooter}`);
   }
 
   return {
