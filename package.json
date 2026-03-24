@@ -57,7 +57,7 @@
     "lint:length": "find source -name '*.ts' | xargs -I{} awk 'END{if(NR>500)print FILENAME\": \"NR\" lines\"}' {}"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.63",
+    "@ai-sdk/anthropic": "^3.0.64",
     "@ai-sdk/deepseek": "^2.0.26",
     "@ai-sdk/devtools": "^0.0.15",
     "@ai-sdk/google": "^3.0.53",
@@ -67,7 +67,7 @@
     "@ai-sdk/openai-compatible": "^2.0.37",
     "@crosscopy/clipboard": "^0.3.6",
     "@travisennis/stdlib": "^0.0.14",
-    "ai": "^6.0.137",
+    "ai": "^6.0.138",
     "cheerio": "^1.2.0",
     "diff": "^8.0.4",
     "fast-glob": "^3.3.3",
@@ -93,8 +93,8 @@
     "commitlint": "^20.5.0",
     "domhandler": "^6.0.1",
     "husky": "^9.1.7",
-    "oxlint": "^1.56.0",
-    "oxlint-tsgolint": "^0.17.2",
+    "oxlint": "^1.57.0",
+    "oxlint-tsgolint": "^0.17.3",
     "typescript": "^6.0.2"
   },
   "engines": {
