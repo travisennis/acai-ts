@@ -1,4 +1,3 @@
-// import { execSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
@@ -7,6 +6,11 @@ import { initExecutionEnvironment } from "../execution/index.ts";
 import type { WorkspaceContext } from "../index.ts";
 import style from "../terminal/style.ts";
 import { resolveCwd, validatePaths } from "../utils/bash.ts";
+import {
+  formatBinaryMessage,
+  isBinaryOutput,
+  saveBinaryOutput,
+} from "../utils/binary-output.ts";
 import {
   detectDestructiveCommand,
   formatBlockedCommandMessage,
@@ -376,6 +380,14 @@ export const createBashTool = async (options: {
         : errorMessage;
       throw new Error(truncateOutput(`${combinedOutput}\n${metadataFooter}`));
     }
+
+    // Check for binary output and handle specially
+    if (isBinaryOutput(output)) {
+      const saveResult = saveBinaryOutput(output);
+      const binaryMessage = formatBinaryMessage(saveResult);
+      return `${binaryMessage}\n${metadataFooter}`;
+    }
+
     return truncateOutput(`${output}\n${metadataFooter}`);
   }
 

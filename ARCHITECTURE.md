@@ -541,6 +541,7 @@ acai-ts
 - **source/utils/bash.ts**: Bash command utilities
 - **source/utils/bash/parse.ts**: Shell command parser (ported from shell-quote)
 - **source/utils/bash/quote.ts**: Shell command quoting (ported from shell-quote)
+- **source/utils/binary-output.ts**: Binary output detection and handling for Bash tool
 - **source/utils/dedent.ts**: Template literal tag for dedenting multi-line strings
 - **source/utils/env-expand.ts**: Environment variable expansion for config values
 - **source/utils/filetype-detection.ts**: File type detection
