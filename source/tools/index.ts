@@ -2,6 +2,7 @@ import type { AsyncReturnType } from "@travisennis/stdlib/types";
 import type { Tool } from "ai";
 import { config } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
+import { ActivatedSkillsTracker } from "../skills/activated-tracker.ts";
 import { AgentTool, createAgentTools } from "./agent.ts";
 import { ApplyPatchTool, createApplyPatchTool } from "./apply-patch.ts";
 import { BashTool, createBashTool } from "./bash.ts";
@@ -36,6 +37,17 @@ export type CompleteTools = {
 
 export type CompleteToolNames = keyof CompleteToolSet;
 
+// Singleton tracker for activated skills, reset when a new session starts
+const activatedSkillsTracker = new ActivatedSkillsTracker();
+
+/**
+ * Returns the activated skills tracker instance.
+ * Used to reset the tracker when a new session starts.
+ */
+export function getActivatedSkillsTracker(): ActivatedSkillsTracker {
+  return activatedSkillsTracker;
+}
+
 export async function initTools({
   workspace,
 }: {
@@ -60,7 +72,7 @@ export async function initTools({
   const projectConfig = await config.getConfig();
   const bashTool = await createBashTool({ workspace, env: projectConfig.env });
 
-  const skillTool = await createSkillTool();
+  const skillTool = await createSkillTool(activatedSkillsTracker);
 
   const agentTool = await createAgentTools({ workspace });
 

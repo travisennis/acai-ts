@@ -22,7 +22,11 @@ import { setTerminalTitle } from "./terminal/control.ts";
 import { select } from "./terminal/select-prompt.ts";
 import { TokenCounter } from "./tokens/counter.ts";
 import { TokenTracker } from "./tokens/tracker.ts";
-import { type CompleteToolNames, initTools } from "./tools/index.ts";
+import {
+  type CompleteToolNames,
+  getActivatedSkillsTracker,
+  initTools,
+} from "./tools/index.ts";
 import { logger } from "./utils/logger.ts";
 import { getPackageVersion } from "./utils/version.ts";
 
@@ -455,6 +459,7 @@ function setupReplEventHandlers(
     logger.info("Resetting agent state.");
     agent.resetState();
     agent.setConfig(await config.getConfig());
+    getActivatedSkillsTracker().reset();
     void repl.rerender();
   });
 

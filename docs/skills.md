@@ -6,8 +6,18 @@ Acai includes a skills system that allows you to create and use specialized inst
 
 1. **Discovery**: At startup, Acai scans multiple locations for skills
 2. **Listing**: Available skills are listed in the system prompt
-3. **On-demand loading**: When a task matches a skill's description, the agent uses the `read` tool to load the skill file
+3. **On-demand loading**: When a task matches a skill's description, the agent uses the `Skill` tool to load the skill
 4. **Execution**: The agent follows the instructions in the skill file
+
+### Skill Activation
+
+When a skill is activated via the `Skill` tool:
+
+1. **Deduplication**: If the skill was already activated in the current session, a brief message is returned instead of re-loading the full content
+2. **Resource listing**: Files in the skill directory are enumerated and displayed in a `<skill_resources>` block
+3. **Content delivery**: The skill's markdown content (with frontmatter stripped) is returned
+
+Starting a new session (Ctrl-N) clears the activated skills cache, allowing skills to be loaded fresh.
 
 ## Skill File Format
 
@@ -126,5 +136,8 @@ Skills are enabled by default. You can disable them via:
 2. **System prompt**: Lists available skills
 3. **User request**: "Extract text from this PDF"
 4. **Agent matches**: Sees "pdf-extract: Extract text and tables from PDF files"
-5. **Skill loading**: Uses `read` tool to load `~/.agents/skills/pdf-extract/SKILL.md`
-6. **Execution**: Follows instructions in skill file (run scripts from this file's directory)
+5. **Skill loading**: Uses `Skill` tool to activate the skill, receiving:
+   - Skill name and base directory
+   - Resource listing (scripts/, references/, etc.)
+   - Full skill instructions
+6. **Execution**: Follows instructions in skill file, using relative paths from the base directory

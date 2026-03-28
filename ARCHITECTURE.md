@@ -170,6 +170,7 @@ acai-ts
     │   ├── manager.ts
     │   └── summary.ts
     ├── skills
+    │   ├── activated-tracker.ts
     │   └── index.ts
     ├── subagents
     │   └── index.ts
@@ -315,6 +316,8 @@ acai-ts
     │   └── manager.test.ts
     ├── sessions
     │   └── manager.test.ts
+    ├── skills
+    │   └── activated-tracker.test.ts
     ├── setup.js
     ├── stdin-handling.test.ts
     ├── terminal
@@ -333,6 +336,7 @@ acai-ts
     │   ├── grep-max-results.test.ts
     │   ├── grep.test.ts
     │   ├── ls.test.ts
+    │   ├── skill.test.ts
     │   └── web-search.test.ts
     ├── tui
     │   ├── autocomplete.test.ts
@@ -476,6 +480,7 @@ acai-ts
 ### Source - Skills
 
 - **source/skills/index.ts**: Skills discovery, validation, loading, and prompt formatting
+- **source/skills/activated-tracker.ts**: Tracks activated skills in current session to prevent duplicate loading
 
 ### Source - Subagents
 
