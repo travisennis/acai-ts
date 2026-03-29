@@ -129,22 +129,23 @@ function detectDestructiveGitCommands(command: string): CommandSafetyResult {
   }
 
   // Block git branch -D (force delete without merge check)
-  if (lowerCommand.match(/git\s+branch\s+-[a-z]/)) {
-    // Check if it's an uppercase letter (force delete)
-    const match = lowerCommand.match(/git\s+branch\s+-[a-z]/);
-    if (match && match[0].slice(-1) !== match[0].slice(-1).toLowerCase()) {
-      // It's uppercase, block it
-    } else if (match) {
-      const upperMatch = command.match(/git\s+branch\s+-[A-Z]/);
-      if (upperMatch) {
-        return {
-          blocked: true,
-          reason:
-            "git branch -D force-deletes branches without checking if they're merged",
-          command,
-          tip: "Use 'git branch -d' (lowercase) to safely delete branches that are merged.",
-        };
-      }
+  // Check for uppercase flag on original command (lowercase -d is safe)
+  // Match 'git' case-insensitively, but preserve case for the flag
+  const branchMatch = lowerCommand.match(/git\s+branch\s+-([a-z])/);
+  if (branchMatch) {
+    // Check if the flag in the original command is uppercase
+    const flagInOriginal = command.match(/git\s+branch\s+-([A-Za-z])/i);
+    if (
+      flagInOriginal &&
+      flagInOriginal[1] === flagInOriginal[1].toUpperCase()
+    ) {
+      return {
+        blocked: true,
+        reason:
+          "git branch -D force-deletes branches without checking if they're merged",
+        command,
+        tip: "Use 'git branch -d' (lowercase) to safely delete branches that are merged.",
+      };
     }
   }
 

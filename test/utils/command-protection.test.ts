@@ -117,6 +117,18 @@ describe("command-protection", () => {
         assert.strictEqual(result.blocked, false);
       });
 
+      it("allows git restore -b (creates branch, not restoring files)", () => {
+        const result = detectDestructiveCommand("git restore -b new-branch");
+        assert.strictEqual(result.blocked, false);
+      });
+
+      it("allows git restore -b with source", () => {
+        const result = detectDestructiveCommand(
+          "git restore -b new-branch --source=HEAD~3",
+        );
+        assert.strictEqual(result.blocked, false);
+      });
+
       it("blocks git clean -f", () => {
         const result = detectDestructiveCommand("git clean -f");
         assert.strictEqual(result.blocked, true);
@@ -184,6 +196,16 @@ describe("command-protection", () => {
           "git branch --delete feature-branch",
         );
         assert.strictEqual(result.blocked, false);
+      });
+
+      it("blocks git branch -D with mixed case Git", () => {
+        const result = detectDestructiveCommand("Git branch -D feature-branch");
+        assert.strictEqual(result.blocked, true);
+      });
+
+      it("blocks GIT BRANCH -D (all caps)", () => {
+        const result = detectDestructiveCommand("GIT BRANCH -D feature-branch");
+        assert.strictEqual(result.blocked, true);
       });
 
       it("blocks git stash drop", () => {
