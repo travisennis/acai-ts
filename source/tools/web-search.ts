@@ -334,7 +334,7 @@ export const createWebSearchTool = async () => {
       inputSchema,
     },
     display({ query }: WebSearchInputSchema) {
-      return `🔍 ${style.cyan(query)}`;
+      return `${style.cyan(query)}`;
     },
     async execute(
       options: WebSearchInputSchema,

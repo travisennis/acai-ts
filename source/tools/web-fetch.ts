@@ -566,7 +566,7 @@ export const createWebFetchTool = async () => {
       inputSchema,
     },
     display({ url }: WebFetchInputSchema) {
-      return `🌐 ${style.cyan(url)}`;
+      return `${style.cyan(url)}`;
     },
     async execute(
       options: WebFetchInputSchema,
