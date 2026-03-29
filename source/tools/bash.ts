@@ -253,17 +253,18 @@ const MAX_OUTPUT_SIZE = 50 * 1024;
 /**
  * Truncates output if it exceeds MAX_OUTPUT_SIZE and adds a clear message.
  * This prevents extremely large outputs from exhausting the context window.
+ * The footer is always appended at the end, even when output is truncated.
  */
-function truncateOutput(output: string): string {
+function truncateOutput(output: string, footer: string): string {
   if (output.length <= MAX_OUTPUT_SIZE) {
-    return output;
+    return `${output}\n${footer}`;
   }
 
   const truncatedLength = MAX_OUTPUT_SIZE;
   const originalLength = output.length;
   const truncated = output.slice(0, truncatedLength);
 
-  return `${truncated}\n\n[OUTPUT TRUNCATED: ${originalLength.toLocaleString()} characters total, showing first ${truncatedLength.toLocaleString()} characters. The output was too large and was truncated to prevent context window exhaustion. Consider using commands that produce smaller output (e.g., head, tail with line limits, or redirecting to a file).]`;
+  return `${truncated}\n\n[OUTPUT TRUNCATED: ${originalLength.toLocaleString()} characters total, showing first ${truncatedLength.toLocaleString()} characters. The output was too large and was truncated to prevent context window exhaustion. Consider using commands that produce smaller output (e.g., head, tail with line limits, or redirecting to a file).]\n${footer}`;
 }
 
 const inputSchema = z.object({
@@ -378,7 +379,7 @@ export const createBashTool = async (options: {
       const combinedOutput = output
         ? `${errorMessage}\n${output}`
         : errorMessage;
-      throw new Error(truncateOutput(`${combinedOutput}\n${metadataFooter}`));
+      throw new Error(truncateOutput(combinedOutput, metadataFooter));
     }
 
     // Check for binary output and handle specially
@@ -388,7 +389,7 @@ export const createBashTool = async (options: {
       return `${binaryMessage}\n${metadataFooter}`;
     }
 
-    return truncateOutput(`${output}\n${metadataFooter}`);
+    return truncateOutput(output, metadataFooter);
   }
 
   return {
