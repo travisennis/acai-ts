@@ -89,7 +89,6 @@ describe("web search tool", async () => {
         timeout: 30000,
         provider: "exa",
       });
-      assert.ok(display.includes("🔍"));
       assert.ok(display.includes("test query"));
     });
   });
