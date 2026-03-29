@@ -20,6 +20,78 @@ export interface SafeCommandResult {
 export type CommandSafetyResult = BlockedCommandResult | SafeCommandResult;
 
 /**
+ * Check if a git subcommand appears as an actual command (not inside quoted strings).
+ * This helps avoid false positives when destructive command text appears in
+ * commit messages or other quoted strings.
+ */
+function isActualGitCommand(command: string, subcommand: string): boolean {
+  const pattern = new RegExp(`\\bgit\\s+${subcommand}\\b`, "gi");
+
+  // Find all matches of git <subcommand>
+  const matches: { index: number; text: string }[] = [];
+  let match: RegExpExecArray | null = pattern.exec(command);
+
+  while (match !== null) {
+    matches.push({ index: match.index, text: match[0] });
+    match = pattern.exec(command);
+  }
+
+  if (matches.length === 0) return false;
+
+  // For each match, check if it's inside quotes
+  for (const { index } of matches) {
+    if (!isInsideQuotes(command, index)) {
+      // Also check if it's at the start or after command separators
+      const beforeMatch = command.slice(0, index).trim();
+      if (
+        beforeMatch === "" ||
+        beforeMatch.endsWith("&&") ||
+        beforeMatch.endsWith("||") ||
+        beforeMatch.endsWith(";") ||
+        beforeMatch.endsWith("|") ||
+        beforeMatch.endsWith("\n")
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Check if a position in a string is inside quotes (single or double).
+ * Handles escaped quotes.
+ */
+function isInsideQuotes(command: string, position: number): boolean {
+  let inSingleQuote = false;
+  let inDoubleQuote = false;
+  let escaped = false;
+
+  for (let i = 0; i < position; i++) {
+    const char = command[i];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escaped = true;
+      continue;
+    }
+
+    if (char === '"' && !inSingleQuote) {
+      inDoubleQuote = !inDoubleQuote;
+    } else if (char === "'" && !inDoubleQuote) {
+      inSingleQuote = !inSingleQuote;
+    }
+  }
+
+  return inSingleQuote || inDoubleQuote;
+}
+
+/**
  * Detects if a command is destructive and should be blocked
  * @param command - The full command string to check
  * @returns BlockedCommandResult if destructive, SafeCommandResult if safe
@@ -131,6 +203,7 @@ function detectDestructiveGitCommands(command: string): CommandSafetyResult {
   // Block git branch -D (force delete without merge check)
   // Check for uppercase flag on original command (lowercase -d is safe)
   // Match 'git' case-insensitively, but preserve case for the flag
+  // Only match if git branch appears as an actual command (not inside quoted strings)
   const branchMatch = lowerCommand.match(/git\s+branch\s+-([a-z])/);
   if (branchMatch) {
     // Check if the flag in the original command is uppercase
@@ -139,13 +212,18 @@ function detectDestructiveGitCommands(command: string): CommandSafetyResult {
       flagInOriginal &&
       flagInOriginal[1] === flagInOriginal[1].toUpperCase()
     ) {
-      return {
-        blocked: true,
-        reason:
-          "git branch -D force-deletes branches without checking if they're merged",
-        command,
-        tip: "Use 'git branch -d' (lowercase) to safely delete branches that are merged.",
-      };
+      // Verify this is an actual git branch command, not text inside quotes
+      // Check if git branch appears at start or after command separators
+      const isActualCommand = isActualGitCommand(command, "branch");
+      if (isActualCommand) {
+        return {
+          blocked: true,
+          reason:
+            "git branch -D force-deletes branches without checking if they're merged",
+          command,
+          tip: "Use 'git branch -d' (lowercase) to safely delete branches that are merged.",
+        };
+      }
     }
   }
 
@@ -275,8 +353,33 @@ function detectDangerousInlineScripts(command: string): CommandSafetyResult {
 
 /**
  * Detect dangerous patterns in heredocs and here-strings
+ * Only blocks heredocs that are explicitly executed by a scripting language,
+ * not heredocs used as data (e.g., commit messages, config files).
  */
 function detectDangerousHeredocs(command: string): CommandSafetyResult {
+  // Check if heredoc is being executed by a scripting language
+  // Patterns that indicate execution:
+  // 1. bash <<EOF, sh <<EOF, python <<EOF, etc. (language reads from heredoc)
+  // 2. cat <<EOF | bash, <<EOF | python, etc. (heredoc piped to language)
+
+  const executionPatterns = [
+    // Shell languages reading heredoc directly
+    /\b(bash|sh|zsh|dash|ksh)\s*<<-?\s*['"]?\w+/i,
+    // Scripting languages reading heredoc directly
+    /\b(python\d?|ruby|perl|node)\s*<<-?\s*['"]?\w+/i,
+    // Heredoc piped to shell
+    /<<-?\s*['"]?\w+['"]?\s*\|\s*(bash|sh|zsh|dash|ksh)\b/i,
+  ];
+
+  const isExecutableHeredoc = executionPatterns.some((pattern) =>
+    pattern.test(command),
+  );
+
+  // Only scan heredoc content if it's being executed by a scripting language
+  if (!isExecutableHeredoc) {
+    return { blocked: false };
+  }
+
   // Match heredoc patterns: <<EOF ... EOF
   const heredocPattern = /<<-?\s*['"]?(\w+)['"]?\s*([\s\S]*?)\n\1\b/gi;
   let match: RegExpExecArray | null = null;

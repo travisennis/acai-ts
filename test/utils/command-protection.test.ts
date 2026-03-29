@@ -521,6 +521,29 @@ describe("command-protection", () => {
         assert.strictEqual(result.blocked, false);
       });
 
+      it("allows heredoc used as commit message", () => {
+        const result = detectDestructiveCommand(
+          "git commit -m \"$(cat <<'EOF'\nfix: fix branch force delete detection\n\nThe original implementation had convoluted logic.\nAlso adds tests for git branch -D with mixed case.\nEOF\n)\"",
+        );
+        assert.strictEqual(result.blocked, false);
+      });
+
+      it("allows heredoc used as commit message with destructive text", () => {
+        // Commit message containing "git branch -D" as text should not be blocked
+        const result = detectDestructiveCommand(
+          "git commit -m \"$(cat <<'EOF'\nfix: handle git branch -D correctly\nEOF\n)\"",
+        );
+        assert.strictEqual(result.blocked, false);
+      });
+
+      it("allows heredoc not executed by scripting language", () => {
+        // Heredoc used for config file, not executed
+        const result = detectDestructiveCommand(
+          "cat > config.yml <<EOF\nname: test\nEOF",
+        );
+        assert.strictEqual(result.blocked, false);
+      });
+
       it("allows heredoc with safe git commands", () => {
         const result = detectDestructiveCommand(
           "cat <<EOF | bash\ngit status\ngit log\nEOF",
