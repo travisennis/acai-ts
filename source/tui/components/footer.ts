@@ -13,7 +13,6 @@ type State = {
   currentContextWindow: number;
   contextWindow: number;
   agentState?: AgentState;
-  currentMode?: string;
 };
 
 function formatProjectStatus(
@@ -63,7 +62,6 @@ export class FooterComponent implements Component {
   private state: State;
   private progressBar: ProgressBarComponent;
   private agentState?: AgentState;
-  private currentMode = "Normal";
   constructor(
     modelManager: ModelManager,
     tokenTracker: TokenTracker | undefined,
@@ -83,9 +81,6 @@ export class FooterComponent implements Component {
   setState(state: State) {
     if (state.agentState) {
       this.agentState = state.agentState;
-    }
-    if (state.currentMode !== undefined) {
-      this.currentMode = state.currentMode;
     }
     this.state = state;
     this.progressBar.setCurrent(state.currentContextWindow);
@@ -111,23 +106,8 @@ export class FooterComponent implements Component {
     );
     results.push(pathLine + " ".repeat(padding) + style.dim(modelInfo));
 
-    const modeDisplay =
-      this.currentMode !== "Normal"
-        ? style.magenta(`[${this.currentMode}]`)
-        : "";
-
     if (gitLine) {
-      if (modeDisplay) {
-        const gitPadding = Math.max(
-          0,
-          width - visibleWidth(gitLine) - visibleWidth(modeDisplay),
-        );
-        results.push(`${gitLine}${" ".repeat(gitPadding)}${modeDisplay}`);
-      } else {
-        results.push(gitLine);
-      }
-    } else if (modeDisplay) {
-      results.push(modeDisplay);
+      results.push(gitLine);
     }
 
     // Line 3: Total session usage from token tracker (accumulated across all turns)

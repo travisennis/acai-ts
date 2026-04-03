@@ -156,9 +156,6 @@ acai-ts
     │   ├── openrouter-provider.ts
     │   ├── providers.ts
     │   └── xai-provider.ts
-    ├── modes
-    │   ├── manager.ts
-    │   └── prompts.ts
     ├── prompts
     │   ├── manager.ts
     │   ├── mentions.ts

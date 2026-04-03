@@ -87,7 +87,6 @@ Reference files directly with `@filename`, directories with `@dirname`, or run s
 │   ├── execution/     # Command execution utilities
 │   ├── middleware/     # AI request/response middleware
 │   ├── models/        # AI model providers and management
-│   ├── modes/         # Agent mode management
 │   ├── prompts/       # Prompt generation and management
 │   ├── repl/          # REPL utilities
 │   ├── sessions/      # Session persistence and management
