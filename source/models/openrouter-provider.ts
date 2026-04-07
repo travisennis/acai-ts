@@ -48,6 +48,7 @@ const openrouterModels = {
   "qwen3-coder-next": openRouterClient("qwen/qwen3-coder-next"),
   "qwen3-6-plus-free": openRouterClient("qwen/qwen3.6-plus:free"),
   "glm-5": openRouterClient("z-ai/glm-5"),
+  "glm-5-1": openRouterClient("z-ai/glm-5.1"),
   "grok-code-fast-1": openRouterClient("x-ai/grok-code-fast-1"),
   "grok-4-1-fast": openRouterClient("x-ai/grok-4.1-fast"),
 };
@@ -223,6 +224,18 @@ export const openrouterModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000001,
     costPerOutputToken: 0.0000032,
+  },
+  "openrouter:glm-5-1": {
+    id: "openrouter:glm-5-1",
+    provider: "openrouter",
+    contextWindow: 202752,
+    maxOutputTokens: 202752,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.0000014,
+    costPerOutputToken: 0.0000044,
   },
   "openrouter:qwen3-coder-next": {
     id: "openrouter:qwen3-coder-next",
