@@ -1,3 +1,6 @@
+import { writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { load } from "cheerio";
 import { z } from "zod";
 import style from "../terminal/style.ts";
@@ -12,6 +15,7 @@ const DEFAULT_TIMEOUT = 30000; // 30 seconds
 const MAX_REDIRECTS = 5;
 const MAX_URL_LENGTH = 2048;
 const JINA_API_BASE = "https://r.jina.ai";
+const MAX_INLINE_SIZE = 50_000; // bytes; content exceeding this is written to a temp file
 
 /**
  * Input schema for the web fetch tool
@@ -525,6 +529,8 @@ export async function executeWebFetch(
     throw new Error(`Web fetch failed: ${errorMessage}`);
   }
 
+  let content: string;
+
   switch (output) {
     case "json": {
       const jsonOutput: Record<string, unknown> = {
@@ -538,20 +544,41 @@ export async function executeWebFetch(
       if (headers && result.headers) {
         jsonOutput["headers"] = result["headers"];
       }
-      return JSON.stringify(jsonOutput, null, 2);
+      content = JSON.stringify(jsonOutput, null, 2);
+      break;
     }
 
     case "html":
-      return result.content;
+      content = result.content;
+      break;
 
     case "markdown":
-      if (result.contentType.includes("text/html")) {
-        return htmlToMarkdown(result.content);
-      }
-      return result.content;
+      content = result.contentType.includes("text/html")
+        ? htmlToMarkdown(result.content)
+        : result.content;
+      break;
+
     default:
-      return result.content;
+      content = result.content;
+      break;
   }
+
+  const contentSize = Buffer.byteLength(content, "utf-8");
+
+  if (contentSize > MAX_INLINE_SIZE) {
+    const tmpFile = join(
+      tmpdir(),
+      `acai-webfetch-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.txt`,
+    );
+    writeFileSync(tmpFile, content, "utf-8");
+    return [
+      `The fetched content from ${url} is ${contentSize} bytes which exceeds the ${MAX_INLINE_SIZE} byte inline limit.`,
+      `The full content has been saved to: ${tmpFile}`,
+      "To use this content, read the file in parts using the Read tool or search it with the Grep tool.",
+    ].join("\n");
+  }
+
+  return content;
 }
 
 /**
