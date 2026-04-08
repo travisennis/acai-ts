@@ -19,6 +19,7 @@ const messagesClient = createAnthropic({
 
 const opencodeGoModels = {
   "glm-5": completionsClient("glm-5"),
+  "glm-5-1": completionsClient("glm-5.1"),
   "kimi-k2-5": completionsClient("kimi-k2.5"),
   "minimax-m2-5": messagesClient("minimax-m2.5"),
   "minimax-m2-7": messagesClient("minimax-m2.7"),
@@ -51,6 +52,18 @@ export const opencodeGoModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000001,
     costPerOutputToken: 0.0000032,
+  },
+  "opencode-go:glm-5-1": {
+    id: "opencode-go:glm-5-1",
+    provider: "opencode-go",
+    contextWindow: 202752,
+    maxOutputTokens: 202752,
+    defaultTemperature: 0.5,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.0000014,
+    costPerOutputToken: 0.0000044,
   },
   "opencode-go:kimi-k2-5": {
     id: "opencode-go:kimi-k2-5",

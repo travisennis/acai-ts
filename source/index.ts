@@ -317,7 +317,7 @@ async function initializeModelManager(
 ): Promise<ModelManager> {
   const chosenModel: ModelName = isSupportedModel(flags.model)
     ? flags.model
-    : "opencode-go:kimi-k2-5";
+    : "opencode-go:glm-5-1"; // DEFAULT MODEL
 
   const projectConfig = await config.getConfig();
   const devtoolsEnabled = projectConfig.devtools?.enabled ?? false;
