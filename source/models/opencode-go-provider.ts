@@ -1,3 +1,4 @@
+import { createAlibaba } from "@ai-sdk/alibaba";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { objectKeys } from "@travisennis/stdlib/object";
@@ -17,12 +18,22 @@ const messagesClient = createAnthropic({
   apiKey: process.env["OPENCODE_ZEN_API_TOKEN"] ?? "",
 });
 
+const alibabaClient = createAlibaba({
+  apiKey: process.env["OPENCODE_ZEN_API_TOKEN"] ?? "",
+  // biome-ignore lint/style/useNamingConvention: third-party controlled
+  baseURL: "https://opencode.ai/zen/go/v1",
+});
+
 const opencodeGoModels = {
   "glm-5": completionsClient("glm-5"),
   "glm-5-1": completionsClient("glm-5.1"),
   "kimi-k2-5": completionsClient("kimi-k2.5"),
   "minimax-m2-5": messagesClient("minimax-m2.5"),
   "minimax-m2-7": messagesClient("minimax-m2.7"),
+  "mimo-v2-pro": completionsClient("mimo-v2-pro"),
+  "mimo-v2-omni": completionsClient("mimo-v2-omni"),
+  "qwen3.6-plus": alibabaClient("qwen3.6-plus"),
+  "qwen3.5-plus": alibabaClient("qwen3.5-plus"),
 } as const;
 
 type ModelName = `opencode-go:${keyof typeof opencodeGoModels}`;
@@ -100,5 +111,53 @@ export const opencodeGoModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 3e-7,
     costPerOutputToken: 0.0000012,
+  },
+  "opencode-go:mimo-v2-pro": {
+    id: "opencode-go:mimo-v2-pro",
+    provider: "opencode-go",
+    contextWindow: 1048576,
+    maxOutputTokens: 131072,
+    defaultTemperature: 1.0,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.000001,
+    costPerOutputToken: 0.000003,
+  },
+  "opencode-go:mimo-v2-omni": {
+    id: "opencode-go:mimo-v2-omni",
+    provider: "opencode-go",
+    contextWindow: 262144,
+    maxOutputTokens: 65536,
+    defaultTemperature: 1.0,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 4e-7,
+    costPerOutputToken: 0.000002,
+  },
+  "opencode-go:qwen3.6-plus": {
+    id: "opencode-go:qwen3.6-plus",
+    provider: "opencode-go",
+    contextWindow: 1000000,
+    maxOutputTokens: 65536,
+    defaultTemperature: 1.0,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 3.25e-7,
+    costPerOutputToken: 0.00000195,
+  },
+  "opencode-go:qwen3.5-plus": {
+    id: "opencode-go:qwen3.5-plus",
+    provider: "opencode-go",
+    contextWindow: 1000000,
+    maxOutputTokens: 65536,
+    defaultTemperature: 1.0,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 2.6e-7,
+    costPerOutputToken: 0.00000156,
   },
 };

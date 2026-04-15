@@ -57,6 +57,7 @@
     "lint:length": "find source -name '*.ts' | xargs -I{} awk 'END{if(NR>500)print FILENAME\": \"NR\" lines\"}' {}"
   },
   "dependencies": {
+    "@ai-sdk/alibaba": "^1.0.17",
     "@ai-sdk/anthropic": "^3.0.69",
     "@ai-sdk/deepseek": "^2.0.29",
     "@ai-sdk/devtools": "^0.0.15",
@@ -88,7 +89,7 @@
     "@ast-grep/napi": "^0.42.1",
     "@biomejs/biome": "2.4.12",
     "@commitlint/config-conventional": "^20.5.0",
-    "@types/node": "^25.6.0",
+    "@types/node": "^22.19.17",
     "c8": "^11.0.0",
     "commitlint": "^20.5.0",
     "domhandler": "^6.0.1",
