@@ -51,3 +51,4 @@ This app, acai-ts, is an AI-assistant CLI tool built with TypeScript. It is an a
 - Always run `Full Check` before committing
 - Whenever adding or removing files from the project, always update ./ARCHITECTURE.md
 - Whenever adding or removing files from the project or adding or removing features from the project, update ./README.md if needed
+- When `npm install` or typecheck fails due to missing type definitions or stale `node_modules`, delete `node_modules` and reinstall with `npm install --include=dev --ignore-scripts`
