@@ -49,6 +49,7 @@
     "oxlint:single": "oxlint --type-aware --ignore-path .gitignore -A all -c .oxlintrc.json",
     "knip": "npx knip",
     "knip:prod": "npx knip --production",
+    "setup": "node scripts/setup.ts",
     "update": "npx npm-check-updates --interactive --format group",
     "cpd": "npx jscpd ./source",
     "typecheck": "tsc --noEmit --pretty -p tsconfig.json",
