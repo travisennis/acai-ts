@@ -164,9 +164,31 @@ Dynamic tools can be configured in your project or user config:
 
 ## Tool Naming
 
-Tool names are prefixed with `dynamic-` when registered. A tool named `my-tool` becomes `dynamic-my-tool` in acai.
+Tools are registered with the exact name specified in the `name` field of the describe output. There is no prefix added.
 
 Parameter names must match `/^[a-zA-Z_][a-zA-Z0-9_-]*$/`.
+
+## Behavior
+
+### Conflict Handling
+
+Dynamic tools with the same name as existing built-in tools are skipped silently. Avoid naming your tools `Bash`, `Read`, `Write`, `Grep`, or other built-in tool names.
+
+### Duplicate Names
+
+If multiple `.js` or `.mjs` files define tools with the same name, only the first one encountered is loaded.
+
+### maxTools Limit
+
+When the total number of discovered tools exceeds `maxTools`, project tools take priority over user tools. The most recently discovered tools (project tools) are kept up to the limit.
+
+### Execution Environment
+
+When your tool executes:
+- `NODE_ENV` is set to `production`
+- The working directory is set to the directory containing your tool script
+- Output exceeding 2MB is truncated with `[Output truncated]`
+- A 30-second timeout applies by default
 
 ## Best Practices
 
