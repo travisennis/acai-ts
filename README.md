@@ -1,4 +1,4 @@
-# Acai: AI-Powered Software Development Assistant
+# acai
 
 ![Project Status](https://img.shields.io/badge/Status-Active-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
