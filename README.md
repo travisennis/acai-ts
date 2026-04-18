@@ -107,7 +107,7 @@ Reference files directly with `@filename`, directories with `@dirname`, or run s
 - [Usage Guide](docs/usage.md) - Commands, keyboard shortcuts, piped input, and prompt syntax
 - [Configuration](docs/configuration.md) - Environment variables, project and global settings
 - [Skills System](docs/skills.md) - Creating and using specialized instruction files
-- [Dynamic Tools](docs/dynamic-tools.md) - Creating custom tools to extend acai
+- [Dynamic Tools](docs/dynamic-tools.md) - Creating custom tools to extend acai (supports bash, python, and other languages; Amp-compatible text schema format; `/tools make` scaffolding command)
 - [Architecture](ARCHITECTURE.md) - Internal architecture and flow diagrams
 - [Contributing](CONTRIBUTING.md) - Development setup, scripts, and code style
 

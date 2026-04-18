@@ -100,6 +100,11 @@ export async function initTools({
       WebSearchTool.name,
       WebFetchTool.name,
     ],
+    sessionContext: {
+      sessionId: "",
+      projectDir: workspace.primaryDir,
+      agentName: "repl",
+    },
   });
 
   // Build tools object for AI SDK

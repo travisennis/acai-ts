@@ -132,6 +132,9 @@ acai-ts
     │   │   └── index.ts
     │   ├── shell
     │   │   └── index.ts
+    │   ├── tools
+    │   │   ├── index.ts
+    │   │   └── templates.ts
     │   └── types.ts
     ├── config
     │   └── index.ts
@@ -324,6 +327,7 @@ acai-ts
     ├── tokens
     ├── tools
     │   ├── bash.test.ts
+    │   ├── dynamic-tool-loader.test.ts
     │   ├── edit-file.test.ts
     │   ├── glob.test.ts
     │   ├── grep-enhanced-ux.test.ts
@@ -442,6 +446,7 @@ acai-ts
 - **source/commands/session/**: Command to manage sessions
 - **source/commands/share/**: Command to share conversations
 - **source/commands/shell/**: Command to execute shell commands
+- **source/commands/tools/**: Command to manage dynamic tools (`/tools make`, `/tools list`)
 
 ### Source - Models
 
@@ -486,12 +491,12 @@ acai-ts
 ### Source - Tools
 
 - **source/tools/index.ts**: Tool initialization and registry
-- **source/tools/types.ts**: Tool type definitions
+- **source/tools/types.ts**: Tool type definitions including `SessionContext` and `ToolExecutionOptions`
 - **source/tools/utils.ts**: Tool utility functions
 - **source/tools/agent.ts**: Agent tool for invoking sub-agents
 - **source/tools/bash.ts**: Bash command execution tool
 - **source/tools/directory-tree.ts**: Directory tree generation tool
-- **source/tools/dynamic-tool-loader.ts**: Dynamic tool loader for loading user-defined tools from `.acai/tools` directories
+- **source/tools/dynamic-tool-loader.ts**: Dynamic tool loader for loading user-defined tools from `.acai/tools` directories. Supports language-agnostic tools (bash, python, etc.) via shebang/extension detection, Amp-compatible text schema format, `.tool` companion files, and session context passing via environment variables
 - **source/tools/edit-file.ts**: File editing tool
 - **source/tools/glob.ts**: File pattern matching tool
 - **source/tools/grep.ts**: Text search tool

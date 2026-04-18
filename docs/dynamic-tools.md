@@ -1,12 +1,26 @@
 # Dynamic Tools
 
-Dynamic tools allow you to extend acai with custom tools written as Node.js scripts. They are loaded from `.acai/tools` directories and invoked by the AI model during conversations.
+Dynamic tools allow you to extend acai with custom tools. They are loaded from `.acai/tools` directories and invoked by the AI model during conversations.
 
-## How Dynamic Tools Work
+## Language Support
 
-1. **Discovery**: At startup, acai scans `.acai/tools` directories for `.js` and `.mjs` files
-2. **Metadata**: Each tool must respond to `TOOL_ACTION=describe` with its schema
-3. **Execution**: Tools are invoked via `TOOL_ACTION=execute` with parameters passed via stdin
+Dynamic tools support any executable language, not just Node.js. The system detects how to run a tool based on:
+
+1. **Shebang line** (`#!/bin/bash`, `#!/usr/bin/env python3`, etc.)
+2. **File extension** (`.js`, `.mjs`, `.sh`, `.py`, `.rb`, etc.)
+3. **Extensionless executables** (must have execute permission)
+
+### Supported Extensions
+
+| Extension | Interpreter |
+|-----------|-------------|
+| `.js`, `.mjs`, `.cjs` | Node.js (`process.execPath`) |
+| `.sh`, `.bash` | `/bin/bash` |
+| `.zsh` | `/bin/zsh` |
+| `.py` | `python3` |
+| `.rb` | `ruby` |
+
+Files without an extension are also supported if they have execute permission and a valid shebang line.
 
 ## Tool Locations
 
@@ -15,13 +29,11 @@ Dynamic tools are loaded from (later sources override earlier ones):
 1. `~/.acai/tools/` (user-level tools)
 2. `<project>/.acai/tools/` (project-specific tools)
 
-## Writing a Dynamic Tool
+## Schema Formats
 
-A dynamic tool is a Node.js script that handles two actions:
+### JSON Schema (Node.js and other languages)
 
-### 1. Describe Action (`TOOL_ACTION=describe`)
-
-When acai loads your tool, it spawns the script with `TOOL_ACTION=describe`. Your script must output JSON metadata:
+When a tool is spawned with `TOOL_ACTION=describe`, it must output its schema. The JSON format is the original format:
 
 ```javascript
 if (process.env.TOOL_ACTION === 'describe') {
@@ -43,7 +55,28 @@ if (process.env.TOOL_ACTION === 'describe') {
 }
 ```
 
-### 2. Execute Action (`TOOL_ACTION=execute`)
+### Text Schema (Amp-compatible)
+
+The text format is simpler and ideal for bash scripts. If JSON parsing of the describe output fails, the text format is tried automatically:
+
+```
+name: run_tests
+description: Run the tests in the project
+workspace: string optional name of the workspace directory
+test: string optional test name pattern
+```
+
+Format specification:
+- `name` and `description` are required
+- Parameter lines: `paramName: type [optional|required] description text`
+- Parameters without `optional` are required by default
+- Supported types: `string`, `number`, `boolean`
+- Empty lines and lines starting with `#` or `//` are comments
+- Tool name must match `/^[a-zA-Z_][a-zA-Z0-9_-]*$/`
+
+## Execution
+
+### JSON Format Execution
 
 When the model calls your tool, it runs with `TOOL_ACTION=execute` and parameters passed as JSON via stdin:
 
@@ -70,22 +103,137 @@ if (process.env.TOOL_ACTION === 'execute') {
 }
 ```
 
-## Example Tool
+### Text Format Execution (Key-Value)
 
-Here's a complete example from `.acai/tools/run-all-checks.mjs`:
+Tools using the text schema format receive parameters as key-value pairs on stdin:
+
+```
+param1=value1
+param2=value2
+```
+
+Example bash script:
+
+```bash
+#!/bin/bash
+
+action="${TOOL_ACTION}"
+
+if [ "$action" = "describe" ]; then
+  cat << 'EOF'
+name: my_tool
+description: My bash tool
+param1: string optional a parameter
+EOF
+  exit 0
+fi
+
+if [ "$action" = "execute" ]; then
+  while IFS='=' read -r key value; do
+    declare "$key"="$value"
+  done
+  echo "Got param1=$param1"
+  exit 0
+fi
+```
+
+## .tool Companion Files
+
+A `.tool` file contains only the text schema definition. The corresponding executable is a file with the same name but without the `.tool` extension in the same directory.
+
+For example:
+- `.acai/tools/run_tests.tool` - text schema definition
+- `.acai/tools/run_tests` - the executable bash script
+
+When a `.tool` file is found:
+1. The `.tool` file is read and parsed as text schema
+2. A companion executable (same name without `.tool`) is looked for
+3. The companion is used for execution
+
+This is useful when you want to separate the schema definition from the executable script.
+
+## Session Context
+
+Dynamic tools receive session context via environment variables during both describe and execute actions:
+
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `ACAI_SESSION_ID` | Current session UUID | Identifies the current session |
+| `ACAI_PROJECT_DIR` | Primary workspace directory | The project root directory |
+| `ACAI_AGENT_NAME` | Agent name (e.g., "repl") | The agent running the tool |
+
+Example usage in bash:
+
+```bash
+#!/bin/bash
+if [ "$TOOL_ACTION" = "execute" ]; then
+  echo "Running in project: $ACAI_PROJECT_DIR"
+  echo "Session: $ACAI_SESSION_ID"
+fi
+```
+
+## Scaffolding Tools with `/tools make`
+
+Use the `/tools make` command in the REPL to scaffold new dynamic tools:
+
+```
+/tools make my_tool --bash --description "My bash tool"
+/tools make my_tool --node --description "My Node.js tool"
+/tools make my_tool --zsh --description "My zsh tool"
+/tools make my_tool --text --description "My tool with text schema"
+```
+
+Options:
+- `--bash` - Create a bash script template (default)
+- `--zsh` - Create a zsh script template
+- `--node` - Create a Node.js script template
+- `--text` - Create a `.tool` schema file with a bash companion script
+- `--description <desc>` or `-d <desc>` - Tool description
+- `--dir <path>` - Custom output directory (default: `.acai/tools`)
+
+List existing dynamic tools:
+
+```
+/tools list
+```
+
+## Example: Bash Tool
+
+```bash
+#!/bin/bash
+
+action="${TOOL_ACTION}"
+
+if [ "$action" = "describe" ]; then
+  cat << 'EOF'
+name: run-all-checks
+description: Run all checks in the project
+dir: string optional the workspace directory
+EOF
+  exit 0
+fi
+
+if [ "$action" = "execute" ]; then
+  while IFS='=' read -r key value; do
+    declare "$key"="$value"
+  done
+  cd "${ACAI_PROJECT_DIR:-${dir:-.}}"
+  npm run typecheck && npm run lint:fix && npm run format
+  exit 0
+fi
+```
+
+## Example: Node.js Tool
 
 ```javascript
 #!/usr/bin/env node
 
-import { spawn } from 'node:child_process';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { writeFileSync, readFileSync, unlinkSync } from 'node:fs';
+const TOOL_ACTION = process.env.TOOL_ACTION;
 
-if (process.env.TOOL_ACTION === 'describe') {
+if (TOOL_ACTION === 'describe') {
   console.log(JSON.stringify({
     name: 'run-all-checks',
-    description: 'Run all checks in a project workspace (typecheck, lint:fix, format)',
+    description: 'Run all checks in the project',
     parameters: [
       {
         name: 'dir',
@@ -100,44 +248,16 @@ if (process.env.TOOL_ACTION === 'describe') {
   process.exit(0);
 }
 
-if (process.env.TOOL_ACTION === 'execute') {
-  let params = [];
+if (TOOL_ACTION === 'execute') {
+  let data = '';
   process.stdin.setEncoding('utf8');
-  process.stdin.on('readable', () => {
-    let chunk;
-    while (null !== (chunk = process.stdin.read())) {
-      params = JSON.parse(chunk);
-    }
-  });
-
+  process.stdin.on('data', (chunk) => { data += chunk; });
   process.stdin.on('end', () => {
+    const params = JSON.parse(data);
     const dir = params.find(p => p.name === 'dir')?.value || '.';
-    const tmpFile = join(tmpdir(), `acai-checks-${Date.now()}.txt`);
-    
-    const child = spawn('npm run typecheck && npm run lint:fix && npm run format', [], {
-      cwd: dir, 
-      stdio: 'pipe',
-      shell: true
-    });
-    
-    let output = '';
-    child.stdout.on('data', (data) => output += data);
-    child.stderr.on('data', (data) => output += data);
-    
-    child.on('close', (code) => {
-      writeFileSync(tmpFile, output);
-      
-      if (code === 0) {
-        console.log('success - all checks pass');
-        unlinkSync(tmpFile);
-        process.exit(0);
-      } else {
-        const fullOutput = readFileSync(tmpFile, 'utf8');
-        console.log(fullOutput);
-        unlinkSync(tmpFile);
-        process.exit(code);
-      }
-    });
+    // Your tool logic here
+    console.log('All checks passed');
+    process.exit(0);
   });
 }
 ```
@@ -176,7 +296,7 @@ Dynamic tools with the same name as existing built-in tools are skipped silently
 
 ### Duplicate Names
 
-If multiple `.js` or `.mjs` files define tools with the same name, only the first one encountered is loaded.
+If multiple files define tools with the same name, only the first one encountered is loaded.
 
 ### maxTools Limit
 
@@ -186,6 +306,7 @@ When the total number of discovered tools exceeds `maxTools`, project tools take
 
 When your tool executes:
 - `NODE_ENV` is set to `production`
+- `ACAI_SESSION_ID`, `ACAI_PROJECT_DIR`, and `ACAI_AGENT_NAME` are set
 - The working directory is set to the directory containing your tool script
 - Output exceeding 2MB is truncated with `[Output truncated]`
 - A 30-second timeout applies by default
@@ -197,3 +318,5 @@ When your tool executes:
 3. **Handle errors gracefully**: Always exit with appropriate codes and output
 4. **Use `needsApproval: false` sparingly**: Only for safe, read-only operations
 5. **Output format**: Return plain text or JSON (will be parsed if valid JSON)
+6. **Use text schema for bash tools**: Simpler than JSON for shell scripts
+7. **Use shebangs**: Always include a shebang line for non-Node.js scripts

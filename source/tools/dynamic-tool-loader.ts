@@ -5,7 +5,7 @@ import path from "node:path";
 import { z } from "zod";
 import { config } from "../config/index.ts";
 import { logger } from "../utils/logger.ts";
-import type { ToolExecutionOptions } from "./types.ts";
+import type { SessionContext, ToolExecutionOptions } from "./types.ts";
 
 // Tool Metadata Schema and Parser
 const toolMetadataSchema = z.object({
@@ -24,6 +24,189 @@ const toolMetadataSchema = z.object({
 });
 
 type ToolMetadata = z.infer<typeof toolMetadataSchema>;
+
+type ToolMetadataWithFormat = ToolMetadata & {
+  format: "json" | "text";
+};
+
+interface InterpreterResult {
+  command: string;
+  args: string[];
+}
+
+const KNOWN_EXTENSIONS = [
+  ".js",
+  ".mjs",
+  ".cjs",
+  ".sh",
+  ".bash",
+  ".zsh",
+  ".py",
+  ".rb",
+  ".tool",
+] as const;
+
+const EXTENSION_INTERPRETER_MAP: Record<string, string> = {
+  ".js": process.execPath,
+  ".mjs": process.execPath,
+  ".cjs": process.execPath,
+  ".sh": "/bin/bash",
+  ".bash": "/bin/bash",
+  ".zsh": "/bin/zsh",
+  ".py": "python3",
+  ".rb": "ruby",
+};
+
+export function getShebang(scriptPath: string): string | null {
+  try {
+    const fd = fs.openSync(scriptPath, "r");
+    const buffer = Buffer.alloc(256);
+    const bytesRead = fs.readSync(fd, buffer, 0, 256, 0);
+    fs.closeSync(fd);
+    const content = buffer.toString("utf8", 0, bytesRead);
+    if (content.startsWith("#!")) {
+      return content.slice(2).trim().split("\n")[0].trim();
+    }
+  } catch {
+    // Can't read file, skip
+  }
+  return null;
+}
+
+export function parseShebang(
+  shebang: string,
+  scriptPath: string,
+): InterpreterResult {
+  if (shebang.startsWith("/usr/bin/env ")) {
+    const interpreter = shebang
+      .slice("/usr/bin/env ".length)
+      .trim()
+      .split(" ")[0];
+    return { command: interpreter, args: [scriptPath] };
+  }
+  const parts = shebang.split(" ");
+  return { command: parts[0], args: [...parts.slice(1), scriptPath] };
+}
+
+export function resolveToolInterpreter(
+  scriptPath: string,
+): InterpreterResult | null {
+  // 1. Check shebang
+  const shebang = getShebang(scriptPath);
+  if (shebang) {
+    return parseShebang(shebang, scriptPath);
+  }
+
+  // 2. Check extension
+  const ext = path.extname(scriptPath).toLowerCase();
+  if (EXTENSION_INTERPRETER_MAP[ext]) {
+    return { command: EXTENSION_INTERPRETER_MAP[ext], args: [scriptPath] };
+  }
+
+  // 3. Extensionless executable
+  if (!ext) {
+    try {
+      const stats = fs.statSync(scriptPath);
+      if (stats.mode & 0o111) {
+        return { command: scriptPath, args: [] };
+      }
+    } catch {
+      // File doesn't exist or can't stat, skip
+    }
+  }
+
+  return null;
+}
+
+export function parseTextSchema(content: string): ToolMetadata | null {
+  const lines = content
+    .trim()
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith("#") && !l.startsWith("//"));
+
+  let name: string | undefined;
+  let description: string | undefined;
+  const parameters: ToolMetadata["parameters"] = [];
+
+  for (const line of lines) {
+    if (line.startsWith("name:")) {
+      name = line.slice(5).trim();
+      continue;
+    }
+
+    if (line.startsWith("description:")) {
+      description = line.slice(12).trim();
+      continue;
+    }
+
+    // Parse parameters: "paramName: type [optional|required] description text"
+    const paramMatch = line.match(
+      /^(\w+):\s*(string|number|boolean)\s+(optional|required)?\s*(.*)$/,
+    );
+    if (paramMatch) {
+      const [, paramName, paramType, requirement, paramDescription] =
+        paramMatch;
+      parameters.push({
+        name: paramName,
+        type: paramType as "string" | "number" | "boolean",
+        description: paramDescription || `Parameter ${paramName}`,
+        required: requirement !== "optional",
+      });
+      continue;
+    }
+
+    // Handle params without type keyword (default to string)
+    const simpleMatch = line.match(/^(\w+):\s*(.*)$/);
+    if (
+      simpleMatch &&
+      !line.startsWith("name:") &&
+      !line.startsWith("description:")
+    ) {
+      const [, paramName, rest] = simpleMatch;
+      const typeMatch = rest.match(/^(string|number|boolean)\s*(.*)$/);
+      if (typeMatch) {
+        const [, paramType, afterType] = typeMatch;
+        const optMatch = afterType.match(/^(optional|required)\s*(.*)$/);
+        parameters.push({
+          name: paramName,
+          type: paramType as "string" | "number" | "boolean",
+          description: optMatch
+            ? optMatch[2] || `Parameter ${paramName}`
+            : afterType || `Parameter ${paramName}`,
+          required: !optMatch || optMatch[1] !== "optional",
+        });
+      } else {
+        const optMatch = rest.match(/^(optional|required)\s*(.*)$/);
+        parameters.push({
+          name: paramName,
+          type: "string",
+          description: optMatch
+            ? optMatch[2] || rest
+            : rest || `Parameter ${paramName}`,
+          required: !optMatch || optMatch[1] !== "optional",
+        });
+      }
+    }
+  }
+
+  if (!name || !description) {
+    logger.warn("Text schema missing required name or description");
+    return null;
+  }
+
+  if (!/^[a-zA-Z_][a-zA-Z0-9_-]*$/.test(name)) {
+    logger.warn(`Invalid tool name: ${name}`);
+    return null;
+  }
+
+  return {
+    name,
+    description,
+    parameters,
+    needsApproval: true,
+  };
+}
 
 export function parseToolMetadata(output: string): ToolMetadata {
   try {
@@ -76,20 +259,35 @@ function generateZodSchema(parameters: ToolMetadata["parameters"]) {
   return z.object(fields);
 }
 
-async function getMetadata(scriptPath: string): Promise<ToolMetadata | null> {
+async function getMetadata(
+  scriptPath: string,
+  sessionContext?: SessionContext,
+): Promise<ToolMetadataWithFormat | null> {
+  const interpreter = resolveToolInterpreter(scriptPath);
+  if (!interpreter) {
+    logger.warn(`No valid interpreter for ${scriptPath}, skipping.`);
+    return null;
+  }
+
   return new Promise((resolve) => {
     let child: ReturnType<typeof spawn>;
     try {
-      // Find the node executable path
-      const nodePath = process.execPath;
-      child = spawn(nodePath, [scriptPath], {
-        env: {
-          ...process.env,
-          // biome-ignore lint/style/useNamingConvention: Environment variables are conventionally uppercase
-          TOOL_ACTION: "describe",
-          // biome-ignore lint/style/useNamingConvention: Environment variables are conventionally uppercase
-          NODE_ENV: "production",
-        },
+      const env: Record<string, string | undefined> = {
+        ...process.env,
+        // biome-ignore lint/style/useNamingConvention: Environment variables are conventionally uppercase
+        TOOL_ACTION: "describe",
+        // biome-ignore lint/style/useNamingConvention: Environment variables are conventionally uppercase
+        NODE_ENV: "production",
+      };
+
+      if (sessionContext) {
+        env["ACAI_SESSION_ID"] = sessionContext.sessionId;
+        env["ACAI_PROJECT_DIR"] = sessionContext.projectDir;
+        env["ACAI_AGENT_NAME"] = sessionContext.agentName;
+      }
+
+      child = spawn(interpreter.command, interpreter.args, {
+        env,
         stdio: ["ignore", "pipe", "pipe"],
       });
     } catch (e) {
@@ -118,12 +316,18 @@ async function getMetadata(scriptPath: string): Promise<ToolMetadata | null> {
 
       try {
         const metadata = parseToolMetadata(stdout);
-        resolve(metadata);
-      } catch (e) {
-        logger.error(
-          `Failed to parse metadata from ${scriptPath}: ${String(e)}`,
-        );
-        resolve(null);
+        resolve({ ...metadata, format: "json" });
+      } catch {
+        // JSON parse failed, try text format
+        const textMetadata = parseTextSchema(stdout);
+        if (textMetadata) {
+          resolve({ ...textMetadata, format: "text" });
+        } else {
+          logger.error(
+            `Failed to parse metadata from ${scriptPath}: not valid JSON or text format`,
+          );
+          resolve(null);
+        }
       }
     });
 
@@ -138,23 +342,45 @@ async function spawnChildProcess(
   scriptPath: string,
   params: Record<string, unknown>,
   abortSignal?: AbortSignal,
+  sessionContext?: SessionContext,
+  format: "json" | "text" = "json",
 ): Promise<string> {
-  const paramsArray = Object.entries(params).map(([name, value]) => ({
-    name,
-    value,
-  }));
-  const paramsJson = JSON.stringify(paramsArray);
+  const interpreter = resolveToolInterpreter(scriptPath);
+  if (!interpreter) {
+    throw new Error(`No valid interpreter for ${scriptPath}`);
+  }
+
+  let paramsInput: string;
+  if (format === "text") {
+    paramsInput = `${Object.entries(params)
+      .map(([key, value]) => `${key}=${value}`)
+      .join("\n")}\n`;
+  } else {
+    const paramsArray = Object.entries(params).map(([name, value]) => ({
+      name,
+      value,
+    }));
+    paramsInput = `${JSON.stringify(paramsArray)}\n`;
+  }
+
+  const env: Record<string, string | undefined> = {
+    ...process.env,
+    // biome-ignore lint/style/useNamingConvention: Environment variables are conventionally uppercase
+    TOOL_ACTION: "execute",
+    // biome-ignore lint/style/useNamingConvention: Environment variables are conventionally uppercase
+    NODE_ENV: "production",
+  };
+
+  if (sessionContext) {
+    env["ACAI_SESSION_ID"] = sessionContext.sessionId;
+    env["ACAI_PROJECT_DIR"] = sessionContext.projectDir;
+    env["ACAI_AGENT_NAME"] = sessionContext.agentName;
+  }
 
   return new Promise<string>((resolve, reject) => {
-    const child = spawn(process.execPath, [scriptPath], {
+    const child = spawn(interpreter.command, interpreter.args, {
       cwd: path.dirname(scriptPath),
-      env: {
-        ...process.env,
-        // biome-ignore lint/style/useNamingConvention: Environment variables are conventionally uppercase
-        TOOL_ACTION: "execute",
-        // biome-ignore lint/style/useNamingConvention: Environment variables are conventionally uppercase
-        NODE_ENV: "production",
-      },
+      env,
       stdio: ["pipe", "pipe", "pipe"],
     });
 
@@ -168,7 +394,7 @@ async function spawnChildProcess(
       reject(new Error("Execution timed out after 30 seconds"));
     }, 30000);
 
-    child.stdin.write(`${paramsJson}\n`);
+    child.stdin.write(paramsInput);
     child.stdin.end();
 
     child.stdout.on("data", (data) => {
@@ -235,10 +461,12 @@ interface DynamicToolObject {
 
 function createDynamicTool(
   scriptPath: string,
-  metadata: ToolMetadata,
+  metadata: ToolMetadataWithFormat,
+  sessionContext?: SessionContext,
 ): { [x: string]: DynamicToolObject } {
   const inputSchema = generateZodSchema(metadata.parameters);
   const toolName = metadata.name;
+  const format = metadata.format;
 
   return {
     [toolName]: {
@@ -251,7 +479,7 @@ function createDynamicTool(
       },
       async execute(
         input: Record<string, unknown>,
-        { abortSignal }: ToolExecutionOptions,
+        { abortSignal, sessionContext: executionContext }: ToolExecutionOptions,
       ): Promise<string> {
         if (abortSignal?.aborted) {
           throw new Error("Execution aborted");
@@ -265,18 +493,50 @@ function createDynamicTool(
           );
         }
 
-        return spawnChildProcess(scriptPath, input, abortSignal);
+        // Prefer execution-time context over load-time context
+        const context = executionContext ?? sessionContext;
+        return spawnChildProcess(
+          scriptPath,
+          input,
+          abortSignal,
+          context,
+          format,
+        );
       },
     } as unknown as DynamicToolObject,
   };
 }
 
+function findCompanion(dir: string, baseName: string): string | null {
+  const companionExtensions = [
+    ".sh",
+    ".bash",
+    ".zsh",
+    ".py",
+    ".rb",
+    ".js",
+    ".mjs",
+    ".cjs",
+    "",
+  ];
+  for (const ext of companionExtensions) {
+    const candidate = path.join(dir, baseName + ext);
+    if (fs.existsSync(candidate)) {
+      const interpreter = resolveToolInterpreter(candidate);
+      if (interpreter) return candidate;
+    }
+  }
+  return null;
+}
+
 export async function loadDynamicTools({
   baseDir,
   existingToolNames = [],
+  sessionContext,
 }: {
   baseDir: string;
   existingToolNames?: string[];
+  sessionContext?: SessionContext;
 }) {
   const projectConfig = await config.getConfig();
   const dynamicConfig = projectConfig.tools.dynamicTools;
@@ -289,18 +549,41 @@ export async function loadDynamicTools({
   const projectToolsDir = path.join(baseDir, ".acai", "tools");
   const userToolsDir = path.join(os.homedir(), ".acai", "tools");
 
-  const toolMap = new Map<string, { path: string; metadata: ToolMetadata }>();
+  const toolMap = new Map<
+    string,
+    { path: string; metadata: ToolMetadataWithFormat }
+  >();
 
   const scanDir = async (dir: string, isProject = false) => {
     if (!fs.existsSync(dir)) return;
     try {
-      const files = fs
-        .readdirSync(dir)
-        .filter((f) => f.endsWith(".js") || f.endsWith(".mjs"));
+      const files = fs.readdirSync(dir).filter((f) => {
+        // Known extensions
+        if (KNOWN_EXTENSIONS.some((ext) => f.endsWith(ext))) {
+          return true;
+        }
+
+        // Extensionless files that are executable
+        if (!path.extname(f)) {
+          const fullPath = path.join(dir, f);
+          try {
+            const stats = fs.statSync(fullPath);
+            if (stats.mode & 0o111) return true;
+          } catch {
+            // Can't stat, skip
+          }
+        }
+
+        return false;
+      });
+
       for (const file of files) {
+        // Skip .tool files, they are handled separately
+        if (file.endsWith(".tool")) continue;
+
         const scriptPath = path.join(dir, file);
         try {
-          const metadata = await getMetadata(scriptPath);
+          const metadata = await getMetadata(scriptPath, sessionContext);
           if (metadata) {
             toolMap.set(metadata.name, { path: scriptPath, metadata });
             logger.info(
@@ -311,6 +594,43 @@ export async function loadDynamicTools({
           }
         } catch (e) {
           logger.error(`Error scanning ${file}: ${e}`);
+        }
+      }
+
+      // Scan for .tool files (text schema with companion executable)
+      const allDirFiles = fs.readdirSync(dir);
+      const allToolFiles = allDirFiles.filter((f) => f.endsWith(".tool"));
+
+      for (const toolFile of allToolFiles) {
+        const toolPath = path.join(dir, toolFile);
+        try {
+          const content = fs.readFileSync(toolPath, "utf8");
+          const metadata = parseTextSchema(content);
+          if (!metadata) {
+            logger.warn(`Failed to parse .tool file: ${toolFile}`);
+            continue;
+          }
+
+          const baseName = toolFile.slice(0, -5); // Remove .tool extension
+          const companionPath = findCompanion(dir, baseName);
+          if (!companionPath) {
+            logger.warn(`No companion executable found for ${toolFile}`);
+            continue;
+          }
+
+          const metadataWithFormat: ToolMetadataWithFormat = {
+            ...metadata,
+            format: "text",
+          };
+          toolMap.set(metadata.name, {
+            path: companionPath,
+            metadata: metadataWithFormat,
+          });
+          logger.info(
+            `Loaded ${isProject ? "project" : "user"} tool: ${metadata.name} (from .tool file)`,
+          );
+        } catch (e) {
+          logger.error(`Error reading .tool file ${toolFile}: ${e}`);
         }
       }
     } catch (e) {
@@ -358,7 +678,7 @@ export async function loadDynamicTools({
       continue;
     }
 
-    Object.assign(tools, createDynamicTool(path, metadata));
+    Object.assign(tools, createDynamicTool(path, metadata, sessionContext));
   }
 
   if (conflictingTools.length > 0) {

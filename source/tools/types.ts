@@ -14,9 +14,16 @@ export const fileEncodingSchema = z.enum([
   "hex",
 ]);
 
+export type SessionContext = {
+  sessionId: string;
+  projectDir: string;
+  agentName: string;
+};
+
 export type ToolExecutionOptions = {
   toolCallId: string;
   // biome-ignore lint/suspicious/noExplicitAny: temporary
   messages?: any[];
   abortSignal?: AbortSignal;
+  sessionContext?: SessionContext;
 };

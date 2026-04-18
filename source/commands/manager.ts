@@ -42,6 +42,7 @@ import { reviewCommand } from "./review/index.ts";
 import { sessionCommand } from "./session/index.ts";
 import { shareCommand } from "./share/index.ts";
 import { shellCommand } from "./shell/index.ts";
+import { toolsCommand } from "./tools/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
 export class CommandManager {
@@ -116,6 +117,7 @@ export class CommandManager {
       resourcesCommand(options),
       shareCommand(options),
       shellCommand(options),
+      toolsCommand(options),
     ];
 
     // Add help command with access to all commands
