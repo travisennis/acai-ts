@@ -41,6 +41,10 @@ This app, acai-ts, is an AI-assistant CLI tool built with TypeScript. It is an a
 - No new warnings generated
 - Documentation updated if needed
 
+## ExecPlans
+
+When writing complex features or significant refactors, use an ExecPlan (as described in .agent/PLANS.md) from design to implementation.
+
 ## Important Notes
 
 - Run the `Full Check` command when you complete a task to make sure the code is correct.
