@@ -10,6 +10,7 @@ import { getCurrentBranch, inGitDirectory } from "../utils/git.ts";
 type SystemPromptComponents = {
   core: string;
   userAgentsMd: string;
+  configAgentsMd: string;
   cwdAgentsMd: string;
   learnedRules: string;
   skills: string;
@@ -21,16 +22,23 @@ async function getProjectContext() {
   const userAgentsFile = agentsFiles.find(
     (f) => f.path === "~/.acai/AGENTS.md",
   );
+  const configAgentsFile = agentsFiles.find(
+    (f) => f.path === "~/.config/AGENTS.md",
+  );
   const cwdAgentsFile = agentsFiles.find((f) => f.path === "./AGENTS.md");
   const userRules = (userAgentsFile?.content ?? "").trim();
+  const configRules = (configAgentsFile?.content ?? "").trim();
   const cwdRules = (cwdAgentsFile?.content ?? "").trim();
   const learnedRules = (await config.readLearnedRulesFile()).trim();
   let result = "";
 
-  if (userRules || cwdRules) {
+  if (userRules || configRules || cwdRules) {
     result += "## Project Context:\n\n";
     if (userRules) {
       result += `### ~/.acai/AGENTS.md\n\n<instructions>\n${userRules}\n</instructions>\n\n`;
+    }
+    if (configRules) {
+      result += `### ~/.config/AGENTS.md\n\n<instructions>\n${configRules}\n</instructions>\n\n`;
     }
     if (cwdRules) {
       result += `### ./AGENTS.md\n\n<instructions>\n${cwdRules}\n</instructions>\n\n`;
@@ -38,7 +46,7 @@ async function getProjectContext() {
   }
 
   if (learnedRules) {
-    if (!userRules && !cwdRules) {
+    if (!userRules && !configRules && !cwdRules) {
       result += "## Project Rules:\n\n";
     }
     result += `### Important rules to follow\n\n${learnedRules}`;
@@ -47,6 +55,7 @@ async function getProjectContext() {
   return {
     text: result.trim(),
     userAgentsMd: userRules,
+    configAgentsMd: configRules,
     cwdAgentsMd: cwdRules,
     learnedRules: learnedRules,
   };
@@ -120,7 +129,13 @@ export async function systemPrompt(
 
   const projectContextResult = includeRules
     ? await getProjectContext()
-    : { text: "", userAgentsMd: "", cwdAgentsMd: "", learnedRules: "" };
+    : {
+        text: "",
+        userAgentsMd: "",
+        configAgentsMd: "",
+        cwdAgentsMd: "",
+        learnedRules: "",
+      };
   const projectContextText = projectContextResult.text;
   const environmentInfoText = await environmentInfo(
     currentWorkingDir,
@@ -268,6 +283,7 @@ DEFAULT TO PARALLEL: Unless you have a specific reason why operations MUST be se
   const components: SystemPromptComponents = {
     core: `${corePrompt}\n\n${environmentInfoText}`,
     userAgentsMd: projectContextResult.userAgentsMd,
+    configAgentsMd: projectContextResult.configAgentsMd,
     cwdAgentsMd: projectContextResult.cwdAgentsMd,
     learnedRules: projectContextResult.learnedRules,
     skills: skillsText,

@@ -252,12 +252,15 @@ test("readAgentsFiles and writeAgentsFile operate in CWD", async () => {
       const mgr = new ConfigManager();
 
       const initial = await mgr.readAgentsFiles();
-      assert.equal(initial.length, 0);
+      // Only check that no CWD AGENTS.md exists; global files may be present
+      const cwdFile = initial.find((f) => f.path === "./AGENTS.md");
+      assert.equal(cwdFile, undefined);
 
       await mgr.writeAgentsFile("# Agents\nagent1");
       const files = await mgr.readAgentsFiles();
-      assert.equal(files.length, 1);
-      assert(files[0].content.includes("agent1"));
+      const cwdFiles = files.filter((f) => f.path === "./AGENTS.md");
+      assert.equal(cwdFiles.length, 1);
+      assert(cwdFiles[0].content.includes("agent1"));
     } finally {
       process.chdir(oldCwd);
     }

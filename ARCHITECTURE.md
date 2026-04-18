@@ -410,7 +410,7 @@ acai-ts
 
 ### Source - Config
 
-- **source/config/index.ts**: Configuration management, directory providers, and config schema
+- **source/config/index.ts**: Configuration management, directory providers, and config schema. Reads AGENTS.md from `~/.acai/AGENTS.md`, `~/.config/AGENTS.md`, and `./AGENTS.md`
 
 ### Source - Agent
 
@@ -467,7 +467,7 @@ acai-ts
 
 - **source/prompts/manager.ts**: Prompt template management and context injection
 - **source/prompts/mentions.ts**: Processes #file mentions and paste placeholders in user input
-- **source/prompts/system-prompt.ts**: System prompt generation and environment info
+- **source/prompts/system-prompt.ts**: System prompt generation and environment info. Reads AGENTS.md files from three locations: `~/.acai/AGENTS.md` (user-level), `~/.config/AGENTS.md` (global config), and `./AGENTS.md` (project-level)
 
 ### Source - REPL
 

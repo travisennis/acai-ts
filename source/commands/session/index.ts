@@ -65,6 +65,11 @@ function buildContextTable(breakdown: Breakdown, window: number): string[][] {
       formatPercentage(breakdown.systemPromptBreakdown.userAgentsMd, window),
     ],
     [
+      "  ~/.config/AGENTS.md",
+      formatNumber(breakdown.systemPromptBreakdown.configAgentsMd),
+      formatPercentage(breakdown.systemPromptBreakdown.configAgentsMd, window),
+    ],
+    [
       "  ./AGENTS.md",
       formatNumber(breakdown.systemPromptBreakdown.cwdAgentsMd),
       formatPercentage(breakdown.systemPromptBreakdown.cwdAgentsMd, window),
@@ -168,6 +173,7 @@ export function sessionCommand({
       const systemPromptBreakdown = {
         core: tokenCounter.count(sysResult.components.core),
         userAgentsMd: tokenCounter.count(sysResult.components.userAgentsMd),
+        configAgentsMd: tokenCounter.count(sysResult.components.configAgentsMd),
         cwdAgentsMd: tokenCounter.count(sysResult.components.cwdAgentsMd),
         learnedRules: tokenCounter.count(sysResult.components.learnedRules),
         skills: tokenCounter.count(sysResult.components.skills),

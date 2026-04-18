@@ -5,6 +5,7 @@ export type Breakdown = {
   systemPromptBreakdown: {
     core: number;
     userAgentsMd: number;
+    configAgentsMd: number;
     cwdAgentsMd: number;
     learnedRules: number;
     skills: number;

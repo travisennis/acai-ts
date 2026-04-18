@@ -118,7 +118,7 @@ You can define environment variables in `acai.json` that are passed to the Bash 
 
 ### Project-Specific Customization
 
-- **Rules/Guidelines**: Add project-specific AI behavior rules in `AGENTS.md`
+- **Rules/Guidelines**: Add project-specific AI behavior rules in `AGENTS.md` (project-level) or `~/.config/AGENTS.md` (global, shared across projects)
 - **Custom Skills**: Store reusable skill prompts in `.agents/skills/<name>/SKILL.md`. Skills with `user-invocable: true` are registered as slash commands with argument placeholder support (`$ARGUMENTS`, `$1`, `$2`, etc.).
 - **File Selections**: Save file/directory selections in `.acai/selections/`
 - **Memory/Rules**: Persistent project rules stored in `.acai/rules/` (see `autoGenerateRules` above)
@@ -127,5 +127,6 @@ You can define environment variables in `acai.json` that are passed to the Bash 
 
 Global application settings are stored in:
 - **Configuration**: `~/.acai/`
+- **Global Agent Rules**: `~/.config/AGENTS.md` (shared across all projects)
 - **Logs**: `~/.acai/logs/acai.log`
 - **Sessions**: `~/.acai/sessions/`

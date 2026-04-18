@@ -222,6 +222,10 @@ export class ConfigManager {
         relative: "~/.acai/AGENTS.md",
       },
       {
+        absolute: path.join(homedir(), ".config", "AGENTS.md"),
+        relative: "~/.config/AGENTS.md",
+      },
+      {
         absolute: path.join(process.cwd(), "AGENTS.md"),
         relative: "./AGENTS.md",
       },
