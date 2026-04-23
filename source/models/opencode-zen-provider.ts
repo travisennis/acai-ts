@@ -44,6 +44,7 @@ const opencodeZenModels = {
   "minimax-m2.7": completionsClient("minimax-m2.7"),
   "gpt-5.2-codex": responsesClient.responses("gpt-5.2-codex"),
   "kimi-k2-5": completionsClient("kimi-k2.5"),
+  "kimi-k2-6": completionsClient("kimi-k2.6"),
 } as const;
 
 type ModelName = `opencode:${keyof typeof opencodeZenModels}`;
@@ -133,6 +134,18 @@ export const opencodeZenModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 6e-7,
     costPerOutputToken: 0.000003,
+  },
+  "opencode:kimi-k2-6": {
+    id: "opencode:kimi-k2-6",
+    provider: "opencode",
+    contextWindow: 256000,
+    maxOutputTokens: 65536,
+    defaultTemperature: 1.0,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 7.448e-7,
+    costPerOutputToken: 0.000004655,
   },
   "opencode:minimax-m2.5": {
     id: "opencode:minimax-m2.5",
