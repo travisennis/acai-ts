@@ -40,12 +40,17 @@ export class PromptManager implements PromptManagerApi {
     if (isString(prompt) && prompt.trim().length > 0) {
       return prompt;
     }
+    if (this.hasContext()) {
+      return prompt ?? "";
+    }
     throw new Error("No prompt available.");
   }
 
   getUserMessage(): UserModelMessage {
     const currentPrompt = this.prompt;
-    if (isString(currentPrompt) && currentPrompt.trim().length > 0) {
+    const hasPrompt =
+      isString(currentPrompt) && currentPrompt.trim().length > 0;
+    if (hasPrompt || this.hasContext()) {
       let userMessage: UserModelMessage;
       if (this.hasContext()) {
         // Pass context items and the prompt string to createUserMessage
