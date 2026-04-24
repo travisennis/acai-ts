@@ -25,12 +25,16 @@ const alibabaClient = createAlibaba({
 });
 
 const opencodeGoModels = {
+  "deepseek-v4-flash": messagesClient("deepseek-v4-flash"),
+  "deepseek-v4-pro": messagesClient("deepseek-v4-pro"),
   "glm-5": completionsClient("glm-5"),
   "glm-5-1": completionsClient("glm-5.1"),
   "kimi-k2-5": completionsClient("kimi-k2.5"),
   "kimi-k2-6": completionsClient("kimi-k2.6"),
   "minimax-m2-5": messagesClient("minimax-m2.5"),
   "minimax-m2-7": messagesClient("minimax-m2.7"),
+  "mimo-v2-5": completionsClient("mimo-v2.5"),
+  "mimo-v2-5-pro": completionsClient("mimo-v2.5-pro"),
   "mimo-v2-pro": completionsClient("mimo-v2-pro"),
   "mimo-v2-omni": completionsClient("mimo-v2-omni"),
   "qwen3.6-plus": alibabaClient("qwen3.6-plus"),
@@ -53,6 +57,30 @@ export const opencodeGoProvider = {
 export const opencodeGoModelRegistry: {
   [K in ModelName]: ModelMetadata<ModelName>;
 } = {
+  "opencode-go:deepseek-v4-flash": {
+    id: "opencode-go:deepseek-v4-flash",
+    provider: "opencode-go",
+    contextWindow: 1048576,
+    maxOutputTokens: 384000,
+    defaultTemperature: 0.5,
+    promptFormat: "bracket",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000014,
+    costPerOutputToken: 0.00000028,
+  },
+  "opencode-go:deepseek-v4-pro": {
+    id: "opencode-go:deepseek-v4-pro",
+    provider: "opencode-go",
+    contextWindow: 1048576,
+    maxOutputTokens: 384000,
+    defaultTemperature: 0.5,
+    promptFormat: "bracket",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.00000174,
+    costPerOutputToken: 0.00000348,
+  },
   "opencode-go:glm-5": {
     id: "opencode-go:glm-5",
     provider: "opencode-go",
@@ -124,6 +152,30 @@ export const opencodeGoModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 3e-7,
     costPerOutputToken: 0.0000012,
+  },
+  "opencode-go:mimo-v2-5": {
+    id: "opencode-go:mimo-v2-5",
+    provider: "opencode-go",
+    contextWindow: 1048576,
+    maxOutputTokens: 131072,
+    defaultTemperature: 1.0,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.0000004,
+    costPerOutputToken: 0.000002,
+  },
+  "opencode-go:mimo-v2-5-pro": {
+    id: "opencode-go:mimo-v2-5-pro",
+    provider: "opencode-go",
+    contextWindow: 1048576,
+    maxOutputTokens: 131072,
+    defaultTemperature: 1.0,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.000001,
+    costPerOutputToken: 0.000003,
   },
   "opencode-go:mimo-v2-pro": {
     id: "opencode-go:mimo-v2-pro",
