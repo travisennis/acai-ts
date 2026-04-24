@@ -36,7 +36,6 @@ const responsesClient = createOpenAI({
 });
 
 const opencodeZenModels = {
-  "glm-4-7": completionsClient("glm-4.7"),
   "glm-5": completionsClient("glm-5"),
   "glm-5-1": completionsClient("glm-5.1"),
   "opus-4-6": messagesClient("claude-opus-4.6"),
@@ -63,18 +62,6 @@ export const opencodeZenProvider = {
 export const opencodeZenModelRegistry: {
   [K in ModelName]: ModelMetadata<ModelName>;
 } = {
-  "opencode:glm-4-7": {
-    id: "opencode:glm-4-7",
-    provider: "opencode",
-    contextWindow: 200000,
-    maxOutputTokens: 131072,
-    defaultTemperature: 0.5,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 1.1e-7,
-    costPerOutputToken: 0.0000022,
-  },
   "opencode:glm-5": {
     id: "opencode:glm-5",
     provider: "opencode",
