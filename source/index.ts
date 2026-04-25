@@ -658,6 +658,19 @@ async function main() {
       resumeSessionId,
     );
 
+    // Add config-sourced allowed directories
+    const configAllowedDirs = appConfig.allowedDirs ?? [];
+    for (const dir of configAllowedDirs) {
+      const expandedDir =
+        dir.startsWith("~/") || dir === "~"
+          ? path.join(os.homedir(), dir.slice(1))
+          : dir;
+      const resolvedDir = path.resolve(expandedDir);
+      if (!workspace.allowedDirs.includes(resolvedDir)) {
+        workspace.allowedDirs.push(resolvedDir);
+      }
+    }
+
     // Add logs directory to allowed directories if configured
     const logsPath = (await config.getConfig()).logs?.path;
     if (logsPath) {

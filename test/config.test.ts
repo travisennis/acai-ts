@@ -244,6 +244,49 @@ test("getConfig deep-merges env with project overriding global per-key", async (
   });
 });
 
+test("getConfig concatenates allowedDirs from app and project configs", async () => {
+  await withTempDir(async (tmpHome) => {
+    const oldHome = process.env["HOME"];
+    const oldCwd = process.cwd();
+    try {
+      process.env["HOME"] = tmpHome;
+      const projectDir = path.join(tmpHome, "proj");
+      await fs.mkdir(projectDir, { recursive: true });
+      process.chdir(projectDir);
+
+      const appCfgDir = path.join(tmpHome, ".acai");
+      await fs.mkdir(appCfgDir, { recursive: true });
+      const appCfg = { allowedDirs: ["/global/dir", "/shared"] };
+      await fs.writeFile(
+        path.join(appCfgDir, "acai.json"),
+        JSON.stringify(appCfg),
+        "utf8",
+      );
+
+      const projCfgDir = path.join(projectDir, ".acai");
+      await fs.mkdir(projCfgDir, { recursive: true });
+      const projCfg = { allowedDirs: ["/project/dir", "/shared"] };
+      await fs.writeFile(
+        path.join(projCfgDir, "acai.json"),
+        JSON.stringify(projCfg),
+        "utf8",
+      );
+
+      const mgr = new ConfigManager();
+      const cfg = await mgr.getConfig();
+      assert.deepEqual(cfg.allowedDirs, [
+        "/global/dir",
+        "/shared",
+        "/project/dir",
+        "/shared",
+      ]);
+    } finally {
+      if (oldHome !== undefined) process.env["HOME"] = oldHome;
+      process.chdir(oldCwd);
+    }
+  });
+});
+
 test("readAgentsFiles and writeAgentsFile operate in CWD", async () => {
   await withTempDir(async (tmpCwd) => {
     const oldCwd = process.cwd();

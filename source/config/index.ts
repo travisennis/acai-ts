@@ -27,6 +27,7 @@ export const defaultConfig = {
     enabled: false,
   },
   autoGenerateRules: false,
+  allowedDirs: [] as string[],
   env: {} as Record<string, string>,
 } as const;
 
@@ -77,6 +78,10 @@ const ConfigSchema = z.object({
     .boolean()
     .optional()
     .default(defaultConfig.autoGenerateRules),
+  allowedDirs: z
+    .array(z.string())
+    .optional()
+    .default(defaultConfig.allowedDirs),
   devtools: z
     .object({
       enabled: z.boolean().optional().default(defaultConfig.devtools.enabled),
@@ -173,10 +178,16 @@ export class ConfigManager {
       ...projectConfig.env,
     };
 
+    const mergedAllowedDirs = [
+      ...(appConfig.allowedDirs ?? []),
+      ...(projectConfig.allowedDirs ?? []),
+    ];
+
     const mergedConfig = {
       ...appConfig,
       ...projectConfig,
       env: mergedEnv,
+      allowedDirs: mergedAllowedDirs,
     };
 
     const result = ConfigSchema.parse(mergedConfig);
