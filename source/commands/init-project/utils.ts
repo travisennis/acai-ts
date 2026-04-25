@@ -22,17 +22,6 @@ export function ensureProjectDirectory(
     existing.push(".acai/");
   }
 
-  const subdirs = ["rules"];
-  for (const subdir of subdirs) {
-    const dirPath = path.join(projectDir, subdir);
-    if (!existsSync(dirPath)) {
-      mkdirSync(dirPath, { recursive: true });
-      created.push(`.acai/${subdir}/`);
-    } else {
-      existing.push(`.acai/${subdir}/`);
-    }
-  }
-
   const agentsSkillsDir = path.join(
     path.dirname(projectDir),
     ".agents",
