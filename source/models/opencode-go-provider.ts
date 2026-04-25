@@ -25,8 +25,8 @@ const alibabaClient = createAlibaba({
 });
 
 const opencodeGoModels = {
-  "deepseek-v4-flash": messagesClient("deepseek-v4-flash"),
-  "deepseek-v4-pro": messagesClient("deepseek-v4-pro"),
+  "deepseek-v4-flash": completionsClient("deepseek-v4-flash"),
+  "deepseek-v4-pro": completionsClient("deepseek-v4-pro"),
   "glm-5": completionsClient("glm-5"),
   "glm-5-1": completionsClient("glm-5.1"),
   "kimi-k2-5": completionsClient("kimi-k2.5"),
