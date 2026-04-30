@@ -11,7 +11,6 @@ const xaiClient = createOpenAI({
 
 const xaiModels = {
   "grok-4-1-fast": xaiClient("grok-4.1-fast"),
-  "grok-code-fast-1": xaiClient("grok-code-fast-1"),
 } as const;
 
 type ModelName = `xai:${keyof typeof xaiModels}`;
@@ -41,17 +40,5 @@ export const xaiModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.0000002,
     costPerOutputToken: 0.0000005,
-  },
-  "xai:grok-code-fast-1": {
-    id: "xai:grok-code-fast-1",
-    provider: "xai",
-    contextWindow: 256000,
-    maxOutputTokens: 10000,
-    defaultTemperature: -1,
-    promptFormat: "markdown",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.0000002,
-    costPerOutputToken: 0.0000015,
   },
 };

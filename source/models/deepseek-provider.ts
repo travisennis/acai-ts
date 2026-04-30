@@ -4,8 +4,6 @@ import { customProvider } from "ai";
 import type { ModelMetadata } from "./providers.ts";
 
 const deepseekModels = {
-  "deepseek-chat": originalDeepseek("deepseek-chat"),
-  "deepseek-reasoner": originalDeepseek("deepseek-reasoner"),
   "deepseek-v4-flash": originalDeepseek("deepseek-v4-flash"),
   "deepseek-v4-pro": originalDeepseek("deepseek-v4-pro"),
 } as const;
@@ -26,30 +24,6 @@ export const deepseekProvider = {
 export const deepseekModelRegistry: {
   [K in ModelName]: ModelMetadata<ModelName>;
 } = {
-  "deepseek:deepseek-chat": {
-    id: "deepseek:deepseek-chat",
-    provider: "deepseek",
-    contextWindow: 1000000,
-    maxOutputTokens: 384000,
-    defaultTemperature: 0.3,
-    promptFormat: "bracket",
-    supportsReasoning: false,
-    supportsToolCalling: true,
-    costPerInputToken: 0.00000014,
-    costPerOutputToken: 0.00000028,
-  },
-  "deepseek:deepseek-reasoner": {
-    id: "deepseek:deepseek-reasoner",
-    provider: "deepseek",
-    contextWindow: 1000000,
-    maxOutputTokens: 384000,
-    defaultTemperature: 0.6,
-    promptFormat: "bracket",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.00000014,
-    costPerOutputToken: 0.00000028,
-  },
   "deepseek:deepseek-v4-flash": {
     id: "deepseek:deepseek-v4-flash",
     provider: "deepseek",

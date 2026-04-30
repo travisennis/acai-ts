@@ -7,7 +7,7 @@ describe("AiConfig", () => {
     it("should return maxOutputTokens for non-Anthropic models", () => {
       const config = new AiConfig({
         modelMetadata: {
-          id: "openrouter:qwen3-max" as const,
+          id: "openrouter:sonnet-4.5" as const,
           provider: "openrouter",
           contextWindow: 8192,
           supportsToolCalling: true,
@@ -103,7 +103,7 @@ describe("AiConfig", () => {
     it("should return temperature when set", () => {
       const config = new AiConfig({
         modelMetadata: {
-          id: "openrouter:qwen3-max" as const,
+          id: "openrouter:sonnet-4.5" as const,
           provider: "openrouter",
           contextWindow: 8192,
           supportsToolCalling: true,
@@ -123,7 +123,7 @@ describe("AiConfig", () => {
     it("should return undefined when temperature is -1", () => {
       const config = new AiConfig({
         modelMetadata: {
-          id: "openrouter:qwen3-max" as const,
+          id: "openrouter:sonnet-4.5" as const,
           provider: "openrouter",
           contextWindow: 8192,
           supportsToolCalling: true,
@@ -145,8 +145,8 @@ describe("AiConfig", () => {
     it("should return 1 for Qwen models", () => {
       const config = new AiConfig({
         modelMetadata: {
-          id: "openrouter:qwen3-max" as const,
-          provider: "openrouter",
+          id: "opencode-go:qwen3.6-plus" as const,
+          provider: "opencode-go",
           contextWindow: 8192,
           supportsToolCalling: true,
           supportsReasoning: false,
@@ -334,7 +334,7 @@ describe("AiConfig", () => {
     it("should return Deepseek thinking configuration", () => {
       const config = new AiConfig({
         modelMetadata: {
-          id: "deepseek:deepseek-reasoner" as const,
+          id: "deepseek:deepseek-v4-pro" as const,
           provider: "deepseek",
           contextWindow: 128000,
           supportsToolCalling: true,

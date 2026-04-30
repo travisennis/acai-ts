@@ -1,5 +1,4 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { objectKeys } from "@travisennis/stdlib/object";
 import { customProvider } from "ai";
@@ -29,19 +28,12 @@ const messagesClient = createAnthropic({
 //   },
 // });
 
-const responsesClient = createOpenAI({
-  // biome-ignore lint/style/useNamingConvention: third-party controlled
-  baseURL: "https://opencode.ai/zen/v1/responses",
-  apiKey: process.env["OPENCODE_ZEN_API_TOKEN"] ?? "",
-});
-
 const opencodeZenModels = {
   "glm-5": completionsClient("glm-5"),
   "glm-5-1": completionsClient("glm-5.1"),
   "opus-4-6": messagesClient("claude-opus-4.6"),
   "minimax-m2.5": completionsClient("minimax-m2.5"),
   "minimax-m2.7": completionsClient("minimax-m2.7"),
-  "gpt-5.2-codex": responsesClient.responses("gpt-5.2-codex"),
   "kimi-k2-5": completionsClient("kimi-k2.5"),
   "kimi-k2-6": completionsClient("kimi-k2.6"),
 } as const;
@@ -97,18 +89,6 @@ export const opencodeZenModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 0.000005,
     costPerOutputToken: 0.000025,
-  },
-  "opencode:gpt-5.2-codex": {
-    id: "opencode:gpt-5.2-codex",
-    provider: "opencode",
-    contextWindow: 400000,
-    maxOutputTokens: 128000,
-    defaultTemperature: -1,
-    promptFormat: "xml",
-    supportsReasoning: true,
-    supportsToolCalling: true,
-    costPerInputToken: 0.00000175,
-    costPerOutputToken: 0.000014,
   },
   "opencode:kimi-k2-5": {
     id: "opencode:kimi-k2-5",
