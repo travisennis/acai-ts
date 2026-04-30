@@ -110,6 +110,7 @@ export const inputSchema = z.object({
       },
       z.union([z.string(), z.array(z.string())]),
     )
+    .default("**/*")
     .describe(
       "Glob patterns to search for (e.g., '*.ts', '**/*.test.ts', 'src/**/*.js')",
     ),
@@ -118,15 +119,19 @@ export const inputSchema = z.object({
       (val) => (val === null || val === undefined ? process.cwd() : val),
       z.string(),
     )
+    .default(process.cwd())
     .describe("Base directory to search in"),
   gitignore: z
     .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
+    .default(null)
     .describe("Respect ignore patterns in .gitignore files. (default: true)"),
   recursive: z
     .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
+    .default(null)
     .describe("Search recursively. (default: true)"),
   expandDirectories: z
     .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
+    .default(null)
     .describe("Automatically expand directories to files. (default: true)"),
   ignoreFiles: z
     .preprocess((val) => {
@@ -149,14 +154,17 @@ export const inputSchema = z.object({
       }
       return converted;
     }, z.union([z.string(), z.array(z.string())]).nullable())
+    .default(null)
     .describe(
       "Glob patterns to look for ignore files (e.g., '.gitignore'). Pass null to use default behavior.",
     ),
   cwd: z
     .preprocess((val) => convertNullString(val), z.coerce.string().nullable())
+    .default(null)
     .describe("Current working directory override. (default: process.cwd())"),
   maxResults: z
     .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
+    .default(null)
     .describe(
       "Maximum number of files to return. Set to 0 for no limit. (Default: 100)",
     ),
@@ -204,11 +212,11 @@ export const createGlobTool = () => {
 
       const globOptions = buildGlobOptions(
         effectivePath,
-        gitignore,
-        recursive,
-        expandDirectories,
-        ignoreFiles,
-        cwd,
+        gitignore ?? null,
+        recursive ?? null,
+        expandDirectories ?? null,
+        ignoreFiles ?? null,
+        cwd ?? null,
       );
 
       const matchingFiles = await glob(patternArray, globOptions);

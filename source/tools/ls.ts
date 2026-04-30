@@ -20,6 +20,7 @@ const inputSchema = z.object({
     .describe("Directory to list (default: current directory)"),
   limit: z
     .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
+    .default(null)
     .describe("Maximum number of entries to return (default: 500)"),
 });
 

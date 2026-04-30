@@ -20,11 +20,13 @@ const inputSchema = z.object({
   path: z.string().describe("The path"),
   maxResults: z
     .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
+    .default(null)
     .describe(
       `Maximum number of items (files + directories) to return. Set to 0 for no limit. (default: ${DEFAULT_ITEM_LIMIT})`,
     ),
   maxDepth: z
     .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
+    .default(null)
     .describe(
       `Maximum recursion depth. Set to 0 for no limit. (default: ${DEFAULT_DEPTH_LIMIT})`,
     ),

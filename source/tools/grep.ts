@@ -26,30 +26,37 @@ const inputSchema = z.object({
   path: z.string().describe("The path to search in"),
   recursive: z
     .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
+    .default(null)
     .describe("Search recursively. (default: true))"),
   ignoreCase: z
     .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
+    .default(null)
     .describe("Use case-sensitive search. (default: false)"),
   filePattern: z
     .preprocess((val) => convertNullString(val), z.coerce.string().nullable())
+    .default(null)
     .describe(
       "Glob pattern to filter files (e.g., '*.ts', '**/*.test.js'). (Default: no filtering)",
     ),
   contextLines: z
     .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
+    .default(null)
     .describe(
       "The number of context lines needed in search results. (Default: 0)",
     ),
   searchIgnored: z
     .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
+    .default(null)
     .describe("Search ignored files. (Default: false)"),
   literal: z
     .preprocess((val) => convertNullString(val), z.coerce.boolean().nullable())
+    .default(null)
     .describe(
       "Pass true for fixed-string search (-F), false for regex, (Default: auto-detects unbalanced patterns like mismatched parentheses/brackets.)",
     ),
   maxResults: z
     .preprocess((val) => convertNullString(val), z.coerce.number().nullable())
+    .default(null)
     .describe(
       "Maximum number of matches to return. Set to 0 for no limit. (Default: 100)",
     ),
