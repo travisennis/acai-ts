@@ -32,6 +32,7 @@ This app, acai-ts, is an AI-assistant CLI tool built with TypeScript. It is an a
 - **Modules:** ES Modules only. Use `.ts` extensions for relative imports
 - **Error Handling:** Robust try/catch, result patterns
 - **Testing:** `node:test` and `node:assert/strict` in `./test` directory
+- **Tool Schemas:** For agent/LLM tool schemas, do not use `.optional()` for fields sent to OpenAI-compatible providers unless the field may truly be omitted from the generated JSON Schema. Many compatible endpoints expect every tool field to be listed in `required`; use nullable schemas with `.default(null)` for omitted-at-runtime values that should still be required-and-nullable in provider JSON Schema.
 
 ## PR Requirements
 
