@@ -66,4 +66,7 @@ dist
 .acai-ci-tmp
 .tmp
 temp/
+
+# tools
+.fallow
 .devtools
