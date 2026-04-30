@@ -35,33 +35,33 @@ function check(name: string, cmd: string, validate: (output: string) => boolean)
   try {
     const output = run(cmd);
     const ok = validate(output);
-    console.log(`  ${ok ? '✓' : '⚠'} ${name}: ${output.split('\n')[0]}`);
+    console.info(`  ${ok ? '✓' : '⚠'} ${name}: ${output.split('\n')[0]}`);
   } catch {
-    console.log(`  ✗ ${name}: not found`);
+    console.info(`  ✗ ${name}: not found`);
   }
 }
 
-console.log('Checking prerequisites...\n');
+console.info('Checking prerequisites...\n');
 
 for (const { name, cmd, validate } of CHECKS) {
   check(name, cmd, validate);
 }
 
 const acaiDir = join(homedir(), '.acai');
-console.log('\nSetting up ~/.acai directory...\n');
+console.info('\nSetting up ~/.acai directory...\n');
 
 for (const dir of ACAI_DIRS) {
   const path = join(acaiDir, dir);
   if (existsSync(path)) {
-    console.log(`  ✓ ${dir}/ already exists`);
+    console.info(`  ✓ ${dir}/ already exists`);
   } else {
     mkdirSync(path, { recursive: true });
-    console.log(`  + created ${dir}/`);
+    console.info(`  + created ${dir}/`);
   }
 }
 
-console.log('\nInstalling dependencies...\n');
+console.info('\nInstalling dependencies...\n');
 
 run('npm install');
 
-console.log('\n✓ Setup complete. Run `npm run dev` to start the REPL.');
+console.info('\n✓ Setup complete. Run `npm run dev` to start the REPL.');
