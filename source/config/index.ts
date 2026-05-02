@@ -9,7 +9,7 @@ const PATH_SEPARATOR = process.platform === "win32" ? ";" : ":";
 
 export function parseSkillsPath(skillsPath: string): string[] {
   if (!skillsPath) return [];
-  return skillsPath
+  const paths = skillsPath
     .split(PATH_SEPARATOR)
     .map((p) => p.trim())
     .filter((p) => p.length > 0)
@@ -19,6 +19,7 @@ export function parseSkillsPath(skillsPath: string): string[] {
       }
       return path.resolve(p);
     });
+  return [...new Set(paths)];
 }
 
 export const defaultConfig = {

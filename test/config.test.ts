@@ -350,6 +350,17 @@ test("parseSkillsPath resolves relative paths", () => {
   assert.equal(result[0], path.resolve("./relative/path"));
 });
 
+test("parseSkillsPath deduplicates identical resolved paths", () => {
+  const result = parseSkillsPath("/foo:/bar:/foo");
+  assert.deepEqual(result, ["/foo", "/bar"]);
+});
+
+test("parseSkillsPath deduplicates ~ expansion", () => {
+  const result = parseSkillsPath("~/my-skills:~/my-skills");
+  assert.equal(result.length, 1);
+  assert.equal(result[0], path.join(os.homedir(), "my-skills"));
+});
+
 test("getConfig parses skills.path from config", async () => {
   await withTempDir(async (tmpHome) => {
     const oldHome = process.env["HOME"];
