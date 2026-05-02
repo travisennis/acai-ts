@@ -75,11 +75,27 @@ Acai supports project-specific configuration through a `.acai/acai.json` file in
     "maxTokens": 30000
   },
   "skills": {
-    "enabled": true
+    "enabled": true,
+    "path": "~/my-skills:/shared/team-skills"
   },
   "autoGenerateRules": false
 }
 ```
+
+#### skills.path
+
+Additional directories to search for skills, beyond the built-in locations (`~/.agents/skills/`, `.agents/skills/`, etc.). Supports colon-separated paths (semicolon on Windows). Use `~` for home directory expansion. Relative paths are resolved against the current working directory.
+
+Example:
+```json
+{
+  "skills": {
+    "path": "~/my-skills:/shared/team-skills"
+  }
+}
+```
+
+Skills from these directories are loaded with the `config` source label and scanned recursively.
 
 #### autoGenerateRules
 

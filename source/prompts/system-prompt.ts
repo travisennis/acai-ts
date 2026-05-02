@@ -1,5 +1,5 @@
 import { platform } from "node:os";
-import { config } from "../config/index.ts";
+import { config, parseSkillsPath } from "../config/index.ts";
 import { formatSkillsForPrompt, loadSkills } from "../skills/index.ts";
 import { formatSubagentsForPrompt, loadSubagents } from "../subagents/index.ts";
 import { getShell } from "../terminal/index.ts";
@@ -145,7 +145,9 @@ export async function systemPrompt(
 
   let skillsText = "";
   if (skillsEnabled) {
-    const skills = await loadSkills();
+    const appConfig = await config.getConfig();
+    const skillPaths = parseSkillsPath(appConfig.skills.path);
+    const skills = await loadSkills(skillPaths);
     skillsText = formatSkillsForPrompt(skills.getModelInvocable());
   }
 

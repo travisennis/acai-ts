@@ -346,7 +346,9 @@ export class Skills {
   }
 }
 
-export async function loadSkills(): Promise<Skills> {
+export async function loadSkills(
+  additionalSkillPaths: string[] = [],
+): Promise<Skills> {
   const skillMap = new Map<string, Skill>();
 
   // Codex: recursive, simple directory name
@@ -429,6 +431,18 @@ export async function loadSkills(): Promise<Skills> {
     true,
   )) {
     skillMap.set(skill.name, skill);
+  }
+
+  // Additional skill paths from config (skills.path)
+  for (const skillPath of additionalSkillPaths) {
+    for (const skill of await loadSkillsFromDirInternal(
+      skillPath,
+      "config",
+      "recursive",
+      true,
+    )) {
+      skillMap.set(skill.name, skill);
+    }
   }
 
   return new Skills(Array.from(skillMap.values()));

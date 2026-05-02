@@ -5,6 +5,22 @@ import path from "node:path";
 import { z } from "zod";
 import { jsonParser } from "../utils/parsing.ts";
 
+const PATH_SEPARATOR = process.platform === "win32" ? ";" : ":";
+
+export function parseSkillsPath(skillsPath: string): string[] {
+  if (!skillsPath) return [];
+  return skillsPath
+    .split(PATH_SEPARATOR)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0)
+    .map((p) => {
+      if (p.startsWith("~")) {
+        return path.join(homedir(), p.slice(1));
+      }
+      return path.resolve(p);
+    });
+}
+
 export const defaultConfig = {
   loop: {
     maxIterations: 200,
@@ -22,6 +38,7 @@ export const defaultConfig = {
   readOnlyFiles: [] as string[],
   skills: {
     enabled: true,
+    path: "",
   },
   devtools: {
     enabled: false,
@@ -71,6 +88,7 @@ const ConfigSchema = z.object({
   skills: z
     .object({
       enabled: z.boolean().optional().default(defaultConfig.skills.enabled),
+      path: z.string().optional().default(defaultConfig.skills.path),
     })
     .optional()
     .default(defaultConfig.skills),
@@ -216,7 +234,7 @@ export class ConfigManager {
     }
 
     if (!configData.skills) {
-      configData.skills = { enabled: true };
+      configData.skills = { enabled: true, path: "" };
     }
     configData.skills.enabled = enabled;
 

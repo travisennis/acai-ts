@@ -1,3 +1,4 @@
+import { parseSkillsPath } from "../../config/index.ts";
 import type { Skill } from "../../skills/index.ts";
 import { loadSkills } from "../../skills/index.ts";
 import style from "../../terminal/style.ts";
@@ -54,7 +55,9 @@ export function resourcesCommand(options: CommandOptions): ReplCommand {
       { tui, editor }: { tui: TUI; container: Container; editor: Editor },
     ): Promise<"continue" | "use"> {
       try {
-        const skills = await loadSkills();
+        const appConfig = await options.config.getConfig();
+        const skillPaths = parseSkillsPath(appConfig.skills.path);
+        const skills = await loadSkills(skillPaths);
         const allSkills = skills.getAll();
         const agentsFiles = await options.config.readAgentsFiles();
 

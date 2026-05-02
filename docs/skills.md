@@ -59,6 +59,7 @@ Skills are loaded from these locations (later sources override earlier ones):
 3. `<cwd>/.claude/skills/*/SKILL.md` (Claude Code project skills)
 4. `~/.agents/skills/**/SKILL.md` (User skills)
 5. `<cwd>/.agents/skills/**/SKILL.md` (Project skills)
+6. Directories specified in `skills.path` config (config skills, scanned recursively)
 
 ## Directory Structure
 
@@ -118,7 +119,7 @@ Acai's skills system is compatible with:
 
 ## Configuration
 
-Skills are enabled by default. You can disable them via:
+Skills are enabled by default. You can configure them via:
 
 1. **CLI flag**: `acai --no-skills`
 2. **Settings file**: Add to `~/.acai/acai.json` or `.acai/acai.json`:
@@ -129,6 +130,23 @@ Skills are enabled by default. You can disable them via:
      }
    }
    ```
+
+### Additional Skill Paths
+
+You can add additional directories for skill discovery using the `skills.path` config option:
+
+```json
+{
+  "skills": {
+    "path": "~/my-skills:/shared/team-skills"
+  }
+}
+```
+
+- Supports colon-separated paths (semicolon on Windows)
+- `~` expands to the home directory
+- Relative paths resolve against the current working directory
+- Skills from these directories are scanned recursively
 
 ## Usage Example
 

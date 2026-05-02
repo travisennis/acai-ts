@@ -9,6 +9,7 @@ import type { CommandManager } from "../commands/manager.ts";
 import { showModelSelector } from "../commands/model/model-panel.ts";
 import { showReviewPanel } from "../commands/review/review-panel.ts";
 import type { Config, ConfigManager } from "../config/index.ts";
+import { parseSkillsPath } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManager } from "../prompts/manager.ts";
@@ -185,7 +186,9 @@ export class Repl {
       return;
     }
     // Setup autocomplete for file paths, slash commands, and skills
-    const skills = await loadSkills();
+    const appConfig = await this.options.configManager.getConfig();
+    const skillPaths = parseSkillsPath(appConfig.skills.path);
+    const skills = await loadSkills(skillPaths);
     const commandsList = await this.options.commands.getCompletions();
 
     const autocompleteProvider = new CombinedProvider([

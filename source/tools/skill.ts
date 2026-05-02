@@ -1,5 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { z } from "zod";
+import { config, parseSkillsPath } from "../config/index.ts";
 import type { ActivatedSkillsTracker } from "../skills/activated-tracker.ts";
 import { loadSkills } from "../skills/index.ts";
 import style from "../terminal/style.ts";
@@ -51,7 +52,9 @@ async function listSkillResources(baseDir: string): Promise<string[]> {
 export async function createSkillTool(
   activatedSkillsTracker: ActivatedSkillsTracker,
 ) {
-  const skills = await loadSkills();
+  const appConfig = await config.getConfig();
+  const skillPaths = parseSkillsPath(appConfig.skills.path);
+  const skills = await loadSkills(skillPaths);
   const modelInvocableSkills = skills.getModelInvocable();
 
   const description = "Run a skill (e.g., commit, review-pr).";

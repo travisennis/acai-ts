@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import type { ConfigManager } from "../config/index.ts";
+import { parseSkillsPath } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
 import type { ModelManager } from "../models/manager.ts";
 import type { PromptManagerApi } from "../prompts/manager.ts";
@@ -139,7 +140,9 @@ export class CommandManager {
   }
 
   private async registerSkillCommands(options: CommandOptions): Promise<void> {
-    const skills = await loadSkills();
+    const appConfig = await this.config.getConfig();
+    const skillPaths = parseSkillsPath(appConfig.skills.path);
+    const skills = await loadSkills(skillPaths);
     const userInvocableSkills = skills.getUserInvocable();
 
     for (const skill of userInvocableSkills) {

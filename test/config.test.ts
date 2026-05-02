@@ -4,7 +4,11 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { ConfigManager, DirectoryProvider } from "../source/config/index.ts";
+import {
+  ConfigManager,
+  DirectoryProvider,
+  parseSkillsPath,
+} from "../source/config/index.ts";
 
 // Helper to create and cleanup a temp directory
 async function withTempDir<T>(fn: (dir: string) => Promise<T>) {
@@ -305,6 +309,70 @@ test("readAgentsFiles and writeAgentsFile operate in CWD", async () => {
       assert.equal(cwdFiles.length, 1);
       assert(cwdFiles[0].content.includes("agent1"));
     } finally {
+      process.chdir(oldCwd);
+    }
+  });
+});
+
+test("parseSkillsPath splits colon-separated paths", () => {
+  const result = parseSkillsPath("/foo:/bar:/baz");
+  assert.deepEqual(result, ["/foo", "/bar", "/baz"]);
+});
+
+test("parseSkillsPath expands ~ to home directory", () => {
+  const result = parseSkillsPath("~/my-skills");
+  assert.equal(result[0], path.join(os.homedir(), "my-skills"));
+});
+
+test("parseSkillsPath handles mixed ~ and absolute paths", () => {
+  const result = parseSkillsPath("~/my-skills:/shared/team-skills");
+  assert.equal(result[0], path.join(os.homedir(), "my-skills"));
+  assert.equal(result[1], "/shared/team-skills");
+});
+
+test("parseSkillsPath returns empty array for empty string", () => {
+  const result = parseSkillsPath("");
+  assert.deepEqual(result, []);
+});
+
+test("parseSkillsPath trims whitespace from paths", () => {
+  const result = parseSkillsPath(" /foo : /bar ");
+  assert.deepEqual(result, ["/foo", "/bar"]);
+});
+
+test("parseSkillsPath filters out empty segments", () => {
+  const result = parseSkillsPath("/foo::/bar");
+  assert.deepEqual(result, ["/foo", "/bar"]);
+});
+
+test("parseSkillsPath resolves relative paths", () => {
+  const result = parseSkillsPath("./relative/path");
+  assert.equal(result[0], path.resolve("./relative/path"));
+});
+
+test("getConfig parses skills.path from config", async () => {
+  await withTempDir(async (tmpHome) => {
+    const oldHome = process.env["HOME"];
+    const oldCwd = process.cwd();
+    try {
+      process.env["HOME"] = tmpHome;
+      const projectDir = path.join(tmpHome, "proj");
+      await fs.mkdir(projectDir, { recursive: true });
+      process.chdir(projectDir);
+
+      const appCfgDir = path.join(tmpHome, ".acai");
+      await fs.mkdir(appCfgDir, { recursive: true });
+      await fs.writeFile(
+        path.join(appCfgDir, "acai.json"),
+        JSON.stringify({ skills: { path: "~/my-skills:/shared/team-skills" } }),
+        "utf8",
+      );
+
+      const mgr = new ConfigManager();
+      const cfg = await mgr.getConfig();
+      assert.equal(cfg.skills.path, "~/my-skills:/shared/team-skills");
+    } finally {
+      if (oldHome !== undefined) process.env["HOME"] = oldHome;
       process.chdir(oldCwd);
     }
   });
