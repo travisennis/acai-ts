@@ -235,6 +235,10 @@ export function createMockConfig(): ConfigManager {
       },
       notify: true,
       readOnlyFiles: [],
+      skills: {
+        enabled: true,
+        path: "",
+      },
     })),
     readLearnedRulesFile: mock.fn(async () => ""),
   } as unknown as ConfigManager;
