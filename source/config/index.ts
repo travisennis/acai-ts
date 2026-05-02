@@ -201,11 +201,20 @@ export class ConfigManager {
       ...(projectConfig.allowedDirs ?? []),
     ];
 
+    const mergedSkills = {
+      ...appConfig.skills,
+      ...projectConfig.skills,
+      path: [appConfig.skills?.path, projectConfig.skills?.path]
+        .filter((p): p is string => !!p)
+        .join(PATH_SEPARATOR),
+    };
+
     const mergedConfig = {
       ...appConfig,
       ...projectConfig,
       env: mergedEnv,
       allowedDirs: mergedAllowedDirs,
+      skills: mergedSkills,
     };
 
     const result = ConfigSchema.parse(mergedConfig);

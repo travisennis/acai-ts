@@ -377,3 +377,76 @@ test("getConfig parses skills.path from config", async () => {
     }
   });
 });
+
+test("getConfig concatenates skills.path from app and project configs", async () => {
+  await withTempDir(async (tmpHome) => {
+    const oldHome = process.env["HOME"];
+    const oldCwd = process.cwd();
+    try {
+      process.env["HOME"] = tmpHome;
+      const projectDir = path.join(tmpHome, "proj");
+      await fs.mkdir(projectDir, { recursive: true });
+      process.chdir(projectDir);
+
+      const appCfgDir = path.join(tmpHome, ".acai");
+      await fs.mkdir(appCfgDir, { recursive: true });
+      await fs.writeFile(
+        path.join(appCfgDir, "acai.json"),
+        JSON.stringify({ skills: { path: "~/global-skills" } }),
+        "utf8",
+      );
+
+      const projCfgDir = path.join(projectDir, ".acai");
+      await fs.mkdir(projCfgDir, { recursive: true });
+      await fs.writeFile(
+        path.join(projCfgDir, "acai.json"),
+        JSON.stringify({ skills: { path: "./project-skills" } }),
+        "utf8",
+      );
+
+      const mgr = new ConfigManager();
+      const cfg = await mgr.getConfig();
+      assert.equal(cfg.skills.path, "~/global-skills:./project-skills");
+    } finally {
+      if (oldHome !== undefined) process.env["HOME"] = oldHome;
+      process.chdir(oldCwd);
+    }
+  });
+});
+
+test("getConfig preserves global skills.path when project config has no path", async () => {
+  await withTempDir(async (tmpHome) => {
+    const oldHome = process.env["HOME"];
+    const oldCwd = process.cwd();
+    try {
+      process.env["HOME"] = tmpHome;
+      const projectDir = path.join(tmpHome, "proj");
+      await fs.mkdir(projectDir, { recursive: true });
+      process.chdir(projectDir);
+
+      const appCfgDir = path.join(tmpHome, ".acai");
+      await fs.mkdir(appCfgDir, { recursive: true });
+      await fs.writeFile(
+        path.join(appCfgDir, "acai.json"),
+        JSON.stringify({ skills: { path: "~/global-skills" } }),
+        "utf8",
+      );
+
+      const projCfgDir = path.join(projectDir, ".acai");
+      await fs.mkdir(projCfgDir, { recursive: true });
+      await fs.writeFile(
+        path.join(projCfgDir, "acai.json"),
+        JSON.stringify({ skills: { enabled: false } }),
+        "utf8",
+      );
+
+      const mgr = new ConfigManager();
+      const cfg = await mgr.getConfig();
+      assert.equal(cfg.skills.path, "~/global-skills");
+      assert.equal(cfg.skills.enabled, false);
+    } finally {
+      if (oldHome !== undefined) process.env["HOME"] = oldHome;
+      process.chdir(oldCwd);
+    }
+  });
+});
