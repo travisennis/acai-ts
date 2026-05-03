@@ -125,6 +125,27 @@ async function resolveValidAncestor(
   }
 }
 
+async function ensurePathExists(
+  validatedPath: string,
+  requestedPath: string,
+  abortSignal?: AbortSignal,
+): Promise<void> {
+  if (abortSignal?.aborted) {
+    throw new Error("Path validation aborted during existence check");
+  }
+  try {
+    await fs.stat(validatedPath);
+  } catch (err) {
+    const error = err as NodeJS.ErrnoException;
+    if (error.code === "ENOENT") {
+      throw new Error(
+        `The specified path does not exist: ${requestedPath} (${validatedPath})`,
+      );
+    }
+    throw error;
+  }
+}
+
 // Security utilities
 export async function validatePath(
   requestedPath: string,
@@ -212,20 +233,7 @@ export async function validatePath(
 
   // Now, if requireExistence, check if the path exists
   if (requireExistence) {
-    if (abortSignal?.aborted) {
-      throw new Error("Path validation aborted during existence check");
-    }
-    try {
-      await fs.stat(validatedPath);
-    } catch (err) {
-      const error = err as NodeJS.ErrnoException;
-      if (error.code === "ENOENT") {
-        throw new Error(
-          `The specified path does not exist: ${requestedPath} (${validatedPath})`,
-        );
-      }
-      throw error;
-    }
+    await ensurePathExists(validatedPath, requestedPath, abortSignal);
   }
 
   return validatedPath;

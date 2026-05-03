@@ -169,10 +169,10 @@ describe("renderSessionHtml", () => {
     assert.ok(html.includes("Part two"));
   });
 
-  it("should render system message with array content", () => {
+  it("should render system message with multiline content", () => {
     const session = {
       sessionId: "abc123",
-      title: "System Array",
+      title: "System Multiline",
       modelId: "gpt-4",
       project: "test-project",
       createdAt: new Date("2024-01-15T10:00:00Z"),
@@ -180,10 +180,7 @@ describe("renderSessionHtml", () => {
       messages: [
         {
           role: "system" as const,
-          content: [
-            { type: "text" as const, text: "Instruction one" },
-            { type: "text" as const, text: "Instruction two" },
-          ],
+          content: "Instruction one\nInstruction two",
         },
       ],
     };

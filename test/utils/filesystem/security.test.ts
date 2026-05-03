@@ -87,3 +87,60 @@ await test("validatePath handles symlinks in ancestor directories", async () => 
   await fs.rm(tmpDir, { recursive: true, force: true });
   await fs.rm(targetOutside, { recursive: true, force: true });
 });
+
+await test("validatePath throws for non-existent path when requireExistence is true", async () => {
+  const allowed = projectRoot;
+  const nonExistent = path.join(allowed, `nonexistent-${Date.now()}.txt`);
+  let threw = false;
+  try {
+    await validatePath(nonExistent, allowed, { requireExistence: true });
+  } catch (err) {
+    threw = true;
+    assert.ok(err instanceof Error);
+    assert.ok((err as Error).message.includes("does not exist"));
+  }
+  assert.equal(threw, true);
+});
+
+await test("validatePath allows non-existent path when requireExistence is false", async () => {
+  const allowed = projectRoot;
+  const nonExistent = path.join(allowed, `nonexistent-${Date.now()}.txt`);
+  const resolved = await validatePath(nonExistent, allowed, {
+    requireExistence: false,
+  });
+  assert.equal(path.resolve(resolved), path.resolve(nonExistent));
+});
+
+await test("validatePath throws when abort signal is already aborted", async () => {
+  const allowed = projectRoot;
+  const controller = new AbortController();
+  controller.abort();
+  let threw = false;
+  try {
+    await validatePath(allowed, allowed, { abortSignal: controller.signal });
+  } catch (err) {
+    threw = true;
+    assert.ok(err instanceof Error);
+    assert.ok((err as Error).message.includes("aborted"));
+  }
+  assert.equal(threw, true);
+});
+
+await test("validatePath accepts array of allowed directories", async () => {
+  const testDirName = `.acai-ci-tmp-validatePath-array-${Date.now()}`;
+  const dir1 = path.join(projectRoot, testDirName, "dir1");
+  const dir2 = path.join(projectRoot, testDirName, "dir2");
+  await fs.mkdir(dir1, { recursive: true });
+  await fs.mkdir(dir2, { recursive: true });
+
+  const fileInDir1 = path.join(dir1, "file.txt");
+  await fs.writeFile(fileInDir1, "ok");
+
+  const resolved = await validatePath(fileInDir1, [dir1, dir2]);
+  assert.equal(path.resolve(resolved), path.resolve(fileInDir1));
+
+  await fs.rm(path.join(projectRoot, testDirName), {
+    recursive: true,
+    force: true,
+  });
+});
