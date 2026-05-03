@@ -3,10 +3,79 @@ import test from "node:test";
 
 import {
   buildGrepArgs,
+  countBrackets,
   likelyUnbalancedRegex,
   type ParsedMatch,
   truncateMatches,
 } from "../../source/tools/grep.ts";
+
+test("countBrackets counts balanced parens, brackets, braces", () => {
+  const result = countBrackets("(a)[b]{c}");
+  assert.equal(result.openParen, 1);
+  assert.equal(result.closeParen, 1);
+  assert.equal(result.openBracket, 1);
+  assert.equal(result.closeBracket, 1);
+  assert.equal(result.openBrace, 1);
+  assert.equal(result.closeBrace, 1);
+});
+
+test("countBrackets detects unbalanced parentheses", () => {
+  const result = countBrackets("terminal.table(");
+  assert.equal(result.openParen, 1);
+  assert.equal(result.closeParen, 0);
+});
+
+test("countBrackets detects unbalanced brackets", () => {
+  const result = countBrackets("array[");
+  assert.equal(result.openBracket, 1);
+  assert.equal(result.closeBracket, 0);
+});
+
+test("countBrackets detects unbalanced braces", () => {
+  const result = countBrackets("const obj = {");
+  assert.equal(result.openBrace, 1);
+  assert.equal(result.closeBrace, 0);
+});
+
+test("countBrackets ignores escaped characters", () => {
+  // backslash-escaped parens/brackets/braces should not be counted
+  const result = countBrackets("\\[ \\] \\( \\) \\{ \\}");
+  assert.equal(result.openParen, 0);
+  assert.equal(result.closeParen, 0);
+  assert.equal(result.openBracket, 0);
+  assert.equal(result.closeBracket, 0);
+  assert.equal(result.openBrace, 0);
+  assert.equal(result.closeBrace, 0);
+});
+
+test("countBrackets ignores brackets inside character classes", () => {
+  // braces inside character class are ignored, but closeBrace after ] is counted
+  const result = countBrackets("[a{]");
+  assert.equal(result.openBracket, 1);
+  assert.equal(result.closeBracket, 1);
+  assert.equal(result.openBrace, 0);
+  assert.equal(result.closeBrace, 0);
+});
+
+test("countBrackets handles empty string", () => {
+  const result = countBrackets("");
+  assert.equal(result.openParen, 0);
+  assert.equal(result.closeParen, 0);
+  assert.equal(result.openBracket, 0);
+  assert.equal(result.closeBracket, 0);
+  assert.equal(result.openBrace, 0);
+  assert.equal(result.closeBrace, 0);
+});
+
+test("countBrackets handles nested brackets", () => {
+  const result = countBrackets("((a)[b]{c})");
+  assert.equal(result.openParen, 2);
+  assert.equal(result.closeParen, 2);
+  assert.equal(result.openBracket, 1);
+  assert.equal(result.closeBracket, 1);
+  assert.equal(result.openBrace, 1);
+  assert.equal(result.closeBrace, 1);
+});
 
 test("buildGrepArgs uses -F when literal=true", () => {
   const args = buildGrepArgs("terminal.table(", "/repo", { literal: true });

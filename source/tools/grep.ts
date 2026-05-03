@@ -312,7 +312,7 @@ function findClosingBrace(pattern: string, startIndex: number): number {
 /**
  * Count bracket/paren/brace pairs in a regex pattern, excluding character classes.
  */
-function countBrackets(pattern: string): {
+export function countBrackets(pattern: string): {
   openParen: number;
   closeParen: number;
   openBracket: number;
@@ -334,13 +334,8 @@ function countBrackets(pattern: string): {
   for (let i = 0; i < pattern.length; i++) {
     const ch = pattern[i];
 
-    if (escaped) {
-      escaped = false;
-      continue;
-    }
-
-    if (ch === "\\") {
-      escaped = true;
+    if (escaped || ch === "\\") {
+      escaped = !escaped;
       continue;
     }
 
