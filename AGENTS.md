@@ -34,6 +34,27 @@ This app, acai-ts, is an AI-assistant CLI tool built with TypeScript. It is an a
 - **Testing:** `node:test` and `node:assert/strict` in `./test` directory
 - **Tool Schemas:** For agent/LLM tool schemas, do not use `.optional()` for fields sent to OpenAI-compatible providers unless the field may truly be omitted from the generated JSON Schema. Many compatible endpoints expect every tool field to be listed in `required`; use nullable schemas with `.default(null)` for omitted-at-runtime values that should still be required-and-nullable in provider JSON Schema.
 
+## Commit Conventions
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/). Commit messages are validated by a `commit-msg` hook.
+
+**Format:** `<type>[(scope)]: <description>`
+
+**Types:** `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
+
+**Recommended Scopes** (aligned with architecture):
+
+| Scope | Description |
+|-------|-------------|
+| `cli` | Command-line interface and argument parsing |
+| `agent` | Agent orchestration, conversation loop, tool execution |
+| `tools` | Tool definitions (Bash, Read, Edit, Write, etc.) |
+| `config` | Configuration, sessions, data directory |
+| `session` | Session persistence and management |
+| `model` | Model configuration and API types |
+| `prompts` | System prompt construction, AGENTS.md integration |
+| `logger` | Logging configuration |
+
 ## PR Requirements
 
 - Follow PR template with description, testing details, and checklist
