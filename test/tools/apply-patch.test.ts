@@ -1,8 +1,8 @@
+import assert from "node:assert/strict";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 
 describe("applyChanges", () => {
@@ -31,9 +31,7 @@ describe("applyChanges", () => {
   }
 
   it("should add a new file", async () => {
-    const { applyChanges } = await import(
-      "../../source/tools/apply-patch.ts"
-    );
+    const { applyChanges } = await import("../../source/tools/apply-patch.ts");
     const newPath = path.join(tmpDir, "newfile.txt");
     const changes = [
       { type: "add" as const, path: newPath, content: "hello world" },
@@ -47,9 +45,7 @@ describe("applyChanges", () => {
   });
 
   it("should create parent directories when adding a file", async () => {
-    const { applyChanges } = await import(
-      "../../source/tools/apply-patch.ts"
-    );
+    const { applyChanges } = await import("../../source/tools/apply-patch.ts");
     const newPath = path.join(tmpDir, "deep", "nested", "file.txt");
     const changes = [
       { type: "add" as const, path: newPath, content: "nested content" },
@@ -63,9 +59,7 @@ describe("applyChanges", () => {
   });
 
   it("should delete an existing file", async () => {
-    const { applyChanges } = await import(
-      "../../source/tools/apply-patch.ts"
-    );
+    const { applyChanges } = await import("../../source/tools/apply-patch.ts");
     await writeFile(testFile, "to be deleted");
 
     const changes = [{ type: "delete" as const, path: testFile }];
@@ -76,9 +70,7 @@ describe("applyChanges", () => {
   });
 
   it("should not throw when deleting a non-existent file", async () => {
-    const { applyChanges } = await import(
-      "../../source/tools/apply-patch.ts"
-    );
+    const { applyChanges } = await import("../../source/tools/apply-patch.ts");
     const nonexistent = path.join(tmpDir, "does-not-exist.txt");
 
     const changes = [{ type: "delete" as const, path: nonexistent }];
@@ -88,9 +80,7 @@ describe("applyChanges", () => {
   });
 
   it("should update an existing file", async () => {
-    const { applyChanges } = await import(
-      "../../source/tools/apply-patch.ts"
-    );
+    const { applyChanges } = await import("../../source/tools/apply-patch.ts");
     await writeFile(testFile, "original content");
 
     const changes = [
@@ -110,9 +100,7 @@ describe("applyChanges", () => {
   });
 
   it("should move a file to a new path on update with movePath", async () => {
-    const { applyChanges } = await import(
-      "../../source/tools/apply-patch.ts"
-    );
+    const { applyChanges } = await import("../../source/tools/apply-patch.ts");
     await writeFile(testFile, "original content");
     const movedPath = path.join(tmpDir, "moved.txt");
 
@@ -137,9 +125,7 @@ describe("applyChanges", () => {
   });
 
   it("should create parent directories for moved file", async () => {
-    const { applyChanges } = await import(
-      "../../source/tools/apply-patch.ts"
-    );
+    const { applyChanges } = await import("../../source/tools/apply-patch.ts");
     await writeFile(testFile, "original content");
     const movedPath = path.join(tmpDir, "deep", "moved.txt");
 
@@ -161,9 +147,7 @@ describe("applyChanges", () => {
   });
 
   it("should throw when signal is aborted", async () => {
-    const { applyChanges } = await import(
-      "../../source/tools/apply-patch.ts"
-    );
+    const { applyChanges } = await import("../../source/tools/apply-patch.ts");
     const controller = new AbortController();
     controller.abort();
 
@@ -176,9 +160,7 @@ describe("applyChanges", () => {
   });
 
   it("should process multiple changes in order", async () => {
-    const { applyChanges } = await import(
-      "../../source/tools/apply-patch.ts"
-    );
+    const { applyChanges } = await import("../../source/tools/apply-patch.ts");
     const file1 = path.join(tmpDir, "file1.txt");
     const file2 = path.join(tmpDir, "file2.txt");
 
@@ -194,9 +176,7 @@ describe("applyChanges", () => {
   });
 
   it("should return empty array for no changes", async () => {
-    const { applyChanges } = await import(
-      "../../source/tools/apply-patch.ts"
-    );
+    const { applyChanges } = await import("../../source/tools/apply-patch.ts");
 
     const result = await applyChanges([]);
 
@@ -204,9 +184,7 @@ describe("applyChanges", () => {
   });
 
   it("should handle update without movePath (in-place update)", async () => {
-    const { applyChanges } = await import(
-      "../../source/tools/apply-patch.ts"
-    );
+    const { applyChanges } = await import("../../source/tools/apply-patch.ts");
     await writeFile(testFile, "v1");
 
     const changes = [

@@ -1,7 +1,13 @@
-import { basename } from "node:path";
 import assert from "node:assert/strict";
+import { basename } from "node:path";
 import { describe, it } from "node:test";
-import { escapeHtml, renderSessionHtml, getSessionData, estimateSessionSize } from "../source/commands/share/html-renderer.ts";
+import type { ModelMessage } from "ai";
+import {
+  escapeHtml,
+  estimateSessionSize,
+  getSessionData,
+  renderSessionHtml,
+} from "../source/commands/share/html-renderer.ts";
 
 describe("escapeHtml", () => {
   it("should escape HTML special characters", () => {
@@ -213,8 +219,12 @@ describe("renderSessionHtml", () => {
     const html = renderSessionHtml(session);
 
     // Verify the whitespace-only text part was not rendered as a content div
-    const contentDivs = html.match(/<div class="content">([\s\S]*?)<\/div>/g) || [];
-    const hasWhitespaceOnly = contentDivs.some((div) => div.trim() === '<div class="content"></div>' || div.includes('>   <'));
+    const contentDivs =
+      html.match(/<div class="content">([\s\S]*?)<\/div>/g) || [];
+    const hasWhitespaceOnly = contentDivs.some(
+      (div) =>
+        div.trim() === '<div class="content"></div>' || div.includes(">   <"),
+    );
     assert.ok(!hasWhitespaceOnly);
     assert.ok(html.includes("Valid text"));
   });
@@ -417,9 +427,9 @@ describe("renderSessionHtml", () => {
       updatedAt: new Date("2024-01-15T11:00:00Z"),
       messages: [
         {
-          role: "unknown_role" as any,
+          role: "unknown_role",
           content: "some content",
-        },
+        } as unknown as ModelMessage,
       ],
     };
 

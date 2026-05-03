@@ -93,9 +93,10 @@ export function strlen(str: string): number {
   const code = codeRegex(false);
   const stripped = `${str}`.replace(code, "");
   const split = stripped.split("\n");
-  return split.reduce((memo: number, s: string) => {
-    return stringWidth(s) > memo ? stringWidth(s) : memo;
-  }, 0);
+  return split.reduce(
+    (memo: number, s: string) => Math.max(stringWidth(s), memo),
+    0,
+  );
 }
 
 export function repeat(str: string, times: number): string {
