@@ -87,79 +87,76 @@ function renderToolResult(toolResult: ToolResultPart): string {
     </div>`;
 }
 
-function renderMessage(message: ModelMessage): string {
-  const role = message.role;
+function extractTextContent(content: ModelMessage["content"]): string {
+  if (typeof content === "string") {
+    return escapeHtml(content);
+  }
+  if (Array.isArray(content)) {
+    return content
+      .filter((p): p is TextPart => typeof p !== "string" && p.type === "text")
+      .map((p) => escapeHtml(p.text))
+      .join("\n");
+  }
+  return "";
+}
 
-  if (role === "system") {
-    const content = Array.isArray(message.content)
-      ? message.content
-          .filter((p): p is TextPart => p.type === "text")
-          .map((p) => escapeHtml(p.text))
-          .join("\n")
-      : escapeHtml(String(message.content));
-
-    return `
+function renderSystemMessage(content: ModelMessage["content"]): string {
+  const textContent = extractTextContent(content);
+  return `
     <div class="message system">
       <div class="role">system</div>
-      <div class="content">${content}</div>
+      <div class="content">${textContent}</div>
     </div>`;
-  }
+}
 
-  if (role === "user") {
-    const content = message.content;
-    let textContent = "";
-
-    if (typeof content === "string") {
-      textContent = escapeHtml(content);
-    } else if (Array.isArray(content)) {
-      textContent = content
-        .filter(
-          (p): p is TextPart => typeof p !== "string" && p.type === "text",
-        )
-        .map((p) => escapeHtml(p.text))
-        .join("\n");
-    }
-
-    return `
+function renderUserMessage(content: ModelMessage["content"]): string {
+  const textContent = extractTextContent(content);
+  return `
     <div class="message user">
       <div class="role">user</div>
       <div class="content">${textContent}</div>
     </div>`;
+}
+
+function renderAssistantContent(content: ModelMessage["content"]): string {
+  if (typeof content === "string") {
+    return `<div class="content">${escapeHtml(content)}</div>`;
   }
-
-  if (role === "assistant") {
-    const content = message.content;
-    let html = `<div class="message assistant"><div class="role">assistant</div>`;
-
-    if (typeof content === "string") {
-      html += `<div class="content">${escapeHtml(content)}</div>`;
-    } else if (Array.isArray(content)) {
-      for (const part of content) {
-        if (part.type === "text" && part.text.trim()) {
-          html += `<div class="content">${escapeHtml(part.text)}</div>`;
-        } else if (part.type === "tool-call") {
-          html += renderToolCall(part);
-        }
-      }
-    }
-
-    html += "</div>";
-    return html;
-  }
-
-  if (role === "tool") {
-    const parts = message.content;
+  if (Array.isArray(content)) {
     let html = "";
-
-    for (const part of parts) {
-      if (part.type === "tool-result") {
-        html += renderToolResult(part);
+    for (const part of content) {
+      if (part.type === "text" && part.text.trim()) {
+        html += `<div class="content">${escapeHtml(part.text)}</div>`;
+      } else if (part.type === "tool-call") {
+        html += renderToolCall(part);
       }
     }
-
     return html;
   }
+  return "";
+}
 
+function renderAssistantMessage(content: ModelMessage["content"]): string {
+  return `<div class="message assistant"><div class="role">assistant</div>${renderAssistantContent(content)}</div>`;
+}
+
+function renderToolMessage(parts: ToolResultPart[]): string {
+  let html = "";
+  for (const part of parts) {
+    if (part.type === "tool-result") {
+      html += renderToolResult(part);
+    }
+  }
+  return html;
+}
+
+function renderMessage(message: ModelMessage): string {
+  const role = message.role;
+  if (role === "system") return renderSystemMessage(message.content);
+  if (role === "user") return renderUserMessage(message.content);
+  if (role === "assistant") return renderAssistantMessage(message.content);
+  if (role === "tool")
+    return renderToolMessage(message.content as ToolResultPart[]);
   return "";
 }
 

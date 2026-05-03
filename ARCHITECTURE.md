@@ -289,6 +289,7 @@ acai-ts
     │   ├── copy-command.test.ts
     │   ├── generate-rules.test.ts
     │   ├── handoff.test.ts
+    │   ├── html-renderer.test.ts
     │   ├── health.test.ts
     │   ├── history-command.integration.test.ts
     │   ├── history-command.test.ts
