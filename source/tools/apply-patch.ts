@@ -380,7 +380,42 @@ function deriveNewContentsFromChunks(
   };
 }
 
-async function applyChanges(
+async function applyAddChange(
+  change: ApplyPatchFileChange & { type: "add" },
+  changed: string[],
+): Promise<void> {
+  const dir = path.dirname(change.path);
+  if (dir !== "." && dir !== "/") await fsp.mkdir(dir, { recursive: true });
+  await fsp.writeFile(change.path, change.content, "utf-8");
+  changed.push(change.path);
+}
+
+async function applyDeleteChange(
+  change: ApplyPatchFileChange & { type: "delete" },
+  changed: string[],
+): Promise<void> {
+  await fsp.unlink(change.path).catch(() => {});
+  changed.push(change.path);
+}
+
+async function applyUpdateChange(
+  change: ApplyPatchFileChange & { type: "update" },
+  changed: string[],
+): Promise<void> {
+  if (change.movePath) {
+    const dir = path.dirname(change.movePath);
+    if (dir !== "." && dir !== "/") await fsp.mkdir(dir, { recursive: true });
+    await fsp.writeFile(change.movePath, change.newContent, "utf-8");
+    await fsp.unlink(change.path).catch(() => {});
+    changed.push(change.movePath);
+    return;
+  }
+
+  await fsp.writeFile(change.path, change.newContent, "utf-8");
+  changed.push(change.path);
+}
+
+export async function applyChanges(
   changes: ApplyPatchFileChange[],
   signal?: AbortSignal,
 ): Promise<string[]> {
@@ -390,31 +425,16 @@ async function applyChanges(
     if (signal?.aborted) throw new Error("Cancelled");
 
     if (change.type === "add") {
-      const dir = path.dirname(change.path);
-      if (dir !== "." && dir !== "/") await fsp.mkdir(dir, { recursive: true });
-      await fsp.writeFile(change.path, change.content, "utf-8");
-      changed.push(change.path);
+      await applyAddChange(change, changed);
       continue;
     }
 
     if (change.type === "delete") {
-      await fsp.unlink(change.path).catch(() => {});
-      changed.push(change.path);
+      await applyDeleteChange(change, changed);
       continue;
     }
 
-    // update
-    if (change.movePath) {
-      const dir = path.dirname(change.movePath);
-      if (dir !== "." && dir !== "/") await fsp.mkdir(dir, { recursive: true });
-      await fsp.writeFile(change.movePath, change.newContent, "utf-8");
-      await fsp.unlink(change.path).catch(() => {});
-      changed.push(change.movePath);
-      continue;
-    }
-
-    await fsp.writeFile(change.path, change.newContent, "utf-8");
-    changed.push(change.path);
+    await applyUpdateChange(change, changed);
   }
 
   return changed;
