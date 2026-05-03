@@ -75,6 +75,7 @@ Reference files directly with `@filename`, directories with `@dirname`, or run s
 - **Pino** for structured logging
 - **Zod** for schema validation
 - **Biome** for formatting and linting
+- **Fallow** for dead code, duplication, and complexity analysis
 
 ## Project Structure
 
