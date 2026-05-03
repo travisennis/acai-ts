@@ -582,29 +582,19 @@ export function parseRipgrepJsonOutput(content: string): ParsedMatch[] {
 /**
  * Convert parsed JSON matches back to legacy line-number format for backwards compatibility
  */
-function matchesToLegacyFormat(matches: ParsedMatch[]): string {
-  const lines: string[] = [];
+export function matchesToLegacyFormat(matches: ParsedMatch[]): string {
+  return matches.map(formatMatch).join("\n");
+}
 
-  for (const match of matches) {
-    const lineNum = match.lineNumber ?? match.line;
-    const file = match.file ?? match.absolutePath;
+function formatMatch(match: ParsedMatch): string {
+  const lineNum = match.lineNumber ?? match.line;
+  const file = match.file ?? match.absolutePath;
+  const separator = match.isMatch ? ":" : "-";
 
-    if (file) {
-      if (match.isMatch) {
-        lines.push(`${file}:${lineNum}:${match.content}`);
-      } else if (match.isContext) {
-        lines.push(`${file}-${lineNum}-${match.content}`);
-      }
-    } else {
-      if (match.isMatch) {
-        lines.push(`${lineNum}:${match.content}`);
-      } else if (match.isContext) {
-        lines.push(`${lineNum}-${match.content}`);
-      }
-    }
+  if (file) {
+    return `${file}${separator}${lineNum}${separator}${match.content}`;
   }
-
-  return lines.join("\n");
+  return `${lineNum}${separator}${match.content}`;
 }
 
 /**

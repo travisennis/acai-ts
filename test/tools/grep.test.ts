@@ -5,6 +5,7 @@ import {
   buildGrepArgs,
   countBrackets,
   likelyUnbalancedRegex,
+  matchesToLegacyFormat,
   type ParsedMatch,
   truncateMatches,
 } from "../../source/tools/grep.ts";
@@ -289,4 +290,118 @@ test("likelyUnbalancedRegex detects empty braces with preceding atom", () => {
 
 test("likelyUnbalancedRegex handles empty braces at start", () => {
   assert.ok(!likelyUnbalancedRegex("{}b"));
+});
+
+test("matchesToLegacyFormat converts match with file using colon separator", () => {
+  const matches: ParsedMatch[] = [
+    { file: "src/app.ts", line: 42, content: "const x = 1;", isMatch: true },
+  ];
+  const result = matchesToLegacyFormat(matches);
+  assert.equal(result, "src/app.ts:42:const x = 1;");
+});
+
+test("matchesToLegacyFormat converts match without file", () => {
+  const matches: ParsedMatch[] = [
+    { line: 10, content: "import foo", isMatch: true },
+  ];
+  const result = matchesToLegacyFormat(matches);
+  assert.equal(result, "10:import foo");
+});
+
+test("matchesToLegacyFormat converts context line with file using dash separator", () => {
+  const matches: ParsedMatch[] = [
+    {
+      file: "src/app.ts",
+      line: 43,
+      content: "  return x;",
+      isMatch: false,
+      isContext: true,
+    },
+  ];
+  const result = matchesToLegacyFormat(matches);
+  assert.equal(result, "src/app.ts-43-  return x;");
+});
+
+test("matchesToLegacyFormat converts context line without file", () => {
+  const matches: ParsedMatch[] = [
+    {
+      line: 11,
+      content: "  // comment",
+      isMatch: false,
+      isContext: true,
+    },
+  ];
+  const result = matchesToLegacyFormat(matches);
+  assert.equal(result, "11-  // comment");
+});
+
+test("matchesToLegacyFormat joins multiple entries with newlines", () => {
+  const matches: ParsedMatch[] = [
+    { file: "a.ts", line: 1, content: "line1", isMatch: true },
+    { file: "a.ts", line: 2, content: "line2", isMatch: true },
+  ];
+  const result = matchesToLegacyFormat(matches);
+  assert.equal(result, "a.ts:1:line1\na.ts:2:line2");
+});
+
+test("matchesToLegacyFormat returns empty string for empty array", () => {
+  const result = matchesToLegacyFormat([]);
+  assert.equal(result, "");
+});
+
+test("matchesToLegacyFormat prefers lineNumber over line when both present", () => {
+  const matches: ParsedMatch[] = [
+    {
+      file: "src/app.ts",
+      line: 1,
+      lineNumber: 42,
+      content: "const x = 1;",
+      isMatch: true,
+    },
+  ];
+  const result = matchesToLegacyFormat(matches);
+  assert.equal(result, "src/app.ts:42:const x = 1;");
+});
+
+test("matchesToLegacyFormat prefers file over absolutePath when both present", () => {
+  const matches: ParsedMatch[] = [
+    {
+      file: "src/app.ts",
+      absolutePath: "/abs/path/src/app.ts",
+      line: 42,
+      content: "const x = 1;",
+      isMatch: true,
+    },
+  ];
+  const result = matchesToLegacyFormat(matches);
+  assert.equal(result, "src/app.ts:42:const x = 1;");
+});
+
+test("matchesToLegacyFormat falls back to absolutePath when file is absent", () => {
+  const matches: ParsedMatch[] = [
+    {
+      absolutePath: "/abs/path/src/app.ts",
+      line: 42,
+      content: "const x = 1;",
+      isMatch: true,
+    },
+  ];
+  const result = matchesToLegacyFormat(matches);
+  assert.equal(result, "/abs/path/src/app.ts:42:const x = 1;");
+});
+
+test("matchesToLegacyFormat handles mixed match and context lines", () => {
+  const matches: ParsedMatch[] = [
+    { file: "a.ts", line: 1, content: "match1", isMatch: true },
+    {
+      file: "a.ts",
+      line: 2,
+      content: "ctx1",
+      isMatch: false,
+      isContext: true,
+    },
+    { file: "a.ts", line: 3, content: "match2", isMatch: true },
+  ];
+  const result = matchesToLegacyFormat(matches);
+  assert.equal(result, "a.ts:1:match1\na.ts-2-ctx1\na.ts:3:match2");
 });
