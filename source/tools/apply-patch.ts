@@ -28,7 +28,7 @@ const inputSchema = z.object({
 type ApplyPatchInputSchema = z.infer<typeof inputSchema>;
 
 // Types for patch parsing - using snake_case to match the patch format
-export type Hunk =
+type Hunk =
   | { type: "add"; path: string; contents: string }
   | { type: "delete"; path: string }
   | {
@@ -45,7 +45,7 @@ export interface UpdateFileChunk {
   isEndOfFile?: boolean;
 }
 
-export type ApplyPatchFileChange =
+type ApplyPatchFileChange =
   | { type: "add"; path: string; content: string }
   | { type: "delete"; path: string; content?: string }
   | {
@@ -56,7 +56,7 @@ export type ApplyPatchFileChange =
       newContent: string;
     };
 
-export interface ParsedApplyPatch {
+interface ParsedApplyPatch {
   hunks: Hunk[];
 }
 

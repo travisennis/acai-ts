@@ -10,14 +10,14 @@ export interface BlockedCommandResult {
   tip: string;
 }
 
-export interface SafeCommandResult {
+interface SafeCommandResult {
   blocked: false;
 }
 
 /**
  * Result type for command safety check
  */
-export type CommandSafetyResult = BlockedCommandResult | SafeCommandResult;
+type CommandSafetyResult = BlockedCommandResult | SafeCommandResult;
 
 /**
  * Check if a git subcommand appears as an actual command (not inside quoted strings).

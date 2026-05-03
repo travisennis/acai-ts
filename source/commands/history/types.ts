@@ -1,7 +1,7 @@
 import type { ModelMessage } from "ai";
 
 // Compact token usage format stored in session files
-export interface SessionTokenUsage {
+interface SessionTokenUsage {
   total: {
     inputTokens: number;
     outputTokens: number;
@@ -21,7 +21,7 @@ export interface SessionTokenUsage {
 }
 
 // Legacy per-turn token usage format (deprecated)
-export interface TokenUsageTurn {
+interface TokenUsageTurn {
   stepIndex: number;
   inputTokens: number;
   outputTokens: number;
