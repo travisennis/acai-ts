@@ -19,13 +19,7 @@ export type { SlashCommand } from "./autocomplete/command-provider.ts";
 export { CommandProvider } from "./autocomplete/command-provider.ts";
 export { FileSearchProvider } from "./autocomplete/file-search-provider.ts";
 export { SkillProvider } from "./autocomplete/skill-provider.ts";
-export {
-  DirectoryCache,
-  directoryCache,
-  extractPathPrefix,
-  getDirectoryEntries,
-  isPathWithinAllowedDirs,
-} from "./autocomplete/utils.ts";
+export { extractPathPrefix } from "./autocomplete/utils.ts";
 
 // Convenience function for backward compatibility
 export function createDefaultProvider<

@@ -245,7 +245,7 @@ async function fetchDuckDuckGo(
 /**
  * Execute web search
  */
-export async function executeWebSearch(
+async function executeWebSearch(
   options: WebSearchInputSchema,
   executionOptions: ToolExecutionOptions,
 ): Promise<string> {

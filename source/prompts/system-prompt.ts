@@ -2,7 +2,7 @@ import { platform } from "node:os";
 import { config, parseSkillsPath } from "../config/index.ts";
 import { formatSkillsForPrompt, loadSkills } from "../skills/index.ts";
 import { formatSubagentsForPrompt, loadSubagents } from "../subagents/index.ts";
-import { getShell } from "../terminal/index.ts";
+import { getShell } from "../terminal/control.ts";
 import type { CompleteToolNames } from "../tools/index.ts";
 import { dedent } from "../utils/dedent.ts";
 import { getCurrentBranch, inGitDirectory } from "../utils/git.ts";

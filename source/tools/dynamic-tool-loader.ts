@@ -208,7 +208,7 @@ export function parseTextSchema(content: string): ToolMetadata | null {
   };
 }
 
-export function parseToolMetadata(output: string): ToolMetadata {
+function parseToolMetadata(output: string): ToolMetadata {
   try {
     const parsed = JSON.parse(output.trim());
     return toolMetadataSchema.parse(parsed);

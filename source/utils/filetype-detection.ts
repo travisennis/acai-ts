@@ -93,19 +93,6 @@ const extensionToLanguageMap: { [key: string]: LanguageInfo } = {
   ".txt": { name: "Text", codeblock: "text" },
 };
 
-export function getLanguageFromFilePath(filePath: string): string | undefined {
-  const extension = extname(filePath).toLowerCase();
-  const languageInfo = extension
-    ? extensionToLanguageMap[extension]
-    : undefined;
-  if (languageInfo) {
-    return languageInfo.name;
-  }
-  const filename = basename(filePath).toLowerCase();
-  const filenameLanguageInfo = extensionToLanguageMap[`.${filename}`];
-  return filenameLanguageInfo?.name;
-}
-
 export function getCodeblockFromFilePath(filePath: string): string | undefined {
   const extension = extname(filePath).toLowerCase();
   const languageInfo = extension

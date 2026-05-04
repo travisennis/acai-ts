@@ -488,7 +488,7 @@ async function fetchUrl(
 /**
  * Execute web fetch
  */
-export async function executeWebFetch(
+async function executeWebFetch(
   options: WebFetchInputSchema,
   executionOptions: ToolExecutionOptions,
 ): Promise<string> {

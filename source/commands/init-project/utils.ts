@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { defaultConfig } from "../../config/index.ts";
 
-export const DEVELOPMENT_DIRECTORY = "/Users/travisennis/Github/acai-ts";
+const DEVELOPMENT_DIRECTORY = "/Users/travisennis/Github/acai-ts";
 
 interface InitializationResult {
   created: string[];

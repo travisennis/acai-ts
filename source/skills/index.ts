@@ -326,7 +326,7 @@ export async function loadSkillsFromDir(
   );
 }
 
-export class Skills {
+class Skills {
   private skills: Skill[];
 
   constructor(skills: Skill[]) {

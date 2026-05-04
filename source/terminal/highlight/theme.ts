@@ -1,6 +1,3 @@
-import { id } from "../../utils/funcs.ts";
-import style from "../style.ts";
-
 /**
  * A generic interface that holds all available language tokens.
  */
@@ -213,54 +210,6 @@ interface Tokens<T> {
 }
 
 /**
- * Possible styles that can be used on a token in a JSON theme.
- * See the [style](https://github.com/chalk/chalk) module for more information.
- * `plain` means no styling.
- */
-type Style =
-  | "reset"
-  | "bold"
-  | "dim"
-  | "italic"
-  | "underline"
-  | "inverse"
-  | "hidden"
-  | "strikethrough"
-  | "black"
-  | "red"
-  | "green"
-  | "yellow"
-  | "blue"
-  | "magenta"
-  | "cyan"
-  | "white"
-  | "gray"
-  | "bgBlack"
-  | "bgRed"
-  | "bgGreen"
-  | "bgYellow"
-  | "bgBlue"
-  | "bgMagenta"
-  | "bgCyan"
-  | "plain";
-
-/**
- * The schema of a JSON file defining a custom scheme. The key is a language token, while the value
- * is a [style](https://github.com/chalk/chalk#styles) style.
- *
- * Example:
- * ```json
- * {
- *     "keyword": ["red", "bold"],
- *     "addition": "green",
- *     "deletion": ["red", "strikethrough"],
- *     "number": "plain"
- * }
- * ```
- */
-interface JsonTheme extends Tokens<Style | Style[]> {}
-
-/**
  * Passed to [[highlight]] as the `theme` option. A theme is a map of language tokens to a function
  * that takes in string value of the token and returns a new string with colorization applied
  * (typically a [style](https://github.com/chalk/chalk) style), but you can also provide your own
@@ -284,87 +233,4 @@ export interface Theme extends Tokens<(codePart: string) => string> {
    * things not matched by any token
    */
   default?: (codePart: string) => string;
-}
-
-/**
- * Converts a [[JsonTheme]] with string values to a [[Theme]] with formatter functions. Used by [[parse]].
- */
-function fromJson(json: JsonTheme): Theme {
-  const theme: Theme = {};
-  for (const key of Object.keys(json)) {
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic theme access needed for highlight compatibility
-    const styleValue: string | string[] = (json as any)[key];
-    if (Array.isArray(styleValue)) {
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic theme access needed for highlight compatibility
-      (theme as any)[key] = styleValue.reduce(
-        (previous: typeof style, current: string) =>
-          // biome-ignore lint/suspicious/noExplicitAny: Dynamic theme access needed for highlight compatibility
-          current === "plain" ? id : (previous as any)[current],
-        style,
-      );
-    } else {
-      // biome-ignore lint/suspicious/noExplicitAny: Dynamic theme access needed for highlight compatibility
-      (theme as any)[key] = (style as any)[styleValue];
-    }
-  }
-  return theme;
-}
-
-/**
- * Converts a [[Theme]] with formatter functions to a [[JsonTheme]] with string values. Used by [[stringify]].
- */
-function toJson(theme: Theme): JsonTheme {
-  // biome-ignore lint/suspicious/noExplicitAny: Dynamic theme access needed for highlight compatibility
-  const jsonTheme: any = {};
-  for (const key of Object.keys(theme)) {
-    // biome-ignore lint/suspicious/noExplicitAny: Dynamic theme access needed for highlight compatibility
-    const style: any = (theme as any)[key];
-    if (style?._styles) {
-      jsonTheme[key] = style._styles;
-    }
-  }
-  return jsonTheme;
-}
-
-/**
- * Stringifies a [[Theme]] with formatter functions to a JSON string.
- *
- * ```ts
- * import style from '../terminal/style.ts';
- * import {stringify} from './highlight/theme.ts';
- * import * as fs from 'node:fs';
- *
- * const myTheme: Theme = {
- *     keyword: style.red.bold,
- *     addition: style.green,
- *     deletion: style.red.strikethrough,
- *     number: plain
- * }
- * const json = stringify(myTheme);
- * fs.writeFile('mytheme.json', json, (err: any) => {
- *     if (err) throw err;
- *     console.log('Theme saved');
- * });
- * ```
- */
-export function stringify(theme: Theme): string {
-  return JSON.stringify(toJson(theme));
-}
-
-/**
- * Parses a JSON string into a [[Theme]] with formatter functions.
- *
- * ```ts
- * import * as fs from 'node:fs';
- * import {parse, highlight} from './highlight/index.ts';
- *
- * fs.readFile('mytheme.json', 'utf-8', (err: any, json: string)  => {
- *     if (err) throw err;
- *     const code = highlight('SELECT * FROM table', {theme: parse(json)});
- *     console.log(code);
- * });
- * ```
- */
-export function parse(json: string): Theme {
-  return fromJson(JSON.parse(json));
 }

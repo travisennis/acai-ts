@@ -255,21 +255,6 @@ export async function getSubagent(name: string): Promise<Subagent | undefined> {
   return subagents.find((s) => s.name === name);
 }
 
-export function formatSubagentsForDescription(subagents: Subagent[]): string {
-  if (subagents.length === 0) {
-    return "  No subagents available";
-  }
-
-  const lines = subagents.map((subagent) => {
-    const toolsStr = subagent.tools
-      ? ` (tools: ${subagent.tools.join(", ")})`
-      : "";
-    return `  - ${subagent.name}: ${subagent.description}${toolsStr}`;
-  });
-
-  return lines.join("\n");
-}
-
 export function formatSubagentsForPrompt(subagents: Subagent[]): string {
   if (subagents.length === 0) {
     return "";

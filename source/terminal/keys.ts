@@ -32,16 +32,10 @@ const CODEPOINTS = {
   d: 100,
   e: 101,
   g: 103,
-  k: 107,
-  l: 108,
   m: 109,
   n: 110,
   o: 111,
-  p: 112,
   r: 114,
-  t: 116,
-  u: 117,
-  w: 119,
   z: 122,
 
   // Special keys
@@ -177,62 +171,15 @@ const Keys = {
   CTRL_D: kittySequence(CODEPOINTS.d, MODIFIERS.ctrl),
   CTRL_E: kittySequence(CODEPOINTS.e, MODIFIERS.ctrl),
   CTRL_G: kittySequence(CODEPOINTS.g, MODIFIERS.ctrl),
-  CTRL_K: kittySequence(CODEPOINTS.k, MODIFIERS.ctrl),
-  CTRL_L: kittySequence(CODEPOINTS.l, MODIFIERS.ctrl),
   CTRL_M: kittySequence(CODEPOINTS.m, MODIFIERS.ctrl),
   CTRL_O: kittySequence(CODEPOINTS.o, MODIFIERS.ctrl),
   CTRL_N: kittySequence(CODEPOINTS.n, MODIFIERS.ctrl),
-  CTRL_P: kittySequence(CODEPOINTS.p, MODIFIERS.ctrl),
   CTRL_R: kittySequence(CODEPOINTS.r, MODIFIERS.ctrl),
-  CTRL_T: kittySequence(CODEPOINTS.t, MODIFIERS.ctrl),
-  CTRL_U: kittySequence(CODEPOINTS.u, MODIFIERS.ctrl),
-  CTRL_W: kittySequence(CODEPOINTS.w, MODIFIERS.ctrl),
   CTRL_Z: kittySequence(CODEPOINTS.z, MODIFIERS.ctrl),
-
-  // Enter combinations
-  SHIFT_ENTER: kittySequence(CODEPOINTS.enter, MODIFIERS.shift),
-  ALT_ENTER: kittySequence(CODEPOINTS.enter, MODIFIERS.alt),
-  CTRL_ENTER: kittySequence(CODEPOINTS.enter, MODIFIERS.ctrl),
 
   // Tab combinations
   SHIFT_TAB: kittySequence(CODEPOINTS.tab, MODIFIERS.shift),
-
-  // Backspace combinations
-  ALT_BACKSPACE: kittySequence(CODEPOINTS.backspace, MODIFIERS.alt),
 } as const;
-
-/**
- * Check if input matches a Kitty protocol Ctrl+<key> sequence.
- * Ignores lock key bits (Caps Lock, Num Lock).
- * @param data - The input data to check
- * @param key - Single lowercase letter (e.g., 'c' for Ctrl+C)
- */
-export function isKittyCtrl(data: string, key: string): boolean {
-  if (key.length !== 1) return false;
-  const codepoint = key.charCodeAt(0);
-  // Check exact match first (fast path)
-  if (data === kittySequence(codepoint, MODIFIERS.ctrl)) return true;
-  // Check with lock bits masked out
-  return matchesKittySequence(data, codepoint, MODIFIERS.ctrl);
-}
-
-/**
- * Check if input matches a Kitty protocol key sequence with specific modifier.
- * Ignores lock key bits (Caps Lock, Num Lock).
- * @param data - The input data to check
- * @param codepoint - ASCII codepoint of the key
- * @param modifier - Modifier value (use MODIFIERS constants)
- */
-export function isKittyKey(
-  data: string,
-  codepoint: number,
-  modifier: number,
-): boolean {
-  // Check exact match first (fast path)
-  if (data === kittySequence(codepoint, modifier)) return true;
-  // Check with lock bits masked out
-  return matchesKittySequence(data, codepoint, modifier);
-}
 
 // Raw control character codes
 const RAW = {
@@ -241,18 +188,10 @@ const RAW = {
   CTRL_D: "\x04",
   CTRL_E: "\x05",
   CTRL_G: "\x07",
-  CTRL_K: "\x0b",
-  CTRL_L: "\x0c",
-  CTRL_M: "\x0d",
   CTRL_N: "\x0e",
   CTRL_O: "\x0f",
-  CTRL_P: "\x10",
   CTRL_R: "\x12",
-  CTRL_T: "\x14",
-  CTRL_U: "\x15",
-  CTRL_W: "\x17",
   CTRL_Z: "\x1a",
-  ALT_BACKSPACE: "\x1b\x7f",
   SHIFT_TAB: "\x1b[Z",
 } as const;
 
@@ -317,33 +256,6 @@ export function isCtrlG(data: string): boolean {
 }
 
 /**
- * Check if input matches Ctrl+K (raw byte or Kitty protocol).
- * Ignores lock key bits.
- * Also checks if first byte is 0x0b for compatibility with terminals
- * that may send trailing bytes.
- */
-export function isCtrlK(data: string): boolean {
-  return (
-    data === RAW.CTRL_K ||
-    (data.length > 0 && data.charCodeAt(0) === 0x0b) || // compatibility with terminals that may send trailing bytes
-    data === Keys.CTRL_K ||
-    matchesKittySequence(data, CODEPOINTS.k, MODIFIERS.ctrl)
-  );
-}
-
-/**
- * Check if input matches Ctrl+L (raw byte or Kitty protocol).
- * Ignores lock key bits.
- */
-export function isCtrlL(data: string): boolean {
-  return (
-    data === RAW.CTRL_L ||
-    data === Keys.CTRL_L ||
-    matchesKittySequence(data, CODEPOINTS.l, MODIFIERS.ctrl)
-  );
-}
-
-/**
  * Check if input matches Ctrl+M (Kitty protocol only).
  * The raw Ctrl+M byte (\x0d) is identical to Enter/Return,
  * so we only match the Kitty protocol sequence to avoid
@@ -381,42 +293,6 @@ export function isCtrlO(data: string): boolean {
 }
 
 /**
- * Check if input matches Shift+Ctrl+O (Kitty protocol only).
- * Ignores lock key bits.
- */
-export function isShiftCtrlO(data: string): boolean {
-  return matchesKittySequence(
-    data,
-    CODEPOINTS.o,
-    MODIFIERS.shift + MODIFIERS.ctrl,
-  );
-}
-
-/**
- * Check if input matches Ctrl+P (raw byte or Kitty protocol).
- * Ignores lock key bits.
- */
-export function isCtrlP(data: string): boolean {
-  return (
-    data === RAW.CTRL_P ||
-    data === Keys.CTRL_P ||
-    matchesKittySequence(data, CODEPOINTS.p, MODIFIERS.ctrl)
-  );
-}
-
-/**
- * Check if input matches Shift+Ctrl+P (Kitty protocol only).
- * Ignores lock key bits.
- */
-export function isShiftCtrlP(data: string): boolean {
-  return matchesKittySequence(
-    data,
-    CODEPOINTS.p,
-    MODIFIERS.shift + MODIFIERS.ctrl,
-  );
-}
-
-/**
  * Check if input matches Ctrl+R (raw byte or Kitty protocol).
  * Ignores lock key bits.
  */
@@ -429,54 +305,6 @@ export function isCtrlR(data: string): boolean {
 }
 
 /**
- * Check if input matches Shift+Ctrl+D (Kitty protocol only, for debug).
- * Ignores lock key bits.
- */
-export function isShiftCtrlD(data: string): boolean {
-  return matchesKittySequence(
-    data,
-    CODEPOINTS.d,
-    MODIFIERS.shift + MODIFIERS.ctrl,
-  );
-}
-
-/**
- * Check if input matches Ctrl+T (raw byte or Kitty protocol).
- * Ignores lock key bits.
- */
-export function isCtrlT(data: string): boolean {
-  return (
-    data === RAW.CTRL_T ||
-    data === Keys.CTRL_T ||
-    matchesKittySequence(data, CODEPOINTS.t, MODIFIERS.ctrl)
-  );
-}
-
-/**
- * Check if input matches Ctrl+U (raw byte or Kitty protocol).
- * Ignores lock key bits.
- */
-export function isCtrlU(data: string): boolean {
-  return (
-    data === RAW.CTRL_U ||
-    data === Keys.CTRL_U ||
-    matchesKittySequence(data, CODEPOINTS.u, MODIFIERS.ctrl)
-  );
-}
-
-/**
- * Check if input matches Ctrl+W (raw byte or Kitty protocol).
- * Ignores lock key bits.
- */
-export function isCtrlW(data: string): boolean {
-  return (
-    data === RAW.CTRL_W ||
-    data === Keys.CTRL_W ||
-    matchesKittySequence(data, CODEPOINTS.w, MODIFIERS.ctrl)
-  );
-}
-
-/**
  * Check if input matches Ctrl+Z (raw byte or Kitty protocol).
  * Ignores lock key bits.
  */
@@ -485,18 +313,6 @@ export function isCtrlZ(data: string): boolean {
     data === RAW.CTRL_Z ||
     data === Keys.CTRL_Z ||
     matchesKittySequence(data, CODEPOINTS.z, MODIFIERS.ctrl)
-  );
-}
-
-/**
- * Check if input matches Alt+Backspace (legacy or Kitty protocol).
- * Ignores lock key bits.
- */
-export function isAltBackspace(data: string): boolean {
-  return (
-    data === RAW.ALT_BACKSPACE ||
-    data === Keys.ALT_BACKSPACE ||
-    matchesKittySequence(data, CODEPOINTS.backspace, MODIFIERS.alt)
   );
 }
 
@@ -600,75 +416,6 @@ export function isBackspace(data: string): boolean {
     data === "\x7f" ||
     data === "\x08" ||
     matchesKittySequence(data, CODEPOINTS.backspace, 0)
-  );
-}
-
-/**
- * Check if input matches Shift+Enter.
- * Ignores lock key bits.
- */
-export function isShiftEnter(data: string): boolean {
-  return (
-    data === Keys.SHIFT_ENTER ||
-    matchesKittySequence(data, CODEPOINTS.enter, MODIFIERS.shift)
-  );
-}
-
-/**
- * Check if input matches Alt+Enter.
- * Ignores lock key bits.
- */
-export function isAltEnter(data: string): boolean {
-  return (
-    data === Keys.ALT_ENTER ||
-    data === "\x1b\r" ||
-    matchesKittySequence(data, CODEPOINTS.enter, MODIFIERS.alt)
-  );
-}
-
-/**
- * Check if input matches Option/Alt+Left (word navigation).
- * Handles multiple formats including Kitty protocol.
- */
-export function isAltLeft(data: string): boolean {
-  return (
-    data === "\x1b[1;3D" ||
-    data === "\x1bb" ||
-    matchesKittySequence(data, ARROW_CODEPOINTS.left, MODIFIERS.alt)
-  );
-}
-
-/**
- * Check if input matches Option/Alt+Right (word navigation).
- * Handles multiple formats including Kitty protocol.
- */
-export function isAltRight(data: string): boolean {
-  return (
-    data === "\x1b[1;3C" ||
-    data === "\x1bf" ||
-    matchesKittySequence(data, ARROW_CODEPOINTS.right, MODIFIERS.alt)
-  );
-}
-
-/**
- * Check if input matches Ctrl+Left (word navigation).
- * Handles multiple formats including Kitty protocol.
- */
-export function isCtrlLeft(data: string): boolean {
-  return (
-    data === "\x1b[1;5D" ||
-    matchesKittySequence(data, ARROW_CODEPOINTS.left, MODIFIERS.ctrl)
-  );
-}
-
-/**
- * Check if input matches Ctrl+Right (word navigation).
- * Handles multiple formats including Kitty protocol.
- */
-export function isCtrlRight(data: string): boolean {
-  return (
-    data === "\x1b[1;5C" ||
-    matchesKittySequence(data, ARROW_CODEPOINTS.right, MODIFIERS.ctrl)
   );
 }
 

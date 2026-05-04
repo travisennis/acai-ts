@@ -50,57 +50,6 @@ export function formatFile(
 }
 
 /**
- * Formats URL content with metadata in the specified format.
- *
- * @param siteUrl - The URL to format
- * @param content - The URL content to format
- * @param format - The output format type
- * @returns Formatted URL content with metadata
- * @throws {Error} When an unsupported format is provided
- *
- * @example
- * ```typescript
- * formatUrl("https://example.com", "<html>...</html>", "xml")
- * // Returns: "<webpage>\n<url>https://example.com</url>\n<content>\n<html>...</html>\n</content>\n</webpage>"
- * ```
- */
-export function formatUrl(
-  siteUrl: string,
-  content: string,
-  format: FormatType,
-): string {
-  switch (format) {
-    case "xml":
-      return `<webpage>\n<url>${siteUrl}</url>\n<content>\n${content}\n</content>\n</webpage>`;
-    case "markdown":
-      return `## URL: ${siteUrl}\n${MD_TRIPLE_QUOTE}\n${content}\n${MD_TRIPLE_QUOTE}`;
-    case "bracket":
-      return `[url]: ${siteUrl}\n[url content begin]\n${content}\n[url content end]`;
-    default:
-      throw new Error(`Unsupported format: ${format}`);
-  }
-}
-
-/**
- * Formats content as a code block with appropriate language identifier.
- *
- * @param file - The file path used to determine the code block language
- * @param content - The code content to format
- * @returns Formatted code block with language identifier
- *
- * @example
- * ```typescript
- * formatCodeBlock("example.js", "console.log('hello');")
- * // Returns: "``` javascript\nconsole.log('hello');\n```"
- * ```
- */
-export function formatCodeBlock(file: string, content: string): string {
-  const codeBlockName =
-    getCodeblockFromFilePath(file) || path.extname(file).slice(1);
-  return `${MD_TRIPLE_QUOTE} ${codeBlockName}\n${content}\n${MD_TRIPLE_QUOTE}`;
-}
-
-/**
  * Formats generic content blocks with a name in the specified format.
  *
  * @param content - The block content to format

@@ -513,7 +513,6 @@ acai-ts
 
 ### Source - Terminal
 
-- **source/terminal/index.ts**: Terminal utilities exports
 - **source/terminal/terminal.ts**: Terminal interface abstraction
 - **source/terminal/control.ts**: Terminal control functions (clear, cursor, etc.)
 - **source/terminal/select-prompt.ts**: Interactive selection prompt

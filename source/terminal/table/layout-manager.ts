@@ -13,7 +13,7 @@ function next(alloc: AllocMap, col: number): number {
   return col;
 }
 
-export function layoutTable(table: Cell[][]): void {
+function layoutTable(table: Cell[][]): void {
   const alloc: AllocMap = {};
   table.forEach((row, rowIndex) => {
     let col = 0;
@@ -37,7 +37,7 @@ export function layoutTable(table: Cell[][]): void {
   });
 }
 
-export function maxWidth(table: Cell[][]): number {
+function maxWidth(table: Cell[][]): number {
   let mw = 0;
   table.forEach((row) => {
     row.forEach((cell) => {
@@ -49,11 +49,11 @@ export function maxWidth(table: Cell[][]): number {
   return mw;
 }
 
-export function maxHeight(table: Cell[][]): number {
+function maxHeight(table: Cell[][]): number {
   return table.length;
 }
 
-export function cellsConflict(
+function cellsConflict(
   cell1: { x: number; y: number; rowSpan?: number; colSpan?: number },
   cell2: { x: number; y: number; rowSpan?: number; colSpan?: number },
 ): boolean {
@@ -72,7 +72,7 @@ export function cellsConflict(
   return yConflict && xConflict;
 }
 
-export function conflictExists(rows: Cell[][], x: number, y: number): boolean {
+function conflictExists(rows: Cell[][], x: number, y: number): boolean {
   const iMax = Math.min(rows.length - 1, y);
   const cell = { x: x, y: y };
   for (let i = 0; i <= iMax; i++) {
@@ -96,7 +96,7 @@ export function conflictExists(rows: Cell[][], x: number, y: number): boolean {
   return false;
 }
 
-export function allBlank(
+function allBlank(
   rows: Cell[][],
   y: number,
   xMin: number,
@@ -110,7 +110,7 @@ export function allBlank(
   return true;
 }
 
-export function addRowSpanCells(table: Cell[][]): void {
+function addRowSpanCells(table: Cell[][]): void {
   table.forEach((row, rowIndex) => {
     row.forEach((cell) => {
       for (let i = 1; i < cell.rowSpan; i++) {
@@ -126,7 +126,7 @@ export function addRowSpanCells(table: Cell[][]): void {
   });
 }
 
-export function addColSpanCells(cellRows: Cell[][]): void {
+function addColSpanCells(cellRows: Cell[][]): void {
   for (let rowIndex = cellRows.length - 1; rowIndex >= 0; rowIndex--) {
     const cellColumns = cellRows[rowIndex];
     for (let columnIndex = 0; columnIndex < cellColumns.length; columnIndex++) {
@@ -147,7 +147,7 @@ export function addColSpanCells(cellRows: Cell[][]): void {
   }
 }
 
-export function insertCell(cell: Cell, row: Cell[]): void {
+function insertCell(cell: Cell, row: Cell[]): void {
   let x = 0;
   const cellX = cell.x;
   while (x < row.length) {
@@ -223,7 +223,7 @@ export function fillInTable(table: Cell[][]): void {
   }
 }
 
-export function generateCells(rows: unknown[]): Cell[][] {
+function generateCells(rows: unknown[]): Cell[][] {
   return rows.map((row) => {
     let processedRow = row;
     if (!Array.isArray(processedRow)) {

@@ -9,45 +9,17 @@ import { logger } from "../utils/logger.ts";
 
 // Re-export key functions from keys.ts for convenient imports
 export {
-  isAltBackspace,
-  isAltEnter,
-  isAltLeft,
-  isAltRight,
   isArrowDown,
-  isArrowLeft,
-  isArrowRight,
   isArrowUp,
-  isBackspace,
-  isCtrlA,
   isCtrlC,
   isCtrlD,
-  isCtrlE,
-  isCtrlG,
-  isCtrlK,
-  isCtrlL,
   isCtrlM,
   isCtrlN,
   isCtrlO,
-  isCtrlP,
   isCtrlR,
-  isCtrlT,
-  isCtrlU,
-  isCtrlW,
   isCtrlZ,
-  isDelete,
-  isEnd,
   isEnter,
   isEscape,
-  isHome,
-  isKittyCtrl,
-  isKittyKey,
-  isNavigationKey,
-  isPageDown,
-  isPageUp,
-  isShiftCtrlD,
-  isShiftCtrlO,
-  isShiftCtrlP,
-  isShiftEnter,
   isShiftTab,
   isTab,
 } from "./keys.ts";
@@ -57,13 +29,6 @@ export {
  */
 export function getShell() {
   return process.env["ZSH_VERSION"] ? "zsh" : process.env["SHELL"] || "bash";
-}
-
-/**
- * Check if terminal is interactive
- */
-export function isInteractive() {
-  return Boolean(process.stdout.isTTY && process.stdin.isTTY);
 }
 
 /**
@@ -87,33 +52,6 @@ export async function alert(): Promise<void> {
   } catch (err) {
     logger.warn({ err }, "Failed to emit alert");
   }
-}
-
-/**
- * Clear the terminal screen
- */
-export function clearScreen(): void {
-  // Clear screen and move cursor to top-left
-  process.stdout.write("\x1b[2J\x1b[0f");
-}
-
-/**
- * Clear the terminal screen including scrollback buffer
- *
- * Unlike clearScreen, this function:
- * 1. Clears the entire screen (\x1b[2J)
- * 2. Clears the scrollback buffer (\x1b[3J)
- * 3. Moves cursor to home position (\x1b[H)
- * 4. Returns a Promise that resolves when the write operation completes
- *
- * @returns Promise that resolves when the terminal has been cleared
- */
-export function clearTerminal(): Promise<void> {
-  return new Promise((resolve) => {
-    process.stdout.write("\x1b[2J\x1b[3J\x1b[H", () => {
-      resolve();
-    });
-  });
 }
 
 /**

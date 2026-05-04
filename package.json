@@ -47,8 +47,8 @@
     "dev": "node --no-warnings --env-file=.env ./source/index.ts",
     "oxlint": "npm run oxlint:single -- ./source",
     "oxlint:single": "oxlint --type-aware --ignore-path .gitignore -A all -c .oxlintrc.json",
-    "knip": "npx knip",
-    "knip:prod": "npx knip --production",
+    "knip": "knip",
+    "knip:prod": "knip --production",
     "fallow": "fallow --format json",
     "setup": "node scripts/setup.ts",
     "update": "npx npm-check-updates --interactive --format group",
@@ -97,6 +97,7 @@
     "domhandler": "^6.0.1",
     "fallow": "^2.62.0",
     "husky": "^9.1.7",
+    "knip": "^6.11.0",
     "oxlint": "^1.62.0",
     "oxlint-tsgolint": "^0.22.1",
     "typescript": "^6.0.3"

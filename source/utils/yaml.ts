@@ -1,7 +1,7 @@
 type YamlValue = string | number | boolean | null | YamlObject | YamlValue[];
 type YamlObject = { [key: string]: YamlValue };
 
-export function parseYaml(input: string): YamlObject {
+function parseYaml(input: string): YamlObject {
   const lines = input.split("\n");
   const result: YamlObject = {};
   let i = 0;

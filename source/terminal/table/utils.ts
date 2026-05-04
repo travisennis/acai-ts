@@ -329,7 +329,7 @@ export function truncate(
   return ret;
 }
 
-export function defaultOptions(): TableInstanceOptions {
+function defaultOptions(): TableInstanceOptions {
   return {
     chars: {
       top: "─",
