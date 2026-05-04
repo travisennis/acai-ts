@@ -88,7 +88,6 @@
   },
   "devDependencies": {
     "@ai-sdk/provider": "^3.0.10",
-    "@ast-grep/napi": "^0.42.1",
     "@biomejs/biome": "2.4.14",
     "@commitlint/config-conventional": "^20.5.3",
     "@types/node": "^25.6.0",
