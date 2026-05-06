@@ -25,7 +25,6 @@ import { addDirectoryCommand } from "./add-directory/index.ts";
 import { clearCommand } from "./clear/index.ts";
 import { copyCommand } from "./copy/index.ts";
 import { generateRulesCommand } from "./generate-rules/index.ts";
-import { handoffCommand } from "./handoff/index.ts";
 import { healthCommand } from "./health/index.ts";
 import { helpCommand } from "./help/index.ts";
 import { historyCommand } from "./history/index.ts";
@@ -36,7 +35,6 @@ import { listToolsCommand } from "./list-tools/index.ts";
 import { modelCommand } from "./model/index.ts";
 
 import { pasteCommand } from "./paste/index.ts";
-import { pickupCommand } from "./pickup/index.ts";
 import { removeDirectoryCommand } from "./remove-directory/index.ts";
 import { resourcesCommand } from "./resources/index.ts";
 import { reviewCommand } from "./review/index.ts";
@@ -106,13 +104,11 @@ export class CommandManager {
       initProjectCommand(options),
       listDirectoriesCommand(options),
       pasteCommand(options),
-      pickupCommand(options),
       removeDirectoryCommand(options),
       reviewCommand(options),
       modelCommand(options),
       sessionCommand(options),
       generateRulesCommand(options),
-      handoffCommand(options),
       copyCommand(options),
       listToolsCommand(options),
       resourcesCommand(options),

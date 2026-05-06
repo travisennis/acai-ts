@@ -334,7 +334,6 @@ async function initializeModelManager(
   modelManager.setModel("tool-repair", "openai:gpt-5.4-mini");
   modelManager.setModel("conversation-analyzer", chosenModel);
   modelManager.setModel("init-project", chosenModel);
-  modelManager.setModel("handoff-agent", chosenModel);
 
   return modelManager;
 }

@@ -82,9 +82,6 @@ acai-ts
     │   │   ├── index.ts
     │   │   ├── service.ts
     │   │   └── utils.ts
-    │   ├── handoff
-    │   │   ├── index.ts
-    │   │   └── utils.ts
     │   ├── health
     │   │   ├── index.ts
     │   │   └── utils.ts
@@ -110,10 +107,6 @@ acai-ts
     │   │   └── utils.ts
     │   ├── paste
     │   │   ├── index.ts
-    │   │   └── utils.ts
-    │   ├── pickup
-    │   │   ├── index.ts
-    │   │   ├── types.ts
     │   │   └── utils.ts
     │   ├── remove-directory
     │   │   └── index.ts
@@ -287,7 +280,6 @@ acai-ts
     │   ├── clear-command.test.ts
     │   ├── copy-command.test.ts
     │   ├── generate-rules.test.ts
-    │   ├── handoff.test.ts
     │   ├── html-renderer.test.ts
     │   ├── health.test.ts
     │   ├── history-command.integration.test.ts
@@ -297,7 +289,6 @@ acai-ts
     │   ├── list-tools.test.ts
     │   ├── model.test.ts
     │   ├── paste.test.ts
-    │   ├── pickup.test.ts
     │   ├── prompt-command.test.ts
     │   ├── remove-directory.test.ts
     │   ├── resources-command.test.ts
@@ -429,7 +420,6 @@ acai-ts
 - **source/commands/clear/**: Command to clear the conversation
 - **source/commands/copy/**: Command to copy content
 - **source/commands/generate-rules/**: Command to generate global rules (includes service.ts for programmatic rule generation)
-- **source/commands/handoff/**: Command for agent handoffs
 - **source/commands/health/**: Command to check system health
 - **source/commands/help/**: Command to display help information
 - **source/commands/history/**: Command to view conversation history
@@ -439,7 +429,6 @@ acai-ts
 - **source/commands/list-tools/**: Command to list available tools
 - **source/commands/model/**: Command to manage AI model configuration
 - **source/commands/paste/**: Command to paste clipboard content
-- **source/commands/pickup/**: Command to resume from saved state
 - **source/commands/remove-directory/**: Command to remove working directories
 - **source/commands/resources/**: Command to manage resources
 - **source/commands/review/**: Command to review code

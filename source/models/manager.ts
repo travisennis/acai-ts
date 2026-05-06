@@ -55,8 +55,7 @@ type App =
   | "conversation-summarizer"
   | "conversation-analyzer"
   | "tool-repair"
-  | "init-project"
-  | "handoff-agent";
+  | "init-project";
 
 interface ModelManagerEvents {
   "set-model": [app: App, model: ModelName];

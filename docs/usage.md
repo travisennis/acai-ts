@@ -92,8 +92,6 @@ Reference files and directories directly in your prompts:
 - `/health` - Check system health and dependencies
 - `/history` - View and manage conversation history
 - `/init-project` - Initialize a new acai project in the current directory
-- `/pickup` - Resume a previous conversation
-- `/handoff` - Hand off conversation to another agent
 - `/share` - Share the current session as a GitHub Gist for viewing in a web browser
 - `/resources` or `/res` - List all active skills and AGENTS.md files
 - `/shell` - Execute shell commands
