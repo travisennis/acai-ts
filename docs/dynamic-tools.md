@@ -292,7 +292,7 @@ Parameter names must match `/^[a-zA-Z_][a-zA-Z0-9_-]*$/`.
 
 ### Conflict Handling
 
-Dynamic tools with the same name as existing built-in tools are skipped silently. Avoid naming your tools `Bash`, `Read`, `Write`, `Grep`, or other built-in tool names.
+Dynamic tools with the same name as existing built-in tools are skipped silently. Avoid naming your tools `Bash`, `Read`, `Write`, or other built-in tool names.
 
 ### Duplicate Names
 

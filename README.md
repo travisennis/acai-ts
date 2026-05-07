@@ -82,7 +82,7 @@ Reference files directly with `@filename`, directories with `@dirname`, or run s
 ```
 .
 ├── source/            # Main application source code
-│   ├── agent/         # Agent loop and sub-agent execution
+│   ├── agent/         # Agent loop
 │   ├── cli.ts         # CLI entry point
 │   ├── commands/      # REPL command implementations
 │   ├── execution/     # Command execution utilities

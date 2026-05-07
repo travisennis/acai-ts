@@ -3,18 +3,10 @@ import type { Tool } from "ai";
 import { config } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { ActivatedSkillsTracker } from "../skills/activated-tracker.ts";
-import { AgentTool, createAgentTools } from "./agent.ts";
 import { ApplyPatchTool, createApplyPatchTool } from "./apply-patch.ts";
 import { BashTool, createBashTool } from "./bash.ts";
-import {
-  createDirectoryTreeTool,
-  DirectoryTreeTool,
-} from "./directory-tree.ts";
 import { loadDynamicTools } from "./dynamic-tool-loader.ts";
 import { createEditFileTool, EditFileTool } from "./edit-file.ts";
-import { createGlobTool, GlobTool } from "./glob.ts";
-import { createGrepTool, GrepTool } from "./grep.ts";
-import { createLsTool, LsTool } from "./ls.ts";
 import { createReadFileTool, ReadFileTool } from "./read-file.ts";
 import { createSaveFileTool, SaveFileTool } from "./save-file.ts";
 import { createSkillTool, SkillTool } from "./skill.ts";
@@ -59,22 +51,12 @@ export async function initTools({
 
   const saveFileTool = await createSaveFileTool({ workspace });
 
-  const directoryTreeTool = await createDirectoryTreeTool({ workspace });
-
-  const globTool = createGlobTool();
-
-  const grepTool = createGrepTool();
-
   const thinkTool = createThinkTool();
-
-  const lsTool = await createLsTool({ workspace });
 
   const projectConfig = await config.getConfig();
   const bashTool = await createBashTool({ workspace, env: projectConfig.env });
 
   const skillTool = await createSkillTool(activatedSkillsTracker);
-
-  const agentTool = await createAgentTools({ workspace });
 
   const webSearchTool = await createWebSearchTool();
 
@@ -90,13 +72,8 @@ export async function initTools({
       BashTool.name,
       SaveFileTool.name,
       ReadFileTool.name,
-      GlobTool.name,
-      GrepTool.name,
-      DirectoryTreeTool.name,
       ThinkTool.name,
-      LsTool.name,
       SkillTool.name,
-      AgentTool.name,
       WebSearchTool.name,
       WebFetchTool.name,
     ],
@@ -114,13 +91,8 @@ export async function initTools({
     [BashTool.name]: bashTool,
     [SaveFileTool.name]: saveFileTool,
     [ReadFileTool.name]: readFileTool,
-    [GlobTool.name]: globTool,
-    [GrepTool.name]: grepTool,
-    [DirectoryTreeTool.name]: directoryTreeTool,
     [ThinkTool.name]: thinkTool,
-    [LsTool.name]: lsTool,
     [SkillTool.name]: skillTool,
-    [AgentTool.name]: agentTool,
     [WebSearchTool.name]: webSearchTool,
     [WebFetchTool.name]: webFetchTool,
 

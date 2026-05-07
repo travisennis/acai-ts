@@ -1,7 +1,6 @@
 import { platform } from "node:os";
 import { config, parseSkillsPath } from "../config/index.ts";
 import { formatSkillsForPrompt, loadSkills } from "../skills/index.ts";
-import { formatSubagentsForPrompt, loadSubagents } from "../subagents/index.ts";
 import { getShell } from "../terminal/control.ts";
 import type { CompleteToolNames } from "../tools/index.ts";
 import { dedent } from "../utils/dedent.ts";
@@ -14,7 +13,6 @@ type SystemPromptComponents = {
   cwdAgentsMd: string;
   learnedRules: string;
   skills: string;
-  subagents: string;
 };
 
 async function getProjectContext() {
@@ -151,9 +149,6 @@ export async function systemPrompt(
     skillsText = formatSkillsForPrompt(skills.getModelInvocable());
   }
 
-  const subagents = await loadSubagents();
-  const subagentsText = formatSubagentsForPrompt(subagents);
-
   const corePrompt = minimalPrompt
     ? "You are acai. You are running as a coding agent in a CLI on the user's computer."
     : dedent`
@@ -239,9 +234,9 @@ You are producing plain text that will later be styled by the CLI. Follow these 
 </tool_calling>
 
 <context_understanding>
-Grep search (grep and ripgrep) is your MAIN exploration tool.
+Use Bash to run \`rg\` (ripgrep) and \`find\` for code exploration.
 - CRITICAL: Start with a broad set of queries that capture keywords based on the USER's request and provided context.
-- MANDATORY: Run multiple Grep searches in parallel with different patterns and variations; exact matches often miss related code.
+- MANDATORY: Run multiple searches in parallel with different patterns and variations; exact matches often miss related code.
 - Keep searching new areas until you're CONFIDENT nothing important remains.
 - When you have found some relevant code, narrow your search and read the most likely important files.
 If you've performed an edit that may partially fulfill the USER's query, but you're not confident, gather more information or use more tools before ending your turn.
@@ -256,7 +251,7 @@ When gathering information about a topic, plan your searches upfront in your thi
 - Searching for different patterns (imports, usage, definitions) should happen in parallel
 - Multiple grep searches with different regex patterns should run simultaneously
 - Reading multiple files or searching different directories can be done all at once
-- Combining Glob with Grep for comprehensive results
+- Combining \`find\` with \`rg\` for comprehensive results
 - Any information gathering where you know upfront what you're looking for
 
 And you should use parallel tool calls in many more cases beyond those listed above.
@@ -289,10 +284,9 @@ DEFAULT TO PARALLEL: Unless you have a specific reason why operations MUST be se
     cwdAgentsMd: projectContextResult.cwdAgentsMd,
     learnedRules: projectContextResult.learnedRules,
     skills: skillsText,
-    subagents: subagentsText,
   };
 
-  const assembledPrompt = `${corePrompt}\n${projectContextText}\n\n${environmentInfoText}${skillsText}\n\n${subagentsText}`;
+  const assembledPrompt = `${corePrompt}\n${projectContextText}\n\n${environmentInfoText}${skillsText}`;
   const result: SystemPromptResult = { prompt: assembledPrompt, components };
   return result;
 }

@@ -62,8 +62,7 @@ acai-ts
 │   └── acai
 └── source
     ├── agent
-    │   ├── index.ts
-    │   └── sub-agent.ts
+    │   └── index.ts
     ├── cli
     │   ├── index.ts
     │   └── stdin.ts
@@ -164,8 +163,6 @@ acai-ts
     │   └── summary.ts
     ├── skills
     │   ├── activated-tracker.ts
-    │   └── index.ts
-    ├── subagents
     │   └── index.ts
     ├── terminal
     │   ├── ansi-styles.ts
@@ -410,7 +407,6 @@ acai-ts
 ### Source - Agent
 
 - **source/agent/index.ts**: Main agent implementation for AI interactions
-- **source/agent/sub-agent.ts**: Subagent implementation for specialized tasks
 
 ### Source - Commands
 
@@ -473,25 +469,15 @@ acai-ts
 - **source/skills/index.ts**: Skills discovery, validation, loading, and prompt formatting
 - **source/skills/activated-tracker.ts**: Tracks activated skills in current session to prevent duplicate loading
 
-### Source - Subagents
-
-- **source/subagents/index.ts**: Subagent discovery, validation, loading, and prompt formatting
-
 ### Source - Tools
 
 - **source/tools/index.ts**: Tool initialization and registry
 - **source/tools/types.ts**: Tool type definitions including `SessionContext` and `ToolExecutionOptions`
 - **source/tools/utils.ts**: Tool utility functions
-- **source/tools/agent.ts**: Agent tool for invoking sub-agents
 - **source/tools/bash.ts**: Bash command execution tool
-- **source/tools/directory-tree.ts**: Directory tree generation tool
 - **source/tools/dynamic-tool-loader.ts**: Dynamic tool loader for loading user-defined tools from `.acai/tools` directories. Supports language-agnostic tools (bash, python, etc.) via shebang/extension detection, Amp-compatible text schema format, `.tool` companion files, and session context passing via environment variables
 - **source/tools/edit-file.ts**: File editing tool
-- **source/tools/glob.ts**: File pattern matching tool
-- **source/tools/grep.ts**: Text search tool
 - **source/tools/apply-patch.ts**: Apply unified patch format for batch file modifications (supports add, update, delete, and move operations)
-
-- **source/tools/ls.ts**: Directory listing tool
 - **source/tools/read-file.ts**: File reading tool
 - **source/tools/save-file.ts**: File writing tool
 - **source/tools/skill.ts**: Skill invocation tool
@@ -541,7 +527,6 @@ acai-ts
 - **source/utils/formatting.ts**: Text formatting utilities (files, URLs, code blocks, numbers, dates, durations)
 - **source/utils/funcs.ts**: General function utilities
 - **source/utils/git.ts**: Git-related utilities
-- **source/utils/glob.ts**: Glob pattern utilities
 - **source/utils/ignore.ts**: Gitignore-style pattern matching
 - **source/utils/iterables.ts**: Iterable utilities
 - **source/utils/logger.ts**: Logging infrastructure using Pino
