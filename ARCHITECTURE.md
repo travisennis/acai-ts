@@ -67,19 +67,9 @@ acai-ts
     │   ├── index.ts
     │   └── stdin.ts
     ├── commands
-    │   ├── add-directory
-    │   │   ├── index.ts
-    │   │   ├── types.ts
-    │   │   └── utils.ts
-    │   ├── clear
-    │   │   └── index.ts
     │   ├── copy
     │   │   ├── index.ts
     │   │   ├── types.ts
-    │   │   └── utils.ts
-    │   ├── generate-rules
-    │   │   ├── index.ts
-    │   │   ├── service.ts
     │   │   └── utils.ts
     │   ├── health
     │   │   ├── index.ts
@@ -95,8 +85,6 @@ acai-ts
     │   ├── init-project
     │   │   ├── index.ts
     │   │   └── utils.ts
-    │   ├── list-directories
-    │   │   └── index.ts
     │   ├── list-tools
     │   │   └── index.ts
     │   ├── manager.ts
@@ -107,22 +95,13 @@ acai-ts
     │   ├── paste
     │   │   ├── index.ts
     │   │   └── utils.ts
-    │   ├── remove-directory
-    │   │   └── index.ts
     │   ├── resources
     │   │   └── index.ts
-    │   ├── review
-    │   │   ├── index.ts
-    │   │   ├── review-panel.ts
-    │   │   ├── types.ts
-    │   │   └── utils.ts
     │   ├── session
     │   │   ├── index.ts
     │   │   └── types.ts
     │   ├── share
     │   │   ├── html-renderer.ts
-    │   │   └── index.ts
-    │   ├── shell
     │   │   └── index.ts
     │   ├── tools
     │   │   ├── index.ts
@@ -273,27 +252,19 @@ acai-ts
 └── test
     ├── agent
     ├── commands
-    │   ├── add-directory.test.ts
-    │   ├── clear-command.test.ts
     │   ├── copy-command.test.ts
-    │   ├── generate-rules.test.ts
     │   ├── html-renderer.test.ts
     │   ├── health.test.ts
     │   ├── history-command.integration.test.ts
     │   ├── history-command.test.ts
     │   ├── init-project.test.ts
-    │   ├── list-directories.test.ts
     │   ├── list-tools.test.ts
     │   ├── model.test.ts
     │   ├── paste.test.ts
     │   ├── prompt-command.test.ts
-    │   ├── remove-directory.test.ts
     │   ├── resources-command.test.ts
-    │   ├── review-command.test.ts
-    │   ├── review.test.ts
     │   ├── session-command.test.ts
-    │   ├── share.test.ts
-    │   └── shell-command.test.ts
+    │   └── share.test.ts
     ├── config.test.ts
     ├── execution.test.ts
     ├── integration
@@ -412,25 +383,18 @@ acai-ts
 
 - **source/commands/manager.ts**: Command registration and execution manager
 - **source/commands/types.ts**: Shared command type definitions
-- **source/commands/add-directory/**: Command to add working directories
-- **source/commands/clear/**: Command to clear the conversation
 - **source/commands/copy/**: Command to copy content
-- **source/commands/generate-rules/**: Command to generate global rules (includes service.ts for programmatic rule generation)
 - **source/commands/health/**: Command to check system health
 - **source/commands/help/**: Command to display help information
 - **source/commands/history/**: Command to view conversation history
 - **source/commands/init/**: Command to initialize acai configuration
 - **source/commands/init-project/**: Command to initialize a new project
-- **source/commands/list-directories/**: Command to list working directories
 - **source/commands/list-tools/**: Command to list available tools
 - **source/commands/model/**: Command to manage AI model configuration
 - **source/commands/paste/**: Command to paste clipboard content
-- **source/commands/remove-directory/**: Command to remove working directories
 - **source/commands/resources/**: Command to manage resources
-- **source/commands/review/**: Command to review code
 - **source/commands/session/**: Command to manage sessions
 - **source/commands/share/**: Command to share conversations
-- **source/commands/shell/**: Command to execute shell commands
 - **source/commands/tools/**: Command to manage dynamic tools (`/tools make`, `/tools list`)
 
 ### Source - Models

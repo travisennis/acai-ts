@@ -475,7 +475,6 @@ function setupReplEventHandlers(
 
   repl.setExitCallback(async (_sessionId: string) => {
     if (!sessionManager.isEmpty()) {
-      await repl.triggerRuleGeneration();
       writeExitSummary(sessionManager, noSession);
     }
   });

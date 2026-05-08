@@ -21,26 +21,22 @@ import { Spacer, Text } from "../tui/index.ts";
 import { logger } from "../utils/logger.ts";
 import { replaceArgumentPlaceholders } from "../utils/templates.ts";
 import { parseFrontMatter } from "../utils/yaml.ts";
-import { addDirectoryCommand } from "./add-directory/index.ts";
-import { clearCommand } from "./clear/index.ts";
+
 import { copyCommand } from "./copy/index.ts";
-import { generateRulesCommand } from "./generate-rules/index.ts";
+
 import { healthCommand } from "./health/index.ts";
 import { helpCommand } from "./help/index.ts";
 import { historyCommand } from "./history/index.ts";
 import { initCommand } from "./init/index.ts";
 import { initProjectCommand } from "./init-project/index.ts";
-import { listDirectoriesCommand } from "./list-directories/index.ts";
+
 import { listToolsCommand } from "./list-tools/index.ts";
 import { modelCommand } from "./model/index.ts";
 
 import { pasteCommand } from "./paste/index.ts";
-import { removeDirectoryCommand } from "./remove-directory/index.ts";
 import { resourcesCommand } from "./resources/index.ts";
-import { reviewCommand } from "./review/index.ts";
 import { sessionCommand } from "./session/index.ts";
 import { shareCommand } from "./share/index.ts";
-import { shellCommand } from "./shell/index.ts";
 import { toolsCommand } from "./tools/index.ts";
 import type { CommandOptions, ReplCommand } from "./types.ts";
 
@@ -96,24 +92,17 @@ export class CommandManager {
 
     // Register all commands
     const cmds = [
-      addDirectoryCommand(options),
-      clearCommand(options),
       healthCommand(options),
       historyCommand(options),
       initCommand(options),
       initProjectCommand(options),
-      listDirectoriesCommand(options),
       pasteCommand(options),
-      removeDirectoryCommand(options),
-      reviewCommand(options),
       modelCommand(options),
       sessionCommand(options),
-      generateRulesCommand(options),
       copyCommand(options),
       listToolsCommand(options),
       resourcesCommand(options),
       shareCommand(options),
-      shellCommand(options),
       toolsCommand(options),
     ];
 

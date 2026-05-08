@@ -44,7 +44,6 @@ export const defaultConfig = {
   devtools: {
     enabled: false,
   },
-  autoGenerateRules: false,
   allowedDirs: [] as string[],
   env: {} as Record<string, string>,
 } as const;
@@ -93,10 +92,6 @@ const ConfigSchema = z.object({
     })
     .optional()
     .default(defaultConfig.skills),
-  autoGenerateRules: z
-    .boolean()
-    .optional()
-    .default(defaultConfig.autoGenerateRules),
   allowedDirs: z
     .array(z.string())
     .optional()

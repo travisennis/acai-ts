@@ -4,11 +4,9 @@ import type {
   AgentState,
   ToolEvent,
 } from "../agent/index.ts";
-import { generateRulesFromSession } from "../commands/generate-rules/service.ts";
 import type { CommandManager } from "../commands/manager.ts";
 import { showModelSelector } from "../commands/model/model-panel.ts";
-import { showReviewPanel } from "../commands/review/review-panel.ts";
-import type { Config, ConfigManager } from "../config/index.ts";
+import type { ConfigManager } from "../config/index.ts";
 import { parseSkillsPath } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
 import type { ModelManager } from "../models/manager.ts";
@@ -124,9 +122,6 @@ export class Repl {
   // verbose mode state
   private verboseMode = false;
 
-  // ProjectConfig - initialized in init()
-  private config!: Config;
-
   /** Creates a new Repl instance, initializing the TUI layout and components. */
   constructor(options: ReplOptions) {
     this.options = options;
@@ -205,10 +200,8 @@ export class Repl {
       sessionManager,
       commands,
       promptHistory,
-      configManager,
     } = this.options;
 
-    this.config = await configManager.getConfig();
     // Listen for session title updates
     // messageHistory.on("update-title", (title: string) => {
     //   this.footer.setTitle(title);
@@ -236,15 +229,6 @@ export class Repl {
 
     this.tui.onCtrlN = () => {
       void this.handleCtrlN();
-    };
-
-    this.tui.onCtrlR = () => {
-      void showReviewPanel(
-        this.tui,
-        this.chatContainer,
-        this.editorContainer,
-        this.editor,
-      );
     };
 
     this.tui.onCtrlM = () => {
@@ -949,12 +933,6 @@ export class Repl {
    */
   private async handleCtrlN(): Promise<void> {
     if (!this.options.sessionManager.isEmpty()) {
-      // Auto-generate rules before starting new session if enabled
-      // Run in background - don't block new session from starting
-      this.maybeGenerateRules().catch((err) =>
-        logger.debug({ err }, "Background rule generation failed"),
-      );
-
       if (!this.options.noSession) {
         await this.options.sessionManager.save();
       }
@@ -963,7 +941,6 @@ export class Repl {
       );
     }
 
-    this.config = await this.options.configManager.getConfig();
     this.options.sessionManager.clearTransientMessages();
     this.options.tokenTracker.reset();
 
@@ -1101,48 +1078,5 @@ export class Repl {
       this.tui.stop();
       this.isInitialized = false;
     }
-  }
-
-  /**
-   * Generates rules automatically if autoGenerateRules is enabled
-   * and the session has messages.
-   */
-  private async maybeGenerateRules(): Promise<void> {
-    try {
-      const config = this.config;
-      if (!config.autoGenerateRules) {
-        return;
-      }
-
-      if (this.options.sessionManager.isEmpty()) {
-        return;
-      }
-
-      const { rules } = await generateRulesFromSession({
-        modelManager: this.options.modelManager,
-        messages: this.options.sessionManager.get(),
-        tokenTracker: this.options.tokenTracker,
-        config: this.options.configManager,
-        workspace: this.options.workspace,
-      });
-
-      if (rules.length > 0) {
-        this.notification.setMessage(
-          `Auto-generated ${rules.length} rule(s) saved`,
-        );
-        this.tui.requestRender();
-      }
-    } catch (error) {
-      // Don't fail the session transition on rule generation errors
-      logger.debug({ error }, "Auto rule generation failed");
-    }
-  }
-
-  /**
-   * Triggers rule generation for use before exit.
-   * Returns a promise that resolves when rules are generated.
-   */
-  async triggerRuleGeneration(): Promise<void> {
-    await this.maybeGenerateRules();
   }
 }
