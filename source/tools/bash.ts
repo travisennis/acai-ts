@@ -242,7 +242,8 @@ export const BashTool = {
 // Tools available:
 // ${installedTools}`;
 
-const simpleDescription = "Run terminal commands.";
+const simpleDescription =
+  "Run terminal commands. When you need to run multiple independent commands (e.g. `git status`, `git diff`, `git log`; or several `rg`/`grep` searches with different patterns), ALWAYS issue multiple Bash tool calls in the same assistant message rather than running one, waiting for the result, then running the next. The runtime executes parallel tool calls concurrently, so batching independent commands is several times faster than serial calls. Only sequence commands when one truly depends on the output of another.";
 
 // Command execution timeout in milliseconds
 const DEFAULT_TIMEOUT = 1.5 * 60 * 1000; // 1.5 minutes

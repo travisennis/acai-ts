@@ -62,7 +62,8 @@ export const createReadFileTool = async (options: {
   const { primaryDir } = options.workspace;
   return {
     toolDef: {
-      description: "Read the contents of a file.",
+      description:
+        "Read the contents of a file. When you need to read multiple files, ALWAYS issue multiple Read tool calls in the same assistant message rather than reading one, waiting for the result, then reading the next. The runtime executes parallel tool calls concurrently, so batching reads is several times faster than serial reads.",
       inputSchema,
     },
     display({ path: providedPath, startLine, lineCount }: ReadFileInputSchema) {
