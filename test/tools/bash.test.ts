@@ -21,17 +21,27 @@ describe("bash tool path validation for git message flags", async () => {
   }
 
   it("allows commit messages with /copy", async () => {
-    await assert.rejects(
-      () => run('echo ok && git commit -m "docs: mention /copy"'),
-      /.*/,
-    );
+    try {
+      await run('echo ok && git commit -m "docs: mention /copy"');
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      assert.ok(
+        !msg.includes("resolves outside the allowed directories"),
+        `Path validation should not block commit message, got: ${msg}`,
+      );
+    }
   });
 
   it("allows URLs in messages", async () => {
-    await assert.rejects(
-      () => run('git commit -m "URL https://example.com/p/a/t/h"'),
-      /.*/,
-    );
+    try {
+      await run('git commit -m "URL https://example.com/p/a/t/h"');
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      assert.ok(
+        !msg.includes("resolves outside the allowed directories"),
+        `Path validation should not block commit message, got: ${msg}`,
+      );
+    }
   });
 
   it("rejects absolute path in git add", async () => {
@@ -49,10 +59,15 @@ describe("bash tool path validation for git message flags", async () => {
   });
 
   it("handles multiple -m flags", async () => {
-    await assert.rejects(
-      () => run('git commit -m "first /copy" -m "second /path"'),
-      /.*/,
-    );
+    try {
+      await run('git commit -m "first /copy" -m "second /path"');
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      assert.ok(
+        !msg.includes("resolves outside the allowed directories"),
+        `Path validation should not block commit message, got: ${msg}`,
+      );
+    }
   });
 });
 
@@ -131,29 +146,22 @@ describe("bash tool timeout handling", async () => {
     );
   });
 
-  it("includes error message when command fails", async () => {
+  it("returns exit code info when command fails", async () => {
     const tool = await createBashTool({
       workspace: { primaryDir: baseDir, allowedDirs: [baseDir] },
     });
     const { execute } = tool;
 
     // Run a command that will fail
-    const result = execute(
+    const result = await execute(
       { command: "exit 1", cwd: baseDir, timeout: 1000 },
       { toolCallId: "t1", messages: [] },
     );
 
-    let errorMessage = "";
-    try {
-      await result;
-      assert.fail("Should have thrown");
-    } catch (error) {
-      errorMessage = error instanceof Error ? error.message : String(error);
-    }
-    // Should contain exit code or error info
+    // Should not throw -- non-zero exit is returned as output
     assert.ok(
-      errorMessage.includes("exited with code") || errorMessage.includes("1"),
-      `Error message should mention exit code, got: ${errorMessage}`,
+      result.includes("[exit:1"),
+      `Result should mention exit code, got: ${result}`,
     );
   });
 });
@@ -431,11 +439,11 @@ describe("bash tool output truncation", async () => {
     assert.ok(result.includes("small output"));
   });
 
-  it("truncates error output when command fails", async () => {
+  it("includes truncated output when command fails", async () => {
     // Generate a large error output
     const result = await run(
       "node -e \"for(let i=0; i<10000; i++) console.error('error line ' + i); process.exit(1);\"",
-    ).catch((e) => e.message);
+    );
     assert.ok(result.includes("[OUTPUT TRUNCATED"));
   });
 

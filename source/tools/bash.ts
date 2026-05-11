@@ -374,13 +374,26 @@ export const createBashTool = async (options: {
     const metadataFooter = `[exit:${exitCode} | ${timeStr}]`;
 
     if (exitCode !== 0) {
+      // Differentiate between process killed (timeout/abort) and normal non-zero exit.
+      // Non-zero exit (e.g., grep/rg finding no matches) returns output for LLM to interpret.
+      // Killed processes (timeout, abort) throw since the command never completed.
+      const execError = error as
+        | (Error & { killed?: boolean; signal?: string | null })
+        | undefined;
+      const wasKilled = execError?.killed === true || execError?.signal != null;
+
       const errorMessage = error
         ? error.message
         : `Command exited with code ${exitCode}`;
       const combinedOutput = output
         ? `${errorMessage}\n${output}`
         : errorMessage;
-      throw new Error(truncateOutput(combinedOutput, metadataFooter));
+
+      if (wasKilled) {
+        throw new Error(truncateOutput(combinedOutput, metadataFooter));
+      }
+
+      return truncateOutput(combinedOutput, metadataFooter);
     }
 
     // Check for binary output and handle specially
