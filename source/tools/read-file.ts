@@ -95,9 +95,7 @@ export const createReadFileTool = async (options: {
         abortSignal,
       );
 
-      validateByteLimit(file, effectiveEncoding, BYTE_LIMIT);
-
-      return file;
+      return applyByteLimit(file, effectiveEncoding, BYTE_LIMIT);
     },
   };
 };
@@ -170,21 +168,49 @@ async function readFileLines(
   return lines.join("\n");
 }
 
-// Validate that file content doesn't exceed byte limit
-function validateByteLimit(
-  file: string,
+// Truncate content to a byte limit, safely handling multi-byte encodings.
+// Returns the truncated content with a message indicating how much remains.
+function applyByteLimit(
+  content: string,
   encoding: BufferEncoding,
   maxBytes: number,
-): void {
-  const byteLength = Buffer.byteLength(file, encoding);
-  if (byteLength > maxBytes) {
-    const fileSizeKb = (byteLength / 1024).toFixed(1);
-    const limitKb = (maxBytes / 1024).toFixed(0);
-    throw new Error(
-      `File (${fileSizeKb}KB) exceeds the ${limitKb}KB read limit. To read this file, use one of these options:\n` +
-        "• Use startLine and lineCount to read specific portions (e.g., startLine: 1, lineCount: 100)\n" +
-        "• Use the Grep tool to search for specific content\n" +
-        `• Use the Bash tool with 'tail' or 'head' commands`,
+): string {
+  const byteLength = Buffer.byteLength(content, encoding);
+  if (byteLength <= maxBytes) {
+    return content;
+  }
+
+  const truncated = truncateToByteLimit(content, encoding, maxBytes);
+  const truncatedBytes = Buffer.byteLength(truncated, encoding);
+  const remainingBytes = byteLength - truncatedBytes;
+  const limitKb = (maxBytes / 1024).toFixed(0);
+  const remainingKb = (remainingBytes / 1024).toFixed(1);
+
+  const message = [
+    "",
+    `[File truncated at ${limitKb}KB limit. ${remainingKb}KB remaining.]`,
+    "To read more, use the startLine and lineCount parameters, or use Bash with head/tail/sed.",
+  ].join("\n");
+
+  return truncated + message;
+}
+
+// Safely truncate a string to a maximum number of bytes in the given encoding.
+// Uses TextDecoder for UTF-8 to avoid splitting multi-byte characters.
+function truncateToByteLimit(
+  content: string,
+  encoding: BufferEncoding,
+  maxBytes: number,
+): string {
+  if (encoding === "utf-8" || encoding === "utf8") {
+    const decoder = new TextDecoder("utf-8");
+    return decoder.decode(
+      Buffer.from(content, encoding).subarray(0, maxBytes),
+      {
+        stream: true,
+      },
     );
   }
+
+  return Buffer.from(content, encoding).toString(encoding, 0, maxBytes);
 }
