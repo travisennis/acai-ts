@@ -257,6 +257,10 @@ const MAX_OUTPUT_SIZE = 50 * 1024;
  * The footer is always appended at the end, even when output is truncated.
  */
 function truncateOutput(output: string, footer: string): string {
+  if (output.length === 0) {
+    return footer;
+  }
+
   if (output.length <= MAX_OUTPUT_SIZE) {
     return `${output}\n${footer}`;
   }
@@ -374,20 +378,18 @@ export const createBashTool = async (options: {
     const metadataFooter = `[exit:${exitCode} | ${timeStr}]`;
 
     if (exitCode !== 0) {
-      // Differentiate between process killed (timeout/abort) and normal non-zero exit.
-      // Non-zero exit (e.g., grep/rg finding no matches) returns output for LLM to interpret.
-      // Killed processes (timeout, abort) throw since the command never completed.
       const execError = error as
         | (Error & { killed?: boolean; signal?: string | null })
         | undefined;
       const wasKilled = execError?.killed === true || execError?.signal != null;
-      const combinedOutput = output || error?.message || "";
 
       if (wasKilled) {
-        throw new Error(truncateOutput(combinedOutput, metadataFooter));
+        const timeoutOutput =
+          output || `Command timed out after ${timeout.toLocaleString()}ms`;
+        return truncateOutput(timeoutOutput, metadataFooter);
       }
 
-      return truncateOutput(combinedOutput, metadataFooter);
+      return truncateOutput(output, metadataFooter);
     }
 
     // Check for binary output and handle specially

@@ -115,54 +115,62 @@ describe("bash tool abort signal handling", async () => {
 });
 
 describe("bash tool timeout handling", async () => {
-  it("returns error message to agent when command times out", async () => {
+  it("returns timeout output with exit metadata when command times out", async () => {
     const tool = await createBashTool({
       workspace: { primaryDir: baseDir, allowedDirs: [baseDir] },
     });
     const { execute } = tool;
 
-    // Use a very short timeout that will definitely trigger
-    const result = execute(
+    const result = await execute(
       { command: "sleep 5", cwd: baseDir, timeout: 10 },
       { toolCallId: "t1", messages: [] },
     );
 
-    let errorMessage = "";
-    try {
-      await result;
-      assert.fail("Should have thrown");
-    } catch (error) {
-      errorMessage = error instanceof Error ? error.message : String(error);
-    }
-    // Should contain some error message (not empty)
-    assert.ok(
-      errorMessage.length > 0,
-      `Error message should not be empty, got: ${errorMessage}`,
-    );
-    // Should mention the command that failed
-    assert.ok(
-      errorMessage.includes("sleep"),
-      `Error message should mention the command, got: ${errorMessage}`,
-    );
+    assert.ok(result.includes("Command timed out after 10ms"));
+    assert.ok(result.includes("[exit:1"));
+    assert.ok(!result.includes("Command failed"));
   });
 
-  it("returns exit code info when command fails", async () => {
+  it("returns only exit metadata for silent non-zero exits", async () => {
     const tool = await createBashTool({
       workspace: { primaryDir: baseDir, allowedDirs: [baseDir] },
     });
     const { execute } = tool;
 
-    // Run a command that will fail
     const result = await execute(
       { command: "exit 1", cwd: baseDir, timeout: 1000 },
       { toolCallId: "t1", messages: [] },
     );
 
-    // Should not throw -- non-zero exit is returned as output
     assert.ok(
-      result.includes("[exit:1"),
+      result.startsWith("[exit:1"),
+      `Result should only contain exit metadata, got: ${result}`,
+    );
+    assert.ok(!result.includes("Command failed"));
+  });
+
+  it("returns command output and exit metadata when command fails", async () => {
+    const tool = await createBashTool({
+      workspace: { primaryDir: baseDir, allowedDirs: [baseDir] },
+    });
+    const { execute } = tool;
+
+    const result = await execute(
+      {
+        command:
+          "node -e \"console.error('expected stderr'); process.exit(2)\"",
+        cwd: baseDir,
+        timeout: 1000,
+      },
+      { toolCallId: "t1", messages: [] },
+    );
+
+    assert.ok(result.includes("expected stderr"));
+    assert.ok(
+      result.includes("[exit:2"),
       `Result should mention exit code, got: ${result}`,
     );
+    assert.ok(!result.includes("Command failed"));
   });
 });
 
