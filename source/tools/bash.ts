@@ -381,7 +381,7 @@ export const createBashTool = async (options: {
         | (Error & { killed?: boolean; signal?: string | null })
         | undefined;
       const wasKilled = execError?.killed === true || execError?.signal != null;
-      const combinedOutput = output ?? error?.message ?? "";
+      const combinedOutput = output || error?.message || "";
 
       if (wasKilled) {
         throw new Error(truncateOutput(combinedOutput, metadataFooter));
