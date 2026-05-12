@@ -15,7 +15,7 @@ This app, acai-ts, is an AI-assistant CLI tool built with TypeScript. It is an a
 - **Run All Tests:** `npm test`
 - **Run Single Test:** `node --no-warnings --test test/path/to/test.ts`
 - **Find Unused Code/Deps:** `npm run knip`
-- **Full Check (typecheck, lint, format):** `npm run check` 
+- **Full Check (typecheck, lint, format):** `npm run check`
 
 ## Running the App
 
@@ -65,7 +65,14 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/). 
 
 ## ExecPlans
 
-When writing complex features or significant refactors, use an ExecPlan (as described in .agent/PLANS.md) from design to implementation.
+When writing complex features or significant refactors, use an ExecPlan (as described in `.agents/PLANS.md`) from design to implementation.
+
+## Agent Workflow
+
+- When asked to create, choose, update, or work on a task, first read `.agents/TASKS.md`, then use `.agents/.tasks/index.md` as the task queue and open the specific task file before acting.
+- When asked to create, update, organize, or use research, first read `.agents/RESEARCH.md`, then use `.agents/.research/index.md` as the research map and open the relevant research file before acting.
+- `Effort: L` and `Effort: XL` tasks require an ExecPlan before implementation. Create or update plans under `.agents/exec-plans/active/` and keep `.agents/exec-plans/active/index.md` current.
+- Do not commit or push code unless explicitly asked to.
 
 ## Important Notes
 
