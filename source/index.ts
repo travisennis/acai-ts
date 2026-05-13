@@ -9,7 +9,12 @@ import { Agent } from "./agent/index.ts";
 import { Cli } from "./cli/index.ts";
 import { readStdinWithLimits } from "./cli/stdin.ts";
 import { CommandManager } from "./commands/manager.ts";
-import { type Config, config, type DirectoryProvider } from "./config/index.ts";
+import {
+  type Config,
+  config,
+  type DirectoryProvider,
+  parseSkillsPath,
+} from "./config/index.ts";
 import { ModelManager } from "./models/manager.ts";
 import { isSupportedModel, type ModelName } from "./models/providers.ts";
 import { PromptManager } from "./prompts/manager.ts";
@@ -664,6 +669,15 @@ async function main() {
           ? path.join(os.homedir(), dir.slice(1))
           : dir;
       const resolvedDir = path.resolve(expandedDir);
+      if (!workspace.allowedDirs.includes(resolvedDir)) {
+        workspace.allowedDirs.push(resolvedDir);
+      }
+    }
+
+    // Add configured skills paths to allowed directories so scripts within
+    // them can be executed by the Bash tool.
+    const skillsPathConfig = appConfig.skills?.path ?? "";
+    for (const resolvedDir of parseSkillsPath(skillsPathConfig)) {
       if (!workspace.allowedDirs.includes(resolvedDir)) {
         workspace.allowedDirs.push(resolvedDir);
       }
