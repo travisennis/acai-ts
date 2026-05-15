@@ -69,9 +69,10 @@ When writing complex features or significant refactors, use an ExecPlan (as desc
 
 ## Agent Workflow
 
-- When asked to create, choose, update, or work on a task, first read `.agents/TASKS.md`, then use `.agents/.tasks/index.md` as the task queue and open the specific task file before acting.
+- When asked to create, choose, update, or work on a task, first read `.agents/TASKS.md`, then use `.agents/.tasks/index.md` as the task queue and open the specific task file in `.agents/.tasks/active/` (or `.agents/.tasks/completed/`) before acting.
 - When asked to create, update, organize, or use research, first read `.agents/RESEARCH.md`, then use `.agents/.research/index.md` as the research map and open the relevant research file before acting.
 - `Effort: L` and `Effort: XL` tasks require an ExecPlan before implementation. Create or update plans under `.agents/exec-plans/active/` and keep `.agents/exec-plans/active/index.md` current.
+- Do not edit generated task indexes (`.agents/.tasks/index.md`, `.agents/.tasks/active/index.md`, `.agents/.tasks/completed/index.md`) by hand. Update task files (and their front matter) and run `npm run task-index` to regenerate. Use `npm run task-index:check` to verify they are current.
 - Do not commit or push code unless explicitly asked to.
 
 ## Important Notes

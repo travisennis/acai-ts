@@ -56,7 +56,9 @@
     "typecheck": "tsc --noEmit --pretty -p tsconfig.json",
     "typecheck:staged": "npm run typecheck",
     "check": "npm run typecheck && npm run lint:fix && npm run format",
-    "lint:length": "find source -name '*.ts' | xargs -I{} awk 'END{if(NR>500)print FILENAME\": \"NR\" lines\"}' {}"
+    "lint:length": "find source -name '*.ts' | xargs -I{} awk 'END{if(NR>500)print FILENAME\": \"NR\" lines\"}' {}",
+    "task-index": "python3 .agents/scripts/generate-task-indexes.py",
+    "task-index:check": "python3 .agents/scripts/generate-task-indexes.py --check"
   },
   "dependencies": {
     "@ai-sdk/alibaba": "^1.0.23",

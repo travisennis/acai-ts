@@ -1,19 +1,37 @@
 # Task Workflow
 
-This document explains how tasks are handled in this repository. When you are asked to create, choose, update, or work on a task, read this file first, then use `.agents/.tasks/index.md` as the task queue and open the relevant task file under `.agents/.tasks/`.
+This document explains how tasks are handled in this repository. When you are asked to create, choose, update, or work on a task, read this file first, then use `.agents/.tasks/index.md` as the task queue and open the relevant task file under `.agents/.tasks/active/` or `.agents/.tasks/completed/`.
 
 ## Task Storage
 
-Tasks live in `.agents/.tasks/`. Each task is a Markdown file named with a stable task id, such as `046.md` or `109.md`. Parent tasks may have lettered child tasks, such as `047a.md`, `047b.md`, and `047c.md`.
+Tasks live in `.agents/.tasks/active/` while they are not complete, and `.agents/.tasks/completed/` after they are finished. Each task is a Markdown file named with a stable task id, such as `046.md` or `109.md`. Parent tasks may have lettered child tasks, such as `047a.md`, `047b.md`, and `047c.md`.
 
-The file `.agents/.tasks/index.md` is the queue and summary. It lists status counts, the next ready work, parent trackers, and all known tasks. Use the index to orient yourself, but always open the task file before making changes or deciding the implementation approach.
+The file `.agents/.tasks/index.md` is the generated queue and summary. It lists status counts, the next ready work, blocked or untriaged tasks, parent trackers, and links to the generated active and completed indexes. Use the index to orient yourself, but always open the task file before making changes or deciding the implementation approach.
+
+The generated indexes are:
+
+- `.agents/.tasks/index.md` for the concise dashboard and next ready queue.
+- `.agents/.tasks/active/index.md` for all active, blocked, open, pending, and tracking tasks.
+- `.agents/.tasks/completed/index.md` for historical lookup of completed tasks.
+
+Do not edit generated indexes by hand. After changing task metadata, moving tasks between `active/` and `completed/`, or creating tasks, run:
+
+```bash
+npm run task-index
+```
+
+This wraps `python3 .agents/scripts/generate-task-indexes.py`. To check that generated indexes are current without rewriting them, run:
+
+```bash
+npm run task-index:check
+```
 
 ## Choosing Work
 
 If the user names a task id or title, work from that task even if another task is higher in the queue. If the user asks for the next task, choose from `.agents/.tasks/index.md` using these rules:
 
 1. Prefer the lowest priority number first: `P0`, then `P1`, `P2`, `P3`, and `P4`.
-2. Skip tasks marked `Completed`, `Blocked`, or `Tracking`.
+2. Skip tasks marked `Completed`, `Blocked`, `Open`, or `Tracking`.
 3. Check dependencies before starting. If a dependency is incomplete, do the dependency first or tell the user why the requested task is blocked.
 4. Treat parent tracker tasks as planning references. Work their child tasks in the order stated by the parent tracker or the index.
 
@@ -21,16 +39,31 @@ Before editing code, read the full task file and inspect the relevant source fil
 
 ## Creating Tasks
 
-Create new tasks in `.agents/.tasks/` with the next available three-digit id. For example, if the highest numbered task is `109.md`, the next unrelated task is `110.md`. Use letter suffixes only for subtasks that belong to a parent tracker, such as `110a.md`.
+Create new tasks in `.agents/.tasks/active/` with the next available three-digit id across both `active/` and `completed/`. For example, if the highest numbered task is `109.md`, the next unrelated task is `110.md`. Use letter suffixes only for subtasks that belong to a parent tracker, such as `110a.md`.
 
 A new task should include enough context for another agent to work it later without the original conversation. Use this shape unless the existing task family clearly uses a narrower format:
 
+- Front matter with id, title, status, priority, effort, ExecPlan, and dependencies.
 - Title as the first heading.
-- Status, created date when useful, priority when known, effort, ExecPlan, and dependencies when known.
+- Created date when useful.
 - Summary or problem statement.
 - Relevant files, modules, commands, or observed behavior.
 - Fix direction or implementation notes.
 - Acceptance notes describing how to know the task is complete.
+
+Use this front matter shape so the indexes can be generated:
+
+```markdown
+---
+id: 001
+title: Short Imperative Task Title
+status: Pending
+priority: P2
+effort: S
+exec_plan: none
+depends_on: none
+---
+```
 
 Use this priority scale:
 
@@ -58,16 +91,16 @@ Use this standard status set:
 
 ## Updating Tasks
 
-Tasks are working records. When you complete a task, discover it is blocked, change its priority, add or finish dependencies, or split it into subtasks, update both the task file and `.agents/.tasks/index.md` in the same change.
+Tasks are working records. When you complete a task, discover it is blocked, change its priority, add or finish dependencies, or split it into subtasks, update the task file front matter and regenerate indexes.
 
-Keep the index consistent with the task files:
+Keep task storage consistent with status:
 
-- Update the status summary counts.
-- Update the next ready queue when readiness changes.
-- Update parent tracker rows when child ordering or status changes.
-- Update the all-tasks table for title, status, priority, effort, ExecPlan, and dependencies.
+- Non-completed tasks stay in `.agents/.tasks/active/`.
+- Completed tasks move to `.agents/.tasks/completed/`.
+- When moving a task, keep the same filename so the stable task id is preserved.
+- After moving or editing task metadata, regenerate the indexes with `npm run task-index`.
 
-There is no task-index generator checked into this repository. Treat index maintenance as manual unless a generator is added later.
+If a generated index is stale, do not patch the index directly. Fix the task file metadata or location, then rerun the generator.
 
 ## Working a Task
 
@@ -81,4 +114,4 @@ Before implementing any task, check its `Effort` field.
 - Update `.agents/exec-plans/active/index.md` when creating, completing, or moving an ExecPlan.
 - For `Effort: S` or `Effort: M`, an ExecPlan is optional unless the task is a significant refactor, cross-cutting behavior change, or has substantial unknowns.
 
-After finishing a task that changes code, config, or dependencies, run the project's Full Check from `AGENTS.md`. For docs-only task updates, verify the Markdown and links; full checks are not required unless code, config, or dependency files changed.
+After finishing a task that changes code, config, or dependencies, run the project's Full Check from `AGENTS.md` (`npm run check`). For docs-only task updates, verify Markdown and links; broad validation is not required unless code, config, or dependency files changed.
