@@ -661,8 +661,9 @@ async function main() {
       resumeSessionId,
     );
 
-    // Add config-sourced allowed directories
-    const configAllowedDirs = appConfig.allowedDirs ?? [];
+    // Add config-sourced allowed directories (merged from app and project configs)
+    const mergedConfig = await config.getConfig();
+    const configAllowedDirs = mergedConfig.allowedDirs ?? [];
     for (const dir of configAllowedDirs) {
       const expandedDir =
         dir.startsWith("~/") || dir === "~"
@@ -676,7 +677,7 @@ async function main() {
 
     // Add configured skills paths to allowed directories so scripts within
     // them can be executed by the Bash tool.
-    const skillsPathConfig = appConfig.skills?.path ?? "";
+    const skillsPathConfig = mergedConfig.skills?.path ?? "";
     for (const resolvedDir of parseSkillsPath(skillsPathConfig)) {
       if (!workspace.allowedDirs.includes(resolvedDir)) {
         workspace.allowedDirs.push(resolvedDir);
@@ -684,7 +685,7 @@ async function main() {
     }
 
     // Add logs directory to allowed directories if configured
-    const logsPath = (await config.getConfig()).logs?.path;
+    const logsPath = mergedConfig.logs?.path;
     if (logsPath) {
       // Expand ~ to home directory before resolving
       const expandedLogsPath =

@@ -85,9 +85,10 @@ export function isPathWithinAllowedDirs(
   requestedPath: string,
   allowedDirs: string[],
 ): boolean {
-  return allowedDirs.some((allowedDir) =>
-    isPathWithinBaseDir(requestedPath, allowedDir),
-  );
+  return allowedDirs.some((allowedDir) => {
+    const expandedDir = expandHome(allowedDir);
+    return isPathWithinBaseDir(requestedPath, expandedDir);
+  });
 }
 
 async function resolveValidAncestor(
@@ -171,7 +172,8 @@ export async function validatePath(
   // Resolve and normalize all allowed directories
   const normalizedAllowedDirs = await Promise.all(
     allowedDirectories.map(async (dir) => {
-      let normalizedDir = normalizePath(path.resolve(dir));
+      const expandedDir = expandHome(dir);
+      let normalizedDir = normalizePath(path.resolve(expandedDir));
       // Try to resolve real path for allowedDirectory when it exists to handle symlinked roots
       try {
         const stats = await fs.stat(normalizedDir);

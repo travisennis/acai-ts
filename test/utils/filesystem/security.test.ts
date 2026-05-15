@@ -3,7 +3,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 
-import { validatePath } from "../../../source/utils/filesystem/security.ts";
+import {
+  isPathWithinAllowedDirs,
+  validatePath,
+} from "../../../source/utils/filesystem/security.ts";
 import { createTempDir } from "../../utils/test-fixtures.ts";
 
 const projectRoot = process.cwd();
@@ -124,6 +127,49 @@ await test("validatePath throws when abort signal is already aborted", async () 
     assert.ok((err as Error).message.includes("aborted"));
   }
   assert.equal(threw, true);
+});
+
+await test("isPathWithinAllowedDirs expands ~ in allowedDirs", () => {
+  const homeDir = process.env["HOME"] || process.env["USERPROFILE"] || "/root";
+  const expandedDir = path.join(homeDir, ".config");
+
+  // Tilde-prefixed allowed dir should match the expanded absolute path
+  const result = isPathWithinAllowedDirs(
+    path.join(expandedDir, "somefile.txt"),
+    ["~/.config"],
+  );
+  assert.equal(result, true);
+
+  // Tilde-prefixed allowed dir should NOT match a path outside it
+  const resultOutside = isPathWithinAllowedDirs("/etc/hosts", ["~/.config"]);
+  assert.equal(resultOutside, false);
+});
+
+await test("isPathWithinAllowedDirs handles bare ~ as allowed dir", () => {
+  const homeDir = process.env["HOME"] || process.env["USERPROFILE"] || "/root";
+
+  const result = isPathWithinAllowedDirs(path.join(homeDir, "somefile.txt"), [
+    "~",
+  ]);
+  assert.equal(result, true);
+});
+
+await test("validatePath expands ~ in allowed directories", async () => {
+  const homeDir = process.env["HOME"] || process.env["USERPROFILE"] || "/root";
+  const testDirName = `.acai-ci-tilde-expand-${Date.now()}`;
+  const expandedDir = path.join(homeDir, testDirName);
+  await fs.mkdir(expandedDir, { recursive: true });
+
+  try {
+    const testFile = path.join(expandedDir, "test.txt");
+    await fs.writeFile(testFile, "ok");
+
+    // Use tilde-prefixed path as allowed directory
+    const resolved = await validatePath(testFile, `~/${testDirName}`);
+    assert.equal(path.resolve(resolved), path.resolve(testFile));
+  } finally {
+    await fs.rm(expandedDir, { recursive: true, force: true });
+  }
 });
 
 await test("validatePath accepts array of allowed directories", async () => {
