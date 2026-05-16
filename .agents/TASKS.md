@@ -34,6 +34,7 @@ If the user names a task id or title, work from that task even if another task i
 2. Skip tasks marked `Completed`, `Blocked`, `Open`, or `Tracking`.
 3. Check dependencies before starting. If a dependency is incomplete, do the dependency first or tell the user why the requested task is blocked.
 4. Treat parent tracker tasks as planning references. Work their child tasks in the order stated by the parent tracker or the index.
+5. Use task labels to filter by type, area, or risk when the user asks for focused work.
 
 Before editing code, read the full task file and inspect the relevant source files. If the task is vague, stale, or conflicts with the current code, update the task with the discovery or ask the user for the missing product decision.
 
@@ -60,6 +61,7 @@ title: Short Imperative Task Title
 status: Pending
 priority: P2
 effort: S
+labels: type:task, area:cli
 exec_plan: none
 depends_on: none
 ---
@@ -81,6 +83,14 @@ Use this effort scale:
 - `L` means a larger feature, refactor, or behavior change that needs an ExecPlan before implementation.
 - `XL` means a broad or high-risk feature, refactor, or behavior change that needs an ExecPlan before implementation.
 
+Use labels to make work easier to filter and route. Prefer a small set of stable labels over one-off tags:
+
+- Type labels: `type:bug`, `type:feature`, `type:task`, `type:docs`, `type:maintenance`, `type:refactor`, `type:test`, `type:security`.
+- Area labels: `area:cli`, `area:agent`, `area:tools`, `area:config`, `area:session`, `area:model`, `area:prompts`, `area:logger`, `area:output`, `area:ci`, `area:deps`, `area:dev-env`.
+- Risk labels: `risk:breaking-change`, `risk:security-sensitive`, `risk:external-service`, `risk:migration`, `risk:release`.
+
+Every task should have at least one `type:*` label and one `area:*` label. Add `risk:*` labels only when they help reviewers or agents choose validation depth.
+
 Use this standard status set:
 
 - `Open` means newly captured work that still needs triage before it is ready for the queue.
@@ -91,7 +101,7 @@ Use this standard status set:
 
 ## Updating Tasks
 
-Tasks are working records. When you complete a task, discover it is blocked, change its priority, add or finish dependencies, or split it into subtasks, update the task file front matter and regenerate indexes.
+Tasks are working records. When you complete a task, discover it is blocked, change its priority, revise labels, add or finish dependencies, or split it into subtasks, update the task file front matter and regenerate indexes.
 
 Keep task storage consistent with status:
 

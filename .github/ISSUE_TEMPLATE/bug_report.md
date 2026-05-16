@@ -31,3 +31,5 @@ If applicable, add screenshots to help explain your problem.
 
 ## Additional Context
 Add any other context about the problem here.
+
+**Suggested Labels:** See `.agents/TASKS.md` for the label taxonomy. Use `type:bug` and the `area:*` labels that match this issue.

@@ -20,3 +20,5 @@ What should the documentation say instead?
 
 ## Additional Context
 Add any other context about the documentation issue here.
+
+**Suggested Labels:** See `.agents/TASKS.md` for the label taxonomy. Use `type:docs` and the `area:*` labels that match this issue.

@@ -14,11 +14,11 @@ Active tasks include open, pending, blocked, and tracking work.
 
 ## Tasks
 
-| Task | Title | Status | Priority | Effort | ExecPlan | Depends on |
-| ---- | ----- | ------ | -------- | ------ | -------- | ---------- |
-| [001](001.md) | Add per-model-request timing telemetry | Pending | P1 | M | none | none |
-| [002](002.md) | Log per-turn input token time series | Pending | P2 | S | none | none |
-| [003](003.md) | Log tool-call serialized size | Pending | P2 | S | none | 001 |
-| [004](004.md) | Surface Bash exit code and duration prominently in tool result | Pending | P2 | S | none | none |
-| [005](005.md) | Track edits-reverted-within-session metric | Pending | P3 | M | none | none |
-| [006](006.md) | Build a tool-call parallelism benchmark harness | Pending | P2 | M | none | 003 |
+| Task | Title | Status | Priority | Effort | Labels | ExecPlan | Depends on |
+| ---- | ----- | ------ | -------- | ------ | ------ | -------- | ---------- |
+| [001](001.md) | Add per-model-request timing telemetry | Pending | P1 | M | type:feature, area:agent, area:model | none | none |
+| [002](002.md) | Log per-turn input token time series | Pending | P2 | S | type:feature, area:session, area:model | none | none |
+| [003](003.md) | Log tool-call serialized size | Pending | P2 | S | type:feature, area:tools, area:agent | none | 001 |
+| [004](004.md) | Surface Bash exit code and duration prominently in tool result | Pending | P2 | S | type:feature, area:tools | none | none |
+| [005](005.md) | Track edits-reverted-within-session metric | Pending | P3 | M | type:feature, area:tools, area:session | none | none |
+| [006](006.md) | Build a tool-call parallelism benchmark harness | Pending | P2 | M | type:feature, area:agent, area:tools | none | 003 |

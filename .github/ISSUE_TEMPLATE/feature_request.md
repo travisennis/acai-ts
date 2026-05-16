@@ -23,3 +23,5 @@ Add any other context or screenshots about the feature request here.
 
 ## Implementation Notes
 Any technical considerations or implementation details you'd like to share.
+
+**Suggested Labels:** See `.agents/TASKS.md` for the label taxonomy. Use `type:feature` and the `area:*` labels that match this request.

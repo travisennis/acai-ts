@@ -27,6 +27,7 @@ class Task:
     status: str
     priority: str
     effort: str
+    labels: str
     exec_plan: str
     depends_on: str
     path: Path
@@ -93,6 +94,7 @@ def parse_task(path: Path, bucket: str) -> Task:
         status=metadata.get("status") or parse_label(text, "Status") or "-",
         priority=metadata.get("priority") or parse_label(text, "Priority") or "-",
         effort=metadata.get("effort") or parse_label(text, "Effort") or "-",
+        labels=metadata.get("labels") or parse_label(text, "Labels") or "-",
         exec_plan=metadata.get("exec_plan") or parse_label(text, "ExecPlan") or "-",
         depends_on=metadata.get("depends_on") or parse_label(text, "Depends on") or "-",
         path=path,
@@ -122,14 +124,14 @@ def md_cell(value: str) -> str:
 
 def table(tasks: list[Task], from_dir: Path) -> list[str]:
     lines = [
-        "| Task | Title | Status | Priority | Effort | ExecPlan | Depends on |",
-        "| ---- | ----- | ------ | -------- | ------ | -------- | ---------- |",
+        "| Task | Title | Status | Priority | Effort | Labels | ExecPlan | Depends on |",
+        "| ---- | ----- | ------ | -------- | ------ | ------ | -------- | ---------- |",
     ]
     for task in tasks:
         lines.append(
             f"| {md_link(task, from_dir)} | {md_cell(task.title)} | {md_cell(task.status)} | "
             f"{md_cell(task.priority)} | {md_cell(task.effort)} | "
-            f"{md_cell(task.exec_plan)} | {md_cell(task.depends_on)} |"
+            f"{md_cell(task.labels)} | {md_cell(task.exec_plan)} | {md_cell(task.depends_on)} |"
         )
     return lines
 
@@ -174,15 +176,19 @@ def render_root_index(tasks: list[Task]) -> str:
         "3. Skip tasks marked `Completed`, `Blocked`, `Open`, or `Tracking`.",
         "4. Check dependencies before starting. If a dependency is incomplete, do that dependency first.",
         "5. Check the `Effort` column before implementation. `L` and `XL` tasks require an ExecPlan.",
+        "6. Use the `Labels` column to filter by type, area, and risk when the user asks for focused work.",
         "",
         "## Next Ready Queue",
         "",
     ]
     if ready:
         for index, task in enumerate(ready[:MAX_READY_TASKS], start=1):
+            details = f"{task.priority}, {task.effort}"
+            if task.labels != "-":
+                details = f"{details}; {task.labels}"
             lines.append(
                 f"{index}. {md_link(task, TASKS_DIR)} - {task.title} "
-                f"({task.priority}, {task.effort})"
+                f"({details})"
             )
         if len(ready) > MAX_READY_TASKS:
             lines.append(
