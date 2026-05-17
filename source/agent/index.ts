@@ -187,7 +187,7 @@ export class Agent {
 
     this._state.timestamps.start = performance.now();
 
-    const { modelManager, sessionManager, tokenTracker } = this.opts;
+    const { modelManager, sessionManager } = this.opts;
     const maxIterations =
       args.maxIterations ?? this.config.loop.maxIterations ?? 200;
     const maxRetries = args.maxRetries ?? 2;
@@ -327,8 +327,6 @@ export class Agent {
         const finishReason = await result.finishReason;
 
         if (finishReason !== "tool-calls") {
-          // Track aggregate usage before yielding agent-stop so footer can display it
-          tokenTracker.trackUsage("repl", this._state.totalUsage);
           yield {
             type: "agent-stop",
           };
@@ -433,8 +431,6 @@ export class Agent {
     }
     // Emit agent-stop if loop ended without emitting a terminal event (maxIterations reached)
     if (!hasEmittedTerminalEvent) {
-      // Track aggregate usage before yielding agent-stop so footer can display it
-      tokenTracker.trackUsage("repl", this._state.totalUsage);
       yield {
         type: "agent-stop",
       };
@@ -620,6 +616,8 @@ export class Agent {
     this._state.totalUsage.cachedInputTokens += cacheReadTokens;
     this._state.totalUsage.inputTokenDetails.cacheReadTokens += cacheReadTokens;
     this._state.totalUsage.reasoningTokens += reasoningTokens;
+
+    this.opts.tokenTracker.trackUsage("repl", stepUsage);
 
     sessionManager.recordTurnUsage({
       inputTokens,
