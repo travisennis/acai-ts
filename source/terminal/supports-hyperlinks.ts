@@ -29,7 +29,7 @@ function parseVersion(versionString = ""): Version {
   };
 }
 
-function createSupportsHyperlinks(stream: { isTty?: boolean }): boolean {
+export function createSupportsHyperlinks(stream: { isTty?: boolean }): boolean {
   const {
     CI,
     CURSOR_TRACE_ID,
@@ -79,52 +79,101 @@ function createSupportsHyperlinks(stream: { isTty?: boolean }): boolean {
     return false;
   }
 
-  if (TERM_PROGRAM) {
-    const version = parseVersion(TERM_PROGRAM_VERSION);
+  const termProgramResult = checkTermProgram(
+    TERM_PROGRAM,
+    TERM_PROGRAM_VERSION,
+    CURSOR_TRACE_ID,
+  );
+  if (termProgramResult !== undefined) {
+    return termProgramResult;
+  }
 
-    switch (TERM_PROGRAM) {
-      case "iTerm.app": {
-        if (version.major === 3) {
-          return version.minor >= 1;
-        }
+  const vteResult = checkVteVersion(VTE_VERSION);
+  if (vteResult !== undefined) {
+    return vteResult;
+  }
 
-        return version.major > 3;
+  const termResult = checkTerm(TERM);
+  if (termResult !== undefined) {
+    return termResult;
+  }
+
+  return false;
+}
+
+/**
+ * Check TERM_PROGRAM-based hyperlink support.
+ * Returns boolean if a known terminal is matched, undefined otherwise.
+ */
+function checkTermProgram(
+  termProgram: string | undefined,
+  versionString: string | undefined,
+  cursorTraceId: string | undefined,
+): boolean | undefined {
+  if (!termProgram) {
+    return undefined;
+  }
+
+  const version = parseVersion(versionString);
+
+  switch (termProgram) {
+    case "iTerm.app": {
+      if (version.major === 3) {
+        return version.minor >= 1;
       }
 
-      case "WezTerm": {
-        return version.major >= 20_200_620;
-      }
+      return version.major > 3;
+    }
 
-      case "vscode": {
-        // Cursor forked VS Code and supports hyperlinks in 0.x.x
-        if (CURSOR_TRACE_ID) {
-          return true;
-        }
+    case "WezTerm": {
+      return version.major >= 20_200_620;
+    }
 
-        // eslint-disable-next-line no-mixed-operators
-        return (
-          version.major > 1 || (version.major === 1 && version.minor >= 72)
-        );
-      }
-
-      case "ghostty": {
+    case "vscode": {
+      // Cursor forked VS Code and supports hyperlinks in 0.x.x
+      if (cursorTraceId) {
         return true;
       }
-      // No default
-    }
-  }
 
-  if (VTE_VERSION) {
-    // 0.50.0 was supposed to support hyperlinks, but throws a segfault
-    if (VTE_VERSION === "0.50.0") {
-      return false;
+      // eslint-disable-next-line no-mixed-operators
+      return (
+        version.major > 1 || (version.major === 1 && version.minor >= 72)
+      );
     }
 
-    const version = parseVersion(VTE_VERSION);
-    return version.major > 0 || version.minor >= 50;
+    case "ghostty": {
+      return true;
+    }
+    // No default
   }
 
-  switch (TERM) {
+  return undefined;
+}
+
+/**
+ * Check VTE_VERSION-based hyperlink support.
+ * Returns boolean if VTE_VERSION is set, undefined otherwise.
+ */
+function checkVteVersion(vteVersion: string | undefined): boolean | undefined {
+  if (!vteVersion) {
+    return undefined;
+  }
+
+  // 0.50.0 was supposed to support hyperlinks, but throws a segfault
+  if (vteVersion === "0.50.0") {
+    return false;
+  }
+
+  const version = parseVersion(vteVersion);
+  return version.major > 0 || version.minor >= 50;
+}
+
+/**
+ * Check TERM-based hyperlink support.
+ * Returns boolean if a known terminal is matched, undefined otherwise.
+ */
+function checkTerm(term: string | undefined): boolean | undefined {
+  switch (term) {
     case "alacritty": {
       // Support added in v0.11 (2022-10-13)
       return true;
@@ -132,7 +181,7 @@ function createSupportsHyperlinks(stream: { isTty?: boolean }): boolean {
     // No default
   }
 
-  return false;
+  return undefined;
 }
 
 export const supportsHyperlinks = {
