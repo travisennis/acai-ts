@@ -322,7 +322,7 @@ async function initializeModelManager(
 ): Promise<ModelManager> {
   const chosenModel: ModelName = isSupportedModel(flags.model)
     ? flags.model
-    : "opencode-go:glm-5-1"; // DEFAULT MODEL
+    : "opencode-go:deepseek-v4-flash"; // DEFAULT MODEL
 
   const projectConfig = await config.getConfig();
   const devtoolsEnabled = projectConfig.devtools?.enabled ?? false;
