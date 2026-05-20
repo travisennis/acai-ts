@@ -59,7 +59,7 @@ async function getProjectContext() {
   };
 }
 
-export async function environmentInfo(
+async function environmentInfo(
   currentWorkingDir: string,
   allowedDirs: string[],
   logsPath?: string,

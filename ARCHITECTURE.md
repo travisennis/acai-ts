@@ -207,7 +207,6 @@ acai-ts
     │   │   ├── box.ts
     │   │   ├── editor.ts
     │   │   ├── footer.ts
-    │   │   ├── header.ts
     │   │   ├── input.ts
     │   │   ├── loader.ts
     │   │   ├── markdown.ts
@@ -479,7 +478,7 @@ acai-ts
 - **source/tui/editor-launcher.ts**: External editor launcher
 - **source/tui/autocomplete.ts**: Autocomplete system
 - **source/tui/autocomplete/**: Autocomplete providers
-- **source/tui/components/**: Reusable TUI components (box, editor, footer, header, input, loader, markdown, modal, notification, progress-bar, select-list, spacer, table, text, thinking-block, tool-execution, assistant-message, user-message, welcome)
+- **source/tui/components/**: Reusable TUI components (box, editor, footer, input, loader, markdown, modal, notification, progress-bar, select-list, spacer, table, text, thinking-block, tool-execution, assistant-message, user-message, welcome)
 
 ### Source - Utils
 

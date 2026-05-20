@@ -2,52 +2,8 @@ import * as fsPromises from "node:fs/promises";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
-export function toPath(urlOrPath: URL | string): string {
+function toPath(urlOrPath: URL | string): string {
   return urlOrPath instanceof URL ? fileURLToPath(urlOrPath) : urlOrPath;
-}
-
-/**
- * Converts Windows backslashes to POSIX forward slashes.
- * Preserves UNC paths and extended-length paths.
- * @param inputPath - Path to convert
- * @returns Path with forward slashes
- */
-export function slash(inputPath: string): string {
-  const isExtendedLengthPath = inputPath.startsWith("\\\\?\\");
-  const isUncPath = inputPath.startsWith("\\\\");
-
-  if (isExtendedLengthPath || isUncPath) {
-    return inputPath;
-  }
-
-  return inputPath.replace(/\\/g, "/");
-}
-
-/**
- * Checks if a path exists and is a directory.
- * @param filePath - Path to check (URL or string)
- * @returns Promise resolving to true if path is a directory
- * @throws TypeError if input is invalid
- */
-export async function isDirectory(filePath: URL | string): Promise<boolean> {
-  const resolvedPath = path.resolve(toPath(filePath));
-
-  if (typeof resolvedPath !== "string" || !resolvedPath.trim()) {
-    throw new TypeError(
-      `Expected a non-empty string or URL, got ${typeof filePath}`,
-    );
-  }
-
-  try {
-    const stats = await fsPromises.stat(resolvedPath);
-    return stats.isDirectory();
-  } catch (error) {
-    const err = error as NodeJS.ErrnoException;
-    if (err.code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
 }
 
 /**

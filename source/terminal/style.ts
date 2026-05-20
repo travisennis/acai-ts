@@ -49,7 +49,7 @@ interface Options {
   readonly level?: number; // 0 | 1 | 2 | 3 (ColorSupportLevel)
 }
 
-export interface StyleInstance {
+interface StyleInstance {
   (...text: unknown[]): string;
 
   /**

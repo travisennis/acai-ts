@@ -629,7 +629,7 @@ interface IgnoreOptions {
   allowRelativePaths?: boolean;
 }
 
-export class Ignore {
+class Ignore {
   private readonly _rules: RuleManager;
   private readonly _strictPathCheck: boolean;
   private _ignoreCache: Record<string, TestResult> = {};

@@ -1,7 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "project": ["source/**/*.{js,ts}!"],
-  "entry": ["source/index.ts!"],
+  "project": ["source/**/*.{js,ts}"],
   "ignoreDependencies": ["pino-pretty", "@commitlint/config-conventional"],
-  "ignoreBinaries": ["sg", "npm-check-updates", "jscpd"]
+  "ignoreBinaries": ["sg", "npm-check-updates", "jscpd", "python3"]
 }

@@ -14,7 +14,7 @@ import {
   modelRegistry,
 } from "./providers.ts";
 
-export function getLanguageModel({
+function getLanguageModel({
   model,
   app,
   stateDir,
@@ -43,7 +43,7 @@ export function getLanguageModel({
   return langModel;
 }
 
-export function getModelMetadata({ model }: { model: ModelName }) {
+function getModelMetadata({ model }: { model: ModelName }) {
   const modelMetadata = modelRegistry[model];
   return modelMetadata;
 }
