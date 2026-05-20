@@ -231,59 +231,68 @@ export function validatePaths(
   return { isValid: true };
 }
 
-export const resolveCwd = (
-  cwdInput: string | null | undefined,
+function resolveBaseDir(
+  allowedDirs: string[] | undefined,
   workingDir: string,
-  allowedDirs?: string[],
-): string => {
-  // Determine which directory to use as the base for resolving relative paths
-  // If allowedDirs is provided and non-empty, use the first allowed directory
-  // Otherwise use the workingDir parameter (backward compatibility)
+): string {
   const baseDirForResolution =
     allowedDirs && allowedDirs.length > 0 ? allowedDirs[0] : workingDir;
 
   const projectRootAbs = path.resolve(baseDirForResolution);
-  let projectRoot = projectRootAbs;
   try {
-    projectRoot = fs.realpathSync(projectRootAbs);
+    return fs.realpathSync(projectRootAbs);
   } catch {
-    // Fallback to resolved path
+    return projectRootAbs;
   }
+}
 
-  const raw =
-    typeof cwdInput === "string" && cwdInput.trim() !== ""
-      ? cwdInput.trim()
-      : projectRoot;
+function resolveRawCwd(
+  cwdInput: string | null | undefined,
+  projectRoot: string,
+): string {
+  if (typeof cwdInput === "string" && cwdInput.trim() !== "") {
+    const trimmed = cwdInput.trim();
+    return path.isAbsolute(trimmed) ? trimmed : path.resolve(projectRoot, trimmed);
+  }
+  return projectRoot;
+}
 
-  const abs = path.isAbsolute(raw) ? raw : path.resolve(projectRoot, raw);
-
-  let target = abs;
+function resolveRealTarget(raw: string): string {
   try {
-    target = fs.realpathSync(abs);
+    return fs.realpathSync(raw);
   } catch {
-    // If the path doesn't exist entirely, validate intended path
+    return raw;
   }
+}
 
-  // Check if within allowed directories if provided, otherwise check project root
-  if (allowedDirs && allowedDirs.length > 0) {
-    if (!isPathWithinAllowedDirs(target, allowedDirs)) {
-      throw new Error(
-        `Working directory must be within the allowed directories: ${allowedDirs.join(", ")}. Received: ${cwdInput ?? "<default>"} -> ${target}`,
-      );
-    }
-  } else {
-    // Fallback to original behavior: check within project root
-    const rel = path.relative(projectRoot, target);
-    const inside =
-      rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
-    if (!inside) {
-      throw new Error(
-        `Working directory must be within the project directory: ${projectRoot}. Received: ${cwdInput ?? "<default>"} -> ${target}`,
-      );
-    }
+function assertWithinAllowedDirs(
+  target: string,
+  allowedDirs: string[],
+  cwdInput: string | null | undefined,
+): void {
+  if (!isPathWithinAllowedDirs(target, allowedDirs)) {
+    throw new Error(
+      `Working directory must be within the allowed directories: ${allowedDirs.join(", ")}. Received: ${cwdInput ?? "<default>"} -> ${target}`,
+    );
   }
+}
 
-  // Check existence and that it's a directory
+function assertWithinProjectRoot(
+  target: string,
+  projectRoot: string,
+  cwdInput: string | null | undefined,
+): void {
+  const rel = path.relative(projectRoot, target);
+  const inside =
+    rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+  if (!inside) {
+    throw new Error(
+      `Working directory must be within the project directory: ${projectRoot}. Received: ${cwdInput ?? "<default>"} -> ${target}`,
+    );
+  }
+}
+
+function assertDirectoryExists(target: string): Stats {
   let stats: Stats;
   try {
     stats = fs.statSync(target);
@@ -291,7 +300,7 @@ export const resolveCwd = (
     const error = err as NodeJS.ErrnoException;
     if (error.code === "ENOENT") {
       throw new Error(
-        `Working directory does not exist: ${target} (from ${cwdInput ?? "<default>"})`,
+        `Working directory does not exist: ${target}`,
       );
     }
     throw error;
@@ -299,7 +308,25 @@ export const resolveCwd = (
   if (!stats.isDirectory()) {
     throw new Error(`Working directory is not a directory: ${target}`);
   }
+  return stats;
+}
 
+export const resolveCwd = (
+  cwdInput: string | null | undefined,
+  workingDir: string,
+  allowedDirs?: string[],
+): string => {
+  const projectRoot = resolveBaseDir(allowedDirs, workingDir);
+  const raw = resolveRawCwd(cwdInput, projectRoot);
+  const target = resolveRealTarget(raw);
+
+  if (allowedDirs && allowedDirs.length > 0) {
+    assertWithinAllowedDirs(target, allowedDirs, cwdInput);
+  } else {
+    assertWithinProjectRoot(target, projectRoot, cwdInput);
+  }
+
+  assertDirectoryExists(target);
   return target;
 };
 

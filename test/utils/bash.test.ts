@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { describe, it } from "node:test";
-import { isMutatingCommand, validatePaths } from "../../source/utils/bash.ts";
+import { isMutatingCommand, resolveCwd, validatePaths } from "../../source/utils/bash.ts";
 
 const baseDir = process.cwd();
 
@@ -708,5 +708,81 @@ describe("bash - isMutatingCommand", () => {
 
   it("does not flag sed without -i", () => {
     assert.strictEqual(isMutatingCommand("sed 's/a/b/' file.txt"), false);
+  });
+});
+
+describe("bash - resolveCwd", () => {
+  const originalCwd = process.cwd();
+  const workingDir = originalCwd;
+
+  it("returns absolute path when cwdInput is within allowedDirs", () => {
+    const result = resolveCwd(originalCwd, workingDir, [originalCwd]);
+    assert.strictEqual(result, originalCwd);
+  });
+
+  it("returns absolute path when cwdInput is within project root (no allowedDirs)", () => {
+    const result = resolveCwd(originalCwd, workingDir);
+    assert.strictEqual(result, originalCwd);
+  });
+
+  it("uses projectRoot when cwdInput is null", () => {
+    const result = resolveCwd(null, workingDir, [originalCwd]);
+    assert.strictEqual(result, originalCwd);
+  });
+
+  it("uses projectRoot when cwdInput is undefined", () => {
+    const result = resolveCwd(undefined, workingDir, [originalCwd]);
+    assert.strictEqual(result, originalCwd);
+  });
+
+  it("uses projectRoot when cwdInput is empty string", () => {
+    const result = resolveCwd("", workingDir, [originalCwd]);
+    assert.strictEqual(result, originalCwd);
+  });
+
+  it("resolves relative cwdInput against projectRoot", () => {
+    const result = resolveCwd("source", workingDir, [workingDir]);
+    assert.ok(result.endsWith("/source") || result.endsWith("\\source"));
+  });
+
+  it("throws when cwdInput is outside allowedDirs", () => {
+    assert.throws(
+      () => resolveCwd("/tmp", workingDir, [workingDir]),
+      /Working directory must be within the allowed directories/,
+    );
+  });
+
+  it("throws when cwdInput is outside project root (no allowedDirs)", () => {
+    assert.throws(
+      () => resolveCwd("/tmp", workingDir),
+      /Working directory must be within the project directory/,
+    );
+  });
+
+  it("throws when target does not exist", () => {
+    // Must pass a path that passes the allowedDirs check first
+    const nonExistent = path.join(workingDir, "__nonexistent_dir_test__");
+    assert.throws(
+      () => resolveCwd(nonExistent, workingDir, [workingDir]),
+      /Working directory does not exist/,
+    );
+  });
+
+  it("throws when target is not a directory", () => {
+    const testFile = path.join(workingDir, "package.json");
+    assert.throws(
+      () => resolveCwd(testFile, workingDir, [workingDir]),
+      /Working directory is not a directory/,
+    );
+  });
+
+  it("uses first allowedDir as base when allowedDirs is non-empty", () => {
+    const result = resolveCwd(null, workingDir, [workingDir]);
+    assert.strictEqual(result, workingDir);
+  });
+
+  it("uses workingDir as base when allowedDirs is empty array", () => {
+    const result = resolveCwd(null, workingDir, []);
+    assert.strictEqual(result, workingDir);
   });
 });
