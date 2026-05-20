@@ -10,55 +10,55 @@ function parseYaml(input: string): YamlObject {
     const line = lines[i];
     const trimmed = line.trim();
 
-    // Skip empty lines and comments
     if (!trimmed || trimmed.startsWith("#")) {
       i++;
       continue;
     }
 
-    // Check for key-value pair
     const colonIndex = line.indexOf(":");
     if (colonIndex === -1) {
       i++;
       continue;
     }
 
-    const indent = getIndent(line);
     const key = line.slice(0, colonIndex).trim();
     const afterColon = line.slice(colonIndex + 1).trim();
 
     if (afterColon) {
-      // Inline value
       result[key] = parseValue(afterColon);
       i++;
     } else {
-      // Check next line for nested content
-      i++;
-      if (i < lines.length) {
-        const nextLine = lines[i];
-        const nextIndent = getIndent(nextLine);
-        const nextTrimmed = nextLine.trim();
-
-        if (nextTrimmed.startsWith("-")) {
-          // Array
-          const [arr, newIndex] = parseArray(lines, i, nextIndent);
-          result[key] = arr;
-          i = newIndex;
-        } else if (nextIndent > indent && nextTrimmed.includes(":")) {
-          // Nested object
-          const [obj, newIndex] = parseObject(lines, i, nextIndent);
-          result[key] = obj;
-          i = newIndex;
-        } else {
-          result[key] = null;
-        }
-      } else {
-        result[key] = null;
-      }
+      const [value, newIndex] = parseNestedContent(lines, i + 1, getIndent(line));
+      result[key] = value;
+      i = newIndex;
     }
   }
 
   return result;
+}
+
+function parseNestedContent(
+  lines: string[],
+  startIdx: number,
+  parentIndent: number,
+): [YamlValue, number] {
+  if (startIdx >= lines.length) {
+    return [null, startIdx];
+  }
+
+  const nextLine = lines[startIdx];
+  const nextIndent = getIndent(nextLine);
+  const nextTrimmed = nextLine.trim();
+
+  if (nextTrimmed.startsWith("-")) {
+    return parseArray(lines, startIdx, nextIndent);
+  }
+
+  if (nextIndent > parentIndent && nextTrimmed.includes(":")) {
+    return parseObject(lines, startIdx, nextIndent);
+  }
+
+  return [null, startIdx];
 }
 
 function parseObject(
