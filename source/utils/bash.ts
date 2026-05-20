@@ -164,6 +164,49 @@ function computeSkipTokenMask(tokens: string[]): boolean[] {
   return skip;
 }
 
+function validateToken(
+  token: string,
+  allowedDirs: string[],
+  cwd: string,
+): { isValid: false; error: string } | { isValid: true } {
+  // Skip fully quoted tokens - they're string arguments, not paths
+  // (paths are typically unquoted or only quoted to handle spaces)
+  if (isFullyQuoted(token) && token.includes("\n")) {
+    return { isValid: true };
+  }
+
+  // Remove quotes for path checking
+  const cleanToken = stripQuotes(token);
+
+  // Skip if it's clearly not a path
+  if (
+    cleanToken.startsWith("-") ||
+    cleanToken.includes("://") ||
+    (!cleanToken.includes("/") && cleanToken !== "~")
+  ) {
+    return { isValid: true };
+  }
+
+  try {
+    // Expand ~ to home directory for proper validation
+    const expandedToken =
+      cleanToken.startsWith("~/") || cleanToken === "~"
+        ? path.join(os.homedir(), cleanToken.slice(1))
+        : cleanToken;
+
+    const resolvedPath = path.resolve(cwd, expandedToken);
+
+    if (!isPathWithinAllowedDirs(resolvedPath, allowedDirs)) {
+      return {
+        isValid: false,
+        error: `Path '${cleanToken}' resolves outside the allowed directories (${resolvedPath}). All paths must be within ${allowedDirs.join(", ")}`,
+      };
+    }
+  } catch (_e) {}
+
+  return { isValid: true };
+}
+
 // Validate path arguments to ensure they're within the project
 export function validatePaths(
   command: string,
@@ -181,40 +224,8 @@ export function validatePaths(
     // Skip tokens marked by command-aware logic
     if (skip[i]) continue;
 
-    // Skip fully quoted tokens - they're string arguments, not paths
-    // (paths are typically unquoted or only quoted to handle spaces)
-    if (isFullyQuoted(token) && token.includes("\n")) {
-      continue;
-    }
-
-    // Remove quotes for path checking
-    const cleanToken = stripQuotes(token);
-
-    // Skip if it's clearly not a path
-    if (
-      cleanToken.startsWith("-") ||
-      cleanToken.includes("://") ||
-      (!cleanToken.includes("/") && cleanToken !== "~")
-    ) {
-      continue;
-    }
-
-    try {
-      // Expand ~ to home directory for proper validation
-      const expandedToken =
-        cleanToken.startsWith("~/") || cleanToken === "~"
-          ? path.join(os.homedir(), cleanToken.slice(1))
-          : cleanToken;
-
-      const resolvedPath = path.resolve(cwd, expandedToken);
-
-      if (!isPathWithinAllowedDirs(resolvedPath, allowedDirs)) {
-        return {
-          isValid: false,
-          error: `Path '${cleanToken}' resolves outside the allowed directories (${resolvedPath}). All paths must be within ${allowedDirs.join(", ")}`,
-        };
-      }
-    } catch (_e) {}
+    const result = validateToken(token, allowedDirs, cwd);
+    if (!result.isValid) return result;
   }
 
   return { isValid: true };
