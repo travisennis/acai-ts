@@ -127,6 +127,33 @@ export function detectDestructiveCommand(command: string): CommandSafetyResult {
 }
 
 /**
+ * Check if a git restore command will discard uncommitted changes
+ * (restore without --staged and not creating a branch with -b)
+ */
+function isDestructiveGitRestore(lowerCommand: string): boolean {
+  if (!lowerCommand.startsWith("git restore")) return false;
+  if (lowerCommand.includes(" --staged")) return false;
+  const afterRestore = lowerCommand.substring("git restore".length).trim();
+  return !!afterRestore && !afterRestore.startsWith("-b");
+}
+
+/**
+ * Check if a git branch command uses -D (force delete without merge check)
+ */
+function isDestructiveGitBranchD(command: string, lowerCommand: string): boolean {
+  const branchMatch = lowerCommand.match(/git\s+branch\s+-([a-z])/);
+  if (!branchMatch) return false;
+
+  // Check if the flag in the original command is uppercase
+  const flagInOriginal = command.match(/git\s+branch\s+-([A-Za-z])/i);
+  if (!flagInOriginal) return false;
+  if (flagInOriginal[1] !== flagInOriginal[1].toUpperCase()) return false;
+
+  // Verify this is an actual git branch command, not text inside quotes
+  return isActualGitCommand(command, "branch");
+}
+
+/**
  * Detect destructive git commands
  */
 function detectDestructiveGitCommands(command: string): CommandSafetyResult {
@@ -156,21 +183,14 @@ function detectDestructiveGitCommands(command: string): CommandSafetyResult {
   }
 
   // Block git restore without --staged (discards uncommitted changes)
-  if (
-    lowerCommand.startsWith("git restore") &&
-    !lowerCommand.includes(" --staged")
-  ) {
-    // Check if it's restoring files (not branches)
-    const afterRestore = lowerCommand.substring("git restore".length).trim();
-    if (afterRestore && !afterRestore.startsWith("-b")) {
-      return {
-        blocked: true,
-        reason:
-          "git restore <file> (without --staged) discards uncommitted changes",
-        command,
-        tip: "Use 'git restore --staged <file>' to only unstage, or 'git stash' to save changes.",
-      };
-    }
+  if (isDestructiveGitRestore(lowerCommand)) {
+    return {
+      blocked: true,
+      reason:
+        "git restore <file> (without --staged) discards uncommitted changes",
+      command,
+      tip: "Use 'git restore --staged <file>' to only unstage, or 'git stash' to save changes.",
+    };
   }
 
   // Block git clean -f (force deletes untracked files)
@@ -201,30 +221,14 @@ function detectDestructiveGitCommands(command: string): CommandSafetyResult {
   }
 
   // Block git branch -D (force delete without merge check)
-  // Check for uppercase flag on original command (lowercase -d is safe)
-  // Match 'git' case-insensitively, but preserve case for the flag
-  // Only match if git branch appears as an actual command (not inside quoted strings)
-  const branchMatch = lowerCommand.match(/git\s+branch\s+-([a-z])/);
-  if (branchMatch) {
-    // Check if the flag in the original command is uppercase
-    const flagInOriginal = command.match(/git\s+branch\s+-([A-Za-z])/i);
-    if (
-      flagInOriginal &&
-      flagInOriginal[1] === flagInOriginal[1].toUpperCase()
-    ) {
-      // Verify this is an actual git branch command, not text inside quotes
-      // Check if git branch appears at start or after command separators
-      const isActualCommand = isActualGitCommand(command, "branch");
-      if (isActualCommand) {
-        return {
-          blocked: true,
-          reason:
-            "git branch -D force-deletes branches without checking if they're merged",
-          command,
-          tip: "Use 'git branch -d' (lowercase) to safely delete branches that are merged.",
-        };
-      }
-    }
+  if (isDestructiveGitBranchD(command, lowerCommand)) {
+    return {
+      blocked: true,
+      reason:
+        "git branch -D force-deletes branches without checking if they're merged",
+      command,
+      tip: "Use 'git branch -d' (lowercase) to safely delete branches that are merged.",
+    };
   }
 
   // Block git stash drop and git stash clear
