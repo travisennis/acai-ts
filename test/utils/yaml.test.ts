@@ -96,4 +96,39 @@ describe("parseYaml (via parseFrontMatter)", () => {
     const { data } = parseFrontMatter('---\nversion: "123"\n---\nContent');
     assert.equal(data["version"], "123");
   });
+
+  it("handles key with empty value followed by another key at same level", () => {
+    const { data } = parseFrontMatter("---\nkey:\nnext: value\n---\nContent");
+    assert.equal(data["key"], null);
+    assert.equal(data["next"], "value");
+  });
+
+  it("handles key with empty value followed by line without colon", () => {
+    const { data } = parseFrontMatter("---\nkey:\njust some text\n---\nContent");
+    assert.equal(data["key"], null);
+  });
+
+  it("handles nested object with empty value key inside", () => {
+    const { data } = parseFrontMatter("---\nouter:\n  inner:\n  sibling: yes\n---\nContent");
+    assert.equal(data["outer"]["inner"], null);
+    assert.equal(data["outer"]["sibling"], "yes");
+  });
+
+  it("skips extra indented lines without colons in nested objects", () => {
+    const { data } = parseFrontMatter("---\nobj:\n  key: val\n    extra indent no colon\n  next: other\n---\nContent");
+    assert.equal(data["obj"]["key"], "val");
+    assert.equal(data["obj"]["next"], "other");
+  });
+
+  it("parses nested arrays and objects mixed", () => {
+    const { data } = parseFrontMatter("---\nobj:\n  arr:\n    - item1\n  nested:\n    deep: value\n---\nContent");
+    assert.ok(Array.isArray(data["obj"]["arr"]));
+    assert.equal(data["obj"]["arr"][0], "item1");
+    assert.deepEqual(data["obj"]["nested"], { deep: "value" });
+  });
+
+  it("handles key with no value and end of input", () => {
+    const { data } = parseFrontMatter("---\ntop:\n  mid:\n    bottom:\n---\nContent");
+    assert.equal(data["top"]["mid"]["bottom"], null);
+  });
 });

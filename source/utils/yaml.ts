@@ -83,47 +83,69 @@ function parseObject(
       break;
     }
 
-    if (indent === baseIndent) {
-      const colonIndex = line.indexOf(":");
-      if (colonIndex === -1) {
-        i++;
-        continue;
-      }
+    if (indent !== baseIndent) {
+      i++;
+      continue;
+    }
 
-      const key = line.slice(0, colonIndex).trim();
-      const afterColon = line.slice(colonIndex + 1).trim();
-
-      if (afterColon) {
-        obj[key] = parseValue(afterColon);
-        i++;
-      } else {
-        i++;
-        if (i < lines.length) {
-          const nextLine = lines[i];
-          const nextIndent = getIndent(nextLine);
-          const nextTrimmed = nextLine.trim();
-
-          if (nextTrimmed.startsWith("-")) {
-            const [arr, newIndex] = parseArray(lines, i, nextIndent);
-            obj[key] = arr;
-            i = newIndex;
-          } else if (nextIndent > indent && nextTrimmed.includes(":")) {
-            const [nested, newIndex] = parseObject(lines, i, nextIndent);
-            obj[key] = nested;
-            i = newIndex;
-          } else {
-            obj[key] = null;
-          }
-        } else {
-          obj[key] = null;
-        }
-      }
+    const result = processObjectLine(lines, i, indent);
+    if (result !== null) {
+      obj[result.key] = result.value;
+      i = result.nextIndex;
     } else {
       i++;
     }
   }
 
   return [obj, i];
+}
+
+interface ObjectLineResult {
+  key: string;
+  value: YamlValue;
+  nextIndex: number;
+}
+
+function processObjectLine(
+  lines: string[],
+  currentIndex: number,
+  indent: number,
+): ObjectLineResult | null {
+  const line = lines[currentIndex];
+  const colonIndex = line.indexOf(":");
+
+  if (colonIndex === -1) {
+    return null;
+  }
+
+  const key = line.slice(0, colonIndex).trim();
+  const afterColon = line.slice(colonIndex + 1).trim();
+
+  if (afterColon) {
+    return { key, value: parseValue(afterColon), nextIndex: currentIndex + 1 };
+  }
+
+  // Empty value after colon - look at next line for nested content
+  const nextIndex = currentIndex + 1;
+  if (nextIndex >= lines.length) {
+    return { key, value: null, nextIndex };
+  }
+
+  const nextLine = lines[nextIndex];
+  const nextIndent = getIndent(nextLine);
+  const nextTrimmed = nextLine.trim();
+
+  if (nextTrimmed.startsWith("-")) {
+    const [arr, newIndex] = parseArray(lines, nextIndex, nextIndent);
+    return { key, value: arr, nextIndex: newIndex };
+  }
+
+  if (nextIndent > indent && nextTrimmed.includes(":")) {
+    const [nested, newIndex] = parseObject(lines, nextIndex, nextIndent);
+    return { key, value: nested, nextIndex: newIndex };
+  }
+
+  return { key, value: null, nextIndex };
 }
 
 function parseArray(
