@@ -1,9 +1,71 @@
 import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { isUndefined } from "@travisennis/stdlib/typeguards";
 
 const MS_IN_SECOND = 1000;
 const SECONDS_IN_MINUTE = 60;
 const DEFAULT_TIMEOUT = 2 * SECONDS_IN_MINUTE * MS_IN_SECOND;
+
+/**
+ * Returns an error result or rejects based on throwOnError flag.
+ */
+function earlyError(
+  throwOnError: boolean,
+  message: string,
+  code: number,
+): Promise<ExecuteResult> {
+  const result: ExecuteResult = { stdout: "", stderr: message, code };
+  if (throwOnError) {
+    return Promise.reject(new Error(message));
+  }
+  return Promise.resolve(result);
+}
+
+/**
+ * Handles an error from execFile and returns an ExecuteResult.
+ * May throw if throwOnError is true.
+ */
+function handleExecError(
+  error: unknown,
+  throwOnError: boolean,
+  preserveOutputOnError: boolean,
+): ExecuteResult {
+  const execError = error as { code?: number; signal?: NodeJS.Signals; name: string; stdout?: string; stderr?: string };
+  let errorCode = typeof execError.code === "number" ? execError.code : 1;
+  let errorSignal = execError.signal ?? undefined;
+
+  if (execError.name === "AbortError") {
+    errorCode = 130;
+    errorSignal = "SIGINT";
+  }
+
+  const result: ExecuteResult = {
+    stdout: preserveOutputOnError ? (execError.stdout ?? "") : "",
+    stderr: preserveOutputOnError ? (execError.stderr ?? "") : "",
+    code: errorCode,
+    signal: errorSignal,
+  };
+
+  if (throwOnError) {
+    throw Object.assign(execError, { result });
+  }
+  return result;
+}
+
+/**
+ * Wraps execFile in a Promise for async/await usage.
+ */
+const execFilePromise = promisify(execFile) as (
+  cmd: string,
+  args: readonly string[],
+  options: {
+    cwd: string;
+    timeout: number;
+    signal?: AbortSignal;
+    shell: boolean;
+    maxBuffer: number;
+  },
+) => Promise<{ stdout: string; stderr: string }>;
 
 interface ExecuteOptions {
   /** Working directory where the command will be executed */
@@ -237,7 +299,7 @@ export function parseArgv(input: string): ParseResult {
  * @param options Execution options
  * @returns Promise resolving to an object containing stdout, stderr, and exit code
  */
-export function executeCommand(
+export async function executeCommand(
   command: string | [string, ...string[]],
   options?: ExecuteOptions,
 ): Promise<ExecuteResult> {
@@ -259,86 +321,29 @@ export function executeCommand(
   } else {
     const parsed = parseArgv(command);
     if (!parsed.ok) {
-      const result: ExecuteResult = {
-        stdout: "",
-        stderr: parsed.error,
-        code: 1,
-      };
-      return throwOnError
-        ? Promise.reject(new Error(parsed.error))
-        : Promise.resolve(result);
+      return earlyError(throwOnError, parsed.error, 1);
     }
     [cmd, ...args] = parsed.argv;
   }
 
   if (isUndefined(cmd) || cmd.trim() === "") {
-    const result: ExecuteResult = {
-      stdout: "",
-      stderr: "Missing command",
-      code: 1,
-    };
-    return throwOnError
-      ? Promise.reject(new Error("Missing command"))
-      : Promise.resolve(result);
+    return earlyError(throwOnError, "Missing command", 1);
   }
 
   if (abortSignal?.aborted) {
-    const result: ExecuteResult = {
-      stdout: "",
-      stderr: "Command execution aborted",
-      code: 130,
-    };
-    return throwOnError
-      ? Promise.reject(new Error("Command execution aborted"))
-      : Promise.resolve(result);
+    return earlyError(throwOnError, "Command execution aborted", 130);
   }
 
-  return new Promise<ExecuteResult>((resolve, reject) => {
-    try {
-      execFile(
-        cmd,
-        args,
-        {
-          cwd,
-          timeout,
-          signal: abortSignal,
-          shell,
-          maxBuffer,
-        },
-        (error, stdout, stderr) => {
-          if (error) {
-            let errorCode = typeof error.code === "number" ? error.code : 1;
-            let errorSignal = error.signal ?? undefined;
-
-            if (error.name === "AbortError") {
-              errorCode = 130;
-              errorSignal = "SIGINT";
-            }
-
-            const result: ExecuteResult = {
-              stdout: preserveOutputOnError ? stdout : "",
-              stderr: preserveOutputOnError ? stderr : "",
-              code: errorCode,
-              signal: errorSignal,
-            };
-
-            if (throwOnError) {
-              reject(Object.assign(error, { result }));
-            } else {
-              resolve(result);
-            }
-          } else {
-            resolve({ stdout, stderr, code: 0 });
-          }
-        },
-      );
-    } catch (error) {
-      const result: ExecuteResult = { stdout: "", stderr: "", code: 1 };
-      if (throwOnError) {
-        reject(error);
-      } else {
-        resolve(result);
-      }
-    }
-  });
+  try {
+    const { stdout, stderr } = await execFilePromise(cmd, args, {
+      cwd,
+      timeout,
+      signal: abortSignal,
+      shell,
+      maxBuffer,
+    });
+    return { stdout, stderr, code: 0 };
+  } catch (error) {
+    return handleExecError(error, throwOnError, preserveOutputOnError);
+  }
 }
