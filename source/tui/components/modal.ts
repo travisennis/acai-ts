@@ -242,6 +242,17 @@ export class Modal extends Container implements Component {
   }
 }
 
+function truncateWord(word: string, maxWidth: number): string {
+  let truncated = "";
+  for (const char of word) {
+    if (visibleWidth(truncated + char) > maxWidth) {
+      break;
+    }
+    truncated += char;
+  }
+  return truncated;
+}
+
 function wrapLine(line: string, contentWidth: number): string[] {
   const words = line.split(" ");
   const lines: string[] = [];
@@ -251,17 +262,8 @@ function wrapLine(line: string, contentWidth: number): string[] {
     const currentVisible = visibleWidth(currentLine);
     const wordVisible = visibleWidth(word);
 
-    let finalWord = word;
-    if (wordVisible > contentWidth) {
-      let truncated = "";
-      for (const char of word) {
-        if (visibleWidth(truncated + char) > contentWidth) {
-          break;
-        }
-        truncated += char;
-      }
-      finalWord = truncated;
-    }
+    const finalWord =
+      wordVisible > contentWidth ? truncateWord(word, contentWidth) : word;
 
     if (currentVisible === 0) {
       currentLine = finalWord;
