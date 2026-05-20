@@ -363,37 +363,94 @@ function truncateNonAscii(
 }
 
 /**
- * Truncate a single fragment to a maximum width.
+ * Truncate text that contains only graphemes (no ANSI, no tabs) by
+ * iterating grapheme clusters up to maxWidth.
  */
-function truncateFragmentToWidth(
+function truncateGraphemesOnly(
   text: string,
   maxWidth: number,
 ): { text: string; width: number } {
-  if (maxWidth <= 0 || text.length === 0) {
-    return { text: "", width: 0 };
-  }
-
-  if (isPrintableAscii(text)) {
-    const clipped = text.slice(0, maxWidth);
-    return { text: clipped, width: clipped.length };
-  }
-
-  const hasAnsi = text.includes("\x1b");
-  const hasTabs = text.includes("\t");
-  if (!hasAnsi && !hasTabs) {
-    let result = "";
-    let width = 0;
-    for (const { segment } of getSegmenter().segment(text)) {
-      const w = graphemeWidth(segment);
-      if (width + w > maxWidth) {
-        break;
-      }
-      result += segment;
-      width += w;
+  let result = "";
+  let width = 0;
+  for (const { segment } of getSegmenter().segment(text)) {
+    const w = graphemeWidth(segment);
+    if (width + w > maxWidth) {
+      break;
     }
-    return { text: result, width };
+    result += segment;
+    width += w;
+  }
+  return { text: result, width };
+}
+
+/**
+ * Process a contiguous text segment (no tabs, no ANSI codes) within the
+ * larger ANSI/tab-aware truncation loop. Returns the consumed portion and
+ * updated state.
+ */
+function processTextSegment(
+  text: string,
+  start: number,
+  maxWidth: number,
+  currentWidth: number,
+  pendingAnsi: string,
+): {
+  text: string;
+  width: number;
+  pendingAnsi: string;
+  nextIndex: number;
+  exhausted: boolean;
+} {
+  // Find end of current text segment (until tab or ANSI code)
+  let end = start;
+  while (end < text.length && text[end] !== "\t") {
+    const nextAnsi = extractAnsiCode(text, end);
+    if (nextAnsi) {
+      break;
+    }
+    end++;
   }
 
+  let result = "";
+  let width = currentWidth;
+  let pending = pendingAnsi;
+
+  for (const { segment } of getSegmenter().segment(text.slice(start, end))) {
+    const w = graphemeWidth(segment);
+    if (width + w > maxWidth) {
+      return {
+        text: result,
+        width,
+        pendingAnsi: pending,
+        nextIndex: end,
+        exhausted: true,
+      };
+    }
+    if (pending) {
+      result += pending;
+      pending = "";
+    }
+    result += segment;
+    width += w;
+  }
+
+  return {
+    text: result,
+    width,
+    pendingAnsi: pending,
+    nextIndex: end,
+    exhausted: false,
+  };
+}
+
+/**
+ * Truncate text that contains ANSI codes and/or tab characters,
+ * correctly measuring visible width.
+ */
+function truncateWithAnsiAndTabs(
+  text: string,
+  maxWidth: number,
+): { text: string; width: number } {
   let result = "";
   let width = 0;
   let i = 0;
@@ -421,31 +478,48 @@ function truncateFragmentToWidth(
       continue;
     }
 
-    let end = i;
-    while (end < text.length && text[end] !== "\t") {
-      const nextAnsi = extractAnsiCode(text, end);
-      if (nextAnsi) {
-        break;
-      }
-      end++;
+    const segmentResult = processTextSegment(
+      text,
+      i,
+      maxWidth,
+      width,
+      pendingAnsi,
+    );
+    result += segmentResult.text;
+    width = segmentResult.width;
+    pendingAnsi = segmentResult.pendingAnsi;
+    i = segmentResult.nextIndex;
+    if (segmentResult.exhausted) {
+      break;
     }
-
-    for (const { segment } of getSegmenter().segment(text.slice(i, end))) {
-      const w = graphemeWidth(segment);
-      if (width + w > maxWidth) {
-        return { text: result, width };
-      }
-      if (pendingAnsi) {
-        result += pendingAnsi;
-        pendingAnsi = "";
-      }
-      result += segment;
-      width += w;
-    }
-    i = end;
   }
 
   return { text: result, width };
+}
+
+/**
+ * Truncate a single fragment to a maximum width.
+ */
+export function truncateFragmentToWidth(
+  text: string,
+  maxWidth: number,
+): { text: string; width: number } {
+  if (maxWidth <= 0 || text.length === 0) {
+    return { text: "", width: 0 };
+  }
+
+  if (isPrintableAscii(text)) {
+    const clipped = text.slice(0, maxWidth);
+    return { text: clipped, width: clipped.length };
+  }
+
+  const hasAnsi = text.includes("\x1b");
+  const hasTabs = text.includes("\t");
+  if (!hasAnsi && !hasTabs) {
+    return truncateGraphemesOnly(text, maxWidth);
+  }
+
+  return truncateWithAnsiAndTabs(text, maxWidth);
 }
 
 /**
