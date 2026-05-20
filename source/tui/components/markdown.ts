@@ -557,6 +557,18 @@ export class Markdown implements Component {
   }
 
   /**
+   * Find the closing backtick for an inline code span starting at the given index.
+   */
+  private findClosingBacktick(cleanText: string, startIndex: number): number {
+    for (let j = startIndex; j < cleanText.length; j++) {
+      if (cleanText[j] === "`") {
+        return j;
+      }
+    }
+    return -1;
+  }
+
+  /**
    * Protect inline code spans by replacing them with width-matched placeholders.
    * This prevents wrapAnsi from breaking code spans across lines while
    * preserving the correct visible width for accurate wrapping.
@@ -578,18 +590,10 @@ export class Markdown implements Component {
       const backtickIndex = cleanText.indexOf("`", i);
       if (backtickIndex === -1) break;
 
-      let closingIndex = -1;
-      let depth = 1;
-
-      for (let j = backtickIndex + 1; j < cleanText.length; j++) {
-        if (cleanText[j] === "`") {
-          depth--;
-          if (depth === 0) {
-            closingIndex = j;
-            break;
-          }
-        }
-      }
+      const closingIndex = this.findClosingBacktick(
+        cleanText,
+        backtickIndex + 1,
+      );
 
       if (closingIndex !== -1) {
         const styledStart = this.cleanToStyledIndex(

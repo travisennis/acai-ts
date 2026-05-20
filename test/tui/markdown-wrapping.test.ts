@@ -91,4 +91,78 @@ describe("Markdown code span wrapping", () => {
       `Code span content should be preserved: "${fullText}"`,
     );
   });
+
+  it("should handle a single code span at start of text", () => {
+    const width = 60;
+    const md = new Markdown(
+      "`start` of the line is a command.",
+      { paddingX: 0, paddingY: 0 },
+    );
+    const lines = md.render(width);
+    const fullText = lines.map((l) => stripAnsi(l)).join("\n");
+    assert.ok(
+      fullText.includes("`start`"),
+      `Code span at start should be preserved: "${fullText}"`,
+    );
+  });
+
+  it("should handle a code span at end of text", () => {
+    const width = 60;
+    const md = new Markdown(
+      "Execute the command `end`",
+      { paddingX: 0, paddingY: 0 },
+    );
+    const lines = md.render(width);
+    const fullText = lines.map((l) => stripAnsi(l)).join("\n");
+    assert.ok(
+      fullText.includes("`end`"),
+      `Code span at end should be preserved: "${fullText}"`,
+    );
+  });
+
+  it("should handle consecutive code spans", () => {
+    const width = 80;
+    const md = new Markdown(
+      "Compare `foo` and `bar` for differences.",
+      { paddingX: 0, paddingY: 0 },
+    );
+    const lines = md.render(width);
+    const fullText = lines.map((l) => stripAnsi(l)).join("\n");
+    assert.ok(
+      fullText.includes("`foo`"),
+      `First code span should be preserved: "${fullText}"`,
+    );
+    assert.ok(
+      fullText.includes("`bar`"),
+      `Second code span should be preserved: "${fullText}"`,
+    );
+  });
+
+  it("should handle code spans with special characters", () => {
+    const width = 80;
+    const md = new Markdown(
+      "Use `someFunc(args, flags)` for processing.",
+      { paddingX: 0, paddingY: 0 },
+    );
+    const lines = md.render(width);
+    const fullText = lines.map((l) => stripAnsi(l)).join("\n");
+    assert.ok(
+      fullText.includes("`someFunc(args, flags)`"),
+      `Code span with special chars should be preserved: "${fullText}"`,
+    );
+  });
+
+  it("should handle text with only a code span", () => {
+    const width = 20;
+    const md = new Markdown(
+      "`only`",
+      { paddingX: 0, paddingY: 0 },
+    );
+    const lines = md.render(width);
+    const fullText = lines.map((l) => stripAnsi(l)).join("\n");
+    assert.ok(
+      fullText.includes("`only`"),
+      `Code-only text should be preserved: "${fullText}"`,
+    );
+  });
 });
