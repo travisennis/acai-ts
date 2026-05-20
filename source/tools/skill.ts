@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { z } from "zod";
 import { config, parseSkillsPath } from "../config/index.ts";
 import type { ActivatedSkillsTracker } from "../skills/activated-tracker.ts";
+import type { Skill } from "../skills/index.ts";
 import { loadSkills } from "../skills/index.ts";
 import style from "../terminal/style.ts";
 import { replaceArgumentPlaceholders } from "../utils/templates.ts";
@@ -47,6 +48,34 @@ async function listSkillResources(baseDir: string): Promise<string[]> {
     // Directory read failed, return empty
     return [];
   }
+}
+
+/**
+ * Build the result string for a skill execution.
+ */
+function buildSkillResult(
+  skill: Skill,
+  body: string,
+  resources: string[],
+  args: string | undefined,
+): string {
+  let result = `# Skill: ${skill.name}\n\n`;
+  result += `**Base directory**: ${skill.baseDir}\n\n`;
+
+  if (resources.length > 0) {
+    result += "<skill_resources>\n";
+    for (const resource of resources) {
+      result += `${resource}\n`;
+    }
+    result += "</skill_resources>\n\n";
+    result +=
+      "Relative paths in this skill are relative to the base directory.\n\n";
+  }
+
+  const argsArray = args ? args.split(/\s+/).filter(Boolean) : [];
+  result += replaceArgumentPlaceholders(body, argsArray);
+
+  return result;
 }
 
 export async function createSkillTool(
@@ -107,21 +136,7 @@ export async function createSkillTool(
         const resources = await listSkillResources(skill.baseDir);
 
         // Build result
-        let result = `# Skill: ${skill.name}\n\n`;
-        result += `**Base directory**: ${skill.baseDir}\n\n`;
-
-        if (resources.length > 0) {
-          result += "<skill_resources>\n";
-          for (const resource of resources) {
-            result += `${resource}\n`;
-          }
-          result += "</skill_resources>\n\n";
-          result +=
-            "Relative paths in this skill are relative to the base directory.\n\n";
-        }
-
-        const argsArray = args ? args.split(/\s+/).filter(Boolean) : [];
-        result += replaceArgumentPlaceholders(body, argsArray);
+        const result = buildSkillResult(skill, body, resources, args);
 
         // Mark as activated
         activatedSkillsTracker.add(skillName);
