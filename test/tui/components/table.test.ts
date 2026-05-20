@@ -131,7 +131,10 @@ describe("TableComponent", () => {
   });
 
   it("should handle numeric values", () => {
-    const data = [[1, 2], [3, 4]];
+    const data = [
+      [1, 2],
+      [3, 4],
+    ];
     const headers = ["Num1", "Num2"];
     const table = new TableComponent(data, { headers, width: 80 });
     const result = table.render(80);
@@ -144,7 +147,10 @@ describe("TableComponent", () => {
 
   it("should cache results and return cached on subsequent calls", () => {
     const data = [["Cached", "Data"]];
-    const table = new TableComponent(data, { headers: ["H1", "H2"], width: 80 });
+    const table = new TableComponent(data, {
+      headers: ["H1", "H2"],
+      width: 80,
+    });
 
     const first = table.render(80);
     const second = table.render(80);
@@ -165,19 +171,27 @@ describe("TableComponent", () => {
 
   it("should invalidate cache when headers change", () => {
     const data = [["Data"]];
-    const table = new TableComponent(data, { headers: ["Old Header"], width: 80 });
+    const table = new TableComponent(data, {
+      headers: ["Old Header"],
+      width: 80,
+    });
     const first = table.render(80);
 
     table.setHeaders(["New Header"]);
     const second = table.render(80);
 
+    assert.notDeepEqual(first, second);
     assert(second.some((line) => line.includes("New Header")));
   });
 
   it("should invalidate cache when column widths change", () => {
     const data = [["Short", "Longer text here"]];
     const headers = ["A", "B"];
-    const table = new TableComponent(data, { headers, colWidths: [50, 50], width: 100 });
+    const table = new TableComponent(data, {
+      headers,
+      colWidths: [50, 50],
+      width: 100,
+    });
     const first = table.render(100);
 
     table.setColWidths([80, 20]);
