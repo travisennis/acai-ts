@@ -100,6 +100,41 @@ function isFullyQuoted(token: string): boolean {
   return (first === '"' && last === '"') || (first === "'" && last === "'");
 }
 
+// Process a single git message flag token and update skip mask
+// Returns true if the token was recognized as a message flag
+function processGitMessageToken(
+  tokens: string[],
+  i: number,
+  t: string,
+  skip: boolean[],
+): boolean {
+  // --message=<msg> - skip this entire token
+  if (t.startsWith("--message=")) {
+    skip[i] = true;
+    return true;
+  }
+
+  // -m<msg> (attached message) - skip this entire token
+  if (/^-m.+/.test(t)) {
+    skip[i] = true;
+    return true;
+  }
+
+  // -m or --message consumes next token
+  if (t === "-m" || t === "--message") {
+    if (i + 1 < tokens.length) skip[i + 1] = true;
+    return true;
+  }
+
+  // Combined short opts containing m, e.g. -am, -avm
+  if (/^-[^-]+$/.test(t) && t.includes("m")) {
+    if (i + 1 < tokens.length) skip[i + 1] = true;
+    return true;
+  }
+
+  return false;
+}
+
 // Compute which tokens should be skipped from path validation
 function computeSkipTokenMask(tokens: string[]): boolean[] {
   const skip = new Array(tokens.length).fill(false) as boolean[];
@@ -110,39 +145,20 @@ function computeSkipTokenMask(tokens: string[]): boolean[] {
   // Commands where -m/--message is a string argument (not a path)
   const gitMessageSubs = new Set(["commit", "merge", "tag", "revert", "notes"]);
 
-  if (bin === "git" && gitMessageSubs.has(sub)) {
-    let seenDoubleDash = false;
-    for (let i = 2; i < tokens.length; i++) {
-      const t = stripQuotes(tokens[i] ?? "");
-      if (t === "--") {
-        seenDoubleDash = true;
-        continue;
-      }
-      if (seenDoubleDash) continue;
+  if (bin !== "git" || !gitMessageSubs.has(sub)) {
+    return skip;
+  }
 
-      // --message=<msg> - skip this entire token
-      if (t.startsWith("--message=")) {
-        skip[i] = true;
-        continue;
-      }
-
-      // -m<msg> (attached message) - skip this entire token
-      if (/^-m.+/.test(t)) {
-        skip[i] = true;
-        continue;
-      }
-
-      // -m or --message consumes next token
-      if (t === "-m" || t === "--message") {
-        if (i + 1 < tokens.length) skip[i + 1] = true;
-        continue;
-      }
-
-      // Combined short opts containing m, e.g. -am, -avm
-      if (/^-[^-]+$/.test(t) && t.includes("m")) {
-        if (i + 1 < tokens.length) skip[i + 1] = true;
-      }
+  let seenDoubleDash = false;
+  for (let i = 2; i < tokens.length; i++) {
+    const t = stripQuotes(tokens[i] ?? "");
+    if (t === "--") {
+      seenDoubleDash = true;
+      continue;
     }
+    if (seenDoubleDash) continue;
+
+    processGitMessageToken(tokens, i, t, skip);
   }
 
   return skip;

@@ -476,6 +476,140 @@ Cache location:
     const r2 = validatePaths("tail -f source/index.ts", [baseDir], baseDir);
     assert.strictEqual(r2.isValid, true);
   });
+
+  // --- computeSkipTokenMask specific coverage ---
+
+  it("skips git notes message flag (subcommand: notes)", () => {
+    const result = validatePaths(
+      'git notes add -m "/etc/hosts reference"',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("skips git notes with --message= format", () => {
+    const result = validatePaths(
+      'git notes add --message="/etc/hosts reference"',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("skips git commit with --amend and -m flag", () => {
+    const result = validatePaths(
+      'git commit --amend -m "/tmp fix"',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("does not skip paths for git subcommands without message flags", () => {
+    // git push with a file argument should validate the path
+    const result = validatePaths(
+      "git push origin main:refs/heads/main",
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("does not skip paths for non-git commands", () => {
+    const result = validatePaths(
+      "cat /etc/hosts",
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, false);
+  });
+
+  it("handles git commit -avm combined flag", () => {
+    const result = validatePaths(
+      'git commit -avm "fix: update paths"',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("handles git commit with mixed -m and --message flags", () => {
+    const result = validatePaths(
+      'git commit -m "first" --message "/etc/hosts reference"',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("validates paths after -- when double dash is used in git commit", () => {
+    const result = validatePaths(
+      'git commit -m "msg" -- /etc/hosts /var/log',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, false);
+  });
+
+  it("skips git merge --message= format", () => {
+    const result = validatePaths(
+      'git merge --message="/tmp branch merge" feature-branch',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("handles git commit with only --message= (no value token after)", () => {
+    // --message= also takes a next token? No, with = it's a single token.
+    const result = validatePaths(
+      'git commit --message="msg"',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("does not skip paths for git subcommands that are not in message set", () => {
+    // git checkout takes -m for move/rename, not message
+    const result = validatePaths(
+      "git checkout -m source/index.ts",
+      [baseDir],
+      baseDir,
+    );
+    // source/index.ts is valid since it's within project
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("handles multiple git message subcommand flags", () => {
+    const result = validatePaths(
+      'git commit -m "fix: bug" -m "refs #123"',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("validates paths after -m flag value", () => {
+    // The token AFTER -m value should still be validated
+    const result = validatePaths(
+      'git commit -m "msg" -- /etc/passwd',
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, false);
+  });
+
+  it("doesn't flag non-git commands with flags that look like git flags", () => {
+    const result = validatePaths(
+      '/custom/bin -m "/etc/hosts"',
+      [baseDir],
+      baseDir,
+    );
+    // /etc/hosts should be flagged since it's not a git message command
+    assert.strictEqual(result.isValid, false);
+  });
 });
 
 describe("bash - isMutatingCommand", () => {
