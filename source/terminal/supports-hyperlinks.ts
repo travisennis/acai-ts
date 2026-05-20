@@ -53,6 +53,14 @@ export function createSupportsHyperlinks(stream: { isTty?: boolean }): boolean {
     return true;
   }
 
+  // TERM=dumb means the terminal is incapable of rendering hyperlinks.
+  // This is checked independently from supports-color because FORCE_COLOR
+  // can make supports-color return truthy even for TERM=dumb, but
+  // FORCE_COLOR does not enable hyperlinks on terminals that lack support.
+  if (TERM === "dumb") {
+    return false;
+  }
+
   // If they specify no colors, they probably don't want hyperlinks.
   if (!createSupportsColor(stream)) {
     return false;
