@@ -28,63 +28,58 @@ export class Input implements Component {
   }
 
   handleInput(data: string): void {
-    // Handle special keys
+    if (this.handleSpecialKey(data)) return;
+    this.insertCharacter(data);
+  }
+
+  private handleSpecialKey(data: string): boolean {
     if (isEnter(data)) {
-      // Enter - submit
-      if (this.onSubmit) {
-        this.onSubmit(this.value);
-      }
-      return;
+      if (this.onSubmit) this.onSubmit(this.value);
+      return true;
     }
-
     if (isBackspace(data)) {
-      // Backspace
-      if (this.cursor > 0) {
-        this.value =
-          this.value.slice(0, this.cursor - 1) + this.value.slice(this.cursor);
-        this.cursor--;
-      }
-      return;
+      this.backspace();
+      return true;
     }
-
     if (isArrowLeft(data)) {
-      // Left arrow
-      if (this.cursor > 0) {
-        this.cursor--;
-      }
-      return;
+      if (this.cursor > 0) this.cursor--;
+      return true;
     }
-
     if (isArrowRight(data)) {
-      // Right arrow
-      if (this.cursor < this.value.length) {
-        this.cursor++;
-      }
-      return;
+      if (this.cursor < this.value.length) this.cursor++;
+      return true;
     }
-
     if (isDelete(data)) {
-      // Delete
-      if (this.cursor < this.value.length) {
-        this.value =
-          this.value.slice(0, this.cursor) + this.value.slice(this.cursor + 1);
-      }
-      return;
+      this.deleteForward();
+      return true;
     }
-
     if (isCtrlA(data)) {
-      // Ctrl+A - beginning of line
       this.cursor = 0;
-      return;
+      return true;
     }
-
     if (isCtrlE(data)) {
-      // Ctrl+E - end of line
       this.cursor = this.value.length;
-      return;
+      return true;
     }
+    return false;
+  }
 
-    // Regular character input
+  private backspace(): void {
+    if (this.cursor > 0) {
+      this.value =
+        this.value.slice(0, this.cursor - 1) + this.value.slice(this.cursor);
+      this.cursor--;
+    }
+  }
+
+  private deleteForward(): void {
+    if (this.cursor < this.value.length) {
+      this.value =
+        this.value.slice(0, this.cursor) + this.value.slice(this.cursor + 1);
+    }
+  }
+
+  private insertCharacter(data: string): void {
     if (data.length === 1 && data >= " " && data <= "~") {
       this.value =
         this.value.slice(0, this.cursor) + data + this.value.slice(this.cursor);
