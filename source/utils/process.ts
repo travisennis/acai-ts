@@ -138,8 +138,21 @@ function handleEscape(
   return null;
 }
 
-// Quote/escape-aware argv tokenizer that forbids command substitution
-export function parseArgv(input: string): ParseResult {
+/**
+ * Tokenizes the input string into arguments, handling quotes and escapes.
+ * Contains the core while-loop parsing logic.
+ */
+function tokenizeArgv(
+  input: string,
+):
+  | {
+      ok: true;
+      argv: string[];
+      buf: string;
+      inSingle: boolean;
+      inDouble: boolean;
+    }
+  | { ok: false; error: string } {
   const argv: string[] = [];
   let buf = "";
   let i = 0;
@@ -181,7 +194,7 @@ export function parseArgv(input: string): ParseResult {
     // Handle escape sequences
     const escapeResult = handleEscape(input, i, ch, inSingle, inDouble, buf);
     if (escapeResult) {
-      if ("ok" in escapeResult && !escapeResult.ok) {
+      if ("error" in escapeResult) {
         return escapeResult;
       }
       buf = escapeResult.buf;
@@ -193,14 +206,27 @@ export function parseArgv(input: string): ParseResult {
     i += 1;
   }
 
-  if (inSingle || inDouble) return { ok: false, error: "Unterminated quote" };
-  if (buf.length > 0) argv.push(buf);
-  if (argv.length === 0) return { ok: false, error: "Empty command" };
-  const first = argv[0];
+  return { ok: true, argv, buf, inSingle, inDouble };
+}
+
+// Quote/escape-aware argv tokenizer that forbids command substitution
+export function parseArgv(input: string): ParseResult {
+  const result = tokenizeArgv(input);
+  if (!result.ok) return result;
+
+  if (result.inSingle || result.inDouble) {
+    return { ok: false, error: "Unterminated quote" };
+  }
+  if (result.buf.length > 0) result.argv.push(result.buf);
+  if (result.argv.length === 0) {
+    return { ok: false, error: "Empty command" };
+  }
+
+  const first = result.argv[0];
   if (typeof first !== "string" || first.trim() === "") {
     return { ok: false, error: "Missing command" };
   }
-  return { ok: true, argv: argv as [string, ...string[]] };
+  return { ok: true, argv: result.argv as [string, ...string[]] };
 }
 
 /**
