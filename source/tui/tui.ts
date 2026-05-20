@@ -342,6 +342,27 @@ export class TUI extends Container {
     return lines;
   }
 
+  private renderModal(width: number, bufferParts: string[]): void {
+    if (!this.activeModal) return;
+    const modalLines = this.activeModal.render(width);
+
+    // Render backdrop first if modal has backdrop
+    if (this.activeModal.backdrop) {
+      const backdropLine = style.bgRgb(0, 0, 0)(" ".repeat(width));
+      const { rows } = getTerminalSize();
+      for (let i = 0; i < rows; i++) {
+        bufferParts.push(`\x1b[${i + 1};1H`, backdropLine);
+      }
+    }
+
+    // Render modal content
+    for (let i = 0; i < modalLines.length; i++) {
+      if (modalLines[i]) {
+        bufferParts.push(`\x1b[${i + 1};1H`, modalLines[i]);
+      }
+    }
+  }
+
   private doRender(): void {
     if (this.isRendering) {
       this.renderAgain = true;
@@ -395,25 +416,7 @@ export class TUI extends Container {
       ];
 
       // Render modal on top if active
-      if (this.activeModal) {
-        const modalLines = this.activeModal.render(width);
-
-        // Render backdrop first if modal has backdrop
-        if (this.activeModal.backdrop) {
-          const backdropLine = style.bgRgb(0, 0, 0)(" ".repeat(width));
-          const { rows } = getTerminalSize();
-          for (let i = 0; i < rows; i++) {
-            bufferParts.push(`\x1b[${i + 1};1H`, backdropLine);
-          }
-        }
-
-        // Render modal content
-        for (let i = 0; i < modalLines.length; i++) {
-          if (modalLines[i]) {
-            bufferParts.push(`\x1b[${i + 1};1H`, modalLines[i]);
-          }
-        }
-      }
+      this.renderModal(width, bufferParts);
 
       bufferParts.push("\x1b[?2026l"); // End synchronized output
       this.terminal.write(bufferParts.join(""));
