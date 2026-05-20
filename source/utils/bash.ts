@@ -338,31 +338,15 @@ function isSegmentMutating(seg: string): boolean {
   const bin = tokens[0];
   if (!bin) return false;
 
-  if (tokens.some((t) => actionMutating.has(t))) {
-    return true;
-  }
+  if (tokens.some((t) => actionMutating.has(t))) return true;
 
-  if (bin === "sed" && tokens.some((t) => /^-i/.test(t))) {
-    return true;
-  }
+  if (bin === "sed" && tokens.some((t) => /^-i/.test(t))) return true;
 
-  if (mutatingBinaries.has(bin)) {
-    return true;
-  }
+  if (mutatingBinaries.has(bin)) return true;
 
-  if (bin === "git" && tokens.length > 1) {
-    const sub = tokens[1];
-    if (typeof sub === "string" && gitMutating.has(sub)) {
-      return true;
-    }
-  }
+  if (bin === "git" && tokens[1] && gitMutating.has(tokens[1])) return true;
 
-  if (packageManagers.has(bin) && tokens.length > 1) {
-    const sub = tokens[1];
-    if (typeof sub === "string" && npmMutating.has(sub)) {
-      return true;
-    }
-  }
+  if (packageManagers.has(bin) && tokens[1] && npmMutating.has(tokens[1])) return true;
 
   return false;
 }

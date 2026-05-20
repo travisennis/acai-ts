@@ -556,4 +556,23 @@ describe("bash - isMutatingCommand", () => {
   it("marks any command with 'install' in it", () => {
     assert.strictEqual(isMutatingCommand("any command install"), true);
   });
+
+  it("does not flag git without a subcommand", () => {
+    assert.strictEqual(isMutatingCommand("git"), false);
+  });
+
+  it("does not flag npm/pnpm/yarn without a subcommand", () => {
+    assert.strictEqual(isMutatingCommand("npm"), false);
+    assert.strictEqual(isMutatingCommand("pnpm"), false);
+    assert.strictEqual(isMutatingCommand("yarn"), false);
+  });
+
+  it("does not flag non-mutating commands with action-like words in paths", () => {
+    assert.strictEqual(isMutatingCommand("cat /path/to/update"), false);
+    assert.strictEqual(isMutatingCommand("ls install/"), false);
+  });
+
+  it("does not flag sed without -i", () => {
+    assert.strictEqual(isMutatingCommand("sed 's/a/b/' file.txt"), false);
+  });
 });
