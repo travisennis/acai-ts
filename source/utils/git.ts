@@ -61,41 +61,59 @@ export async function getDiffStat() {
   }
 }
 
-export async function getGitStatus() {
-  // Git status processing (optimized)
+interface GitCounts {
+  added: number;
+  modified: number;
+  deleted: number;
+  untracked: number;
+}
+
+export async function getGitStatus(): Promise<GitCounts> {
   const result = await executeCommand(["git", "status", "--porcelain"], {
     cwd: process.cwd(),
     throwOnError: false,
   });
 
-  let added = 0;
-  let modified = 0;
-  let deleted = 0;
-  let untracked = 0;
-
-  if (result.code === 0) {
-    const lines = result.stdout.split("\n");
-
-    for (const line of lines) {
-      if (!line) continue;
-      const s = line.slice(0, 2);
-      if (s[0] === "A" || s === "M ") added++;
-      else if (s[1] === "M" || s === " M") modified++;
-      else if (s[0] === "D" || s === " D") deleted++;
-      else if (s === "??") untracked++;
-    }
-
-    // if (added) gitStatus += ` +${added}`;
-    // if (modified) gitStatus += ` ~${modified}`;
-    // if (deleted) gitStatus += ` -${deleted}`;
-    // if (untracked) gitStatus += ` ?${untracked}`;
-  }
-  return {
-    added,
-    modified,
-    deleted,
-    untracked,
+  const counts: GitCounts = {
+    added: 0,
+    modified: 0,
+    deleted: 0,
+    untracked: 0,
   };
+
+  if (result.code !== 0) {
+    return counts;
+  }
+
+  const lines = result.stdout.split("\n");
+  for (const line of lines) {
+    incrementCountsFromStatusLine(line, counts);
+  }
+
+  return counts;
+}
+
+/**
+ * Parse a single git status --porcelain line and increment the appropriate counter.
+ */
+function incrementCountsFromStatusLine(line: string, counts: GitCounts): void {
+  if (!line) return;
+  const s = line.slice(0, 2);
+  if (s === "??") {
+    counts.untracked++;
+    return;
+  }
+  if (s[0] === "A" || s === "M ") {
+    counts.added++;
+    return;
+  }
+  if (s[1] === "M" || s === " M") {
+    counts.modified++;
+    return;
+  }
+  if (s[0] === "D" || s === " D") {
+    counts.deleted++;
+  }
 }
 
 export const inGitDirectory = memoize(async (): Promise<boolean> => {
