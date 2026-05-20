@@ -175,6 +175,21 @@ function truncateSimple(
   };
 }
 
+/**
+ * Find the end of the current text segment (until tab or ANSI code).
+ */
+function findSegmentEnd(text: string, start: number): number {
+  let end = start;
+  while (end < text.length && text[end] !== "\t") {
+    const nextAnsi = extractAnsiCode(text, end);
+    if (nextAnsi) {
+      return end;
+    }
+    end++;
+  }
+  return end;
+}
+
 function truncateComplex(
   text: string,
   targetWidth: number,
@@ -205,14 +220,7 @@ function truncateComplex(
     }
 
     // Find end of current text segment (until tab or ANSI)
-    let end = i;
-    while (end < text.length && text[end] !== "\t") {
-      const nextAnsi = extractAnsiCode(text, end);
-      if (nextAnsi) {
-        break;
-      }
-      end++;
-    }
+    const end = findSegmentEnd(text, i);
 
     // Process graphemes in this segment
     for (const { segment } of getSegmenter().segment(text.slice(i, end))) {

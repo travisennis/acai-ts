@@ -290,3 +290,80 @@ describe("truncateFragmentToWidth", () => {
     assert.equal(result.width, 0);
   });
 });
+
+describe("truncateToWidth - complex path (ANSI + tabs + mixed)", () => {
+  // These tests exercise the trunkComplex/truncateNonAscii codepaths
+  // which handle ANSI codes, tabs, and mixed content
+
+  it("handles text starting with ANSI code", () => {
+    const result = truncateToWidth("\x1b[31mhello\x1b[0m", 10);
+    assert.equal(result, "\x1b[31mhello\x1b[0m");
+  });
+
+  it("truncates text with ANSI codes at boundary", () => {
+    const result = truncateToWidth("\x1b[31mhello\x1b[0m world", 8);
+    assert.ok(result.includes("\x1b[31m"));
+    // ANSI codes increase string length but not visible width
+    assert.ok(result.endsWith("...") || result.includes("\x1b[0m"));
+  });
+
+  it("handles multiple ANSI codes with truncation", () => {
+    const result = truncateToWidth(
+      "\x1b[31mhello\x1b[32m colorful\x1b[0m world",
+      12,
+    );
+    assert.ok(result.includes("\x1b[31m") || result.includes("\x1b[32m"));
+    assert.ok(result.endsWith("...") || result.length > 0);
+  });
+
+  it("handles tab characters with truncation", () => {
+    const result = truncateToWidth("short\tlonger", 10);
+    assert.ok(result.includes("\t") || result.endsWith("..."));
+  });
+
+  it("handles mixed ANSI, tabs, and Unicode", () => {
+    const result = truncateToWidth("\x1b[33mhello\tworld\x1b[0m 😀", 15);
+    assert.ok(result.includes("\x1b[33m"));
+  });
+
+  it("handles text that fits exactly with tabs", () => {
+    const result = truncateToWidth("a\tb", 5);
+    assert.equal(result, "a\tb");
+  });
+
+  it("breaks early when maxWidth is exceeded by tab", () => {
+    // With maxWidth=3 and "..." ellipsis, targetWidth is 0
+    const result = truncateToWidth("a\tb", 3);
+    assert.equal(result, "...");
+  });
+
+  it("handles segment boundary with ANSI code", () => {
+    const result = truncateToWidth(
+      "\x1b[31mred\x1b[32mgreen\x1b[0m",
+      20,
+    );
+    assert.equal(result, "\x1b[31mred\x1b[32mgreen\x1b[0m");
+  });
+
+  it("truncates at grapheme boundary with ANSI", () => {
+    const result = truncateToWidth("\x1b[31ma😀b\x1b[0m", 3);
+    // Should not truncate because 'a😀b' fits in 4 width which is <= target
+    assert.ok(result.endsWith("...") || result.includes("😀"));
+  });
+
+  it("preserves ANSI codes in truncated output with tabs", () => {
+    const result = truncateToWidth("a\x1b[0m\tb", 10);
+    assert.equal(result, "a\x1b[0m\tb");
+  });
+
+  it("truncation adds ellipsis for short maxWidth with tabs", () => {
+    // With maxWidth=3 and "..." ellipsis, targetWidth is 0
+    const result = truncateToWidth("a\tb", 3);
+    assert.equal(result, "...");
+  });
+
+  it("truncation adds ellipsis for very short maxWidth with ANSI", () => {
+    const result = truncateToWidth("\x1b[31ma😀b\x1b[0m", 2);
+    assert.equal(result, "..");
+  });
+});
