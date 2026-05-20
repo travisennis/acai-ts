@@ -252,7 +252,9 @@ function resolveRawCwd(
 ): string {
   if (typeof cwdInput === "string" && cwdInput.trim() !== "") {
     const trimmed = cwdInput.trim();
-    return path.isAbsolute(trimmed) ? trimmed : path.resolve(projectRoot, trimmed);
+    return path.isAbsolute(trimmed)
+      ? trimmed
+      : path.resolve(projectRoot, trimmed);
   }
   return projectRoot;
 }
@@ -283,8 +285,7 @@ function assertWithinProjectRoot(
   cwdInput: string | null | undefined,
 ): void {
   const rel = path.relative(projectRoot, target);
-  const inside =
-    rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+  const inside = rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
   if (!inside) {
     throw new Error(
       `Working directory must be within the project directory: ${projectRoot}. Received: ${cwdInput ?? "<default>"} -> ${target}`,
@@ -299,9 +300,7 @@ function assertDirectoryExists(target: string): Stats {
   } catch (err) {
     const error = err as NodeJS.ErrnoException;
     if (error.code === "ENOENT") {
-      throw new Error(
-        `Working directory does not exist: ${target}`,
-      );
+      throw new Error(`Working directory does not exist: ${target}`);
     }
     throw error;
   }
@@ -400,7 +399,8 @@ function isSegmentMutating(seg: string): boolean {
 
   if (bin === "git" && tokens[1] && gitMutating.has(tokens[1])) return true;
 
-  if (packageManagers.has(bin) && tokens[1] && npmMutating.has(tokens[1])) return true;
+  if (packageManagers.has(bin) && tokens[1] && npmMutating.has(tokens[1]))
+    return true;
 
   return false;
 }

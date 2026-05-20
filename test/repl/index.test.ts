@@ -6,8 +6,8 @@ import type { ConfigManager } from "../../source/config/index.ts";
 import type { WorkspaceContext } from "../../source/index.ts";
 import type { ModelManager } from "../../source/models/manager.ts";
 import type { PromptManager } from "../../source/prompts/manager.ts";
-import type { SessionManager } from "../../source/sessions/manager.ts";
 import { Repl } from "../../source/repl/index.ts";
+import type { SessionManager } from "../../source/sessions/manager.ts";
 import type { TokenCounter } from "../../source/tokens/counter.ts";
 import type { TokenTracker } from "../../source/tokens/tracker.ts";
 
@@ -74,13 +74,13 @@ function createMockDeps(): MockedReplDeps {
 describe("Repl", () => {
   let deps: MockedReplDeps;
   let repl: Repl;
-  let originalStdoutIsTTY: boolean | undefined;
-  let originalStdinIsTTY: boolean | undefined;
+  let originalStdoutIsTty: boolean | undefined;
+  let originalStdinIsTty: boolean | undefined;
 
   beforeEach(() => {
     // Temporarily fake TTY for ProcessTerminal
-    originalStdoutIsTTY = (process.stdout as any).isTTY;
-    originalStdinIsTTY = (process.stdin as any).isTTY;
+    originalStdoutIsTty = (process.stdout as any).isTTY;
+    originalStdinIsTty = (process.stdin as any).isTTY;
     (process.stdout as any).isTTY = true;
     (process.stdin as any).isTTY = true;
 
@@ -94,8 +94,8 @@ describe("Repl", () => {
   });
 
   afterEach(() => {
-    (process.stdout as any).isTTY = originalStdoutIsTTY;
-    (process.stdin as any).isTTY = originalStdinIsTTY;
+    (process.stdout as any).isTTY = originalStdoutIsTty;
+    (process.stdin as any).isTTY = originalStdinIsTty;
     mock.reset();
   });
 
@@ -106,11 +106,18 @@ describe("Repl", () => {
       const editor = (repl as any).editor;
       await editor.onSubmit("   ");
 
-      assert.strictEqual((deps.commands.handle as unknown as ReturnType<typeof mock.fn>).mock.callCount(), 0);
+      assert.strictEqual(
+        (
+          deps.commands.handle as unknown as ReturnType<typeof mock.fn>
+        ).mock.callCount(),
+        0,
+      );
     });
 
     it("should handle commands and return early", async () => {
-      const handleMock = deps.commands.handle as unknown as ReturnType<typeof mock.fn>;
+      const handleMock = deps.commands.handle as unknown as ReturnType<
+        typeof mock.fn
+      >;
       handleMock.mock.mockImplementation(() => ({
         continue: true,
       }));
@@ -125,7 +132,9 @@ describe("Repl", () => {
     });
 
     it("should process prompt when no command is matched", async () => {
-      const handleMock = deps.commands.handle as unknown as ReturnType<typeof mock.fn>;
+      const handleMock = deps.commands.handle as unknown as ReturnType<
+        typeof mock.fn
+      >;
       handleMock.mock.mockImplementation(() => ({
         continue: false,
       }));
@@ -137,23 +146,31 @@ describe("Repl", () => {
 
       assert.strictEqual(handleMock.mock.callCount(), 1);
       assert.strictEqual(
-        (deps.promptManager.set as unknown as ReturnType<typeof mock.fn>).mock.callCount(),
+        (
+          deps.promptManager.set as unknown as ReturnType<typeof mock.fn>
+        ).mock.callCount(),
         1,
       );
       assert.strictEqual(
-        (deps.sessionManager.appendUserMessage as unknown as ReturnType<typeof mock.fn>).mock.callCount(),
+        (
+          deps.sessionManager.appendUserMessage as unknown as ReturnType<
+            typeof mock.fn
+          >
+        ).mock.callCount(),
         1,
       );
     });
 
     it("should push prompt history when promptManager is pending", async () => {
-      const handleMock = deps.commands.handle as unknown as ReturnType<typeof mock.fn>;
+      const handleMock = deps.commands.handle as unknown as ReturnType<
+        typeof mock.fn
+      >;
       handleMock.mock.mockImplementation(() => ({
         continue: false,
       }));
-      (deps.promptManager.isPending as unknown as ReturnType<typeof mock.fn>).mock.mockImplementation(
-        () => true,
-      );
+      (
+        deps.promptManager.isPending as unknown as ReturnType<typeof mock.fn>
+      ).mock.mockImplementation(() => true);
 
       await repl.init();
 
@@ -166,7 +183,9 @@ describe("Repl", () => {
     });
 
     it("should call onInputCallback when set", async () => {
-      const handleMock = deps.commands.handle as unknown as ReturnType<typeof mock.fn>;
+      const handleMock = deps.commands.handle as unknown as ReturnType<
+        typeof mock.fn
+      >;
       handleMock.mock.mockImplementation(() => ({
         continue: false,
       }));

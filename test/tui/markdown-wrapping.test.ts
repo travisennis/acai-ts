@@ -94,10 +94,10 @@ describe("Markdown code span wrapping", () => {
 
   it("should handle a single code span at start of text", () => {
     const width = 60;
-    const md = new Markdown(
-      "`start` of the line is a command.",
-      { paddingX: 0, paddingY: 0 },
-    );
+    const md = new Markdown("`start` of the line is a command.", {
+      paddingX: 0,
+      paddingY: 0,
+    });
     const lines = md.render(width);
     const fullText = lines.map((l) => stripAnsi(l)).join("\n");
     assert.ok(
@@ -108,10 +108,10 @@ describe("Markdown code span wrapping", () => {
 
   it("should handle a code span at end of text", () => {
     const width = 60;
-    const md = new Markdown(
-      "Execute the command `end`",
-      { paddingX: 0, paddingY: 0 },
-    );
+    const md = new Markdown("Execute the command `end`", {
+      paddingX: 0,
+      paddingY: 0,
+    });
     const lines = md.render(width);
     const fullText = lines.map((l) => stripAnsi(l)).join("\n");
     assert.ok(
@@ -122,10 +122,10 @@ describe("Markdown code span wrapping", () => {
 
   it("should handle consecutive code spans", () => {
     const width = 80;
-    const md = new Markdown(
-      "Compare `foo` and `bar` for differences.",
-      { paddingX: 0, paddingY: 0 },
-    );
+    const md = new Markdown("Compare `foo` and `bar` for differences.", {
+      paddingX: 0,
+      paddingY: 0,
+    });
     const lines = md.render(width);
     const fullText = lines.map((l) => stripAnsi(l)).join("\n");
     assert.ok(
@@ -140,10 +140,10 @@ describe("Markdown code span wrapping", () => {
 
   it("should handle code spans with special characters", () => {
     const width = 80;
-    const md = new Markdown(
-      "Use `someFunc(args, flags)` for processing.",
-      { paddingX: 0, paddingY: 0 },
-    );
+    const md = new Markdown("Use `someFunc(args, flags)` for processing.", {
+      paddingX: 0,
+      paddingY: 0,
+    });
     const lines = md.render(width);
     const fullText = lines.map((l) => stripAnsi(l)).join("\n");
     assert.ok(
@@ -154,10 +154,7 @@ describe("Markdown code span wrapping", () => {
 
   it("should handle text with only a code span", () => {
     const width = 20;
-    const md = new Markdown(
-      "`only`",
-      { paddingX: 0, paddingY: 0 },
-    );
+    const md = new Markdown("`only`", { paddingX: 0, paddingY: 0 });
     const lines = md.render(width);
     const fullText = lines.map((l) => stripAnsi(l)).join("\n");
     assert.ok(

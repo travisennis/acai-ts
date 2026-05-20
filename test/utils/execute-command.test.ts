@@ -5,25 +5,41 @@ import { executeCommand } from "../../source/utils/process.ts";
 describe("executeCommand", () => {
   describe("successful execution", () => {
     it("executes a simple string command", async () => {
-      const result = await executeCommand(["node", "-e", "console.log('hello')"]);
+      const result = await executeCommand([
+        "node",
+        "-e",
+        "console.log('hello')",
+      ]);
       assert.equal(result.code, 0);
       assert.equal(result.stdout.trim(), "hello");
     });
 
     it("executes a command with multiple arguments", async () => {
-      const result = await executeCommand(["node", "-e", "console.log('hello world')"]);
+      const result = await executeCommand([
+        "node",
+        "-e",
+        "console.log('hello world')",
+      ]);
       assert.equal(result.code, 0);
       assert.equal(result.stdout.trim(), "hello world");
     });
 
     it("executes an array command directly", async () => {
-      const result = await executeCommand(["node", "-e", "console.log('hello')"]);
+      const result = await executeCommand([
+        "node",
+        "-e",
+        "console.log('hello')",
+      ]);
       assert.equal(result.code, 0);
       assert.equal(result.stdout.trim(), "hello");
     });
 
     it("captures stderr output", async () => {
-      const result = await executeCommand(["node", "-e", "console.error('err')"]);
+      const result = await executeCommand([
+        "node",
+        "-e",
+        "console.error('err')",
+      ]);
       assert.equal(result.code, 0);
       assert.equal(result.stderr.trim(), "err");
     });
@@ -62,7 +78,9 @@ describe("executeCommand", () => {
 
   describe("missing command", () => {
     it("returns error when array has no command", async () => {
-      const result = await executeCommand([] as unknown as [string, ...string[]]);
+      const result = await executeCommand(
+        [] as unknown as [string, ...string[]],
+      );
       assert.equal(result.code, 1);
       assert.equal(result.stderr, "Missing command");
     });
@@ -150,20 +168,22 @@ describe("executeCommand", () => {
 
   describe("timeout", () => {
     it("kills command after timeout", async () => {
-      const result = await executeCommand(["node", "-e", "setTimeout(() => {}, 10000)"], {
-        timeout: 200,
-      });
+      const result = await executeCommand(
+        ["node", "-e", "setTimeout(() => {}, 10000)"],
+        {
+          timeout: 200,
+        },
+      );
       assert.notEqual(result.code, 0);
     });
   });
 
   describe("custom working directory", () => {
     it("executes command in specified cwd", async () => {
-      const result = await executeCommand([
-        "node",
-        "-e",
-        "console.log(process.cwd())",
-      ], { cwd: "/private/tmp" });
+      const result = await executeCommand(
+        ["node", "-e", "console.log(process.cwd())"],
+        { cwd: "/private/tmp" },
+      );
       assert.equal(result.code, 0);
       assert.equal(result.stdout.trim(), "/private/tmp");
     });
@@ -171,11 +191,10 @@ describe("executeCommand", () => {
 
   describe("maxBuffer", () => {
     it("respects maxBuffer limit", async () => {
-      const result = await executeCommand([
-        "node",
-        "-e",
-        "console.log('x'.repeat(100000))",
-      ], { maxBuffer: 1024 });
+      const result = await executeCommand(
+        ["node", "-e", "console.log('x'.repeat(100000))"],
+        { maxBuffer: 1024 },
+      );
       assert.notEqual(result.code, 0);
     });
   });

@@ -28,7 +28,11 @@ function parseYaml(input: string): YamlObject {
       result[key] = parseValue(afterColon);
       i++;
     } else {
-      const [value, newIndex] = parseNestedContent(lines, i + 1, getIndent(line));
+      const [value, newIndex] = parseNestedContent(
+        lines,
+        i + 1,
+        getIndent(line),
+      );
       result[key] = value;
       i = newIndex;
     }

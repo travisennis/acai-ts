@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { after, before, describe, it } from "node:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
 import { execSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { after, before, describe, it } from "node:test";
 import { getGitStatus } from "../../source/utils/git.ts";
 
 describe("getGitStatus", () => {
@@ -28,7 +28,12 @@ describe("getGitStatus", () => {
     process.chdir(testDir);
     try {
       const result = await getGitStatus();
-      assert.deepEqual(result, { added: 0, modified: 0, deleted: 0, untracked: 0 });
+      assert.deepEqual(result, {
+        added: 0,
+        modified: 0,
+        deleted: 0,
+        untracked: 0,
+      });
     } finally {
       process.chdir(prevDir);
     }
@@ -101,7 +106,9 @@ describe("getGitStatus", () => {
     try {
       // Set up: create a file to be deleted
       writeFileSync(join(testDir, "to-delete.ts"), "const d = 1;\n");
-      execSync("git add to-delete.ts && git commit -m 'add to-delete'", { cwd: testDir });
+      execSync("git add to-delete.ts && git commit -m 'add to-delete'", {
+        cwd: testDir,
+      });
 
       // Now: staged addition + worktree modification + staged deletion + untracked
       writeFileSync(join(testDir, "new-file.ts"), "const n = 1;\n");
@@ -118,7 +125,9 @@ describe("getGitStatus", () => {
       assert.equal(result.untracked, 1);
     } finally {
       // Cleanup
-      execSync("git reset HEAD new-file.ts to-delete.ts 2>/dev/null || true", { cwd: testDir });
+      execSync("git reset HEAD new-file.ts to-delete.ts 2>/dev/null || true", {
+        cwd: testDir,
+      });
       rmSync(join(testDir, "new-file.ts"), { force: true });
       rmSync(join(testDir, "untracked.txt"), { force: true });
       rmSync(join(testDir, "to-delete.ts"), { force: true });

@@ -92,7 +92,7 @@ describe("parseArgv", () => {
   });
 
   it("preserves single quotes inside double quotes", () => {
-    const res = parseArgv("echo \"a'b\"");
+    const res = parseArgv('echo "a\'b"');
     assert.equal(res.ok, true);
     if (res.ok) {
       assert.deepEqual(res.argv, ["echo", "a'b"]);
@@ -100,7 +100,7 @@ describe("parseArgv", () => {
   });
 
   it("preserves double quotes inside single quotes", () => {
-    const res = parseArgv('echo \'a"b\'');
+    const res = parseArgv("echo 'a\"b'");
     assert.equal(res.ok, true);
     if (res.ok) {
       assert.deepEqual(res.argv, ["echo", 'a"b']);

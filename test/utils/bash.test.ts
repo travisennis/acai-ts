@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { describe, it } from "node:test";
-import { isMutatingCommand, resolveCwd, validatePaths } from "../../source/utils/bash.ts";
+import {
+  isMutatingCommand,
+  resolveCwd,
+  validatePaths,
+} from "../../source/utils/bash.ts";
 
 const baseDir = process.cwd();
 
@@ -517,11 +521,7 @@ Cache location:
   });
 
   it("does not skip paths for non-git commands", () => {
-    const result = validatePaths(
-      "cat /etc/hosts",
-      [baseDir],
-      baseDir,
-    );
+    const result = validatePaths("cat /etc/hosts", [baseDir], baseDir);
     assert.strictEqual(result.isValid, false);
   });
 

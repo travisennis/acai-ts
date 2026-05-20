@@ -30,7 +30,13 @@ function handleExecError(
   throwOnError: boolean,
   preserveOutputOnError: boolean,
 ): ExecuteResult {
-  const execError = error as { code?: number; signal?: NodeJS.Signals; name: string; stdout?: string; stderr?: string };
+  const execError = error as {
+    code?: number;
+    signal?: NodeJS.Signals;
+    name: string;
+    stdout?: string;
+    stderr?: string;
+  };
   let errorCode = typeof execError.code === "number" ? execError.code : 1;
   let errorSignal = execError.signal ?? undefined;
 
@@ -204,9 +210,7 @@ function handleEscape(
  * Tokenizes the input string into arguments, handling quotes and escapes.
  * Contains the core while-loop parsing logic.
  */
-function tokenizeArgv(
-  input: string,
-):
+function tokenizeArgv(input: string):
   | {
       ok: true;
       argv: string[];

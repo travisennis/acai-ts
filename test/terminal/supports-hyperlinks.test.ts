@@ -64,10 +64,7 @@ describe("supports-hyperlinks", () => {
   });
 
   it("returns false if stream is not a TTY (no override)", () => {
-    const result = testWithEnv(
-      { isTty: false },
-      { COLORTERM: "truecolor" },
-    );
+    const result = testWithEnv({ isTty: false }, { COLORTERM: "truecolor" });
     assert.strictEqual(result, false);
   });
 
@@ -177,7 +174,11 @@ describe("supports-hyperlinks", () => {
     it("0.50.0 returns false (segfault)", () => {
       const result = testWithEnv(
         { isTty: true },
-        { VTE_VERSION: "0.50.0", COLORTERM: "truecolor", TERM_PROGRAM: undefined },
+        {
+          VTE_VERSION: "0.50.0",
+          COLORTERM: "truecolor",
+          TERM_PROGRAM: undefined,
+        },
       );
       assert.strictEqual(result, false);
     });
@@ -185,7 +186,11 @@ describe("supports-hyperlinks", () => {
     it("0.62.0 returns true", () => {
       const result = testWithEnv(
         { isTty: true },
-        { VTE_VERSION: "0.62.0", COLORTERM: "truecolor", TERM_PROGRAM: undefined },
+        {
+          VTE_VERSION: "0.62.0",
+          COLORTERM: "truecolor",
+          TERM_PROGRAM: undefined,
+        },
       );
       assert.strictEqual(result, true);
     });

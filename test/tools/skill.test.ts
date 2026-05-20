@@ -73,10 +73,11 @@ describe("Skill Tool", () => {
     let tempHome: string;
     let tracker: ActivatedSkillsTracker;
     // These will be populated via dynamic import after we set HOME
-    type CreateSkillTool = (
-      tracker: ActivatedSkillsTracker,
-    ) => Promise<{
-      toolDef: { description: string; inputSchema: import("zod").ZodObject<any> };
+    type CreateSkillTool = (tracker: ActivatedSkillsTracker) => Promise<{
+      toolDef: {
+        description: string;
+        inputSchema: import("zod").ZodObject<any>;
+      };
       display: (input: any) => string;
       execute: (
         input: any,

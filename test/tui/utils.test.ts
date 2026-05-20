@@ -338,10 +338,7 @@ describe("truncateToWidth - complex path (ANSI + tabs + mixed)", () => {
   });
 
   it("handles segment boundary with ANSI code", () => {
-    const result = truncateToWidth(
-      "\x1b[31mred\x1b[32mgreen\x1b[0m",
-      20,
-    );
+    const result = truncateToWidth("\x1b[31mred\x1b[32mgreen\x1b[0m", 20);
     assert.equal(result, "\x1b[31mred\x1b[32mgreen\x1b[0m");
   });
 

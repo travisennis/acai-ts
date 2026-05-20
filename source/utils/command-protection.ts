@@ -140,7 +140,10 @@ function isDestructiveGitRestore(lowerCommand: string): boolean {
 /**
  * Check if a git branch command uses -D (force delete without merge check)
  */
-function isDestructiveGitBranchD(command: string, lowerCommand: string): boolean {
+function isDestructiveGitBranchD(
+  command: string,
+  lowerCommand: string,
+): boolean {
   const branchMatch = lowerCommand.match(/git\s+branch\s+-([a-z])/);
   if (!branchMatch) return false;
 

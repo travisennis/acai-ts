@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { beforeEach, describe, it, mock } from "node:test";
 import type { Terminal } from "../../source/tui/terminal.ts";
 import { TUI } from "../../source/tui/tui.ts";
+
 type MockTerminal = Terminal & {
   getWritten(): string;
   getWrittenParts(): string[];
@@ -80,7 +81,10 @@ describe("TUI", () => {
 
       const output = mockTerminal.getWritten();
       // Should have sync begin, clear codes, empty visible lines, and sync end
-      assert.ok(output.startsWith("\x1b[?2026h"), "Should start with sync begin");
+      assert.ok(
+        output.startsWith("\x1b[?2026h"),
+        "Should start with sync begin",
+      );
       assert.ok(output.includes("\x1b[3J\x1b[2J\x1b[H"), "Should clear screen");
       assert.ok(output.endsWith("\x1b[?2026l"), "Should end with sync end");
     });
@@ -108,8 +112,14 @@ describe("TUI", () => {
       await new Promise((resolve) => setImmediate(resolve));
 
       const output = mockTerminal.getWritten();
-      assert.ok(output.includes("scrollable line"), "Should include scrollable content");
-      assert.ok(output.includes("footer line"), "Should include footer content");
+      assert.ok(
+        output.includes("scrollable line"),
+        "Should include scrollable content",
+      );
+      assert.ok(
+        output.includes("footer line"),
+        "Should include footer content",
+      );
     });
 
     it("should not render when already rendering", async () => {
@@ -158,7 +168,10 @@ describe("TUI", () => {
       await new Promise((resolve) => setImmediate(resolve));
 
       const output = mockTerminal.getWritten();
-      assert.ok(output.includes("-- modal header --"), "Should render modal header");
+      assert.ok(
+        output.includes("-- modal header --"),
+        "Should render modal header",
+      );
       assert.ok(output.includes("modal body"), "Should render modal body");
     });
 

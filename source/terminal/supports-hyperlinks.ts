@@ -136,9 +136,7 @@ function checkTermProgram(
       }
 
       // eslint-disable-next-line no-mixed-operators
-      return (
-        version.major > 1 || (version.major === 1 && version.minor >= 72)
-      );
+      return version.major > 1 || (version.major === 1 && version.minor >= 72);
     }
 
     case "ghostty": {
