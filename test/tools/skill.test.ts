@@ -76,10 +76,13 @@ describe("Skill Tool", () => {
     type CreateSkillTool = (tracker: ActivatedSkillsTracker) => Promise<{
       toolDef: {
         description: string;
+        // biome-ignore lint/suspicious/noExplicitAny: zod object type
         inputSchema: import("zod").ZodObject<any>;
       };
+      // biome-ignore lint/suspicious/noExplicitAny: display accepts any input
       display: (input: any) => string;
       execute: (
+        // biome-ignore lint/suspicious/noExplicitAny: execute accepts any input
         input: any,
         options: import("../../source/tools/types.ts").ToolExecutionOptions,
       ) => Promise<string>;
@@ -90,6 +93,7 @@ describe("Skill Tool", () => {
     async function run(
       tool: {
         execute: (
+          // biome-ignore lint/suspicious/noExplicitAny: test helper accepts any input
           input: any,
           options: import("../../source/tools/types.ts").ToolExecutionOptions,
         ) => Promise<string>;

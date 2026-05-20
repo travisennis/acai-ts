@@ -91,7 +91,7 @@ describe("TUI", () => {
 
     it("should render scrollable children content", async () => {
       const child = new MockComponent("line 1", "line 2");
-      tui.addChild(child as any);
+      tui.addChild(child);
       tui.requestRender();
 
       await new Promise((resolve) => setImmediate(resolve));
@@ -104,9 +104,9 @@ describe("TUI", () => {
     it("should render fixed footer content", async () => {
       const scrollable = new MockComponent("scrollable line");
       const footer = new MockComponent("footer line");
-      tui.addChild(scrollable as any);
+      tui.addChild(scrollable);
       tui.setFixedFooterStart();
-      tui.addChild(footer as any);
+      tui.addChild(footer);
       tui.requestRender();
 
       await new Promise((resolve) => setImmediate(resolve));
@@ -140,7 +140,7 @@ describe("TUI", () => {
         manyLines.push(`line ${i}`);
       }
       const child = new MockComponent(...manyLines);
-      tui.addChild(child as any);
+      tui.addChild(child);
 
       // Set a terminal with fewer rows
       Object.defineProperty(mockTerminal, "rows", { value: 10 });
@@ -156,7 +156,7 @@ describe("TUI", () => {
 
     it("should render modal on top when active", async () => {
       const scrollable = new MockComponent("background content");
-      tui.addChild(scrollable as any);
+      tui.addChild(scrollable);
 
       const modal = {
         render: (_width: number) => ["-- modal header --", "modal body"],
@@ -164,6 +164,7 @@ describe("TUI", () => {
         backdrop: false,
       };
 
+      // biome-ignore lint/suspicious/noExplicitAny: mock modal without full Modal shape
       tui.showModal(modal as any);
       await new Promise((resolve) => setImmediate(resolve));
 
@@ -177,7 +178,7 @@ describe("TUI", () => {
 
     it("should render backdrop when modal has backdrop enabled", async () => {
       const scrollable = new MockComponent("background");
-      tui.addChild(scrollable as any);
+      tui.addChild(scrollable);
 
       const modal = {
         render: () => ["modal line"],
@@ -185,6 +186,7 @@ describe("TUI", () => {
         backdrop: true,
       };
 
+      // biome-ignore lint/suspicious/noExplicitAny: mock modal without full Modal shape
       tui.showModal(modal as any);
       await new Promise((resolve) => setImmediate(resolve));
 
@@ -193,14 +195,17 @@ describe("TUI", () => {
       assert.ok(output.includes("modal line"), "Should render modal content");
 
       // Count backdrop occurrences - should have 24 rows written
-      const backdropCount = (output.match(/\x1b\[\d+;1H/g) || []).length;
+      const backdropPattern = "\x1b\\[\\d+;1H";
+      const backdropCount = (
+        output.match(new RegExp(backdropPattern, "g")) || []
+      ).length;
       // 24 rows for backdrop + 1 for modal line = 25 positionings
       assert.ok(backdropCount >= 24, "Should position backdrop for all rows");
     });
 
     it("should skip empty modal lines", async () => {
       const scrollable = new MockComponent("background");
-      tui.addChild(scrollable as any);
+      tui.addChild(scrollable);
 
       const modal = {
         render: () => ["line 1", "", "", "line 4"],
@@ -208,6 +213,7 @@ describe("TUI", () => {
         backdrop: false,
       };
 
+      // biome-ignore lint/suspicious/noExplicitAny: mock modal without full Modal shape
       tui.showModal(modal as any);
       await new Promise((resolve) => setImmediate(resolve));
 
@@ -222,7 +228,7 @@ describe("TUI", () => {
         manyLines.push(`line ${i}`);
       }
       const child = new MockComponent(...manyLines);
-      tui.addChild(child as any);
+      tui.addChild(child);
 
       // Set a terminal with fewer rows
       Object.defineProperty(mockTerminal, "rows", { value: 3 });

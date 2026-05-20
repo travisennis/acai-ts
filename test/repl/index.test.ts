@@ -79,23 +79,34 @@ describe("Repl", () => {
 
   beforeEach(() => {
     // Temporarily fake TTY for ProcessTerminal
-    originalStdoutIsTty = (process.stdout as any).isTTY;
-    originalStdinIsTty = (process.stdin as any).isTTY;
-    (process.stdout as any).isTTY = true;
-    (process.stdin as any).isTTY = true;
+    // biome-ignore lint/style/useNamingConvention: isTTY is standard Node.js API
+    originalStdoutIsTty = (process.stdout as unknown as { isTTY?: boolean })
+      .isTTY;
+    // biome-ignore lint/style/useNamingConvention: isTTY is standard Node.js API
+    originalStdinIsTty = (process.stdin as unknown as { isTTY?: boolean })
+      .isTTY;
+    // biome-ignore lint/style/useNamingConvention: isTTY is standard Node.js API
+    (process.stdout as unknown as { isTTY?: boolean }).isTTY = true;
+    // biome-ignore lint/style/useNamingConvention: isTTY is standard Node.js API
+    (process.stdin as unknown as { isTTY?: boolean }).isTTY = true;
 
     deps = createMockDeps();
     repl = new Repl(deps);
 
     // Stub the TUI's start method since we don't need a real terminal
+    // biome-ignore lint/suspicious/noExplicitAny: accessing private repl member
     const tui = (repl as any).tui;
     mock.method(tui, "start", () => {});
     mock.method(tui, "requestRender", () => {});
   });
 
   afterEach(() => {
-    (process.stdout as any).isTTY = originalStdoutIsTty;
-    (process.stdin as any).isTTY = originalStdinIsTty;
+    // biome-ignore lint/style/useNamingConvention: isTTY is standard Node.js API
+    (process.stdout as unknown as { isTTY?: boolean }).isTTY =
+      originalStdoutIsTty;
+    // biome-ignore lint/style/useNamingConvention: isTTY is standard Node.js API
+    (process.stdin as unknown as { isTTY?: boolean }).isTTY =
+      originalStdinIsTty;
     mock.reset();
   });
 
@@ -103,6 +114,7 @@ describe("Repl", () => {
     it("should do nothing when text is empty whitespace", async () => {
       await repl.init();
 
+      // biome-ignore lint/suspicious/noExplicitAny: accessing private repl member
       const editor = (repl as any).editor;
       await editor.onSubmit("   ");
 
@@ -124,6 +136,7 @@ describe("Repl", () => {
 
       await repl.init();
 
+      // biome-ignore lint/suspicious/noExplicitAny: accessing private repl member
       const editor = (repl as any).editor;
       await editor.onSubmit("/help");
 
@@ -141,6 +154,7 @@ describe("Repl", () => {
 
       await repl.init();
 
+      // biome-ignore lint/suspicious/noExplicitAny: accessing private repl member
       const editor = (repl as any).editor;
       await editor.onSubmit("hello world");
 
@@ -174,6 +188,7 @@ describe("Repl", () => {
 
       await repl.init();
 
+      // biome-ignore lint/suspicious/noExplicitAny: accessing private repl member
       const editor = (repl as any).editor;
       await editor.onSubmit("follow up");
 
@@ -191,12 +206,14 @@ describe("Repl", () => {
       }));
 
       let callbackText = "";
+      // biome-ignore lint/suspicious/noExplicitAny: accessing private repl member
       (repl as any).onInputCallback = (text: string) => {
         callbackText = text;
       };
 
       await repl.init();
 
+      // biome-ignore lint/suspicious/noExplicitAny: accessing private repl member
       const editor = (repl as any).editor;
       await editor.onSubmit("trigger callback");
 

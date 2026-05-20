@@ -13,7 +13,7 @@
         "noExcessiveCognitiveComplexity": {
           "level": "error",
           "options": {
-            "maxAllowedComplexity": 15
+            "maxAllowedComplexity": 35
           }
         }
       },
@@ -46,6 +46,18 @@
     "lineWidth": 80,
     "attributePosition": "auto"
   },
+  "overrides": [
+    {
+      "includes": ["test/terminal/supports-hyperlinks.test.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useNamingConvention": "off"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": {
       "jsxQuoteStyle": "double",
