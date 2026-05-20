@@ -131,4 +131,59 @@ describe("parseYaml (via parseFrontMatter)", () => {
     const { data } = parseFrontMatter("---\ntop:\n  mid:\n    bottom:\n---\nContent");
     assert.equal(data["top"]["mid"]["bottom"], null);
   });
+
+  it("parses array items with nested objects", () => {
+    const { data } = parseFrontMatter(
+      "---\nitems:\n  -\n    key: value\n    name: test\n  -\n    other: thing\n---\nContent",
+    );
+    assert.deepEqual(data["items"], [
+      { key: "value", name: "test" },
+      { other: "thing" },
+    ]);
+  });
+
+  it("handles array item with empty dash followed by non-colon line", () => {
+    const { data } = parseFrontMatter(
+      "---\nitems:\n  -\n    just some text\n---\nContent",
+    );
+    assert.deepEqual(data["items"], []);
+  });
+
+  it("handles array at end of input with no trailing content", () => {
+    const { data } = parseFrontMatter(
+      "---\nitems:\n  - apple\n  - banana\n---\nContent",
+    );
+    assert.deepEqual(data["items"], ["apple", "banana"]);
+  });
+
+  it("parses mixed inline and nested array items", () => {
+    const { data } = parseFrontMatter(
+      "---\nitems:\n  - inline\n  -\n    key: nested\n  - direct\n---\nContent",
+    );
+    assert.deepEqual(data["items"], [
+      "inline",
+      { key: "nested" },
+      "direct",
+    ]);
+  });
+
+  it("parses array with empty dash at end of input", () => {
+    const { data } = parseFrontMatter("---\nitems:\n  -\n---\nContent");
+    assert.deepEqual(data["items"], []);
+  });
+
+  it("skips comment lines inside arrays", () => {
+    const { data } = parseFrontMatter(
+      "---\nitems:\n  - apple\n  # comment\n  - banana\n---\nContent",
+    );
+    assert.deepEqual(data["items"], ["apple", "banana"]);
+  });
+
+  it("stops array at smaller indent", () => {
+    const { data } = parseFrontMatter(
+      "---\nitems:\n  - apple\n  - banana\nother: value\n---\nContent",
+    );
+    assert.deepEqual(data["items"], ["apple", "banana"]);
+    assert.equal(data["other"], "value");
+  });
 });

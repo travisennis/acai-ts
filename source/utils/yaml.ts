@@ -148,6 +148,39 @@ function processObjectLine(
   return { key, value: null, nextIndex };
 }
 
+function parseArrayItem(
+  lines: string[],
+  currentIndex: number,
+  arr: YamlValue[],
+): number {
+  const line = lines[currentIndex];
+  const trimmed = line.trim();
+  const afterDash = trimmed.slice(1).trim();
+
+  if (afterDash) {
+    arr.push(parseValue(afterDash));
+    return currentIndex + 1;
+  }
+
+  // Empty dash - check next line for nested content
+  const nextIndex = currentIndex + 1;
+  if (nextIndex >= lines.length) {
+    return nextIndex;
+  }
+
+  const nextLine = lines[nextIndex];
+  const nextIndent = getIndent(nextLine);
+  const nextTrimmed = nextLine.trim();
+
+  if (nextTrimmed.includes(":")) {
+    const [obj, newIndex] = parseObject(lines, nextIndex, nextIndent);
+    arr.push(obj);
+    return newIndex;
+  }
+
+  return nextIndex + 1;
+}
+
 function parseArray(
   lines: string[],
   start: number,
@@ -171,29 +204,7 @@ function parseArray(
     }
 
     if (indent === baseIndent && trimmed.startsWith("-")) {
-      const afterDash = trimmed.slice(1).trim();
-
-      if (afterDash) {
-        // Inline array item
-        arr.push(parseValue(afterDash));
-        i++;
-      } else {
-        // Check next line for nested content
-        i++;
-        if (i < lines.length) {
-          const nextLine = lines[i];
-          const nextIndent = getIndent(nextLine);
-          const nextTrimmed = nextLine.trim();
-
-          if (nextTrimmed.includes(":")) {
-            const [obj, newIndex] = parseObject(lines, i, nextIndent);
-            arr.push(obj);
-            i = newIndex;
-          } else {
-            i++;
-          }
-        }
-      }
+      i = parseArrayItem(lines, i, arr);
     } else {
       i++;
     }
