@@ -264,64 +264,64 @@ export class Repl {
 
     // Create editor for input
     this.editor.onSubmit = async (text) => {
-      if (text.trim()) {
-        // see if the text contains a command
-        const commandResult = await commands.handle(
-          { userInput: text },
-          {
-            tui: this.tui,
-            container: this.chatContainer,
-            inputContainer: this.editorContainer,
-            editor: this.editor,
-          },
-        );
+      if (!text.trim()) return;
 
-        if (commandResult.continue) {
-          this.editor.setText("");
-          this.tui.requestRender();
-          return;
-        }
+      // see if the text contains a command
+      const commandResult = await commands.handle(
+        { userInput: text },
+        {
+          tui: this.tui,
+          container: this.chatContainer,
+          inputContainer: this.editorContainer,
+          editor: this.editor,
+        },
+      );
 
-        if (!promptManager.isPending()) {
-          const processedPrompt = await processPrompt(text, {
-            baseDir: process.cwd(),
-            model: modelConfig,
-          });
-          for (const context of processedPrompt.context) {
-            promptManager.addContext(context);
-          }
-          promptManager.set(processedPrompt.message);
-        } else {
-          promptHistory.push(promptManager.get());
-          this.editor.addToHistory(promptManager.get());
-        }
-
-        // flag to see if the user prompt has added context
-        const hasAddedContext = promptManager.hasContext();
-
-        if (hasAddedContext) {
-          const contextTokenCount = promptManager.getContextTokenCount();
-          this.addComponentWithSpacing(
-            new Text(
-              style.green(
-                `Context will be added to prompt. (${contextTokenCount} tokens)`,
-              ),
-            ),
-          );
-        }
-
-        const userPrompt = promptManager.get();
-        const userMsg = promptManager.getUserMessage();
-
-        sessionManager.appendUserMessage(userMsg);
-
-        this.addMessageToChat({ role: "user", content: userPrompt });
+      if (commandResult.continue) {
         this.editor.setText("");
         this.tui.requestRender();
+        return;
+      }
 
-        if (this.onInputCallback) {
-          this.onInputCallback(userPrompt);
+      if (!promptManager.isPending()) {
+        const processedPrompt = await processPrompt(text, {
+          baseDir: process.cwd(),
+          model: modelConfig,
+        });
+        for (const context of processedPrompt.context) {
+          promptManager.addContext(context);
         }
+        promptManager.set(processedPrompt.message);
+      } else {
+        promptHistory.push(promptManager.get());
+        this.editor.addToHistory(promptManager.get());
+      }
+
+      // flag to see if the user prompt has added context
+      const hasAddedContext = promptManager.hasContext();
+
+      if (hasAddedContext) {
+        const contextTokenCount = promptManager.getContextTokenCount();
+        this.addComponentWithSpacing(
+          new Text(
+            style.green(
+              `Context will be added to prompt. (${contextTokenCount} tokens)`,
+            ),
+          ),
+        );
+      }
+
+      const userPrompt = promptManager.get();
+      const userMsg = promptManager.getUserMessage();
+
+      sessionManager.appendUserMessage(userMsg);
+
+      this.addMessageToChat({ role: "user", content: userPrompt });
+      this.editor.setText("");
+      this.tui.requestRender();
+
+      if (this.onInputCallback) {
+        this.onInputCallback(userPrompt);
       }
     };
 
