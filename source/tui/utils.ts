@@ -284,20 +284,46 @@ export function truncateToWidth(
 
   // Fast path: pure ASCII printable
   if (isPrintableAscii(text)) {
-    if (text.length <= maxWidth) {
-      return pad ? text + " ".repeat(maxWidth - text.length) : text;
-    }
-    const targetWidth = maxWidth - ellipsisWidth;
-    return finalizeTruncatedResult(
-      text.slice(0, targetWidth),
-      targetWidth,
-      ellipsis,
-      ellipsisWidth,
-      maxWidth,
-      pad,
-    );
+    return truncateAscii(text, maxWidth, ellipsis, ellipsisWidth, pad);
   }
 
+  return truncateNonAscii(text, maxWidth, ellipsis, ellipsisWidth, pad);
+}
+
+/**
+ * Truncate ASCII-only text with ellipsis.
+ */
+function truncateAscii(
+  text: string,
+  maxWidth: number,
+  ellipsis: string,
+  ellipsisWidth: number,
+  pad: boolean,
+): string {
+  if (text.length <= maxWidth) {
+    return pad ? text + " ".repeat(maxWidth - text.length) : text;
+  }
+  const targetWidth = maxWidth - ellipsisWidth;
+  return finalizeTruncatedResult(
+    text.slice(0, targetWidth),
+    targetWidth,
+    ellipsis,
+    ellipsisWidth,
+    maxWidth,
+    pad,
+  );
+}
+
+/**
+ * Truncate text that may contain ANSI codes, tabs, or Unicode wide characters.
+ */
+function truncateNonAscii(
+  text: string,
+  maxWidth: number,
+  ellipsis: string,
+  ellipsisWidth: number,
+  pad: boolean,
+): string {
   const targetWidth = maxWidth - ellipsisWidth;
   const hasAnsi = text.includes("\x1b");
   const hasTabs = text.includes("\t");
