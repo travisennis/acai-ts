@@ -56,10 +56,42 @@ export class TableComponent implements Component {
   }
 
   render(width: number): string[] {
-    // Use provided width if specified, otherwise use component width
     const renderWidth = this.width || width;
 
-    // Check cache
+    const cached = this.getCachedOutput(renderWidth);
+    if (cached) {
+      return cached;
+    }
+
+    if (this.data.length === 0) {
+      this.cachedOutput = [];
+      return [];
+    }
+
+    const colCount = this.getColumnCount();
+    const padding = 5;
+    const availableWidth = Math.max(20, renderWidth - padding);
+    const computedColWidths = this.getColumnWidths(colCount, availableWidth);
+
+    const table = new Table({
+      head: this.headers,
+      colWidths: computedColWidths,
+      wordWrap: true,
+      wrapOnWordBoundary: true,
+    });
+
+    const normalizedData = this.normalizeData(colCount);
+    table.push(...normalizedData);
+
+    const tableString = table.toString();
+    const result = tableString.split("\n");
+
+    this.updateCache(result, renderWidth);
+
+    return result;
+  }
+
+  private getCachedOutput(renderWidth: number): string[] | undefined {
     if (
       this.cachedOutput &&
       this.cachedData === this.data &&
@@ -69,87 +101,78 @@ export class TableComponent implements Component {
     ) {
       return this.cachedOutput;
     }
+    return undefined;
+  }
 
-    if (this.data.length === 0) {
-      this.cachedOutput = [];
-      return [];
+  private getColumnCount(): number {
+    if (this.headers?.length !== undefined) {
+      return this.headers.length;
     }
-
-    // Determine number of columns from data or header
-    let colCount = this.headers?.length;
-    if (colCount === undefined) {
-      colCount = this.data.length > 0 && this.data[0] ? this.data[0].length : 1;
+    if (this.data.length > 0 && this.data[0]) {
+      return this.data[0].length;
     }
+    return 1;
+  }
 
-    // Calculate column widths based on terminal width
-    const padding = 5; // Account for table borders and padding
-    const availableWidth = Math.max(20, renderWidth - padding);
-
-    let computedColWidths: number[];
-
+  private getColumnWidths(colCount: number, availableWidth: number): number[] {
     if (this.colWidths && this.colWidths.length === colCount) {
-      // Use provided percentages
-      computedColWidths = this.colWidths.map((percent) =>
+      return this.colWidths.map((percent) =>
         Math.max(10, Math.floor((percent / 100) * availableWidth)),
       );
-    } else {
-      // Distribute width evenly with minimum width per column
-      const minColWidth = 15;
-      const maxColsThatFit = Math.floor(availableWidth / minColWidth);
-      const actualColCount = Math.min(colCount, maxColsThatFit);
-
-      if (actualColCount === 1) {
-        computedColWidths = [availableWidth];
-      } else {
-        // Calculate base width and distribute remaining pixels
-        const baseWidth = Math.floor(availableWidth / actualColCount);
-        const remainder = availableWidth % actualColCount;
-        computedColWidths = Array(actualColCount).fill(baseWidth);
-
-        // Distribute remainder pixels to first few columns
-        for (let i = 0; i < remainder && i < actualColCount; i++) {
-          computedColWidths[i] = (computedColWidths[i] || 0) + 1;
-        }
-      }
-
-      // If we have fewer computed widths than columns, extend the array
-      while (computedColWidths.length < colCount) {
-        computedColWidths.push(minColWidth);
-      }
     }
 
-    const table = new Table({
-      head: this.headers,
-      colWidths: computedColWidths,
-      wordWrap: true,
-      wrapOnWordBoundary: true,
-    });
+    const minColWidth = 15;
+    const maxColsThatFit = Math.floor(availableWidth / minColWidth);
+    const actualColCount = Math.min(colCount, maxColsThatFit);
 
-    // Ensure all data rows have the same number of columns
-    const normalizedData = this.data.map((row) => {
+    const computedColWidths = this.distributeColumnWidths(
+      actualColCount,
+      availableWidth,
+    );
+
+    while (computedColWidths.length < colCount) {
+      computedColWidths.push(minColWidth);
+    }
+
+    return computedColWidths;
+  }
+
+  private distributeColumnWidths(
+    actualColCount: number,
+    availableWidth: number,
+  ): number[] {
+    if (actualColCount === 1) {
+      return [availableWidth];
+    }
+
+    const baseWidth = Math.floor(availableWidth / actualColCount);
+    const remainder = availableWidth % actualColCount;
+    const widths = Array(actualColCount).fill(baseWidth);
+
+    for (let i = 0; i < remainder && i < actualColCount; i++) {
+      widths[i] = (widths[i] || 0) + 1;
+    }
+
+    return widths;
+  }
+
+  private normalizeData(colCount: number): (string | number)[][] {
+    return this.data.map((row) => {
       if (row.length < colCount) {
-        // Pad with empty strings if row has fewer columns
         return [...row, ...Array(colCount - row.length).fill("")];
       }
       if (row.length > colCount) {
-        // Truncate if row has more columns
         return row.slice(0, colCount);
       }
       return row;
     });
+  }
 
-    table.push(...normalizedData);
-
-    const tableString = table.toString();
-    const result = tableString.split("\n");
-
-    // Update cache
+  private updateCache(result: string[], renderWidth: number): void {
     this.cachedOutput = result;
     this.cachedData = this.data;
     this.cachedHeaders = this.headers;
     this.cachedColWidths = this.colWidths;
     this.cachedWidth = renderWidth;
-
-    return result;
   }
 }
