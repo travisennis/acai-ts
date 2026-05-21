@@ -95,7 +95,8 @@ export const createReadFileTool = async (options: {
         abortSignal,
       );
 
-      return applyByteLimit(file, effectiveEncoding, BYTE_LIMIT);
+      const totalLines = file === "" ? 0 : file.split("\n").length;
+      return applyByteLimit(file, effectiveEncoding, BYTE_LIMIT, totalLines);
     },
   };
 };
@@ -169,11 +170,13 @@ async function readFileLines(
 }
 
 // Truncate content to a byte limit, safely handling multi-byte encodings.
-// Returns the truncated content with a message indicating how much remains.
+// Returns the truncated content with a message indicating how much remains
+// and the total number of lines in the original content.
 function applyByteLimit(
   content: string,
   encoding: BufferEncoding,
   maxBytes: number,
+  totalLines: number,
 ): string {
   const byteLength = Buffer.byteLength(content, encoding);
   if (byteLength <= maxBytes) {
@@ -188,7 +191,7 @@ function applyByteLimit(
 
   const message = [
     "",
-    `[File truncated at ${limitKb}KB limit. ${remainingKb}KB remaining.]`,
+    `[File truncated at ${limitKb}KB limit. ${remainingKb}KB remaining. Total lines: ${totalLines.toLocaleString()}.]`,
     "To read more, use the startLine and lineCount parameters, or use Bash with head/tail/sed.",
   ].join("\n");
 
