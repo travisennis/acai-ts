@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   parsePatch,
   type UpdateFileChunk,
+  computeReplacements,
 } from "../source/tools/apply-patch.ts";
 
 describe("parsePatch", () => {
@@ -150,6 +151,170 @@ describe("parsePatch", () => {
     const result = parsePatch(patchText);
     const chunks = (result.hunks[0] as { chunks: UpdateFileChunk[] }).chunks;
     assert.equal(chunks[0].changeContext, undefined);
+  });
+
+  describe("computeReplacements", () => {
+    it("should find and replace a simple pattern", () => {
+      const lines = ["line1", "line2", "line3"];
+      const chunks: UpdateFileChunk[] = [
+        {
+          oldLines: ["line2"],
+          newLines: ["modified"],
+        },
+      ];
+
+      const result = computeReplacements(lines, "test.txt", chunks);
+      assert.equal(result.length, 1);
+      assert.deepEqual(result[0], [1, 1, ["modified"]]);
+    });
+
+    it("should handle multiple chunks", () => {
+      const lines = ["line1", "line2", "line3", "line4"];
+      const chunks: UpdateFileChunk[] = [
+        {
+          oldLines: ["line1"],
+          newLines: ["modified1"],
+        },
+        {
+          oldLines: ["line3"],
+          newLines: ["modified3"],
+        },
+      ];
+
+      const result = computeReplacements(lines, "test.txt", chunks);
+      assert.equal(result.length, 2);
+      assert.deepEqual(result[0], [0, 1, ["modified1"]]);
+      assert.deepEqual(result[1], [2, 1, ["modified3"]]);
+    });
+
+    it("should advance line index after context", () => {
+      const lines = ["a", "b", "c", "d", "e"];
+      const chunks: UpdateFileChunk[] = [
+        {
+          changeContext: "a",
+          oldLines: ["b"],
+          newLines: ["x"],
+        },
+      ];
+
+      const result = computeReplacements(lines, "test.txt", chunks);
+      assert.equal(result.length, 1);
+      // After context "a" at index 0, lineIndex moves to 1, so pattern "b" is at index 1
+      assert.deepEqual(result[0], [1, 1, ["x"]]);
+    });
+
+    it("should handle insertion (empty oldLines) at end of file", () => {
+      const lines = ["line1", "line2"];
+      const chunks: UpdateFileChunk[] = [
+        {
+          oldLines: [],
+          newLines: ["inserted"],
+        },
+      ];
+
+      const result = computeReplacements(lines, "test.txt", chunks);
+      assert.equal(result.length, 1);
+      assert.deepEqual(result[0], [2, 0, ["inserted"]]);
+    });
+
+    it("should insert before trailing empty line if present", () => {
+      const lines = ["line1", "line2", ""];
+      const chunks: UpdateFileChunk[] = [
+        {
+          oldLines: [],
+          newLines: ["inserted"],
+        },
+      ];
+
+      const result = computeReplacements(lines, "test.txt", chunks);
+      assert.equal(result.length, 1);
+      // Insert before the trailing empty line at index 2
+      assert.deepEqual(result[0], [2, 0, ["inserted"]]);
+    });
+
+    it("should trim trailing empty line from pattern if not found", () => {
+      const lines = ["line1", "line2"];
+      const chunks: UpdateFileChunk[] = [
+        {
+          oldLines: ["line1", "line2", ""],
+          newLines: ["modified1", "modified2", ""],
+        },
+      ];
+
+      const result = computeReplacements(lines, "test.txt", chunks);
+      assert.equal(result.length, 1);
+      // After trimming the trailing empty lines, pattern is ["line1", "line2"]
+      assert.deepEqual(result[0], [0, 2, ["modified1", "modified2"]]);
+    });
+
+    it("should throw when context line not found", () => {
+      const lines = ["line1", "line2"];
+      const chunks: UpdateFileChunk[] = [
+        {
+          changeContext: "nonexistent",
+          oldLines: ["line2"],
+          newLines: ["modified"],
+        },
+      ];
+
+      assert.throws(
+        () => computeReplacements(lines, "test.txt", chunks),
+        /Failed to find context/,
+      );
+    });
+
+    it("should throw when pattern not found", () => {
+      const lines = ["line1", "line2"];
+      const chunks: UpdateFileChunk[] = [
+        {
+          oldLines: ["nonexistent"],
+          newLines: ["modified"],
+        },
+      ];
+
+      assert.throws(
+        () => computeReplacements(lines, "test.txt", chunks),
+        /Failed to find expected lines/,
+      );
+    });
+
+    it("should handle empty chunks array", () => {
+      const result = computeReplacements(["line1"], "test.txt", []);
+      assert.deepEqual(result, []);
+    });
+
+    it("should sort replacements by start index when chunks are in order", () => {
+      const lines = ["a", "b", "c"];
+      const chunks: UpdateFileChunk[] = [
+        {
+          oldLines: ["a"],
+          newLines: ["y"],
+        },
+        {
+          oldLines: ["c"],
+          newLines: ["x"],
+        },
+      ];
+
+      const result = computeReplacements(lines, "test.txt", chunks);
+      assert.equal(result.length, 2);
+      assert.deepEqual(result[0], [0, 1, ["y"]]);
+      assert.deepEqual(result[1], [2, 1, ["x"]]);
+    });
+
+    it("should handle chunk with only context and keep unchanged lines", () => {
+      const lines = ["a", "b", "c", "d"];
+      const chunks: UpdateFileChunk[] = [
+        {
+          oldLines: ["b", "c"],
+          newLines: ["b", "c"],
+        },
+      ];
+
+      const result = computeReplacements(lines, "test.txt", chunks);
+      assert.equal(result.length, 1);
+      assert.deepEqual(result[0], [1, 2, ["b", "c"]]);
+    });
   });
 
   it("should handle end of file marker", () => {

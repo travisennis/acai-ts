@@ -281,7 +281,60 @@ function applyReplacements(
   return result;
 }
 
-function computeReplacements(
+function findContextLine(
+  originalLines: string[],
+  changeContext: string,
+  lineIndex: number,
+  filePath: string,
+): number {
+  const contextIdx = seekSequence(originalLines, [changeContext], lineIndex);
+  if (contextIdx === -1) {
+    throw new Error(
+      `Failed to find context '${changeContext}' in ${filePath}`,
+    );
+  }
+  return contextIdx + 1;
+}
+
+function computeInsertionIndex(originalLines: string[]): number {
+  return originalLines.length > 0 &&
+    originalLines[originalLines.length - 1] === ""
+    ? originalLines.length - 1
+    : originalLines.length;
+}
+
+interface PatternMatch {
+  pattern: string[];
+  newSlice: string[];
+  found: number;
+}
+
+function findPatternWithFallback(
+  originalLines: string[],
+  oldLines: string[],
+  newLines: string[],
+  lineIndex: number,
+): PatternMatch {
+  let pattern = oldLines;
+  let newSlice = newLines;
+  let found = seekSequence(originalLines, pattern, lineIndex);
+
+  if (
+    found === -1 &&
+    pattern.length > 0 &&
+    pattern[pattern.length - 1] === ""
+  ) {
+    pattern = pattern.slice(0, -1);
+    if (newSlice.length > 0 && newSlice[newSlice.length - 1] === "") {
+      newSlice = newSlice.slice(0, -1);
+    }
+    found = seekSequence(originalLines, pattern, lineIndex);
+  }
+
+  return { pattern, newSlice, found };
+}
+
+export function computeReplacements(
   originalLines: string[],
   filePath: string,
   chunks: UpdateFileChunk[],
@@ -291,43 +344,29 @@ function computeReplacements(
 
   for (const chunk of chunks) {
     if (chunk.changeContext) {
-      const contextIdx = seekSequence(
+      lineIndex = findContextLine(
         originalLines,
-        [chunk.changeContext],
+        chunk.changeContext,
         lineIndex,
+        filePath,
       );
-      if (contextIdx === -1) {
-        throw new Error(
-          `Failed to find context '${chunk.changeContext}' in ${filePath}`,
-        );
-      }
-      lineIndex = contextIdx + 1;
     }
 
     if (chunk.oldLines.length === 0) {
-      const insertionIdx =
-        originalLines.length > 0 &&
-        originalLines[originalLines.length - 1] === ""
-          ? originalLines.length - 1
-          : originalLines.length;
-      replacements.push([insertionIdx, 0, chunk.newLines]);
+      replacements.push([
+        computeInsertionIndex(originalLines),
+        0,
+        chunk.newLines,
+      ]);
       continue;
     }
 
-    let pattern = chunk.oldLines;
-    let newSlice = chunk.newLines;
-    let found = seekSequence(originalLines, pattern, lineIndex);
-
-    if (
-      found === -1 &&
-      pattern.length > 0 &&
-      pattern[pattern.length - 1] === ""
-    ) {
-      pattern = pattern.slice(0, -1);
-      if (newSlice.length > 0 && newSlice[newSlice.length - 1] === "")
-        newSlice = newSlice.slice(0, -1);
-      found = seekSequence(originalLines, pattern, lineIndex);
-    }
+    const { pattern, newSlice, found } = findPatternWithFallback(
+      originalLines,
+      chunk.oldLines,
+      chunk.newLines,
+      lineIndex,
+    );
 
     if (found !== -1) {
       replacements.push([found, pattern.length, newSlice]);
