@@ -357,6 +357,43 @@ export interface LoadSkillsOptions {
   };
 }
 
+async function warnIfDeprecatedSkillsDir(
+  dirPath: string,
+  message: string,
+): Promise<void> {
+  try {
+    const entries = await readdir(dirPath);
+    if (entries.length > 0) {
+      logger.warn(message);
+    }
+  } catch {
+    // Directory doesn't exist, no warning needed
+  }
+}
+
+interface DirConfig {
+  dir: string;
+  source: string;
+  mode: "recursive" | "claude";
+  colonSeparated: boolean;
+}
+
+async function loadAllSkillDirs(
+  configs: DirConfig[],
+  skillMap: Map<string, Skill>,
+): Promise<void> {
+  for (const { dir, source, mode, colonSeparated } of configs) {
+    for (const skill of await loadSkillsFromDirInternal(
+      dir,
+      source,
+      mode,
+      colonSeparated,
+    )) {
+      skillMap.set(skill.name, skill);
+    }
+  }
+}
+
 export async function loadSkills(
   additionalSkillPathsOrOptions?: string[] | LoadSkillsOptions,
 ): Promise<Skills> {
@@ -371,74 +408,44 @@ export async function loadSkills(
 
   const skillMap = new Map<string, Skill>();
 
-  // Deprecated: warn if skills exist in old .acai directories
-  const deprecatedGlobalDir = join(homedir(), CONFIG_DIR_NAME, "skills");
-  try {
-    const entries = await readdir(deprecatedGlobalDir);
-    if (entries.length > 0) {
-      logger.warn(
-        "Skills found in ~/.acai/skills/ are deprecated and will not be loaded. Move them to ~/.agents/skills/ to continue using them.",
-      );
-    }
-  } catch {
-    // Directory doesn't exist, no warning needed
-  }
-
-  const deprecatedProjectDir = resolve(
-    process.cwd(),
-    CONFIG_DIR_NAME,
-    "skills",
+  await warnIfDeprecatedSkillsDir(
+    join(homedir(), CONFIG_DIR_NAME, "skills"),
+    "Skills found in ~/.acai/skills/ are deprecated and will not be loaded. Move them to ~/.agents/skills/ to continue using them.",
   );
-  try {
-    const entries = await readdir(deprecatedProjectDir);
-    if (entries.length > 0) {
-      logger.warn(
-        "Skills found in .acai/skills/ are deprecated and will not be loaded. Move them to ~/.agents/skills/ to continue using them.",
-      );
-    }
-  } catch {
-    // Directory doesn't exist, no warning needed
-  }
+
+  await warnIfDeprecatedSkillsDir(
+    resolve(process.cwd(), CONFIG_DIR_NAME, "skills"),
+    "Skills found in .acai/skills/ are deprecated and will not be loaded. Move them to ~/.agents/skills/ to continue using them.",
+  );
 
   // --- User-level skills (lowest priority) ---
 
-  // Codex user: recursive, simple directory name
-  const codexUserDir = dirs.codexUser ?? join(homedir(), ".codex", "skills");
-  for (const skill of await loadSkillsFromDirInternal(
-    codexUserDir,
-    "codex-user",
-    "recursive",
-    false,
-  )) {
-    skillMap.set(skill.name, skill);
-  }
-
-  // Claude user: single level only
-  const claudeUserDir = dirs.claudeUser ?? join(homedir(), ".claude", "skills");
-  for (const skill of await loadSkillsFromDirInternal(
-    claudeUserDir,
-    "claude-user",
-    "claude",
-    false,
-  )) {
-    skillMap.set(skill.name, skill);
-  }
-
-  // .agents global (user): recursive, colon-separated path names
-  const agentsGlobalSkillsDir =
-    dirs.agentsGlobal ?? join(homedir(), ".agents", "skills");
-  for (const skill of await loadSkillsFromDirInternal(
-    agentsGlobalSkillsDir,
-    "user",
-    "recursive",
-    true,
-  )) {
-    skillMap.set(skill.name, skill);
-  }
+  await loadAllSkillDirs(
+    [
+      {
+        dir: dirs.codexUser ?? join(homedir(), ".codex", "skills"),
+        source: "codex-user",
+        mode: "recursive",
+        colonSeparated: false,
+      },
+      {
+        dir: dirs.claudeUser ?? join(homedir(), ".claude", "skills"),
+        source: "claude-user",
+        mode: "claude",
+        colonSeparated: false,
+      },
+      {
+        dir: dirs.agentsGlobal ?? join(homedir(), ".agents", "skills"),
+        source: "user",
+        mode: "recursive",
+        colonSeparated: true,
+      },
+    ],
+    skillMap,
+  );
 
   // --- Config-level skills (overrides user-level) ---
 
-  // Additional skill paths from config (skills.path)
   for (const skillPath of additionalSkillPaths) {
     for (const skill of await loadSkillsFromDirInternal(
       skillPath,
@@ -452,29 +459,23 @@ export async function loadSkills(
 
   // --- Project-level skills (highest priority, always wins) ---
 
-  // Claude project: single level only
-  const claudeProjectDir =
-    dirs.claudeProject ?? resolve(process.cwd(), ".claude", "skills");
-  for (const skill of await loadSkillsFromDirInternal(
-    claudeProjectDir,
-    "claude-project",
-    "claude",
-    false,
-  )) {
-    skillMap.set(skill.name, skill);
-  }
-
-  // .agents project: recursive, colon-separated path names
-  const agentsProjectSkillsDir =
-    dirs.agentsProject ?? resolve(process.cwd(), ".agents", "skills");
-  for (const skill of await loadSkillsFromDirInternal(
-    agentsProjectSkillsDir,
-    "project",
-    "recursive",
-    true,
-  )) {
-    skillMap.set(skill.name, skill);
-  }
+  await loadAllSkillDirs(
+    [
+      {
+        dir: dirs.claudeProject ?? resolve(process.cwd(), ".claude", "skills"),
+        source: "claude-project",
+        mode: "claude",
+        colonSeparated: false,
+      },
+      {
+        dir: dirs.agentsProject ?? resolve(process.cwd(), ".agents", "skills"),
+        source: "project",
+        mode: "recursive",
+        colonSeparated: true,
+      },
+    ],
+    skillMap,
+  );
 
   return new Skills(Array.from(skillMap.values()));
 }

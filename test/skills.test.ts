@@ -185,4 +185,39 @@ describe("loadSkills priority", () => {
     assert.ok(names.includes("claude-project-only"));
     assert.ok(names.includes("project-only"));
   });
+
+  it("should handle empty options gracefully", async () => {
+    // No error when no options provided
+    const skills = await loadSkills();
+    assert.ok(skills instanceof Object);
+  });
+
+  it("should handle empty array (simplified API)", async () => {
+    const skills = await loadSkills([]);
+    assert.ok(skills instanceof Object);
+  });
+
+  it("should handle undefined options gracefully", async () => {
+    const skills = await loadSkills(undefined);
+    assert.ok(skills instanceof Object);
+  });
+
+  it("should handle empty additionalSkillPaths", async () => {
+    const skills = await loadSkills({ additionalSkillPaths: [], dirs: {} });
+    assert.ok(skills instanceof Object);
+  });
+
+  it("should handle mixed undefined dirs gracefully", async () => {
+    const skills = await loadSkills({
+      additionalSkillPaths: [],
+      dirs: {
+        codexUser: undefined,
+        claudeUser: undefined,
+        agentsGlobal: undefined,
+        claudeProject: undefined,
+        agentsProject: undefined,
+      },
+    });
+    assert.ok(skills instanceof Object);
+  });
 });
