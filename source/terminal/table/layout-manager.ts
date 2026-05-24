@@ -303,6 +303,108 @@ function applyForcedValues(vals: Array<number | null>, result: number[]): void {
 }
 
 /**
+ * Computes the existing width and count of editable columns
+ * for a spanning cell by summing up the spanned columns.
+ */
+function computeSpanExistingWidth(
+  span: number,
+  col: number,
+  result: number[],
+  vals: Array<number | null>,
+  initialWidth: number,
+  initialEditable: number,
+): { existingWidth: number; editableCols: number } {
+  let existingWidth = initialWidth;
+  let editableCols = initialEditable;
+  for (let i = 1; i < span; i++) {
+    existingWidth += 1 + result[col + i];
+    if (typeof vals[col + i] !== "number") {
+      editableCols++;
+    }
+  }
+  return { existingWidth, editableCols };
+}
+
+/**
+ * Distributes excess desired width across editable columns.
+ */
+function distributeSpanExcess(
+  cell: Cell,
+  col: number,
+  desiredWidth: "desiredWidth" | "desiredHeight",
+  result: number[],
+  vals: Array<number | null>,
+  startWidth: number,
+  startEditable: number,
+): void {
+  let existingWidth = startWidth;
+  let editableCols = startEditable;
+  let i = 0;
+  while (editableCols > 0 && cell[desiredWidth] > existingWidth) {
+    if (typeof vals[col + i] !== "number") {
+      const dif = Math.round(
+        (cell[desiredWidth] - existingWidth) / editableCols,
+      );
+      existingWidth += dif;
+      result[col + i] += dif;
+      editableCols--;
+    }
+    i++;
+  }
+}
+
+/**
+ * Processes a single spanning cell, computing and distributing its width.
+ */
+function processSpanner(
+  cell: Cell,
+  colSpan: "colSpan",
+  desiredWidth: "desiredWidth" | "desiredHeight",
+  x: "x" | "y",
+  result: number[],
+  auto: Record<number, number>,
+  vals: Array<number | null>,
+): void {
+  const span = cell[colSpan];
+  const col = cell[x];
+  if (col === null) return;
+
+  let existingWidth = result[col];
+  let editableCols = typeof vals[col] === "number" ? 0 : 1;
+
+  if (typeof existingWidth === "number") {
+    const computed = computeSpanExistingWidth(
+      span,
+      col,
+      result,
+      vals,
+      existingWidth,
+      editableCols,
+    );
+    existingWidth = computed.existingWidth;
+    editableCols = computed.editableCols;
+  } else {
+    existingWidth =
+      desiredWidth === "desiredWidth" ? cell.desiredWidth - 1 : 1;
+    if (!auto[col] || auto[col] < existingWidth) {
+      auto[col] = existingWidth;
+    }
+  }
+
+  if (cell[desiredWidth] > existingWidth) {
+    distributeSpanExcess(
+      cell,
+      col,
+      desiredWidth,
+      result,
+      vals,
+      existingWidth,
+      editableCols,
+    );
+  }
+}
+
+/**
  * Processes spanning cells and distributes their widths across columns.
  */
 function processSpanners(
@@ -315,43 +417,7 @@ function processSpanners(
   vals: Array<number | null>,
 ): void {
   for (let k = spanners.length - 1; k >= 0; k--) {
-    const cell = spanners[k];
-    const span = cell[colSpan];
-    const col = cell[x];
-    if (col === null) continue;
-
-    let existingWidth = result[col];
-    let editableCols = typeof vals[col] === "number" ? 0 : 1;
-
-    if (typeof existingWidth === "number") {
-      for (let i = 1; i < span; i++) {
-        existingWidth += 1 + result[col + i];
-        if (typeof vals[col + i] !== "number") {
-          editableCols++;
-        }
-      }
-    } else {
-      existingWidth =
-        desiredWidth === "desiredWidth" ? cell.desiredWidth - 1 : 1;
-      if (!auto[col] || auto[col] < existingWidth) {
-        auto[col] = existingWidth;
-      }
-    }
-
-    if (cell[desiredWidth] > existingWidth) {
-      let i = 0;
-      while (editableCols > 0 && cell[desiredWidth] > existingWidth) {
-        if (typeof vals[col + i] !== "number") {
-          const dif = Math.round(
-            (cell[desiredWidth] - existingWidth) / editableCols,
-          );
-          existingWidth += dif;
-          result[col + i] += dif;
-          editableCols--;
-        }
-        i++;
-      }
-    }
+    processSpanner(spanners[k], colSpan, desiredWidth, x, result, auto, vals);
   }
 }
 

@@ -67,6 +67,109 @@ describe("makeComputeWidths", () => {
     const sum = (vals[0] ?? 0) + (vals[1] ?? 0) + (vals[2] ?? 0);
     assert.ok(sum > 0, "Span should distribute width across columns");
   });
+
+  it("should distribute span across columns beyond existing widths", () => {
+    // Column 0 and 1 already have values from non-spanning cells
+    const spanningCell = createCell(0, 30, 2); // spans cols 0-1, wants 30 total
+    const existingCell0 = createCell(0, 5); // col 0 already wants 5
+    // Need them in different rows so they don't conflict
+    const vals: (number | null)[] = [null, null];
+    const table: Cell[][] = [[existingCell0], [spanningCell]];
+    computeWidths(vals, table);
+    // The span should increase col 0 beyond the existing 5 to help reach 30
+    // Since only col 0 (forced) and col 1 (editable), distribution goes to col 1
+    assert.ok(
+      (vals[1] ?? 0) > 0,
+      "Span should distribute excess to editable columns",
+    );
+  });
+
+  it("should respect forced values when distributing span", () => {
+    // Column 0 has a forced value, column 1 is editable
+    const spanningCell = createCell(0, 20, 2); // spans cols 0-1
+    const vals: (number | null)[] = [10, null]; // col 0 forced to 10
+    const table: Cell[][] = [[spanningCell]];
+    computeWidths(vals, table);
+    // Forced col 0 stays at 10, editable col 1 gets the distribution
+    assert.equal(vals[0], 10, "Forced column should keep its value");
+    assert.ok(
+      (vals[1] ?? 0) > 0,
+      "Editable column should get distributed width",
+    );
+  });
+
+  it("should handle span where desired width does not exceed existing", () => {
+    // Existing values already satisfy the span's desire
+    const spanningCell = createCell(0, 5, 2); // wants 5 total
+    const vals: (number | null)[] = [10, 5]; // existing total = 10 + 1 (gap) + 5 = 16 > 5
+    const table: Cell[][] = [[spanningCell]];
+    computeWidths(vals, table);
+    // Values should remain as-is since existing > desired
+    assert.equal(vals[0], 10);
+    assert.equal(vals[1], 5);
+  });
+
+  it("should handle multiple spanning cells", () => {
+    // Two spanning cells in different rows
+    const span1 = createCell(0, 15, 3); // spans cols 0-2
+    const span2 = createCell(0, 20, 2); // spans cols 0-1, smaller desire so should not force
+    const vals: (number | null)[] = [null, null, null];
+    const table: Cell[][] = [[span1], [span2]];
+    computeWidths(vals, table);
+    // Both spans should contribute to final widths
+    const totalWidth = (vals[0] ?? 0) + (vals[1] ?? 0) + (vals[2] ?? 0);
+    assert.ok(totalWidth >= 15, "Columns should accommodate wider span");
+  });
+
+  it("should handle span with no editable columns (all forced)", () => {
+    const spanningCell = createCell(0, 5, 2); // spans cols 0-1
+    const vals: (number | null)[] = [10, 10]; // both columns forced
+    const table: Cell[][] = [[spanningCell]];
+    computeWidths(vals, table);
+    // Both columns are forced, so no distribution possible
+    assert.equal(vals[0], 10);
+    assert.equal(vals[1], 10);
+  });
+
+  it("should handle span starting beyond first column", () => {
+    // Span starts at column 2
+    const spanningCell = createCell(2, 20, 2); // spans cols 2-3
+    const vals: (number | null)[] = [null, null, null, null];
+    const table: Cell[][] = [[spanningCell]];
+    computeWidths(vals, table);
+    // Only cols 2-3 should have values
+    assert.equal(vals[0], 1, "Col 0 should get forced minimum");
+    assert.equal(vals[1], 1, "Col 1 should get forced minimum");
+    assert.ok(
+      (vals[2] ?? 0) > 0,
+      "Span column 2 should have distributed width",
+    );
+    assert.ok(
+      (vals[3] ?? 0) > 0,
+      "Span column 3 should have distributed width",
+    );
+  });
+
+  it("should handle single-column span", () => {
+    const spanningCell = createCell(1, 15, 1); // colSpan of 1, effectively no spanning
+    const vals: (number | null)[] = [null, null];
+    const table: Cell[][] = [[spanningCell]];
+    computeWidths(vals, table);
+    assert.equal(vals[0], 1, "Col 0 gets forced minimum");
+    assert.equal(vals[1], 15, "Col 1 gets the cell's desired width");
+  });
+
+  it("should process spanners in reverse order for correct distribution", () => {
+    // Two spans overlapping - later spans should be processed after earlier ones
+    const span1 = createCell(0, 30, 3); // big span over cols 0-2
+    const span2 = createCell(0, 5, 2); // smaller span over cols 0-1
+    const vals: (number | null)[] = [null, null, null];
+    const table: Cell[][] = [[span1], [span2]];
+    computeWidths(vals, table);
+    // The smaller span (span2) is processed second and should not reduce existing widths
+    assert.ok((vals[0] ?? 0) > 0, "Col 0 should have width");
+    assert.ok((vals[1] ?? 0) > 0, "Col 1 should have width");
+  });
 });
 
 describe("fillInTable", () => {
