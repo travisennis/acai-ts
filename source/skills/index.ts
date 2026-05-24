@@ -219,6 +219,129 @@ async function shouldSkipEntry(
   return false;
 }
 
+/**
+ * Resolves the real path of a directory and checks for symlink cycles.
+ * Returns true if the directory can be safely processed.
+ */
+async function resolveSkillDir(
+  fullDir: string,
+  visited: Set<string>,
+): Promise<boolean> {
+  try {
+    const real = await realpath(fullDir);
+    if (visited.has(real)) {
+      logger.warn(`Skipping ${fullDir}: symlink cycle detected`);
+      return false;
+    }
+    visited.add(real);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Reads directory entries, returning null if the directory doesn't exist
+ * or can't be read.
+ */
+async function readSkillDirEntries(
+  fullDir: string,
+): Promise<Awaited<ReturnType<typeof readdir>> | null> {
+  try {
+    // @ts-expect-error - Node.js types have a quirk with withFileTypes
+    return await readdir(fullDir, { withFileTypes: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      logger.error(error, `Error reading skills directory ${fullDir}:`);
+    }
+    return null;
+  }
+}
+
+/**
+ * Processes a directory entry in recursive mode: recursively scans subdirectories.
+ */
+async function handleRecursiveDir(
+  entryName: string,
+  dir: string,
+  source: string,
+  mode: "recursive" | "claude",
+  subdir: string,
+  visited: Set<string>,
+): Promise<Skill[]> {
+  const newSubdir = subdir ? join(subdir, entryName) : entryName;
+  return await loadSkillsFromDirInternal(
+    dir,
+    source,
+    mode,
+    false,
+    newSubdir,
+    visited,
+  );
+}
+
+/**
+ * Processes a directory entry in claude mode: checks for SKILL.md in the subdirectory.
+ */
+async function handleClaudeDir(
+  entryName: string,
+  entryPath: string,
+  source: string,
+): Promise<Skill[]> {
+  const skillPath = join(entryPath, "SKILL.md");
+  const skill = await tryLoadSkillFromFile(
+    skillPath,
+    entryName,
+    entryPath,
+    source,
+  );
+  return skill ? [skill] : [];
+}
+
+/**
+ * Processes a directory entry based on the scan mode.
+ */
+async function handleDirEntry(
+  entryName: string,
+  entryPath: string,
+  dir: string,
+  source: string,
+  mode: "recursive" | "claude",
+  subdir: string,
+  visited: Set<string>,
+): Promise<Skill[]> {
+  if (mode === "recursive") {
+    return await handleRecursiveDir(
+      entryName,
+      dir,
+      source,
+      mode,
+      subdir,
+      visited,
+    );
+  }
+  return await handleClaudeDir(entryName, entryPath, source);
+}
+
+/**
+ * Processes a SKILL.md file entry, loading it as a skill.
+ */
+async function handleSkillFile(
+  entryPath: string,
+  dir: string,
+  subdir: string,
+  source: string,
+): Promise<Skill[]> {
+  const baseDir = subdir ? join(dir, subdir) : dir;
+  const skill = await tryLoadSkillFromFile(
+    entryPath,
+    basename(dirname(entryPath)),
+    baseDir,
+    source,
+  );
+  return skill ? [skill] : [];
+}
+
 async function loadSkillsFromDirInternal(
   dir: string,
   source: string,
@@ -230,82 +353,47 @@ async function loadSkillsFromDirInternal(
   const skills: Skill[] = [];
   const fullDir = join(dir, subdir);
 
-  // Resolve the real path to detect symlink cycles
-  try {
-    const real = await realpath(fullDir);
-    if (visited.has(real)) {
-      logger.warn(`Skipping ${fullDir}: symlink cycle detected`);
-      return skills;
-    }
-    visited.add(real);
-  } catch {
+  // Check symlink cycles
+  if (!(await resolveSkillDir(fullDir, visited))) {
     return skills;
   }
 
-  let entries: Awaited<ReturnType<typeof readdir>>;
-  try {
-    // @ts-expect-error - Node.js types have a quirk with withFileTypes
-    entries = await readdir(fullDir, { withFileTypes: true });
-  } catch (error) {
-    // Directory doesn't exist or can't be read
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      logger.error(error, `Error reading skills directory ${fullDir}:`);
-    }
-    return skills;
-  }
+  // Read directory
+  const entries = await readSkillDirEntries(fullDir);
+  if (!entries) return skills;
 
+  // Process each entry
   for (const entry of entries) {
     const entryName = entry.name.toString();
     const entryPath = join(fullDir, entryName);
 
-    // Skip hidden files, symlinks, etc.
     if (await shouldSkipEntry(entryPath, entryName)) {
       continue;
     }
 
-    // Handle directories
     if (entry.isDirectory()) {
-      if (mode === "recursive") {
-        // Recursively scan subdirectories
-        const newSubdir = subdir ? join(subdir, entryName) : entryName;
-        const subSkills = await loadSkillsFromDirInternal(
-          dir,
-          source,
-          mode,
-          false,
-          newSubdir,
-          visited,
-        );
-        skills.push(...subSkills);
-      } else if (mode === "claude") {
-        // Claude mode: only check immediate subdirectories for SKILL.md
-        const skillPath = join(entryPath, "SKILL.md");
-        const skill = await tryLoadSkillFromFile(
-          skillPath,
-          entryName,
-          entryPath,
-          source,
-        );
-        if (skill) {
-          skills.push(skill);
-        }
-      }
-      continue;
-    }
-
-    // Handle files
-    if (entry.isFile() && entryName === "SKILL.md" && mode === "recursive") {
-      // Base directory is the directory containing the SKILL.md file
-      const baseDir = subdir ? join(dir, subdir) : dir;
-      const skill = await tryLoadSkillFromFile(
+      const subSkills = await handleDirEntry(
+        entryName,
         entryPath,
-        basename(dirname(entryPath)),
-        baseDir,
+        dir,
+        source,
+        mode,
+        subdir,
+        visited,
+      );
+      skills.push(...subSkills);
+    } else if (
+      entry.isFile() &&
+      entryName === "SKILL.md" &&
+      mode === "recursive"
+    ) {
+      const fileSkills = await handleSkillFile(
+        entryPath,
+        dir,
+        subdir,
         source,
       );
-      if (skill) {
-        skills.push(skill);
-      }
+      skills.push(...fileSkills);
     }
   }
 
