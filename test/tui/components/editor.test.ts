@@ -400,3 +400,182 @@ describe('Editor layoutText', () => {
     assert.equal(result[0].width, 0);
   });
 });
+
+describe('Editor moveCursor', () => {
+  describe('horizontal movement (right)', () => {
+    it('moves right within a line', () => {
+      const editor = new Editor();
+      editor.setText('hello');
+      editor['state'].cursorCol = 2;
+      editor['moveCursor'](0, 1);
+      assert.equal(editor['state'].cursorCol, 3);
+      assert.equal(editor['state'].cursorLine, 0);
+    });
+
+    it('wraps to next line when at end of non-last line', () => {
+      const editor = new Editor();
+      editor.setText('abc\nde');
+      editor['state'].cursorLine = 0;
+      editor['state'].cursorCol = 3;
+      editor['moveCursor'](0, 1);
+      assert.equal(editor['state'].cursorLine, 1);
+      assert.equal(editor['state'].cursorCol, 0);
+    });
+
+    it('stays at end of last line when pressing right', () => {
+      const editor = new Editor();
+      editor.setText('hello');
+      editor['state'].cursorCol = 5;
+      editor['moveCursor'](0, 1);
+      assert.equal(editor['state'].cursorCol, 5);
+      assert.equal(editor['state'].cursorLine, 0);
+    });
+
+    it('stays at end of last line (multi-line) when pressing right', () => {
+      const editor = new Editor();
+      editor.setText('abc\nde');
+      editor['state'].cursorLine = 1;
+      editor['state'].cursorCol = 2;
+      editor['moveCursor'](0, 1);
+      assert.equal(editor['state'].cursorLine, 1);
+      assert.equal(editor['state'].cursorCol, 2);
+    });
+  });
+
+  describe('horizontal movement (left)', () => {
+    it('moves left within a line', () => {
+      const editor = new Editor();
+      editor.setText('hello');
+      editor['state'].cursorCol = 3;
+      editor['moveCursor'](0, -1);
+      assert.equal(editor['state'].cursorCol, 2);
+      assert.equal(editor['state'].cursorLine, 0);
+    });
+
+    it('wraps to previous line when at start of non-first line', () => {
+      const editor = new Editor();
+      editor.setText('abc\nde');
+      editor['state'].cursorLine = 1;
+      editor['state'].cursorCol = 0;
+      editor['moveCursor'](0, -1);
+      assert.equal(editor['state'].cursorLine, 0);
+      assert.equal(editor['state'].cursorCol, 3);
+    });
+
+    it('stays at start of first line when pressing left', () => {
+      const editor = new Editor();
+      editor.setText('hello');
+      editor['state'].cursorCol = 0;
+      editor['moveCursor'](0, -1);
+      assert.equal(editor['state'].cursorCol, 0);
+      assert.equal(editor['state'].cursorLine, 0);
+    });
+  });
+
+  describe('vertical movement (down)', () => {
+    it('moves down to next line preserving column position', () => {
+      const editor = new Editor();
+      editor.setText('hello\nworld');
+      editor['state'].cursorLine = 0;
+      editor['state'].cursorCol = 2;
+      editor['moveCursor'](1, 0);
+      assert.equal(editor['state'].cursorLine, 1);
+      // Column clamped to target line length (5), so stays 2
+      assert.equal(editor['state'].cursorCol, 2);
+    });
+
+    it('clamps column when target line is shorter', () => {
+      const editor = new Editor();
+      editor.setText('hello\nab');
+      editor['state'].cursorLine = 0;
+      editor['state'].cursorCol = 4;
+      editor['moveCursor'](1, 0);
+      assert.equal(editor['state'].cursorLine, 1);
+      assert.equal(editor['state'].cursorCol, 2); // clamped to 'ab'.length
+    });
+
+    it('does nothing when already on last line', () => {
+      const editor = new Editor();
+      editor.setText('hello\nworld');
+      editor['state'].cursorLine = 1;
+      editor['state'].cursorCol = 2;
+      editor['moveCursor'](1, 0);
+      assert.equal(editor['state'].cursorLine, 1);
+      assert.equal(editor['state'].cursorCol, 2);
+    });
+
+    it('moves to next visual line when text is wrapped', () => {
+      const editor = new Editor();
+      editor.setText('a long line that wraps');
+      editor['lastWidth'] = 10;
+      editor['state'].cursorLine = 0;
+      editor['state'].cursorCol = 0;
+      // Move down once
+      editor['moveCursor'](1, 0);
+      // Should be on the second visual chunk (same logical line 0)
+      assert.equal(editor['state'].cursorLine, 0);
+      // Cursor should be at or near start of second chunk
+      assert.ok(editor['state'].cursorCol > 0);
+    });
+  });
+
+  describe('vertical movement (up)', () => {
+    it('moves up to previous line preserving column position', () => {
+      const editor = new Editor();
+      editor.setText('hello\nworld');
+      editor['state'].cursorLine = 1;
+      editor['state'].cursorCol = 2;
+      editor['moveCursor'](-1, 0);
+      assert.equal(editor['state'].cursorLine, 0);
+      assert.equal(editor['state'].cursorCol, 2);
+    });
+
+    it('clamps column when target line is shorter', () => {
+      const editor = new Editor();
+      editor.setText('ab\nhello');
+      editor['state'].cursorLine = 1;
+      editor['state'].cursorCol = 4;
+      editor['moveCursor'](-1, 0);
+      assert.equal(editor['state'].cursorLine, 0);
+      assert.equal(editor['state'].cursorCol, 2); // clamped to 'ab'.length
+    });
+
+    it('does nothing when already on first line', () => {
+      const editor = new Editor();
+      editor.setText('hello\nworld');
+      editor['state'].cursorLine = 0;
+      editor['state'].cursorCol = 2;
+      editor['moveCursor'](-1, 0);
+      assert.equal(editor['state'].cursorLine, 0);
+      assert.equal(editor['state'].cursorCol, 2);
+    });
+
+    it('moves to previous visual line when text is wrapped', () => {
+      const editor = new Editor();
+      editor.setText('a long line that wraps');
+      editor['lastWidth'] = 10;
+      editor['state'].cursorLine = 0;
+      // Place cursor at start of what would be the second visual chunk
+      // First chunk: "a long li" (10 chars), second chunk starts at index 10
+      editor['state'].cursorCol = 12;
+      // Move up once
+      editor['moveCursor'](-1, 0);
+      // Should be on the first visual chunk (same logical line 0)
+      assert.equal(editor['state'].cursorLine, 0);
+      // Cursor should be in first chunk
+      assert.ok(editor['state'].cursorCol < 12);
+    });
+  });
+
+  describe('no-op delta', () => {
+    it('does nothing when both deltas are zero', () => {
+      const editor = new Editor();
+      editor.setText('hello\nworld');
+      editor['state'].cursorLine = 1;
+      editor['state'].cursorCol = 2;
+      editor['moveCursor'](0, 0);
+      assert.equal(editor['state'].cursorLine, 1);
+      assert.equal(editor['state'].cursorCol, 2);
+    });
+  });
+});

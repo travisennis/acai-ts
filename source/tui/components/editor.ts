@@ -1233,57 +1233,56 @@ export class Editor implements Component {
   }
 
   private moveCursor(deltaLine: number, deltaCol: number): void {
-    const width = this.lastWidth;
-
     if (deltaLine !== 0) {
-      // Build visual line map for navigation
-      const visualLines = this.buildVisualLineMap(width);
-      const currentVisualLine = this.findCurrentVisualLine(visualLines);
-
-      // Calculate column position within current visual line
-      const currentVl = visualLines[currentVisualLine];
-      const visualCol = currentVl
-        ? this.state.cursorCol - currentVl.startCol
-        : 0;
-
-      // Move to target visual line
-      const targetVisualLine = currentVisualLine + deltaLine;
-
-      if (targetVisualLine >= 0 && targetVisualLine < visualLines.length) {
-        const targetVl = visualLines[targetVisualLine];
-        if (targetVl) {
-          this.state.cursorLine = targetVl.logicalLine;
-          // Try to maintain visual column position, clamped to line length
-          const targetCol =
-            targetVl.startCol + Math.min(visualCol, targetVl.length);
-          const logicalLine = this.state.lines[targetVl.logicalLine] || "";
-          this.state.cursorCol = Math.min(targetCol, logicalLine.length);
-        }
-      }
+      this.moveCursorVertical(deltaLine);
     }
 
     if (deltaCol !== 0) {
-      const currentLine = this.state.lines[this.state.cursorLine] || "";
+      this.moveCursorHorizontal(deltaCol);
+    }
+  }
 
-      if (deltaCol > 0) {
-        // Moving right
-        if (this.state.cursorCol < currentLine.length) {
-          this.state.cursorCol++;
-        } else if (this.state.cursorLine < this.state.lines.length - 1) {
-          // Wrap to start of next logical line
-          this.state.cursorLine++;
-          this.state.cursorCol = 0;
-        }
-      } else {
-        // Moving left
-        if (this.state.cursorCol > 0) {
-          this.state.cursorCol--;
-        } else if (this.state.cursorLine > 0) {
-          // Wrap to end of previous logical line
-          this.state.cursorLine--;
-          const prevLine = this.state.lines[this.state.cursorLine] || "";
-          this.state.cursorCol = prevLine.length;
-        }
+  private moveCursorVertical(deltaLine: number): void {
+    const width = this.lastWidth;
+    const visualLines = this.buildVisualLineMap(width);
+    const currentVisualLine = this.findCurrentVisualLine(visualLines);
+
+    const currentVl = visualLines[currentVisualLine];
+    const visualCol = currentVl
+      ? this.state.cursorCol - currentVl.startCol
+      : 0;
+
+    const targetVisualLine = currentVisualLine + deltaLine;
+
+    if (targetVisualLine >= 0 && targetVisualLine < visualLines.length) {
+      const targetVl = visualLines[targetVisualLine];
+      if (targetVl) {
+        this.state.cursorLine = targetVl.logicalLine;
+        const targetCol =
+          targetVl.startCol + Math.min(visualCol, targetVl.length);
+        const logicalLine = this.state.lines[targetVl.logicalLine] || "";
+        this.state.cursorCol = Math.min(targetCol, logicalLine.length);
+      }
+    }
+  }
+
+  private moveCursorHorizontal(deltaCol: number): void {
+    const currentLine = this.state.lines[this.state.cursorLine] || "";
+
+    if (deltaCol > 0) {
+      if (this.state.cursorCol < currentLine.length) {
+        this.state.cursorCol++;
+      } else if (this.state.cursorLine < this.state.lines.length - 1) {
+        this.state.cursorLine++;
+        this.state.cursorCol = 0;
+      }
+    } else {
+      if (this.state.cursorCol > 0) {
+        this.state.cursorCol--;
+      } else if (this.state.cursorLine > 0) {
+        this.state.cursorLine--;
+        const prevLine = this.state.lines[this.state.cursorLine] || "";
+        this.state.cursorCol = prevLine.length;
       }
     }
   }
