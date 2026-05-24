@@ -350,6 +350,41 @@ async function getMetadata(
   });
 }
 
+/**
+ * Processes child process stdout/stderr into a result string.
+ * Trims, truncates oversized output, falls back to stderr or a placeholder,
+ * and attempts JSON parsing for structured output.
+ */
+export function processChildOutput(stdout: string, stderr: string): string {
+  const maxOutputBytes = 2_000_000;
+  let output = stdout.trim();
+
+  if (output.length > maxOutputBytes) {
+    output = `${output.substring(0, maxOutputBytes)}\n[Output truncated]`;
+  }
+
+  if (!output) {
+    const errText = stderr.trim();
+    if (errText) {
+      output = errText;
+    }
+  }
+
+  if (!output) {
+    output = "[No output from dynamic tool]";
+  }
+
+  if (output.startsWith("{") || output.startsWith("[")) {
+    try {
+      return JSON.stringify(JSON.parse(output));
+    } catch {
+      return output;
+    }
+  }
+
+  return output;
+}
+
 async function spawnChildProcess(
   scriptPath: string,
   params: Record<string, unknown>,
@@ -420,34 +455,7 @@ async function spawnChildProcess(
     child.on("close", () => {
       clearTimeout(timer);
       if (hasTimedOut) return;
-
-      let output = stdout.trim();
-      const maxOutputBytes = 2000000;
-      if (output.length > maxOutputBytes) {
-        output = `${output.substring(0, maxOutputBytes)}\n[Output truncated]`;
-      }
-
-      // If no stdout, prefer stderr so callers get useful info
-      const errText = stderr.trim();
-      if (!output && errText) {
-        output = errText;
-      }
-
-      // Fallback to a non-empty placeholder to satisfy callers
-      if (!output) {
-        output = "[No output from dynamic tool]";
-      }
-
-      // Attempt to parse as JSON if structured
-      if (output && (output.startsWith("{") || output.startsWith("["))) {
-        try {
-          resolve(JSON.stringify(JSON.parse(output)));
-        } catch {
-          resolve(output);
-        }
-      } else {
-        resolve(output);
-      }
+      resolve(processChildOutput(stdout, stderr));
     });
 
     if (abortSignal) {

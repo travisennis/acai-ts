@@ -7,6 +7,7 @@ import {
   getShebang,
   parseShebang,
   parseTextSchema,
+  processChildOutput,
   resolveToolInterpreter,
 } from "../../source/tools/dynamic-tool-loader.ts";
 
@@ -354,5 +355,71 @@ verbose: boolean optional enable verbose`;
     assert.strictEqual(result?.parameters[2].name, "verbose");
     assert.strictEqual(result?.parameters[2].type, "boolean");
     assert.strictEqual(result?.parameters[2].required, false);
+  });
+});
+
+describe("processChildOutput", () => {
+  it("should trim stdout", () => {
+    const result = processChildOutput("  hello world  ", "");
+    assert.strictEqual(result, "hello world");
+  });
+
+  it("should truncate output exceeding max size", () => {
+    const largeOutput = "x".repeat(2_000_001);
+    const result = processChildOutput(largeOutput, "");
+    assert.strictEqual(result.length, 2_000_000 + "\n[Output truncated]".length);
+    assert.ok(result.endsWith("[Output truncated]"));
+  });
+
+  it("should not truncate output within max size", () => {
+    const output = "hello world";
+    const result = processChildOutput(output, "");
+    assert.strictEqual(result, "hello world");
+  });
+
+  it("should fall back to stderr when stdout is empty", () => {
+    const result = processChildOutput("", "error message");
+    assert.strictEqual(result, "error message");
+  });
+
+  it("should use placeholder when both stdout and stderr are empty", () => {
+    const result = processChildOutput("", "");
+    assert.strictEqual(result, "[No output from dynamic tool]");
+  });
+
+  it("should use placeholder when stdout is empty and stderr is only whitespace", () => {
+    const result = processChildOutput("", "   ");
+    assert.strictEqual(result, "[No output from dynamic tool]");
+  });
+
+  it("should parse valid JSON object output", () => {
+    const result = processChildOutput('{"key": "value"}', "");
+    assert.strictEqual(result, '{"key":"value"}');
+  });
+
+  it("should parse valid JSON array output", () => {
+    const result = processChildOutput("[1, 2, 3]", "");
+    assert.strictEqual(result, "[1,2,3]");
+  });
+
+  it("should return raw output for invalid JSON", () => {
+    const result = processChildOutput("{invalid json}", "");
+    assert.strictEqual(result, "{invalid json}");
+  });
+
+  it("should return raw output for non-JSON strings", () => {
+    const result = processChildOutput("plain text output", "");
+    assert.strictEqual(result, "plain text output");
+  });
+
+  it("should prefer stdout over stderr when both are non-empty", () => {
+    const result = processChildOutput("stdout content", "stderr content");
+    assert.strictEqual(result, "stdout content");
+  });
+
+  it("should handle truncated output that is valid JSON", () => {
+    const largeJson = "{" + '"a": ' + "\"" + "x".repeat(2_000_000) + "\"}";
+    const result = processChildOutput(largeJson, "");
+    assert.ok(result.endsWith("[Output truncated]"));
   });
 });
