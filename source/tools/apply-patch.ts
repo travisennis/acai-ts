@@ -3,7 +3,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import { createTwoFilesPatch } from "diff";
 import { z } from "zod";
-import { config } from "../config/index.ts";
+import { config, type Config } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { clearProjectStatusCache } from "../repl/project-status.ts";
 import style from "../terminal/style.ts";
@@ -489,6 +489,71 @@ export async function applyChanges(
   return changed;
 }
 
+interface ProcessHunkResult {
+  change: ApplyPatchFileChange;
+  diffLine?: string;
+}
+
+async function processHunk(
+  hunk: Hunk,
+  root: string,
+  allowedDirectories: string[],
+  projectConfig: Config,
+  primaryDir: string,
+  abortSignal?: AbortSignal,
+): Promise<ProcessHunkResult> {
+  if (abortSignal?.aborted) {
+    throw new Error("Cancelled");
+  }
+
+  const p = resolvePathInRoot(root, hunk.path);
+  const validPath = await validatePath(p.abs, allowedDirectories, {
+    requireExistence: hunk.type !== "add",
+    abortSignal,
+  });
+
+  if (hunk.type === "add") {
+    return {
+      change: { type: "add", path: validPath, content: hunk.contents },
+    };
+  }
+
+  if (hunk.type === "delete") {
+    validateFileNotReadOnly(validPath, projectConfig, primaryDir);
+    return { change: { type: "delete", path: validPath } };
+  }
+
+  // update
+  validateFileNotReadOnly(validPath, projectConfig, primaryDir);
+
+  let moveAbs: string | undefined;
+  if (hunk.movePath) {
+    const moveP = resolvePathInRoot(root, hunk.movePath);
+    moveAbs = await validatePath(moveP.abs, allowedDirectories, {
+      requireExistence: false,
+      abortSignal,
+    });
+  }
+
+  const upd = deriveNewContentsFromChunks(validPath, hunk.chunks);
+  const change: ApplyPatchFileChange = {
+    type: "update",
+    path: validPath,
+    movePath: moveAbs,
+    newContent: upd.content,
+    unifiedDiff: upd.unifiedDiff,
+  };
+
+  if (upd.unifiedDiff) {
+    return {
+      change,
+      diffLine: `*** Update File: ${path.relative(root, moveAbs ?? validPath)}\n${upd.unifiedDiff}\n`,
+    };
+  }
+
+  return { change };
+}
+
 export const createApplyPatchTool = async (options: {
   workspace: WorkspaceContext;
 }) => {
@@ -539,64 +604,24 @@ export const createApplyPatchTool = async (options: {
         return "No changes found in patch.";
       }
 
-      // Build a list of resolved file changes (absolute paths), and a diff preview.
       const changes: ApplyPatchFileChange[] = [];
       let diffOutput = "";
 
       for (const hunk of hunks) {
-        if (abortSignal?.aborted) throw new Error("Cancelled");
-
-        const p = resolvePathInRoot(root, hunk.path);
-
-        // Validate path is within allowed directories
-        const validPath = await validatePath(p.abs, allowedDirectories, {
-          requireExistence: hunk.type !== "add",
+        const { change, diffLine } = await processHunk(
+          hunk,
+          root,
+          allowedDirectories,
+          projectConfig,
+          primaryDir,
           abortSignal,
-        });
-
-        if (hunk.type === "add") {
-          changes.push({
-            type: "add",
-            path: validPath,
-            content: hunk.contents,
-          });
-          continue;
-        }
-
-        if (hunk.type === "delete") {
-          // Validate file is not read-only before deletion
-          validateFileNotReadOnly(validPath, projectConfig, primaryDir);
-          changes.push({ type: "delete", path: validPath });
-          continue;
-        }
-
-        // update - validate file is not read-only
-        validateFileNotReadOnly(validPath, projectConfig, primaryDir);
-
-        let moveAbs: string | undefined;
-        if (hunk.movePath) {
-          const moveP = resolvePathInRoot(root, hunk.movePath);
-          moveAbs = await validatePath(moveP.abs, allowedDirectories, {
-            requireExistence: false,
-            abortSignal,
-          });
-        }
-
-        const upd = deriveNewContentsFromChunks(validPath, hunk.chunks);
-        changes.push({
-          type: "update",
-          path: validPath,
-          movePath: moveAbs,
-          newContent: upd.content,
-          unifiedDiff: upd.unifiedDiff,
-        });
-        if (upd.unifiedDiff) {
-          diffOutput += `*** Update File: ${path.relative(root, moveAbs ?? validPath)}\n`;
-          diffOutput += `${upd.unifiedDiff}\n`;
+        );
+        changes.push(change);
+        if (diffLine) {
+          diffOutput += diffLine;
         }
       }
 
-      // Apply changes
       const changedAbs = await applyChanges(changes, abortSignal);
       const changedRel = changedAbs.map((p) => path.relative(root, p));
 

@@ -167,7 +167,8 @@ export class ConfigManager {
       const data = await fs.readFile(configPath, "utf8");
       return jsonParser(ConfigSchema).parse(data);
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "ENOENT" || code === "EPERM" || code === "EACCES") {
         return {};
       }
       throw error;
