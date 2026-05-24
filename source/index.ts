@@ -631,6 +631,28 @@ async function runReplMode(
   );
 }
 
+/**
+ * Expands a leading tilde in a path to the user's home directory.
+ * If the path does not start with ~, it is returned unchanged.
+ */
+export function expandTildePath(dir: string): string {
+  if (dir.startsWith("~/") || dir === "~") {
+    return path.join(os.homedir(), dir.slice(1));
+  }
+  return dir;
+}
+
+/**
+ * Resolves a path (expanding tilde if present) and adds it to a list
+ * of directories if it is not already present.
+ */
+export function addUniqueDir(dir: string, dirs: string[]): void {
+  const resolvedDir = path.resolve(expandTildePath(dir));
+  if (!dirs.includes(resolvedDir)) {
+    dirs.push(resolvedDir);
+  }
+}
+
 async function main() {
   try {
     const appConfig = await config.ensureDefaultConfig("acai");
@@ -663,36 +685,24 @@ async function main() {
 
     // Add config-sourced allowed directories (merged from app and project configs)
     const mergedConfig = await config.getConfig();
-    const configAllowedDirs = mergedConfig.allowedDirs ?? [];
-    for (const dir of configAllowedDirs) {
-      const expandedDir =
-        dir.startsWith("~/") || dir === "~"
-          ? path.join(os.homedir(), dir.slice(1))
-          : dir;
-      const resolvedDir = path.resolve(expandedDir);
-      if (!workspace.allowedDirs.includes(resolvedDir)) {
-        workspace.allowedDirs.push(resolvedDir);
-      }
+    for (const dir of mergedConfig.allowedDirs ?? []) {
+      addUniqueDir(dir, workspace.allowedDirs);
     }
 
     // Add configured skills paths to allowed directories so scripts within
     // them can be executed by the Bash tool.
-    const skillsPathConfig = mergedConfig.skills?.path ?? "";
-    for (const resolvedDir of parseSkillsPath(skillsPathConfig)) {
-      if (!workspace.allowedDirs.includes(resolvedDir)) {
-        workspace.allowedDirs.push(resolvedDir);
-      }
+    for (const resolvedDir of parseSkillsPath(
+      mergedConfig.skills?.path ?? "",
+    )) {
+      addUniqueDir(resolvedDir, workspace.allowedDirs);
     }
 
     // Add logs directory to allowed directories if configured
     const logsPath = mergedConfig.logs?.path;
     if (logsPath) {
-      // Expand ~ to home directory before resolving
-      const expandedLogsPath =
-        logsPath.startsWith("~/") || logsPath === "~"
-          ? path.join(os.homedir(), logsPath.slice(1))
-          : logsPath;
-      const logsDir = path.dirname(path.resolve(expandedLogsPath));
+      const logsDir = path.dirname(
+        path.resolve(expandTildePath(logsPath)),
+      );
       if (!workspace.allowedDirs.includes(logsDir)) {
         workspace.allowedDirs.push(logsDir);
       }
