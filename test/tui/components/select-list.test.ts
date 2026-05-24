@@ -276,6 +276,96 @@ describe("SelectList navigation", () => {
     });
   });
 
+  describe("render", () => {
+    const plainTheme = {
+      selectedPrefix: (t: string) => t,
+      selectedText: (t: string) => `[sel]${t}[/sel]`,
+      description: (t: string) => `[desc]${t}[/desc]`,
+      scrollInfo: (t: string) => `[info]${t}[/info]`,
+      noMatch: (t: string) => `[no]${t}[/no]`,
+    };
+
+    it("should return no-match message when no items", () => {
+      const list = new SelectList([], 5, plainTheme);
+      const lines = list.render(40);
+      assert.equal(lines.length, 1);
+      assert.ok(lines[0].includes("No matching commands"));
+    });
+
+    it("should render one line per visible item", () => {
+      const items = [
+        { value: "1", label: "One" },
+        { value: "2", label: "Two" },
+        { value: "3", label: "Three" },
+      ];
+      const list = new SelectList(items, 5, plainTheme);
+      const lines = list.render(40);
+      assert.equal(lines.length, 3);
+      assert.ok(lines[0].includes("One"));
+      assert.ok(lines[1].includes("Two"));
+      assert.ok(lines[2].includes("Three"));
+    });
+
+    it("should mark selected item", () => {
+      const items = [
+        { value: "1", label: "One" },
+        { value: "2", label: "Two" },
+      ];
+      const list = new SelectList(items, 5, plainTheme);
+      const lines = list.render(40);
+      assert.ok(lines[0].includes("[sel]"));
+    });
+
+    it("should show description when width allows", () => {
+      const items = [
+        { value: "1", label: "One", description: "First item" },
+        { value: "2", label: "Two", description: "Second item" },
+      ];
+      const list = new SelectList(items, 5, plainTheme);
+      list.setSelectedIndex(1);
+      const lines = list.render(80);
+      assert.ok(lines[1].includes("Second item"));
+    });
+
+    it("should show scroll indicator when items exceed maxVisible", () => {
+      const items = [
+        { value: "1", label: "One" },
+        { value: "2", label: "Two" },
+        { value: "3", label: "Three" },
+        { value: "4", label: "Four" },
+        { value: "5", label: "Five" },
+        { value: "6", label: "Six" },
+      ];
+      const list = new SelectList(items, 3, plainTheme);
+      const lines = list.render(40);
+      assert.equal(lines.length, 4);
+      assert.ok(lines[3].includes("[info]"));
+    });
+
+    it("should not show scroll indicator when items fit within maxVisible", () => {
+      const items = [
+        { value: "1", label: "One" },
+        { value: "2", label: "Two" },
+        { value: "3", label: "Three" },
+      ];
+      const list = new SelectList(items, 5, plainTheme);
+      const lines = list.render(40);
+      assert.equal(lines.length, 3);
+    });
+
+    it("should handle selection at different positions", () => {
+      const items = [
+        { value: "1", label: "One" },
+        { value: "2", label: "Two" },
+        { value: "3", label: "Three" },
+      ];
+      const list = new SelectList(items, 5, plainTheme);
+      list.setSelectedIndex(1);
+      const lines = list.render(40);
+      assert.ok(lines[1].includes("[sel]"));
+    });
+  });
+
   describe("handleInput - unknown keys", () => {
     it("should not change selection for unknown input", () => {
       const list = new SelectList(testItems, 5);

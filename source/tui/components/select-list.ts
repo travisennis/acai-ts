@@ -104,104 +104,63 @@ export class SelectList implements Component {
       if (!item) continue;
 
       const isSelected = i === this.selectedIndex;
-
-      let line = "";
-      if (isSelected) {
-        // Use arrow indicator for selection - entire line uses selectedText color
-        const prefixWidth = 2; // "→ " is 2 characters visually
-        const displayValue = item.label || item.value;
-
-        if (item.description && width > 40) {
-          // Calculate how much space we have for value + description
-          const maxValueWidth = width - prefixWidth - 4;
-          const truncatedValue = truncateToWidth(
-            displayValue,
-            maxValueWidth,
-            "...",
-          );
-          const spacing = " ".repeat(Math.max(1, 32 - truncatedValue.length));
-
-          // Calculate remaining space for description using visible widths
-          const descriptionStart =
-            prefixWidth + truncatedValue.length + spacing.length;
-          const remainingWidth = width - descriptionStart - 2; // -2 for safety
-
-          if (remainingWidth > 10) {
-            const truncatedDesc = truncateToWidth(
-              item.description,
-              remainingWidth,
-              "...",
-            );
-            // Apply selectedText to entire line content
-            line = this.theme.selectedText(
-              `→ ${truncatedValue}${spacing}${truncatedDesc}`,
-            );
-          } else {
-            // Not enough space for description
-            const maxWidth = width - prefixWidth - 2;
-            line = this.theme.selectedText(
-              `→ ${truncateToWidth(displayValue, maxWidth, "...")}`,
-            );
-          }
-        } else {
-          // No description or not enough width
-          const maxWidth = width - prefixWidth - 2;
-          line = this.theme.selectedText(
-            `→ ${truncateToWidth(displayValue, maxWidth, "...")}`,
-          );
-        }
-      } else {
-        const displayValue = item.label || item.value;
-        const prefix = "  ";
-
-        if (item.description && width > 40) {
-          // Calculate how much space we have for value + description
-          const maxValueWidth = width - prefix.length - 4;
-          const truncatedValue = truncateToWidth(
-            displayValue,
-            maxValueWidth,
-            "...",
-          );
-          const spacing = " ".repeat(Math.max(1, 32 - truncatedValue.length));
-
-          // Calculate remaining space for description
-          const descriptionStart =
-            prefix.length + truncatedValue.length + spacing.length;
-          const remainingWidth = width - descriptionStart - 2; // -2 for safety
-
-          if (remainingWidth > 10) {
-            const truncatedDesc = truncateToWidth(
-              item.description,
-              remainingWidth,
-              "...",
-            );
-            const descText = this.theme.description(spacing + truncatedDesc);
-            line = prefix + truncatedValue + descText;
-          } else {
-            // Not enough space for description
-            const maxWidth = width - prefix.length - 2;
-            line = prefix + truncateToWidth(displayValue, maxWidth, "...");
-          }
-        } else {
-          // No description or not enough width
-          const maxWidth = width - prefix.length - 2;
-          line = prefix + truncateToWidth(displayValue, maxWidth, "...");
-        }
-      }
-
-      lines.push(line);
+      lines.push(this.formatItemLine(item, isSelected, width));
     }
 
     // Add scroll indicators if needed
     if (startIndex > 0 || endIndex < this.filteredItems.length) {
       const scrollText = `  (${this.selectedIndex + 1}/${this.filteredItems.length})`;
-      // Truncate if too long for terminal
       lines.push(
         this.theme.scrollInfo(truncateToWidth(scrollText, width - 2, "...")),
       );
     }
 
     return lines;
+  }
+
+  private formatItemLine(
+    item: SelectItem,
+    isSelected: boolean,
+    width: number,
+  ): string {
+    const displayValue = item.label || item.value;
+    const prefixWidth = 2;
+    const prefix = isSelected ? "→ " : "  ";
+
+    // Try to show description if available and enough width
+    if (item.description && width > 40) {
+      const maxValueWidth = width - prefixWidth - 4;
+      const truncatedValue = truncateToWidth(
+        displayValue,
+        maxValueWidth,
+        "...",
+      );
+      const spacing = " ".repeat(Math.max(1, 32 - truncatedValue.length));
+
+      const descriptionStart =
+        prefixWidth + truncatedValue.length + spacing.length;
+      const remainingWidth = width - descriptionStart - 2;
+
+      if (remainingWidth > 10) {
+        const truncatedDesc = truncateToWidth(
+          item.description,
+          remainingWidth,
+          "...",
+        );
+        const content = `${prefix}${truncatedValue}${spacing}${truncatedDesc}`;
+        return isSelected
+          ? this.theme.selectedText(content)
+          : `${prefix}${truncatedValue}${this.theme.description(spacing + truncatedDesc)}`;
+      }
+    }
+
+    // Fallback: no description or not enough room
+    const maxWidth = width - prefixWidth - 2;
+    const truncated = truncateToWidth(displayValue, maxWidth, "...");
+    if (isSelected) {
+      return this.theme.selectedText(`${prefix}${truncated}`);
+    }
+    return `${prefix}${truncated}`;
   }
 
   wantsNavigationKeys(): boolean {
