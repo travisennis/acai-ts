@@ -709,38 +709,50 @@ export class Markdown implements Component {
       // Process item tokens to handle nested lists
       const itemLines = this.renderListItem(item.tokens || [], depth);
 
-      if (itemLines.length > 0) {
-        // First line - check if it's a nested list
-        const firstLine = itemLines[0];
-        const isNestedList = this.isNestedListLine(firstLine, depth);
-
-        if (isNestedList) {
-          // This is a nested list, just add it as-is (already has full indent)
-          lines.push(firstLine);
-        } else {
-          // Regular text content - add indent and bullet
-          lines.push(indent + this.theme.listBullet(bullet) + firstLine);
-        }
-
-        // Rest of the lines
-        for (let j = 1; j < itemLines.length; j++) {
-          const line = itemLines[j];
-          const isNestedListLine = line.includes("\x1b[36m"); // cyan bullet color
-
-          if (isNestedListLine) {
-            // Nested list line - already has full indent
-            lines.push(line);
-          } else {
-            // Regular content - add parent indent + 2 spaces for continuation
-            lines.push(`${indent}  ${line}`);
-          }
-        }
-      } else {
-        lines.push(indent + this.theme.listBullet(bullet));
-      }
+      this.appendItemLines(lines, itemLines, indent, bullet);
     }
 
     return lines;
+  }
+
+  /**
+   * Append list item lines to the output, handling nested lists
+   */
+  private appendItemLines(
+    lines: string[],
+    itemLines: string[],
+    indent: string,
+    bullet: string,
+  ): void {
+    if (itemLines.length > 0) {
+      // First line - check if it's a nested list
+      const firstLine = itemLines[0];
+      const isNestedList = this.isNestedListLine(firstLine, indent.length / 2);
+
+      if (isNestedList) {
+        // This is a nested list, just add it as-is (already has full indent)
+        lines.push(firstLine);
+      } else {
+        // Regular text content - add indent and bullet
+        lines.push(indent + this.theme.listBullet(bullet) + firstLine);
+      }
+
+      // Rest of the lines
+      for (let j = 1; j < itemLines.length; j++) {
+        const line = itemLines[j];
+        const isNestedListLine = line.includes("\x1b[36m"); // cyan bullet color
+
+        if (isNestedListLine) {
+          // Nested list line - already has full indent
+          lines.push(line);
+        } else {
+          // Regular content - add parent indent + 2 spaces for continuation
+          lines.push(`${indent}  ${line}`);
+        }
+      }
+    } else {
+      lines.push(indent + this.theme.listBullet(bullet));
+    }
   }
 
   /**
