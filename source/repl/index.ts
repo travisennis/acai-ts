@@ -1,3 +1,4 @@
+import type { ModelMessage } from "ai";
 import type {
   Agent,
   AgentEvent,
@@ -643,8 +644,36 @@ export class Repl {
 
     // Get session messages
     const messages = this.options.sessionManager.get();
+    const toolResults = this.collectToolResults(messages);
 
-    // First pass: collect all tool results
+    // Render all messages in order
+    for (let i = 0; i < messages.length; i++) {
+      const message = messages[i];
+
+      if (message.role === "user") {
+        this.renderUserMessageFromSession(message);
+      } else if (message.role === "assistant") {
+        this.renderAssistantMessage(message);
+        this.renderToolCallsForAssistantMessage(message, toolResults);
+      }
+      // Tool messages are handled through their associated assistant message
+    }
+  }
+
+  /**
+   * Collects all tool results from tool-role messages into a map
+   * keyed by tool call ID.
+   */
+  private collectToolResults(
+    messages: ModelMessage[],
+  ): Map<
+    string,
+    {
+      toolName: string;
+      outputValue: string;
+      isError: boolean;
+    }
+  > {
     const toolResults = new Map<
       string,
       {
@@ -661,58 +690,90 @@ export class Repl {
       if (!Array.isArray(content)) continue;
 
       for (const part of content) {
-        if (part.type === "tool-result") {
-          const output = part.output;
-          const outputValue =
-            output && typeof output === "object" && "value" in output
-              ? String(output.value)
-              : "";
-
-          toolResults.set(part.toolCallId, {
-            toolName: part.toolName,
-            outputValue,
+        const toolPart = part as {
+          type: string;
+          toolName?: string;
+          toolCallId?: string;
+          output?: unknown;
+        };
+        if (toolPart.type === "tool-result") {
+          toolResults.set(toolPart.toolCallId ?? "", {
+            toolName: toolPart.toolName ?? "",
+            outputValue: this.extractToolOutputValue(toolPart.output),
             isError: false,
           });
         }
       }
     }
 
-    // Second pass: render all messages in order
-    for (let i = 0; i < messages.length; i++) {
-      const message = messages[i];
+    return toolResults;
+  }
 
-      if (message.role === "user") {
-        // Render user message
-        const textContent = this.extractUserMessageText(message);
-        if (textContent) {
-          const userComponent = new UserMessageComponent(textContent);
-          this.addComponentWithSpacing(userComponent);
-        }
-      } else if (message.role === "assistant") {
-        // Render assistant message text parts
-        this.renderAssistantMessage(message);
+  /**
+   * Extracts the output value string from a tool result's output field.
+   */
+  private extractToolOutputValue(output: unknown): string {
+    if (output && typeof output === "object" && "value" in output) {
+      return String((output as Record<string, unknown>)["value"]);
+    }
+    return "";
+  }
 
-        // Collect and render tool calls for this assistant message
-        const toolCallsForThisAssistant = this.extractToolCallsFromAssistant(
-          message,
-          toolResults,
-        );
+  /**
+   * Renders a user message into the chat container.
+   */
+  private renderUserMessageFromSession(message: {
+    role: string;
+    content: string | Array<{ type: string; text?: string }>;
+  }) {
+    const textContent = this.extractUserMessageText(message);
+    if (textContent) {
+      const userComponent = new UserMessageComponent(textContent);
+      this.addComponentWithSpacing(userComponent);
+    }
+  }
 
-        for (const toolCallContent of toolCallsForThisAssistant) {
-          const toolCallId = toolCallContent.toolCallId;
-          const events = this.createToolEvents(toolCallContent);
-
-          if (events.length > 0) {
-            const component = new ToolExecutionComponent(events, {
-              verboseMode: this.verboseMode,
-            });
-            this.pendingTools.set(toolCallId, component);
-            this.allToolExecutions.push(component);
-            this.addComponentWithSpacing(component);
-          }
-        }
+  /**
+   * Renders tool call execution components for an assistant message.
+   */
+  private renderToolCallsForAssistantMessage(
+    message: {
+      role: string;
+      content:
+        | string
+        | Array<{
+            type: string;
+            toolName?: string;
+            toolCallId?: string;
+            input?: unknown;
+          }>;
+    },
+    toolResults: Map<
+      string,
+      {
+        toolName: string;
+        outputValue: string;
+        isError: boolean;
       }
-      // Tool messages are handled through their associated assistant message
+    >,
+  ) {
+    const toolCallsForThisAssistant = this.extractToolCallsFromAssistant(
+      message,
+      toolResults,
+    );
+
+    for (const toolCallContent of toolCallsForThisAssistant) {
+      const toolCallId = toolCallContent.toolCallId;
+      const events = this.createToolEvents(toolCallContent);
+
+      if (events.length > 0) {
+        const component = new ToolExecutionComponent(events, {
+          verboseMode: this.verboseMode,
+        });
+        this.pendingTools.set(toolCallId, component);
+        this.allToolExecutions.push(component);
+        this.addComponentWithSpacing(component);
+      }
     }
   }
 
