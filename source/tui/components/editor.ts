@@ -770,58 +770,72 @@ export class Editor implements Component {
       const lineVisibleWidth = metrics.totalWidth;
 
       if (lineVisibleWidth <= contentWidth) {
-        // Line fits in one layout line
-        if (isCurrentLine) {
-          layoutLines.push({
-            text: line,
-            hasCursor: true,
-            cursorPos: this.state.cursorCol,
-            width: lineVisibleWidth,
-          });
-        } else {
-          layoutLines.push({
-            text: line,
-            hasCursor: false,
-            width: lineVisibleWidth,
-          });
-        }
+        this.pushSingleLayoutLine(layoutLines, line, isCurrentLine, lineVisibleWidth);
       } else {
-        // Line needs wrapping - use shared helper
         const chunks = computeLineChunks(line, contentWidth);
-
-        for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-          const chunk = chunks[chunkIndex];
-          if (!chunk) continue;
-
-          const cursorPos = this.state.cursorCol;
-          const isLastChunk = chunkIndex === chunks.length - 1;
-          // For non-last chunks, cursor at endIndex belongs to the next chunk
-          const hasCursorInChunk =
-            isCurrentLine &&
-            cursorPos >= chunk.startIndex &&
-            (isLastChunk
-              ? cursorPos <= chunk.endIndex
-              : cursorPos < chunk.endIndex);
-
-          if (hasCursorInChunk) {
-            layoutLines.push({
-              text: chunk.text,
-              hasCursor: true,
-              cursorPos: cursorPos - chunk.startIndex,
-              width: chunk.width,
-            });
-          } else {
-            layoutLines.push({
-              text: chunk.text,
-              hasCursor: false,
-              width: chunk.width,
-            });
-          }
-        }
+        this.pushWrappedLayoutLines(layoutLines, chunks, isCurrentLine);
       }
     }
 
     return layoutLines;
+  }
+
+  private pushSingleLayoutLine(
+    layoutLines: LayoutLine[],
+    line: string,
+    isCurrentLine: boolean,
+    width: number,
+  ): void {
+    if (isCurrentLine) {
+      layoutLines.push({
+        text: line,
+        hasCursor: true,
+        cursorPos: this.state.cursorCol,
+        width,
+      });
+    } else {
+      layoutLines.push({
+        text: line,
+        hasCursor: false,
+        width,
+      });
+    }
+  }
+
+  private pushWrappedLayoutLines(
+    layoutLines: LayoutLine[],
+    chunks: LineChunk[],
+    isCurrentLine: boolean,
+  ): void {
+    const cursorPos = this.state.cursorCol;
+    for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+      const chunk = chunks[chunkIndex];
+      if (!chunk) continue;
+
+      const isLastChunk = chunkIndex === chunks.length - 1;
+      // For non-last chunks, cursor at endIndex belongs to the next chunk
+      const hasCursorInChunk =
+        isCurrentLine &&
+        cursorPos >= chunk.startIndex &&
+        (isLastChunk
+          ? cursorPos <= chunk.endIndex
+          : cursorPos < chunk.endIndex);
+
+      if (hasCursorInChunk) {
+        layoutLines.push({
+          text: chunk.text,
+          hasCursor: true,
+          cursorPos: cursorPos - chunk.startIndex,
+          width: chunk.width,
+        });
+      } else {
+        layoutLines.push({
+          text: chunk.text,
+          hasCursor: false,
+          width: chunk.width,
+        });
+      }
+    }
   }
 
   getText(): string {

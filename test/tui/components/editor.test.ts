@@ -296,3 +296,107 @@ describe('Editor render', () => {
     assert.equal(result.length, 3);
   });
 });
+
+describe('Editor layoutText', () => {
+  it('returns empty line with cursor for empty editor', () => {
+    const editor = new Editor();
+    const result = editor['layoutText'](10);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].text, '');
+    assert.equal(result[0].hasCursor, true);
+    assert.equal(result[0].cursorPos, 0);
+    assert.equal(result[0].width, 0);
+  });
+
+  it('returns single line for single-line content that fits', () => {
+    const editor = new Editor();
+    editor.setText('hello');
+    editor['state'].cursorCol = 5;
+    const result = editor['layoutText'](10);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].text, 'hello');
+    assert.equal(result[0].hasCursor, true);
+    assert.equal(result[0].cursorPos, 5);
+    assert.equal(result[0].width, 5);
+  });
+
+  it('returns line without cursor for non-current line', () => {
+    const editor = new Editor();
+    editor.setText('line one\nline two');
+    editor['state'].cursorLine = 1;
+    editor['state'].cursorCol = 4;
+    const result = editor['layoutText'](20);
+    // Line 0 should have hasCursor = false
+    assert.equal(result.length, 2);
+    assert.equal(result[0].text, 'line one');
+    assert.equal(result[0].hasCursor, false);
+    assert.equal(result[1].text, 'line two');
+    assert.equal(result[1].hasCursor, true);
+    assert.equal(result[1].cursorPos, 4);
+  });
+
+  it('wraps line that exceeds content width', () => {
+    const editor = new Editor();
+    editor.setText('this is a long line that needs wrapping');
+    editor['state'].cursorLine = 0;
+    editor['state'].cursorCol = 10;
+    const result = editor['layoutText'](15);
+    // Should produce multiple layout lines
+    assert.ok(result.length > 1);
+    // Verify cursored line has cursor info
+    const cursorLine = result.find((l) => l.hasCursor);
+    assert.ok(cursorLine !== undefined);
+    assert.ok(cursorLine!.cursorPos !== undefined);
+  });
+
+  it('returns single line when content exactly fits width', () => {
+    const editor = new Editor();
+    editor.setText('123456789012345');
+    editor['state'].cursorCol = 15;
+    const result = editor['layoutText'](15);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].text, '123456789012345');
+    assert.equal(result[0].hasCursor, true);
+    assert.equal(result[0].width, 15);
+  });
+
+  it('places cursor in first chunk when cursor is in that range', () => {
+    const editor = new Editor();
+    editor.setText('this is a long line that needs wrapping');
+    editor['state'].cursorLine = 0;
+    editor['state'].cursorCol = 3; // 's' in 'this'
+    const result = editor['layoutText'](10);
+    // First chunk should have cursor
+    assert.ok(result.length > 1);
+    assert.equal(result[0].hasCursor, true);
+    assert.equal(result[0].cursorPos, 3);
+    // Subsequent chunks should not have cursor
+    for (let i = 1; i < result.length; i++) {
+      assert.equal(result[i].hasCursor, false);
+    }
+  });
+
+  it('wraps line that exceeds content width into multiple layout lines', () => {
+    const editor = new Editor();
+    editor.setText('a b c d e f g h i j k l m n o p');
+    editor['state'].cursorLine = 0;
+    editor['state'].cursorCol = 0;
+    const result = editor['layoutText'](5);
+    // Should produce multiple layout lines
+    assert.ok(result.length > 1, 'should produce multiple wrapped lines');
+    // Each chunk should be at most 5 chars wide (or less for edge chunks)
+    for (const line of result) {
+      assert.ok(line.width <= 5, `chunk width ${line.width} exceeds max width of 5`);
+    }
+  });
+
+  it('handles editor with single empty line as empty', () => {
+    const editor = new Editor();
+    editor.setText('');
+    const result = editor['layoutText'](10);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].text, '');
+    assert.equal(result[0].hasCursor, true);
+    assert.equal(result[0].width, 0);
+  });
+});
