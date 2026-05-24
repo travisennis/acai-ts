@@ -253,125 +253,178 @@ export class Markdown implements Component {
     const lines: string[] = [];
 
     switch (token.type) {
-      case "heading": {
-        const headingLevel = token.depth;
-        const headingPrefix = `${"#".repeat(headingLevel)} `;
-        const headingText = this.renderInlineTokens(token.tokens || []);
-        if (headingLevel === 1) {
-          lines.push(style.underline(this.theme.heading(headingText)));
-        } else if (headingLevel === 2) {
-          lines.push(this.theme.heading(headingText));
-        } else {
-          lines.push(this.theme.heading(headingPrefix + headingText));
-        }
-        lines.push(""); // Add spacing after headings
+      case "heading":
+        this.renderHeadingToken(token, lines);
         break;
-      }
 
-      case "paragraph": {
-        const paragraphText = this.renderInlineTokens(token.tokens || []);
-        lines.push(this.theme.paragraph(paragraphText));
-        // Don't add spacing if next token is space or list
-        if (
-          nextTokenType &&
-          nextTokenType !== "list" &&
-          nextTokenType !== "space"
-        ) {
-          lines.push("");
-        }
+      case "paragraph":
+        this.renderParagraphToken(token, lines, nextTokenType);
         break;
-      }
 
-      case "code": {
-        if (token.lang && supportsLanguage(token.lang)) {
-          // Use syntax highlighting for supported languages
-          const highlightedCode = highlight(token.text, {
-            language: token.lang,
-            theme: this.highlightTheme,
-          });
-          const codeLines = highlightedCode.split("\n");
-          lines.push(this.theme.codeBlockBorder(`\`\`\`${token.lang}`));
-          for (const codeLine of codeLines) {
-            lines.push(style.dim("  ") + codeLine);
-          }
-          lines.push(this.theme.codeBlockBorder("```"));
-        } else {
-          // Fallback to basic styling for unsupported languages
-          lines.push(this.theme.codeBlockBorder(`\`\`\`${token.lang || ""}`));
-          const codeLines = token.text.split("\n");
-          for (const codeLine of codeLines) {
-            lines.push(style.dim("  ") + this.theme.codeBlock(codeLine));
-          }
-          lines.push(this.theme.codeBlockBorder("```"));
-        }
-        lines.push(""); // Add spacing after code blocks
+      case "code":
+        this.renderCodeBlockToken(token, lines);
         break;
-      }
 
-      case "list": {
-        const listLines = this.renderList(
-          token as Token & { items: unknown[]; ordered: boolean },
-          0,
-        );
-        lines.push(...listLines);
-        // Don't add spacing after lists if a space token follows
-        // (the space token will handle it)
+      case "list":
+        this.renderBlockListToken(token, lines);
         break;
-      }
 
-      case "table": {
-        const tableLines = this.renderTable(
-          token as Token & { header: unknown[]; rows: unknown[][] },
-        );
-        lines.push(...tableLines);
+      case "table":
+        this.renderBlockTableToken(token, lines);
         break;
-      }
 
-      case "blockquote": {
-        const quoteText = this.renderInlineTokens(token.tokens || []);
-        const quoteLines = quoteText.split("\n");
-        for (const quoteLine of quoteLines) {
-          lines.push(
-            this.theme.quoteBorder("│ ") + this.theme.quote(quoteLine),
-          );
-        }
-        lines.push(""); // Add spacing after blockquotes
+      case "blockquote":
+        this.renderBlockquoteToken(token, lines);
         break;
-      }
 
       case "hr":
-        lines.push(this.theme.hr("─".repeat(Math.min(width, 80))));
-        lines.push(""); // Add spacing after horizontal rules
+        this.renderHrToken(width, lines);
         break;
 
-      case "image": {
-        const alt = (token.title ?? token.text ?? "").toString().trim();
-        if (alt.length > 0) {
-          lines.push(`[Image: ${alt} (${token.href})]`);
-        } else {
-          lines.push(`[Image: ${token.href}]`);
-        }
+      case "image":
+        this.renderImageBlockToken(token, lines);
         break;
-      }
 
       case "html":
-        // Render HTML tags with dim styling and content as normal text
-        lines.push(style.dim(token.text));
+        this.renderHtmlToken(token, lines);
         break;
 
       case "space":
-        // Space tokens represent blank lines in markdown
-        lines.push("");
+        this.renderSpaceToken(lines);
         break;
 
       default:
-        // Handle any other token types as plain text
-        if ("text" in token && typeof token.text === "string") {
-          lines.push(token.text);
-        }
+        this.renderDefaultBlockToken(token, lines);
     }
 
     return lines;
+  }
+
+  private renderHeadingToken(
+    token: Token,
+    lines: string[],
+  ): void {
+    const t = token as Token & { depth: number; tokens?: Token[] };
+    const headingLevel = t.depth;
+    const headingPrefix = "".concat("#".repeat(headingLevel), " ");
+    const headingText = this.renderInlineTokens(t.tokens || []);
+    if (headingLevel === 1) {
+      lines.push(style.underline(this.theme.heading(headingText)));
+    } else if (headingLevel === 2) {
+      lines.push(this.theme.heading(headingText));
+    } else {
+      lines.push(this.theme.heading(headingPrefix + headingText));
+    }
+    lines.push(""); // Add spacing after headings
+  }
+
+  private renderParagraphToken(
+    token: Token,
+    lines: string[],
+    nextTokenType?: string,
+  ): void {
+    const t = token as Token & { tokens?: Token[] };
+    const paragraphText = this.renderInlineTokens(t.tokens || []);
+    lines.push(this.theme.paragraph(paragraphText));
+    // Don't add spacing if next token is space or list
+    if (
+      nextTokenType &&
+      nextTokenType !== "list" &&
+      nextTokenType !== "space"
+    ) {
+      lines.push("");
+    }
+  }
+
+  private renderCodeBlockToken(token: Token, lines: string[]): void {
+    const t = token as Token & { lang?: string; text: string };
+    if (t.lang && supportsLanguage(t.lang)) {
+      // Use syntax highlighting for supported languages
+      const highlightedCode = highlight(t.text, {
+        language: t.lang,
+        theme: this.highlightTheme,
+      });
+      const codeLines = highlightedCode.split("\n");
+      lines.push(this.theme.codeBlockBorder("".concat("```", t.lang)));
+      for (const codeLine of codeLines) {
+        lines.push(style.dim("  ") + codeLine);
+      }
+      lines.push(this.theme.codeBlockBorder("```"));
+    } else {
+      // Fallback to basic styling for unsupported languages
+      lines.push(this.theme.codeBlockBorder("".concat("```", t.lang || "")));
+      const codeLines = t.text.split("\n");
+      for (const codeLine of codeLines) {
+        lines.push(style.dim("  ") + this.theme.codeBlock(codeLine));
+      }
+      lines.push(this.theme.codeBlockBorder("```"));
+    }
+    lines.push(""); // Add spacing after code blocks
+  }
+
+  private renderBlockListToken(token: Token, lines: string[]): void {
+    const listLines = this.renderList(
+      token as Token & { items: unknown[]; ordered: boolean },
+      0,
+    );
+    lines.push(...listLines);
+  }
+
+  private renderBlockTableToken(token: Token, lines: string[]): void {
+    const tableLines = this.renderTable(
+      token as Token & { header: unknown[]; rows: unknown[][] },
+    );
+    lines.push(...tableLines);
+  }
+
+  private renderBlockquoteToken(token: Token, lines: string[]): void {
+    const t = token as Token & { tokens?: Token[] };
+    const quoteText = this.renderInlineTokens(t.tokens || []);
+    const quoteLines = quoteText.split("\n");
+    for (const quoteLine of quoteLines) {
+      lines.push(
+        this.theme.quoteBorder("│ ") + this.theme.quote(quoteLine),
+      );
+    }
+    lines.push(""); // Add spacing after blockquotes
+  }
+
+  private renderHrToken(width: number, lines: string[]): void {
+    lines.push(this.theme.hr("─".repeat(Math.min(width, 80))));
+    lines.push(""); // Add spacing after horizontal rules
+  }
+
+  private renderImageBlockToken(token: Token, lines: string[]): void {
+    const t = token as Token & {
+      title?: string | null;
+      text: string;
+      href: string;
+    };
+    const alt = (t.title ?? t.text ?? "").toString().trim();
+    if (alt.length > 0) {
+      lines.push("[Image: ".concat(alt, " (", t.href, ")]"));
+    } else {
+      lines.push("[Image: ".concat(t.href, "]"));
+    }
+  }
+
+  private renderHtmlToken(token: Token, lines: string[]): void {
+    const t = token as Token & { text: string };
+    // Render HTML tags with dim styling and content as normal text
+    lines.push(style.dim(t.text));
+  }
+
+  private renderSpaceToken(lines: string[]): void {
+    // Space tokens represent blank lines in markdown
+    lines.push("");
+  }
+
+  private renderDefaultBlockToken(token: Token, lines: string[]): void {
+    const t = token as Token & { text: string };
+    // Handle any other token types as plain text
+    if ("text" in t && typeof t.text === "string") {
+      lines.push(t.text);
+    }
   }
 
   private renderInlineTokens(tokens: Token[]): string {
