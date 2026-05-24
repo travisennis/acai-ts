@@ -366,76 +366,95 @@ async function initializeSessionManager(
   return sessionManager;
 }
 
-async function handleConversationHistory(
+export async function handleConversationHistory(
   sessionManager: SessionManager,
   sessionsDir: string,
   _hasContinueOrResume: boolean,
   resumeSessionId: string | undefined,
+  continueFlag = flags.continue,
+  resumeFlag = flags.resume,
+  selectFn = select,
+  setTitleFn = setTerminalTitle,
 ): Promise<void> {
-  if (flags.continue === true) {
+  if (continueFlag === true) {
+    await handleContinue(sessionManager, sessionsDir, selectFn, setTitleFn);
+  } else if (resumeFlag === true) {
+    await handleResume(sessionManager, sessionsDir, resumeSessionId, setTitleFn);
+  }
+}
+
+async function handleContinue(
+  sessionManager: SessionManager,
+  sessionsDir: string,
+  selectFn: (typeof select),
+  setTitleFn: (typeof setTerminalTitle),
+): Promise<void> {
+  const histories = await SessionManager.load(sessionsDir, DEFAULT_HISTORY_LIMIT);
+  if (histories.length === 0) {
+    logger.info("No previous conversations found to continue.");
+    return;
+  }
+  try {
+    const choice = await selectFn({
+      message: "Select a conversation to resume:",
+      choices: histories.map((h, index) => ({
+        name: `${index + 1}: ${h.title} [${h.sessionId}] (${h.updatedAt.toLocaleString()})`,
+        value: index,
+        description: `${h.messages.length} messages`,
+      })),
+    });
+    const selectedHistory = histories.at(choice);
+    if (selectedHistory) {
+      sessionManager.restore(selectedHistory);
+      logger.info(`Resuming conversation: ${selectedHistory.title}`);
+      setTitleFn(selectedHistory.title || `acai: ${process.cwd()}`);
+    } else {
+      logger.error("Selected history index out of bounds.");
+    }
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "isCanceled" in error &&
+      error.isCanceled === true
+    ) {
+      logger.info("Resume selection cancelled.");
+    } else {
+      throw error;
+    }
+  }
+}
+
+async function handleResume(
+  sessionManager: SessionManager,
+  sessionsDir: string,
+  resumeSessionId: string | undefined,
+  setTitleFn: (typeof setTerminalTitle),
+): Promise<void> {
+  if (resumeSessionId) {
     const histories = await SessionManager.load(
       sessionsDir,
       DEFAULT_HISTORY_LIMIT,
     );
-    if (histories.length > 0) {
-      try {
-        const choice = await select({
-          message: "Select a conversation to resume:",
-          choices: histories.map((h, index) => ({
-            name: `${index + 1}: ${h.title} [${h.sessionId}] (${h.updatedAt.toLocaleString()})`,
-            value: index,
-            description: `${h.messages.length} messages`,
-          })),
-        });
-        const selectedHistory = histories.at(choice);
-        if (selectedHistory) {
-          sessionManager.restore(selectedHistory);
-          logger.info(`Resuming conversation: ${selectedHistory.title}`);
-          setTerminalTitle(selectedHistory.title || `acai: ${process.cwd()}`);
-        } else {
-          logger.error("Selected history index out of bounds.");
-        }
-      } catch (error) {
-        if (
-          error instanceof Error &&
-          "isCanceled" in error &&
-          error.isCanceled === true
-        ) {
-          logger.info("Resume selection cancelled.");
-        } else {
-          throw error;
-        }
-      }
+    const targetHistory = histories.find(
+      (h) => h.sessionId === resumeSessionId,
+    );
+    if (targetHistory) {
+      sessionManager.restore(targetHistory);
+      logger.info(`Resuming conversation: ${targetHistory.title}`);
+      setTitleFn(targetHistory.title || `acai: ${process.cwd()}`);
     } else {
-      logger.info("No previous conversations found to continue.");
+      console.error(`Session not found: ${resumeSessionId}`);
+      process.exit(1);
     }
-  } else if (flags.resume === true) {
-    if (resumeSessionId) {
-      const histories = await SessionManager.load(
-        sessionsDir,
-        DEFAULT_HISTORY_LIMIT,
-      );
-      const targetHistory = histories.find(
-        (h) => h.sessionId === resumeSessionId,
-      );
-      if (targetHistory) {
-        sessionManager.restore(targetHistory);
-        logger.info(`Resuming conversation: ${targetHistory.title}`);
-        setTerminalTitle(targetHistory.title || `acai: ${process.cwd()}`);
-      } else {
-        console.error(`Session not found: ${resumeSessionId}`);
-        process.exit(1);
-      }
+  } else {
+    const histories = await SessionManager.load(sessionsDir, 1); // read the most recent session
+    const latestHistory = histories.at(0);
+    if (latestHistory) {
+      sessionManager.restore(latestHistory);
+      console.info(`Resuming conversation: ${latestHistory.title}`);
+      setTitleFn(latestHistory.title || `acai: ${process.cwd()}`);
     } else {
-      const histories = await SessionManager.load(sessionsDir, 1); // read the most recent session
-      const latestHistory = histories.at(0);
-      if (latestHistory) {
-        sessionManager.restore(latestHistory);
-        console.info(`Resuming conversation: ${latestHistory.title}`);
-        setTerminalTitle(latestHistory.title || `acai: ${process.cwd()}`);
-      } else {
-        logger.info("No previous conversation found to resume.");
-      }
+      logger.info("No previous conversation found to resume.");
     }
   }
 }
