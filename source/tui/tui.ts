@@ -188,42 +188,60 @@ export class TUI extends Container {
       return;
     }
 
+    this.handleBracketedPaste(data);
+
+    if (this.handleCtrlZ(data)) return;
+    if (this.handleCtrlC(data)) return;
+    if (this.handleCtrlD(data)) return;
+    if (this.handleKeyBindings(data)) return;
+    if (this.handleShiftTab(data)) return;
+    if (this.handleEscapeModal(data)) return;
+
+    this.dispatchInput(data);
+  }
+
+  private handleBracketedPaste(data: string): void {
     if (data.includes("\x1b[200~")) {
       this.inBracketedPaste = true;
     }
     if (data.includes("\x1b[201~")) {
       this.inBracketedPaste = false;
     }
+  }
 
-    // Handle Ctrl+Z - background the process (POSIX only)
+  private handleCtrlZ(data: string): boolean {
     if (
       isCtrlZ(data) &&
       !this.inBracketedPaste &&
       process.platform !== "win32"
     ) {
       this.terminal.background();
-      return;
+      return true;
     }
+    return false;
+  }
 
-    // Handle Ctrl+C globally - exit the application
-    if (isCtrlC(data)) {
-      console.info("\nCtrl+C pressed - exiting...");
-      if (this.onCtrlC) {
-        this.onCtrlC();
-      } else {
-        this.stop();
-        process.exit(0);
-      }
+  private handleCtrlC(data: string): boolean {
+    if (!isCtrlC(data)) return false;
+    console.info("\nCtrl+C pressed - exiting...");
+    if (this.onCtrlC) {
+      this.onCtrlC();
+    } else {
+      this.stop();
+      process.exit(0);
     }
+    return true;
+  }
 
-    // Handle Ctrl+D - exit only if editor is empty (handled by Repl)
-    if (isCtrlD(data)) {
-      if (this.onCtrlD) {
-        this.onCtrlD();
-      }
-      return;
+  private handleCtrlD(data: string): boolean {
+    if (!isCtrlD(data)) return false;
+    if (this.onCtrlD) {
+      this.onCtrlD();
     }
+    return true;
+  }
 
+  private handleKeyBindings(data: string): boolean {
     const keyBindings: Array<{
       check: (data: string) => boolean;
       handler: (() => void) | undefined;
@@ -237,29 +255,32 @@ export class TUI extends Container {
     for (const binding of keyBindings) {
       if (binding.check(data)) {
         binding.handler?.();
-        return;
+        return true;
       }
     }
+    return false;
+  }
 
-    // Handle Shift+Tab - cycle mode only when no modal is active,
-    // the focused component won't handle navigation (e.g., model selector),
-    // and the editor isn't showing autocomplete
-    if (isShiftTab(data) && !this.inBracketedPaste) {
-      if (!this.activeModal && !this.focusedComponentWantsNavigation()) {
-        if (this.onShiftTab) {
-          this.onShiftTab();
-        }
-        return;
+  private handleShiftTab(data: string): boolean {
+    if (!isShiftTab(data) || this.inBracketedPaste) return false;
+    if (!this.activeModal && !this.focusedComponentWantsNavigation()) {
+      if (this.onShiftTab) {
+        this.onShiftTab();
       }
+      return true;
     }
+    return false;
+  }
 
-    // Handle Escape key to close modal if one is active
+  private handleEscapeModal(data: string): boolean {
     if (isEscape(data) && this.activeModal) {
       this.hideModal();
-      return;
+      return true;
     }
+    return false;
+  }
 
-    // Pass input to active modal first, then focused component
+  private dispatchInput(data: string): void {
     if (this.activeModal?.handleInput) {
       this.activeModal.handleInput(data);
       this.requestRender();
