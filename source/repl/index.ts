@@ -359,183 +359,206 @@ export class Repl {
     const eventType = event.type;
     switch (eventType) {
       case "agent-start":
-        // start the terminal progress display
-        startProgress();
-        // disable the submit functionality of the editor
-        this.editor.disableSubmit = true;
-        // Stop old loader before clearing
-        if (this.loadingAnimation) {
-          this.loadingAnimation.stop();
-        }
-        this.statusContainer.clear();
-        // Show loading animation
-        this.loadingAnimation = new Loader(
-          this.tui,
-          "Working... (esc to interrupt)",
-        );
-        this.statusContainer.addChild(this.loadingAnimation);
-        this.tui.requestRender();
+        this.handleAgentStart();
         break;
 
       case "step-start":
-        // this.tui.requestRender();
         break;
 
       case "step-stop":
-        // this.pendingTools.clear();
-        // this.tui.requestRender();
         break;
 
       case "message-start":
-        if (event.role === "assistant") {
-          // Create assistant component for streaming
-          const assistantMessageComponent = new AssistantMessageComponent();
-          this.streamingComponent = assistantMessageComponent;
-          this.addComponentWithSpacing(assistantMessageComponent);
-          this.streamingComponent.updateContent(event);
-          this.tui.requestRender();
-        }
+        this.handleMessageStart(event);
         break;
 
       case "message":
-        if (event.role === "assistant") {
-          // Update streaming component
-          if (this.streamingComponent && event.role === "assistant") {
-            this.streamingComponent.updateContent(event);
-
-            this.tui.requestRender();
-          }
-        }
+        this.handleMessage(event);
         break;
 
       case "message-end":
-        if (this.streamingComponent && event.role === "assistant") {
-          this.streamingComponent.updateContent(event);
-
-          this.streamingComponent = null;
-
-          this.tui.requestRender();
-        }
+        this.handleMessageEnd(event);
         break;
 
-      case "tool-call-lifecycle": {
-        const component = this.pendingTools.get(event.toolCallId);
-        if (component) {
-          component.update(event.events);
-        } else {
-          // Create tool component for new tool call
-          const newComponent = new ToolExecutionComponent(event.events, {
-            verboseMode: this.verboseMode,
-          });
-          this.pendingTools.set(event.toolCallId, newComponent);
-          this.allToolExecutions.push(newComponent);
-          this.addComponentWithSpacing(newComponent);
-        }
-        this.tui.requestRender();
+      case "tool-call-lifecycle":
+        this.handleToolCallLifecycle(event);
         break;
-      }
 
       case "agent-stop":
-        // stop the terminal progress display
-        stopProgress();
-        // send a terminal alert to indicate the agent is done
-        await alert();
-        // Stop loading animation
-        if (this.loadingAnimation) {
-          this.loadingAnimation.stop();
-          this.loadingAnimation = null;
-          this.statusContainer.clear();
-        }
-        // Clear streaming component reference
-        if (this.streamingComponent) {
-          this.streamingComponent = null;
-        }
-        this.pendingTools.clear();
-        this.editor.disableSubmit = false;
-        this.options.sessionManager.clearTransientMessages();
-        if (!this.options.noSession) {
-          await this.options.sessionManager.save();
-        }
-        // Refresh project status now that agent may have modified files
-        await getProjectStatus().then((ps) => {
-          this.footer.setState({
-            projectStatus: ps,
-            currentContextWindow:
-              this.options.sessionManager.getLastTurnContextWindow(),
-            contextWindow:
-              this.options.modelManager.getModelMetadata("repl").contextWindow,
-          });
-          this.tui.requestRender();
-        });
-        this.tui.requestRender();
+        await this.handleAgentStop();
         break;
 
       case "agent-error":
-        logger.error(event, "agent-error");
-        this.options.sessionManager.clearTransientMessages();
-        if (!this.options.noSession) {
-          await this.options.sessionManager.save();
-        }
-        // Stop loading animation
-        if (this.loadingAnimation) {
-          this.loadingAnimation.stop();
-          this.loadingAnimation = null;
-          this.statusContainer.clear();
-        }
-        // Clear streaming component reference
-        if (this.streamingComponent) {
-          this.streamingComponent = null;
-        }
-        this.pendingTools.clear();
-        this.editor.disableSubmit = false;
-        this.tui.requestRender();
+        await this.handleAgentError(event);
         break;
 
-      case "thinking-start": {
-        const component = new ThinkingBlockComponent(undefined, {
-          verboseMode: this.verboseMode,
-        });
-        this.thinkingBlockComponent = component;
-        this.allThinkingBlocks.push(component);
-
-        // If a streaming message component already exists (text came before thinking),
-        // insert the thinking block BEFORE it to ensure correct visual order
-        if (this.streamingComponent) {
-          this.chatContainer.insertChildBefore(
-            this.streamingComponent,
-            component,
-          );
-          this.chatContainer.insertChildBefore(
-            this.streamingComponent,
-            new Spacer(1),
-          );
-        } else {
-          this.addComponentWithSpacing(component);
-        }
-
-        this.thinkingBlockComponent.updateContent(event);
-        this.tui.requestRender();
+      case "thinking-start":
+        this.handleThinkingStart(event);
         break;
-      }
 
       case "thinking":
-        if (this.thinkingBlockComponent) {
-          this.thinkingBlockComponent.updateContent(event);
-          this.tui.requestRender();
-        }
+        this.handleThinking(event);
         break;
 
       case "thinking-end":
-        if (this.thinkingBlockComponent) {
-          this.thinkingBlockComponent.endThinking();
-
-          this.thinkingBlockComponent = null;
-          this.tui.requestRender();
-        }
+        this.handleThinkingEnd();
         break;
 
       default:
         eventType satisfies never;
+    }
+  }
+
+  private handleAgentStart(): void {
+    startProgress();
+    this.editor.disableSubmit = true;
+    if (this.loadingAnimation) {
+      this.loadingAnimation.stop();
+    }
+    this.statusContainer.clear();
+    this.loadingAnimation = new Loader(
+      this.tui,
+      "Working... (esc to interrupt)",
+    );
+    this.statusContainer.addChild(this.loadingAnimation);
+    this.tui.requestRender();
+  }
+
+  private handleMessageStart(event: AgentEvent): void {
+    if (event.type === "message-start" && event.role === "assistant") {
+      const assistantMessageComponent = new AssistantMessageComponent();
+      this.streamingComponent = assistantMessageComponent;
+      this.addComponentWithSpacing(assistantMessageComponent);
+      this.streamingComponent.updateContent(event);
+      this.tui.requestRender();
+    }
+  }
+
+  private handleMessage(event: AgentEvent): void {
+    if (event.type === "message" && event.role === "assistant") {
+      if (this.streamingComponent) {
+        this.streamingComponent.updateContent(event);
+        this.tui.requestRender();
+      }
+    }
+  }
+
+  private handleMessageEnd(event: AgentEvent): void {
+    if (
+      event.type === "message-end" &&
+      this.streamingComponent &&
+      event.role === "assistant"
+    ) {
+      this.streamingComponent.updateContent(event);
+      this.streamingComponent = null;
+      this.tui.requestRender();
+    }
+  }
+
+  private handleToolCallLifecycle(
+    event: AgentEvent & { type: "tool-call-lifecycle" },
+  ): void {
+    const component = this.pendingTools.get(event.toolCallId);
+    if (component) {
+      component.update(event.events);
+    } else {
+      const newComponent = new ToolExecutionComponent(event.events, {
+        verboseMode: this.verboseMode,
+      });
+      this.pendingTools.set(event.toolCallId, newComponent);
+      this.allToolExecutions.push(newComponent);
+      this.addComponentWithSpacing(newComponent);
+    }
+    this.tui.requestRender();
+  }
+
+  private async handleAgentStop(): Promise<void> {
+    stopProgress();
+    await alert();
+    if (this.loadingAnimation) {
+      this.loadingAnimation.stop();
+      this.loadingAnimation = null;
+      this.statusContainer.clear();
+    }
+    if (this.streamingComponent) {
+      this.streamingComponent = null;
+    }
+    this.pendingTools.clear();
+    this.editor.disableSubmit = false;
+    this.options.sessionManager.clearTransientMessages();
+    if (!this.options.noSession) {
+      await this.options.sessionManager.save();
+    }
+    await getProjectStatus().then((ps) => {
+      this.footer.setState({
+        projectStatus: ps,
+        currentContextWindow:
+          this.options.sessionManager.getLastTurnContextWindow(),
+        contextWindow:
+          this.options.modelManager.getModelMetadata("repl").contextWindow,
+      });
+      this.tui.requestRender();
+    });
+    this.tui.requestRender();
+  }
+
+  private async handleAgentError(event: AgentEvent): Promise<void> {
+    logger.error(event, "agent-error");
+    this.options.sessionManager.clearTransientMessages();
+    if (!this.options.noSession) {
+      await this.options.sessionManager.save();
+    }
+    if (this.loadingAnimation) {
+      this.loadingAnimation.stop();
+      this.loadingAnimation = null;
+      this.statusContainer.clear();
+    }
+    if (this.streamingComponent) {
+      this.streamingComponent = null;
+    }
+    this.pendingTools.clear();
+    this.editor.disableSubmit = false;
+    this.tui.requestRender();
+  }
+
+  private handleThinkingStart(
+    event: AgentEvent & { type: "thinking-start" },
+  ): void {
+    const component = new ThinkingBlockComponent(undefined, {
+      verboseMode: this.verboseMode,
+    });
+    this.thinkingBlockComponent = component;
+    this.allThinkingBlocks.push(component);
+
+    if (this.streamingComponent) {
+      this.chatContainer.insertChildBefore(
+        this.streamingComponent,
+        component,
+      );
+      this.chatContainer.insertChildBefore(
+        this.streamingComponent,
+        new Spacer(1),
+      );
+    } else {
+      this.addComponentWithSpacing(component);
+    }
+
+    this.thinkingBlockComponent.updateContent({ content: event.content });
+    this.tui.requestRender();
+  }
+
+  private handleThinking(event: AgentEvent & { type: "thinking" }): void {
+    if (this.thinkingBlockComponent) {
+      this.thinkingBlockComponent.updateContent(event);
+      this.tui.requestRender();
+    }
+  }
+
+  private handleThinkingEnd(): void {
+    if (this.thinkingBlockComponent) {
+      this.thinkingBlockComponent.endThinking();
+      this.thinkingBlockComponent = null;
+      this.tui.requestRender();
     }
   }
 
