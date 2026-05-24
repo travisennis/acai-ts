@@ -177,3 +177,122 @@ describe('Editor deleteWordBackwards', () => {
     assert.equal(editor['state'].cursorCol, 6);
   });
 });
+
+describe('Editor render', () => {
+  it('renders border lines for empty editor', () => {
+    const editor = new Editor();
+    const result = editor.render(10);
+    // Empty editor: top border + empty line with cursor + bottom border
+    assert.equal(result.length, 3);
+    assert.equal(result[0], '─'.repeat(10)); // top border
+    assert.equal(result[result.length - 1], '─'.repeat(10)); // bottom border
+    // Middle line has cursor at position 0 (highlighted space)
+    assert.match(result[1], /\x1b\[7m \x1b\[0m/);
+  });
+
+  it('renders single line with cursor at end', () => {
+    const editor = new Editor();
+    editor.setText('hello');
+    editor['state'].cursorCol = 5;
+    const result = editor.render(10);
+    assert.equal(result.length, 3);
+    assert.equal(result[0], '─'.repeat(10));
+    assert.equal(result[result.length - 1], '─'.repeat(10));
+    // Cursor at end: highlighted space added
+    assert.equal(result[1], 'hello' + '\x1b[7m \x1b[0m' + ' '.repeat(4));
+  });
+
+  it('renders single line with cursor in middle', () => {
+    const editor = new Editor();
+    editor.setText('hello');
+    editor['state'].cursorCol = 2;
+    const result = editor.render(10);
+    assert.equal(result.length, 3);
+    // Cursor on 'l' (character at position 2) should be highlighted
+    assert.equal(result[1], 'he' + '\x1b[7ml\x1b[0m' + 'lo' + ' '.repeat(5));
+  });
+
+  it('renders single line with cursor at start', () => {
+    const editor = new Editor();
+    editor.setText('hello');
+    editor['state'].cursorCol = 0;
+    const result = editor.render(10);
+    assert.equal(result.length, 3);
+    // Cursor on 'h' should be highlighted
+    assert.equal(result[1], '\x1b[7mh\x1b[0m' + 'ello' + ' '.repeat(5));
+  });
+
+  it('renders multi-line content', () => {
+    const editor = new Editor();
+    editor.setText('line one\nline two\nline three');
+    editor['state'].cursorLine = 1;
+    editor['state'].cursorCol = 4;
+    const result = editor.render(20);
+    assert.equal(result.length, 5); // top + 3 lines + bottom
+    assert.equal(result[0], '─'.repeat(20));
+    assert.equal(result[result.length - 1], '─'.repeat(20));
+    // Line 0 (no cursor)
+    assert.equal(result[1], 'line one' + ' '.repeat(12));
+    // Line 1 (cursor on char at col 4: ' ')
+    assert.equal(result[2], 'line' + '\x1b[7m \x1b[0m' + 'two' + ' '.repeat(12));
+    // Line 2 (no cursor)
+    assert.equal(result[3], 'line three' + ' '.repeat(10));
+  });
+
+  it('renders word-wrapped line with cursor', () => {
+    const editor = new Editor();
+    editor.setText('this is a long line that needs wrapping');
+    editor['state'].cursorLine = 0;
+    editor['state'].cursorCol = 10;
+    const result = editor.render(15);
+    // Should have top + wrapped lines + bottom
+    assert.ok(result.length > 3);
+    assert.equal(result[0], '─'.repeat(15));
+    assert.equal(result[result.length - 1], '─'.repeat(15));
+    // Cursor line should have ANSI escape codes
+    const cursorLine = result.findIndex((line) => line.includes('\x1b[7m'));
+    assert.notEqual(cursorLine, -1);
+  });
+
+  it('renders cursor at end of full-width line (no room for space)', () => {
+    const editor = new Editor();
+    editor.setText('hello world!!');
+    editor['state'].cursorCol = 14; // at end of exactly 14-char line
+    const result = editor.render(15);
+    assert.equal(result.length, 3);
+    // Cursor at end, width = 14, room available (14 < 15), so highlighted space
+    assert.ok(result[1].includes('\x1b[7m \x1b[0m'));
+  });
+
+  it('renders cursor at end of line that exactly fills width', () => {
+    const editor = new Editor();
+    editor.setText('123456789012345'); // 15 chars = width
+    editor['state'].cursorCol = 15;
+    const result = editor.render(15);
+    assert.equal(result.length, 3);
+    // Line is at full width, cursor at end
+    // Should highlight the last character (at position 14)
+    assert.ok(result[1].includes('\x1b[7m5\x1b[0m'));
+  });
+
+  it('render pads lines to match width', () => {
+    const editor = new Editor();
+    editor.setText('short');
+    editor['state'].cursorCol = 5;
+    const result = editor.render(20);
+    assert.equal(result.length, 3);
+    // Line should be padded to 20 chars
+    assert.equal(
+      result[1].replace(/\x1b\[\d+m/g, '').replace(/\x1b\[0m/g, '').length,
+      20,
+    );
+  });
+
+  it('does not add autocomplete list when not autocompleting', () => {
+    const editor = new Editor();
+    editor.setText('test');
+    const result = editor.render(10);
+    // Only top + content + bottom = 3 lines
+    assert.equal(result.length, 3);
+  });
+});

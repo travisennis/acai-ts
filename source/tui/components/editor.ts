@@ -345,6 +345,46 @@ export class Editor implements Component {
     // No cached state to invalidate currently
   }
 
+  private renderCursorOnLine(
+    displayText: string,
+    lineVisibleWidth: number,
+    layoutLine: LayoutLine,
+    width: number,
+  ): { displayText: string; lineVisibleWidth: number } {
+    const before = displayText.slice(0, layoutLine.cursorPos);
+    const after = displayText.slice(layoutLine.cursorPos);
+
+    if (after.length > 0) {
+      const afterGraphemes = [...getSegmenter().segment(after)];
+      const firstGrapheme = afterGraphemes[0]?.segment || "";
+      const restAfter = after.slice(firstGrapheme.length);
+      const cursor = `\x1b[7m${firstGrapheme}\x1b[0m`;
+      return { displayText: before + cursor + restAfter, lineVisibleWidth };
+    }
+
+    if (lineVisibleWidth < width) {
+      const cursor = "\x1b[7m \x1b[0m";
+      return {
+        displayText: before + cursor,
+        lineVisibleWidth: lineVisibleWidth + 1,
+      };
+    }
+
+    const beforeGraphemes = [...getSegmenter().segment(before)];
+    if (beforeGraphemes.length > 0) {
+      const lastGrapheme =
+        beforeGraphemes[beforeGraphemes.length - 1]?.segment || "";
+      const cursor = `\x1b[7m${lastGrapheme}\x1b[0m`;
+      const beforeWithoutLast = beforeGraphemes
+        .slice(0, -1)
+        .map((g) => g.segment)
+        .join("");
+      return { displayText: beforeWithoutLast + cursor, lineVisibleWidth };
+    }
+
+    return { displayText, lineVisibleWidth };
+  }
+
   render(width: number): string[] {
     // Store width for cursor navigation
     this.lastWidth = width;
@@ -364,52 +404,18 @@ export class Editor implements Component {
       let displayText = layoutLine.text;
       let lineVisibleWidth = layoutLine.width;
 
-      // Add cursor if this line has it
       if (layoutLine.hasCursor && layoutLine.cursorPos !== undefined) {
-        const before = displayText.slice(0, layoutLine.cursorPos);
-        const after = displayText.slice(layoutLine.cursorPos);
-
-        if (after.length > 0) {
-          // Cursor is on a character (grapheme) - replace it with highlighted version
-          // Get the first grapheme from 'after'
-          const afterGraphemes = [...getSegmenter().segment(after)];
-          const firstGrapheme = afterGraphemes[0]?.segment || "";
-          const restAfter = after.slice(firstGrapheme.length);
-          const cursor = `\x1b[7m${firstGrapheme}\x1b[0m`;
-          displayText = before + cursor + restAfter;
-          // lineVisibleWidth stays the same - we're replacing, not adding
-        } else {
-          // Cursor is at the end - check if we have room for the space
-          if (lineVisibleWidth < width) {
-            // We have room - add highlighted space
-            const cursor = "\x1b[7m \x1b[0m";
-            displayText = before + cursor;
-            // lineVisibleWidth increases by 1 - we're adding a space
-            lineVisibleWidth = lineVisibleWidth + 1;
-          } else {
-            // Line is at full width - use reverse video on last grapheme if possible
-            // or just show cursor at the end without adding space
-            const beforeGraphemes = [...getSegmenter().segment(before)];
-            if (beforeGraphemes.length > 0) {
-              const lastGrapheme =
-                beforeGraphemes[beforeGraphemes.length - 1]?.segment || "";
-              const cursor = `\x1b[7m${lastGrapheme}\x1b[0m`;
-              // Rebuild 'before' without the last grapheme
-              const beforeWithoutLast = beforeGraphemes
-                .slice(0, -1)
-                .map((g) => g.segment)
-                .join("");
-              displayText = beforeWithoutLast + cursor;
-            }
-            // lineVisibleWidth stays the same
-          }
-        }
+        const cursorResult = this.renderCursorOnLine(
+          displayText,
+          lineVisibleWidth,
+          layoutLine,
+          width,
+        );
+        displayText = cursorResult.displayText;
+        lineVisibleWidth = cursorResult.lineVisibleWidth;
       }
 
-      // Calculate padding based on actual visible width
       const padding = " ".repeat(Math.max(0, width - lineVisibleWidth));
-
-      // Render the line (no side borders, just horizontal lines above and below)
       result.push(displayText + padding);
     }
 
