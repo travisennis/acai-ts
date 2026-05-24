@@ -337,4 +337,110 @@ describe("Editor Input Handling", () => {
       assert.ok(true);
     });
   });
+
+  describe("handlePaste - bracketed paste mode", () => {
+    const pasteStart = "\x1b[200~";
+    const pasteEnd = "\x1b[201~";
+
+    it("should insert a single-line paste", () => {
+      const editor = new Editor();
+      editor.handleInput(`${pasteStart}hello${pasteEnd}`);
+      assert.equal(editor.getText(), "hello");
+    });
+
+    it("should paste at cursor position", () => {
+      const editor = new Editor();
+      editor.handleInput("ab");
+      // Move cursor between a and b
+      editor.handleInput("\x1b[D");
+      editor.handleInput(`${pasteStart}XY${pasteEnd}`);
+      assert.equal(editor.getText(), "aXYb");
+    });
+
+    it("should handle multi-line paste", () => {
+      const editor = new Editor();
+      editor.handleInput(`${pasteStart}line1\nline2\nline3${pasteEnd}`);
+      assert.equal(editor.getText(), "line1\nline2\nline3");
+    });
+
+    it("should merge multi-line paste with current line content", () => {
+      const editor = new Editor();
+      editor.handleInput("start");
+      // Cursor is at end of "start" (line 0, col 5)
+      editor.handleInput(`${pasteStart}A\nB${pasteEnd}`);
+      assert.equal(editor.getText(), "startA\nB");
+    });
+
+    it("should expand tabs to spaces", () => {
+      const editor = new Editor();
+      editor.handleInput(`${pasteStart}hello\tworld${pasteEnd}`);
+      assert.equal(editor.getText(), "hello    world");
+    });
+
+    it("should normalize CRLF to LF", () => {
+      const editor = new Editor();
+      editor.handleInput(`${pasteStart}line1\r\nline2${pasteEnd}`);
+      assert.equal(editor.getText(), "line1\nline2");
+    });
+
+    it("should create paste marker for large paste (> 10 lines)", () => {
+      const editor = new Editor();
+      const lines = Array.from({ length: 12 }, (_, i) => `line${i + 1}`);
+      const text = lines.join("\n");
+      editor.handleInput(`${pasteStart}${text}${pasteEnd}`);
+      assert.ok(editor.getText().startsWith("[paste #"));
+      assert.ok(editor.getText().includes("+12 lines]"));
+    });
+
+    it("should create paste marker for large paste (> 1000 chars)", () => {
+      const editor = new Editor();
+      const longLine = "x".repeat(1500);
+      editor.handleInput(`${pasteStart}${longLine}${pasteEnd}`);
+      assert.ok(editor.getText().startsWith("[paste #"));
+      assert.ok(editor.getText().includes("1500 chars]"));
+    });
+
+    it("should filter non-printable characters", () => {
+      const editor = new Editor();
+      // null byte, bell, etc. should be filtered out
+      editor.handleInput(`${pasteStart}\x00\x07hello\x1b${pasteEnd}`);
+      assert.equal(editor.getText(), "hello");
+    });
+
+    it("should handle empty paste", () => {
+      const editor = new Editor();
+      editor.handleInput(`${pasteStart}${pasteEnd}`);
+      assert.equal(editor.getText(), "");
+    });
+
+    it("should insert single character at cursor in multi-line buffer", () => {
+      const editor = new Editor();
+      editor.handleInput("first\nsecond\nthird");
+      // Cursor is at end of "third" (line 2, col 5)
+      // Move to line 0 ("first") with cursor at position 4 (after "firs")
+      editor.handleInput("\x1b[A"); // Up to line 1
+      editor.handleInput("\x1b[A"); // Up to line 0
+      // At this point cursor should be on line 0, clamped to "first" length
+      editor.handleInput(`${pasteStart}X${pasteEnd}`);
+      // Single-line paste at cursor position on first line
+      assert.ok(editor.getText().includes("X"));
+    });
+
+    it("should handle paste after existing content on same line", () => {
+      const editor = new Editor();
+      editor.handleInput("hello");
+      // Cursor is at end
+      editor.handleInput(`${pasteStart} world${pasteEnd}`);
+      assert.equal(editor.getText(), "hello world");
+    });
+
+    it("should handle paste at beginning of line", () => {
+      const editor = new Editor();
+      editor.handleInput("hello");
+      // Move cursor to start
+      editor.handleInput("\x1b[H");
+      editor.handleInput(`${pasteStart}pre${pasteEnd}`);
+      assert.equal(editor.getText(), "prehello");
+    });
+  });
 });

@@ -864,88 +864,81 @@ export class Editor implements Component {
   }
 
   private handlePaste(pastedText: string): void {
-    // Clean the pasted text
     const cleanText = pastedText.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-
-    // Convert tabs to spaces (4 spaces per tab)
     const tabExpandedText = cleanText.replace(/\t/g, "    ");
-
-    // Filter out non-printable characters except newlines
     const filteredText = tabExpandedText
       .split("")
       .filter((char) => char === "\n" || (char >= " " && char <= "~"))
       .join("");
 
-    // Split into lines
     const pastedLines = filteredText.split("\n");
-
-    // Check if this is a large paste (> 10 lines or > 1000 characters)
     const totalChars = filteredText.length;
+
     if (pastedLines.length > 10 || totalChars > 1000) {
-      // Store the paste and insert a marker
-      this.pasteCounter++;
-      const pasteId = this.pasteCounter;
-      this.pastes.set(pasteId, filteredText);
-
-      // Insert marker like "[paste #1 +123 lines]" or "[paste #1 1234 chars]"
-      const marker =
-        pastedLines.length > 10
-          ? `[paste #${pasteId} +${pastedLines.length} lines]`
-          : `[paste #${pasteId} ${totalChars} chars]`;
-      for (const char of marker) {
-        this.insertCharacter(char, true);
-      }
-
+      this.handleLargePaste(filteredText, pastedLines, totalChars);
       return;
     }
 
     if (pastedLines.length === 1) {
-      // Single line - just insert each character
-      const text = pastedLines[0] || "";
-      for (const char of text) {
-        this.insertCharacter(char, true);
-      }
-
+      this.handleSingleLinePaste(pastedLines[0] || "");
       return;
     }
 
-    // Multi-line paste - be very careful with array manipulation
+    this.handleMultiLinePaste(pastedLines);
+  }
+
+  private handleLargePaste(
+    filteredText: string,
+    pastedLines: string[],
+    totalChars: number,
+  ): void {
+    this.pasteCounter++;
+    const pasteId = this.pasteCounter;
+    this.pastes.set(pasteId, filteredText);
+
+    const marker =
+      pastedLines.length > 10
+        ? `[paste #${pasteId} +${pastedLines.length} lines]`
+        : `[paste #${pasteId} ${totalChars} chars]`;
+    for (const char of marker) {
+      this.insertCharacter(char, true);
+    }
+  }
+
+  private handleSingleLinePaste(text: string): void {
+    for (const char of text) {
+      this.insertCharacter(char, true);
+    }
+  }
+
+  private handleMultiLinePaste(pastedLines: string[]): void {
     const currentLine = this.state.lines[this.state.cursorLine] || "";
     const beforeCursor = currentLine.slice(0, this.state.cursorCol);
     const afterCursor = currentLine.slice(this.state.cursorCol);
 
-    // Build the new lines array step by step
     const newLines: string[] = [];
 
-    // Add all lines before current line
     for (let i = 0; i < this.state.cursorLine; i++) {
       newLines.push(this.state.lines[i] || "");
     }
 
-    // Add the first pasted line merged with before cursor text
     newLines.push(beforeCursor + (pastedLines[0] || ""));
 
-    // Add all middle pasted lines
     for (let i = 1; i < pastedLines.length - 1; i++) {
       newLines.push(pastedLines[i] || "");
     }
 
-    // Add the last pasted line with after cursor text
     newLines.push((pastedLines[pastedLines.length - 1] || "") + afterCursor);
 
-    // Add all lines after current line
     for (let i = this.state.cursorLine + 1; i < this.state.lines.length; i++) {
       newLines.push(this.state.lines[i] || "");
     }
 
-    // Replace the entire lines array
     this.state.lines = newLines;
 
-    // Update cursor position to end of pasted content
     this.state.cursorLine += pastedLines.length - 1;
     this.state.cursorCol = (pastedLines[pastedLines.length - 1] || "").length;
 
-    // Notify of change
     if (this.onChange) {
       this.onChange(this.getText());
     }
