@@ -354,6 +354,32 @@ describe("web search tool with mock", async () => {
       }
     }
   });
+
+  it("throws helpful error when Exa fails with network error", async () => {
+    const tool = await createWebSearchTool();
+    const { execute } = tool;
+
+    const originalFetch = globalThis.fetch;
+    // Simulate fetch failing with network error (TypeError: fetch failed)
+    (globalThis as { fetch?: unknown }).fetch = mock.fn(() =>
+      Promise.reject(new TypeError("fetch failed")),
+    );
+
+    const originalEnv = process.env["EXA_API_KEY"];
+    process.env["EXA_API_KEY"] = "test-api-key";
+
+    try {
+      await assert.rejects(async () => {
+        await execute(
+          { query: "test", numResults: 10, timeout: 30000, provider: "exa" },
+          { toolCallId: "t1", messages: [] },
+        );
+      }, /Exa API is not accessible/);
+    } finally {
+      (globalThis as { fetch?: unknown }).fetch = originalFetch;
+      process.env["EXA_API_KEY"] = originalEnv;
+    }
+  });
 });
 
 describe("web search tool input validation", async () => {

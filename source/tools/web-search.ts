@@ -243,6 +243,56 @@ async function fetchDuckDuckGo(
 }
 
 /**
+ * Attempt Exa search with automatic fallback to DuckDuckGo
+ */
+async function fetchExaWithFallback(
+  query: string,
+  numResults: number,
+  signal: AbortSignal,
+): Promise<SearchResponse> {
+  try {
+    return await fetchExa(query, numResults, signal);
+  } catch (error) {
+    // If aborted, re-throw the original error
+    if (signal.aborted) {
+      throw error;
+    }
+    // Provide more helpful error message about network failures
+    const errorMessage =
+      error instanceof Error ? error.message : String(error);
+    if (
+      errorMessage.includes("fetch failed") ||
+      errorMessage.includes("ENOTFOUND") ||
+      errorMessage.includes("connect")
+    ) {
+      throw new Error(
+        `Exa API is not accessible (network error). Try using provider="duckduckgo" instead.`,
+      );
+    }
+    // For non-network errors (auth, rate limit, etc.), fall back to DuckDuckGo
+    return await fetchDuckDuckGo(query, numResults, signal);
+  }
+}
+
+/**
+ * Format search response into a human-readable string
+ */
+function formatSearchResults(query: string, response: SearchResponse): string {
+  if (response.results.length === 0) {
+    return `No search results found for "${query}".`;
+  }
+
+  const resultsText = response.results
+    .map(
+      (result, index) =>
+        `${index + 1}. [${result.title}](${result.url})\n   ${result.snippet.substring(0, 200)}${result.snippet.length > 200 ? "..." : ""}`,
+    )
+    .join("\n\n");
+
+  return `Search results for "${query}" (${response.provider}):\n\n${resultsText}\n\nTotal results: ${response.totalResults || response.results.length}`;
+}
+
+/**
  * Execute web search
  */
 async function executeWebSearch(
@@ -273,47 +323,12 @@ async function executeWebSearch(
   );
 
   try {
-    let response: SearchResponse;
+    const response =
+      provider === "duckduckgo"
+        ? await fetchDuckDuckGo(query, effectiveNumResults, signal)
+        : await fetchExaWithFallback(query, effectiveNumResults, signal);
 
-    if (provider === "duckduckgo") {
-      response = await fetchDuckDuckGo(query, effectiveNumResults, signal);
-    } else {
-      // Try Exa first, fall back to DuckDuckGo
-      try {
-        response = await fetchExa(query, effectiveNumResults, signal);
-      } catch (exaError) {
-        // Fall back to DuckDuckGo if Exa fails (but not if aborted)
-        if (signal.aborted) {
-          throw exaError;
-        }
-        // Provide more helpful error message about Exa failure
-        const errorMsg =
-          exaError instanceof Error ? exaError.message : String(exaError);
-        if (
-          errorMsg.includes("fetch failed") ||
-          errorMsg.includes("ENOTFOUND") ||
-          errorMsg.includes("connect")
-        ) {
-          throw new Error(
-            `Exa API is not accessible (network error). Try using provider="duckduckgo" instead.`,
-          );
-        }
-        response = await fetchDuckDuckGo(query, effectiveNumResults, signal);
-      }
-    }
-
-    if (response.results.length === 0) {
-      return `No search results found for "${query}".`;
-    }
-
-    const resultsText = response.results
-      .map(
-        (result, index) =>
-          `${index + 1}. [${result.title}](${result.url})\n   ${result.snippet.substring(0, 200)}${result.snippet.length > 200 ? "..." : ""}`,
-      )
-      .join("\n\n");
-
-    return `Search results for "${query}" (${response.provider}):\n\n${resultsText}\n\nTotal results: ${response.totalResults || response.results.length}`;
+    return formatSearchResults(query, response);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(`Web search failed: ${errorMessage}`);
