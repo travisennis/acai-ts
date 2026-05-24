@@ -1083,51 +1083,59 @@ export class Editor implements Component {
 
     const currentLine = this.state.lines[this.state.cursorLine] || "";
 
-    // If at start of line, behave like backspace at column 0 (merge with previous line)
     if (this.state.cursorCol === 0) {
-      if (this.state.cursorLine > 0) {
-        const previousLine = this.state.lines[this.state.cursorLine - 1] || "";
-        this.state.lines[this.state.cursorLine - 1] =
-          previousLine + currentLine;
-        this.state.lines.splice(this.state.cursorLine, 1);
-        this.state.cursorLine--;
-        this.state.cursorCol = previousLine.length;
-      }
+      this.mergeLineWithPrevious(currentLine);
     } else {
-      const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
-
-      const isWhitespace = (char: string): boolean => /\s/.test(char);
-      const isPunctuation = (char: string): boolean => {
-        // Treat obvious code punctuation as boundaries
-        return /[(){}[\]<>.,;:'"!?+\-=*/\\|&%^$#@~`]/.test(char);
-      };
-
-      let deleteFrom = this.state.cursorCol;
-      const lastChar = textBeforeCursor[deleteFrom - 1] ?? "";
-
-      // If immediately on whitespace or punctuation, delete that single boundary char
-      if (isWhitespace(lastChar) || isPunctuation(lastChar)) {
-        deleteFrom -= 1;
-      } else {
-        // Otherwise, delete a run of non-boundary characters (the "word")
-        while (deleteFrom > 0) {
-          const ch = textBeforeCursor[deleteFrom - 1] ?? "";
-          if (isWhitespace(ch) || isPunctuation(ch)) {
-            break;
-          }
-          deleteFrom -= 1;
-        }
-      }
-
-      this.state.lines[this.state.cursorLine] =
-        currentLine.slice(0, deleteFrom) +
-        currentLine.slice(this.state.cursorCol);
-      this.state.cursorCol = deleteFrom;
+      this.deleteWordOnCurrentLine(currentLine);
     }
 
     if (this.onChange) {
       this.onChange(this.getText());
     }
+  }
+
+  private mergeLineWithPrevious(currentLine: string): void {
+    if (this.state.cursorLine <= 0) return;
+    const previousLine = this.state.lines[this.state.cursorLine - 1] || "";
+    this.state.lines[this.state.cursorLine - 1] = previousLine + currentLine;
+    this.state.lines.splice(this.state.cursorLine, 1);
+    this.state.cursorLine--;
+    this.state.cursorCol = previousLine.length;
+  }
+
+  private deleteWordOnCurrentLine(currentLine: string): void {
+    const deleteFrom = this.findWordBoundaryBackwards(
+      currentLine,
+      this.state.cursorCol,
+    );
+    this.state.lines[this.state.cursorLine] =
+      currentLine.slice(0, deleteFrom) + currentLine.slice(this.state.cursorCol);
+    this.state.cursorCol = deleteFrom;
+  }
+
+  private findWordBoundaryBackwards(text: string, fromIndex: number): number {
+    const textBeforeCursor = text.slice(0, fromIndex);
+    let deleteFrom = fromIndex;
+    const lastChar = textBeforeCursor[deleteFrom - 1] ?? "";
+
+    if (this.isWordBoundaryChar(lastChar)) {
+      return deleteFrom - 1;
+    }
+
+    while (deleteFrom > 0) {
+      const ch = textBeforeCursor[deleteFrom - 1] ?? "";
+      if (this.isWordBoundaryChar(ch)) {
+        break;
+      }
+      deleteFrom -= 1;
+    }
+    return deleteFrom;
+  }
+
+  private isWordBoundaryChar(char: string): boolean {
+    if (/\s/.test(char)) return true;
+    // Treat obvious code punctuation as boundaries
+    return /[(){}[\]<>.,;:'"!?+\-=*/\\|&%^$#@~`]/.test(char);
   }
 
   /**
