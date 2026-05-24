@@ -140,53 +140,9 @@ export function parseTextSchema(content: string): ToolMetadata | null {
       continue;
     }
 
-    // Parse parameters: "paramName: type [optional|required] description text"
-    const paramMatch = line.match(
-      /^(\w+):\s*(string|number|boolean)\s+(optional|required)?\s*(.*)$/,
-    );
-    if (paramMatch) {
-      const [, paramName, paramType, requirement, paramDescription] =
-        paramMatch;
-      parameters.push({
-        name: paramName,
-        type: paramType as "string" | "number" | "boolean",
-        description: paramDescription || `Parameter ${paramName}`,
-        required: requirement !== "optional",
-      });
-      continue;
-    }
-
-    // Handle params without type keyword (default to string)
-    const simpleMatch = line.match(/^(\w+):\s*(.*)$/);
-    if (
-      simpleMatch &&
-      !line.startsWith("name:") &&
-      !line.startsWith("description:")
-    ) {
-      const [, paramName, rest] = simpleMatch;
-      const typeMatch = rest.match(/^(string|number|boolean)\s*(.*)$/);
-      if (typeMatch) {
-        const [, paramType, afterType] = typeMatch;
-        const optMatch = afterType.match(/^(optional|required)\s*(.*)$/);
-        parameters.push({
-          name: paramName,
-          type: paramType as "string" | "number" | "boolean",
-          description: optMatch
-            ? optMatch[2] || `Parameter ${paramName}`
-            : afterType || `Parameter ${paramName}`,
-          required: !optMatch || optMatch[1] !== "optional",
-        });
-      } else {
-        const optMatch = rest.match(/^(optional|required)\s*(.*)$/);
-        parameters.push({
-          name: paramName,
-          type: "string",
-          description: optMatch
-            ? optMatch[2] || rest
-            : rest || `Parameter ${paramName}`,
-          required: !optMatch || optMatch[1] !== "optional",
-        });
-      }
+    const param = parseTextSchemaParameter(line);
+    if (param) {
+      parameters.push(param);
     }
   }
 
@@ -205,6 +161,62 @@ export function parseTextSchema(content: string): ToolMetadata | null {
     description,
     parameters,
     needsApproval: true,
+  };
+}
+
+/**
+ * Parse a single line as a text schema parameter definition.
+ * Supports formats:
+ *   - "paramName: type [optional|required] description"
+ *   - "paramName: [optional|required] description" (type defaults to string)
+ *   - "paramName: description" (type defaults to string, required)
+ */
+function parseTextSchemaParameter(
+  line: string,
+): ToolMetadata["parameters"][number] | null {
+  // Parse parameters: "paramName: type [optional|required] description text"
+  const fullMatch = line.match(
+    /^(\w+):\s*(string|number|boolean)\s+(optional|required)?\s*(.*)$/,
+  );
+  if (fullMatch) {
+    const [, paramName, paramType, requirement, paramDescription] = fullMatch;
+    return {
+      name: paramName,
+      type: paramType as "string" | "number" | "boolean",
+      description: paramDescription || `Parameter ${paramName}`,
+      required: requirement !== "optional",
+    };
+  }
+
+  // Handle params without type keyword (default to string)
+  const simpleMatch = line.match(/^(\w+):\s*(.*)$/);
+  if (!simpleMatch) {
+    return null;
+  }
+
+  const [, paramName, rest] = simpleMatch;
+  const typeMatch = rest.match(/^(string|number|boolean)\s*(.*)$/);
+  if (typeMatch) {
+    const [, paramType, afterType] = typeMatch;
+    const optMatch = afterType.match(/^(optional|required)\s*(.*)$/);
+    return {
+      name: paramName,
+      type: paramType as "string" | "number" | "boolean",
+      description: optMatch
+        ? optMatch[2] || `Parameter ${paramName}`
+        : afterType || `Parameter ${paramName}`,
+      required: !optMatch || optMatch[1] !== "optional",
+    };
+  }
+
+  const optMatch = rest.match(/^(optional|required)\s*(.*)$/);
+  return {
+    name: paramName,
+    type: "string",
+    description: optMatch
+      ? optMatch[2] || rest
+      : rest || `Parameter ${paramName}`,
+    required: !optMatch || optMatch[1] !== "optional",
   };
 }
 

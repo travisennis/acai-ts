@@ -292,4 +292,67 @@ description: A tool`;
     const result = parseTextSchema(content);
     assert.strictEqual(result?.needsApproval, true);
   });
+
+  it("should skip lines that don't match any pattern", () => {
+    const content = `name: my_tool
+description: A tool
+some random non-matching line`;
+    const result = parseTextSchema(content);
+    assert.strictEqual(result?.name, "my_tool");
+    assert.strictEqual(result?.description, "A tool");
+    assert.strictEqual(result?.parameters.length, 0);
+  });
+
+  it("should parse parameter with optional keyword but no type", () => {
+    const content = `name: my_tool
+description: A tool
+input: optional description of input`;
+    const result = parseTextSchema(content);
+    assert.strictEqual(result?.parameters.length, 1);
+    assert.strictEqual(result?.parameters[0].name, "input");
+    assert.strictEqual(result?.parameters[0].type, "string");
+    assert.strictEqual(result?.parameters[0].required, false);
+    assert.strictEqual(result?.parameters[0].description, "description of input");
+  });
+
+  it("should parse parameter with required keyword but no type", () => {
+    const content = `name: my_tool
+description: A tool
+input: required description of input`;
+    const result = parseTextSchema(content);
+    assert.strictEqual(result?.parameters.length, 1);
+    assert.strictEqual(result?.parameters[0].name, "input");
+    assert.strictEqual(result?.parameters[0].type, "string");
+    assert.strictEqual(result?.parameters[0].required, true);
+  });
+
+  it("should parse parameter with type but no description", () => {
+    const content = `name: my_tool
+description: A tool
+count: number required`;
+    const result = parseTextSchema(content);
+    assert.strictEqual(result?.parameters.length, 1);
+    assert.strictEqual(result?.parameters[0].name, "count");
+    assert.strictEqual(result?.parameters[0].type, "number");
+    assert.strictEqual(result?.parameters[0].required, true);
+  });
+
+  it("should parse multiple parameters with mixed types", () => {
+    const content = `name: my_tool
+description: A tool
+username: string required the name
+count: number optional the count
+verbose: boolean optional enable verbose`;
+    const result = parseTextSchema(content);
+    assert.strictEqual(result?.parameters.length, 3);
+    assert.strictEqual(result?.parameters[0].name, "username");
+    assert.strictEqual(result?.parameters[0].type, "string");
+    assert.strictEqual(result?.parameters[0].required, true);
+    assert.strictEqual(result?.parameters[1].name, "count");
+    assert.strictEqual(result?.parameters[1].type, "number");
+    assert.strictEqual(result?.parameters[1].required, false);
+    assert.strictEqual(result?.parameters[2].name, "verbose");
+    assert.strictEqual(result?.parameters[2].type, "boolean");
+    assert.strictEqual(result?.parameters[2].required, false);
+  });
 });
