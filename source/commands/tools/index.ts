@@ -139,14 +139,21 @@ function createToolFiles(
   return files;
 }
 
-function handleToolMake(
-  args: string[],
-  options: CommandOptions,
-  container: Container,
-  editor: Editor,
-  tui: TUI,
-): "continue" | "use" {
-  // Parse arguments
+interface ParsedToolArgs {
+  toolName: string;
+  toolType: ToolType;
+  description: string;
+  customDir: string;
+}
+
+const TYPE_FLAGS: Record<string, ToolType> = {
+  "--bash": "bash",
+  "--zsh": "zsh",
+  "--node": "node",
+  "--text": "text",
+};
+
+function parseToolArgs(args: string[]): ParsedToolArgs {
   let toolName = "";
   let toolType: ToolType = "bash";
   let description = "";
@@ -154,14 +161,9 @@ function handleToolMake(
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    if (arg === "--bash") {
-      toolType = "bash";
-    } else if (arg === "--zsh") {
-      toolType = "zsh";
-    } else if (arg === "--node") {
-      toolType = "node";
-    } else if (arg === "--text") {
-      toolType = "text";
+    const typeFlag = TYPE_FLAGS[arg];
+    if (typeFlag) {
+      toolType = typeFlag;
     } else if (arg === "--description" || arg === "-d") {
       description = args[++i] || "";
     } else if (arg === "--dir") {
@@ -171,46 +173,84 @@ function handleToolMake(
     }
   }
 
+  return { toolName, toolType, description, customDir };
+}
+
+function showToolError(
+  container: Container,
+  editor: Editor,
+  tui: TUI,
+  message: string,
+  usage?: string,
+): "continue" {
+  container.addChild(new Text(style.red(message), 0, 1));
+  if (usage) {
+    container.addChild(new Text(style.dim(usage), 0, 1));
+  }
+  tui.requestRender();
+  editor.setText("");
+  return "continue";
+}
+
+function showToolSuccess(
+  container: Container,
+  editor: Editor,
+  tui: TUI,
+  toolName: string,
+  filePaths: string[],
+): "continue" {
+  container.addChild(new Text(style.green(`Created tool: ${toolName}`), 0, 1));
+  for (const filePath of filePaths) {
+    container.addChild(new Text(style.dim(`  ${filePath}`), 0, 1));
+  }
+  container.addChild(
+    new Text(
+      style.dim("Restart acai or reload tools to use the new tool."),
+      0,
+      1,
+    ),
+  );
+  tui.requestRender();
+  editor.setText("");
+  return "continue";
+}
+
+function handleToolMake(
+  args: string[],
+  options: CommandOptions,
+  container: Container,
+  editor: Editor,
+  tui: TUI,
+): "continue" | "use" {
+  const parsed = parseToolArgs(args);
+  let { toolName, toolType, description, customDir } = parsed;
+
   if (!toolName) {
-    container.addChild(
-      new Text(style.red("Error: Tool name is required"), 0, 1),
+    return showToolError(
+      container,
+      editor,
+      tui,
+      "Error: Tool name is required",
+      "Usage: /tools make <name> [--bash|--zsh|--node|--text] [--description <desc>] [--dir <path>]",
     );
-    container.addChild(
-      new Text(
-        style.dim(
-          "Usage: /tools make <name> [--bash|--zsh|--node|--text] [--description <desc>] [--dir <path>]",
-        ),
-        0,
-        1,
-      ),
-    );
-    tui.requestRender();
-    editor.setText("");
-    return "continue";
   }
 
   if (!TOOL_NAME_REGEX.test(toolName)) {
-    container.addChild(
-      new Text(
-        style.red(`Error: Tool name must match ${TOOL_NAME_REGEX.source}`),
-        0,
-        1,
-      ),
+    return showToolError(
+      container,
+      editor,
+      tui,
+      `Error: Tool name must match ${TOOL_NAME_REGEX.source}`,
     );
-    tui.requestRender();
-    editor.setText("");
-    return "continue";
   }
 
   if (!description) {
     description = `Dynamic tool: ${toolName}`;
   }
 
-  // Determine output directory
   const outputDir =
     customDir || path.join(options.workspace.primaryDir, ".acai", "tools");
 
-  // Create directory if it doesn't exist
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
@@ -219,37 +259,23 @@ function handleToolMake(
     const result = createToolFiles(toolName, description, toolType, outputDir);
 
     if (typeof result === "string") {
-      // A file already exists
-      container.addChild(
-        new Text(style.red(`Error: File already exists: ${result}`), 0, 1),
+      return showToolError(
+        container,
+        editor,
+        tui,
+        `Error: File already exists: ${result}`,
       );
-      tui.requestRender();
-      editor.setText("");
-      return "continue";
     }
 
-    container.addChild(
-      new Text(style.green(`Created tool: ${toolName}`), 0, 1),
-    );
-    for (const filePath of result) {
-      container.addChild(new Text(style.dim(`  ${filePath}`), 0, 1));
-    }
-    container.addChild(
-      new Text(
-        style.dim("Restart acai or reload tools to use the new tool."),
-        0,
-        1,
-      ),
-    );
+    return showToolSuccess(container, editor, tui, toolName, result);
   } catch (e) {
-    container.addChild(
-      new Text(style.red(`Error creating tool: ${(e as Error).message}`), 0, 1),
+    return showToolError(
+      container,
+      editor,
+      tui,
+      `Error creating tool: ${(e as Error).message}`,
     );
   }
-
-  tui.requestRender();
-  editor.setText("");
-  return "continue";
 }
 
 async function handleToolList(
