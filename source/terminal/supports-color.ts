@@ -109,6 +109,43 @@ function detectTerminalColorLevel(): number | undefined {
   return undefined;
 }
 
+function detectWindowsColorLevel(): number | undefined {
+  if (process.platform !== "win32") {
+    return undefined;
+  }
+
+  // Windows 10 build 10586 is the first Windows release that supports 256 colors.
+  // Windows 10 build 14931 is the first release that supports 16m/TrueColor.
+  const osRelease = os.release().split(".");
+  if (Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10_586) {
+    return Number(osRelease[2]) >= 14_931 ? 3 : 2;
+  }
+
+  return 1;
+}
+
+function detectHighColorTerminalLevel(): number | undefined {
+  if (env["COLORTERM"] === "truecolor") {
+    return 3;
+  }
+
+  if (env["TERM"] === "xterm-kitty" || env["TERM"] === "xterm-ghostty") {
+    return 3;
+  }
+
+  return undefined;
+}
+
+function detectTeamCityColorLevel(): number | undefined {
+  if ("TEAMCITY_VERSION" in env) {
+    return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env["TEAMCITY_VERSION"] || "")
+      ? 1
+      : 0;
+  }
+
+  return undefined;
+}
+
 function _supportsColor(
   haveStream: boolean,
   options: { streamIsTty?: boolean } = {},
@@ -136,15 +173,9 @@ function _supportsColor(
     return min;
   }
 
-  if (process.platform === "win32") {
-    // Windows 10 build 10586 is the first Windows release that supports 256 colors.
-    // Windows 10 build 14931 is the first release that supports 16m/TrueColor.
-    const osRelease = os.release().split(".");
-    if (Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10_586) {
-      return Number(osRelease[2]) >= 14_931 ? 3 : 2;
-    }
-
-    return 1;
+  const windowsLevel = detectWindowsColorLevel();
+  if (windowsLevel !== undefined) {
+    return windowsLevel;
   }
 
   const ciLevel = detectCiColorLevel(min);
@@ -152,22 +183,14 @@ function _supportsColor(
     return ciLevel;
   }
 
-  if ("TEAMCITY_VERSION" in env) {
-    return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env["TEAMCITY_VERSION"] || "")
-      ? 1
-      : 0;
+  const teamCityLevel = detectTeamCityColorLevel();
+  if (teamCityLevel !== undefined) {
+    return teamCityLevel;
   }
 
-  if (env["COLORTERM"] === "truecolor") {
-    return 3;
-  }
-
-  if (env["TERM"] === "xterm-kitty") {
-    return 3;
-  }
-
-  if (env["TERM"] === "xterm-ghostty") {
-    return 3;
+  const highColorLevel = detectHighColorTerminalLevel();
+  if (highColorLevel !== undefined) {
+    return highColorLevel;
   }
 
   const terminalLevel = detectTerminalColorLevel();
