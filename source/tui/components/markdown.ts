@@ -485,56 +485,54 @@ export class Markdown implements Component {
     styledText: string,
     cleanIndex: number,
   ): number {
-    let cleanPos = 0;
-    let styledPos = 0;
-    const escapeChar = String.fromCharCode(27);
-
-    // Handle edge case: if cleanIndex is 0, return 0
     if (cleanIndex === 0) {
       return 0;
     }
 
+    const escapeChar = String.fromCharCode(27);
+    let cleanPos = 0;
+    let styledPos = 0;
+
     while (styledPos < styledText.length) {
-      // If we've found all the clean characters we need, skip any escape
-      // sequences at the current position and return after them
       if (cleanPos >= cleanIndex) {
-        // Skip any escape sequences at this position
-        while (
-          styledPos < styledText.length &&
-          styledText[styledPos] === escapeChar
-        ) {
-          while (
-            styledPos < styledText.length &&
-            styledText[styledPos] !== "m"
-          ) {
-            styledPos++;
-          }
-          styledPos++; // skip 'm'
-        }
-        return styledPos;
+        return this.skipAnsiAtPosition(styledText, styledPos, escapeChar);
       }
 
-      const char = cleanText[cleanPos];
+      styledPos = this.skipAnsiAtPosition(styledText, styledPos, escapeChar);
+      if (styledPos >= styledText.length) break;
 
-      if (styledText[styledPos] === escapeChar) {
-        // Skip the entire ANSI escape sequence
-        while (styledPos < styledText.length && styledText[styledPos] !== "m") {
-          styledPos++;
-        }
-        styledPos++;
-        // Don't increment cleanPos - ANSI codes don't correspond to clean text characters
-      } else if (styledText[styledPos] === char) {
-        // Characters match, advance both
+      if (styledText[styledPos] === cleanText[cleanPos]) {
         cleanPos++;
-        styledPos++;
-      } else {
-        // Characters don't match - this shouldn't happen if cleanText is derived from styledText
-        // But to be safe, just advance styledPos
-        styledPos++;
       }
+      styledPos++;
     }
 
     return styledPos;
+  }
+
+  /**
+   * Skip any ANSI escape sequences at the given position in styled text
+   * and return the position after the last complete escape sequence.
+   */
+  private skipAnsiAtPosition(
+    styledText: string,
+    position: number,
+    escapeChar: string,
+  ): number {
+    while (
+      position < styledText.length &&
+      styledText[position] === escapeChar
+    ) {
+      position++;
+      while (
+        position < styledText.length &&
+        styledText[position] !== "m"
+      ) {
+        position++;
+      }
+      position++; // skip 'm'
+    }
+    return position;
   }
 
   /**
