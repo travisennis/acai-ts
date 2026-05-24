@@ -378,78 +378,86 @@ export class Markdown implements Component {
     let result = "";
 
     for (const token of tokens) {
-      switch (token.type) {
-        case "text":
-          // Text tokens in list items can have nested tokens for inline formatting
-          if (token.tokens && token.tokens.length > 0) {
-            result += this.renderInlineTokens(token.tokens);
-          } else {
-            result += token.text;
-          }
-          break;
-
-        case "strong":
-          result += this.theme.bold(
-            this.renderInlineTokens(token.tokens || []),
-          );
-          break;
-
-        case "em":
-          result += this.theme.italic(
-            this.renderInlineTokens(token.tokens || []),
-          );
-          break;
-
-        case "codespan":
-          result +=
-            this.theme.codeBlockBorder("`") +
-            this.theme.code(token.text) +
-            this.theme.codeBlockBorder("`");
-          break;
-
-        case "link": {
-          const linkText = this.renderInlineTokens(token.tokens || []);
-          const terminalLinkText = terminalLink(linkText, token.href);
-          // If link text matches href, only show the link once
-          if (linkText === token.href) {
-            result += this.theme.link(terminalLinkText ?? linkText);
-          } else {
-            result +=
-              this.theme.link(terminalLinkText ?? linkText) +
-              this.theme.linkUrl(` (${token.href})`);
-          }
-          break;
-        }
-
-        case "br":
-          result += "\n";
-          break;
-
-        case "del":
-          result += this.theme.strikethrough(
-            this.renderInlineTokens(token.tokens || []),
-          );
-          break;
-
-        case "image": {
-          const alt = (token.title ?? token.text ?? "").toString().trim();
-          if (alt.length > 0) {
-            result += `[Image: ${alt} (${token.href})]`;
-          } else {
-            result += `[Image: ${token.href}]`;
-          }
-          break;
-        }
-
-        default:
-          // Handle any other inline token types as plain text
-          if ("text" in token && typeof token.text === "string") {
-            result += token.text;
-          }
-      }
+      result += this.renderInlineToken(token);
     }
 
     return result;
+  }
+
+  private renderInlineToken(token: Token): string {
+    switch (token.type) {
+      case "text":
+        return this.renderTextToken(token);
+      case "strong":
+        return this.theme.bold(this.renderInlineTokens(token.tokens || []));
+      case "em":
+        return this.theme.italic(this.renderInlineTokens(token.tokens || []));
+      case "codespan":
+        return (
+          this.theme.codeBlockBorder("`") +
+          this.theme.code(token.text) +
+          this.theme.codeBlockBorder("`")
+        );
+      case "link":
+        return this.renderLinkToken(token);
+      case "br":
+        return "\n";
+      case "del":
+        return this.theme.strikethrough(
+          this.renderInlineTokens(token.tokens || []),
+        );
+      case "image":
+        return this.renderImageToken(token);
+      default:
+        return this.renderDefaultToken(token);
+    }
+  }
+
+  private renderTextToken(token: Token): string {
+    const t = token as Token & { tokens?: Token[]; text: string };
+    // Text tokens in list items can have nested tokens for inline formatting
+    if (t.tokens && t.tokens.length > 0) {
+      return this.renderInlineTokens(t.tokens);
+    }
+    return t.text;
+  }
+
+  private renderLinkToken(token: Token): string {
+    const t = token as Token & {
+      tokens?: Token[];
+      href: string;
+    };
+    const linkText = this.renderInlineTokens(t.tokens || []);
+    const terminalLinkText = terminalLink(linkText, t.href);
+    // If link text matches href, only show the link once
+    if (linkText === t.href) {
+      return this.theme.link(terminalLinkText ?? linkText);
+    }
+    return (
+      this.theme.link(terminalLinkText ?? linkText) +
+      this.theme.linkUrl(` (${t.href})`)
+    );
+  }
+
+  private renderImageToken(token: Token): string {
+    const t = token as Token & {
+      title?: string | null;
+      text: string;
+      href: string;
+    };
+    const alt = (t.title ?? t.text ?? "").toString().trim();
+    if (alt.length > 0) {
+      return `[Image: ${alt} (${t.href})]`;
+    }
+    return `[Image: ${t.href}]`;
+  }
+
+  private renderDefaultToken(token: Token): string {
+    // Handle any other inline token types as plain text
+    if ("text" in token && typeof token.text === "string") {
+      return token.text;
+    }
+    return "";
   }
 
   private wrapLine(line: string, contentWidth: number): string[] {
