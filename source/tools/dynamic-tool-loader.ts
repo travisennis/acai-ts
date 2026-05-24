@@ -574,85 +574,95 @@ export async function loadDynamicTools({
     { path: string; metadata: ToolMetadataWithFormat }
   >();
 
+  const filterEligibleFiles = (dir: string): string[] => {
+    return fs.readdirSync(dir).filter((f) => {
+      if (KNOWN_EXTENSIONS.some((ext) => f.endsWith(ext))) {
+        return true;
+      }
+
+      if (!path.extname(f)) {
+        const fullPath = path.join(dir, f);
+        try {
+          const stats = fs.statSync(fullPath);
+          if (stats.mode & 0o111) return true;
+        } catch {
+          // Can't stat, skip
+        }
+      }
+
+      return false;
+    });
+  };
+
+  const loadScriptTools = async (
+    dir: string,
+    files: string[],
+    isProject: boolean,
+  ) => {
+    for (const file of files) {
+      if (file.endsWith(".tool")) continue;
+
+      const scriptPath = path.join(dir, file);
+      try {
+        const metadata = await getMetadata(scriptPath, sessionContext);
+        if (metadata) {
+          toolMap.set(metadata.name, { path: scriptPath, metadata });
+          logger.info(
+            `Loaded ${isProject ? "project" : "user"} tool: ${metadata.name}`,
+          );
+        } else {
+          logger.warn(`Skipped invalid tool: ${file}`);
+        }
+      } catch (e) {
+        logger.error(`Error scanning ${file}: ${e}`);
+      }
+    }
+  };
+
+  const loadDotToolFiles = async (dir: string, isProject: boolean) => {
+    const allDirFiles = fs.readdirSync(dir);
+    const allToolFiles = allDirFiles.filter((f) => f.endsWith(".tool"));
+
+    for (const toolFile of allToolFiles) {
+      const toolPath = path.join(dir, toolFile);
+      try {
+        const content = fs.readFileSync(toolPath, "utf8");
+        const metadata = parseTextSchema(content);
+        if (!metadata) {
+          logger.warn(`Failed to parse .tool file: ${toolFile}`);
+          continue;
+        }
+
+        const baseName = toolFile.slice(0, -5);
+        const companionPath = findCompanion(dir, baseName);
+        if (!companionPath) {
+          logger.warn(`No companion executable found for ${toolFile}`);
+          continue;
+        }
+
+        const metadataWithFormat: ToolMetadataWithFormat = {
+          ...metadata,
+          format: "text",
+        };
+        toolMap.set(metadata.name, {
+          path: companionPath,
+          metadata: metadataWithFormat,
+        });
+        logger.info(
+          `Loaded ${isProject ? "project" : "user"} tool: ${metadata.name} (from .tool file)`,
+        );
+      } catch (e) {
+        logger.error(`Error reading .tool file ${toolFile}: ${e}`);
+      }
+    }
+  };
+
   const scanDir = async (dir: string, isProject = false) => {
     if (!fs.existsSync(dir)) return;
     try {
-      const files = fs.readdirSync(dir).filter((f) => {
-        // Known extensions
-        if (KNOWN_EXTENSIONS.some((ext) => f.endsWith(ext))) {
-          return true;
-        }
-
-        // Extensionless files that are executable
-        if (!path.extname(f)) {
-          const fullPath = path.join(dir, f);
-          try {
-            const stats = fs.statSync(fullPath);
-            if (stats.mode & 0o111) return true;
-          } catch {
-            // Can't stat, skip
-          }
-        }
-
-        return false;
-      });
-
-      for (const file of files) {
-        // Skip .tool files, they are handled separately
-        if (file.endsWith(".tool")) continue;
-
-        const scriptPath = path.join(dir, file);
-        try {
-          const metadata = await getMetadata(scriptPath, sessionContext);
-          if (metadata) {
-            toolMap.set(metadata.name, { path: scriptPath, metadata });
-            logger.info(
-              `Loaded ${isProject ? "project" : "user"} tool: ${metadata.name}`,
-            );
-          } else {
-            logger.warn(`Skipped invalid tool: ${file}`);
-          }
-        } catch (e) {
-          logger.error(`Error scanning ${file}: ${e}`);
-        }
-      }
-
-      // Scan for .tool files (text schema with companion executable)
-      const allDirFiles = fs.readdirSync(dir);
-      const allToolFiles = allDirFiles.filter((f) => f.endsWith(".tool"));
-
-      for (const toolFile of allToolFiles) {
-        const toolPath = path.join(dir, toolFile);
-        try {
-          const content = fs.readFileSync(toolPath, "utf8");
-          const metadata = parseTextSchema(content);
-          if (!metadata) {
-            logger.warn(`Failed to parse .tool file: ${toolFile}`);
-            continue;
-          }
-
-          const baseName = toolFile.slice(0, -5); // Remove .tool extension
-          const companionPath = findCompanion(dir, baseName);
-          if (!companionPath) {
-            logger.warn(`No companion executable found for ${toolFile}`);
-            continue;
-          }
-
-          const metadataWithFormat: ToolMetadataWithFormat = {
-            ...metadata,
-            format: "text",
-          };
-          toolMap.set(metadata.name, {
-            path: companionPath,
-            metadata: metadataWithFormat,
-          });
-          logger.info(
-            `Loaded ${isProject ? "project" : "user"} tool: ${metadata.name} (from .tool file)`,
-          );
-        } catch (e) {
-          logger.error(`Error reading .tool file ${toolFile}: ${e}`);
-        }
-      }
+      const files = filterEligibleFiles(dir);
+      await loadScriptTools(dir, files, isProject);
+      await loadDotToolFiles(dir, isProject);
     } catch (e) {
       logger.error(`Error reading dir ${dir}: ${e}`);
     }
