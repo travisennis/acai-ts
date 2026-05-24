@@ -300,64 +300,85 @@ export async function select<T = unknown>({
     }
 
     function onData(key: string) {
-      if (isCtrlC(key)) {
-        cleanup();
-        stdout.write("\n");
-        const err = new Error("Cancelled") as Error & { isCanceled?: boolean };
-        err.isCanceled = true;
-        reject(err);
-        return;
-      }
-
-      if (isEnter(key)) {
-        cleanup();
-        const chosen = filteredChoices[pointer];
-        stdout.write("\n");
-        resolve(chosen.value);
-        return;
-      }
-
-      if (isArrowUp(key)) {
-        move(-1);
-        return;
-      }
-      if (isArrowDown(key)) {
-        move(1);
-        return;
-      }
-
-      if (isHome(key)) {
-        pointer = findFirstEnabledIndex(filteredChoices);
-        pageStart = updatePageStart(pointer, pageSize, filteredChoices.length);
-        renderToScreen();
-        return;
-      }
-      if (isEnd(key)) {
-        pointer = findLastEnabledIndex(filteredChoices);
-        pageStart = updatePageStart(pointer, pageSize, filteredChoices.length);
-        renderToScreen();
-        return;
-      }
-
-      if (isBackspace(key)) {
-        if (searchBuffer.length > 0) {
-          searchBuffer = searchBuffer.slice(0, -1);
-          if (searchBuffer.length === 0) {
-            clearSearchBuffer();
-          } else {
+      const handlers: Array<{
+        test: (k: string) => boolean;
+        run: () => void;
+      }> = [
+        {
+          test: isCtrlC,
+          run: () => {
+            cleanup();
+            stdout.write("\n");
+            const err = new Error("Cancelled") as Error & {
+              isCanceled?: boolean;
+            };
+            err.isCanceled = true;
+            reject(err);
+          },
+        },
+        {
+          test: isEnter,
+          run: () => {
+            cleanup();
+            const chosen = filteredChoices[pointer];
+            stdout.write("\n");
+            resolve(chosen.value);
+          },
+        },
+        { test: isArrowUp, run: () => move(-1) },
+        { test: isArrowDown, run: () => move(1) },
+        {
+          test: isHome,
+          run: () => {
+            pointer = findFirstEnabledIndex(filteredChoices);
+            pageStart = updatePageStart(
+              pointer,
+              pageSize,
+              filteredChoices.length,
+            );
+            renderToScreen();
+          },
+        },
+        {
+          test: isEnd,
+          run: () => {
+            pointer = findLastEnabledIndex(filteredChoices);
+            pageStart = updatePageStart(
+              pointer,
+              pageSize,
+              filteredChoices.length,
+            );
+            renderToScreen();
+          },
+        },
+        {
+          test: isBackspace,
+          run: () => {
+            if (searchBuffer.length === 0) return;
+            searchBuffer = searchBuffer.slice(0, -1);
+            if (searchBuffer.length === 0) {
+              clearSearchBuffer();
+            } else {
+              filterChoices(searchBuffer);
+              renderToScreen();
+            }
+          },
+        },
+        {
+          test: (k: string) => !!k && k >= " " && k <= "~",
+          run: () => {
+            searchBuffer += key;
+            resetSearchTimer();
             filterChoices(searchBuffer);
             renderToScreen();
-          }
+          },
+        },
+      ];
+      for (const h of handlers) {
+        if (h.test(key)) {
+          h.run();
+          return;
         }
-        return;
-      }
-
-      if (key && key >= " " && key <= "~") {
-        searchBuffer += key;
-        resetSearchTimer();
-        filterChoices(searchBuffer);
-        renderToScreen();
-        return;
       }
     }
 
