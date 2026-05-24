@@ -93,6 +93,54 @@ function parsePatchHeader(
   return null;
 }
 
+function parseOneChunk(
+  lines: string[],
+  startIdx: number,
+): { chunk: UpdateFileChunk; nextIdx: number } {
+  const contextLine = lines[startIdx].substring(2).trim();
+  let i = startIdx + 1;
+
+  const oldLines: string[] = [];
+  const newLines: string[] = [];
+  let isEndOfFile = false;
+
+  while (i < lines.length && !lines[i].startsWith("@@")) {
+    const changeLine = lines[i];
+
+    if (changeLine === "*** End of File") {
+      isEndOfFile = true;
+      i++;
+      break;
+    }
+
+    if (changeLine.startsWith("***")) {
+      break;
+    }
+
+    if (changeLine.startsWith(" ")) {
+      const content = changeLine.substring(1);
+      oldLines.push(content);
+      newLines.push(content);
+    } else if (changeLine.startsWith("-")) {
+      oldLines.push(changeLine.substring(1));
+    } else if (changeLine.startsWith("+")) {
+      newLines.push(changeLine.substring(1));
+    }
+
+    i++;
+  }
+
+  return {
+    chunk: {
+      oldLines,
+      newLines,
+      changeContext: contextLine || undefined,
+      isEndOfFile: isEndOfFile || undefined,
+    },
+    nextIdx: i,
+  };
+}
+
 function parseUpdateFileChunks(
   lines: string[],
   startIdx: number,
@@ -102,47 +150,9 @@ function parseUpdateFileChunks(
 
   while (i < lines.length && !lines[i].startsWith("***")) {
     if (lines[i].startsWith("@@")) {
-      const contextLine = lines[i].substring(2).trim();
-      i++;
-
-      const oldLines: string[] = [];
-      const newLines: string[] = [];
-      let isEndOfFile = false;
-
-      while (i < lines.length && !lines[i].startsWith("@@")) {
-        const changeLine = lines[i];
-
-        // Check for end of file marker first (before general *** check)
-        if (changeLine === "*** End of File") {
-          isEndOfFile = true;
-          i++;
-          break;
-        }
-
-        // Check for other *** markers (new file operations)
-        if (changeLine.startsWith("***")) {
-          break;
-        }
-
-        if (changeLine.startsWith(" ")) {
-          const content = changeLine.substring(1);
-          oldLines.push(content);
-          newLines.push(content);
-        } else if (changeLine.startsWith("-")) {
-          oldLines.push(changeLine.substring(1));
-        } else if (changeLine.startsWith("+")) {
-          newLines.push(changeLine.substring(1));
-        }
-
-        i++;
-      }
-
-      chunks.push({
-        oldLines,
-        newLines,
-        changeContext: contextLine || undefined,
-        isEndOfFile: isEndOfFile || undefined,
-      });
+      const { chunk, nextIdx } = parseOneChunk(lines, i);
+      chunks.push(chunk);
+      i = nextIdx;
     } else {
       i++;
     }
