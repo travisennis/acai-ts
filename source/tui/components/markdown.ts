@@ -818,43 +818,57 @@ export class Markdown implements Component {
    * Render list item tokens, handling nested lists
    * Returns lines WITHOUT the parent indent (renderList will add it)
    */
-  private renderListItem(tokens: Token[], parentDepth: number): string[] {
+  // Token handler map for renderListItem dispatch
+  private listTokenHandlers: Record<
+    string,
+    (token: Token, parentDepth: number) => string[]
+  > = {
+    list: (token, parentDepth) =>
+      this.renderList(
+        token as Token & {
+          items: unknown[];
+          ordered: boolean;
+          start?: number | string;
+        },
+        parentDepth + 1,
+      ),
+    text: (token) => {
+      const t = token as { tokens?: Token[]; text?: string };
+      return t.tokens && t.tokens.length > 0
+        ? [this.renderInlineTokens(t.tokens)]
+        : [t.text || ""];
+    },
+    paragraph: (token) => [
+      this.renderInlineTokens(
+        (token as { tokens?: Token[] }).tokens || [],
+      ),
+    ],
+    code: (token) => {
+      const t = token as { lang?: string; text?: string };
+      const lines: string[] = [
+        this.theme.codeBlockBorder(`\`\`\`${t.lang || ""}`),
+      ];
+      const codeLines = (t.text || "").split("\n");
+      for (const codeLine of codeLines) {
+        lines.push(style.dim("  ") + this.theme.codeBlock(codeLine));
+      }
+      lines.push(this.theme.codeBlockBorder("```"));
+      return lines;
+    },
+  };
+
+  private renderListItem(
+    tokens: Token[],
+    parentDepth: number,
+  ): string[] {
     const lines: string[] = [];
 
     for (const token of tokens) {
-      if (token.type === "list") {
-        // Nested list - render with one additional indent level
-        // These lines will have their own indent, so we just add them as-is
-        const nestedLines = this.renderList(
-          token as Token & {
-            items: unknown[];
-            ordered: boolean;
-            start?: number | string;
-          },
-          parentDepth + 1,
-        );
-        lines.push(...nestedLines);
-      } else if (token.type === "text") {
-        // Text content (may have inline tokens)
-        const text =
-          token.tokens && token.tokens.length > 0
-            ? this.renderInlineTokens(token.tokens)
-            : token.text || "";
-        lines.push(text);
-      } else if (token.type === "paragraph") {
-        // Paragraph in list item
-        const text = this.renderInlineTokens(token.tokens || []);
-        lines.push(text);
-      } else if (token.type === "code") {
-        // Code block in list item
-        lines.push(this.theme.codeBlockBorder(`\`\`\`${token.lang || ""}`));
-        const codeLines = token.text.split("\n");
-        for (const codeLine of codeLines) {
-          lines.push(style.dim("  ") + this.theme.codeBlock(codeLine));
-        }
-        lines.push(this.theme.codeBlockBorder("```"));
+      const handler = this.listTokenHandlers[token.type];
+      if (handler) {
+        lines.push(...handler(token, parentDepth));
       } else {
-        // Other token types - try to render as inline
+        // Unknown token types - try to render as inline
         const text = this.renderInlineTokens([token]);
         if (text) {
           lines.push(text);
