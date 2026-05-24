@@ -209,50 +209,57 @@ export class SelectList implements Component {
   }
 
   handleInput(keyData: string): void {
-    // Up arrow - wrap to bottom when at top
     if (isArrowUp(keyData)) {
-      this.selectedIndex =
-        this.selectedIndex === 0
-          ? this.filteredItems.length - 1
-          : this.selectedIndex - 1;
-      this.notifySelectionChange();
+      this.moveSelectionUp();
+      return;
     }
-    // Down arrow - wrap to top when at bottom
-    else if (isArrowDown(keyData)) {
-      this.selectedIndex =
-        this.selectedIndex === this.filteredItems.length - 1
-          ? 0
-          : this.selectedIndex + 1;
-      this.notifySelectionChange();
+    if (isArrowDown(keyData)) {
+      this.moveSelectionDown();
+      return;
     }
-    // Tab - move down with wrapping (like down arrow)
-    else if (isTab(keyData)) {
-      this.selectedIndex =
-        this.selectedIndex === this.filteredItems.length - 1
-          ? 0
-          : this.selectedIndex + 1;
-      this.notifySelectionChange();
+    if (isTab(keyData)) {
+      this.moveSelectionDown();
+      return;
     }
-    // Shift+Tab - move up with wrapping (like up arrow)
-    else if (isShiftTab(keyData)) {
-      this.selectedIndex =
-        this.selectedIndex === 0
-          ? this.filteredItems.length - 1
-          : this.selectedIndex - 1;
-      this.notifySelectionChange();
+    if (isShiftTab(keyData)) {
+      this.moveSelectionUp();
+      return;
     }
-    // Enter
-    else if (isEnter(keyData)) {
-      const selectedItem = this.filteredItems[this.selectedIndex];
-      if (selectedItem && this.onSelect) {
-        this.onSelect(selectedItem);
-      }
+    if (isEnter(keyData)) {
+      this.selectCurrentItem();
+      return;
     }
-    // Escape or Ctrl+C
-    else if (isEscape(keyData) || isCtrlC(keyData)) {
-      if (this.onCancel) {
-        this.onCancel();
-      }
+    if (isEscape(keyData) || isCtrlC(keyData)) {
+      this.cancelSelection();
+    }
+  }
+
+  private moveSelectionUp(): void {
+    this.selectedIndex =
+      this.selectedIndex === 0
+        ? this.filteredItems.length - 1
+        : this.selectedIndex - 1;
+    this.notifySelectionChange();
+  }
+
+  private moveSelectionDown(): void {
+    this.selectedIndex =
+      this.selectedIndex === this.filteredItems.length - 1
+        ? 0
+        : this.selectedIndex + 1;
+    this.notifySelectionChange();
+  }
+
+  private selectCurrentItem(): void {
+    const selectedItem = this.filteredItems[this.selectedIndex];
+    if (selectedItem && this.onSelect) {
+      this.onSelect(selectedItem);
+    }
+  }
+
+  private cancelSelection(): void {
+    if (this.onCancel) {
+      this.onCancel();
     }
   }
 

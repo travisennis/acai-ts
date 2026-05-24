@@ -150,4 +150,143 @@ describe("SelectList navigation", () => {
     list.handleInput("\t");
     assert.equal(list.getSelectedItem()?.value, "apple");
   });
+
+  describe("handleInput - enter key", () => {
+    it("should call onSelect with the selected item", () => {
+      const list = new SelectList(testItems, 5);
+      const selected: { item: SelectItem | null } = { item: null };
+      list.onSelect = (item: SelectItem) => {
+        selected.item = item;
+      };
+      list.handleInput("\r");
+      assert.equal(selected.item?.value, "1");
+    });
+
+    it("should call onSelect with current item after navigation", () => {
+      const list = new SelectList(testItems, 5);
+      const selected: { item: SelectItem | null } = { item: null };
+      list.onSelect = (item: SelectItem) => {
+        selected.item = item;
+      };
+      list.handleInput("\t"); // move to index 1
+      list.handleInput("\r");
+      assert.equal(selected.item?.value, "2");
+    });
+
+    it("should not throw when onSelect is not set", () => {
+      const list = new SelectList(testItems, 5);
+      list.handleInput("\r");
+      assert.equal(list.getSelectedItem()?.value, "1");
+    });
+  });
+
+  describe("handleInput - escape and ctrl+c", () => {
+    it("should call onCancel on Escape", () => {
+      const list = new SelectList(testItems, 5);
+      let cancelled = false;
+      list.onCancel = () => {
+        cancelled = true;
+      };
+      list.handleInput("\x1b");
+      assert.equal(cancelled, true);
+    });
+
+    it("should call onCancel on Ctrl+C", () => {
+      const list = new SelectList(testItems, 5);
+      let cancelled = false;
+      list.onCancel = () => {
+        cancelled = true;
+      };
+      list.handleInput("\x03");
+      assert.equal(cancelled, true);
+    });
+
+    it("should not throw when onCancel is not set", () => {
+      const list = new SelectList(testItems, 5);
+      list.handleInput("\x1b");
+      assert.equal(list.getSelectedItem()?.value, "1");
+    });
+
+    it("should not throw on Ctrl+C when onCancel is not set", () => {
+      const list = new SelectList(testItems, 5);
+      list.handleInput("\x03");
+      assert.equal(list.getSelectedItem()?.value, "1");
+    });
+  });
+
+  describe("handleInput - selection change callback", () => {
+    it("should call onSelectionChange on arrow up", () => {
+      const list = new SelectList(testItems, 5);
+      const changed: { item: SelectItem | null } = { item: null };
+      list.onSelectionChange = (item: SelectItem) => {
+        changed.item = item;
+      };
+      list.handleInput("\x1b[A");
+      assert.equal(changed.item?.value, "5");
+    });
+
+    it("should call onSelectionChange on arrow down", () => {
+      const list = new SelectList(testItems, 5);
+      const changed: { item: SelectItem | null } = { item: null };
+      list.onSelectionChange = (item: SelectItem) => {
+        changed.item = item;
+      };
+      list.handleInput("\x1b[B");
+      assert.equal(changed.item?.value, "2");
+    });
+
+    it("should call onSelectionChange on Tab", () => {
+      const list = new SelectList(testItems, 5);
+      const changed: { item: SelectItem | null } = { item: null };
+      list.onSelectionChange = (item: SelectItem) => {
+        changed.item = item;
+      };
+      list.handleInput("\t");
+      assert.equal(changed.item?.value, "2");
+    });
+
+    it("should call onSelectionChange on Shift+Tab", () => {
+      const list = new SelectList(testItems, 5);
+      const changed: { item: SelectItem | null } = { item: null };
+      list.onSelectionChange = (item: SelectItem) => {
+        changed.item = item;
+      };
+      list.handleInput("\x1b[Z");
+      assert.equal(changed.item?.value, "5");
+    });
+
+    it("should not call onSelectionChange on Enter", () => {
+      const list = new SelectList(testItems, 5);
+      let changed = false;
+      list.onSelectionChange = () => {
+        changed = true;
+      };
+      list.handleInput("\r");
+      assert.equal(changed, false);
+    });
+
+    it("should not call onSelectionChange on Escape", () => {
+      const list = new SelectList(testItems, 5);
+      let changed = false;
+      list.onSelectionChange = () => {
+        changed = true;
+      };
+      list.handleInput("\x1b");
+      assert.equal(changed, false);
+    });
+  });
+
+  describe("handleInput - unknown keys", () => {
+    it("should not change selection for unknown input", () => {
+      const list = new SelectList(testItems, 5);
+      list.handleInput("a");
+      assert.equal(list.getSelectedItem()?.value, "1");
+    });
+
+    it("should not change selection for function keys", () => {
+      const list = new SelectList(testItems, 5);
+      list.handleInput("\x1bOP"); // F1
+      assert.equal(list.getSelectedItem()?.value, "1");
+    });
+  });
 });
