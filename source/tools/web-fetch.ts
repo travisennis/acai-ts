@@ -382,6 +382,70 @@ async function handleTextResponse(
 }
 
 /**
+ * If the response is a redirect (3xx with a Location header), return the
+ * resolved redirect target URL. Otherwise returns null.
+ */
+function getRedirectUrl(
+  response: Response,
+  currentUrl: string,
+): string | null {
+  if (response.status < 300 || response.status >= 400) {
+    return null;
+  }
+  const location = response.headers.get("location");
+  if (!location) {
+    return null;
+  }
+  return new URL(location, currentUrl).toString();
+}
+
+/**
+ * Process a non-redirect fetch response: validate status, determine content
+ * type, and delegate to the appropriate handler.
+ */
+async function processNonRedirectResponse(
+  response: Response,
+  options: {
+    useJina: boolean;
+    includeHeaders: boolean;
+    signal: AbortSignal;
+    verbose: boolean;
+  },
+): Promise<FetchResult> {
+  const { useJina, includeHeaders, signal, verbose } = options;
+
+  if (!response.ok) {
+    throw new Error(
+      `HTTP error! status: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const contentType = getContentType(response);
+  const responseHeaders: Record<string, string> = {};
+  if (includeHeaders) {
+    response.headers.forEach((value, key) => {
+      responseHeaders[key] = value;
+    });
+  }
+
+  let result: FetchResult;
+
+  if (contentType.includes("text/html")) {
+    result = await handleHtmlResponse(response, useJina, signal, verbose);
+  } else if (contentType.startsWith("image/")) {
+    result = await handleImageResponse(response, contentType);
+  } else {
+    result = await handleTextResponse(response, contentType);
+  }
+
+  if (includeHeaders) {
+    result.headers = responseHeaders;
+  }
+
+  return result;
+}
+
+/**
  * Main fetch function with redirect handling
  */
 async function fetchUrl(
@@ -434,49 +498,22 @@ async function fetchUrl(
         headers: requestHeaders,
       });
 
-      // Handle redirects
-      if (response.status >= 300 && response.status < 400) {
-        const location = response.headers.get("location");
-        if (location) {
-          const redirectUrl = new URL(location, currentUrl).toString();
-          if (verbose) {
-            console.error(`Redirecting to: ${redirectUrl}`);
-          }
-          currentUrl = redirectUrl;
-          redirectCount++;
-          continue;
+      const redirectUrl = getRedirectUrl(response, currentUrl);
+      if (redirectUrl) {
+        if (verbose) {
+          console.error(`Redirecting to: ${redirectUrl}`);
         }
+        currentUrl = redirectUrl;
+        redirectCount++;
+        continue;
       }
 
-      if (!response.ok) {
-        throw new Error(
-          `HTTP error! status: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      const contentType = getContentType(response);
-      const responseHeaders: Record<string, string> = {};
-      if (includeHeaders) {
-        response.headers.forEach((value, key) => {
-          responseHeaders[key] = value;
-        });
-      }
-
-      let result: FetchResult;
-
-      if (contentType.includes("text/html")) {
-        result = await handleHtmlResponse(response, useJina, signal, verbose);
-      } else if (contentType.startsWith("image/")) {
-        result = await handleImageResponse(response, contentType);
-      } else {
-        result = await handleTextResponse(response, contentType);
-      }
-
-      if (includeHeaders) {
-        result.headers = responseHeaders;
-      }
-
-      return result;
+      return await processNonRedirectResponse(response, {
+        useJina,
+        includeHeaders,
+        signal,
+        verbose,
+      });
     } finally {
       cleanup();
     }
