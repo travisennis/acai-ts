@@ -101,10 +101,10 @@ describe("Markdown inline token rendering", () => {
     });
 
     it("should render link with matching text and href", () => {
-      const md = new Markdown(
-        "Go to https://example.com",
-        { paddingX: 0, paddingY: 0 },
-      );
+      const md = new Markdown("Go to https://example.com", {
+        paddingX: 0,
+        paddingY: 0,
+      });
       const lines = md.render(80);
       const visible = lines.map((l) => stripAnsi(l));
       assert.ok(

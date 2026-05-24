@@ -66,7 +66,10 @@ describe("Markdown list rendering", () => {
   });
 
   it("should render list items with inline code", () => {
-    const md = new Markdown("- Use the `code` span", { paddingX: 0, paddingY: 0 });
+    const md = new Markdown("- Use the `code` span", {
+      paddingX: 0,
+      paddingY: 0,
+    });
     const lines = md.render(80);
     const fullText = lines.map((l) => stripAnsi(l)).join("\n");
     assert.ok(
@@ -76,10 +79,10 @@ describe("Markdown list rendering", () => {
   });
 
   it("should render a list with a paragraph inside an item", () => {
-    const md = new Markdown(
-      "- Item with\n  a paragraph continuation",
-      { paddingX: 0, paddingY: 0 },
-    );
+    const md = new Markdown("- Item with\n  a paragraph continuation", {
+      paddingX: 0,
+      paddingY: 0,
+    });
     const lines = md.render(80);
     const visible = lines.map((l) => stripAnsi(l));
     assert.ok(visible.some((l) => l.includes("Item with")));
@@ -87,10 +90,10 @@ describe("Markdown list rendering", () => {
   });
 
   it("should render deep nesting (3 levels)", () => {
-    const md = new Markdown(
-      "- Level 1\n  - Level 2\n    - Level 3",
-      { paddingX: 0, paddingY: 0 },
-    );
+    const md = new Markdown("- Level 1\n  - Level 2\n    - Level 3", {
+      paddingX: 0,
+      paddingY: 0,
+    });
     const lines = md.render(80);
     const visible = lines.map((l) => stripAnsi(l));
     const level1 = visible.find((l) => l.includes("Level 1"));
@@ -115,10 +118,10 @@ describe("Markdown list rendering", () => {
   });
 
   it("should handle list with mixed content types", () => {
-    const md = new Markdown(
-      "- Text item\n- Item with `code`\n- Last item",
-      { paddingX: 0, paddingY: 0 },
-    );
+    const md = new Markdown("- Text item\n- Item with `code`\n- Last item", {
+      paddingX: 0,
+      paddingY: 0,
+    });
     const lines = md.render(80);
     const visible = lines.map((l) => stripAnsi(l));
     assert.ok(visible.some((l) => l.includes("Text item")));

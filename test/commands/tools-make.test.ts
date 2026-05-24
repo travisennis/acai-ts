@@ -49,7 +49,10 @@ describe("tools command - make", () => {
 
   it("should create a bash tool file by default", async () => {
     const command = await getCommand();
-    const result = await command.handle(["make", "my-tool"], createHandlerArgs());
+    const result = await command.handle(
+      ["make", "my-tool"],
+      createHandlerArgs(),
+    );
 
     assert.equal(result, "continue");
     const toolPath = path.join(tmpDir, ".acai", "tools", "my-tool.sh");

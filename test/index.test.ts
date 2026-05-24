@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
-import { expandTildePath, addUniqueDir } from "../source/index.ts";
+import { addUniqueDir, expandTildePath } from "../source/index.ts";
 
 describe("expandTildePath", () => {
   it("expands ~/ to the home directory", () => {

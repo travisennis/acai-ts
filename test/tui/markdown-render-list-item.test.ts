@@ -14,10 +14,7 @@ describe("Markdown renderListItem", () => {
     const allText = visible.join("\n");
     assert.ok(visible.some((l) => l.includes("Item with")));
     assert.ok(allText.includes("const x = 1;"), "Should contain code content");
-    assert.ok(
-      allText.includes("```"),
-      "Should contain code block delimiters",
-    );
+    assert.ok(allText.includes("```"), "Should contain code block delimiters");
   });
 
   it("should render a list item with inline code", () => {
@@ -93,7 +90,7 @@ describe("Markdown renderListItem", () => {
 
   it("should render linked text in a list item", () => {
     const md = new Markdown(
-      '- Item with [a link](https://example.com) inside',
+      "- Item with [a link](https://example.com) inside",
       { paddingX: 0, paddingY: 0 },
     );
     const lines = md.render(80);

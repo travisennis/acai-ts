@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { describe, it, mock, beforeEach, afterEach } from "node:test";
+import { afterEach, beforeEach, describe, it, mock } from "node:test";
 import type { ModelMessage } from "ai";
-import { SessionManager } from "../source/sessions/manager.ts";
 import { handleConversationHistory } from "../source/index.ts";
 import { ModelManager } from "../source/models/manager.ts";
+import { SessionManager } from "../source/sessions/manager.ts";
 
 type SavedMessageHistory = {
   project: string;
@@ -15,7 +15,9 @@ type SavedMessageHistory = {
   messages: ModelMessage[];
 };
 
-function makeHistory(overrides: Partial<SavedMessageHistory> = {}): SavedMessageHistory {
+function makeHistory(
+  overrides: Partial<SavedMessageHistory> = {},
+): SavedMessageHistory {
   return {
     project: "test",
     sessionId: "test-session-id",

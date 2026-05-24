@@ -385,10 +385,7 @@ async function handleTextResponse(
  * If the response is a redirect (3xx with a Location header), return the
  * resolved redirect target URL. Otherwise returns null.
  */
-function getRedirectUrl(
-  response: Response,
-  currentUrl: string,
-): string | null {
+function getRedirectUrl(response: Response, currentUrl: string): string | null {
   if (response.status < 300 || response.status >= 400) {
     return null;
   }

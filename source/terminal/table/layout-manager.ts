@@ -384,8 +384,7 @@ function processSpanner(
     existingWidth = computed.existingWidth;
     editableCols = computed.editableCols;
   } else {
-    existingWidth =
-      desiredWidth === "desiredWidth" ? cell.desiredWidth - 1 : 1;
+    existingWidth = desiredWidth === "desiredWidth" ? cell.desiredWidth - 1 : 1;
     if (!auto[col] || auto[col] < existingWidth) {
       auto[col] = existingWidth;
     }

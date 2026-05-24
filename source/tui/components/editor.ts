@@ -770,7 +770,12 @@ export class Editor implements Component {
       const lineVisibleWidth = metrics.totalWidth;
 
       if (lineVisibleWidth <= contentWidth) {
-        this.pushSingleLayoutLine(layoutLines, line, isCurrentLine, lineVisibleWidth);
+        this.pushSingleLayoutLine(
+          layoutLines,
+          line,
+          isCurrentLine,
+          lineVisibleWidth,
+        );
       } else {
         const chunks = computeLineChunks(line, contentWidth);
         this.pushWrappedLayoutLines(layoutLines, chunks, isCurrentLine);
@@ -1129,7 +1134,8 @@ export class Editor implements Component {
       this.state.cursorCol,
     );
     this.state.lines[this.state.cursorLine] =
-      currentLine.slice(0, deleteFrom) + currentLine.slice(this.state.cursorCol);
+      currentLine.slice(0, deleteFrom) +
+      currentLine.slice(this.state.cursorCol);
     this.state.cursorCol = deleteFrom;
   }
 
@@ -1248,9 +1254,7 @@ export class Editor implements Component {
     const currentVisualLine = this.findCurrentVisualLine(visualLines);
 
     const currentVl = visualLines[currentVisualLine];
-    const visualCol = currentVl
-      ? this.state.cursorCol - currentVl.startCol
-      : 0;
+    const visualCol = currentVl ? this.state.cursorCol - currentVl.startCol : 0;
 
     const targetVisualLine = currentVisualLine + deltaLine;
 

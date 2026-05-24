@@ -387,12 +387,7 @@ async function loadSkillsFromDirInternal(
       entryName === "SKILL.md" &&
       mode === "recursive"
     ) {
-      const fileSkills = await handleSkillFile(
-        entryPath,
-        dir,
-        subdir,
-        source,
-      );
+      const fileSkills = await handleSkillFile(entryPath, dir, subdir, source);
       skills.push(...fileSkills);
     }
   }

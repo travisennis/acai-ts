@@ -314,7 +314,10 @@ input: optional description of input`;
     assert.strictEqual(result?.parameters[0].name, "input");
     assert.strictEqual(result?.parameters[0].type, "string");
     assert.strictEqual(result?.parameters[0].required, false);
-    assert.strictEqual(result?.parameters[0].description, "description of input");
+    assert.strictEqual(
+      result?.parameters[0].description,
+      "description of input",
+    );
   });
 
   it("should parse parameter with required keyword but no type", () => {
@@ -368,7 +371,10 @@ describe("processChildOutput", () => {
   it("should truncate output exceeding max size", () => {
     const largeOutput = "x".repeat(2_000_001);
     const result = processChildOutput(largeOutput, "");
-    assert.strictEqual(result.length, 2_000_000 + "\n[Output truncated]".length);
+    assert.strictEqual(
+      result.length,
+      2_000_000 + "\n[Output truncated]".length,
+    );
     assert.ok(result.endsWith("[Output truncated]"));
   });
 
@@ -419,7 +425,7 @@ describe("processChildOutput", () => {
   });
 
   it("should handle truncated output that is valid JSON", () => {
-    const largeJson = "{" + '"a": ' + "\"" + "x".repeat(2_000_000) + "\"}";
+    const largeJson = "{" + '"a": ' + '"' + "x".repeat(2_000_000) + '"}';
     const result = processChildOutput(largeJson, "");
     assert.ok(result.endsWith("[Output truncated]"));
   });
@@ -474,11 +480,7 @@ describe("loadDynamicTools (scanDir behavior)", () => {
 
     // Create the companion executable
     const companionPath = path.join(toolsDir, "greet");
-    fs.writeFileSync(
-      companionPath,
-      `#!/bin/bash\necho "Hello, $1!"`,
-      "utf8",
-    );
+    fs.writeFileSync(companionPath, `#!/bin/bash\necho "Hello, $1!"`, "utf8");
     fs.chmodSync(companionPath, 0o755);
 
     try {
@@ -551,16 +553,15 @@ describe("loadDynamicTools (scanDir behavior)", () => {
     // (they won't produce valid JSON metadata, so they'll be skipped)
     for (let i = 0; i < 15; i++) {
       const scriptPath = path.join(toolsDir, `tool-${i}.sh`);
-      fs.writeFileSync(
-        scriptPath,
-        `#!/bin/bash\necho "tool ${i}"`,
-        "utf8",
-      );
+      fs.writeFileSync(scriptPath, `#!/bin/bash\necho "tool ${i}"`, "utf8");
       fs.chmodSync(scriptPath, 0o755);
     }
 
     try {
-      const result = await loadDynamicTools({ baseDir: tmpDir, existingToolNames: [] });
+      const result = await loadDynamicTools({
+        baseDir: tmpDir,
+        existingToolNames: [],
+      });
       // Since the scripts don't emit valid JSON metadata, result should be empty
       assert.deepStrictEqual(result, {});
     } finally {
@@ -574,7 +575,11 @@ describe("loadDynamicTools (scanDir behavior)", () => {
     fs.mkdirSync(toolsDir, { recursive: true });
 
     // Create a .xyz file (unknown extension)
-    fs.writeFileSync(path.join(toolsDir, "unknown.xyz"), "some content", "utf8");
+    fs.writeFileSync(
+      path.join(toolsDir, "unknown.xyz"),
+      "some content",
+      "utf8",
+    );
 
     // Create a text file (no extension, not executable)
     fs.writeFileSync(path.join(toolsDir, "readme"), "readme content", "utf8");

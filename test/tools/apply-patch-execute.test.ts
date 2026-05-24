@@ -10,7 +10,9 @@ describe("createApplyPatchTool - execute", () => {
   let testFile: string;
 
   beforeEach(async () => {
-    tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), "acai-apply-patch-exec-"));
+    tmpDir = await fsp.mkdtemp(
+      path.join(os.tmpdir(), "acai-apply-patch-exec-"),
+    );
     testFile = path.join(tmpDir, "test.txt");
   });
 
@@ -150,10 +152,7 @@ describe("createApplyPatchTool - execute", () => {
     const { createApplyPatchTool } = await import(
       "../../source/tools/apply-patch.ts"
     );
-    const patchText = [
-      "*** Begin Patch",
-      "*** End Patch",
-    ].join("\n");
+    const patchText = ["*** Begin Patch", "*** End Patch"].join("\n");
 
     const tool = await createApplyPatchTool({
       workspace: {
@@ -283,7 +282,9 @@ describe("createApplyPatchTool - execute", () => {
 
     // Should mention the updated file and include diff info
     assert.ok(result.includes("1 file(s) changed"));
-    assert.ok(result.includes(`${testFile}`) || result.includes("Update File:"));
+    assert.ok(
+      result.includes(`${testFile}`) || result.includes("Update File:"),
+    );
   });
 
   it("should handle relative paths correctly", async () => {

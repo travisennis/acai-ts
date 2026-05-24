@@ -3,7 +3,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import { createTwoFilesPatch } from "diff";
 import { z } from "zod";
-import { config, type Config } from "../config/index.ts";
+import { type Config, config } from "../config/index.ts";
 import type { WorkspaceContext } from "../index.ts";
 import { clearProjectStatusCache } from "../repl/project-status.ts";
 import style from "../terminal/style.ts";
@@ -289,9 +289,7 @@ function findContextLine(
 ): number {
   const contextIdx = seekSequence(originalLines, [changeContext], lineIndex);
   if (contextIdx === -1) {
-    throw new Error(
-      `Failed to find context '${changeContext}' in ${filePath}`,
-    );
+    throw new Error(`Failed to find context '${changeContext}' in ${filePath}`);
   }
   return contextIdx + 1;
 }

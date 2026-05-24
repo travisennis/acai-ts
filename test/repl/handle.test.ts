@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
-import type { Agent, AgentEvent, AgentState } from "../../source/agent/index.ts";
-import type { ModelName } from "../../source/models/providers.ts";
+import type {
+  Agent,
+  AgentEvent,
+  AgentState,
+} from "../../source/agent/index.ts";
 import type { CommandManager } from "../../source/commands/manager.ts";
 import type { ConfigManager } from "../../source/config/index.ts";
 import type { WorkspaceContext } from "../../source/index.ts";
 import type { ModelManager } from "../../source/models/manager.ts";
+import type { ModelName } from "../../source/models/providers.ts";
 import type { PromptManager } from "../../source/prompts/manager.ts";
 import { Repl } from "../../source/repl/index.ts";
 import type { SessionManager } from "../../source/sessions/manager.ts";
@@ -184,7 +188,9 @@ describe("Repl handle method", () => {
   describe("initialization check", () => {
     it("should call init when not initialized", async () => {
       // biome-ignore lint/suspicious/noExplicitAny: accessing private member
-      const initMock = mock.method(repl, "init" as any, () => Promise.resolve());
+      const initMock = mock.method(repl, "init" as any, () =>
+        Promise.resolve(),
+      );
 
       await repl.handle({ type: "step-start" }, createAgentState());
 

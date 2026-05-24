@@ -295,24 +295,15 @@ describe("web fetch tool", async () => {
 
   describe("input validation", async () => {
     it("rejects invalid URLs", async () => {
-      await assert.rejects(
-        () => run("not-a-url"),
-        /Invalid URL format/,
-      );
+      await assert.rejects(() => run("not-a-url"), /Invalid URL format/);
     });
 
     it("rejects empty URLs", async () => {
-      await assert.rejects(
-        () => run(""),
-        /Invalid URL format/,
-      );
+      await assert.rejects(() => run(""), /Invalid URL format/);
     });
 
     it("rejects URLs without protocol", async () => {
-      await assert.rejects(
-        () => run("example.com/path"),
-        /Invalid URL format/,
-      );
+      await assert.rejects(() => run("example.com/path"), /Invalid URL format/);
     });
   });
 });

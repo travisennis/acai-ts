@@ -34,7 +34,10 @@ describe("Markdown renderToken - heading cases", () => {
     assert.ok(visible.some((l) => l.includes("Heading 3")));
     // Level 3+ headings should show the # prefix
     const headingLine = visible.find((l) => l.includes("Heading 3"));
-    assert.ok(headingLine?.includes("#"), "Level 3 heading should include # prefix");
+    assert.ok(
+      headingLine?.includes("#"),
+      "Level 3 heading should include # prefix",
+    );
   });
 
   it("should render level-4 heading with prefix", () => {
@@ -180,14 +183,23 @@ describe("Markdown renderToken - list cases", () => {
 
 describe("Markdown renderToken - table case", () => {
   it("should render a table", () => {
-    const md = new Markdown("| Col1 | Col2 |\n|------|------|\n| A    | B    |", {
-      paddingX: 0,
-      paddingY: 0,
-    });
+    const md = new Markdown(
+      "| Col1 | Col2 |\n|------|------|\n| A    | B    |",
+      {
+        paddingX: 0,
+        paddingY: 0,
+      },
+    );
     const lines = md.render(80);
     const visible = lines.map((l) => stripAnsi(l));
-    assert.ok(visible.some((l) => l.includes("Col1")), "Should contain table header");
-    assert.ok(visible.some((l) => l.includes("A")), "Should contain table data");
+    assert.ok(
+      visible.some((l) => l.includes("Col1")),
+      "Should contain table header",
+    );
+    assert.ok(
+      visible.some((l) => l.includes("A")),
+      "Should contain table data",
+    );
   });
 });
 
@@ -199,7 +211,10 @@ describe("Markdown renderToken - blockquote case", () => {
     });
     const lines = md.render(80);
     const visible = lines.map((l) => stripAnsi(l));
-    assert.ok(visible.some((l) => l.includes("Quoted text")), "Should contain quote text");
+    assert.ok(
+      visible.some((l) => l.includes("Quoted text")),
+      "Should contain quote text",
+    );
   });
 
   it("should add blank line after blockquote", () => {

@@ -27,7 +27,15 @@ describe("parseUpdateFileChunks - edge cases", () => {
     const result = parsePatch(patchText);
     assert.equal(result.hunks.length, 1);
     assert.equal(result.hunks[0].type, "update");
-    const chunks = (result.hunks[0] as { chunks: { oldLines: string[]; newLines: string[]; changeContext?: string }[] }).chunks;
+    const chunks = (
+      result.hunks[0] as {
+        chunks: {
+          oldLines: string[];
+          newLines: string[];
+          changeContext?: string;
+        }[];
+      }
+    ).chunks;
     assert.equal(chunks.length, 2);
     assert.equal(chunks[0].changeContext, "first context");
     assert.equal(chunks[1].changeContext, "second context");
@@ -46,7 +54,11 @@ describe("parseUpdateFileChunks - edge cases", () => {
 *** End Patch`;
 
     const result = parsePatch(patchText);
-    const chunks = (result.hunks[0] as { chunks: { oldLines: string[]; newLines: string[] }[] }).chunks;
+    const chunks = (
+      result.hunks[0] as {
+        chunks: { oldLines: string[]; newLines: string[] }[];
+      }
+    ).chunks;
     assert.deepEqual(chunks[0].oldLines, ["line1", "line2"]);
     assert.deepEqual(chunks[0].newLines, []);
   });
@@ -60,7 +72,11 @@ describe("parseUpdateFileChunks - edge cases", () => {
 *** End Patch`;
 
     const result = parsePatch(patchText);
-    const chunks = (result.hunks[0] as { chunks: { oldLines: string[]; newLines: string[] }[] }).chunks;
+    const chunks = (
+      result.hunks[0] as {
+        chunks: { oldLines: string[]; newLines: string[] }[];
+      }
+    ).chunks;
     assert.deepEqual(chunks[0].oldLines, []);
     assert.deepEqual(chunks[0].newLines, ["line1", "line2"]);
   });
@@ -74,7 +90,11 @@ describe("parseUpdateFileChunks - edge cases", () => {
 *** End Patch`;
 
     const result = parsePatch(patchText);
-    const chunks = (result.hunks[0] as { chunks: { oldLines: string[]; newLines: string[] }[] }).chunks;
+    const chunks = (
+      result.hunks[0] as {
+        chunks: { oldLines: string[]; newLines: string[] }[];
+      }
+    ).chunks;
     assert.deepEqual(chunks[0].oldLines, ["unchanged", "still unchanged"]);
     assert.deepEqual(chunks[0].newLines, ["unchanged", "still unchanged"]);
   });
@@ -90,7 +110,11 @@ describe("parseUpdateFileChunks - edge cases", () => {
 *** End Patch`;
 
     const result = parsePatch(patchText);
-    const chunks = (result.hunks[0] as { chunks: { oldLines: string[]; newLines: string[] }[] }).chunks;
+    const chunks = (
+      result.hunks[0] as {
+        chunks: { oldLines: string[]; newLines: string[] }[];
+      }
+    ).chunks;
     assert.deepEqual(chunks[0].oldLines, ["keep", "remove", "keep too"]);
     assert.deepEqual(chunks[0].newLines, ["keep", "add", "keep too"]);
   });
@@ -106,7 +130,8 @@ describe("parseUpdateFileChunks - edge cases", () => {
 *** End Patch`;
 
     const result = parsePatch(patchText);
-    const chunks = (result.hunks[0] as { chunks: { isEndOfFile?: boolean }[] }).chunks;
+    const chunks = (result.hunks[0] as { chunks: { isEndOfFile?: boolean }[] })
+      .chunks;
     assert.equal(chunks[0].isEndOfFile, true);
   });
 
@@ -120,7 +145,11 @@ junk line that should be ignored
 *** End Patch`;
 
     const result = parsePatch(patchText);
-    const chunks = (result.hunks[0] as { chunks: { oldLines: string[]; newLines: string[] }[] }).chunks;
+    const chunks = (
+      result.hunks[0] as {
+        chunks: { oldLines: string[]; newLines: string[] }[];
+      }
+    ).chunks;
     assert.equal(chunks.length, 1);
     assert.deepEqual(chunks[0].oldLines, ["old"]);
     assert.deepEqual(chunks[0].newLines, ["new"]);
@@ -137,7 +166,12 @@ junk line that should be ignored
 
     const result = parsePatch(patchText);
     assert.equal(result.hunks.length, 1);
-    const update = result.hunks[0] as { type: "update"; path: string; movePath?: string; chunks: unknown[] };
+    const update = result.hunks[0] as {
+      type: "update";
+      path: string;
+      movePath?: string;
+      chunks: unknown[];
+    };
     assert.equal(update.movePath, "new/path.ts");
     assert.equal(update.chunks.length, 1);
   });
@@ -152,7 +186,11 @@ junk line that should be ignored
 *** End Patch`;
 
     const result = parsePatch(patchText);
-    const chunks = (result.hunks[0] as { chunks: { changeContext?: string; oldLines: string[] }[] }).chunks;
+    const chunks = (
+      result.hunks[0] as {
+        chunks: { changeContext?: string; oldLines: string[] }[];
+      }
+    ).chunks;
     assert.equal(chunks.length, 2);
     assert.equal(chunks[0].changeContext, "one");
     assert.equal(chunks[1].changeContext, "two");

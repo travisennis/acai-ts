@@ -308,7 +308,11 @@ describe("Repl reconstructSession", () => {
       (c: { constructor: { name: string } }) =>
         c.constructor.name === "UserMessageComponent",
     );
-    assert.strictEqual(userComponents.length, 1, "should have one user message");
+    assert.strictEqual(
+      userComponents.length,
+      1,
+      "should have one user message",
+    );
 
     const assistantComponents = children.filter(
       (c: { constructor: { name: string } }) =>
@@ -372,7 +376,10 @@ describe("Repl reconstructSession", () => {
       (c: { constructor: { name: string } }) =>
         c.constructor.name === "UserMessageComponent",
     );
-    assert.ok(userComponent, "should render user message even with whitespace text");
+    assert.ok(
+      userComponent,
+      "should render user message even with whitespace text",
+    );
   });
 
   it("should handle tool messages without array content gracefully", () => {

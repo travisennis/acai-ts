@@ -258,8 +258,7 @@ async function fetchExaWithFallback(
       throw error;
     }
     // Provide more helpful error message about network failures
-    const errorMessage =
-      error instanceof Error ? error.message : String(error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     if (
       errorMessage.includes("fetch failed") ||
       errorMessage.includes("ENOTFOUND") ||

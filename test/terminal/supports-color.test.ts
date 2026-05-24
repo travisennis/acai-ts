@@ -99,7 +99,13 @@ describe("createSupportsColor", () => {
   });
 
   it("returns min level when TERM=dumb with no other indicators", () => {
-    setEnv({ TERM: "dumb", FORCE_COLOR: undefined, CI: undefined, TF_BUILD: undefined, AGENT_NAME: undefined });
+    setEnv({
+      TERM: "dumb",
+      FORCE_COLOR: undefined,
+      CI: undefined,
+      TF_BUILD: undefined,
+      AGENT_NAME: undefined,
+    });
     const result = createSupportsColor({ isTty: true });
     // min = 0, returns min (0) → false
     assert.equal(result, false);
@@ -113,28 +119,53 @@ describe("createSupportsColor", () => {
   });
 
   it("returns level 3 for COLORTERM=truecolor", () => {
-    setEnv({ COLORTERM: "truecolor", FORCE_COLOR: undefined, CI: undefined, TF_BUILD: undefined, AGENT_NAME: undefined });
+    setEnv({
+      COLORTERM: "truecolor",
+      FORCE_COLOR: undefined,
+      CI: undefined,
+      TF_BUILD: undefined,
+      AGENT_NAME: undefined,
+    });
     const result = createSupportsColor({ isTty: true });
     assert.notEqual(result, false);
     assert.equal((result as any).level, 3);
   });
 
   it("returns level 3 for xterm-kitty terminal", () => {
-    setEnv({ TERM: "xterm-kitty", FORCE_COLOR: undefined, CI: undefined, TF_BUILD: undefined, AGENT_NAME: undefined, COLORTERM: undefined });
+    setEnv({
+      TERM: "xterm-kitty",
+      FORCE_COLOR: undefined,
+      CI: undefined,
+      TF_BUILD: undefined,
+      AGENT_NAME: undefined,
+      COLORTERM: undefined,
+    });
     const result = createSupportsColor({ isTty: true });
     assert.notEqual(result, false);
     assert.equal((result as any).level, 3);
   });
 
   it("returns level 3 for xterm-ghostty terminal", () => {
-    setEnv({ TERM: "xterm-ghostty", FORCE_COLOR: undefined, CI: undefined, TF_BUILD: undefined, AGENT_NAME: undefined, COLORTERM: undefined });
+    setEnv({
+      TERM: "xterm-ghostty",
+      FORCE_COLOR: undefined,
+      CI: undefined,
+      TF_BUILD: undefined,
+      AGENT_NAME: undefined,
+      COLORTERM: undefined,
+    });
     const result = createSupportsColor({ isTty: true });
     assert.notEqual(result, false);
     assert.equal((result as any).level, 3);
   });
 
   it("returns level 1 for CI environments with min=0", () => {
-    setEnv({ CI: "true", GITHUB_ACTIONS: "true", FORCE_COLOR: undefined, TERM: undefined });
+    setEnv({
+      CI: "true",
+      GITHUB_ACTIONS: "true",
+      FORCE_COLOR: undefined,
+      TERM: undefined,
+    });
     const result = createSupportsColor({ isTty: true });
     assert.notEqual(result, false);
     // GITHUB_ACTIONS returns 3 (level 3)
@@ -142,20 +173,41 @@ describe("createSupportsColor", () => {
   });
 
   it("handles TeamCity version check", () => {
-    setEnv({ TEAMCITY_VERSION: "9.1.0", FORCE_COLOR: undefined, CI: undefined, TERM: undefined, TF_BUILD: undefined, AGENT_NAME: undefined });
+    setEnv({
+      TEAMCITY_VERSION: "9.1.0",
+      FORCE_COLOR: undefined,
+      CI: undefined,
+      TERM: undefined,
+      TF_BUILD: undefined,
+      AGENT_NAME: undefined,
+    });
     const result = createSupportsColor({ isTty: true });
     assert.notEqual(result, false);
     assert.equal((result as any).level, 1);
   });
 
   it("returns 0 for old TeamCity version", () => {
-    setEnv({ TEAMCITY_VERSION: "8.0.0", FORCE_COLOR: undefined, CI: undefined, TERM: undefined, TF_BUILD: undefined, AGENT_NAME: undefined });
+    setEnv({
+      TEAMCITY_VERSION: "8.0.0",
+      FORCE_COLOR: undefined,
+      CI: undefined,
+      TERM: undefined,
+      TF_BUILD: undefined,
+      AGENT_NAME: undefined,
+    });
     const result = createSupportsColor({ isTty: true });
     assert.equal(result, false);
   });
 
   it("handles COLORTERM present but not truecolor", () => {
-    setEnv({ COLORTERM: "256color", FORCE_COLOR: undefined, CI: undefined, TERM: undefined, TF_BUILD: undefined, AGENT_NAME: undefined });
+    setEnv({
+      COLORTERM: "256color",
+      FORCE_COLOR: undefined,
+      CI: undefined,
+      TERM: undefined,
+      TF_BUILD: undefined,
+      AGENT_NAME: undefined,
+    });
     const result = createSupportsColor({ isTty: true });
     assert.notEqual(result, false);
     assert.equal((result as any).level, 1);

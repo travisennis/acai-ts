@@ -1,8 +1,8 @@
 import { strict as assert } from "node:assert";
-import { describe, it } from "node:test";
-import { mkdtemp, mkdir, writeFile, symlink, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, it } from "node:test";
 import { loadSkillsFromDir } from "../../source/skills/index.ts";
 
 async function createTempDir(): Promise<string> {
@@ -175,10 +175,7 @@ describe("loadSkillsFromDir", () => {
     try {
       const skillDir = join(baseDir, "no-desc");
       await mkdir(skillDir, { recursive: true });
-      await writeFile(
-        join(skillDir, "SKILL.md"),
-        "---\nname: no-desc\n---",
-      );
+      await writeFile(join(skillDir, "SKILL.md"), "---\nname: no-desc\n---");
 
       const skills = await loadSkillsFromDir({ dir: baseDir, source: "test" });
       assert.equal(skills.length, 0);

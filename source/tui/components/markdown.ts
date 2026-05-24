@@ -300,10 +300,7 @@ export class Markdown implements Component {
     return lines;
   }
 
-  private renderHeadingToken(
-    token: Token,
-    lines: string[],
-  ): void {
+  private renderHeadingToken(token: Token, lines: string[]): void {
     const t = token as Token & { depth: number; tokens?: Token[] };
     const headingLevel = t.depth;
     const headingPrefix = "".concat("#".repeat(headingLevel), " ");
@@ -382,9 +379,7 @@ export class Markdown implements Component {
     const quoteText = this.renderInlineTokens(t.tokens || []);
     const quoteLines = quoteText.split("\n");
     for (const quoteLine of quoteLines) {
-      lines.push(
-        this.theme.quoteBorder("│ ") + this.theme.quote(quoteLine),
-      );
+      lines.push(this.theme.quoteBorder("│ ") + this.theme.quote(quoteLine));
     }
     lines.push(""); // Add spacing after blockquotes
   }
@@ -577,10 +572,7 @@ export class Markdown implements Component {
       styledText[position] === escapeChar
     ) {
       position++;
-      while (
-        position < styledText.length &&
-        styledText[position] !== "m"
-      ) {
+      while (position < styledText.length && styledText[position] !== "m") {
         position++;
       }
       position++; // skip 'm'
@@ -839,9 +831,7 @@ export class Markdown implements Component {
         : [t.text || ""];
     },
     paragraph: (token) => [
-      this.renderInlineTokens(
-        (token as { tokens?: Token[] }).tokens || [],
-      ),
+      this.renderInlineTokens((token as { tokens?: Token[] }).tokens || []),
     ],
     code: (token) => {
       const t = token as { lang?: string; text?: string };
@@ -857,10 +847,7 @@ export class Markdown implements Component {
     },
   };
 
-  private renderListItem(
-    tokens: Token[],
-    parentDepth: number,
-  ): string[] {
+  private renderListItem(tokens: Token[], parentDepth: number): string[] {
     const lines: string[] = [];
 
     for (const token of tokens) {

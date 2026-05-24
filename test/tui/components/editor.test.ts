@@ -1,346 +1,349 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
-import { Editor } from '../../../source/tui/components/editor.ts';
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { Editor } from "../../../source/tui/components/editor.ts";
 
-describe('Editor deleteWordBackwards', () => {
-  it('deletes a single character when cursor is after whitespace', () => {
+describe("Editor deleteWordBackwards", () => {
+  it("deletes a single character when cursor is after whitespace", () => {
     const editor = new Editor();
     // Set initial state
-    editor.setText('hello ');
-    editor['state'].cursorCol = 6; // cursor at end: "hello |"
+    editor.setText("hello ");
+    editor["state"].cursorCol = 6; // cursor at end: "hello |"
 
     // Access private method via bracket notation for testing
-    editor['deleteWordBackwards']();
+    editor["deleteWordBackwards"]();
 
-    assert.equal(editor.getText(), 'hello');
-    assert.equal(editor['state'].cursorCol, 5);
+    assert.equal(editor.getText(), "hello");
+    assert.equal(editor["state"].cursorCol, 5);
   });
 
-  it('deletes a single punctuation character when cursor is after punctuation', () => {
+  it("deletes a single punctuation character when cursor is after punctuation", () => {
     const editor = new Editor();
-    editor.setText('hello.');
-    editor['state'].cursorCol = 6;
+    editor.setText("hello.");
+    editor["state"].cursorCol = 6;
 
-    editor['deleteWordBackwards']();
+    editor["deleteWordBackwards"]();
 
-    assert.equal(editor.getText(), 'hello');
-    assert.equal(editor['state'].cursorCol, 5);
+    assert.equal(editor.getText(), "hello");
+    assert.equal(editor["state"].cursorCol, 5);
   });
 
-  it('deletes an entire word when cursor is after alphanumeric characters', () => {
+  it("deletes an entire word when cursor is after alphanumeric characters", () => {
     const editor = new Editor();
-    editor.setText('hello world');
-    editor['state'].cursorCol = 11; // after "world"
+    editor.setText("hello world");
+    editor["state"].cursorCol = 11; // after "world"
 
-    editor['deleteWordBackwards']();
+    editor["deleteWordBackwards"]();
 
-    assert.equal(editor.getText(), 'hello ');
-    assert.equal(editor['state'].cursorCol, 6);
+    assert.equal(editor.getText(), "hello ");
+    assert.equal(editor["state"].cursorCol, 6);
   });
 
-  it('deletes the first word when cursor is at the end of a single word', () => {
+  it("deletes the first word when cursor is at the end of a single word", () => {
     const editor = new Editor();
-    editor.setText('hello');
-    editor['state'].cursorCol = 5;
+    editor.setText("hello");
+    editor["state"].cursorCol = 5;
 
-    editor['deleteWordBackwards']();
+    editor["deleteWordBackwards"]();
 
-    assert.equal(editor.getText(), '');
-    assert.equal(editor['state'].cursorCol, 0);
+    assert.equal(editor.getText(), "");
+    assert.equal(editor["state"].cursorCol, 0);
   });
 
-  it('merges with previous line when cursor is at column 0 on second line', () => {
+  it("merges with previous line when cursor is at column 0 on second line", () => {
     const editor = new Editor();
-    editor.setText('first line\nsecond line');
-    editor['state'].cursorLine = 1;
-    editor['state'].cursorCol = 0;
+    editor.setText("first line\nsecond line");
+    editor["state"].cursorLine = 1;
+    editor["state"].cursorCol = 0;
 
-    editor['deleteWordBackwards']();
+    editor["deleteWordBackwards"]();
 
-    assert.equal(editor.getText(), 'first linesecond line');
-    assert.equal(editor['state'].cursorLine, 0);
-    assert.equal(editor['state'].cursorCol, 10); // length of "first line"
+    assert.equal(editor.getText(), "first linesecond line");
+    assert.equal(editor["state"].cursorLine, 0);
+    assert.equal(editor["state"].cursorCol, 10); // length of "first line"
   });
 
-  it('does nothing when cursor is at column 0 on first line', () => {
+  it("does nothing when cursor is at column 0 on first line", () => {
     const editor = new Editor();
-    editor.setText('hello');
-    editor['state'].cursorLine = 0;
-    editor['state'].cursorCol = 0;
+    editor.setText("hello");
+    editor["state"].cursorLine = 0;
+    editor["state"].cursorCol = 0;
 
-    editor['deleteWordBackwards']();
+    editor["deleteWordBackwards"]();
 
-    assert.equal(editor.getText(), 'hello');
-    assert.equal(editor['state'].cursorCol, 0);
+    assert.equal(editor.getText(), "hello");
+    assert.equal(editor["state"].cursorCol, 0);
   });
 
-  it('handles empty text gracefully', () => {
+  it("handles empty text gracefully", () => {
     const editor = new Editor();
-    editor['state'].cursorLine = 0;
-    editor['state'].cursorCol = 0;
+    editor["state"].cursorLine = 0;
+    editor["state"].cursorCol = 0;
 
-    editor['deleteWordBackwards']();
+    editor["deleteWordBackwards"]();
 
-    assert.equal(editor.getText(), '');
-    assert.equal(editor['state'].cursorCol, 0);
+    assert.equal(editor.getText(), "");
+    assert.equal(editor["state"].cursorCol, 0);
   });
 
-  it('deletes only one word when multiple words precede cursor', () => {
+  it("deletes only one word when multiple words precede cursor", () => {
     const editor = new Editor();
-    editor.setText('foo bar baz');
-    editor['state'].cursorCol = 11; // after "baz"
+    editor.setText("foo bar baz");
+    editor["state"].cursorCol = 11; // after "baz"
 
-    editor['deleteWordBackwards']();
+    editor["deleteWordBackwards"]();
 
-    assert.equal(editor.getText(), 'foo bar ');
-    assert.equal(editor['state'].cursorCol, 8);
+    assert.equal(editor.getText(), "foo bar ");
+    assert.equal(editor["state"].cursorCol, 8);
   });
 
-  it('deletes until previous whitespace when cursor is after multiple spaces', () => {
+  it("deletes until previous whitespace when cursor is after multiple spaces", () => {
     const editor = new Editor();
-    editor.setText('foo   bar');
-    editor['state'].cursorCol = 9; // after "bar"
+    editor.setText("foo   bar");
+    editor["state"].cursorCol = 9; // after "bar"
 
-    editor['deleteWordBackwards']();
+    editor["deleteWordBackwards"]();
 
-    assert.equal(editor.getText(), 'foo   ');
-    assert.equal(editor['state'].cursorCol, 6);
+    assert.equal(editor.getText(), "foo   ");
+    assert.equal(editor["state"].cursorCol, 6);
   });
 
-  it('resets historyIndex to -1', () => {
+  it("resets historyIndex to -1", () => {
     const editor = new Editor();
-    editor.setText('hello');
-    editor['historyIndex'] = 0;
-    editor['state'].cursorCol = 5;
+    editor.setText("hello");
+    editor["historyIndex"] = 0;
+    editor["state"].cursorCol = 5;
 
-    editor['deleteWordBackwards']();
+    editor["deleteWordBackwards"]();
 
-    assert.equal(editor['historyIndex'], -1);
+    assert.equal(editor["historyIndex"], -1);
   });
 
-  it('calls onChange callback after deleting', () => {
+  it("calls onChange callback after deleting", () => {
     const editor = new Editor();
-    let changedText = '';
+    let changedText = "";
     editor.onChange = (text: string) => {
       changedText = text;
     };
-    editor.setText('hello');
-    editor['state'].cursorCol = 5;
+    editor.setText("hello");
+    editor["state"].cursorCol = 5;
 
-    editor['deleteWordBackwards']();
+    editor["deleteWordBackwards"]();
 
-    assert.equal(changedText, '');
+    assert.equal(changedText, "");
   });
 
-  it('does not throw when onChange is not set', () => {
+  it("does not throw when onChange is not set", () => {
     const editor = new Editor();
-    editor.setText('hello');
-    editor['state'].cursorCol = 5;
+    editor.setText("hello");
+    editor["state"].cursorCol = 5;
 
     assert.doesNotThrow(() => {
-      editor['deleteWordBackwards']();
+      editor["deleteWordBackwards"]();
     });
   });
 
-  it('stops at word boundary when mixed content precedes cursor', () => {
+  it("stops at word boundary when mixed content precedes cursor", () => {
     const editor = new Editor();
-    editor.setText('hello.world foo');
-    editor['state'].cursorCol = 16; // after "foo"
+    editor.setText("hello.world foo");
+    editor["state"].cursorCol = 16; // after "foo"
 
-    editor['deleteWordBackwards']();
+    editor["deleteWordBackwards"]();
 
-    assert.equal(editor.getText(), 'hello.world ');
-    assert.equal(editor['state'].cursorCol, 12);
+    assert.equal(editor.getText(), "hello.world ");
+    assert.equal(editor["state"].cursorCol, 12);
   });
 
-  it('treats code punctuation as word boundaries', () => {
+  it("treats code punctuation as word boundaries", () => {
     const editor = new Editor();
-    editor.setText('foo()');
-    editor['state'].cursorCol = 5;
+    editor.setText("foo()");
+    editor["state"].cursorCol = 5;
 
-    editor['deleteWordBackwards']();
+    editor["deleteWordBackwards"]();
 
     // Cursor is after ')', which is punctuation, so it deletes just the paren
-    assert.equal(editor.getText(), 'foo(');
-    assert.equal(editor['state'].cursorCol, 4);
+    assert.equal(editor.getText(), "foo(");
+    assert.equal(editor["state"].cursorCol, 4);
   });
 
-  it('handles cursor in the middle of a word', () => {
+  it("handles cursor in the middle of a word", () => {
     const editor = new Editor();
-    editor.setText('hello world');
-    editor['state'].cursorCol = 7; // cursor after 'w' in 'world'
+    editor.setText("hello world");
+    editor["state"].cursorCol = 7; // cursor after 'w' in 'world'
 
-    editor['deleteWordBackwards']();
+    editor["deleteWordBackwards"]();
 
     // Deletes from cursor position backwards to word boundary
-    assert.equal(editor.getText(), 'hello orld');
-    assert.equal(editor['state'].cursorCol, 6);
+    assert.equal(editor.getText(), "hello orld");
+    assert.equal(editor["state"].cursorCol, 6);
   });
 });
 
-describe('Editor render', () => {
-  it('renders border lines for empty editor', () => {
+describe("Editor render", () => {
+  it("renders border lines for empty editor", () => {
     const editor = new Editor();
     const result = editor.render(10);
     // Empty editor: top border + empty line with cursor + bottom border
     assert.equal(result.length, 3);
-    assert.equal(result[0], '─'.repeat(10)); // top border
-    assert.equal(result[result.length - 1], '─'.repeat(10)); // bottom border
+    assert.equal(result[0], "─".repeat(10)); // top border
+    assert.equal(result[result.length - 1], "─".repeat(10)); // bottom border
     // Middle line has cursor at position 0 (highlighted space)
     assert.match(result[1], /\x1b\[7m \x1b\[0m/);
   });
 
-  it('renders single line with cursor at end', () => {
+  it("renders single line with cursor at end", () => {
     const editor = new Editor();
-    editor.setText('hello');
-    editor['state'].cursorCol = 5;
+    editor.setText("hello");
+    editor["state"].cursorCol = 5;
     const result = editor.render(10);
     assert.equal(result.length, 3);
-    assert.equal(result[0], '─'.repeat(10));
-    assert.equal(result[result.length - 1], '─'.repeat(10));
+    assert.equal(result[0], "─".repeat(10));
+    assert.equal(result[result.length - 1], "─".repeat(10));
     // Cursor at end: highlighted space added
-    assert.equal(result[1], 'hello' + '\x1b[7m \x1b[0m' + ' '.repeat(4));
+    assert.equal(result[1], "hello" + "\x1b[7m \x1b[0m" + " ".repeat(4));
   });
 
-  it('renders single line with cursor in middle', () => {
+  it("renders single line with cursor in middle", () => {
     const editor = new Editor();
-    editor.setText('hello');
-    editor['state'].cursorCol = 2;
+    editor.setText("hello");
+    editor["state"].cursorCol = 2;
     const result = editor.render(10);
     assert.equal(result.length, 3);
     // Cursor on 'l' (character at position 2) should be highlighted
-    assert.equal(result[1], 'he' + '\x1b[7ml\x1b[0m' + 'lo' + ' '.repeat(5));
+    assert.equal(result[1], "he" + "\x1b[7ml\x1b[0m" + "lo" + " ".repeat(5));
   });
 
-  it('renders single line with cursor at start', () => {
+  it("renders single line with cursor at start", () => {
     const editor = new Editor();
-    editor.setText('hello');
-    editor['state'].cursorCol = 0;
+    editor.setText("hello");
+    editor["state"].cursorCol = 0;
     const result = editor.render(10);
     assert.equal(result.length, 3);
     // Cursor on 'h' should be highlighted
-    assert.equal(result[1], '\x1b[7mh\x1b[0m' + 'ello' + ' '.repeat(5));
+    assert.equal(result[1], "\x1b[7mh\x1b[0m" + "ello" + " ".repeat(5));
   });
 
-  it('renders multi-line content', () => {
+  it("renders multi-line content", () => {
     const editor = new Editor();
-    editor.setText('line one\nline two\nline three');
-    editor['state'].cursorLine = 1;
-    editor['state'].cursorCol = 4;
+    editor.setText("line one\nline two\nline three");
+    editor["state"].cursorLine = 1;
+    editor["state"].cursorCol = 4;
     const result = editor.render(20);
     assert.equal(result.length, 5); // top + 3 lines + bottom
-    assert.equal(result[0], '─'.repeat(20));
-    assert.equal(result[result.length - 1], '─'.repeat(20));
+    assert.equal(result[0], "─".repeat(20));
+    assert.equal(result[result.length - 1], "─".repeat(20));
     // Line 0 (no cursor)
-    assert.equal(result[1], 'line one' + ' '.repeat(12));
+    assert.equal(result[1], "line one" + " ".repeat(12));
     // Line 1 (cursor on char at col 4: ' ')
-    assert.equal(result[2], 'line' + '\x1b[7m \x1b[0m' + 'two' + ' '.repeat(12));
+    assert.equal(
+      result[2],
+      "line" + "\x1b[7m \x1b[0m" + "two" + " ".repeat(12),
+    );
     // Line 2 (no cursor)
-    assert.equal(result[3], 'line three' + ' '.repeat(10));
+    assert.equal(result[3], "line three" + " ".repeat(10));
   });
 
-  it('renders word-wrapped line with cursor', () => {
+  it("renders word-wrapped line with cursor", () => {
     const editor = new Editor();
-    editor.setText('this is a long line that needs wrapping');
-    editor['state'].cursorLine = 0;
-    editor['state'].cursorCol = 10;
+    editor.setText("this is a long line that needs wrapping");
+    editor["state"].cursorLine = 0;
+    editor["state"].cursorCol = 10;
     const result = editor.render(15);
     // Should have top + wrapped lines + bottom
     assert.ok(result.length > 3);
-    assert.equal(result[0], '─'.repeat(15));
-    assert.equal(result[result.length - 1], '─'.repeat(15));
+    assert.equal(result[0], "─".repeat(15));
+    assert.equal(result[result.length - 1], "─".repeat(15));
     // Cursor line should have ANSI escape codes
-    const cursorLine = result.findIndex((line) => line.includes('\x1b[7m'));
+    const cursorLine = result.findIndex((line) => line.includes("\x1b[7m"));
     assert.notEqual(cursorLine, -1);
   });
 
-  it('renders cursor at end of full-width line (no room for space)', () => {
+  it("renders cursor at end of full-width line (no room for space)", () => {
     const editor = new Editor();
-    editor.setText('hello world!!');
-    editor['state'].cursorCol = 14; // at end of exactly 14-char line
+    editor.setText("hello world!!");
+    editor["state"].cursorCol = 14; // at end of exactly 14-char line
     const result = editor.render(15);
     assert.equal(result.length, 3);
     // Cursor at end, width = 14, room available (14 < 15), so highlighted space
-    assert.ok(result[1].includes('\x1b[7m \x1b[0m'));
+    assert.ok(result[1].includes("\x1b[7m \x1b[0m"));
   });
 
-  it('renders cursor at end of line that exactly fills width', () => {
+  it("renders cursor at end of line that exactly fills width", () => {
     const editor = new Editor();
-    editor.setText('123456789012345'); // 15 chars = width
-    editor['state'].cursorCol = 15;
+    editor.setText("123456789012345"); // 15 chars = width
+    editor["state"].cursorCol = 15;
     const result = editor.render(15);
     assert.equal(result.length, 3);
     // Line is at full width, cursor at end
     // Should highlight the last character (at position 14)
-    assert.ok(result[1].includes('\x1b[7m5\x1b[0m'));
+    assert.ok(result[1].includes("\x1b[7m5\x1b[0m"));
   });
 
-  it('render pads lines to match width', () => {
+  it("render pads lines to match width", () => {
     const editor = new Editor();
-    editor.setText('short');
-    editor['state'].cursorCol = 5;
+    editor.setText("short");
+    editor["state"].cursorCol = 5;
     const result = editor.render(20);
     assert.equal(result.length, 3);
     // Line should be padded to 20 chars
     assert.equal(
-      result[1].replace(/\x1b\[\d+m/g, '').replace(/\x1b\[0m/g, '').length,
+      result[1].replace(/\x1b\[\d+m/g, "").replace(/\x1b\[0m/g, "").length,
       20,
     );
   });
 
-  it('does not add autocomplete list when not autocompleting', () => {
+  it("does not add autocomplete list when not autocompleting", () => {
     const editor = new Editor();
-    editor.setText('test');
+    editor.setText("test");
     const result = editor.render(10);
     // Only top + content + bottom = 3 lines
     assert.equal(result.length, 3);
   });
 });
 
-describe('Editor layoutText', () => {
-  it('returns empty line with cursor for empty editor', () => {
+describe("Editor layoutText", () => {
+  it("returns empty line with cursor for empty editor", () => {
     const editor = new Editor();
-    const result = editor['layoutText'](10);
+    const result = editor["layoutText"](10);
     assert.equal(result.length, 1);
-    assert.equal(result[0].text, '');
+    assert.equal(result[0].text, "");
     assert.equal(result[0].hasCursor, true);
     assert.equal(result[0].cursorPos, 0);
     assert.equal(result[0].width, 0);
   });
 
-  it('returns single line for single-line content that fits', () => {
+  it("returns single line for single-line content that fits", () => {
     const editor = new Editor();
-    editor.setText('hello');
-    editor['state'].cursorCol = 5;
-    const result = editor['layoutText'](10);
+    editor.setText("hello");
+    editor["state"].cursorCol = 5;
+    const result = editor["layoutText"](10);
     assert.equal(result.length, 1);
-    assert.equal(result[0].text, 'hello');
+    assert.equal(result[0].text, "hello");
     assert.equal(result[0].hasCursor, true);
     assert.equal(result[0].cursorPos, 5);
     assert.equal(result[0].width, 5);
   });
 
-  it('returns line without cursor for non-current line', () => {
+  it("returns line without cursor for non-current line", () => {
     const editor = new Editor();
-    editor.setText('line one\nline two');
-    editor['state'].cursorLine = 1;
-    editor['state'].cursorCol = 4;
-    const result = editor['layoutText'](20);
+    editor.setText("line one\nline two");
+    editor["state"].cursorLine = 1;
+    editor["state"].cursorCol = 4;
+    const result = editor["layoutText"](20);
     // Line 0 should have hasCursor = false
     assert.equal(result.length, 2);
-    assert.equal(result[0].text, 'line one');
+    assert.equal(result[0].text, "line one");
     assert.equal(result[0].hasCursor, false);
-    assert.equal(result[1].text, 'line two');
+    assert.equal(result[1].text, "line two");
     assert.equal(result[1].hasCursor, true);
     assert.equal(result[1].cursorPos, 4);
   });
 
-  it('wraps line that exceeds content width', () => {
+  it("wraps line that exceeds content width", () => {
     const editor = new Editor();
-    editor.setText('this is a long line that needs wrapping');
-    editor['state'].cursorLine = 0;
-    editor['state'].cursorCol = 10;
-    const result = editor['layoutText'](15);
+    editor.setText("this is a long line that needs wrapping");
+    editor["state"].cursorLine = 0;
+    editor["state"].cursorCol = 10;
+    const result = editor["layoutText"](15);
     // Should produce multiple layout lines
     assert.ok(result.length > 1);
     // Verify cursored line has cursor info
@@ -349,23 +352,23 @@ describe('Editor layoutText', () => {
     assert.ok(cursorLine!.cursorPos !== undefined);
   });
 
-  it('returns single line when content exactly fits width', () => {
+  it("returns single line when content exactly fits width", () => {
     const editor = new Editor();
-    editor.setText('123456789012345');
-    editor['state'].cursorCol = 15;
-    const result = editor['layoutText'](15);
+    editor.setText("123456789012345");
+    editor["state"].cursorCol = 15;
+    const result = editor["layoutText"](15);
     assert.equal(result.length, 1);
-    assert.equal(result[0].text, '123456789012345');
+    assert.equal(result[0].text, "123456789012345");
     assert.equal(result[0].hasCursor, true);
     assert.equal(result[0].width, 15);
   });
 
-  it('places cursor in first chunk when cursor is in that range', () => {
+  it("places cursor in first chunk when cursor is in that range", () => {
     const editor = new Editor();
-    editor.setText('this is a long line that needs wrapping');
-    editor['state'].cursorLine = 0;
-    editor['state'].cursorCol = 3; // 's' in 'this'
-    const result = editor['layoutText'](10);
+    editor.setText("this is a long line that needs wrapping");
+    editor["state"].cursorLine = 0;
+    editor["state"].cursorCol = 3; // 's' in 'this'
+    const result = editor["layoutText"](10);
     // First chunk should have cursor
     assert.ok(result.length > 1);
     assert.equal(result[0].hasCursor, true);
@@ -376,206 +379,209 @@ describe('Editor layoutText', () => {
     }
   });
 
-  it('wraps line that exceeds content width into multiple layout lines', () => {
+  it("wraps line that exceeds content width into multiple layout lines", () => {
     const editor = new Editor();
-    editor.setText('a b c d e f g h i j k l m n o p');
-    editor['state'].cursorLine = 0;
-    editor['state'].cursorCol = 0;
-    const result = editor['layoutText'](5);
+    editor.setText("a b c d e f g h i j k l m n o p");
+    editor["state"].cursorLine = 0;
+    editor["state"].cursorCol = 0;
+    const result = editor["layoutText"](5);
     // Should produce multiple layout lines
-    assert.ok(result.length > 1, 'should produce multiple wrapped lines');
+    assert.ok(result.length > 1, "should produce multiple wrapped lines");
     // Each chunk should be at most 5 chars wide (or less for edge chunks)
     for (const line of result) {
-      assert.ok(line.width <= 5, `chunk width ${line.width} exceeds max width of 5`);
+      assert.ok(
+        line.width <= 5,
+        `chunk width ${line.width} exceeds max width of 5`,
+      );
     }
   });
 
-  it('handles editor with single empty line as empty', () => {
+  it("handles editor with single empty line as empty", () => {
     const editor = new Editor();
-    editor.setText('');
-    const result = editor['layoutText'](10);
+    editor.setText("");
+    const result = editor["layoutText"](10);
     assert.equal(result.length, 1);
-    assert.equal(result[0].text, '');
+    assert.equal(result[0].text, "");
     assert.equal(result[0].hasCursor, true);
     assert.equal(result[0].width, 0);
   });
 });
 
-describe('Editor moveCursor', () => {
-  describe('horizontal movement (right)', () => {
-    it('moves right within a line', () => {
+describe("Editor moveCursor", () => {
+  describe("horizontal movement (right)", () => {
+    it("moves right within a line", () => {
       const editor = new Editor();
-      editor.setText('hello');
-      editor['state'].cursorCol = 2;
-      editor['moveCursor'](0, 1);
-      assert.equal(editor['state'].cursorCol, 3);
-      assert.equal(editor['state'].cursorLine, 0);
+      editor.setText("hello");
+      editor["state"].cursorCol = 2;
+      editor["moveCursor"](0, 1);
+      assert.equal(editor["state"].cursorCol, 3);
+      assert.equal(editor["state"].cursorLine, 0);
     });
 
-    it('wraps to next line when at end of non-last line', () => {
+    it("wraps to next line when at end of non-last line", () => {
       const editor = new Editor();
-      editor.setText('abc\nde');
-      editor['state'].cursorLine = 0;
-      editor['state'].cursorCol = 3;
-      editor['moveCursor'](0, 1);
-      assert.equal(editor['state'].cursorLine, 1);
-      assert.equal(editor['state'].cursorCol, 0);
+      editor.setText("abc\nde");
+      editor["state"].cursorLine = 0;
+      editor["state"].cursorCol = 3;
+      editor["moveCursor"](0, 1);
+      assert.equal(editor["state"].cursorLine, 1);
+      assert.equal(editor["state"].cursorCol, 0);
     });
 
-    it('stays at end of last line when pressing right', () => {
+    it("stays at end of last line when pressing right", () => {
       const editor = new Editor();
-      editor.setText('hello');
-      editor['state'].cursorCol = 5;
-      editor['moveCursor'](0, 1);
-      assert.equal(editor['state'].cursorCol, 5);
-      assert.equal(editor['state'].cursorLine, 0);
+      editor.setText("hello");
+      editor["state"].cursorCol = 5;
+      editor["moveCursor"](0, 1);
+      assert.equal(editor["state"].cursorCol, 5);
+      assert.equal(editor["state"].cursorLine, 0);
     });
 
-    it('stays at end of last line (multi-line) when pressing right', () => {
+    it("stays at end of last line (multi-line) when pressing right", () => {
       const editor = new Editor();
-      editor.setText('abc\nde');
-      editor['state'].cursorLine = 1;
-      editor['state'].cursorCol = 2;
-      editor['moveCursor'](0, 1);
-      assert.equal(editor['state'].cursorLine, 1);
-      assert.equal(editor['state'].cursorCol, 2);
-    });
-  });
-
-  describe('horizontal movement (left)', () => {
-    it('moves left within a line', () => {
-      const editor = new Editor();
-      editor.setText('hello');
-      editor['state'].cursorCol = 3;
-      editor['moveCursor'](0, -1);
-      assert.equal(editor['state'].cursorCol, 2);
-      assert.equal(editor['state'].cursorLine, 0);
-    });
-
-    it('wraps to previous line when at start of non-first line', () => {
-      const editor = new Editor();
-      editor.setText('abc\nde');
-      editor['state'].cursorLine = 1;
-      editor['state'].cursorCol = 0;
-      editor['moveCursor'](0, -1);
-      assert.equal(editor['state'].cursorLine, 0);
-      assert.equal(editor['state'].cursorCol, 3);
-    });
-
-    it('stays at start of first line when pressing left', () => {
-      const editor = new Editor();
-      editor.setText('hello');
-      editor['state'].cursorCol = 0;
-      editor['moveCursor'](0, -1);
-      assert.equal(editor['state'].cursorCol, 0);
-      assert.equal(editor['state'].cursorLine, 0);
+      editor.setText("abc\nde");
+      editor["state"].cursorLine = 1;
+      editor["state"].cursorCol = 2;
+      editor["moveCursor"](0, 1);
+      assert.equal(editor["state"].cursorLine, 1);
+      assert.equal(editor["state"].cursorCol, 2);
     });
   });
 
-  describe('vertical movement (down)', () => {
-    it('moves down to next line preserving column position', () => {
+  describe("horizontal movement (left)", () => {
+    it("moves left within a line", () => {
       const editor = new Editor();
-      editor.setText('hello\nworld');
-      editor['state'].cursorLine = 0;
-      editor['state'].cursorCol = 2;
-      editor['moveCursor'](1, 0);
-      assert.equal(editor['state'].cursorLine, 1);
+      editor.setText("hello");
+      editor["state"].cursorCol = 3;
+      editor["moveCursor"](0, -1);
+      assert.equal(editor["state"].cursorCol, 2);
+      assert.equal(editor["state"].cursorLine, 0);
+    });
+
+    it("wraps to previous line when at start of non-first line", () => {
+      const editor = new Editor();
+      editor.setText("abc\nde");
+      editor["state"].cursorLine = 1;
+      editor["state"].cursorCol = 0;
+      editor["moveCursor"](0, -1);
+      assert.equal(editor["state"].cursorLine, 0);
+      assert.equal(editor["state"].cursorCol, 3);
+    });
+
+    it("stays at start of first line when pressing left", () => {
+      const editor = new Editor();
+      editor.setText("hello");
+      editor["state"].cursorCol = 0;
+      editor["moveCursor"](0, -1);
+      assert.equal(editor["state"].cursorCol, 0);
+      assert.equal(editor["state"].cursorLine, 0);
+    });
+  });
+
+  describe("vertical movement (down)", () => {
+    it("moves down to next line preserving column position", () => {
+      const editor = new Editor();
+      editor.setText("hello\nworld");
+      editor["state"].cursorLine = 0;
+      editor["state"].cursorCol = 2;
+      editor["moveCursor"](1, 0);
+      assert.equal(editor["state"].cursorLine, 1);
       // Column clamped to target line length (5), so stays 2
-      assert.equal(editor['state'].cursorCol, 2);
+      assert.equal(editor["state"].cursorCol, 2);
     });
 
-    it('clamps column when target line is shorter', () => {
+    it("clamps column when target line is shorter", () => {
       const editor = new Editor();
-      editor.setText('hello\nab');
-      editor['state'].cursorLine = 0;
-      editor['state'].cursorCol = 4;
-      editor['moveCursor'](1, 0);
-      assert.equal(editor['state'].cursorLine, 1);
-      assert.equal(editor['state'].cursorCol, 2); // clamped to 'ab'.length
+      editor.setText("hello\nab");
+      editor["state"].cursorLine = 0;
+      editor["state"].cursorCol = 4;
+      editor["moveCursor"](1, 0);
+      assert.equal(editor["state"].cursorLine, 1);
+      assert.equal(editor["state"].cursorCol, 2); // clamped to 'ab'.length
     });
 
-    it('does nothing when already on last line', () => {
+    it("does nothing when already on last line", () => {
       const editor = new Editor();
-      editor.setText('hello\nworld');
-      editor['state'].cursorLine = 1;
-      editor['state'].cursorCol = 2;
-      editor['moveCursor'](1, 0);
-      assert.equal(editor['state'].cursorLine, 1);
-      assert.equal(editor['state'].cursorCol, 2);
+      editor.setText("hello\nworld");
+      editor["state"].cursorLine = 1;
+      editor["state"].cursorCol = 2;
+      editor["moveCursor"](1, 0);
+      assert.equal(editor["state"].cursorLine, 1);
+      assert.equal(editor["state"].cursorCol, 2);
     });
 
-    it('moves to next visual line when text is wrapped', () => {
+    it("moves to next visual line when text is wrapped", () => {
       const editor = new Editor();
-      editor.setText('a long line that wraps');
-      editor['lastWidth'] = 10;
-      editor['state'].cursorLine = 0;
-      editor['state'].cursorCol = 0;
+      editor.setText("a long line that wraps");
+      editor["lastWidth"] = 10;
+      editor["state"].cursorLine = 0;
+      editor["state"].cursorCol = 0;
       // Move down once
-      editor['moveCursor'](1, 0);
+      editor["moveCursor"](1, 0);
       // Should be on the second visual chunk (same logical line 0)
-      assert.equal(editor['state'].cursorLine, 0);
+      assert.equal(editor["state"].cursorLine, 0);
       // Cursor should be at or near start of second chunk
-      assert.ok(editor['state'].cursorCol > 0);
+      assert.ok(editor["state"].cursorCol > 0);
     });
   });
 
-  describe('vertical movement (up)', () => {
-    it('moves up to previous line preserving column position', () => {
+  describe("vertical movement (up)", () => {
+    it("moves up to previous line preserving column position", () => {
       const editor = new Editor();
-      editor.setText('hello\nworld');
-      editor['state'].cursorLine = 1;
-      editor['state'].cursorCol = 2;
-      editor['moveCursor'](-1, 0);
-      assert.equal(editor['state'].cursorLine, 0);
-      assert.equal(editor['state'].cursorCol, 2);
+      editor.setText("hello\nworld");
+      editor["state"].cursorLine = 1;
+      editor["state"].cursorCol = 2;
+      editor["moveCursor"](-1, 0);
+      assert.equal(editor["state"].cursorLine, 0);
+      assert.equal(editor["state"].cursorCol, 2);
     });
 
-    it('clamps column when target line is shorter', () => {
+    it("clamps column when target line is shorter", () => {
       const editor = new Editor();
-      editor.setText('ab\nhello');
-      editor['state'].cursorLine = 1;
-      editor['state'].cursorCol = 4;
-      editor['moveCursor'](-1, 0);
-      assert.equal(editor['state'].cursorLine, 0);
-      assert.equal(editor['state'].cursorCol, 2); // clamped to 'ab'.length
+      editor.setText("ab\nhello");
+      editor["state"].cursorLine = 1;
+      editor["state"].cursorCol = 4;
+      editor["moveCursor"](-1, 0);
+      assert.equal(editor["state"].cursorLine, 0);
+      assert.equal(editor["state"].cursorCol, 2); // clamped to 'ab'.length
     });
 
-    it('does nothing when already on first line', () => {
+    it("does nothing when already on first line", () => {
       const editor = new Editor();
-      editor.setText('hello\nworld');
-      editor['state'].cursorLine = 0;
-      editor['state'].cursorCol = 2;
-      editor['moveCursor'](-1, 0);
-      assert.equal(editor['state'].cursorLine, 0);
-      assert.equal(editor['state'].cursorCol, 2);
+      editor.setText("hello\nworld");
+      editor["state"].cursorLine = 0;
+      editor["state"].cursorCol = 2;
+      editor["moveCursor"](-1, 0);
+      assert.equal(editor["state"].cursorLine, 0);
+      assert.equal(editor["state"].cursorCol, 2);
     });
 
-    it('moves to previous visual line when text is wrapped', () => {
+    it("moves to previous visual line when text is wrapped", () => {
       const editor = new Editor();
-      editor.setText('a long line that wraps');
-      editor['lastWidth'] = 10;
-      editor['state'].cursorLine = 0;
+      editor.setText("a long line that wraps");
+      editor["lastWidth"] = 10;
+      editor["state"].cursorLine = 0;
       // Place cursor at start of what would be the second visual chunk
       // First chunk: "a long li" (10 chars), second chunk starts at index 10
-      editor['state'].cursorCol = 12;
+      editor["state"].cursorCol = 12;
       // Move up once
-      editor['moveCursor'](-1, 0);
+      editor["moveCursor"](-1, 0);
       // Should be on the first visual chunk (same logical line 0)
-      assert.equal(editor['state'].cursorLine, 0);
+      assert.equal(editor["state"].cursorLine, 0);
       // Cursor should be in first chunk
-      assert.ok(editor['state'].cursorCol < 12);
+      assert.ok(editor["state"].cursorCol < 12);
     });
   });
 
-  describe('no-op delta', () => {
-    it('does nothing when both deltas are zero', () => {
+  describe("no-op delta", () => {
+    it("does nothing when both deltas are zero", () => {
       const editor = new Editor();
-      editor.setText('hello\nworld');
-      editor['state'].cursorLine = 1;
-      editor['state'].cursorCol = 2;
-      editor['moveCursor'](0, 0);
-      assert.equal(editor['state'].cursorLine, 1);
-      assert.equal(editor['state'].cursorCol, 2);
+      editor.setText("hello\nworld");
+      editor["state"].cursorLine = 1;
+      editor["state"].cursorCol = 2;
+      editor["moveCursor"](0, 0);
+      assert.equal(editor["state"].cursorLine, 1);
+      assert.equal(editor["state"].cursorCol, 2);
     });
   });
 });

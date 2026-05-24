@@ -531,10 +531,7 @@ export class Repl {
     this.allThinkingBlocks.push(component);
 
     if (this.streamingComponent) {
-      this.chatContainer.insertChildBefore(
-        this.streamingComponent,
-        component,
-      );
+      this.chatContainer.insertChildBefore(this.streamingComponent, component);
       this.chatContainer.insertChildBefore(
         this.streamingComponent,
         new Spacer(1),
@@ -687,9 +684,7 @@ export class Repl {
    * Collects all tool results from tool-role messages into a map
    * keyed by tool call ID.
    */
-  private collectToolResults(
-    messages: ModelMessage[],
-  ): Map<
+  private collectToolResults(messages: ModelMessage[]): Map<
     string,
     {
       toolName: string;

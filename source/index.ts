@@ -379,17 +379,25 @@ export async function handleConversationHistory(
   if (continueFlag === true) {
     await handleContinue(sessionManager, sessionsDir, selectFn, setTitleFn);
   } else if (resumeFlag === true) {
-    await handleResume(sessionManager, sessionsDir, resumeSessionId, setTitleFn);
+    await handleResume(
+      sessionManager,
+      sessionsDir,
+      resumeSessionId,
+      setTitleFn,
+    );
   }
 }
 
 async function handleContinue(
   sessionManager: SessionManager,
   sessionsDir: string,
-  selectFn: (typeof select),
-  setTitleFn: (typeof setTerminalTitle),
+  selectFn: typeof select,
+  setTitleFn: typeof setTerminalTitle,
 ): Promise<void> {
-  const histories = await SessionManager.load(sessionsDir, DEFAULT_HISTORY_LIMIT);
+  const histories = await SessionManager.load(
+    sessionsDir,
+    DEFAULT_HISTORY_LIMIT,
+  );
   if (histories.length === 0) {
     logger.info("No previous conversations found to continue.");
     return;
@@ -428,7 +436,7 @@ async function handleResume(
   sessionManager: SessionManager,
   sessionsDir: string,
   resumeSessionId: string | undefined,
-  setTitleFn: (typeof setTerminalTitle),
+  setTitleFn: typeof setTerminalTitle,
 ): Promise<void> {
   if (resumeSessionId) {
     const histories = await SessionManager.load(
@@ -719,9 +727,7 @@ async function main() {
     // Add logs directory to allowed directories if configured
     const logsPath = mergedConfig.logs?.path;
     if (logsPath) {
-      const logsDir = path.dirname(
-        path.resolve(expandTildePath(logsPath)),
-      );
+      const logsDir = path.dirname(path.resolve(expandTildePath(logsPath)));
       if (!workspace.allowedDirs.includes(logsDir)) {
         workspace.allowedDirs.push(logsDir);
       }
