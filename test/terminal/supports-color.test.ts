@@ -75,21 +75,21 @@ describe("createSupportsColor", () => {
     setEnv({ FORCE_COLOR: "1" });
     const result = createSupportsColor({ isTty: true });
     assert.notEqual(result, false);
-    assert.equal((result as any).level, 1);
+    assert.equal((result as { level: number }).level, 1);
   });
 
   it("returns level 3 when FORCE_COLOR=3", () => {
     setEnv({ FORCE_COLOR: "3" });
     const result = createSupportsColor({ isTty: true });
     assert.notEqual(result, false);
-    assert.equal((result as any).level, 3);
+    assert.equal((result as { level: number }).level, 3);
   });
 
   it("returns level 1 for Azure DevOps pipelines", () => {
     setEnv({ TF_BUILD: "true", AGENT_NAME: "hosted", FORCE_COLOR: undefined });
     const result = createSupportsColor({ isTty: true });
     assert.notEqual(result, false);
-    assert.equal((result as any).level, 1);
+    assert.equal((result as { level: number }).level, 1);
   });
 
   it("returns 0 when stream is not a TTY and no force color", () => {
@@ -115,7 +115,7 @@ describe("createSupportsColor", () => {
     setEnv({ TERM: "dumb", FORCE_COLOR: "1" });
     const result = createSupportsColor({ isTty: true });
     assert.notEqual(result, false);
-    assert.equal((result as any).level, 1);
+    assert.equal((result as { level: number }).level, 1);
   });
 
   it("returns level 3 for COLORTERM=truecolor", () => {
@@ -128,7 +128,7 @@ describe("createSupportsColor", () => {
     });
     const result = createSupportsColor({ isTty: true });
     assert.notEqual(result, false);
-    assert.equal((result as any).level, 3);
+    assert.equal((result as { level: number }).level, 3);
   });
 
   it("returns level 3 for xterm-kitty terminal", () => {
@@ -142,7 +142,7 @@ describe("createSupportsColor", () => {
     });
     const result = createSupportsColor({ isTty: true });
     assert.notEqual(result, false);
-    assert.equal((result as any).level, 3);
+    assert.equal((result as { level: number }).level, 3);
   });
 
   it("returns level 3 for xterm-ghostty terminal", () => {
@@ -156,7 +156,7 @@ describe("createSupportsColor", () => {
     });
     const result = createSupportsColor({ isTty: true });
     assert.notEqual(result, false);
-    assert.equal((result as any).level, 3);
+    assert.equal((result as { level: number }).level, 3);
   });
 
   it("returns level 1 for CI environments with min=0", () => {
@@ -169,7 +169,7 @@ describe("createSupportsColor", () => {
     const result = createSupportsColor({ isTty: true });
     assert.notEqual(result, false);
     // GITHUB_ACTIONS returns 3 (level 3)
-    assert.equal((result as any).level, 3);
+    assert.equal((result as { level: number }).level, 3);
   });
 
   it("handles TeamCity version check", () => {
@@ -183,7 +183,7 @@ describe("createSupportsColor", () => {
     });
     const result = createSupportsColor({ isTty: true });
     assert.notEqual(result, false);
-    assert.equal((result as any).level, 1);
+    assert.equal((result as { level: number }).level, 1);
   });
 
   it("returns 0 for old TeamCity version", () => {
@@ -210,6 +210,6 @@ describe("createSupportsColor", () => {
     });
     const result = createSupportsColor({ isTty: true });
     assert.notEqual(result, false);
-    assert.equal((result as any).level, 1);
+    assert.equal((result as { level: number }).level, 1);
   });
 });

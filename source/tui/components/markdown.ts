@@ -567,17 +567,15 @@ export class Markdown implements Component {
     position: number,
     escapeChar: string,
   ): number {
-    while (
-      position < styledText.length &&
-      styledText[position] === escapeChar
-    ) {
-      position++;
-      while (position < styledText.length && styledText[position] !== "m") {
-        position++;
+    let pos = position;
+    while (pos < styledText.length && styledText[pos] === escapeChar) {
+      pos++;
+      while (pos < styledText.length && styledText[pos] !== "m") {
+        pos++;
       }
-      position++; // skip 'm'
+      pos++; // skip 'm'
     }
-    return position;
+    return pos;
   }
 
   /**

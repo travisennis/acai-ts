@@ -187,7 +187,8 @@ describe("Editor render", () => {
     assert.equal(result[0], "─".repeat(10)); // top border
     assert.equal(result[result.length - 1], "─".repeat(10)); // bottom border
     // Middle line has cursor at position 0 (highlighted space)
-    assert.match(result[1], /\x1b\[7m \x1b\[0m/);
+    const esc = "\x1b";
+    assert.match(result[1], new RegExp(`${esc}\\[7m ${esc}\\[0m`));
   });
 
   it("renders single line with cursor at end", () => {
@@ -199,7 +200,7 @@ describe("Editor render", () => {
     assert.equal(result[0], "─".repeat(10));
     assert.equal(result[result.length - 1], "─".repeat(10));
     // Cursor at end: highlighted space added
-    assert.equal(result[1], "hello" + "\x1b[7m \x1b[0m" + " ".repeat(4));
+    assert.equal(result[1], `hello\x1b[7m \x1b[0m${" ".repeat(4)}`);
   });
 
   it("renders single line with cursor in middle", () => {
@@ -209,7 +210,7 @@ describe("Editor render", () => {
     const result = editor.render(10);
     assert.equal(result.length, 3);
     // Cursor on 'l' (character at position 2) should be highlighted
-    assert.equal(result[1], "he" + "\x1b[7ml\x1b[0m" + "lo" + " ".repeat(5));
+    assert.equal(result[1], `he\x1b[7ml\x1b[0mlo${" ".repeat(5)}`);
   });
 
   it("renders single line with cursor at start", () => {
@@ -219,7 +220,7 @@ describe("Editor render", () => {
     const result = editor.render(10);
     assert.equal(result.length, 3);
     // Cursor on 'h' should be highlighted
-    assert.equal(result[1], "\x1b[7mh\x1b[0m" + "ello" + " ".repeat(5));
+    assert.equal(result[1], `\x1b[7mh\x1b[0mello${" ".repeat(5)}`);
   });
 
   it("renders multi-line content", () => {
@@ -232,14 +233,11 @@ describe("Editor render", () => {
     assert.equal(result[0], "─".repeat(20));
     assert.equal(result[result.length - 1], "─".repeat(20));
     // Line 0 (no cursor)
-    assert.equal(result[1], "line one" + " ".repeat(12));
+    assert.equal(result[1], `line one${" ".repeat(12)}`);
     // Line 1 (cursor on char at col 4: ' ')
-    assert.equal(
-      result[2],
-      "line" + "\x1b[7m \x1b[0m" + "two" + " ".repeat(12),
-    );
+    assert.equal(result[2], `line\x1b[7m \x1b[0mtwo${" ".repeat(12)}`);
     // Line 2 (no cursor)
-    assert.equal(result[3], "line three" + " ".repeat(10));
+    assert.equal(result[3], `line three${" ".repeat(10)}`);
   });
 
   it("renders word-wrapped line with cursor", () => {
@@ -285,8 +283,11 @@ describe("Editor render", () => {
     const result = editor.render(20);
     assert.equal(result.length, 3);
     // Line should be padded to 20 chars
+    const esc = "\x1b";
     assert.equal(
-      result[1].replace(/\x1b\[\d+m/g, "").replace(/\x1b\[0m/g, "").length,
+      result[1]
+        .replace(new RegExp(`${esc}\\[\\d+m`, "g"), "")
+        .replace(new RegExp(`${esc}\\[0m`, "g"), "").length,
       20,
     );
   });
@@ -349,7 +350,7 @@ describe("Editor layoutText", () => {
     // Verify cursored line has cursor info
     const cursorLine = result.find((l) => l.hasCursor);
     assert.ok(cursorLine !== undefined);
-    assert.ok(cursorLine!.cursorPos !== undefined);
+    assert.ok(cursorLine?.cursorPos !== undefined);
   });
 
   it("returns single line when content exactly fits width", () => {

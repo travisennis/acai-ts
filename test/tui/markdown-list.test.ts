@@ -45,8 +45,8 @@ describe("Markdown list rendering", () => {
     const anotherChildLine = visible.find((l) => l.includes("Another child"));
     assert.ok(anotherChildLine, "Should contain Another child");
     // Child should be indented more than parent
-    const parentIndent = parentLine!.search(/\S/);
-    const childIndent = childLine!.search(/\S/);
+    const parentIndent = parentLine?.search(/\S/);
+    const childIndent = childLine?.search(/\S/);
     assert.ok(
       childIndent > parentIndent,
       `Child indent (${childIndent}) should be greater than parent indent (${parentIndent})`,
@@ -103,9 +103,9 @@ describe("Markdown list rendering", () => {
     assert.ok(level2, "Should contain Level 2");
     assert.ok(level3, "Should contain Level 3");
     // Each level should be indented progressively
-    const i1 = level1!.search(/\S/);
-    const i2 = level2!.search(/\S/);
-    const i3 = level3!.search(/\S/);
+    const i1 = level1?.search(/\S/);
+    const i2 = level2?.search(/\S/);
+    const i3 = level3?.search(/\S/);
     assert.ok(i2 > i1, `Level 2 indent (${i2}) > Level 1 indent (${i1})`);
     assert.ok(i3 > i2, `Level 3 indent (${i3}) > Level 2 indent (${i2})`);
   });

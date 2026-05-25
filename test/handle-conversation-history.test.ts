@@ -46,7 +46,7 @@ describe("handleConversationHistory", () => {
   let mm: ModelManager;
   // Helper to create a properly typed select mock
   const mockSelect = (value: number) =>
-    ((_opts: Record<string, unknown>) => Promise.resolve(value)) as any;
+    ((_opts: unknown) => Promise.resolve(value)) as never;
 
   beforeEach(() => {
     mm = createMockModelManager();
@@ -109,9 +109,9 @@ describe("handleConversationHistory", () => {
       mock.method(SessionManager, "load", () => Promise.resolve(histories));
       const cancelError = new Error("canceled");
       (cancelError as Error & { isCanceled: boolean }).isCanceled = true;
-      const selectFn = mock.fn((_opts: Record<string, unknown>) =>
+      const selectFn = mock.fn((_opts: never) =>
         Promise.reject(cancelError),
-      ) as any;
+      ) as never;
 
       await handleConversationHistory(
         sessionManager,
@@ -131,9 +131,9 @@ describe("handleConversationHistory", () => {
       const histories = [makeHistory({ sessionId: "abc" })];
       mock.method(SessionManager, "load", () => Promise.resolve(histories));
       const realError = new Error("Something went wrong");
-      const selectFn = mock.fn((_opts: Record<string, unknown>) =>
+      const selectFn = mock.fn((_opts: never) =>
         Promise.reject(realError),
-      ) as any;
+      ) as never;
 
       await assert.rejects(
         () =>

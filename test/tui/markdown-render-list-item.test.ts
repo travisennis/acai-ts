@@ -41,9 +41,9 @@ describe("Markdown renderListItem", () => {
     assert.ok(child, "Should contain Child");
     assert.ok(grandchild, "Should contain Grandchild");
     // Each level should be progressively indented
-    const parentIndent = parent!.search(/\S/);
-    const childIndent = child!.search(/\S/);
-    const grandchildIndent = grandchild!.search(/\S/);
+    const parentIndent = parent?.search(/\S/);
+    const childIndent = child?.search(/\S/);
+    const grandchildIndent = grandchild?.search(/\S/);
     assert.ok(
       childIndent > parentIndent,
       `Child indent (${childIndent}) > Parent indent (${parentIndent})`,

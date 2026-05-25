@@ -167,6 +167,7 @@ describe("web fetch tool", async () => {
           return Promise.resolve(
             mockResponse(null, {
               status: 302,
+              // biome-ignore lint/style/useNamingConvention: HTTP header name
               headers: { Location: "/target" },
             }),
           );
@@ -196,6 +197,7 @@ describe("web fetch tool", async () => {
           return Promise.resolve(
             mockResponse(null, {
               status: 301,
+              // biome-ignore lint/style/useNamingConvention: HTTP header name
               headers: { Location: "/hop1" },
             }),
           );
@@ -204,6 +206,7 @@ describe("web fetch tool", async () => {
           return Promise.resolve(
             mockResponse(null, {
               status: 301,
+              // biome-ignore lint/style/useNamingConvention: HTTP header name
               headers: { Location: "/hop2" },
             }),
           );
@@ -225,13 +228,14 @@ describe("web fetch tool", async () => {
     });
 
     it("throws on too many redirects", async () => {
-      let callCount = 0;
+      let _callCount = 0;
       const originalFetch = globalThis.fetch;
       (globalThis as { fetch?: unknown }).fetch = mock.fn(() => {
-        callCount++;
+        _callCount++;
         return Promise.resolve(
           mockResponse(null, {
             status: 302,
+            // biome-ignore lint/style/useNamingConvention: HTTP header name
             headers: { Location: "/loop" },
           }),
         );

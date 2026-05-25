@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it, mock } from "node:test";
 import {
   getShebang,
   loadDynamicTools,
@@ -425,13 +425,28 @@ describe("processChildOutput", () => {
   });
 
   it("should handle truncated output that is valid JSON", () => {
-    const largeJson = "{" + '"a": ' + '"' + "x".repeat(2_000_000) + '"}';
+    const largeJson = `{"a": "${"x".repeat(2_000_000)}"}`;
     const result = processChildOutput(largeJson, "");
     assert.ok(result.endsWith("[Output truncated]"));
   });
 });
 
 describe("loadDynamicTools (scanDir behavior)", () => {
+  let mockHomeDir: string;
+
+  beforeEach(() => {
+    // Mock os.homedir to a temp dir so user's actual ~/.acai/tools are not loaded
+    mockHomeDir = fs.mkdtempSync(path.join(os.tmpdir(), "acai-test-home-"));
+    mock.method(os, "homedir", () => mockHomeDir);
+  });
+
+  afterEach(() => {
+    mock.restoreAll();
+    if (mockHomeDir) {
+      fs.rmSync(mockHomeDir, { recursive: true, force: true });
+    }
+  });
+
   it("should return empty tools when no directories exist", async () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "acai-test-scan"));
     try {

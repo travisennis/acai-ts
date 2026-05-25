@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import { select } from "../../source/terminal/select-prompt.ts";
 
 function createMockTerminal() {
+  // biome-ignore lint/suspicious/noExplicitAny: mock stdin for testing
   const stdin = new EventEmitter() as any;
   stdin.isTTY = true;
   stdin.setRawMode = () => {};
@@ -13,11 +14,13 @@ function createMockTerminal() {
   stdin.removeListener = () => {};
 
   const outputChunks: string[] = [];
+  // biome-ignore lint/suspicious/noExplicitAny: mock stdout for testing
   const stdout: any = {
     write: (chunk: string) => {
       outputChunks.push(chunk);
       return true;
     },
+    // biome-ignore lint/style/useNamingConvention: matches Node.js stream.isTTY property name
     isTTY: true,
     getOutput: () => outputChunks.join(""),
     reset: () => {
