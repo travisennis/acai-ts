@@ -6,4 +6,4 @@ No active ExecPlans yet.
 
 ## Revision Notes
 
-- 2026-05-11 / Codex: Created the active ExecPlan index while adding the task, research, and ExecPlan workflow scaffold.
+- YYYY-MM-DD / agent: Created the active ExecPlan index.

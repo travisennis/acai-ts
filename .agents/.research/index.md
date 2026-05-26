@@ -16,7 +16,7 @@ No investigation documents yet.
 
 Notes from external documentation, tools, articles, or open source repositories.
 
-No source documents yet.
+No source notes yet.
 
 ## Topics
 

@@ -9,9 +9,9 @@ Research lives in `.agents/.research/`. The directory is intentionally lightweig
 Use these subdirectories:
 
 - `inbox/` for raw ideas, pasted notes, and thin captures that have not been triaged.
-- `investigations/` for acai-ts-specific findings from debugging, profiling, code reading, session analysis, or behavior checks.
+- `investigations/` for project-specific findings from debugging, profiling, code reading, session analysis, or behavior checks.
 - `sources/` for notes from external articles, papers, documentation, tools, or open source repositories.
-- `topics/` for synthesized, durable notes about an area of acai-ts or an idea that may feed several tasks or plans.
+- `topics/` for synthesized, durable notes about an area of this project or an idea that may feed several tasks or plans.
 - `archived/` for stale or superseded notes kept for historical reference.
 
 The file `.agents/.research/index.md` is the manually maintained map. Update it when adding, moving, archiving, or renaming research files.
@@ -36,14 +36,14 @@ Confidence: low | medium | high
 
 ## Notes / Evidence
 
-## Implications for acai-ts
+## Implications for this project
 
 ## Follow-ups
 ```
 
 ## Using Research
 
-Research is not automatically authoritative. Before using a research note to justify implementation work, check its status, date, confidence, evidence, and whether a newer task, ExecPlan, ADR, or source file supersedes it.
+Research is not automatically authoritative. Before using a research note to justify implementation work, check its status, date, confidence, evidence, and whether a newer task, ExecPlan, or source file supersedes it.
 
 If a research finding implies actionable work, either link an existing task or create one under `.agents/.tasks/`. If the finding is broad, risky, or implementation-heavy, promote it into an ExecPlan under `.agents/exec-plans/active/`.
 

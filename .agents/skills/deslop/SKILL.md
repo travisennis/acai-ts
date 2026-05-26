@@ -1,115 +1,209 @@
 ---
 name: deslop
-description: Run a focused review-readiness pass on a nearly finished acai-ts change before commit or handoff. Executes three sequential review passes (rules conformance, type safety, overengineering) to catch issues, then synthesizes and applies the worthwhile fixes.
+description: Run a focused review-readiness pass on a nearly finished change before commit. Scales the review to change size (XS/S = one pass, M = two passes, L/XL = three sequential passes covering rules conformance, correctness/source-of-truth, and overengineering). Then synthesize and apply the worthwhile fixes.
 ---
 
 # Deslop
 
-Use this skill after a change is functionally correct and before a commit or handoff. The PR, commit text, task notes, or final response should describe already-deslopped code, not code that still needs cleanup.
+Use this skill after a change is functionally correct and before commit or
+handoff. The PR, commit text, task notes, and final response should describe
+already-deslopped code.
 
 ## Goals
 
-Leave the smallest clear diff that still solves the issue.
-Run multiple focused review passes instead of relying on one final subjective read.
-Preserve behavior while improving readability, type safety, and alignment with acai-ts repo rules.
+Leave the smallest clear diff that still solves the issue. Run focused
+review passes instead of one subjective read. Preserve behavior while
+improving readability, correctness, and alignment with repo rules.
 
-## Required Context
+## Scale the review to the change size
 
-Before reviewing, read:
+Pick an effort level from the diff before reading anything else:
+
+```bash
+git diff --stat
+```
+
+| Change size                                     | Required context           | Review passes        | Compliance note |
+| ----------------------------------------------- | -------------------------- | -------------------- | --------------- |
+| **XS** (docs/skill/config only, ≤2 files)       | Root AGENTS.md if relevant | One combined pass    | One line        |
+| **S** (single module, ≤~50 LOC, no public API)  | Root AGENTS.md, nearest nested AGENTS.md | One combined pass    | One line        |
+| **M** (multi-file, ≤~200 LOC, no cross-module)  | + active task file, ExecPlan if one exists | Pass 1 + Pass 2      | Short block     |
+| **L/XL** (cross-module, public API, agent loop, persistence, concurrency, external integrations, security boundaries) | + design docs and ADRs in the changed area | All three passes     | Full block      |
+
+Only read context items that are relevant to the changed surface. Discover
+them with targeted commands, e.g. `rg --files -g AGENTS.md`,
+`rg --files docs/design-docs docs/adr`, `git diff -- <paths>`.
+
+Required context items, in priority order:
 
 - repo root `AGENTS.md`
-- nested `AGENTS.md` files for the changed areas, if any
-- `.agents/TASKS.md`, `.agents/.tasks/index.md`, and the active task file when the work came from a task
-- `.agents/PLANS.md`
-- `docs/README.md`
-- any ADR directly relevant to the changed area, especially under `docs/adr/`
-- the relevant active ExecPlan when one exists for the current work
-- the changed files and enough nearby context to review them properly
+- nested `AGENTS.md` files for the changed areas
+- `.agents/TASKS.md`, `.agents/.tasks/index.md`, and the active task file
+  when the work came from a task
+- the relevant active exec plan when one exists for the current work
+  (see `.agents/exec-plans/active/`)
+- `.agents/PLANS.md` and `docs/design-docs/index.md` for L/XL changes
+- any design doc or ADR directly relevant to the changed area
+- the changed files and enough nearby context to review them
 
-If working on an ExecPlan, also inspect `.agents/exec-plans/active/`. When a plan clearly matches the current task, study it before reviewing because it often contains context, constraints, and acceptance criteria not captured in the task or ADRs.
+## Review passes
 
-## Review Protocol
+Treat each pass as a clean read with its own focus. Do not blur findings
+across passes.
 
-Run these three reviews sequentially, treating each as a clean pass with its own focus. Do not blur findings between passes.
+### Pass 1: Rules and documentation conformance
 
-### Pass 1: Rules and Documentation Conformance
+- Are we following `AGENTS.md`, nested `AGENTS.md`, and design docs?
+- Did we drift from documented repo patterns or ownership boundaries?
+- If the work came from a task or ExecPlan, does the implementation match
+  its acceptance notes and recorded decisions?
+- Did we update task, ExecPlan, design doc, or ADR notes when the change
+  discovered something durable?
 
-- Are we following `AGENTS.md`, nested `AGENTS.md`, docs, ADRs, and existing repo patterns?
-- Did we drift from documented module boundaries in `source/`, especially commands, tools, models, sessions, prompts, terminal/TUI, and config?
-- If the work came from a task or ExecPlan, does the implementation match its acceptance notes and recorded decisions?
-- Did we update task, ExecPlan, README, architecture, docs, or ADR notes when the change added or removed files, added or removed features, or discovered durable behavior?
-- Are manual testing expectations honored for REPL/TUI changes by using the `manual-testing` skill and tmux workflow when needed?
+### Pass 2: Correctness and source of truth
 
-### Pass 2: Type Safety and Source of Truth
+This pass is about project-native correctness at the changed surface.
+Before reviewing, infer the project's language, framework, runtime, data
+modeling style, and validation tools from the changed files plus nearby
+manifests and scripts. Prefer explicit repo instructions in `AGENTS.md`,
+package manifests, lockfiles, CI config, `Makefile`, `justfile`, and
+existing tests over generic language advice.
 
-- Are we preserving canonical TypeScript types instead of cloning shape definitions or drifting into `any`, broad `unknown`, or untyped JSON plumbing?
-- Did we stringify, parse, or convert data where carrying the existing typed value would be clearer?
-- Did we introduce non-null assertions, broad casts, broad lint suppressions, `// @ts-ignore`, `// @ts-expect-error`, or silent fallbacks where a typed result, schema, or explicit error would be better?
-- Are Zod schemas, AI SDK provider inputs, OpenAI-compatible tool schemas, session records, config files, and dynamic tool boundaries validated at the edge and represented with repo-owned types downstream?
-- For agent/LLM tool schemas, did we avoid `.optional()` for provider-sent fields unless the field may truly be omitted from generated JSON Schema?
-- Are fallible APIs explicit about failure, with useful context and without swallowing serialization, session, provider, filesystem, or tool execution errors?
-- Are async boundaries clear, with no unnecessary blocking filesystem or process work added inside latency-sensitive paths unless nearby code already accepts it?
-- Could a mistake slip to runtime that TypeScript, Zod, or a narrower union/object type could catch earlier?
+Focus questions:
 
-### Pass 3: Overengineering and Simplification
+- Are we preserving canonical domain models, schemas, identifiers, and
+  state machines, or did we stringify, parse, duplicate, or reshape data
+  instead of carrying the project-owned representation?
+- Did we introduce stringly typed sentinels, unvalidated dictionaries/maps,
+  loosely shaped JSON, global state, or duplicated constants where the
+  project normally uses a schema, class, struct, enum, type alias, database
+  constraint, or shared config?
+- Are fallible boundaries explicit about failure, with useful context and
+  without swallowing parse, validation, network, filesystem, process,
+  persistence, auth, or external-service errors?
+- Are concurrency, async, transaction, lifecycle, and resource boundaries
+  consistent with nearby code and the runtime in use?
+- Are CLI/API/UI/database/config/external-integration boundaries validated
+  at the edge and then represented with project-owned shapes downstream?
+- Could an existing compiler, type checker, linter, schema validator,
+  migration check, test helper, or narrower data model catch a mistake
+  earlier than this implementation currently does?
+
+### Pass 3: Overengineering and simplification
 
 - Did we write more code than needed?
-- Did we create helpers, abstractions, factories, wrappers, classes, or indirection without enough payoff?
-- Could the same result be expressed more directly in the changed module?
-- Are new modules or public exports justified by real reuse or by an existing design boundary?
-- Did we preserve the CLI app shape instead of introducing library-style public API surface without a project reason?
-- Did we avoid churn in stable code outside the changed area?
+- Did we create helpers, abstractions, factories, wrappers, or indirection
+  without enough payoff?
+- Could the same result be expressed more directly?
+- Are new modules, traits, builders, or generic helpers justified by real
+  reuse or by an existing design boundary?
 
-After all three passes, synthesize findings into one balanced report with these headings:
+## Between-pass hygiene
+
+Ground each pass in narrow local evidence. Use the smallest check that fits
+the change:
+
+- `git diff --stat` and `git diff -- <paths>` to keep review anchored
+- formatters when formatting is affected, chosen from repo tooling
+  (`gofmt`, `prettier`, `ruff format`, language-native formatters, or a
+  documented script)
+- focused tests in the changed area using the repo's normal runner
+  (`go test`, `pytest`, `npm test`, `cargo test`, `bundle exec`, `make`,
+  `just`, or the relevant framework command)
+- type checks, linters, schema checks, migrations, generated-code checks, or
+  build steps when public types, shared code, config, API contracts, database
+  shape, or dependency behavior changed
+- the repo's final validation command after code/config/dependency changes
+  are complete, when one is documented in `AGENTS.md`, CI config, `Makefile`,
+  `justfile`, package scripts, or project docs
+
+For docs-only or skill-only edits, verify rendered Markdown and links by
+inspection or `rg --files`; full CI is not required.
+
+## Synthesis
+
+After running the passes for the chosen scale, synthesize into one balanced
+report with these headings:
 
 - "How did we do?"
 - "Feedback to keep"
 - "Feedback to ignore"
 - "Plan of attack"
+- "Deslop compliance" (skip for XS; one line for S; short block for M;
+  full block for L/XL — see template below)
 
-## Between-Pass Hygiene
+## What to fix automatically
 
-Between each review pass, ground the pass in concrete local evidence. Use the narrowest checks that fit the change:
+In an unattended implementation flow, apply worthwhile feedback before
+commit. Prioritize:
 
-- `git diff --stat` and `git diff -- <paths>` to keep the review anchored to the actual changed surface.
-- `npm run typecheck` when types, schemas, provider contracts, sessions, config, tools, or shared code changed.
-- `npm run lint -- path/to/file.ts` or `npm run lint` when lint behavior or TypeScript source changed.
-- `node --no-warnings --require ./test/setup.js --test test/path/to/test.ts` for focused tests in the changed area.
-- `npx fallow --summary` when code generation, dead code, complexity, or architecture drift is a meaningful risk.
-- `npm run check` after code, config, or dependency changes are complete, as required by repo instructions.
+- type drift, unnecessary cloning/string conversion, duplicated type defs
+- violations of documented repo boundaries or design documents
+- dead helpers, dead code, debug leftovers, placeholder text
+- new panic/abort paths, placeholder exceptions, debug prints, commented-out
+  code, broad lint suppressions, or ignored errors in production paths
+- errors lacking actionable context at CLI/API/UI/database/config/process/
+  network/external-service boundaries
+- unnecessary wrappers or indirection removable locally without widening
+  scope
 
-For docs-only or skill-only edits, read the rendered Markdown structure and verify links/paths by inspection or `rg --files`; full checks are not required unless code, config, or dependency files changed.
+Leave out feedback that is speculative, conflicts across passes, or would
+widen scope materially. Mention it briefly in the synthesis.
 
-## What to Fix Automatically
+## Compliance note
 
-If you are in an unattended implementation flow, apply the worthwhile feedback immediately before commit. Prioritize:
+Make the chosen context auditable. Length scales with change size.
 
-- type drift, unnecessary casting, unnecessary JSON conversion, or duplicated type definitions
-- violations of documented repo boundaries, ADRs, or task/ExecPlan acceptance notes
-- dead helpers, dead code, debug leftovers, placeholder text, or stale comments
-- new broad casts, non-null assertions, `todo`, `console.log`, `debugger`, `// @ts-ignore`, or broad lint suppressions
-- errors that lack actionable context at CLI, provider, session, config, filesystem, or tool boundaries
-- unnecessary wrappers or indirection that can be removed locally without widening scope
+**XS / S example:**
 
-If feedback is speculative, conflicts across passes, or would widen scope materially, leave it out and mention it briefly in the synthesis/workpad.
+```markdown
+### Deslop compliance
+- XS docs-only change to one skill file. Root AGENTS.md skim only; no
+  nested AGENTS.md under the changed path; no CI required.
+```
+
+**M / L / XL template:**
+
+```markdown
+### Deslop compliance
+
+- Root AGENTS.md: read
+- Nested AGENTS.md: <paths or "none under changed paths">
+- Task context: <task id> / not applicable because <reason>
+- ExecPlan: <plan id> / not applicable because <reason>
+- Design docs: <docs> / not applicable because <reason>
+- ADRs: <adrs> / not applicable because <reason>
+- Changed files and diff: reviewed via `git diff --stat` and targeted diffs
+- Validation: <commands run>
+```
+
+Do not write blanket "no design docs to check" claims unless you actually
+looked for a relevant one and can explain why the changed area has no
+design-doc surface.
 
 ## Steps
 
-1. Gather the context listed in Required Context.
-2. Run Pass 1 (rules and docs conformance) and record findings.
-3. Run a narrow evidence check such as `git diff --stat`, a focused test, `npm run typecheck`, or Markdown/path inspection.
-4. Run Pass 2 (type safety) and record findings.
-5. Run the next narrow evidence check that fits the risks found so far.
-6. Run Pass 3 (overengineering/simplification) and record findings.
-7. Synthesize all findings into the balanced report.
-8. Apply the worthwhile feedback that is clearly in scope.
-9. Rerun the narrowest affected validation immediately, then run `npm run check` when the finished work changed code, config, or dependencies.
-10. Update task notes, ExecPlan notes, commit text, PR-facing text, or final response so they describe the final post-deslop state rather than the earlier draft state.
+1. Run `git diff --stat`. Pick a scale from the table.
+2. Read only the required-context items for that scale.
+3. Run the review passes for that scale, with a narrow evidence check
+   between them.
+4. Synthesize findings into the balanced report.
+5. Apply worthwhile feedback that is clearly in scope.
+6. Rerun the narrowest affected validation, then the repo's documented
+   final validation command when the finished work changed code, config, or
+   dependencies.
+7. Update task notes, ExecPlan notes, commit text, and PR/final response to
+   describe the post-deslop state.
 
-## Stop Rules
+## Stop rules
 
 - Do not turn this into a refactor unrelated to the ticket.
-- Do not churn stable code outside the changed area just to make it prettier.
+- Do not churn stable code outside the changed area just to make it
+  prettier.
 - If a cleanup is subjective and not clearly better, leave it alone.
 - Do not blindly apply every finding from every pass.
-- Do not run broad or slow checks repeatedly when a focused test already covers the current pass; save `npm run check` for final validation after code, config, or dependency changes.
+- Do not run broad or slow checks repeatedly when a focused test already
+  covers the current pass; save the repo's broad validation command for
+  final validation.
+- Do not escalate the scale beyond what the diff justifies just to feel
+  thorough.

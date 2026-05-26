@@ -1,9 +1,9 @@
 # Completed ExecPlans
 
-This index follows `.agents/PLANS.md`. Completed ExecPlans are checked-in plans whose work has been implemented and whose Outcomes & Retrospective section has been updated.
+This index follows `.agents/PLANS.md`. Completed ExecPlans are plans whose work is complete, or historical plans that have been explicitly closed as superseded with a retrospective.
 
 No completed ExecPlans yet.
 
 ## Revision Notes
 
-- 2026-05-11 / Codex: Created the completed ExecPlan index while adding the task, research, and ExecPlan workflow scaffold.
+- YYYY-MM-DD / agent: Created the completed ExecPlan index.
