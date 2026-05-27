@@ -39,6 +39,7 @@ const opencodeGoModels = {
   "mimo-v2-omni": completionsClient("mimo-v2-omni"),
   "qwen3.6-plus": alibabaClient("qwen3.6-plus"),
   "qwen3.5-plus": alibabaClient("qwen3.5-plus"),
+  "qwen3.7-max": messagesClient("qwen3.7-max"),
 } as const;
 
 type ModelName = `opencode-go:${keyof typeof opencodeGoModels}`;
@@ -224,5 +225,17 @@ export const opencodeGoModelRegistry: {
     supportsToolCalling: true,
     costPerInputToken: 2.6e-7,
     costPerOutputToken: 0.00000156,
+  },
+  "opencode-go:qwen3.7-max": {
+    id: "opencode-go:qwen3.7-max",
+    provider: "opencode-go",
+    contextWindow: 1000000,
+    maxOutputTokens: 65536,
+    defaultTemperature: 1.0,
+    promptFormat: "markdown",
+    supportsReasoning: true,
+    supportsToolCalling: true,
+    costPerInputToken: 0.0000025,
+    costPerOutputToken: 0.0000075,
   },
 };
