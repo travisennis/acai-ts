@@ -2,13 +2,10 @@
   "version": "0.1.0",
   "files": {
     ".agents/.research/README.md": "69343a0adf485ea1b22d4b12d7645e4f3b9d6a642aa19ebaff86bde2ec5ebc1a",
-    ".agents/.research/index.md": "1640fcd6f1c7a16e3be612bcb9751ae729b055da06ff965112eadbaefe4e92a5",
     ".agents/.tasks/README.md": "fd47da7ad3995193a3658d4dabbdf7549a0ccebaa9ae578471119f7e34f70104",
-    ".agents/PLANS.md": "d81b2ad78fed06a236660d3f9b532382f44e0396d0ad642d1f557b7cd45e417b",
-    ".agents/RESEARCH.md": "e78fb7b6406539bdade16360db2231bcebff140d0b222ccc9b0c6a8cf357d78d",
-    ".agents/TASKS.md": "0011343348be1158504c2a335d43b62ea98e73ba9a17379f1e1fbd99f2aa13f9",
-    ".agents/exec-plans/active/index.md": "0d502294506d84824ebf308de5328f2b639c6d4df70192e39e0b1c8c94423f16",
-    ".agents/exec-plans/completed/index.md": "1b88548cb536c9404a33422d52200c812794f45ddc71c9058b95451652636206",
+    ".agents/PLANS.md": "b83a10d1aaebd025ec6fa04f151c3a1beed9051a0a12108f6d33be59186dd622",
+    ".agents/RESEARCH.md": "264593a8e61bc8bbda96e2ceb8f0c29040f13fcc4e4d4d21d99278becc0c89d8",
+    ".agents/TASKS.md": "530c1ac304830aea76fee1f54b3aaa976002f070e371cacf7724940862ed39fb",
     ".agents/skills/deslop/SKILL.md": "a5f1b5491b9b8cddb0fc55dd4bbf57a597ff7952f44588e02f52f88042fd0bc9",
     "docs/adr/README.md": "4bf1e67a7e48953ff4aa94cad4eb55df694667feeb1ebf232a353d27eef4d23b"
   }

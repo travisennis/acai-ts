@@ -14,7 +14,7 @@ Use these subdirectories:
 - `topics/` for synthesized, durable notes about an area of this project or an idea that may feed several tasks or plans.
 - `archived/` for stale or superseded notes kept for historical reference.
 
-The file `.agents/.research/index.md` is the manually maintained map. Update it when adding, moving, archiving, or renaming research files.
+The file `.agents/.research/index.md` is the generated research map. Use it to orient yourself, but always open the source research file before relying on a note.
 
 ## Creating Research
 
@@ -57,4 +57,4 @@ inbox note -> investigation/source/topic synthesis -> task or ExecPlan -> comple
 
 When a note becomes stale, do not silently delete useful context. Mark it `superseded` or move it to `archived/`, and add a short note explaining what replaced it.
 
-When moving files between research categories, update `.agents/.research/index.md` in the same change.
+When adding, moving, archiving, or renaming research files, regenerate the indexes with `ahm index`.

@@ -6,7 +6,7 @@ This document describes the requirements for an execution plan ("ExecPlan"), a d
 
 When authoring an executable specification (ExecPlan), follow PLANS.md _to the letter_. If it is not in your context, refresh your memory by reading the entire PLANS.md file. Be thorough in reading (and re-reading) source material to produce an accurate specification. When creating a spec, start from the skeleton and flesh it out as you do your research.
 
-In this repository, store in-progress checked-in ExecPlans under .agents/exec-plans/active/. When an ExecPlan is complete and its Outcomes & Retrospective section has been fully updated, move it to .agents/exec-plans/completed/ and update the relevant indexes so the active and completed plan lists stay accurate.
+In this repository, store in-progress checked-in ExecPlans under .agents/exec-plans/active/. When an ExecPlan is complete and its Outcomes & Retrospective section has been fully updated, move it to .agents/exec-plans/completed/ and run `ahm index` so the generated active and completed plan lists stay accurate.
 
 When implementing an executable specification (ExecPlan), do not prompt the user for "next steps"; simply proceed to the next milestone. Keep all sections up to date, add or split entries in the list at every stopping point to affirmatively state the progress made and next steps. Resolve ambiguities autonomously, and commit frequently.
 

@@ -114,6 +114,11 @@ Keep task storage consistent with status:
 - When moving a task, keep the same filename so the stable task id is preserved.
 - After moving or editing task metadata, regenerate the indexes.
 
+Before marking a task as Completed, fill in Acceptance Notes when practical so
+the completed record captures the verification and outcome. If you edit only the
+completed task body afterward, no index regeneration is needed. If you edit task
+front matter afterward, rerun `ahm index`.
+
 To mark a task as Completed, prefer `ahm task complete <id>`. It sets the front-matter `status:` to `Completed`, moves the file from `.agents/.tasks/active/<id>.md` to `.agents/.tasks/completed/<id>.md`, and regenerates the indexes in one step. Do not leave Completed tasks in `active/`.
 
 To mark a task as Cancelled, prefer `ahm task cancel <id>`. It sets the front-matter `status:` to `Cancelled`, moves the file from `.agents/.tasks/active/<id>.md` to `.agents/.tasks/cancelled/<id>.md`, and regenerates the indexes in one step. Do not leave Cancelled tasks in `active/`. Before cancelling, note in the task body why it is being cancelled so future readers understand the decision.
