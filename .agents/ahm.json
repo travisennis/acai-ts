@@ -1,8 +1,9 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "files": {
     ".agents/.research/README.md": "69343a0adf485ea1b22d4b12d7645e4f3b9d6a642aa19ebaff86bde2ec5ebc1a",
     ".agents/.tasks/README.md": "fd47da7ad3995193a3658d4dabbdf7549a0ccebaa9ae578471119f7e34f70104",
+    ".agents/DOCS.md": "22a01a3e24f616f3f2b7d1cf7d05ac1b95835ee762e9b0747ffba768b129b212",
     ".agents/PLANS.md": "b83a10d1aaebd025ec6fa04f151c3a1beed9051a0a12108f6d33be59186dd622",
     ".agents/RESEARCH.md": "264593a8e61bc8bbda96e2ceb8f0c29040f13fcc4e4d4d21d99278becc0c89d8",
     ".agents/TASKS.md": "530c1ac304830aea76fee1f54b3aaa976002f070e371cacf7724940862ed39fb",
