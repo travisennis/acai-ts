@@ -16,4 +16,6 @@ To preview which generated indexes would be rewritten, run:
 ahm --dry-run index
 ```
 
+A clean repository immediately after `ahm index` produces no dry-run output.
+
 Do not edit generated indexes by hand. Update task files and regenerate.

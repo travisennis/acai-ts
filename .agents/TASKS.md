@@ -27,6 +27,8 @@ To preview which generated indexes would be rewritten, run:
 ahm --dry-run index
 ```
 
+A clean repository immediately after `ahm index` produces no dry-run output.
+
 ## Choosing Work
 
 If the user names a task id or title, work from that task even if another task is higher in the queue. If the user asks for the next task, choose from `.agents/.tasks/index.md` using these rules:
