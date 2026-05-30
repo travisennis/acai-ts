@@ -2,6 +2,20 @@
 
 ## Development Environment Setup
 
+This project requires **Node.js ≥24** (pinned in `.node-version` — `fnm`, `nvm`, and agents pick this up automatically).
+
+### Quick start (single command)
+
+```bash
+git clone https://github.com/travisennis/acai-ts.git
+cd acai-ts
+npm run setup
+```
+
+`npm run setup` checks prerequisites (Node version, Git, Ripgrep), installs dependencies, and creates the `~/.acai/` data directory.
+
+### Manual walkthrough
+
 1. **Clone and install dependencies:**
    ```bash
    git clone https://github.com/travisennis/acai-ts.git
@@ -15,19 +29,20 @@
    # Add your API keys (see docs/configuration.md)
    ```
 
-3. **Development workflow:**
-   ```bash
-   # Run in development mode (uses .env file)
-   npm run dev
+### Development workflow
 
-   # Build and test
-   npm run build
-   npm test
+```bash
+# Run in development mode (uses .env file)
+npm run dev
 
-   # Code quality
-   npm run lint
-   npm run format
-   ```
+# Build and test
+npm run build
+npm test
+
+# Code quality
+npm run lint
+npm run format
+```
 
 ## Available NPM Scripts
 

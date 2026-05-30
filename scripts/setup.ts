@@ -5,12 +5,12 @@ import { join } from 'node:path';
 
 const CHECKS = [
   {
-    name: 'Node.js ≥20',
+    name: 'Node.js ≥24',
     cmd: 'node -v',
     validate: (v: string) => {
       const version = parseInt(v.slice(1));
-      if (version < 20) {
-        throw new Error(`Node.js ${version} is below minimum version 20`);
+      if (version < 24) {
+        throw new Error(`Node.js ${version} is below minimum version 24`);
       }
       return true;
     },

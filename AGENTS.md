@@ -2,10 +2,11 @@
 
 ## Project Overview
 
-This app, acai-ts, is an AI-assistant CLI tool built with TypeScript. It is an agent hardness similar to Claude Code, opencode, and Codex. The project uses a modular architecture with source code in `./source`, organized into commands, tool (agent/llm callable), models, and UI components. Tests are in `/test`. Tech stack: Node.js ≥20, TypeScript (ESNext), Biome for linting/formatting, and AI SDK providers.
+This app, acai-ts, is an AI-assistant CLI tool built with TypeScript. It is an agent hardness similar to Claude Code, opencode, and Codex. The project uses a modular architecture with source code in `./source`, organized into commands, tool (agent/llm callable), models, and UI components. Tests are in `/test`. Tech stack: Node.js ≥24, TypeScript (ESNext), Biome for linting/formatting, and AI SDK providers.
 
 ## Build & Development Commands
 
+- **Bootstrap:** `npm run setup` (or `npm run bootstrap`) — checks prerequisites, installs deps, creates `~/.acai/`
 - **Build:** `npm run build`
 - **Typecheck:** `npm run typecheck`
 - **Lint:** `npm run lint`

@@ -51,6 +51,7 @@
     "knip:prod": "knip --production",
     "fallow": "fallow --format json",
     "setup": "node scripts/setup.ts",
+    "bootstrap": "npm run setup",
     "update": "npx npm-check-updates --interactive --format group",
     "cpd": "npx jscpd ./source",
     "typecheck": "tsc --noEmit --pretty -p tsconfig.json",
@@ -101,7 +102,7 @@
     "typescript": "^6.0.3"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "publishConfig": {
     "access": "public"

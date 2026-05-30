@@ -19,7 +19,7 @@ Acai is an AI-driven command-line tool that assists software developers with cod
 
 ## Prerequisites
 
-- Node.js 20 or higher
+- Node.js 24 or higher
 - Git
 - [Ripgrep](https://github.com/BurntSushi/ripgrep) (`rg`) - Fast file content searching
 - [GitHub CLI](https://cli.github.com/) (`gh`) - Git operations and repository management
