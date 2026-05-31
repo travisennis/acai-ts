@@ -4,10 +4,10 @@
     ".agents/.research/README.md": "69343a0adf485ea1b22d4b12d7645e4f3b9d6a642aa19ebaff86bde2ec5ebc1a",
     ".agents/.tasks/README.md": "843763d4acc87ea48d0593c899b6fd0d5179fea2dc4303e0e886996316284979",
     ".agents/DOCS.md": "22a01a3e24f616f3f2b7d1cf7d05ac1b95835ee762e9b0747ffba768b129b212",
-    ".agents/PLANS.md": "b83a10d1aaebd025ec6fa04f151c3a1beed9051a0a12108f6d33be59186dd622",
+    ".agents/PLANS.md": "aa8e9175f96970bc5663e7312495fe7e630c95353835b818abd53c9d15e670d9",
     ".agents/RESEARCH.md": "264593a8e61bc8bbda96e2ceb8f0c29040f13fcc4e4d4d21d99278becc0c89d8",
-    ".agents/TASKS.md": "330aad21318a5847ed85cc7c48195446d2c5032c049f20328cb48cbdf05d890d",
-    ".agents/skills/deslop/SKILL.md": "a5f1b5491b9b8cddb0fc55dd4bbf57a597ff7952f44588e02f52f88042fd0bc9",
+    ".agents/TASKS.md": "881af43bcdecd5ebc928ee36fb4025ddb7fe70430fc4cdb4e211ce50b6c32505",
+    ".agents/skills/deslop/SKILL.md": "b111f728823e33f5e385fa54760d7a66f8803c05f68c797d21e8387b264fc85f",
     "docs/adr/README.md": "4bf1e67a7e48953ff4aa94cad4eb55df694667feeb1ebf232a353d27eef4d23b"
   }
 }

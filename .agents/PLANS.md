@@ -8,6 +8,8 @@ When authoring an executable specification (ExecPlan), follow PLANS.md _to the l
 
 In this repository, store in-progress checked-in ExecPlans under .agents/exec-plans/active/. When an ExecPlan is complete and its Outcomes & Retrospective section has been fully updated, move it to .agents/exec-plans/completed/ and run `ahm index` so the generated active and completed plan lists stay accurate.
 
+When an ExecPlan completes a task, use this order so task metadata and generated indexes stay coherent: fill the task Acceptance Notes, update the ExecPlan Outcomes & Retrospective, move the ExecPlan to .agents/exec-plans/completed/, update the task `exec_plan` field to the completed path, then run `ahm task complete <id>`. The task completion command moves the task file and regenerates indexes, so a separate `ahm index` is only needed if you edit task or ExecPlan metadata afterward.
+
 When implementing an executable specification (ExecPlan), do not prompt the user for "next steps"; simply proceed to the next milestone. Keep all sections up to date, add or split entries in the list at every stopping point to affirmatively state the progress made and next steps. Resolve ambiguities autonomously, and commit frequently.
 
 When discussing an executable specification (ExecPlan), record decisions in a log in the spec for posterity; it should be unambiguously clear why any change to the specification was made. ExecPlans are living documents, and it should always be possible to restart from _only_ the ExecPlan and no other work.

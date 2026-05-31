@@ -21,7 +21,13 @@ Pick an effort level from the diff before reading anything else:
 
 ```bash
 git diff --stat
+git status --short
 ```
+
+Include untracked new files from `git status --short` (or
+`git ls-files --others --exclude-standard`) when choosing the scale. A split
+into new files can look deceptively small in `git diff --stat` until those
+files are staged.
 
 | Change size                                     | Required context           | Review passes        | Compliance note |
 | ----------------------------------------------- | -------------------------- | -------------------- | --------------- |
@@ -183,7 +189,8 @@ design-doc surface.
 
 ## Steps
 
-1. Run `git diff --stat`. Pick a scale from the table.
+1. Run `git diff --stat` and `git status --short`. Pick a scale from the
+   table, counting untracked new files.
 2. Read only the required-context items for that scale.
 3. Run the review passes for that scale, with a narrow evidence check
    between them.

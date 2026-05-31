@@ -70,13 +70,13 @@ When writing complex features or significant refactors, use an ExecPlan (as desc
 
 ## Agent Workflow
 
-- When asked to create, choose, update, or work on a task, first read `.agents/TASKS.md`, then use `.agents/.tasks/index.md` as the task queue and open the specific task file in `.agents/.tasks/active/` (or `.agents/.tasks/completed/`) before acting.
+- For the first task in a session, read `.agents/TASKS.md`, then use `.agents/.tasks/index.md` as the generated task queue and open the specific task file in `.agents/.tasks/active/` (or `.agents/.tasks/completed/`) before acting. For later tasks in the same session, reread only the task index and specific task file unless `.agents/TASKS.md` changed or the task changes task workflow semantics.
 - Use task labels to filter work by type, area, and risk when the user asks for focused work.
-- When asked to create, update, organize, or use research, first read `.agents/RESEARCH.md`, then use `.agents/.research/index.md` as the research map and open the relevant research file before acting.
-- When auditing or updating documentation, first read `.agents/DOCS.md` and follow its workflow guidelines.
+- Before creating, updating, organizing, or using research, read `.agents/RESEARCH.md`. Use `.agents/.research/index.md` as the research map.
+- Before auditing or updating documentation, read `.agents/DOCS.md`. Prefer the target repository's existing documentation conventions over adding new structures.
 - `Effort: L` and `Effort: XL` tasks require an ExecPlan before implementation. Create or update plans under `.agents/exec-plans/active/` and keep `.agents/exec-plans/active/index.md` current.
 - Use `ahm task complete <id>` and `ahm task cancel <id>` for task state transitions that move files between task buckets. Do not manually move task files.
-- Do not edit generated task indexes (`.agents/.tasks/index.md`, `.agents/.tasks/active/index.md`, `.agents/.tasks/completed/index.md`) by hand. Update task files (and their front matter) and run `ahm index` to regenerate. Use `ahm --dry-run index` to verify they are current without rewriting.
+- Do not edit generated indexes by hand. Update source task, research, or ExecPlan files and run `ahm index` to regenerate. Do not run `ahm index` after `ahm task start`, `ahm task complete`, or `ahm task cancel` unless you edit metadata by hand afterward; those commands already regenerate indexes. Use `ahm --dry-run index` to verify they are current without rewriting.
 - Do not commit or push code unless explicitly asked to.
 
 ## Important Notes
@@ -90,3 +90,4 @@ When writing complex features or significant refactors, use an ExecPlan (as desc
 - Whenever adding or removing files from the project, always update ./ARCHITECTURE.md
 - Whenever adding or removing files from the project or adding or removing features from the project, update ./README.md if needed
 - When `npm install` or typecheck fails due to missing type definitions or stale `node_modules`, delete `node_modules` and reinstall with `npm install --include=dev --ignore-scripts`
+- When moving implementation between files or packages, update repository code maps and implementation-location references even if user-facing behavior is unchanged.

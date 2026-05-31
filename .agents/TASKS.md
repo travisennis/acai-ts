@@ -1,6 +1,6 @@
 # Task Workflow
 
-This document explains how tasks are handled in this repository. When you are asked to create, choose, update, or work on a task, read this file first, then use `.agents/.tasks/index.md` as the task queue and open the relevant task file under `.agents/.tasks/active/`, `.agents/.tasks/completed/`, or `.agents/.tasks/cancelled/`.
+This document explains how tasks are handled in this repository. For the first task you work in a session, read this file, then use `.agents/.tasks/index.md` as the task queue and open the relevant task file under `.agents/.tasks/active/`, `.agents/.tasks/completed/`, or `.agents/.tasks/cancelled/`. For later tasks in the same session, reread only `.agents/.tasks/index.md` and the specific task file unless this file changed or the task changes task workflow semantics.
 
 ## Task Storage
 
@@ -15,7 +15,7 @@ The generated indexes are:
 - `.agents/.tasks/completed/index.md` for historical lookup of completed tasks.
 - `.agents/.tasks/cancelled/index.md` for historical lookup of cancelled tasks.
 
-Do not edit generated indexes by hand. After changing task metadata, moving tasks between `active/`, `completed/`, and `cancelled/`, or creating tasks, run:
+Do not edit generated indexes by hand. After changing task metadata by hand, moving tasks between `active/`, `completed/`, and `cancelled/` by hand, or creating tasks by hand, run:
 
 ```bash
 ahm index
@@ -28,6 +28,8 @@ ahm --dry-run index
 ```
 
 A clean repository immediately after `ahm index` produces no dry-run output.
+
+Do not run `ahm index` after `ahm task start <id>`, `ahm task complete <id>`, or `ahm task cancel <id>` unless you edited task or ExecPlan metadata by hand afterward. Those commands already regenerate task, research, and ExecPlan indexes.
 
 ## Choosing Work
 
@@ -106,7 +108,7 @@ Use this standard status set:
 
 ## Updating Tasks
 
-Tasks are working records. When you complete a task, discover it is blocked, change its priority, add or finish dependencies, or split it into subtasks, update the task file front matter and regenerate indexes with `ahm index`.
+Tasks are working records. When you complete a task, discover it is blocked, change its priority, add or finish dependencies, or split it into subtasks, update the task file front matter and regenerate indexes with `ahm index`. If you use an `ahm task ...` command for the change, do not run a separate `ahm index` unless you make more metadata edits afterward.
 
 Keep task storage consistent with status:
 
@@ -138,6 +140,14 @@ Before implementing any task, check its labels, effort, and risk.
 - Update the task file to point to the ExecPlan and record whether the task is blocked on, tracked by, or completed by that plan.
 - Update `.agents/exec-plans/active/index.md` when creating, completing, or moving an ExecPlan.
 - For `Effort: S` or `Effort: M`, an ExecPlan is optional unless the task is a significant refactor, cross-cutting behavior change, or has substantial unknowns.
+
+When completing a task with an ExecPlan, use this order:
+
+1. Fill in task Acceptance Notes.
+2. Update the ExecPlan Outcomes & Retrospective.
+3. Move the ExecPlan from `.agents/exec-plans/active/` to `.agents/exec-plans/completed/`.
+4. Update the task `exec_plan` field to the completed path.
+5. Run `ahm task complete <id>` so the task moves to `.agents/.tasks/completed/` and indexes regenerate.
 
 Tasks that introduce or change an architectural decision must have an Architecture Decision Record before implementation. ADRs live under `docs/adr/`; use `docs/adr/README.md` for the numbering, naming, and template rules.
 
