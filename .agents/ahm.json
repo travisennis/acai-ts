@@ -7,8 +7,9 @@
     ".agents/DOCS.md": "22a01a3e24f616f3f2b7d1cf7d05ac1b95835ee762e9b0747ffba768b129b212",
     ".agents/PLANS.md": "aa8e9175f96970bc5663e7312495fe7e630c95353835b818abd53c9d15e670d9",
     ".agents/RESEARCH.md": "264593a8e61bc8bbda96e2ceb8f0c29040f13fcc4e4d4d21d99278becc0c89d8",
-    ".agents/TASKS.md": "5a4e11322438c502f47fcc4db20bd18af3b510a0e3baf7416876dbdc8ee2d37a",
+    ".agents/TASKS.md": "85bcce4fae4d985124c63618e359d89f6ac034d7d8ece852e3ddf076409e4f26",
     ".agents/skills/deslop/SKILL.md": "b111f728823e33f5e385fa54760d7a66f8803c05f68c797d21e8387b264fc85f",
+    ".agents/skills/grooming-backlog/SKILL.md": "15c818370758498fc57f2b2bcc34b587130d4b73004e4568620fe122f5d0f55a",
     "docs/adr/README.md": "4bf1e67a7e48953ff4aa94cad4eb55df694667feeb1ebf232a353d27eef4d23b"
   }
 }

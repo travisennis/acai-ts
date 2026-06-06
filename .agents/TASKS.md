@@ -54,7 +54,7 @@ Available flags include:
 
 - `--priority <value>`, `-p <value>` — set priority (default P2)
 - `--effort <value>` — set effort (default S)
-- `--labels <value>` — set labels (default `type:task, area:cli`)
+- `--labels <value>` — set labels (default `type:task, area:unknown`)
 - `--status <value>` — set initial status (default Open)
 - `--description <text>`, `-d <text>` — set summary text
 - `--body-file <path>` — read the full Markdown body from a file, or `-` for stdin
@@ -97,7 +97,7 @@ title: Short Imperative Task Title
 status: Open
 priority: P2
 effort: S
-labels: type:task, area:cli
+labels: type:task, area:unknown
 exec_plan: -
 depends_on: -
 ---
