@@ -29,7 +29,7 @@ ahm --dry-run index
 
 A clean repository immediately after `ahm index` produces no dry-run output.
 
-Do not run `ahm index` after `ahm task start <id>`, `ahm task complete <id>`, or `ahm task cancel <id>` unless you edited task or ExecPlan metadata by hand afterward. Those commands already regenerate task, research, and ExecPlan indexes.
+Do not run `ahm index` after `ahm task create`, `ahm task start <id>`, `ahm task complete <id>`, `ahm task cancel <id>`, `ahm task accept <id>`, or `ahm task reopen <id>` unless you edited task or ExecPlan metadata by hand afterward. Those commands already regenerate task, research, and ExecPlan indexes.
 
 ## Choosing Work
 
@@ -45,11 +45,42 @@ Before editing code, read the full task file and inspect the relevant source fil
 
 ## Creating Tasks
 
-Create new tasks in `.agents/.tasks/active/` with the next available three-digit id across `active/`, `completed/`, and `cancelled/`. For example, if the highest numbered task is `109.md`, the next unrelated task is `110.md`. Use letter suffixes only for subtasks that belong to a parent tracker, such as `110a.md`.
+Use `ahm task create <title> [flags]` to create a new task. This is the
+preferred path because it automatically allocates the next available ID, writes
+front matter and body, places the file in `.agents/.tasks/active/`, and
+regenerates all task indexes in one step.
 
-A new task should include enough context for another agent to work it later without the original conversation. Use this shape unless the existing task family clearly uses a narrower format:
+Available flags include:
 
-- Front matter with id, title, status, priority, effort, ExecPlan, and dependencies.
+- `--priority <value>`, `-p <value>` — set priority (default P2)
+- `--effort <value>` — set effort (default S)
+- `--labels <value>` — set labels (default `type:task, area:cli`)
+- `--status <value>` — set initial status (default Open)
+- `--description <text>`, `-d <text>` — set summary text
+- `--body-file <path>` — read the full Markdown body from a file, or `-` for stdin
+
+When creating a complete task record with sections such as Problem, Relevant
+Files, Fix Direction, and Acceptance Notes, use `--body-file`. This lets `ahm`
+own ID allocation, front matter, placement, and index regeneration while you
+supply the full body. See `docs/cli.md` for details and examples.
+
+`ahm task create` regenerates task, research, and ExecPlan indexes
+automatically, so no separate `ahm index` is needed after creation.
+
+If you cannot run `ahm` or need full control over the body, create tasks by
+hand:
+
+Create new tasks in `.agents/.tasks/active/` with the next available three-digit
+id across `active/`, `completed/`, and `cancelled/`. For example, if the highest
+numbered task is `109.md`, the next unrelated task is `110.md`. Use letter
+suffixes only for subtasks that belong to a parent tracker, such as `110a.md`.
+
+A new task should include enough context for another agent to work it later
+without the original conversation. Use this shape unless the existing task
+family clearly uses a narrower format:
+
+- Front matter with id, title, status, priority, effort, ExecPlan, and
+  dependencies.
 - Title as the first heading.
 - Created date when useful.
 - Summary or problem statement.
@@ -63,7 +94,7 @@ Use this front matter shape so the indexes can be generated:
 ---
 id: 136
 title: Short Imperative Task Title
-status: Pending
+status: Open
 priority: P2
 effort: S
 labels: type:task, area:cli
@@ -119,9 +150,13 @@ Keep task storage consistent with status:
 - After moving or editing task metadata, regenerate the indexes.
 
 Before marking a task as Completed, fill in Acceptance Notes when practical so
-the completed record captures the verification and outcome. If you edit only the
-completed task body afterward, no index regeneration is needed. If you edit task
-front matter afterward, rerun `ahm index`.
+the completed record captures the verification and outcome. `ahm task complete`
+warns when Acceptance Notes are missing, still contain the seeded `- [ ] TODO`
+placeholder, or include unchecked checklist items. Repositories can set
+`"strict_acceptance": true` in `.agents/ahm.json` to make those warnings block
+completion unless `--force` is used. If you edit only the completed task body
+afterward, no index regeneration is needed. If you edit task front matter
+afterward, rerun `ahm index`.
 
 To mark a task as Completed, prefer `ahm task complete <id>`. It sets the front-matter `status:` to `Completed`, moves the file from `.agents/.tasks/active/<id>.md` to `.agents/.tasks/completed/<id>.md`, and regenerates the indexes in one step. Do not leave Completed tasks in `active/`.
 
