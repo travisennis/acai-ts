@@ -205,7 +205,7 @@ function parseTextSchemaParameter(
       description: optMatch
         ? optMatch[2] || `Parameter ${paramName}`
         : afterType || `Parameter ${paramName}`,
-      required: !optMatch || optMatch[1] !== "optional",
+      required: optMatch?.[1] !== "optional",
     };
   }
 
@@ -216,7 +216,7 @@ function parseTextSchemaParameter(
     description: optMatch
       ? optMatch[2] || rest
       : rest || `Parameter ${paramName}`,
-    required: !optMatch || optMatch[1] !== "optional",
+    required: optMatch?.[1] !== "optional",
   };
 }
 
