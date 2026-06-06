@@ -60,7 +60,6 @@
     "lint:length": "find source -name '*.ts' | xargs -I{} awk 'END{if(NR>500)print FILENAME\": \"NR\" lines\"}' {}"
   },
   "dependencies": {
-    "@ai-sdk/alibaba": "^1.0.25",
     "@ai-sdk/anthropic": "^3.0.81",
     "@ai-sdk/deepseek": "^2.0.35",
     "@ai-sdk/devtools": "^0.0.18",
