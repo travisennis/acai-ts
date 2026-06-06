@@ -13,11 +13,14 @@ function testWithEnv(
   const saved = { ...process.env };
 
   try {
-    // Apply custom env
+    // Clear all env vars to prevent real environment from leaking in
+    for (const key of Object.keys(process.env)) {
+      delete process.env[key];
+    }
+
+    // Apply only the test-specific env vars
     for (const [k, v] of Object.entries(env)) {
-      if (v === undefined) {
-        delete process.env[k];
-      } else {
+      if (v !== undefined) {
         process.env[k] = v;
       }
     }
@@ -25,10 +28,8 @@ function testWithEnv(
     return createSupportsHyperlinks(stream);
   } finally {
     // Restore original env
-    for (const k of Object.keys(process.env)) {
-      if (!(k in saved)) {
-        delete process.env[k];
-      }
+    for (const key of Object.keys(process.env)) {
+      delete process.env[key];
     }
     for (const [k, v] of Object.entries(saved)) {
       process.env[k] = v ?? "";
@@ -120,7 +121,11 @@ describe("supports-hyperlinks", () => {
     it("WezTerm version >= 200200620 returns true", () => {
       const result = testWithEnv(
         { isTty: true },
-        { TERM_PROGRAM: "WezTerm", TERM_PROGRAM_VERSION: "20200620" },
+        {
+          TERM_PROGRAM: "WezTerm",
+          TERM_PROGRAM_VERSION: "20200620",
+          COLORTERM: "truecolor",
+        },
       );
       assert.strictEqual(result, true);
     });
@@ -140,6 +145,7 @@ describe("supports-hyperlinks", () => {
           TERM_PROGRAM: "vscode",
           TERM_PROGRAM_VERSION: "1.70.0",
           CURSOR_TRACE_ID: "abc",
+          COLORTERM: "truecolor",
         },
       );
       assert.strictEqual(result, true);
@@ -148,7 +154,11 @@ describe("supports-hyperlinks", () => {
     it("vscode version >= 1.72 returns true", () => {
       const result = testWithEnv(
         { isTty: true },
-        { TERM_PROGRAM: "vscode", TERM_PROGRAM_VERSION: "1.72.0" },
+        {
+          TERM_PROGRAM: "vscode",
+          TERM_PROGRAM_VERSION: "1.72.0",
+          COLORTERM: "truecolor",
+        },
       );
       assert.strictEqual(result, true);
     });
@@ -164,7 +174,11 @@ describe("supports-hyperlinks", () => {
     it("ghostty returns true", () => {
       const result = testWithEnv(
         { isTty: true },
-        { TERM_PROGRAM: "ghostty", TERM_PROGRAM_VERSION: "1.0.0" },
+        {
+          TERM_PROGRAM: "ghostty",
+          TERM_PROGRAM_VERSION: "1.0.0",
+          COLORTERM: "truecolor",
+        },
       );
       assert.strictEqual(result, true);
     });
