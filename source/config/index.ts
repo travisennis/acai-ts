@@ -165,7 +165,7 @@ export class ConfigManager {
   private async _readConfig(configPath: string): Promise<Partial<Config>> {
     try {
       const data = await fs.readFile(configPath, "utf8");
-      return jsonParser(ConfigSchema).parse(data);
+      return JSON.parse(data) as Partial<Config>;
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code;
       if (code === "ENOENT" || code === "EPERM" || code === "EACCES") {

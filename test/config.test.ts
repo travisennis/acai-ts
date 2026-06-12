@@ -170,6 +170,55 @@ test("getConfig merges app and project configs with project precedence", async (
   });
 });
 
+test("getConfig does not clobber app-level keys with project-absent defaults", async () => {
+  await withTempDir(async (tmpHome) => {
+    const oldHome = process.env["HOME"];
+    const oldCwd = process.cwd();
+    try {
+      process.env["HOME"] = tmpHome;
+      const projectDir = path.join(tmpHome, "proj");
+      await fs.mkdir(projectDir, { recursive: true });
+      process.chdir(projectDir);
+
+      // app config sets a non-default value
+      const appCfgDir = path.join(tmpHome, ".acai");
+      await fs.mkdir(appCfgDir, { recursive: true });
+      const appCfg = {
+        tools: { maxTokens: 50000 },
+        loop: { maxIterations: 500 },
+      };
+      await fs.writeFile(
+        path.join(appCfgDir, "acai.json"),
+        JSON.stringify(appCfg),
+        "utf8",
+      );
+
+      // project config sets a completely different key (notify) — does not mention tools or loop
+      const projCfgDir = path.join(projectDir, ".acai");
+      await fs.mkdir(projCfgDir, { recursive: true });
+      const projCfg = { notify: false };
+      await fs.writeFile(
+        path.join(projCfgDir, "acai.json"),
+        JSON.stringify(projCfg),
+        "utf8",
+      );
+
+      const mgr = new ConfigManager();
+      const merged = await mgr.getConfig();
+
+      // app-level values must survive — project config never set these
+      assert.equal(merged.tools.maxTokens, 50000);
+      assert.equal(merged.loop.maxIterations, 500);
+
+      // project-level value must still apply
+      assert.equal(merged.notify, false);
+    } finally {
+      if (oldHome !== undefined) process.env["HOME"] = oldHome;
+      process.chdir(oldCwd);
+    }
+  });
+});
+
 test("getConfig parses env field from config", async () => {
   await withTempDir(async (tmpHome) => {
     const oldHome = process.env["HOME"];
