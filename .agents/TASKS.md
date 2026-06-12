@@ -160,7 +160,7 @@ afterward, rerun `ahm index`.
 
 To mark a task as Completed, prefer `ahm task complete <id>`. It sets the front-matter `status:` to `Completed`, moves the file from `.agents/.tasks/active/<id>.md` to `.agents/.tasks/completed/<id>.md`, and regenerates the indexes in one step. Do not leave Completed tasks in `active/`.
 
-To mark a task as Cancelled, prefer `ahm task cancel <id>`. It sets the front-matter `status:` to `Cancelled`, moves the file from `.agents/.tasks/active/<id>.md` to `.agents/.tasks/cancelled/<id>.md`, and regenerates the indexes in one step. Do not leave Cancelled tasks in `active/`. Before cancelling, note in the task body why it is being cancelled so future readers understand the decision.
+To mark a task as Cancelled, use `ahm task cancel <id> --reason <text>`. It requires a non-empty reason, stores that reason in a `## Cancellation Reason` body section, sets the front-matter `status:` to `Cancelled`, moves the file from `.agents/.tasks/active/<id>.md` to `.agents/.tasks/cancelled/<id>.md`, and regenerates the indexes in one step. The global `--force` flag does not bypass the reason requirement. Do not leave Cancelled tasks in `active/`.
 
 If a generated index is stale, do not patch the index directly. Fix the task file metadata or location, then rerun `ahm index`. Always go through `ahm`; do not invoke legacy scaffold scripts directly.
 

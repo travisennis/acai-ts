@@ -91,7 +91,7 @@ ls .agents/.tasks/active/
 - Remove stale `TODO` placeholders from Acceptance Notes when the question
   has been answered.
 - If a task is superseded, obsolete, or no longer relevant, cancel it with
-  `ahm task cancel <id>` and note why.
+  `ahm task cancel <id> --reason <text>`.
 
 ### 4. Flag what needs human input
 
