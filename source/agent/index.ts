@@ -344,6 +344,7 @@ export class Agent {
         };
 
         // continue iterations
+        consecutiveErrors = 0;
         iter += 1;
       } catch (error) {
         consecutiveErrors += 1;
