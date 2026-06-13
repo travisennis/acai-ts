@@ -301,6 +301,36 @@ describe("command-protection", () => {
         assert.strictEqual(result.blocked, true);
       });
 
+      it("blocks rm -rf with mixed temp and non-temp paths", () => {
+        const result = detectDestructiveCommand("rm -rf /tmp/x /home/y");
+        assert.strictEqual(result.blocked, true);
+      });
+
+      it("blocks rm -rf with temp path traversal", () => {
+        const result = detectDestructiveCommand("rm -rf /tmp/../etc");
+        assert.strictEqual(result.blocked, true);
+      });
+
+      it("blocks rm -fr /", () => {
+        const result = detectDestructiveCommand("rm -fr /");
+        assert.strictEqual(result.blocked, true);
+      });
+
+      it("blocks rm -rfv /home", () => {
+        const result = detectDestructiveCommand("rm -rfv /home");
+        assert.strictEqual(result.blocked, true);
+      });
+
+      it("blocks rm -r -f /", () => {
+        const result = detectDestructiveCommand("rm -r -f /");
+        assert.strictEqual(result.blocked, true);
+      });
+
+      it("blocks rm --recursive --force /", () => {
+        const result = detectDestructiveCommand("rm --recursive --force /");
+        assert.strictEqual(result.blocked, true);
+      });
+
       it("allows rm -rf /tmp", () => {
         const result = detectDestructiveCommand("rm -rf /tmp");
         assert.strictEqual(result.blocked, false);
@@ -318,6 +348,11 @@ describe("command-protection", () => {
 
       it("allows rm -rf /tmp/my-test-*", () => {
         const result = detectDestructiveCommand("rm -rf /tmp/my-test-*");
+        assert.strictEqual(result.blocked, false);
+      });
+
+      it("allows rm -rf with multiple temp-only paths", () => {
+        const result = detectDestructiveCommand("rm -rf /tmp/x /var/tmp/y");
         assert.strictEqual(result.blocked, false);
       });
 
@@ -384,6 +419,11 @@ describe("command-protection", () => {
 
         it("blocks bash -c with git clean -f", () => {
           const result = detectDestructiveCommand('bash -c "git clean -f"');
+          assert.strictEqual(result.blocked, true);
+        });
+
+        it("blocks bash -c with rm -fr /", () => {
+          const result = detectDestructiveCommand('bash -c "rm -fr /"');
           assert.strictEqual(result.blocked, true);
         });
 
@@ -602,6 +642,13 @@ describe("command-protection", () => {
 
       it("blocks rm -rf /var in heredoc", () => {
         const result = detectDestructiveCommand("bash <<EOF\nrm -rf /var\nEOF");
+        assert.strictEqual(result.blocked, true);
+      });
+
+      it("blocks rm long recursive force flags in heredoc", () => {
+        const result = detectDestructiveCommand(
+          "bash <<EOF\nrm --recursive --force /\nEOF",
+        );
         assert.strictEqual(result.blocked, true);
       });
     });

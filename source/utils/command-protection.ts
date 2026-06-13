@@ -2,6 +2,7 @@
  * Command Protection Module
  * Detects and blocks destructive commands that could cause data loss
  */
+import path from "node:path";
 
 export interface BlockedCommandResult {
   blocked: true;
@@ -12,6 +13,24 @@ export interface BlockedCommandResult {
 
 interface SafeCommandResult {
   blocked: false;
+}
+
+interface ShellToken {
+  value: string;
+  separator: boolean;
+}
+
+interface ShellTokenizerState {
+  tokens: ShellToken[];
+  current: string;
+  inSingleQuote: boolean;
+  inDoubleQuote: boolean;
+  escaped: boolean;
+}
+
+interface RmFlagState {
+  recursive: boolean;
+  force: boolean;
 }
 
 /**
@@ -254,59 +273,210 @@ function detectDestructiveGitCommands(command: string): CommandSafetyResult {
  * Detect dangerous rm -rf commands outside of temporary directories
  */
 function detectDangerousRmRf(command: string): CommandSafetyResult {
-  // Check for rm -rf pattern (case insensitive)
-  const rmMatch = command.match(/rm\s+-rf\s+/i);
-  if (!rmMatch || rmMatch.index === undefined) {
-    return { blocked: false };
+  const tokens = tokenizeShellCommand(command);
+
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (!token || token.separator || token.value !== "rm") continue;
+
+    const rmArgs = collectCommandArguments(tokens, i + 1);
+    if (!isRecursiveForceRm(rmArgs)) continue;
+
+    const paths = getRmPathArguments(rmArgs);
+    if (paths.length === 0) continue;
+    if (paths.every(isTempDirectoryOnly)) continue;
+
+    return {
+      blocked: true,
+      reason:
+        "rm -rf outside of temporary directories can cause permanent data loss",
+      command,
+      tip: "Only rm -rf is allowed for /tmp/*, /var/tmp/*, or $TMPDIR/* to clean temporary files.",
+    };
   }
 
-  // Extract the path argument
-  const matchIndex = rmMatch.index + rmMatch[0].length;
-  const afterRmRf = command.substring(matchIndex).trim();
+  return { blocked: false };
+}
 
-  // If no path specified, don't block (will fail naturally)
-  if (!afterRmRf) {
-    return { blocked: false };
+function tokenizeShellCommand(command: string): ShellToken[] {
+  const state: ShellTokenizerState = {
+    tokens: [],
+    current: "",
+    inSingleQuote: false,
+    inDoubleQuote: false,
+    escaped: false,
+  };
+
+  for (let i = 0; i < command.length; i++) {
+    consumeShellChar(state, command[i] ?? "");
   }
 
-  // Get temporary directory paths
-  const tempDirs = ["/tmp", "/var/tmp", process.env["TMPDIR"] || "/tmp"];
+  pushShellToken(state);
+  return state.tokens;
+}
 
-  // Check if the path is explicitly targeting only temp directories
-  // This handles: rm -rf /tmp/*, rm -rf /var/tmp/*, rm -rf $TMPDIR/*, and any subpaths
-  const isTempDirectoryOnly = tempDirs.some((tempDir) => {
-    // Check if path starts with temp directory (e.g., /tmp/foo, /tmp/*)
-    if (afterRmRf === tempDir || afterRmRf.startsWith(`${tempDir}/`)) {
-      return true;
+function consumeShellChar(state: ShellTokenizerState, char: string): void {
+  if (state.escaped) {
+    state.current += char;
+    state.escaped = false;
+    return;
+  }
+
+  if (char === "\\" && !state.inSingleQuote) {
+    state.escaped = true;
+    return;
+  }
+
+  if (char === "'" && !state.inDoubleQuote) {
+    state.inSingleQuote = !state.inSingleQuote;
+    return;
+  }
+
+  if (char === '"' && !state.inSingleQuote) {
+    state.inDoubleQuote = !state.inDoubleQuote;
+    return;
+  }
+
+  if (isTokenBoundary(state, char)) {
+    pushShellToken(state);
+    if (char === "\n" || isShellSeparator(char)) {
+      state.tokens.push({ value: char, separator: true });
     }
-    return false;
-  });
+    return;
+  }
 
-  // Also check for $TMPDIR/* pattern (literal strings)
-  // Using string concatenation to avoid lint warnings about template-like strings
+  state.current += char;
+}
+
+function isTokenBoundary(state: ShellTokenizerState, char: string): boolean {
+  return (
+    !state.inSingleQuote &&
+    !state.inDoubleQuote &&
+    (/\s/.test(char) || isShellSeparator(char))
+  );
+}
+
+function pushShellToken(state: ShellTokenizerState): void {
+  if (!state.current) return;
+  state.tokens.push({ value: state.current, separator: false });
+  state.current = "";
+}
+
+function isShellSeparator(char: string): boolean {
+  return char === ";" || char === "|" || char === "&";
+}
+
+function collectCommandArguments(
+  tokens: ShellToken[],
+  startIndex: number,
+): string[] {
+  const args: string[] = [];
+
+  for (let i = startIndex; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (!token || token.separator) break;
+    args.push(token.value);
+  }
+
+  return args;
+}
+
+function isRecursiveForceRm(args: string[]): boolean {
+  const flags: RmFlagState = { recursive: false, force: false };
+
+  for (const arg of args) {
+    if (arg === "--") break;
+    updateRmFlagState(flags, arg);
+  }
+
+  return flags.recursive && flags.force;
+}
+
+function updateRmFlagState(flags: RmFlagState, arg: string): void {
+  if (arg === "--recursive") {
+    flags.recursive = true;
+    return;
+  }
+
+  if (arg === "--force") {
+    flags.force = true;
+    return;
+  }
+
+  if (!/^-[^-]+$/.test(arg)) return;
+  if (arg.includes("r") || arg.includes("R")) flags.recursive = true;
+  if (arg.includes("f")) flags.force = true;
+}
+
+function getRmPathArguments(args: string[]): string[] {
+  const paths: string[] = [];
+  let parsingOptions = true;
+
+  for (const arg of args) {
+    if (parsingOptions && arg === "--") {
+      parsingOptions = false;
+      continue;
+    }
+
+    if (parsingOptions && isRmOption(arg)) continue;
+    paths.push(arg);
+  }
+
+  return paths;
+}
+
+function isRmOption(arg: string): boolean {
+  return arg.startsWith("-") && arg !== "-";
+}
+
+function isTempDirectoryOnly(inputPath: string): boolean {
   const tmpDirVar = "$" + "TMPDIR";
   const tmpDirVarBraces = "$" + "{TMPDIR}";
+
   if (
-    afterRmRf === tmpDirVar ||
-    afterRmRf.startsWith(`${tmpDirVar}/`) ||
-    afterRmRf === tmpDirVarBraces ||
-    afterRmRf.startsWith(`${tmpDirVarBraces}/`)
+    isTempVariablePath(inputPath, tmpDirVar) ||
+    isTempVariablePath(inputPath, tmpDirVarBraces)
   ) {
-    return { blocked: false };
+    return true;
   }
 
-  if (isTempDirectoryOnly) {
-    return { blocked: false };
+  if (!inputPath.startsWith("/")) return false;
+
+  const normalizedPath = normalizeAbsolutePath(inputPath);
+  const tempDirs = ["/tmp", "/var/tmp", process.env["TMPDIR"] || "/tmp"].map(
+    normalizeAbsolutePath,
+  );
+
+  return tempDirs.some(
+    (tempDir) =>
+      normalizedPath === tempDir || normalizedPath.startsWith(`${tempDir}/`),
+  );
+}
+
+function isTempVariablePath(inputPath: string, variable: string): boolean {
+  if (inputPath !== variable && !inputPath.startsWith(`${variable}/`)) {
+    return false;
   }
 
-  // Block any other rm -rf
-  return {
-    blocked: true,
-    reason:
-      "rm -rf outside of temporary directories can cause permanent data loss",
-    command,
-    tip: "Only rm -rf is allowed for /tmp/*, /var/tmp/*, or $TMPDIR/* to clean temporary files.",
-  };
+  const suffix = inputPath.slice(variable.length);
+  return !suffix.split("/").includes("..");
+}
+
+function normalizeAbsolutePath(inputPath: string): string {
+  return path.posix.normalize(inputPath.replace(/\/+$/, "") || "/");
+}
+
+function detectDangerousRmRfInText(content: string): CommandSafetyResult {
+  const rmCommandPattern = /\brm\b[^\n;&|)]*/gi;
+  let match: RegExpExecArray | null = rmCommandPattern.exec(content);
+
+  while (match !== null) {
+    const rmResult = detectDangerousRmRf(match[0]);
+    if (rmResult.blocked) return rmResult;
+    match = rmCommandPattern.exec(content);
+  }
+
+  return { blocked: false };
 }
 
 /**
@@ -336,9 +506,6 @@ function detectDangerousInlineScripts(command: string): CommandSafetyResult {
         /git\s+push\s+(-f|--force)/i,
         /git\s+branch\s+-[A-Z]/i,
         /git\s+stash\s+(drop|clear)/i,
-        /rm\s+-rf\s+\/home/i,
-        /rm\s+-rf\s+\/usr/i,
-        /rm\s+-rf\s+~/i,
       ];
 
       // Check if any destructive pattern is present in the command
@@ -351,6 +518,16 @@ function detectDangerousInlineScripts(command: string): CommandSafetyResult {
             tip: "Review the script content for destructive commands.",
           };
         }
+      }
+
+      const rmResult = detectDangerousRmRfInText(command);
+      if (rmResult.blocked) {
+        return {
+          blocked: true,
+          reason: `Inline ${language} script contains destructive operation`,
+          command,
+          tip: "Review the script content for destructive commands.",
+        };
       }
     }
   }
@@ -461,37 +638,12 @@ function detectDangerousScriptContent(content: string): {
     }
   }
 
-  // Check for dangerous rm -rf patterns (more permissive for scripts, block obvious dangers)
-  const dangerousRmPatterns = [
-    /\brm\s+-rf\s+\/[^\s*]*[a-z]/i, // rm -rf /something (but allow /tmp/* patterns)
-    /\brm\s+-rf\s+\/home/i,
-    /\brm\s+-rf\s+\/usr/i,
-    /\brm\s+-rf\s+\/etc/i,
-    /\brm\s+-rf\s+\/var\s*$/i, // Block /var alone but allow /var/tmp
-    /\brm\s+-rf\s+~(?!\/)/i, // rm -rf ~ but allow ~/tmp
-  ];
-
-  for (const pattern of dangerousRmPatterns) {
-    if (pattern.test(content)) {
-      return {
-        blocked: true,
-        tip: "The script contains a dangerous rm -rf command.",
-      };
-    }
-  }
-
-  // Check for format string attacks and other dangerous patterns
-  const dangerousPatterns = [
-    /\brm\s+-rf\s+\$\w+/i, // rm -rf $VAR (variable expansion could be dangerous)
-  ];
-
-  for (const pattern of dangerousPatterns) {
-    if (pattern.test(content)) {
-      return {
-        blocked: true,
-        tip: "The script contains a potentially dangerous rm command with variable expansion.",
-      };
-    }
+  const rmResult = detectDangerousRmRfInText(content);
+  if (rmResult.blocked) {
+    return {
+      blocked: true,
+      tip: "The script contains a dangerous rm -rf command.",
+    };
   }
 
   return { blocked: false };
