@@ -1,13 +1,13 @@
 ---
-name: deslop
+name: preflight
 description: Run a focused review-readiness pass on a nearly finished change before commit. Scales the review to change size (XS/S = one pass, M = two passes, L/XL = three sequential passes covering rules conformance, correctness/source-of-truth, and overengineering). Then synthesize and apply the worthwhile fixes.
 ---
 
-# Deslop
+# Preflight
 
 Use this skill after a change is functionally correct and before commit or
 handoff. The PR, commit text, task notes, and final response should describe
-already-deslopped code.
+already-preflighted code.
 
 ## Goals
 
@@ -44,8 +44,9 @@ Required context items, in priority order:
 
 - repo root `AGENTS.md`
 - nested `AGENTS.md` files for the changed areas
-- `.agents/TASKS.md`, `.agents/.tasks/index.md`, and the active task file
-  when the work came from a task
+- `.agents/TASKS.md`, `ahm task show <id>` output, and the active task file
+  when the work came from a task; use `.agents/.tasks/index.md` only as a
+  fallback queue artifact when `ahm` is unavailable
 - the relevant active exec plan when one exists for the current work
   (see `.agents/exec-plans/active/`)
 - `.agents/PLANS.md` and `docs/design-docs/index.md` for L/XL changes
@@ -135,7 +136,7 @@ report with these headings:
 - "Feedback to keep"
 - "Feedback to ignore"
 - "Plan of attack"
-- "Deslop compliance" (skip for XS; one line for S; short block for M;
+- "Preflight compliance" (skip for XS; one line for S; short block for M;
   full block for L/XL — see template below)
 
 ## What to fix automatically
@@ -163,7 +164,7 @@ Make the chosen context auditable. Length scales with change size.
 **XS / S example:**
 
 ```markdown
-### Deslop compliance
+### Preflight compliance
 - XS docs-only change to one skill file. Root AGENTS.md skim only; no
   nested AGENTS.md under the changed path; no CI required.
 ```
@@ -171,7 +172,7 @@ Make the chosen context auditable. Length scales with change size.
 **M / L / XL template:**
 
 ```markdown
-### Deslop compliance
+### Preflight compliance
 
 - Root AGENTS.md: read
 - Nested AGENTS.md: <paths or "none under changed paths">
@@ -200,7 +201,7 @@ design-doc surface.
    final validation command when the finished work changed code, config, or
    dependencies.
 7. Update task notes, ExecPlan notes, commit text, and PR/final response to
-   describe the post-deslop state.
+   describe the post-preflight state.
 
 ## Stop rules
 

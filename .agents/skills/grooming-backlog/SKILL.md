@@ -29,22 +29,22 @@ clarification.
 
 ## Workflow
 
-### 1. Read the queue
+### 1. Inspect the queue
 
 ```bash
-# Full task index
-cat .agents/.tasks/index.md
-
 # Quick ready queue
-ahm task ready 2>/dev/null || echo '(ahm not installed)'
+ahm task ready
 
 # Active tasks not ready
-ahm task blocked 2>/dev/null
-ahm task list --status Open 2>/dev/null
+ahm task blocked
+ahm task list --status Open
 
-# List all active tasks by status
-ls .agents/.tasks/active/
+# Label vocabulary and counts
+ahm task labels
 ```
+
+If `ahm` is unavailable, read `.agents/.tasks/index.md` as the fallback queue
+artifact and inspect the relevant files under `.agents/.tasks/active/`.
 
 ### 2. For each task that is not Completed or Cancelled, audit:
 
@@ -84,8 +84,11 @@ ls .agents/.tasks/active/
 
 ### 3. Fix what you can directly
 
+- Use `ahm task accept`, `ahm task dep add`, `ahm task dep remove`,
+  `ahm task cancel`, and other `ahm task ...` commands when they express the
+  needed change.
 - Update front matter status, priority, effort, labels, depends_on, or
-  exec_plan when the needed change is clear.
+  exec_plan by hand only when no command fits the change.
 - Record decisions in the task body (add a `## Decision` section when
   recording a resolved choice).
 - Remove stale `TODO` placeholders from Acceptance Notes when the question
@@ -106,9 +109,9 @@ cannot make alone:
    ```
 3. Do not leave the task Pending with undocumented open questions.
 
-### 5. Regenerate indexes
+### 5. Regenerate indexes after manual edits
 
-After all edits:
+After manual edits:
 
 ```bash
 ahm index
