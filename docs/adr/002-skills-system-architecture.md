@@ -1,8 +1,9 @@
-# ADR-002: Skills System Architecture
-
-**Status:** Proposed
-**Date:** 2026-04-15
-**Deciders:** Travis Ennis
+---
+status: proposed
+date: 2026-04-15
+decision-makers: Travis Ennis
+---
+# Skills System Architecture
 
 ## Context
 
@@ -119,3 +120,4 @@ const inputSchema = z.object({
 **Registry Service:** Central registry would require network access and introduce a dependency. Filesystem discovery is offline-first. Rejected.
 
 **Plugin System:** A formal plugin system with manifest files and lifecycle hooks is overkill for the current use case. May be revisited if needs grow.
+

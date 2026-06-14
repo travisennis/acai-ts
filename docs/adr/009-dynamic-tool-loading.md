@@ -1,8 +1,9 @@
-# ADR-009: Dynamic Tool Loading
-
-**Status:** Proposed
-**Date:** 2026-04-15
-**Deciders:** Travis Ennis
+---
+status: proposed
+date: 2026-04-15
+decision-makers: Travis Ennis
+---
+# Dynamic Tool Loading
 
 ## Context
 
@@ -186,3 +187,4 @@ Tools with `needsApproval: true` trigger a confirmation prompt before execution.
 **YAML/JSON definition files:** Would be simpler but less flexible. JavaScript allows complex logic.
 
 **HTTP-based tool services:** Would enable remote tools but requires server infrastructure. Not implemented.
+

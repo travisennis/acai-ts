@@ -1,7 +1,8 @@
-# ADR 013: Model Request Timing Telemetry
-
-**Status:** Accepted
-**Date:** 2026-06-14
+---
+status: accepted
+date: 2026-06-14
+---
+# Model Request Timing Telemetry
 
 ## Context
 
@@ -84,3 +85,4 @@ The timing boundaries within each iteration are:
 - Task `.agents/.tasks/active/001.md`
 - `source/agent/index.ts`, `source/sessions/manager.ts`, `source/sessions/summary.ts`
 - ADR 008: Token Tracking Strategy
+

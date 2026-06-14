@@ -1,8 +1,9 @@
-# ADR-007: Multi-provider Fallback Strategy
-
-**Status:** Proposed
-**Date:** 2026-04-15
-**Deciders:** Travis Ennis
+---
+status: proposed
+date: 2026-04-15
+decision-makers: Travis Ennis
+---
+# Multi-provider Fallback Strategy
 
 ## Context
 
@@ -130,3 +131,4 @@ const providerGroups = [
 ```
 
 **Circuit Breaker:** Track failure rates per provider and temporarily skip unhealthy providers.
+

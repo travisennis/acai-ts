@@ -1,8 +1,9 @@
-# ADR-003: Tool Calling Interface
-
-**Status:** Proposed
-**Date:** 2026-04-15
-**Deciders:** Travis Ennis
+---
+status: proposed
+date: 2026-04-15
+decision-makers: Travis Ennis
+---
+# Tool Calling Interface
 
 ## Context
 
@@ -124,3 +125,4 @@ Failed tool calls are sent to a "tool-repair" model with the invalid input and e
 **Streaming Tool Results:** Instead of waiting for completion, streaming results would allow partial output. Not implemented due to complexity with parallel tool handling.
 
 **Tool Categories:** Grouping tools into categories for selective enabling would be useful but not yet needed. May add later.
+

@@ -1,8 +1,9 @@
-# ADR-012: Remove Specialized File Search and Agent Tools
-
-**Status:** Accepted
-**Date:** 2026-05-06
-**Deciders:** Travis Ennis
+---
+status: accepted
+date: 2026-05-06
+decision-makers: Travis Ennis
+---
+# Remove Specialized File Search and Agent Tools
 
 ## Context
 
@@ -51,3 +52,4 @@ The system prompt is updated to instruct models to use `rg` and `find` via Bash 
 **Keep tools but mark as optional:** Would still require maintenance and add token overhead. Not worth the cost for tools that Bash can replace.
 
 **Replace with lighter wrappers:** Would still require schema maintenance and dependency management. The Bash tool already provides full shell access.
+

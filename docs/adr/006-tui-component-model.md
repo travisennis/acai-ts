@@ -1,8 +1,9 @@
-# ADR-006: TUI Component Model
-
-**Status:** Proposed
-**Date:** 2026-04-15
-**Deciders:** Travis Ennis
+---
+status: proposed
+date: 2026-04-15
+decision-makers: Travis Ennis
+---
+# TUI Component Model
 
 ## Context
 
@@ -184,3 +185,4 @@ Input is processed in stages:
 **React for terminals (ink, react-blessed):** Would bring React patterns but adds complexity and bundle size. Rejected for simplicity.
 
 **ncurses:** Standard library but complex C API. Not suitable for TypeScript. Rejected.
+

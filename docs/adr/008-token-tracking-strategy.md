@@ -1,8 +1,9 @@
-# ADR-008: Token Tracking Strategy
-
-**Status:** Proposed
-**Date:** 2026-04-15
-**Deciders:** Travis Ennis
+---
+status: proposed
+date: 2026-04-15
+decision-makers: Travis Ennis
+---
+# Token Tracking Strategy
 
 ## Decision
 
@@ -140,3 +141,4 @@ trackUsage(app: string, usage: LanguageModelUsage): void {
 **Historical Tracking:** Persist usage to a database for analytics and reporting.
 
 **Dynamic Pricing:** Fetch current pricing from provider APIs or user-configured overrides.
+

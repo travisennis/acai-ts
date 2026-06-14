@@ -1,8 +1,9 @@
-# ADR-004: Session Persistence Format
-
-**Status:** Proposed
-**Date:** 2026-04-15
-**Deciders:** Travis Ennis
+---
+status: proposed
+date: 2026-04-15
+decision-makers: Travis Ennis
+---
+# Session Persistence Format
 
 ## Context
 
@@ -156,3 +157,4 @@ sanitizeResponseMessages(messages: ResponseMessage[]): ResponseMessage[]
 **Binary Format:** MessagePack or Protocol Buffers would be smaller and faster, but JSON is human-readable and easier to debug. Rejected for simplicity.
 
 **Per-turn Token Storage:** Storing every turn's usage would be useful for detailed analytics but increases file size significantly. Current compact format is sufficient for current needs.
+

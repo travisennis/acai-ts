@@ -1,8 +1,9 @@
-# ADR-001: Use AI SDK for Model Abstraction
-
-**Status:** Proposed
-**Date:** 2026-04-15
-**Deciders:** Travis Ennis
+---
+status: proposed
+date: 2026-04-15
+decision-makers: Travis Ennis
+---
+# Use AI SDK for Model Abstraction
 
 ## Context
 
@@ -124,3 +125,4 @@ export class ModelManager extends EventEmitter<ModelManagerEvents> {
 **Direct Provider SDKs:** Using Anthropic SDK, OpenAI SDK, etc. directly would tie us to multiple SDKs with different interfaces and require manual normalization. Rejected due to maintenance burden.
 
 **LangChain:** While powerful, LangChain is heavier and more complex than needed for this use case. The AI SDK provides a lighter-weight solution. Rejected for simplicity.
+

@@ -1,8 +1,9 @@
-# ADR-011: Dynamic Tools Enhancement
-
-**Status:** Proposed
-**Date:** 2026-04-18
-**Deciders:** Travis Ennis
+---
+status: proposed
+date: 2026-04-18
+decision-makers: Travis Ennis
+---
+# Dynamic Tools Enhancement
 
 ## Context
 
@@ -116,3 +117,4 @@ Templates generate working tool files with proper shebangs, describe/execute pro
 **JSON-only metadata with wrapper scripts:** Would require users to write JSON metadata even for bash tools. The text format is more ergonomic.
 
 **Separate schema files in YAML/JSON:** The `.tool` text format was chosen over YAML/JSON schema files because it matches Amp's convention and is simpler for bash tool authors.
+

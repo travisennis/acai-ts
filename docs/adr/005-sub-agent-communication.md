@@ -1,8 +1,9 @@
-# ADR-005: Sub-agent Communication
-
-**Status:** Proposed
-**Date:** 2026-04-15
-**Deciders:** Travis Ennis
+---
+status: proposed
+date: 2026-04-15
+decision-makers: Travis Ennis
+---
+# Sub-agent Communication
 
 ## Context
 
@@ -143,3 +144,4 @@ The sub-agent completed the following tasks:
 **Message Passing:** Instead of text results, structured message passing between agents would be more robust. Not implemented due to complexity. May revisit if needs grow.
 
 **Shared History:** Sub-agents could append directly to parent session history. Currently they return results instead, keeping history cleaner.
+

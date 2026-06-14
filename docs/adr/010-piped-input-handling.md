@@ -1,8 +1,9 @@
-# ADR-010: Piped Input Handling
-
-**Status:** Proposed
-**Date:** 2026-04-15
-**Deciders:** Travis Ennis
+---
+status: proposed
+date: 2026-04-15
+decision-makers: Travis Ennis
+---
+# Piped Input Handling
 
 ## Context
 
@@ -194,3 +195,4 @@ acai
 **Hybrid Mode:** REPL that also accepts piped input as initial context. Adds complexity and unclear semantics. Not implemented.
 
 **Daemon Mode:** Long-running server that accepts requests. Overkill for current use case. Not implemented.
+
