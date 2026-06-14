@@ -601,14 +601,90 @@ Cache location:
     assert.strictEqual(result.isValid, false);
   });
 
-  it("doesn't flag non-git commands with flags that look like git flags", () => {
+  it("skips fully-quoted tokens for non-git commands", () => {
+    // Fully-quoted tokens are treated as string arguments, not paths
     const result = validatePaths(
       '/custom/bin -m "/etc/hosts"',
       [baseDir],
       baseDir,
     );
-    // /etc/hosts should be flagged since it's not a git message command
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("catches --key=/absolute/path outside allowed dirs", () => {
+    const result = validatePaths("cat --file=/etc/passwd", [baseDir], baseDir);
     assert.strictEqual(result.isValid, false);
+    assert.match(
+      result.error ?? "",
+      /resolves outside the allowed directories/,
+    );
+  });
+
+  it("catches -X/path style flag outside allowed dirs", () => {
+    const result = validatePaths("cat -o/etc/hosts", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, false);
+    assert.match(
+      result.error ?? "",
+      /resolves outside the allowed directories/,
+    );
+  });
+
+  it("allows --key=./relative/path within project", () => {
+    const result = validatePaths(
+      "cat --config=./package.json",
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("rejects --key=~/home-path outside allowed dirs", () => {
+    const result = validatePaths(
+      "cat --config=~/nonexistent-test-file",
+      [baseDir],
+      baseDir,
+    );
+    // ~/ resolves to home dir which is outside project; expect rejection
+    assert.strictEqual(result.isValid, false);
+    assert.match(
+      result.error ?? "",
+      /resolves outside the allowed directories/,
+    );
+  });
+
+  it("skips --flag=non-path-string (no /, ~, ./ prefix)", () => {
+    const result = validatePaths(
+      'echo --label="name=some/value"',
+      [baseDir],
+      baseDir,
+    );
+    // value doesn't start with a path-identifying prefix
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("validates unquoted absolute paths as before", () => {
+    const result = validatePaths("cat /etc/hosts", [baseDir], baseDir);
+    assert.strictEqual(result.isValid, false);
+    assert.match(
+      result.error ?? "",
+      /resolves outside the allowed directories/,
+    );
+  });
+
+  it("allows fully-quoted tokens within allowed dirs", () => {
+    // A fully-quoted path is treated as a string argument
+    const result = validatePaths('cat "/etc/hosts"', [baseDir], baseDir);
+    assert.strictEqual(result.isValid, true);
+  });
+
+  it("allows fully-quoted multiline strings", () => {
+    const result = validatePaths(
+      `some-tool -m 'some text
+/etc/hosts reference'`,
+      [baseDir],
+      baseDir,
+    );
+    assert.strictEqual(result.isValid, true);
   });
 });
 

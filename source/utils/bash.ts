@@ -164,6 +164,59 @@ function computeSkipTokenMask(tokens: string[]): boolean[] {
   return skip;
 }
 
+// Extract a path embedded in a flag-style argument (--key=value or -X/path).
+// Returns null if no path-like segment is found.
+function extractPathFromFlag(flag: string): string | null {
+  // --key=value style: extract and de-quote the value side
+  const eqIndex = flag.indexOf("=");
+  if (eqIndex !== -1) {
+    const value = stripQuotes(flag.slice(eqIndex + 1));
+    // Only treat as a path if it starts with a path-identifying prefix
+    // to avoid validating string arguments that happen to contain "/"
+    if (
+      value.startsWith("/") ||
+      value.startsWith("~") ||
+      value.startsWith("./") ||
+      value.startsWith("../")
+    ) {
+      return value;
+    }
+    return null;
+  }
+
+  // -X/path style: single letter flag directly attached to a path
+  if (/^-[a-zA-Z]\//.test(flag)) {
+    return flag.slice(2);
+  }
+
+  return null;
+}
+
+function validatePathValue(
+  rawPath: string,
+  allowedDirs: string[],
+  cwd: string,
+): { isValid: false; error: string } | { isValid: true } {
+  try {
+    // Expand ~ to home directory for proper validation
+    const expandedPath =
+      rawPath.startsWith("~/") || rawPath === "~"
+        ? path.join(os.homedir(), rawPath.slice(1))
+        : rawPath;
+
+    const resolvedPath = path.resolve(cwd, expandedPath);
+
+    if (!isPathWithinAllowedDirs(resolvedPath, allowedDirs)) {
+      return {
+        isValid: false,
+        error: `Path '${rawPath}' resolves outside the allowed directories (${resolvedPath}). All paths must be within ${allowedDirs.join(", ")}`,
+      };
+    }
+  } catch (_e) {}
+
+  return { isValid: true };
+}
+
 function validateToken(
   token: string,
   allowedDirs: string[],
@@ -171,40 +224,33 @@ function validateToken(
 ): { isValid: false; error: string } | { isValid: true } {
   // Skip fully quoted tokens - they're string arguments, not paths
   // (paths are typically unquoted or only quoted to handle spaces)
-  if (isFullyQuoted(token) && token.includes("\n")) {
+  if (isFullyQuoted(token)) {
     return { isValid: true };
   }
 
   // Remove quotes for path checking
   const cleanToken = stripQuotes(token);
 
-  // Skip if it's clearly not a path
+  // Skip URLs and non-path tokens
   if (
-    cleanToken.startsWith("-") ||
     cleanToken.includes("://") ||
     (!cleanToken.includes("/") && cleanToken !== "~")
   ) {
     return { isValid: true };
   }
 
-  try {
-    // Expand ~ to home directory for proper validation
-    const expandedToken =
-      cleanToken.startsWith("~/") || cleanToken === "~"
-        ? path.join(os.homedir(), cleanToken.slice(1))
-        : cleanToken;
-
-    const resolvedPath = path.resolve(cwd, expandedToken);
-
-    if (!isPathWithinAllowedDirs(resolvedPath, allowedDirs)) {
-      return {
-        isValid: false,
-        error: `Path '${cleanToken}' resolves outside the allowed directories (${resolvedPath}). All paths must be within ${allowedDirs.join(", ")}`,
-      };
+  // For flag-style tokens that embed paths (e.g., --file=/etc/passwd, -o/tmp/x),
+  // extract the embedded path for validation.
+  if (cleanToken.startsWith("-")) {
+    const embeddedPath = extractPathFromFlag(cleanToken);
+    if (!embeddedPath) {
+      // No embedded path found — just a flag
+      return { isValid: true };
     }
-  } catch (_e) {}
+    return validatePathValue(embeddedPath, allowedDirs, cwd);
+  }
 
-  return { isValid: true };
+  return validatePathValue(cleanToken, allowedDirs, cwd);
 }
 
 // Validate path arguments to ensure they're within the project
