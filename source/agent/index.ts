@@ -28,6 +28,54 @@ import type {
 import { toAiSdkTools } from "../tools/utils.ts";
 import { logger } from "../utils/logger.ts";
 
+/**
+ * Whether a stream chunk carries model output (used to mark time-to-first-token).
+ */
+function isContentChunk(chunk: { type?: string }): boolean {
+  return (
+    chunk.type === "text-delta" ||
+    chunk.type === "reasoning-delta" ||
+    chunk.type === "tool-call"
+  );
+}
+
+/**
+ * Rough input-token estimate for the request.start event. Real input token
+ * counts are reported on request.end from provider usage.
+ */
+function estimateInputTokens(
+  messages: unknown[],
+  systemPrompt: string,
+): number {
+  const chars = systemPrompt.length + JSON.stringify(messages).length;
+  return Math.ceil(chars / 4);
+}
+
+/**
+ * Selects provider response headers worth keeping for telemetry: request id,
+ * rate-limit headers, and retry hints. Header names vary per provider.
+ */
+function extractProviderHeaders(
+  headers: Record<string, string> | undefined,
+): Record<string, string> {
+  if (!headers) {
+    return {};
+  }
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    const lower = key.toLowerCase();
+    if (
+      lower === "x-request-id" ||
+      lower === "retry-after" ||
+      lower.includes("ratelimit") ||
+      lower.includes("rate-limit")
+    ) {
+      out[lower] = value;
+    }
+  }
+  return out;
+}
+
 type AgentOptions = {
   config: Config;
   modelManager: ModelManager;
@@ -219,6 +267,10 @@ export class Agent {
 
       const toolsCalled: Map<string, ToolEvent[]> = new Map();
 
+      const requestId = `${sessionManager.getSessionId()}:${iter}`;
+      const requestStart = performance.now();
+      let firstTokenAt: number | null = null;
+
       try {
         // Check abort signal again before starting streamText
         if (abortSignal?.aborted) {
@@ -227,6 +279,19 @@ export class Agent {
 
         const messages = sessionManager.get();
         const aiSdkTools = toAiSdkTools(tools, false);
+
+        logger.info(
+          {
+            event: "model.request.start",
+            requestId,
+            sessionId: sessionManager.getSessionId(),
+            model: modelConfig.id,
+            provider: modelConfig.provider,
+            iteration: iter,
+            inputTokenEstimate: estimateInputTokens(messages, systemPrompt),
+          },
+          "model.request.start",
+        );
 
         const result = streamText({
           model: langModel,
@@ -275,6 +340,17 @@ export class Agent {
         const pendingToolCalls: PendingToolCall[] = [];
 
         for await (const chunk of result.fullStream) {
+          if (firstTokenAt === null && isContentChunk(chunk)) {
+            firstTokenAt = performance.now();
+            logger.info(
+              {
+                event: "model.first_token",
+                requestId,
+                ttftMs: Math.round(firstTokenAt - requestStart),
+              },
+              "model.first_token",
+            );
+          }
           const event = this.handleStreamChunk(chunk, {
             accumulatedText,
             accumulatedReasoning,
@@ -289,10 +365,13 @@ export class Agent {
           }
         }
 
+        const modelStreamEnd = performance.now();
+
         // ============================================================
         // PARALLEL TOOL EXECUTION
         // ============================================================
 
+        const toolStart = performance.now();
         const { collectedEvents, parallelToolMessages } =
           await this.executeToolsInParallel({
             pendingToolCalls,
@@ -301,6 +380,7 @@ export class Agent {
             stepToolCalls: thisStepToolCalls,
             stepToolResults: thisStepToolResults,
           });
+        const toolEnd = performance.now();
 
         // Yield all collected events in order
         for (const event of collectedEvents) {
@@ -325,6 +405,41 @@ export class Agent {
 
         // If finishReason is not tool-calls, break
         const finishReason = await result.finishReason;
+
+        const modelResponseMs = modelStreamEnd - requestStart;
+        const toolMs = toolEnd - toolStart;
+        const wallClockMs = performance.now() - requestStart;
+        const outputTokens = stepUsage.outputTokens ?? 0;
+        logger.info(
+          {
+            event: "model.request.end",
+            requestId,
+            model: modelConfig.id,
+            provider: modelConfig.provider,
+            modelResponseMs: Math.round(modelResponseMs),
+            ttftMs:
+              firstTokenAt === null
+                ? null
+                : Math.round(firstTokenAt - requestStart),
+            inputTokens: stepUsage.inputTokens ?? 0,
+            outputTokens,
+            outputTokensPerSecond:
+              modelResponseMs > 0
+                ? Number((outputTokens / (modelResponseMs / 1000)).toFixed(2))
+                : 0,
+            reasoningTokens: stepUsage.outputTokenDetails.reasoningTokens ?? 0,
+            finishReason,
+            retryCount: consecutiveErrors,
+            providerRequestId: response.id ?? null,
+            providerHeaders: extractProviderHeaders(response.headers),
+          },
+          "model.request.end",
+        );
+        sessionManager.recordTurnTiming({
+          wallClockMs,
+          modelMs: modelResponseMs,
+          toolMs,
+        });
 
         if (finishReason !== "tool-calls") {
           yield {

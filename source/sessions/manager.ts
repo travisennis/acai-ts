@@ -188,6 +188,27 @@ type SessionTokenUsage = {
 };
 
 /**
+ * Per-turn timing accumulated across a session.
+ * Mirrors the SessionTokenUsage shape (total plus lastTurn) so summaries can
+ * separate model response time from tool execution time.
+ */
+type SessionTiming = {
+  /** Aggregated totals for the entire session */
+  total: {
+    wallClockMs: number;
+    modelMs: number;
+    toolMs: number;
+    turns: number;
+  };
+  /** Last turn's timing */
+  lastTurn: {
+    wallClockMs: number;
+    modelMs: number;
+    toolMs: number;
+  };
+};
+
+/**
  * @deprecated Use SessionTokenUsage instead. Kept for backward compatibility
  * with older session files that may have the old format.
  */
@@ -220,6 +241,7 @@ type SavedMessageHistory = {
   updatedAt: Date;
   messages: ModelMessage[];
   tokenUsage?: SessionTokenUsage | TokenUsageTurn[];
+  timing?: SessionTiming;
   metadata?: Record<string, unknown>;
 };
 
@@ -248,6 +270,7 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
   private modelManager: ModelManager;
   private tokenTracker: TokenTracker;
   private tokenUsage: SessionTokenUsage | null;
+  private timing: SessionTiming | null;
   private transientMessages: UserModelMessage[] = [];
   private metadata: Record<string, unknown> = {};
 
@@ -272,6 +295,7 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
     this.modelManager = modelManager;
     this.tokenTracker = tokenTracker;
     this.tokenUsage = null;
+    this.timing = null;
   }
 
   private createEmptyTokenUsage(): SessionTokenUsage {
@@ -291,6 +315,22 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
         cachedInputTokens: 0,
         reasoningTokens: 0,
         estimatedCost: 0,
+      },
+    };
+  }
+
+  private createEmptyTiming(): SessionTiming {
+    return {
+      total: {
+        wallClockMs: 0,
+        modelMs: 0,
+        toolMs: 0,
+        turns: 0,
+      },
+      lastTurn: {
+        wallClockMs: 0,
+        modelMs: 0,
+        toolMs: 0,
       },
     };
   }
@@ -363,6 +403,7 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
     this.metadata = {};
     this.contextWindow = 0;
     this.tokenUsage = null;
+    this.timing = null;
     this.emit("clear-history");
   }
 
@@ -471,6 +512,7 @@ export class SessionManager extends EventEmitter<MessageHistoryEvents> {
       updatedAt: this.updatedAt,
       messages: this.history,
       ...(this.tokenUsage !== null ? { tokenUsage: this.tokenUsage } : {}),
+      ...(this.timing !== null ? { timing: this.timing } : {}),
       metadata:
         Object.keys(this.metadata).length > 0 ? this.metadata : undefined,
     };
@@ -838,6 +880,8 @@ React Component Rendering Debug";
       this.tokenUsage = null;
     }
 
+    this.timing = savedHistory.timing ?? null;
+
     this.metadata = savedHistory.metadata ?? {};
   }
 
@@ -925,5 +969,53 @@ React Component Rendering Debug";
 
   clearTokenUsage(): void {
     this.tokenUsage = null;
+  }
+
+  recordTurnTiming(timing: {
+    wallClockMs: number;
+    modelMs: number;
+    toolMs: number;
+  }): void {
+    if (this.timing === null) {
+      this.timing = this.createEmptyTiming();
+    }
+
+    this.timing.total.wallClockMs += timing.wallClockMs;
+    this.timing.total.modelMs += timing.modelMs;
+    this.timing.total.toolMs += timing.toolMs;
+    this.timing.total.turns += 1;
+
+    this.timing.lastTurn.wallClockMs = timing.wallClockMs;
+    this.timing.lastTurn.modelMs = timing.modelMs;
+    this.timing.lastTurn.toolMs = timing.toolMs;
+  }
+
+  /**
+   * Session-level rollup of timing data. Returns null when no timing has been
+   * recorded for the session. `overheadMs` is non-tool, non-model wall-clock
+   * time, and `toolTimeRatio` is the fraction of total wall-clock spent in tools.
+   */
+  getTimingSummary(): {
+    wallClockMs: number;
+    modelMs: number;
+    toolMs: number;
+    overheadMs: number;
+    toolTimeRatio: number;
+    turns: number;
+  } | null {
+    if (this.timing === null) {
+      return null;
+    }
+    const { wallClockMs, modelMs, toolMs, turns } = this.timing.total;
+    const overheadMs = Math.max(0, wallClockMs - modelMs - toolMs);
+    const toolTimeRatio = wallClockMs > 0 ? toolMs / wallClockMs : 0;
+    return {
+      wallClockMs,
+      modelMs,
+      toolMs,
+      overheadMs,
+      toolTimeRatio,
+      turns,
+    };
   }
 }

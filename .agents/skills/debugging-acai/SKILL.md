@@ -35,6 +35,32 @@ grep "sessionId" ~/.acai/logs/current.log | tail -20
 - **WARN level**: Non-fatal issues that might affect behavior
 - **agent-error events**: Errors emitted by the agent loop
 
+### Model Request Timing Telemetry
+
+The agent loop emits one structured JSON log line per model request, correlated
+by a stable `requestId` of the form `<sessionId>:<iteration>`. Each request emits
+three events (filter on the `event` field):
+
+- `model.request.start` — `model`, `provider`, `iteration`, `inputTokenEstimate`
+- `model.first_token` — `ttftMs` (time-to-first-token in ms)
+- `model.request.end` — `modelResponseMs`, `ttftMs`, `inputTokens`,
+  `outputTokens`, `outputTokensPerSecond`, `reasoningTokens`, `finishReason`,
+  `retryCount`, `providerRequestId`, and selected `providerHeaders`
+  (request id, rate-limit, retry-after)
+
+```bash
+# All timing events for a session
+grep '"requestId":"<sessionId>:' ~/.acai/logs/current.log
+
+# Just request-end metrics
+grep '"event":"model.request.end"' ~/.acai/logs/current.log | tail -20
+```
+
+Per-turn timing (`wallClockMs`, `modelMs`, `toolMs`) is also persisted in the
+session file and rolled up in the exit Session Summary (Total/Model/Tools/
+Overhead and Tool/Total ratio), so you can see whether a session is dominated by
+model response time or tool execution.
+
 ## Session Files
 
 ### Reading Sessions

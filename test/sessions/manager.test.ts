@@ -581,3 +581,80 @@ test("sanitizeResponseMessages keeps message even if all tool calls are invalid"
   assert.equal(content[0].toolCallId, "call-1");
   assert.deepStrictEqual(content[0].input, {}); // sanitized to empty object
 });
+
+test("recordTurnTiming accumulates totals and tracks last turn", async () => {
+  await withTempDir(async (tmp) => {
+    const modelManager = await createModelManagerForTest();
+    const tokenTracker = new TokenTracker();
+    const sessionManager = new SessionManager({
+      stateDir: tmp,
+      modelManager,
+      tokenTracker,
+    });
+
+    assert.equal(sessionManager.getTimingSummary(), null);
+
+    sessionManager.recordTurnTiming({
+      wallClockMs: 1000,
+      modelMs: 600,
+      toolMs: 300,
+    });
+    sessionManager.recordTurnTiming({
+      wallClockMs: 2000,
+      modelMs: 1000,
+      toolMs: 800,
+    });
+
+    const summary = sessionManager.getTimingSummary();
+    assert.ok(summary);
+    assert.equal(summary.turns, 2);
+    assert.equal(summary.wallClockMs, 3000);
+    assert.equal(summary.modelMs, 1600);
+    assert.equal(summary.toolMs, 1100);
+    assert.equal(summary.overheadMs, 300);
+    assert.equal(
+      Number(summary.toolTimeRatio.toFixed(4)),
+      Number((1100 / 3000).toFixed(4)),
+    );
+  });
+});
+
+test("timing survives save and restore", async () => {
+  await withTempDir(async (tmp) => {
+    const modelManager = await createModelManagerForTest();
+    const tokenTracker = new TokenTracker();
+    const sessionManager = new SessionManager({
+      stateDir: tmp,
+      modelManager,
+      tokenTracker,
+    });
+
+    sessionManager.recordTurnTiming({
+      wallClockMs: 1500,
+      modelMs: 900,
+      toolMs: 400,
+    });
+    await sessionManager.save();
+
+    const loaded = await SessionManager.load(tmp);
+    const match = loaded.find(
+      (s) => s.sessionId === sessionManager.getSessionId(),
+    );
+    assert.ok(match);
+
+    const restored = new SessionManager({
+      stateDir: tmp,
+      modelManager,
+      tokenTracker,
+    });
+    restored.restore(match);
+
+    const summary = restored.getTimingSummary();
+    assert.ok(summary);
+    assert.equal(summary.turns, 1);
+    assert.equal(summary.wallClockMs, 1500);
+    assert.equal(summary.modelMs, 900);
+    assert.equal(summary.toolMs, 400);
+    assert.equal(summary.overheadMs, 200);
+  });
+});

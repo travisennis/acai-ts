@@ -24,9 +24,29 @@ function formatSummary(
     lines.push(`  Resume:  acai --resume ${sessionId}`);
   }
 
+  const timing = sessionManager.getTimingSummary();
+  if (timing && timing.wallClockMs > 0) {
+    const toolPct = (timing.toolTimeRatio * 100).toFixed(1);
+    lines.push("");
+    lines.push("  Timing");
+    lines.push(`    Turns:     ${timing.turns}`);
+    lines.push(`    Total:     ${formatMs(timing.wallClockMs)}`);
+    lines.push(`    Model:     ${formatMs(timing.modelMs)}`);
+    lines.push(`    Tools:     ${formatMs(timing.toolMs)}`);
+    lines.push(`    Overhead:  ${formatMs(timing.overheadMs)}`);
+    lines.push(`    Tool/Total: ${toolPct}%`);
+  }
+
   lines.push("");
 
   return lines.join("\n");
+}
+
+function formatMs(ms: number): string {
+  if (ms < 1000) {
+    return `${Math.round(ms)}ms`;
+  }
+  return `${(ms / 1000).toFixed(2)}s`;
 }
 
 export function writeExitSummary(

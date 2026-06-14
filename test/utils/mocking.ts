@@ -203,6 +203,8 @@ export function createMockSessionManager(
     getCreatedAt: mock.fn(() => new Date("2025-12-16T10:30:00Z")),
     getUpdatedAt: mock.fn(() => new Date("2025-12-16T10:45:00Z")),
     getSessionFileName: mock.fn(() => "session-test-session-id.json"),
+    recordTurnTiming: mock.fn(),
+    getTimingSummary: mock.fn(() => null),
   } as unknown as SessionManager;
 }
 
