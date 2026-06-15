@@ -19,6 +19,27 @@ acai-ts
 ├── package.json
 ├── plan.md
 ├── prompt.md
+├── docs
+│   ├── README.md
+│   ├── configuration.md
+│   ├── dynamic-tools.md
+│   ├── skills.md
+│   ├── usage.md
+│   ├── adr
+│   │   ├── README.md
+│   │   ├── index.md
+│   │   └── 001-013 architecture decision records
+│   └── guardrails
+│       ├── api-stability-and-compatibility.md
+│       ├── cli-and-user-output.md
+│       ├── configuration.md
+│       ├── dependencies-build-ci-release.md
+│       ├── documentation.md
+│       ├── implementation-quality.md
+│       ├── performance-and-resource-use.md
+│       ├── persistence-and-migrations.md
+│       ├── security-and-permissions.md
+│       └── testing-and-verification.md
 ├── scripts
 │   └── show-config.ts
 ├── specs
@@ -324,7 +345,7 @@ acai-ts
 
 ### Root Configuration Files
 
-- **AGENTS.md**: Agent configuration and behavior guidelines for the AI assistant
+- **AGENTS.md**: Concise routing guide for agents working in this repository
 - **ARCHITECTURE.md**: This file - comprehensive architecture documentation
 - **LICENSE**: MIT license for the project
 - **README.md**: Project documentation and usage instructions
@@ -352,6 +373,16 @@ acai-ts
 - **specs/session-token-usage.md**: Token usage tracking for sessions
 - **specs/share-command.md**: Share command feature specification
 - **specs/template.md**: Template for new specifications
+
+### Docs
+
+- **docs/README.md**: Documentation map for users, contributors, and agents
+- **docs/configuration.md**: Environment variables, `acai.json`, project settings, and global paths
+- **docs/dynamic-tools.md**: Dynamic tool contracts, schema formats, execution protocol, and scaffolding
+- **docs/skills.md**: Skills discovery, loading, authoring, and slash-command behavior
+- **docs/usage.md**: User guide for CLI, REPL, commands, prompt syntax, and keyboard shortcuts
+- **docs/adr/**: Architecture decision records and ADR workflow
+- **docs/guardrails/**: Short agent-facing rules organized by compatibility and risk surface
 
 ### Temp
 

@@ -111,6 +111,8 @@ Reference files directly with `@filename`, directories with `@dirname`, or run s
 - [Dynamic Tools](docs/dynamic-tools.md) - Creating custom tools to extend acai (supports bash, python, and other languages; Amp-compatible text schema format; `/tools make` scaffolding command)
 - [Architecture](ARCHITECTURE.md) - Internal architecture and flow diagrams
 - [Contributing](CONTRIBUTING.md) - Development setup, scripts, and code style
+- [Agent Instructions](AGENTS.md) - Routing guide for AI agents working in this repo
+- [Agent Guardrails](docs/guardrails/) - Focused compatibility, security, testing, and documentation rules
 
 ## Acknowledgments
 

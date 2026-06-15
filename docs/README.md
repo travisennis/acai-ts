@@ -23,6 +23,28 @@ Quick reference for developing and extending acai-ts.
 - [AGENTS.md](../AGENTS.md) - Project-specific rules for AI assistants working in this repo
 - [CONTRIBUTING.md](../CONTRIBUTING.md) - Development setup, scripts, and code style
 - [Architecture Overview](../ARCHITECTURE.md) - Internal architecture, modules, and flow diagrams
+- [Agent Guardrails](guardrails/) - Focused rules by compatibility and risk surface
+
+## Agent Guardrails
+
+- [API Stability and Compatibility](guardrails/api-stability-and-compatibility.md)
+- [CLI and User Output](guardrails/cli-and-user-output.md)
+- [Configuration](guardrails/configuration.md)
+- [Dependencies, Build, CI, and Release](guardrails/dependencies-build-ci-release.md)
+- [Documentation](guardrails/documentation.md)
+- [Implementation Quality](guardrails/implementation-quality.md)
+- [Performance and Resource Use](guardrails/performance-and-resource-use.md)
+- [Persistence and Migrations](guardrails/persistence-and-migrations.md)
+- [Security and Permissions](guardrails/security-and-permissions.md)
+- [Testing and Verification](guardrails/testing-and-verification.md)
+
+## Workflow Docs
+
+- [Task Workflow](../.agents/TASKS.md) - AHM task queue and lifecycle rules
+- [Documentation Workflow](../.agents/DOCS.md) - Documentation audit/update rules
+- [Research Workflow](../.agents/RESEARCH.md) - Research artifact rules
+- [ExecPlans](../.agents/PLANS.md) - Large-change planning format
+- [ADR Workflow](adr/README.md) - Architecture decision records
 
 ## API Reference
 

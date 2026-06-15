@@ -1,99 +1,60 @@
-# AGENTS.md
+# Agent Instructions
 
-## Project Overview
+## Project
+Acai is a TypeScript/Node.js CLI assistant for coding workflows, available as both one-shot CLI and interactive REPL/TUI. It integrates model providers, agent-callable tools, skills, dynamic tools, and persisted sessions.
 
-This app, acai-ts, is an AI-assistant CLI tool built with TypeScript. It is an agent hardness similar to Claude Code, opencode, and Codex. The project uses a modular architecture with source code in `./source`, organized into commands, tool (agent/llm callable), models, and UI components. Tests are in `/test`. Tech stack: Node.js ≥24, TypeScript (ESNext), Biome for linting/formatting, and AI SDK providers.
+Compatibility surfaces: CLI flags/commands, REPL/TUI output, prompt and AGENTS.md loading, `acai.json`, environment variables, dynamic tool and skill contracts, provider/model IDs, tool schemas, session/log formats, filesystem and shell permission boundaries, terminal rendering, package entry points, Node.js >=24, and documented output formats. Preserve them unless explicitly changed.
 
-## Build & Development Commands
+## Operating Loop
+1. Classify the request before editing.
+2. Load only the routed docs needed for that request.
+3. Preserve compatibility surfaces unless explicitly changed.
+4. Keep edits surgical and verify according to risk.
+5. Handoff with changes, checks, and remaining risk.
 
-- **Bootstrap:** `npm run setup` (or `npm run bootstrap`) — checks prerequisites, installs deps, creates `~/.acai/`
-- **Build:** `npm run build`
-- **Typecheck:** `npm run typecheck`
-- **Lint:** `npm run lint`
-- **Lint Single File:** `npm run lint -- path/to/file.ts`
-- **Format:** `npm run format`
-- **Fix Lint/Format:** `npm run lint:fix`
-- **Run All Tests:** `npm test`
-- **Run Single Test:** `node --no-warnings --test test/path/to/test.ts`
-- **Find Unused Code/Deps:** `npm run knip`
-- **Full Check (typecheck, lint, format):** `npm run check`
+When this file conflicts with a specialized workflow doc for that workflow, the specialized doc wins.
+Keep AGENTS.md as routing, not as a command catalog or procedure manual.
 
-## Running the App
+## Workflow Routing
 
-- **REPL:** `acai`
-- **CLI:** `acai -p <prompt>`
-- **Dev Mode:** `node source/index.ts`
-- **Application logs:** `~/.acai/logs/current.log` Do not read this file directly as it can be quite big. Use tail to see the end of the log file.
-- **Sessions:** `~/.acai/sessions/*.json` Do not read session files directly as they can be quite big. Use the dynamic-read-session tool to get a serialized version of the file.
-- **IMPORTANT:** Use `tmux` when running the REPL. The `Bash` tool does not support interactive commands. See the `manual-testing` skill for detailed instructions.
+### CLI, REPL, TUI, And User Output
+Use this workflow for command parsing, slash commands, stdin, interactive behavior, terminal rendering, markdown, autocomplete, and user-visible text. Consult `docs/guardrails/cli-and-user-output.md`, `docs/usage.md`, `ARCHITECTURE.md`, and relevant `specs/`. Preserve documented commands, flags, exit behavior, and terminal-width handling.
 
-## Code Style Guidelines
+### Agent Runtime, Tools, Skills, And Provider Contracts
+Use this workflow for agent orchestration, model providers, AI SDK integration, tool calling, dynamic tools, skills, prompts, tokens, and middleware. Consult `docs/guardrails/api-stability-and-compatibility.md`, `docs/guardrails/security-and-permissions.md`, `docs/dynamic-tools.md`, `docs/skills.md`, `ARCHITECTURE.md`, and `docs/adr/`. Keep tool schemas provider-compatible.
 
-- **Language:** Strict TypeScript with ESNext target
-- **Modules:** ES Modules only. Use `.ts` extensions for relative imports
-- **Error Handling:** Robust try/catch, result patterns
-- **Testing:** `node:test` and `node:assert/strict` in `./test` directory
-- **Tool Schemas:** For agent/LLM tool schemas, do not use `.optional()` for fields sent to OpenAI-compatible providers unless the field may truly be omitted from the generated JSON Schema. Many compatible endpoints expect every tool field to be listed in `required`; use nullable schemas with `.default(null)` for omitted-at-runtime values that should still be required-and-nullable in provider JSON Schema.
+### Configuration, Environment, And Project Rules
+Use this workflow for `.env`, `acai.json`, config loading, AGENTS.md discovery, global/project settings, and generated rules. Consult `docs/guardrails/configuration.md`, `docs/configuration.md`, and `ARCHITECTURE.md`. Preserve precedence, defaults, and secret handling.
 
-## Commit Conventions
+### Persistence, Sessions, Logs, And File Formats
+Use this workflow for session storage, resume/share/history, log paths, caches, selections, serialized records, and migrations. Consult `docs/guardrails/persistence-and-migrations.md`, `ARCHITECTURE.md`, `docs/adr/004-session-persistence-format.md`, and relevant `specs/`. Maintain backward compatibility unless the task explicitly scopes a migration.
 
-This project uses [Conventional Commits](https://www.conventionalcommits.org/). Commit messages are validated by a `commit-msg` hook.
+### Security, Permissions, And Sandboxing
+Use this workflow for shell execution, filesystem access, web fetch/search, dynamic tool execution, approvals, path validation, secrets, and log redaction. Consult `docs/guardrails/security-and-permissions.md`, `docs/dynamic-tools.md`, and security tests. Default to least privilege.
 
-**Format:** `<type>[(scope)]: <description>`
+### Dependencies, Build, CI, And Release
+Use this workflow for dependencies, Node/toolchain support, package metadata, build scripts, CI hooks, publishing, and release-adjacent changes. Consult `docs/guardrails/dependencies-build-ci-release.md`, `CONTRIBUTING.md`, and `package.json`. Preserve Node.js >=24 and package entry points.
 
-**Types:** `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
+### Performance, Resource Use, And Large Outputs
+Use this workflow for token budgets, streaming, process lifetime, stdout/stderr volume, file scans, cache behavior, and terminal rendering cost. Consult `docs/guardrails/performance-and-resource-use.md` and `ARCHITECTURE.md`. Avoid unbounded reads, logs, model context, process output, and directory scans.
 
-**Recommended Scopes** (aligned with architecture):
+### Documentation And Workflow Artifacts
+Use this workflow for README, architecture, guardrails, usage docs, ADRs, tasks, research, and ExecPlans. Consult `docs/guardrails/documentation.md`, `.agents/DOCS.md`, `.agents/TASKS.md`, `.agents/RESEARCH.md`, `.agents/PLANS.md`, and `docs/adr/README.md` as applicable. Do not edit generated indexes by hand.
 
-| Scope | Description |
-|-------|-------------|
-| `cli` | Command-line interface and argument parsing |
-| `agent` | Agent orchestration, conversation loop, tool execution |
-| `tools` | Tool definitions (Bash, Read, Edit, Write, etc.) |
-| `config` | Configuration, sessions, data directory |
-| `session` | Session persistence and management |
-| `model` | Model configuration and API types |
-| `prompts` | System prompt construction, AGENTS.md integration |
-| `logger` | Logging configuration |
+### Workflow Overlays
+Use this workflow when the user names a task, asks for planning/research, or changes ADR/task/research semantics. Consult `.agents/TASKS.md`, `.agents/PLANS.md`, `.agents/RESEARCH.md`, `.agents/DOCS.md`, and `docs/adr/README.md`; those docs own their lifecycle rules.
 
-## PR Requirements
+### Implementation Quality And Verification
+Use this workflow for code changes, refactors, bug fixes, tests, and review readiness. Consult `docs/guardrails/implementation-quality.md`, `docs/guardrails/testing-and-verification.md`, `CONTRIBUTING.md`, and `ARCHITECTURE.md`. Match existing style and scale checks to the changed surface.
 
-- Follow PR template with description, testing details, and checklist
-- All tests must pass
-- Code follows style guidelines
-- No new warnings generated
-- Documentation updated if needed
+## Repository Rules
+- Do not commit or push unless explicitly asked.
+- Assume uncommitted changes may belong to the user.
+- Do not revert, overwrite, or clean files you did not intentionally change.
+- Inspect `git status --short` before broad edits.
+- Update `ARCHITECTURE.md` when adding/removing files or moving implementation.
+- Update `README.md` when adding/removing user-visible features or docs.
+- Report relevant remaining changes before handoff.
 
-## ExecPlans
-
-When writing complex features or significant refactors, use an ExecPlan (as described in `.agents/PLANS.md`) from design to implementation.
-
-## Agent Workflow
-
-- Determine if the user is asking you to work on a task or not.
-- For the first task in a session, read `.agents/TASKS.md`, then use `ahm task next`, `ahm task ready`, `ahm task list`, `ahm task blocked`, or `ahm task show <id>` to inspect task state before acting. You may also open the specific task file under `.agents/.tasks/active/` or `.agents/.tasks/completed/` for full context. For later tasks in the same session, reread only the task index and specific task file unless `.agents/TASKS.md` changed or the task changes task workflow semantics.
-- Use task labels to filter work by type, area, and risk when the user asks for focused work.
-- Before creating, updating, organizing, or using research, read `.agents/RESEARCH.md`. Use `.agents/.research/index.md` as the research map.
-- Before auditing or updating documentation, read `.agents/DOCS.md`. Prefer the target repository's existing documentation conventions over adding new structures.
-- `Effort: L` and `Effort: XL` tasks, significant refactors, or workflow semantics changes require an ExecPlan before implementation. Create or update plans under `.agents/exec-plans/active/` and keep `.agents/exec-plans/active/index.md` current.
-- Use `ahm task complete <id>` and `ahm task cancel <id> --reason <text>` for task state transitions that move files between task buckets. Do not manually move task files.
-- Do not edit generated indexes by hand. Update source task, research, or ExecPlan files and run `ahm index` to regenerate. Do not run `ahm index` after `ahm task start`, `ahm task complete`, or `ahm task cancel` unless you edit metadata by hand afterward; those commands already regenerate indexes. Use `ahm --dry-run index` to verify they are current without rewriting.
-- Treat `.agents/*` workflow guides and `docs/adr/README.md` as AHM-managed templates. Change canonical guidance in the AHM repository, not through local consumer edits.
-- Do not commit or push code unless explicitly asked to.
-
-## Architecture Decision Records
-
-When creating, updating, or managing ADRs, read `docs/adr/README.md` for the format and workflow rules. Use `ahm adr create`, `ahm adr accept`, `ahm adr reject`, `ahm adr deprecate`, and `ahm adr supersede` for ADR lifecycle management.
-
-## Important Notes
-
-- Run the `Full Check` command when you complete a task to make sure the code is correct.
-- The version of node that acai supports can run typescript directly.
-- Always use single quotes for commit messages containing special characters
-- Never add comments explaining edits - only add comments that explain or clarify how code works
-- Never add comments indicating that code was removed
-- Always run `Full Check` before committing
-- Whenever adding or removing files from the project, always update ./ARCHITECTURE.md
-- Whenever adding or removing files from the project or adding or removing features from the project, update ./README.md if needed
-- When `npm install` or typecheck fails due to missing type definitions or stale `node_modules`, delete `node_modules` and reinstall with `npm install --include=dev --ignore-scripts`
-- When moving implementation between files or packages, update repository code maps and implementation-location references even if user-facing behavior is unchanged.
+## Handoff
+End with what changed, exact checks run, remaining risks or skipped checks, and actionable next steps. For commits, include hash, worktree cleanliness, and leftover changes.
