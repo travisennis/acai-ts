@@ -41,11 +41,21 @@ Use this workflow for token budgets, streaming, process lifetime, stdout/stderr 
 ### Documentation And Workflow Artifacts
 Use this workflow for README, architecture, guardrails, usage docs, ADRs, tasks, research, and ExecPlans. Consult `docs/guardrails/documentation.md`, `.agents/DOCS.md`, `.agents/TASKS.md`, `.agents/RESEARCH.md`, `.agents/PLANS.md`, and `docs/adr/README.md` as applicable. Do not edit generated indexes by hand.
 
-### Workflow Overlays
-Use this workflow when the user names a task, asks for planning/research, or changes ADR/task/research semantics. Consult `.agents/TASKS.md`, `.agents/PLANS.md`, `.agents/RESEARCH.md`, `.agents/DOCS.md`, and `docs/adr/README.md`; those docs own their lifecycle rules.
-
 ### Implementation Quality And Verification
 Use this workflow for code changes, refactors, bug fixes, tests, and review readiness. Consult `docs/guardrails/implementation-quality.md`, `docs/guardrails/testing-and-verification.md`, `CONTRIBUTING.md`, and `ARCHITECTURE.md`. Match existing style and scale checks to the changed surface.
+
+### Workflow Overlays
+These overlays do not replace the specific workflow routes above. Use them first
+to identify or manage the work item, then re-classify the concrete task and load
+the relevant routed workflow docs before editing.
+
+When asked to create, choose, update, or work on a task, read `.agents/TASKS.md`,
+inspect the task with `ahm task ...`, open the task file, then return to
+Workflow Routing and choose the specific route or routes required by the task
+content. When a task, workflow doc, or user request calls for an ExecPlan, read
+`.agents/PLANS.md`. When one calls for an ADR, read [docs/adr/README.md](docs/adr/README.md).
+When asked to create, update, organize, or use research, read `.agents/RESEARCH.md`,
+then use `.agents/.research/index.md` as the map.
 
 ## Repository Rules
 - Do not commit or push unless explicitly asked.
