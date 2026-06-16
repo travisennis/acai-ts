@@ -292,6 +292,6 @@ Tasks that introduce or change an architectural decision must have an Architectu
 - When an ADR is required, create or update it before code changes begin, then reference it from the task body or implementation notes. If the task also requires an ExecPlan, the ExecPlan should cite the ADR and implement the accepted decision.
 
 After finishing a task that changes code, config, dependencies, fixtures, or
-templates, run the project's Full CI check as instructed in `AGENTS.md`. For
+templates, run the project's Full CI check as instructed in `CONTRIBUTING.md`. For
 docs-only task updates, verify the Markdown and links; full CI is not required
 unless code, config, dependency, fixture, or template files changed.

@@ -1,5 +1,5 @@
 {
-  "version": "0.3.0",
+  "version": "0.3.1",
   "strict_acceptance": false,
   "files": {
     ".agents/.research/README.md": "69343a0adf485ea1b22d4b12d7645e4f3b9d6a642aa19ebaff86bde2ec5ebc1a",
@@ -7,9 +7,9 @@
     ".agents/DOCS.md": "22a01a3e24f616f3f2b7d1cf7d05ac1b95835ee762e9b0747ffba768b129b212",
     ".agents/PLANS.md": "aa8e9175f96970bc5663e7312495fe7e630c95353835b818abd53c9d15e670d9",
     ".agents/RESEARCH.md": "264593a8e61bc8bbda96e2ceb8f0c29040f13fcc4e4d4d21d99278becc0c89d8",
-    ".agents/TASKS.md": "69e03652d9234b673622ea5424aaf5fe73ba69f23f2a6bc285416da6ece43ba0",
+    ".agents/TASKS.md": "ef918845e873c8b785951d6e457f230f265e75b0eeb0d863fd1499b6d0fd9101",
     ".agents/skills/grooming-backlog/SKILL.md": "cc03e3ce68dba4128def53657e99f00c55f66f91858bacc725306112636f2e85",
     ".agents/skills/preflight/SKILL.md": "898e715dd0961abfe0ec3f7967d592659c6a40b067a0ae43fbac3b0c69c0a431",
-    "docs/adr/README.md": "bbdbd91fd49096fac3525943d16a78c6e513b91d3939fcf5a038a15ea5d1358a"
+    "docs/adr/README.md": "f7ce58d36ed29aebbe8b3d3d3ba5cbcdf3cffee249283bbf1b9832b81a7ab0e9"
   }
 }

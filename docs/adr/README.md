@@ -29,6 +29,8 @@ ADRs are usually optional for localized bug fixes, tests, docs, small refactors,
 
 Treat ADRs as decision history, not living specifications. Do not delete or rewrite an old ADR just because a later decision changes direction.
 
+When new evidence, requirements, or implementation experience changes an accepted decision, create a new ADR instead of editing the old decision in place. The old ADR should continue to describe the decision that was accepted at the time.
+
 Create a new ADR when:
 
 - A later decision reverses, replaces, or materially changes an accepted architectural boundary.
@@ -43,7 +45,7 @@ Update an existing ADR when:
 
 Full supersession is expressed through `ahm adr supersede <old-id> --by <new-id>`, which sets the old record's `status` to `superseded by ADR-NNN` and writes reciprocal body references.
 
-Partial supersession (when only part of an older decision is replaced) is represented by keeping the old ADR's status as `accepted` and recording the partial replacement in the body, usually under `## More Information`. The new ADR should state which part of the older decision it supersedes and list the older ADR in its References.
+Use `ahm adr supersede` only when the new ADR fully replaces the old decision. Partial supersession (when only part of an older decision is replaced) is represented by keeping the old ADR's status as `accepted` and recording the partial replacement in the body, usually under `## More Information`. The new ADR should state which part of the older decision it supersedes and list the older ADR in its References.
 
 ## Numbering and Naming
 
