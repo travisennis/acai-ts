@@ -72,6 +72,12 @@ const DEFAULT_THEME: MarkdownTheme = {
 };
 
 /**
+ * The bundled Table renders one space of padding on each side of every cell,
+ * so each column needs two extra columns beyond its content width.
+ */
+const TABLE_CELL_PADDING = 2;
+
+/**
  * Options for configuring Markdown component
  */
 interface MarkdownOptions {
@@ -270,7 +276,7 @@ export class Markdown implements Component {
         break;
 
       case "table":
-        this.renderBlockTableToken(token, lines);
+        this.renderBlockTableToken(token, width, lines);
         break;
 
       case "blockquote":
@@ -367,9 +373,18 @@ export class Markdown implements Component {
     lines.push(...listLines);
   }
 
-  private renderBlockTableToken(token: Token, lines: string[]): void {
+  private renderBlockTableToken(
+    token: Token,
+    width: number,
+    lines: string[],
+  ): void {
     const tableLines = this.renderTable(
-      token as Token & { header: unknown[]; rows: unknown[][] },
+      token as Token & {
+        header: unknown[];
+        rows: unknown[][];
+        align?: Array<"left" | "right" | "center" | null>;
+      },
+      width,
     );
     lines.push(...tableLines);
   }
@@ -887,14 +902,24 @@ export class Markdown implements Component {
   }
 
   /**
-   * Render a table
+   * Render a GitHub-flavored markdown table.
+   *
+   * Columns are sized to their content rather than split evenly: each column
+   * keeps its natural width when the whole table fits within the available
+   * terminal width, and only the widest columns are shrunk (with word
+   * wrapping) when it does not. This keeps narrow columns compact, lets
+   * content-heavy columns use the room they need, and lets the table grow up
+   * to the full terminal width instead of a fixed cap.
    */
   private renderTable(
-    token: Token & { header: unknown[]; rows: unknown[][] },
+    token: Token & {
+      header: unknown[];
+      rows: unknown[][];
+      align?: Array<"left" | "right" | "center" | null>;
+    },
+    availableWidth: number,
   ): string[] {
-    const lines: string[] = [];
-
-    // Extract header and row texts
+    // Extract header and row texts (with inline formatting applied)
     const header = token.header.map((cell) => {
       const headerCell = cell as { tokens?: Token[] };
       return this.renderInlineTokens(headerCell.tokens || []);
@@ -907,30 +932,110 @@ export class Markdown implements Component {
       }),
     );
 
-    // Calculate column widths based on available width
-    const padding = 5; // Account for table borders and padding
-    const availableWidth = Math.max(10, 80 - padding); // Use reasonable default width for TUI
-    const colCount = header?.length ?? 1;
-    const width = Math.max(
-      10,
-      Math.floor(availableWidth / Math.max(1, colCount)),
-    );
-    const computedColWidths: number[] = new Array(colCount).fill(width);
+    const colCount = Math.max(header.length, ...rows.map((r) => r.length), 1);
 
-    // Create table using cli-table3
+    // Measure each column's natural width (its longest line) and minimum
+    // width (its longest word) using the visible width so ANSI styling and
+    // wide characters are accounted for.
+    const natural = new Array<number>(colCount).fill(0);
+    const minimum = new Array<number>(colCount).fill(1);
+    const measure = (text: string, col: number): void => {
+      for (const line of text.split("\n")) {
+        natural[col] = Math.max(natural[col], visibleWidth(line));
+        for (const word of line.split(/\s+/)) {
+          if (word) {
+            minimum[col] = Math.max(minimum[col], visibleWidth(word));
+          }
+        }
+      }
+    };
+    for (let c = 0; c < colCount; c++) {
+      measure(header[c] ?? "", c);
+    }
+    for (const row of rows) {
+      for (let c = 0; c < colCount; c++) {
+        measure(row[c] ?? "", c);
+      }
+    }
+    // A column never needs to be wider than its longest line.
+    for (let c = 0; c < colCount; c++) {
+      minimum[c] = Math.min(minimum[c], natural[c] || 1);
+    }
+
+    // Budget for cell *content* after removing the column separators and the
+    // single space of padding the table draws on each side of every cell.
+    const borderOverhead = colCount + 1;
+    const contentBudget = Math.max(
+      colCount,
+      availableWidth - borderOverhead - TABLE_CELL_PADDING * colCount,
+    );
+
+    const contentWidths = this.fitColumnWidths(natural, minimum, contentBudget);
+    const colWidths = contentWidths.map((w) => w + TABLE_CELL_PADDING);
+
+    const colAligns = Array.from({ length: colCount }, (_, c) => {
+      const align = token.align?.[c];
+      return align === "right" || align === "center" ? align : "left";
+    });
+
     const table = new Table({
       head: header,
-      colWidths: computedColWidths,
-      wordWrap: true, // Enable word wrapping for the description column
+      colWidths,
+      colAligns,
+      wordWrap: true,
+      wrapOnWordBoundary: true,
     });
 
     table.push(...rows);
 
-    // Split table output into lines
-    const tableOutput = table.toString();
-    const tableLines = tableOutput.split("\n");
-    lines.push(...tableLines);
+    const lines = table.toString().split("\n");
     lines.push(""); // Add spacing after table
     return lines;
+  }
+
+  /**
+   * Choose a content width for each column so the whole table fits within
+   * `contentBudget` columns.
+   *
+   * Columns keep their natural width when everything fits. Otherwise the
+   * widest column is shrunk one column at a time (never below the longest word
+   * it contains) until the table fits, so content-heavy columns share the
+   * available space fairly while narrow columns stay compact. If even the
+   * word-boundary minimums overflow, columns are shrunk further (cells then
+   * truncate) so the table never exceeds the budget.
+   */
+  private fitColumnWidths(
+    natural: number[],
+    minimum: number[],
+    contentBudget: number,
+  ): number[] {
+    const widths = natural.slice();
+    let total = widths.reduce((sum, w) => sum + w, 0);
+    if (total <= contentBudget) {
+      return widths;
+    }
+
+    const shrinkWidest = (floor: (index: number) => number): void => {
+      while (total > contentBudget) {
+        let idx = -1;
+        let widest = -1;
+        for (let i = 0; i < widths.length; i++) {
+          if (widths[i] > floor(i) && widths[i] > widest) {
+            widest = widths[i];
+            idx = i;
+          }
+        }
+        if (idx === -1) {
+          break;
+        }
+        widths[idx] -= 1;
+        total -= 1;
+      }
+    };
+
+    shrinkWidest((i) => minimum[i]);
+    shrinkWidest(() => 1);
+
+    return widths;
   }
 }

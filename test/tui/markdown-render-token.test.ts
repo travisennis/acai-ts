@@ -202,6 +202,86 @@ describe("Markdown renderToken - table case", () => {
       "Should contain table data",
     );
   });
+
+  it("should size columns to their content instead of evenly", () => {
+    const md = new Markdown(
+      [
+        "| Tool | Description | Status |",
+        "|------|-------------|--------|",
+        "| readFile | Reads a file from the local filesystem and returns its contents | active |",
+        "| grep | Search | beta |",
+      ].join("\n"),
+      { paddingX: 0, paddingY: 0 },
+    );
+    const lines = md.render(120).map((l) => stripAnsi(l));
+    const headerLine = lines.find((l) => l.includes("Tool"));
+    assert.ok(headerLine, "header line should be rendered");
+
+    // Column boundaries are the vertical separators. The narrow "Tool" and
+    // "Status" columns must be much narrower than the wide "Description"
+    // column, rather than all three being equal.
+    const segments = (headerLine as string).split("│").slice(1, -1);
+    assert.equal(segments.length, 3, "should have three columns");
+    const [toolW, descW, statusW] = segments.map((s) => s.length);
+    assert.ok(
+      descW > toolW * 2 && descW > statusW * 2,
+      `description column (${descW}) should be much wider than tool (${toolW}) and status (${statusW})`,
+    );
+  });
+
+  it("should not exceed the available width on a narrow terminal", () => {
+    const md = new Markdown(
+      [
+        "| Tool | Description | Status |",
+        "|------|-------------|--------|",
+        "| readFile | Reads a file from the local filesystem and returns its contents | active |",
+      ].join("\n"),
+      { paddingX: 0, paddingY: 0 },
+    );
+    const width = 60;
+    const lines = md.render(width).map((l) => stripAnsi(l));
+    for (const line of lines) {
+      assert.ok(
+        line.length <= width,
+        `line of width ${line.length} should not exceed ${width}: ${line}`,
+      );
+    }
+  });
+
+  it("should let wide tables grow beyond the old fixed cap", () => {
+    const longText = "word ".repeat(40).trim();
+    const md = new Markdown(
+      ["| A | B |", "|---|---|", `| ${longText} | ${longText} |`].join("\n"),
+      { paddingX: 0, paddingY: 0 },
+    );
+    const lines = md.render(160).map((l) => stripAnsi(l));
+    const maxWidth = Math.max(...lines.map((l) => l.length));
+    assert.ok(
+      maxWidth > 90,
+      `wide table should use more than the old ~80 cap, got ${maxWidth}`,
+    );
+    assert.ok(maxWidth <= 160, "table should stay within terminal width");
+  });
+
+  it("should honor column alignment", () => {
+    const md = new Markdown(
+      [
+        "| Item | Price |",
+        "|:-----|------:|",
+        "| Apples | 1.25 |",
+        "| A longer item name | 9 |",
+      ].join("\n"),
+      { paddingX: 0, paddingY: 0 },
+    );
+    const lines = md.render(80).map((l) => stripAnsi(l));
+    const priceRow = lines.find((l) => l.includes("9"));
+    assert.ok(priceRow, "row with right-aligned value should render");
+    // Right-aligned value sits flush against the trailing padding/border.
+    assert.ok(
+      / 9 │/.test(priceRow as string),
+      `right-aligned price should hug the right edge: ${priceRow}`,
+    );
+  });
 });
 
 describe("Markdown renderToken - blockquote case", () => {
