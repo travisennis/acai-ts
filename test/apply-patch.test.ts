@@ -330,4 +330,59 @@ describe("parsePatch", () => {
     const chunks = (result.hunks[0] as { chunks: UpdateFileChunk[] }).chunks;
     assert.equal(chunks[0].isEndOfFile, true);
   });
+
+  it("should parse an add file patch with a colon in the path", () => {
+    const patchText = `*** Begin Patch
+*** Add File: C:/Users/test/file.txt
++Hello World
+*** End Patch`;
+
+    const result = parsePatch(patchText);
+    assert.equal(result.hunks.length, 1);
+    assert.equal(result.hunks[0].type, "add");
+    assert.equal(result.hunks[0].path, "C:/Users/test/file.txt");
+  });
+
+  it("should parse a delete file patch with a colon in the path", () => {
+    const patchText = `*** Begin Patch
+*** Delete File: D:/data/old.txt
+*** End Patch`;
+
+    const result = parsePatch(patchText);
+    assert.equal(result.hunks.length, 1);
+    assert.equal(result.hunks[0].type, "delete");
+    assert.equal(result.hunks[0].path, "D:/data/old.txt");
+  });
+
+  it("should parse an update file patch with a colon in the path", () => {
+    const patchText = `*** Begin Patch
+*** Update File: C:/project/src/index.ts
+@@ context
+-old
++new
+*** End Patch`;
+
+    const result = parsePatch(patchText);
+    assert.equal(result.hunks.length, 1);
+    assert.equal(result.hunks[0].type, "update");
+    assert.equal(result.hunks[0].path, "C:/project/src/index.ts");
+  });
+
+  it("should parse a move operation with a colon in the path", () => {
+    const patchText = `*** Begin Patch
+*** Update File: old/path.ts
+*** Move to: D:/project/new/path.ts
+@@ context
+-old
++new
+*** End Patch`;
+
+    const result = parsePatch(patchText);
+    assert.equal(result.hunks.length, 1);
+    assert.equal(result.hunks[0].type, "update");
+    assert.equal(
+      (result.hunks[0] as { movePath?: string }).movePath,
+      "D:/project/new/path.ts",
+    );
+  });
 });
