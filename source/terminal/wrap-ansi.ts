@@ -137,7 +137,7 @@ function parseEscapeSequence(
   currentEscapeUrl: string | undefined,
 ): { escapeCode: number | undefined; escapeUrl: string | undefined } {
   const match = new RegExp(
-    `(?:\\\\${ANSI_CSI}(?<code>\\d+)m|\\\\${ANSI_ESCAPE_LINK}(?<uri>.*)${ANSI_ESCAPE_BELL})`,
+    `(?:\\${ANSI_CSI}(?<code>\\d+)m|\\${ANSI_ESCAPE_LINK}(?<uri>.*)${ANSI_ESCAPE_BELL})`,
   ).exec(preString.slice(preStringIndex));
 
   let newEscapeCode = currentEscapeCode;

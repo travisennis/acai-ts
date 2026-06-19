@@ -110,6 +110,18 @@ describe("wrapAnsi", () => {
       strictEqual(result.includes("world"), true);
     });
 
+    it("should re-emit active color codes when wrapping across lines", () => {
+      const Esc = "\u001B";
+      const red = `${Esc}[31m`;
+      const reset = `${Esc}[39m`;
+      // "hello world" split at width 5 puts "hello" on line 1 and "world" on line 2
+      // The red code should be re-emitted before "world" on the continuation line
+      const input = `${red}hello world${reset}`;
+      const result = wrapAnsi(input, 5);
+      // Verify the red code is present on line 2 before "world"
+      strictEqual(result.includes(`${Esc}[31m`), true);
+    });
+
     it("should handle styled text wrapping", () => {
       const red = "\u001B[31m";
       const reset = "\u001B[39m";
