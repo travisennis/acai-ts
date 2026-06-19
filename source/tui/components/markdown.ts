@@ -405,8 +405,7 @@ export class Markdown implements Component {
 
   private renderHtmlToken(token: Token, lines: string[]): void {
     const t = token as Token & { text: string };
-    // Render HTML tags with dim styling and content as normal text
-    lines.push(style.dim(t.text));
+    lines.push(t.text.replace(/<\/?[^>]+>/g, (tag) => style.dim(tag)));
   }
 
   private renderSpaceToken(lines: string[]): void {
@@ -617,6 +616,30 @@ export class Markdown implements Component {
     return -1;
   }
 
+  private includeAnsiSequencesImmediatelyBefore(
+    styledText: string,
+    position: number,
+  ): number {
+    let pos = position;
+    const escapeChar = String.fromCharCode(27);
+
+    while (pos > 0) {
+      const escapeStart = styledText.lastIndexOf(escapeChar, pos - 1);
+      if (escapeStart === -1) {
+        break;
+      }
+
+      const escapeEnd = styledText.indexOf("m", escapeStart);
+      if (escapeEnd + 1 !== pos) {
+        break;
+      }
+
+      pos = escapeStart;
+    }
+
+    return pos;
+  }
+
   /**
    * Protect inline code spans by replacing them with width-matched placeholders.
    * This prevents wrapAnsi from breaking code spans across lines while
@@ -645,10 +668,9 @@ export class Markdown implements Component {
       );
 
       if (closingIndex !== -1) {
-        const styledStart = this.cleanToStyledIndex(
-          cleanText,
+        const styledStart = this.includeAnsiSequencesImmediatelyBefore(
           text,
-          backtickIndex,
+          this.cleanToStyledIndex(cleanText, text, backtickIndex),
         );
         const styledEnd = this.cleanToStyledIndex(
           cleanText,

@@ -118,8 +118,35 @@ describe("wrapAnsi", () => {
       // The red code should be re-emitted before "world" on the continuation line
       const input = `${red}hello world${reset}`;
       const result = wrapAnsi(input, 5);
-      // Verify the red code is present on line 2 before "world"
-      strictEqual(result.includes(`${Esc}[31m`), true);
+      const lines = result.split("\n");
+      // Verify the red code is re-emitted on line 2 before "world"
+      strictEqual(lines[1], `${red}world${reset}`);
+    });
+
+    it("should re-emit active modifier and color codes independently", () => {
+      const Esc = "\u001B";
+      const bold = `${Esc}[1m`;
+      const red = `${Esc}[31m`;
+      const resetBold = `${Esc}[22m`;
+      const resetColor = `${Esc}[39m`;
+      const input = `${bold}${red}hello world${resetColor}${resetBold}`;
+
+      const result = wrapAnsi(input, 5);
+      const lines = result.split("\n");
+
+      strictEqual(lines[1], `${bold}${red}world${resetColor}${resetBold}`);
+    });
+
+    it("should not leak closed color codes to later wrapped lines", () => {
+      const Esc = "\u001B";
+      const gray = `${Esc}[90m`;
+      const resetColor = `${Esc}[39m`;
+      const input = `wrap with ${gray}\`${resetColor}${Esc}[36mcode${resetColor}${gray}\`${resetColor} and then stop`;
+
+      const result = wrapAnsi(input, 20, { trim: false });
+      const lines = result.split("\n");
+
+      strictEqual(lines.at(-1)?.includes(Esc), false);
     });
 
     it("should handle styled text wrapping", () => {

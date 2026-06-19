@@ -1,4 +1,3 @@
-import { ansiStyles } from "./ansi-styles.ts";
 import stringWidth from "./string-width.ts";
 import stripAnsi from "./strip-ansi.ts";
 
@@ -10,14 +9,14 @@ interface WrapAnsiOptions {
 
 const ESCAPES = new Set(["\u001B", "\u009B"]);
 
-const END_CODE = 39;
 const ANSI_ESCAPE_BELL = "\u0007";
 const ANSI_CSI = "[";
 const ANSI_OSC = "]";
 const ANSI_SGR_TERMINATOR = "m";
 const ANSI_ESCAPE_LINK = `${ANSI_OSC}8;;`;
+const ANSI_REGEX_ESCAPE = "\u001B";
 
-const wrapAnsiCode = (code: number): string =>
+const wrapAnsiCode = (code: string | number): string =>
   `${ESCAPES.values().next().value}${ANSI_CSI}${code}${ANSI_SGR_TERMINATOR}`;
 
 const wrapAnsiHyperlink = (url: string): string =>
@@ -126,112 +125,189 @@ const stringVisibleTrimSpacesRight = (string: string): string => {
   return words.slice(0, last).join(" ") + words.slice(last).join("");
 };
 
+type SgrSlot =
+  | "intensity"
+  | "italic"
+  | "underline"
+  | "overline"
+  | "inverse"
+  | "hidden"
+  | "strikethrough"
+  | "foreground"
+  | "background";
+
+interface ActiveSgr {
+  open: string;
+  close: string;
+}
+
+interface EscapeState {
+  sgr: Map<SgrSlot, ActiveSgr>;
+  escapeUrl: string | undefined;
+}
+
+const SGR_SLOT_BY_OPEN_CODE = new Map<number, SgrSlot>([
+  [1, "intensity"],
+  [2, "intensity"],
+  [3, "italic"],
+  [4, "underline"],
+  [53, "overline"],
+  [7, "inverse"],
+  [8, "hidden"],
+  [9, "strikethrough"],
+]);
+
+const CLOSE_CODE_BY_SLOT = new Map<SgrSlot, number>([
+  ["intensity", 22],
+  ["italic", 23],
+  ["underline", 24],
+  ["overline", 55],
+  ["inverse", 27],
+  ["hidden", 28],
+  ["strikethrough", 29],
+  ["foreground", 39],
+  ["background", 49],
+]);
+
+const SLOT_BY_CLOSE_CODE = new Map<number, SgrSlot>(
+  [...CLOSE_CODE_BY_SLOT.entries()].map(([slot, closeCode]) => [
+    closeCode,
+    slot,
+  ]),
+);
+
+const isForegroundCode = (code: number): boolean =>
+  (code >= 30 && code <= 37) || (code >= 90 && code <= 97);
+
+const isBackgroundCode = (code: number): boolean =>
+  (code >= 40 && code <= 47) || (code >= 100 && code <= 107);
+
+const applySgrCode = (
+  state: EscapeState,
+  slot: SgrSlot,
+  open: string,
+): void => {
+  const close = CLOSE_CODE_BY_SLOT.get(slot);
+  if (close !== undefined) {
+    state.sgr.set(slot, { open, close: wrapAnsiCode(close) });
+  }
+};
+
+const applyExtendedColorCode = (
+  state: EscapeState,
+  codes: number[],
+  index: number,
+): number => {
+  const code = codes[index];
+  const mode = codes[index + 1];
+  const parameterCount = mode === 2 ? 5 : mode === 5 ? 3 : 0;
+
+  if ((code !== 38 && code !== 48) || parameterCount === 0) {
+    return index;
+  }
+
+  const openCodes = codes.slice(index, index + parameterCount).join(";");
+  applySgrCode(state, code === 38 ? "foreground" : "background", openCodes);
+  return index + parameterCount - 1;
+};
+
+const applySgrCodeAt = (
+  state: EscapeState,
+  codes: number[],
+  index: number,
+): number => {
+  const code = codes[index] ?? 0;
+
+  if (code === 0) {
+    state.sgr.clear();
+    return index;
+  }
+
+  const closeSlot = SLOT_BY_CLOSE_CODE.get(code);
+  if (closeSlot) {
+    state.sgr.delete(closeSlot);
+    return index;
+  }
+
+  const slot = SGR_SLOT_BY_OPEN_CODE.get(code);
+  if (slot) {
+    applySgrCode(state, slot, String(code));
+    return index;
+  }
+
+  if (isForegroundCode(code)) {
+    applySgrCode(state, "foreground", String(code));
+    return index;
+  }
+
+  if (isBackgroundCode(code)) {
+    applySgrCode(state, "background", String(code));
+    return index;
+  }
+
+  return applyExtendedColorCode(state, codes, index);
+};
+
+const applySgrCodes = (state: EscapeState, rawCode: string): void => {
+  const codes = rawCode.length === 0 ? [0] : rawCode.split(";").map(Number);
+
+  for (let index = 0; index < codes.length; index++) {
+    index = applySgrCodeAt(state, codes, index);
+  }
+};
+
 /**
  * Parses an ANSI escape sequence from preString starting at the given index.
- * Returns the updated escapeCode and escapeUrl.
  */
 function parseEscapeSequence(
   preString: string,
   preStringIndex: number,
-  currentEscapeCode: number | undefined,
-  currentEscapeUrl: string | undefined,
-): { escapeCode: number | undefined; escapeUrl: string | undefined } {
+  state: EscapeState,
+): void {
+  const rest = preString.slice(preStringIndex);
   const match = new RegExp(
-    `(?:\\${ANSI_CSI}(?<code>\\d+)m|\\${ANSI_ESCAPE_LINK}(?<uri>.*)${ANSI_ESCAPE_BELL})`,
-  ).exec(preString.slice(preStringIndex));
+    `^(?:${ANSI_REGEX_ESCAPE}\\${ANSI_CSI}(?<code>[\\d;]*)m|${ANSI_REGEX_ESCAPE}\\${ANSI_ESCAPE_LINK}(?<uri>.*?)${ANSI_ESCAPE_BELL})`,
+  ).exec(rest);
 
-  let newEscapeCode = currentEscapeCode;
-  let newEscapeUrl = currentEscapeUrl;
-
-  if (match?.groups) {
-    const { groups } = match;
-    if (groups["code"] !== undefined) {
-      const code = Number.parseFloat(groups["code"]);
-      newEscapeCode = code === END_CODE ? undefined : code;
-    } else if (groups["uri"] !== undefined) {
-      newEscapeUrl = groups["uri"].length === 0 ? undefined : groups["uri"];
-    }
+  if (!match?.groups) {
+    return;
   }
 
-  return { escapeCode: newEscapeCode, escapeUrl: newEscapeUrl };
+  const { groups } = match;
+  if (groups["code"] !== undefined) {
+    applySgrCodes(state, groups["code"]);
+  } else if (groups["uri"] !== undefined) {
+    state.escapeUrl = groups["uri"].length === 0 ? undefined : groups["uri"];
+  }
 }
 
-/**
- * Handles escape output when the next character is a newline.
- */
-function handleEscapeOnNextNewline(
-  currentReturnValue: string,
-  escapeCode: number | undefined,
-  escapeUrl: string | undefined,
-): string {
-  const code = ansiStyles["codes"].get(Number(escapeCode));
-  let newReturnValue = currentReturnValue;
+const closeActiveEscapes = (state: EscapeState): string =>
+  `${state.escapeUrl ? wrapAnsiHyperlink("") : ""}${[...state.sgr.values()]
+    .toReversed()
+    .map(({ close }) => close)
+    .join("")}`;
 
-  if (escapeUrl) {
-    newReturnValue += wrapAnsiHyperlink("");
-  }
-
-  if (escapeCode && code) {
-    newReturnValue += wrapAnsiCode(code);
-  }
-
-  return newReturnValue;
-}
-
-/**
- * Handles escape output when the current character is a newline.
- */
-function handleEscapeOnCurrentNewline(
-  currentReturnValue: string,
-  escapeCode: number | undefined,
-  escapeUrl: string | undefined,
-): string {
-  const code = ansiStyles["codes"].get(Number(escapeCode));
-  let newReturnValue = currentReturnValue;
-
-  if (escapeCode && code) {
-    newReturnValue += wrapAnsiCode(escapeCode);
-  }
-
-  if (escapeUrl) {
-    newReturnValue += wrapAnsiHyperlink(escapeUrl);
-  }
-
-  return newReturnValue;
-}
+const openActiveEscapes = (state: EscapeState): string =>
+  `${[...state.sgr.values()]
+    .map(({ open }) => wrapAnsiCode(open))
+    .join("")}${state.escapeUrl ? wrapAnsiHyperlink(state.escapeUrl) : ""}`;
 
 const processAnsiEscapes = (pre: string[], preString: string): string => {
   let returnValue = "";
-  let escapeCode: number | undefined;
-  let escapeUrl: string | undefined;
+  const state: EscapeState = { sgr: new Map(), escapeUrl: undefined };
   let preStringIndex = 0;
 
   for (const [index, character] of pre.entries()) {
     returnValue += character;
 
     if (ESCAPES.has(character)) {
-      const parsed = parseEscapeSequence(
-        preString,
-        preStringIndex,
-        escapeCode,
-        escapeUrl,
-      );
-      escapeCode = parsed.escapeCode;
-      escapeUrl = parsed.escapeUrl;
+      parseEscapeSequence(preString, preStringIndex, state);
     }
 
     if (pre[index + 1] === "\n") {
-      returnValue = handleEscapeOnNextNewline(
-        returnValue,
-        escapeCode,
-        escapeUrl,
-      );
+      returnValue += closeActiveEscapes(state);
     } else if (character === "\n") {
-      returnValue = handleEscapeOnCurrentNewline(
-        returnValue,
-        escapeCode,
-        escapeUrl,
-      );
+      returnValue += openActiveEscapes(state);
     }
 
     preStringIndex += character.length;

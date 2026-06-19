@@ -1,6 +1,7 @@
 import { strict as assert } from "node:assert/strict";
 import { describe, it } from "node:test";
 import stripAnsi from "../../source/terminal/strip-ansi.ts";
+import style from "../../source/terminal/style.ts";
 import { Markdown } from "../../source/tui/components/markdown.ts";
 
 describe("Markdown renderToken - heading cases", () => {
@@ -273,16 +274,51 @@ describe("Markdown renderToken - image case", () => {
 
 describe("Markdown renderToken - html case", () => {
   it("should render HTML tags dimmed", () => {
-    const md = new Markdown("<div>content</div>", {
-      paddingX: 0,
-      paddingY: 0,
-    });
-    const lines = md.render(80);
-    const visible = lines.map((l) => stripAnsi(l));
-    assert.ok(
-      visible.some((l) => l.includes("content")),
-      "Should contain HTML content",
-    );
+    const originalLevel = style.level;
+    style.level = 1;
+    try {
+      const md = new Markdown("<div>content</div>", {
+        paddingX: 0,
+        paddingY: 0,
+      });
+      const lines = md.render(80);
+      const rendered = lines.join("\n");
+      assert.ok(rendered.includes("\x1B[2m<div>\x1B[22m"));
+      assert.ok(rendered.includes("\x1B[2m</div>\x1B[22m"));
+      const visible = lines.map((l) => stripAnsi(l));
+      assert.ok(
+        visible.some((l) => l.includes("content")),
+        "Should contain HTML content",
+      );
+    } finally {
+      style.level = originalLevel;
+    }
+  });
+
+  it("should not dim HTML text content when wrapping", () => {
+    const originalLevel = style.level;
+    style.level = 1;
+    try {
+      const md = new Markdown(
+        "<div>long html content wraps here</div> normal paragraph after",
+        {
+          paddingX: 0,
+          paddingY: 0,
+        },
+      );
+      const lines = md.render(18);
+
+      assert.equal(
+        lines.some((line) => line.startsWith("\x1B[2mcontent")),
+        false,
+      );
+      assert.equal(
+        lines.some((line) => line.startsWith("\x1B[2mparagraph")),
+        false,
+      );
+    } finally {
+      style.level = originalLevel;
+    }
   });
 });
 

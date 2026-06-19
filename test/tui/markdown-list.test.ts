@@ -1,6 +1,7 @@
 import { strict as assert } from "node:assert/strict";
 import { describe, it } from "node:test";
 import stripAnsi from "../../source/terminal/strip-ansi.ts";
+import style from "../../source/terminal/style.ts";
 import { Markdown } from "../../source/tui/components/markdown.ts";
 
 describe("Markdown list rendering", () => {
@@ -76,6 +77,32 @@ describe("Markdown list rendering", () => {
       fullText.includes("`code`"),
       `Code in list should be preserved: "${fullText}"`,
     );
+  });
+
+  it("should not leak inline code styling to wrapped list continuation lines", () => {
+    const originalLevel = style.level;
+    style.level = 1;
+    try {
+      const md = new Markdown(
+        "- First item has enough words to wrap with `inline code` and then stop\n- Second item has enough words to wrap onto a continuation line and then stop",
+        {
+          paddingX: 0,
+          paddingY: 0,
+        },
+      );
+      const lines = md.render(36);
+
+      assert.equal(
+        lines.some((line) => line.startsWith("\x1B[90mstop")),
+        false,
+      );
+      assert.equal(
+        lines.some((line) => line.startsWith("\x1B[2mstop")),
+        false,
+      );
+    } finally {
+      style.level = originalLevel;
+    }
   });
 
   it("should render a list with a paragraph inside an item", () => {
