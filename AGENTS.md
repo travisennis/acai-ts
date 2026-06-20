@@ -6,11 +6,12 @@ Acai is a TypeScript/Node.js CLI assistant for coding workflows, available as bo
 Compatibility surfaces: CLI flags/commands, REPL/TUI output, prompt and AGENTS.md loading, `acai.json`, environment variables, dynamic tool and skill contracts, provider/model IDs, tool schemas, session/log formats, filesystem and shell permission boundaries, terminal rendering, package entry points, Node.js >=24, and documented output formats. Preserve them unless explicitly changed.
 
 ## Operating Loop
-1. Classify the request before editing.
-2. Load only the routed docs needed for that request.
-3. Preserve compatibility surfaces unless explicitly changed.
-4. Keep edits surgical and verify according to risk.
-5. Handoff with changes, checks, and remaining risk.
+1. Do managed-work intake first. If the request is about a task, ExecPlan, ADR, or research note, use `ahm` (see Managed Work Intake With `ahm`) to understand that work item before choosing implementation docs. If the request is directly about code, CLI behavior, tests, docs, build, release, or repo mechanics, skip `ahm` intake and classify it directly.
+2. Classify the concrete request before editing.
+3. Load only the routed docs needed for that request.
+4. Preserve compatibility surfaces unless explicitly changed.
+5. Keep edits surgical and verify according to risk.
+6. State the selected route and loaded docs, then handoff with changes, checks, and remaining risk.
 
 When this file conflicts with a specialized workflow doc for that workflow, the specialized doc wins.
 Keep AGENTS.md as routing, not as a command catalog or procedure manual.
@@ -39,23 +40,29 @@ Use this workflow for dependencies, Node/toolchain support, package metadata, bu
 Use this workflow for token budgets, streaming, process lifetime, stdout/stderr volume, file scans, cache behavior, and terminal rendering cost. Consult `docs/guardrails/performance-and-resource-use.md` and `ARCHITECTURE.md`. Avoid unbounded reads, logs, model context, process output, and directory scans.
 
 ### Documentation And Workflow Artifacts
-Use this workflow for README, architecture, guardrails, usage docs, ADRs, tasks, research, and ExecPlans. Consult `docs/guardrails/documentation.md`, `.agents/DOCS.md`, `.agents/TASKS.md`, `.agents/RESEARCH.md`, `.agents/PLANS.md`, and `docs/adr/README.md` as applicable. Do not edit generated indexes by hand.
+Use this workflow for README, architecture, guardrails, usage docs, ADRs, tasks, research, and ExecPlans. Consult `docs/guardrails/documentation.md` and, for managed work items, the relevant `ahm context` output (`docs`, `task`, `research`, `plan`, `adr`). Do not edit generated indexes by hand.
 
 ### Implementation Quality And Verification
 Use this workflow for code changes, refactors, bug fixes, tests, and review readiness. Consult `docs/guardrails/implementation-quality.md`, `docs/guardrails/testing-and-verification.md`, `CONTRIBUTING.md`, and `ARCHITECTURE.md`. Match existing style and scale checks to the changed surface.
 
-### Workflow Overlays
-These overlays do not replace the specific workflow routes above. Use them first
-to identify or manage the work item, then re-classify the concrete task and load
-the relevant routed workflow docs before editing.
+### Managed Work Intake With `ahm`
+`ahm` is for understanding and managing higher-order workflow records (tasks,
+ExecPlans, ADRs, research). It is not the implementation route. These overlays do
+not replace the specific workflow routes above: use `ahm` first to identify or
+manage the work item, then re-classify the concrete task and load the relevant
+routed workflow docs before editing. Treat `ahm context` output as the canonical
+workflow guidance.
 
-When asked to create, choose, update, or work on a task, read `.agents/TASKS.md`,
-inspect the task with `ahm task ...`, open the task file, then return to
-Workflow Routing and choose the specific route or routes required by the task
-content. When a task, workflow doc, or user request calls for an ExecPlan, read
-`.agents/PLANS.md`. When one calls for an ADR, read [docs/adr/README.md](docs/adr/README.md).
-When asked to create, update, organize, or use research, read `.agents/RESEARCH.md`,
-then use `.agents/.research/index.md` as the map.
+- Tasks: run `ahm context task`, inspect the task with `ahm task ...`, open the
+  task file, then return to Workflow Routing and choose the route(s) required by
+  the task content.
+- ExecPlans: run `ahm context plan` when the request or task calls for an ExecPlan.
+- ADRs: run `ahm context adr` when the request or task calls for an ADR, and use
+  `ahm adr ...` for lifecycle changes.
+- Research: run `ahm context research`, then use `.agents/.research/index.md` as
+  the map, when asked to create, update, organize, or use research.
+- General briefing: run `ahm context` only when asked for broad project context
+  or when no narrower managed-work context applies.
 
 ## Repository Rules
 - Do not commit or push unless explicitly asked.
@@ -65,6 +72,7 @@ then use `.agents/.research/index.md` as the map.
 - Update `ARCHITECTURE.md` when adding/removing files or moving implementation.
 - Update `README.md` when adding/removing user-visible features or docs.
 - Report relevant remaining changes before handoff.
+- Never hand-edit generated task, research, ExecPlan, or ADR indexes; update the source records and run the appropriate `ahm` command (`ahm task ...` for task state, `ahm adr ...` for ADR lifecycle).
 
 ## Handoff
 End with what changed, exact checks run, remaining risks or skipped checks, and actionable next steps. For commits, include hash, worktree cleanliness, and leftover changes.
