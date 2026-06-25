@@ -318,7 +318,7 @@ export class ExecutionEnvironment {
         output: string,
         duration: number,
       ) => {
-        const exitCode = error.code ?? 1;
+        const exitCode = typeof error.code === "number" ? error.code : 1;
         logger.error(
           {
             error: error.message,
