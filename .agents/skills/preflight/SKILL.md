@@ -64,6 +64,9 @@ across passes.
 
 - Are we following `AGENTS.md`, nested `AGENTS.md`, and design docs?
 - Did we drift from documented repo patterns or ownership boundaries?
+- If the changed surface is user-visible CLI/API/config/file-format/workflow
+  behavior, did we update the affected docs in the same change or record why
+  the behavior is intentionally undocumented?
 - If the work came from a task or ExecPlan, does the implementation match
   its acceptance notes and recorded decisions?
 - Did we update task, ExecPlan, design doc, or ADR notes when the change
@@ -182,6 +185,7 @@ Make the chosen context auditable. Length scales with change size.
 - ExecPlan: <plan id> / not applicable because <reason>
 - Design docs: <docs> / not applicable because <reason>
 - ADRs: <adrs> / not applicable because <reason>
+- Documentation impact: <docs checked/updated, or intentionally none because ...>
 - Changed files and diff: reviewed via `git diff --stat` and targeted diffs
 - Validation: <commands run>
 ```
